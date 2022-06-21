@@ -1,0 +1,104 @@
+use yew::prelude::*;
+use yew::html::IntoPropValue;
+use yew::virtual_dom::{Key, VNode};
+
+use super::{WidgetStdProps, Border, Margin, Padding}; 
+
+pub trait WidgetBuilder: Into<VNode> {
+    fn as_std_props_mut(&mut self) -> &mut WidgetStdProps;
+
+    /// Builder style method to set the yew `node_ref`
+    fn node_ref(mut self, node_ref: NodeRef) -> Self {
+        self.set_node_ref(node_ref);
+        self
+    }
+
+    /// Method to set the yew `node_ref`
+    fn set_node_ref(&mut self, node_ref: NodeRef) {
+        self.as_std_props_mut().node_ref = node_ref;
+    }
+
+    /// Builder style method to set the yew `key` property
+    fn key(mut self, key: impl IntoPropValue<Option<Key>>) -> Self {
+        self.set_key(key);
+        self
+    }
+
+    /// Method to set the yew `key` property
+    fn set_key(&mut self, key: impl IntoPropValue<Option<Key>>) {
+        self.as_std_props_mut().key = key.into_prop_value();
+    }
+
+    /// Builder style method to add a html class
+    fn class(mut self, class: impl Into<Classes>) -> Self {
+        self.add_class(class);
+        self
+    }
+
+    /// Method to add a html class
+    fn add_class(&mut self, class: impl Into<Classes>) {
+        self.as_std_props_mut().class.push(class);
+    }
+
+    /// Builder style method to set the box border
+    fn border(mut self, border: impl Into<Border>) -> Self {
+        self.set_border(border);
+        self
+    }
+
+    /// Method to set the box border
+    fn set_border(&mut self, border: impl Into<Border>) {
+        self.as_std_props_mut().border = border.into();
+    }
+
+    /// Builder style method to set the box padding
+    fn padding(mut self, padding: impl Into<Padding>) -> Self {
+        self.set_padding(padding);
+        self
+    }
+
+    /// Method to set the box padding
+    fn set_padding(&mut self, padding: impl Into<Padding>) {
+        self.as_std_props_mut().padding = padding.into();
+    }
+
+    /// Builder style method to set the box margin
+    fn margin(mut self, margin: impl Into<Margin>) -> Self {
+        self.set_margin(margin);
+        self
+    }
+
+    /// Method to set the box margin
+    fn set_margin(&mut self, margin: impl Into<Margin>) {
+        self.as_std_props_mut().margin = margin.into();
+    }
+
+    /// Builder style method to set additional html attributes
+    ///
+    /// Note: Value 'None' removes the attribute.
+    fn attribute(
+        mut self,
+        key: impl Into<AttrValue>,
+        value: impl IntoPropValue<Option<AttrValue>>,
+    ) -> Self {
+        self.set_attribute(key, value);
+        self
+    }
+
+    /// Method to set additional html attributes
+    ///
+    /// Note: Value 'None' removes the attribute.
+    fn set_attribute(
+        &mut self,
+        key: impl Into<AttrValue>,
+        value: impl IntoPropValue<Option<AttrValue>>,
+    ) {
+        if let Some(value) = value.into_prop_value() {
+            self.as_std_props_mut().attributes.get_mut_index_map()
+                .insert(key.into(), value);
+        } else {
+            self.as_std_props_mut().attributes.get_mut_index_map()
+                .remove(&key.into());
+        }
+    }
+}

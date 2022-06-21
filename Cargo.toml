@@ -1,0 +1,34 @@
+[package]
+name = "pwt"
+version = "0.2.0"
+edition = "2021"
+
+[workspace]
+
+members = [ "pwt-macros" ]
+
+[dependencies]
+anyhow = "1.0"
+lazy_static = "1.4"
+# this is the development version of Yew
+yew = { git = "https://github.com/yewstack/yew/", features = ["csr"] }
+web-sys = { version = "0.3.55", features = ["DomRect", "Element", "HtmlCollection", 'Headers', "NodeList", "Storage", 'Request', 'RequestInit', 'RequestCredentials', 'RequestMode', 'Response', 'Window', "MediaQueryList", "CssStyleDeclaration", "ScrollToOptions", "IntersectionObserver", "IntersectionObserverEntry"] }
+js-sys = "0.3"
+log = "0.4.6"
+indexmap = { version = "1", features = ["std"] }
+wasm-bindgen = { version = "0.2", features = ["serde-serialize"] }
+wasm-logger = "0.2"
+gloo-events = "0.1"
+gloo-timers = "0.2"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+wasm-bindgen-futures = "0.4"
+url = "2.1"
+percent-encoding = "2.1"
+
+pwt-macros = { path = "pwt-macros" }
+
+proxmox-schema = "1"
+
+[patch.crates-io.proxmox-schema]
+path = "../proxmox/proxmox-schema"

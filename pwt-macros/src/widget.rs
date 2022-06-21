@@ -1,0 +1,231 @@
+use proc_macro::TokenStream;
+use syn::{Attribute, Error, Fields, Result, Path, Ident, Token};
+use syn::spanned::Spanned;
+use syn::parse::{Parse, ParseStream};
+use quote::quote;
+use syn::{parse_macro_input, DeriveInput, Data};
+
+#[derive(Debug)]
+pub(crate)struct WidgetSetup {
+    component_name: Option<Path>,
+    is_input: bool,
+    is_container: bool,
+    is_element: bool,
+}
+
+impl Parse for WidgetSetup {
+    fn parse(input: ParseStream) -> Result<Self> {
+
+        let mut component_name = None;
+        let mut is_input = false;
+        let mut is_container = false;
+        let mut is_element = false;
+
+        loop {
+            if input.is_empty() { break; }
+            let lookahead = input.lookahead1();
+            if lookahead.peek(Token![@]) {
+                let _: Token![@] = input.parse()?;
+                let mixin: Ident = input.parse()?;
+                if mixin == "input" {
+                    is_input = true;
+                } else if mixin == "container" {
+                    is_container = true;
+                } else if mixin == "element" {
+                    is_element = true;
+                } else {
+                    return Err(Error::new(mixin.span(), "no such widget mixin"));
+                }
+
+                if input.is_empty() { break; }
+            } else {
+                let path: Path = input.parse()?;
+                if component_name.is_some() {
+                    return Err(Error::new(path.span(), "multiple component definitions"));
+                }
+                component_name = Some(path);
+            }
+            if input.is_empty() { break; }
+            let _: Token![,] = input.parse()?;
+            if input.is_empty() { break; }
+        }
+
+        Ok(WidgetSetup {
+            component_name,
+            is_input,
+            is_container,
+            is_element,
+        })
+    }
+}
+
+pub(crate) fn handle_widget_struct(setup: &WidgetSetup, input: TokenStream) -> TokenStream {
+
+    let widget = parse_macro_input!(input as DeriveInput);
+
+    derive_widget(setup, widget)
+        .unwrap_or_else(syn::Error::into_compile_error)
+        .into()
+}
+
+fn has_property_derive(attrs: &Vec<Attribute>) -> bool {
+
+    // SIGH!!
+    for attr in attrs {
+        if attr.style != syn::AttrStyle::Outer { continue; }
+        if let Some(ident) = attr.path.get_ident() {
+            if ident != "derive" { continue; }
+            if let Ok(syn::Meta::List(list)) = attr.parse_meta() {
+                for item in list.nested {
+                    if let syn::NestedMeta::Meta(meta) = item {
+                        if let syn::Meta::Path(ref path) = meta  {
+                            if let Some(ident) = path.get_ident() {
+                                if ident == "Properties" {
+                                    return true;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    false
+}
+
+fn derive_widget(setup: &WidgetSetup, widget: DeriveInput) -> Result<proc_macro2::TokenStream> {
+
+    let DeriveInput { attrs, vis, ident, generics, data } = widget;
+
+    let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
+
+    let has_property_derive = has_property_derive(&attrs);
+
+    let fields = match data {
+        Data::Struct(data) => {
+            match data.fields {
+                Fields::Named(fields) => fields,
+                _ => {
+                    return Err(Error::new(data.struct_token.span, "expected `struct` with named fields"));
+                }
+            }
+        }
+        Data::Enum(data) => {
+            return Err(Error::new(data.enum_token.span, "expected `struct`"));
+        }
+        Data::Union(data) => {
+            return Err(Error::new(data.union_token.span, "expected `struct`"));
+        }
+    };
+
+    let fields = fields.named; // remove braces
+
+    let mut opt_fields: Vec<_> = Vec::new();
+
+    let prop_or_default = if has_property_derive {
+        quote!{ #[prop_or_default] }
+    } else {
+        quote!{}
+    };
+
+    if setup.is_input {
+        opt_fields.push(quote!{
+            #prop_or_default
+            pub input_props: crate::props::FieldStdProps,
+        });
+    }
+
+    if setup.is_container {
+        opt_fields.push(quote!{
+            #prop_or_default
+            pub(crate) children: Vec<::yew::virtual_dom::VNode>,
+        });
+    }
+
+    if setup.is_element {
+        opt_fields.push(quote!{
+            #prop_or_default
+            pub(crate) listeners: crate::props::ListenersWrapper,
+        });
+    }
+
+    let mut output = quote!{
+        #(#attrs)*
+        #vis struct #ident #generics {
+
+            #prop_or_default
+            pub std_props: crate::props::WidgetStdProps,
+
+            #(#opt_fields)*
+
+            #fields
+        }
+    };
+
+    output.extend(quote!{
+        impl #impl_generics crate::props::WidgetBuilder for #ident #ty_generics #where_clause {
+            fn as_std_props_mut(&mut self) -> &mut crate::props::WidgetStdProps {
+                &mut self.std_props
+            }
+        }
+    });
+
+    if setup.is_element {
+        output.extend(quote!{
+            impl #impl_generics crate::props::EventSubscriber for #ident #ty_generics #where_clause {
+                fn as_listeners_mut(&mut self) -> &mut crate::props::ListenersWrapper {
+                    &mut self.listeners
+                }
+            }
+        });
+    }
+
+    if setup.is_container {
+        output.extend(quote!{
+            impl #impl_generics crate::props::ContainerBuilder for #ident #ty_generics #where_clause {
+                fn as_children_mut(&mut self) -> &mut Vec<::yew::virtual_dom::VNode> {
+                    &mut self.children
+                }
+            }
+        });
+    }
+
+    if setup.is_input {
+        output.extend(quote!{
+            impl #impl_generics crate::props::FieldBuilder for #ident #ty_generics #where_clause {
+                fn as_input_props_mut(&mut self) -> &mut crate::props::FieldStdProps {
+                    &mut self.input_props
+                }
+            }
+        });
+    }
+
+    if let Some(component_name) = &setup.component_name {
+        output.extend(quote!{
+            impl #impl_generics Into<::yew::virtual_dom::VNode> for #ident #ty_generics #where_clause {
+                fn into(self) -> ::yew::virtual_dom::VNode {
+                    // Note: self.std_props.node_ref is handled inside the component
+                    let node_ref = NodeRef::default();
+                    let key = self.std_props.key.clone();
+                    let comp = ::yew::virtual_dom::VComp::new::<#component_name>(
+                        ::std::rc::Rc::new(self), node_ref, key,
+                    );
+                    ::yew::virtual_dom::VNode::from(comp)
+                }
+            }
+        });
+    } else {
+        output.extend(quote!{
+            impl #impl_generics Into<::yew::virtual_dom::VNode> for #ident #ty_generics #where_clause {
+                fn into(self) -> ::yew::virtual_dom::VNode {
+                    let vtag: ::yew::virtual_dom::VTag = self.into();
+                    ::yew::virtual_dom::VNode::from(vtag)
+                }
+            }
+        });
+    }
+
+    //eprintln!("TEST {}", output);
+    Ok(output)
+}
