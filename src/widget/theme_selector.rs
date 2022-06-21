@@ -3,7 +3,7 @@ use std::rc::Rc;
 use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 
-use crate::widget::prelude::*;
+use crate::prelude::*;
 use crate::widget::Button;
 
 #[derive(Clone, PartialEq, Properties)]

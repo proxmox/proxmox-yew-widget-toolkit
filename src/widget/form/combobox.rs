@@ -8,7 +8,7 @@ use yew::html::IntoEventCallback;
 
 use proxmox_schema::Schema;
 
-use crate::widget::prelude::*;
+use crate::prelude::*;
 use crate::props::{FieldStdProps, RenderFn};
 use crate::widget::{DataTableColumn, Dropdown, GridPicker};
 use crate::widget::form::ValidateFn;

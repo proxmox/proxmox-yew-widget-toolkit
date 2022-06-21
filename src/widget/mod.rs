@@ -115,10 +115,3 @@ pub fn get_unique_element_id() -> String {
     let id = UNIQUE_ELEMENT_ID.fetch_add(1, Ordering::SeqCst);
     format!("PwtElementId{}", id)
 }
-
-pub mod prelude {
-    pub use crate::props::WidgetBuilder;
-    pub use crate::props::ContainerBuilder;
-    pub use crate::props::FieldBuilder;
-    pub use crate::props::EventSubscriber;
-}

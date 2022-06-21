@@ -8,7 +8,7 @@ use yew::prelude::*;
 use yew::html::{IntoPropValue, IntoEventCallback};
 use yew::virtual_dom::VNode;
 
-use crate::widget::prelude::*;
+use crate::prelude::*;
 use crate::props::{WidgetStdProps, FieldStdProps, RenderFn};
 use crate::widget::Tooltip;
 use crate::widget::form::Input;

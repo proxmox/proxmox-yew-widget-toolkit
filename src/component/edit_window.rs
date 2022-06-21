@@ -7,7 +7,7 @@ use yew::prelude::*;
 use yew::virtual_dom::{Key, VComp, VNode};
 use yew::html::IntoEventCallback;
 
-use crate::widget::prelude::*;
+use crate::prelude::*;
 use crate::props::{
     LoadCallback, IntoLoadCallback, SubmitCallback, IntoSubmitCallback,
     RenderFn,

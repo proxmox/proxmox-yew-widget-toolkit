@@ -5,7 +5,7 @@ use yew::virtual_dom::{Listeners, VList, VTag};
 
 use pwt_macros::widget;
 
-use crate::widget::prelude::*;
+use crate::prelude::*;
 use crate::state::FormState;
 
 #[widget(@element, @container)]

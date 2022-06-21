@@ -6,7 +6,7 @@ use yew::prelude::*;
 use yew::virtual_dom::{Listeners, VList, VTag};
 use yew::html::IntoPropValue;
 
-use crate::widget::prelude::*;
+use crate::prelude::*;
 
 use pwt_macros::widget;
 

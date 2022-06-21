@@ -6,7 +6,7 @@ use indexmap::IndexMap;
 use yew::prelude::*;
 use yew::virtual_dom::{Key, VComp, VNode};
 
-use crate::widget::prelude::*;
+use crate::prelude::*;
 use crate::props::RenderFn;
 use super::{Column, TabBar};
 

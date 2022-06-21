@@ -6,7 +6,7 @@ use wasm_bindgen::JsCast;
 use yew::prelude::*;
 use yew::virtual_dom::{Key, VComp, VNode};
 
-use crate::widget::prelude::*;
+use crate::prelude::*;
 use crate::widget::{Button, Panel};
 
 // Dialog properties

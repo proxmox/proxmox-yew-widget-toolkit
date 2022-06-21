@@ -5,7 +5,7 @@ use yew::html::IntoPropValue;
 
 use pwt_macros::widget;
 
-use crate::widget::prelude::*;
+use crate::prelude::*;
 use crate::widget::Row;
 
 #[widget(@element, @container)]

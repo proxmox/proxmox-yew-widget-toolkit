@@ -5,7 +5,7 @@ use yew::virtual_dom::{Listeners, VList, VTag};
 
 use pwt_macros::widget;
 
-use crate::widget::prelude::*;
+use crate::prelude::*;
 use super::focus::{focus_next_tabable, init_roving_tabindex};
 
 #[widget(PwtToolbar, @element, @container)]

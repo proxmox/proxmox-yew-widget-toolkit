@@ -8,7 +8,7 @@ use web_sys::HtmlInputElement;
 use yew::prelude::*;
 use yew::html::{IntoEventCallback, IntoPropValue};
 
-use crate::widget::prelude::*;
+use crate::prelude::*;
 use crate::widget::Tooltip;
 use crate::widget::form::Input;
 

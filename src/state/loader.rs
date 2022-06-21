@@ -5,7 +5,7 @@ use anyhow::Error;
 
 use yew::prelude::*;
 
-use crate::widget::prelude::*;
+use crate::prelude::*;
 use crate::props::{LoadCallback, IntoLoadCallback};
 use crate::widget::{Button, Fa};
 use crate::component::error_message;

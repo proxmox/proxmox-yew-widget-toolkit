@@ -6,7 +6,7 @@ use indexmap::IndexMap;
 use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode, Key};
 
-use crate::widget::prelude::*;
+use crate::prelude::*;
 use crate::props::{
     LoadCallback, IntoLoadCallback, SubmitCallback, IntoSubmitCallback,
     RenderItemFn,

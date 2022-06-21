@@ -6,7 +6,7 @@ use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 use yew::html::IntoPropValue;
 
-use crate::widget::prelude::*;
+use crate::prelude::*;
 use crate::widget::{Button, Dialog, Fa, Row, Toolbar};
 
 #[derive(Clone, Properties, PartialEq)]

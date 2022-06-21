@@ -3,7 +3,7 @@ use yew::virtual_dom::{Listeners, VList, VTag};
 
 use pwt_macros::widget;
 
-use crate::widget::prelude::*;
+use crate::prelude::*;
 
 #[widget(@element, @container)]
 #[derive(Default, Debug, Clone)]

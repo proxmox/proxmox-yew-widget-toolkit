@@ -12,7 +12,10 @@ readme="README.md"
 
 [workspace]
 
-members = [ "pwt-macros" ]
+members = [
+    "pwt-macros",
+    "examples/counter",
+]
 
 [dependencies]
 anyhow = "1.0"

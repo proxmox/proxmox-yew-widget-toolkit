@@ -8,7 +8,7 @@ use yew::html::{IntoEventCallback, IntoPropValue};
 
 use proxmox_schema::Schema;
 
-use crate::widget::prelude::*;
+use crate::prelude::*;
 use crate::props::{ExtractKeyFn, IntoLoadCallback, LoadCallback, RenderFn};
 use crate::state::Loader;
 use crate::widget::Dropdown;

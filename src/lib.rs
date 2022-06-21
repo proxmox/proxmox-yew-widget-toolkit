@@ -102,3 +102,10 @@ pub fn load_use_dark_theme() -> Option<bool>{
                 .map(|s| s.parse().unwrap_or(false))
         })
 }
+
+pub mod prelude {
+    pub use crate::props::WidgetBuilder;
+    pub use crate::props::ContainerBuilder;
+    pub use crate::props::FieldBuilder;
+    pub use crate::props::EventSubscriber;
+}
