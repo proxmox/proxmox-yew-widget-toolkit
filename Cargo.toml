@@ -14,8 +14,12 @@ readme="README.md"
 
 members = [
     "pwt-macros",
+
+    # Examples
+    
     "examples/counter",
     "examples/loader",
+    "examples/tauri-example",
 ]
 
 [dependencies]
