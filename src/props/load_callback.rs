@@ -1,9 +1,11 @@
 use std::rc::Rc;
 use std::future::Future;
 use std::pin::Pin;
+use std::sync::{Arc, Mutex};
 
-use anyhow::Error;
+use anyhow::{bail, format_err, Error};
 use serde::de::DeserializeOwned;
+use serde_json::Value;
 
 use yew::AttrValue;
 use yew::html::IntoPropValue;
@@ -111,7 +113,6 @@ impl<T: 'static + DeserializeOwned> IntoLoadCallback<T> for &str {
     }
 }
 
-/*
 impl<T: 'static + DeserializeOwned> IntoLoadCallback<T> for String {
     fn into_load_callback(self) -> Option<LoadCallback<T>> {
         let url = AttrValue::from(self);
@@ -120,8 +121,11 @@ impl<T: 'static + DeserializeOwned> IntoLoadCallback<T> for String {
                 let url = url.clone();
                 move || {
                     let url = url.clone();
+                    let http_get = HTTP_GET.lock().unwrap().clone();
                     async move {
-                        crate::http_get(&*url, None).await
+                        let value = http_get(url.to_string()).await?;
+                        let data = serde_json::from_value(value)?;
+                        Ok(data)
                     }
                 }
             }).url(url)
@@ -139,7 +143,6 @@ impl<T: 'static + DeserializeOwned> IntoLoadCallback<T> for Option<String> {
     }
 }
 
-*/
 
 impl<T: 'static, F, R, P> IntoLoadCallback<T> for (F, P)
 where
@@ -155,4 +158,67 @@ where
         };
         Some(LoadCallback::new(callback).url(url))
     }
+}
+
+lazy_static::lazy_static!{
+    static ref HTTP_GET: Mutex<Arc<dyn Send + Sync + Fn(String) -> Pin<Box<dyn Future<Output = Result<Value, Error>>>> >> = {
+        Mutex::new(Arc::new(|url| Box::pin(http_get(url))))
+    };
+}
+
+/// Overwrite the HTTP get method used by the [LoadCallback]
+///
+/// The default method expects a valid json response and simply
+/// deserializes the data using serde.
+pub fn set_http_get_method<F: 'static +  Future<Output = Result<Value, Error>>>(cb: fn(String) -> F) {
+    *HTTP_GET.lock().unwrap() = Arc::new(move |url| Box::pin(cb(url)));
+}
+
+async fn http_get(url: String) -> Result<Value, Error> {
+
+    let mut init = web_sys::RequestInit::new();
+    init.method("GET");
+
+    let js_headers = web_sys::Headers::new()
+        .map_err(|err| format_err!("{:?}", err))?;
+
+    js_headers.append("content-type", "application/x-www-form-urlencoded")
+        .map_err(|err| format_err!("{:?}", err))?;
+
+    init.headers(&js_headers);
+    let js_req = web_sys::Request::new_with_str_and_init(&url, &init)
+        .map_err(|err| format_err!("{:?}", err))?;
+
+    let window = web_sys::window()
+        .ok_or_else(|| format_err!("unable to get window object"))?;
+
+    let promise = window.fetch_with_request(&js_req);
+    let js_fut =  wasm_bindgen_futures::JsFuture::from(promise);
+    let js_resp = js_fut.await
+        .map_err(|err| format_err!("{:?}", err))?;
+
+    let resp: web_sys::Response = js_resp.into();
+
+    let promise = resp.text()
+        .map_err(|err| format_err!("{:?}", err))?;
+
+    let js_fut =  wasm_bindgen_futures::JsFuture::from(promise);
+    let body = js_fut.await
+        .map_err(|err| format_err!("{:?}", err))?;
+
+    let text = body.as_string()
+        .ok_or_else(|| format_err!("Got non-utf8-string response"))?;
+
+    let data = if resp.ok() {
+        if text.is_empty() {
+            Value::Null
+        } else {
+            serde_json::from_str(&text)
+                .map_err(|err| format_err!("invalid json: {}", err))?
+        }
+    } else {
+        bail!("HTTP status {}: {}", resp.status(), resp.status_text());
+    };
+
+    Ok(data)
 }

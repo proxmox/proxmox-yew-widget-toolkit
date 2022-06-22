@@ -4,7 +4,7 @@ mod extract_key_function;
 pub use extract_key_function::ExtractKeyFn;
 
 mod load_callback;
-pub use load_callback::{IntoLoadCallback, LoadCallback};
+pub use load_callback::{set_http_get_method, IntoLoadCallback, LoadCallback};
 
 mod field_std_props;
 pub use field_std_props::FieldStdProps;
