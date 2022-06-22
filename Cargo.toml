@@ -15,6 +15,7 @@ readme="README.md"
 members = [
     "pwt-macros",
     "examples/counter",
+    "examples/loader",
 ]
 
 [dependencies]
