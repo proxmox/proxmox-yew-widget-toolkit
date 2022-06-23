@@ -19,11 +19,6 @@ extern "C" {
     fn clear_auth_cookie();
     fn test_alert();
 
-    // uPlot binding
-    fn uplot(opts: &JsValue, data: &JsValue, node: web_sys::Node) -> JsValue;
-    fn uplot_set_data(uplot: &JsValue, data: &JsValue);
-    fn uplot_set_size(uplot: &JsValue, width: usize, height: usize);
-
     // Popper binding
     fn create_popper(content: web_sys::Node, tip: web_sys::Node, opts: &JsValue) -> JsValue;
     fn update_popper(popper: &JsValue);
@@ -31,9 +26,6 @@ extern "C" {
     //Dialog bindings
     fn show_modal_dialog(dialog: web_sys::Node);
     fn close_dialog(dialog: web_sys::Node);
-    
-    fn render_server_epoch(epoch: f64) -> String;
-    fn render_timestamp(epoch: f64) -> String;
 }
 
 
