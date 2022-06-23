@@ -1,9 +1,5 @@
 // js functions we want to call from rust
 
-function async_sleep(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-}
-
 function test_alert() {
     alert("This is a test!");
 }
@@ -42,7 +38,6 @@ function close_dialog(dialog) {
 }
 
 export {
-    async_sleep,
     test_alert,
     create_popper,
     update_popper,

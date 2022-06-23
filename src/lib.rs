@@ -13,7 +13,6 @@ use wasm_bindgen::{self, prelude::*};
 #[wasm_bindgen(module = "/js-helper-module.js")]
 #[cfg(target_arch="wasm32")]
 extern "C" {
-    fn async_sleep(ms: i32) -> js_sys::Promise;
     fn test_alert();
 
     // Popper binding
