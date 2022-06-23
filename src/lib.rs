@@ -14,9 +14,6 @@ use wasm_bindgen::{self, prelude::*};
 #[cfg(target_arch="wasm32")]
 extern "C" {
     fn async_sleep(ms: i32) -> js_sys::Promise;
-    fn get_cookie() -> String;
-    fn set_auth_cookie(value: &str);
-    fn clear_auth_cookie();
     fn test_alert();
 
     // Popper binding
