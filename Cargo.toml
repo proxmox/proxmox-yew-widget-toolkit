@@ -26,8 +26,7 @@ members = [
 anyhow = "1.0"
 lazy_static = "1.4"
 # this is the development version of Yew
-# yew = { git = "https://github.com/yewstack/yew/", features = ["csr"] }
-yew = { git = "https://github.com/yewstack/yew/", rev = "015412e6ff7948c63b7ef343742075a247d1a2de", features = ["csr"] }
+yew = { git = "https://github.com/yewstack/yew/", features = ["csr"] }
 web-sys = { version = "0.3.55", features = ["DomRect", "Element", "HtmlCollection", 'Headers', "NodeList", "Storage", 'Request', 'RequestInit', 'RequestCredentials', 'RequestMode', 'Response', 'Window', "MediaQueryList", "CssStyleDeclaration", "ScrollToOptions", "IntersectionObserver", "IntersectionObserverEntry"] }
 js-sys = "0.3"
 log = "0.4.6"
