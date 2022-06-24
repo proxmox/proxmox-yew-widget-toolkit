@@ -81,7 +81,7 @@ impl Mask {
             self.add_child(child);
         } else {
             // important for VDOM diff
-            // self.add_child(html!{}); // this can still chnage child order,
+            // self.add_child(html!{}); // this can still change child order,
             // so we add a real DOM element for now
             self.add_child(html!{<div class="pwt-d-none"/>});
         }
