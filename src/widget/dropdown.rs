@@ -113,6 +113,9 @@ pub struct PwtDropdown {
     show: bool,
     last_show: bool, // track changes
     value: String,
+    // fire on_change() event delayed, after the dialog is closed, so that
+    // other widget can grep the focus after a change (if the want)
+    pending_change: bool,
     mousedown_listener: Option<EventListener>,
     input_ref: NodeRef,
     picker_ref: NodeRef,
@@ -125,6 +128,7 @@ impl PwtDropdown {
     // focus the input elelent (after closing the dropdown dialog)
     // just to be sure (Dialog should do this automatically)
     fn restore_focus(&mut self) {
+        log::info!("DROPDOWN RESTORE FOCUS");
         if let Some(el) = self.input_ref.cast::<web_sys::HtmlElement>() {
             let _ = el.focus();
         }
@@ -139,6 +143,7 @@ impl Component for PwtDropdown {
         Self {
             show: false,
             last_show: false,
+            pending_change: false,
             value: ctx.props().value.clone().unwrap_or_else(|| String::new()),
             mousedown_listener: None,
             input_ref: NodeRef::default(),
@@ -154,6 +159,14 @@ impl Component for PwtDropdown {
             Msg::DialogClosed => {
                 self.show = false;
                 //log::info!("DialogClosed");
+                self.restore_focus();
+                if self.pending_change {
+                    self.pending_change = false;
+                    //log::info!("Pending Change {}", self.value);
+                    if let Some(on_change) = &ctx.props().on_change {
+                        on_change.emit(self.value.clone());
+                    }
+                }
                 true
             }
             Msg::TogglePicker => {
@@ -177,13 +190,18 @@ impl Component for PwtDropdown {
                 true
             }
             Msg::Select(key) => {
-                self.show = false;
-                //log::info!("Select {} {}", key, value);
-                if let Some(on_change) = &ctx.props().on_change {
-                    on_change.emit(key.clone());
-                }
                 self.value = key;
-                true
+                if self.show {
+                    self.pending_change = true;
+                    yew::Component::update(self, ctx, Msg::HidePicker)
+                } else {
+                    //log::info!("Select {} {}", key, value);
+                    if let Some(on_change) = &ctx.props().on_change {
+                        on_change.emit(self.value.clone());
+                    }
+
+                    true
+                }
             }
             Msg::Input(value) => {
                 //log::info!("Input {}", value);
@@ -380,7 +398,6 @@ impl Component for PwtDropdown {
                     focus_selected_element(&self.picker_ref);
                 } else {
                     crate::close_dialog(dialog_node);
-                    self.restore_focus();
                 }
             }
         }
