@@ -4,6 +4,7 @@ use std::cell::RefCell;
 use anyhow::Error;
 
 use yew::prelude::*;
+use yew::html::IntoPropValue;
 
 use crate::prelude::*;
 use crate::props::{LoadCallback, IntoLoadCallback};
@@ -57,12 +58,17 @@ impl<T: 'static> Loader<T> {
         self.loader = callback.into_load_callback();
     }
 
-    pub fn data(mut self, data: Rc<T>) -> Self {
+    pub fn data(mut self, data: impl IntoPropValue<Option<Rc<T>>>) -> Self {
         self.set_data(data);
         self
     }
 
-    pub fn set_data(&mut self, data: Rc<T>) {
+    pub fn set_data(&mut self, data: impl IntoPropValue<Option<Rc<T>>>) {
+        let data = match data.into_prop_value() {
+            Some(data) => data,
+            None => return, // do nothing
+        };
+
         let mut state = self.state.borrow_mut();
         if let Some(Ok(old_data)) = &state.data {
             if Rc::ptr_eq(&old_data, &data) {

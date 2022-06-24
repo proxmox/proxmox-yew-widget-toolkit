@@ -33,6 +33,7 @@ pub struct CreatePickerArgs<T> {
 #[derive(Clone, Properties)]
 pub struct Selector<T: 'static> {
     pub loader: Option<LoadCallback<Vec<T>>>,
+    pub data: Option<Rc<Vec<T>>>,
     pub default: Option<String>,
     #[prop_or_default]
     pub editable: bool,
@@ -49,6 +50,16 @@ pub struct Selector<T: 'static> {
 
 impl<T> PartialEq for Selector<T> {
     fn eq(&self, other: &Self) -> bool {
+        match (&self.data, &other.data) {
+            (None, None) => { /* fall through */ }
+            (None, Some(_)) | (Some(_), None) => return false,
+            (Some(ref d1), Some(ref d2)) => {
+                if !Rc::ptr_eq(d1, d2) {
+                    return false;
+                }
+            }
+        }
+
         self.std_props == other.std_props &&
             self.input_props == other.input_props &&
             self.loader == other.loader &&
@@ -106,6 +117,17 @@ impl<T: 'static> Selector<T> {
     /// Method to set the load callback.
     pub fn set_loader(&mut self, callback: impl IntoLoadCallback<Vec<T>>) {
         self.loader = callback.into_load_callback();
+    }
+
+    /// Builder style method to set the data
+    pub fn data(mut self, data: impl IntoPropValue<Option<Rc<Vec<T>>>>) -> Self {
+        self.set_data(data);
+        self
+    }
+
+    /// Method to set the data
+    pub fn set_data(&mut self, data: impl IntoPropValue<Option<Rc<Vec<T>>>>) {
+        self.data = data.into_prop_value();
     }
 
     pub fn extract_key(mut self, extract_fn: impl Into<ExtractKeyFn<T>>) -> Self {
@@ -240,6 +262,7 @@ impl<T: 'static> Component for PwtSelector<T> {
     fn create(ctx: &Context<Self>) -> Self {
         let props = ctx.props();
         let loader = Loader::new(ctx.link().callback(|_| Msg::UpdateList))
+            .data(props.data.clone())
             .loader(props.loader.clone());
 
         loader.load();
