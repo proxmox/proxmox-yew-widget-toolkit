@@ -128,7 +128,6 @@ impl PwtDropdown {
     // focus the input elelent (after closing the dropdown dialog)
     // just to be sure (Dialog should do this automatically)
     fn restore_focus(&mut self) {
-        log::info!("DROPDOWN RESTORE FOCUS");
         if let Some(el) = self.input_ref.cast::<web_sys::HtmlElement>() {
             let _ = el.focus();
         }
