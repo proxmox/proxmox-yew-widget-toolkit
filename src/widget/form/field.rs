@@ -110,6 +110,7 @@ pub enum Msg {
 pub struct PwtField {
     value: String,
     valid: Result<(), String>,
+    last_version: usize,
 }
 
 impl PwtField {
@@ -148,7 +149,7 @@ impl PwtField {
         self.valid = valid.clone();
 
         if let Some(form_ref) = &props.input_props.form_ref {
-             form_ref.form.with_field_state_mut(&form_ref.field_name, move |field| {
+            form_ref.form.with_field_state_mut(&form_ref.field_name, move |field| {
                 field.value = value.clone().into();
                 field.valid = valid.clone();
                 if let Some(default) = &default {
@@ -210,6 +211,7 @@ impl Component for PwtField {
         Self {
             value: value,
             valid: valid,
+            last_version: 0,
         }
     }
 
@@ -219,9 +221,29 @@ impl Component for PwtField {
             Msg::Update(value) => {
                 if props.input_props.disabled { return true; }
                 self.set_value(ctx, value, None);
-               true
+                true
             }
         }
+    }
+
+    fn changed(&mut self, ctx: &Context<Self>) -> bool {
+        let props = ctx.props();
+
+        if let Some(form_ref) = &props.input_props.form_ref {
+            if form_ref.version != self.last_version {
+                self.last_version = form_ref.version;
+
+                let value = self.get_value(ctx);
+                let valid = self.get_valid(ctx);
+
+                // try to keep data in sync
+                if value != self.value || valid != self.valid {
+                    self.set_value(ctx, value, None);
+                }
+            }
+        }
+
+        true
     }
 
     fn view(&self, ctx: &Context<Self>) -> Html {
