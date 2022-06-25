@@ -154,7 +154,6 @@ impl Component for PwtDialog {
         });
 
         let mut panel = Panel::new()
-            .class("pwt-fit")
             .title(props.title.clone())
             .border(false);
 
