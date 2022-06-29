@@ -184,6 +184,7 @@ pub enum Msg {
 pub struct PwtSelector<T> {
     loader: Loader<Vec<T>>,
     last_loader: Option<LoadCallback<Vec<T>>>, //change tracking
+    last_data: Option<Rc<Vec<T>>>, //change tracking
     value: String,
     valid: Result<(), String>,
 }
@@ -261,6 +262,7 @@ impl<T: 'static> Component for PwtSelector<T> {
 
     fn create(ctx: &Context<Self>) -> Self {
         let props = ctx.props();
+
         let loader = Loader::new(ctx.link().callback(|_| Msg::UpdateList))
             .data(props.data.clone())
             .loader(props.loader.clone());
@@ -274,6 +276,7 @@ impl<T: 'static> Component for PwtSelector<T> {
             valid: Ok(()),
             loader,
             last_loader: props.loader.clone(),
+            last_data: props.data.clone(),
         };
 
         me.valid = me.validate(ctx, &me.value);
@@ -333,6 +336,19 @@ impl<T: 'static> Component for PwtSelector<T> {
 
     fn changed(&mut self, ctx: &Context<Self>) -> bool {
         let props = ctx.props();
+
+        // Note: manual impl. to avoid PartialEq on T
+        let data_changed = match (&props.data, &self.last_data) {
+            (None, None) => false,
+            (Some(_), None) => true,
+            (None, Some(_)) => true,
+            (Some(ref a), Some(ref b)) => !Rc::ptr_eq(a, b),
+        };
+
+        if data_changed {
+            self.last_data = props.data.clone();
+            self.loader.set_data(props.data.clone());
+        }
 
         if props.loader != self.last_loader {
             self.last_loader = props.loader.clone();
