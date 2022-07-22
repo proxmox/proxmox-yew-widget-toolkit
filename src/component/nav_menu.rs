@@ -1,0 +1,309 @@
+use std::collections::HashMap;
+
+use yew::prelude::*;
+use yew::virtual_dom::VNode;
+use yew::{html, Component, Html, Properties};
+
+use crate::props::{ContainerBuilder, EventSubscriber, WidgetBuilder};
+use crate::widget::focus::focus_next_tabable;
+use crate::widget::{Column, Row};
+
+pub struct MenuItem {
+    id: String,
+    text: String,
+    icon_cls: Option<String>,
+    starting_indent: usize,
+    content: Box<dyn Fn() -> Html>,
+}
+
+impl PartialEq for MenuItem {
+    fn eq(&self, other: &Self) -> bool {
+        self.id == other.id
+    }
+}
+
+impl MenuItem {
+    pub fn new(
+        id: &str,
+        text: &str,
+        icon_cls: Option<&str>,
+        content: impl Fn() -> Html + 'static,
+    ) -> Self {
+        Self {
+            id: id.to_string(),
+            text: text.to_string(),
+            icon_cls: icon_cls.and_then(|cls| Some(cls.to_string())),
+            content: Box::new(content),
+            starting_indent: 0,
+        }
+    }
+
+    pub fn with_indent(
+        id: &str,
+        text: &str,
+        icon_cls: Option<&str>,
+        content: impl Fn() -> Html + 'static,
+        starting_indent: usize,
+    ) -> Self {
+        Self {
+            id: id.to_string(),
+            text: text.to_string(),
+            icon_cls: icon_cls.and_then(|cls| Some(cls.to_string())),
+            content: Box::new(content),
+            starting_indent,
+        }
+    }
+
+    fn content(&self) -> Html {
+        (self.content)()
+    }
+}
+
+#[derive(PartialEq)]
+pub enum Menu {
+    Child(MenuItem),
+    Submenu(MenuItem, Vec<Menu>),
+    Component(VNode),
+}
+
+use Menu::{Child, Submenu};
+
+#[derive(PartialEq, Properties)]
+pub struct NavigationMenu {
+    menu: Vec<Menu>,
+    on_select: Callback<Option<String>>,
+}
+
+impl NavigationMenu {
+    pub fn new() -> Self {
+        Self {
+            menu: Vec::new(),
+            on_select: Callback::noop(),
+        }
+    }
+
+    pub fn with_child(mut self, item: MenuItem) -> Self {
+        self.add_child(item);
+        self
+    }
+
+    pub fn add_child(&mut self, item: MenuItem) {
+        self.menu.push(Child(item));
+    }
+
+    pub fn with_menu(mut self, item: MenuItem, menu: Vec<Menu>) -> Self {
+        self.add_menu(item, menu);
+        self
+    }
+
+    pub fn add_menu(&mut self, item: MenuItem, menu: Vec<Menu>) {
+        self.menu.push(Submenu(item, menu));
+    }
+
+    pub fn with_component(mut self, component: impl Into<VNode>) -> Self {
+        self.add_component(component);
+        self
+    }
+
+    pub fn add_component(&mut self, component: impl Into<VNode>) {
+        self.menu.push(Menu::Component(component.into()))
+    }
+
+    pub fn on_select(mut self, callback: Callback<Option<String>>) -> Self {
+        self.on_select = callback;
+        self
+    }
+}
+
+pub enum Msg {
+    Select(Option<String>),
+    MenuToggle(String),
+    MenuClose(String),
+    MenuOpen(String),
+}
+
+pub struct PwtNavigationMenu {
+    active: Option<String>,
+    menu_states: HashMap<String, bool>, // true = open
+    menu_ref: NodeRef,
+}
+
+impl PwtNavigationMenu {
+    fn render_child(
+        &self,
+        ctx: &yew::Context<PwtNavigationMenu>,
+        item: &MenuItem,
+        indent_level: usize,
+        is_menu: bool,
+        visible: bool,
+    ) -> Html {
+        let is_active = self
+            .active
+            .as_ref()
+            .map_or(false, |active| active == &item.id);
+        let indent = indent_level + item.starting_indent;
+        let class = classes!(is_active.then(|| "active"), "pwt-nav-link",);
+
+        let onclick = ctx.link().callback({
+            let key = item.id.to_string();
+            move |_event: MouseEvent| Msg::Select(Some(key.clone()))
+        });
+
+        let on_expander_click = ctx.link().callback({
+            let key = item.id.to_string();
+            move |event: MouseEvent| {
+                event.stop_propagation();
+                Msg::MenuToggle(key.clone())
+            }
+        });
+
+        let onkeydown = ctx.link().batch_callback({
+            let key = item.id.to_string();
+            move |event: KeyboardEvent| match event.key().as_str() {
+                " " => Some(Msg::Select(Some(key.clone()))),
+                "ArrowRight" if is_menu => Some(Msg::MenuOpen(key.clone())),
+                "ArrowLeft" if is_menu => Some(Msg::MenuClose(key.clone())),
+                _ => None,
+            }
+        });
+
+        let tabindex = if is_active { "0" } else { "-1" };
+
+        let open = if is_menu {
+            *self.menu_states.get(&item.id).unwrap_or(&true)
+        } else {
+            true
+        };
+        let style = (!visible).then(|| "display:none").unwrap_or("");
+
+        html! {
+            <a disabled={!visible} {style} {onclick} {onkeydown} {class} {tabindex}>
+            { (0..indent).map(|_| html!{ <span class="pwt-ps-4" /> }).collect::<Html>() }
+                if let Some(icon) = &item.icon_cls {
+                    <i class={classes!(icon.to_string(), "pwt-me-2")}/>
+                }
+            {&item.text}
+            if is_menu {
+                <i class={classes!{
+                        "fa",
+                        "fa-fw",
+                        if open { "fa-caret-up" } else { "fa-caret-down" },
+                        "pwt-nav-menu-expander"
+                    }}
+                    onclick={on_expander_click}>{"\u{00a0}"}</i>
+            }
+            </a>
+        }
+    }
+
+    fn render_item(
+        &self,
+        ctx: &yew::Context<PwtNavigationMenu>,
+        item: &Menu,
+        menu: &mut Column,
+        active: &str,
+        level: usize,
+        visible: bool,
+    ) -> Option<Html> {
+        let mut content = None;
+        match item {
+            Child(child) => {
+                menu.add_child(self.render_child(ctx, child, level, false, visible));
+                if child.id == active {
+                    content = Some(child.content());
+                }
+            }
+            Submenu(child, list) => {
+                menu.add_child(self.render_child(ctx, child, level, true, visible));
+                if child.id == active {
+                    content = Some(child.content());
+                }
+                let visible = visible
+                    .then(|| *self.menu_states.get(&child.id).unwrap_or(&true))
+                    .unwrap_or(false);
+                for sub in list.iter() {
+                    if let Some(new_content) =
+                        self.render_item(ctx, sub, menu, active, level + 1, visible)
+                    {
+                        content = Some(new_content);
+                    }
+                }
+            }
+            Menu::Component(comp) => {
+                menu.add_child(comp.clone());
+            }
+        }
+        content
+    }
+}
+
+impl Component for PwtNavigationMenu {
+    type Message = Msg;
+    type Properties = NavigationMenu;
+
+    fn create(_ctx: &yew::Context<Self>) -> Self {
+        Self {
+            active: None,
+            menu_states: HashMap::new(),
+            menu_ref: NodeRef::default(),
+        }
+    }
+
+    fn update(&mut self, ctx: &yew::Context<Self>, msg: Self::Message) -> bool {
+        match msg {
+            Msg::Select(key) => {
+                self.active = key.clone();
+                ctx.props().on_select.emit(key);
+                true
+            }
+            Msg::MenuToggle(key) => {
+                let entry = *self.menu_states.entry(key.clone()).or_insert_with(|| true);
+                self.menu_states.insert(key, !entry);
+                true
+            }
+            Msg::MenuClose(key) => {
+                self.menu_states.insert(key, false);
+                true
+            }
+            Msg::MenuOpen(key) => {
+                self.menu_states.insert(key, true);
+                true
+            }
+        }
+    }
+
+    fn view(&self, ctx: &yew::Context<Self>) -> yew::Html {
+        let mut content: Option<Html> = None;
+
+        let menu_ref = self.menu_ref.clone();
+        let onkeydown = Callback::from(move |event: KeyboardEvent| {
+            match event.key().as_str() {
+                "ArrowDown" => {
+                    focus_next_tabable(&menu_ref, false, false);
+                }
+                "ArrowUp" => {
+                    focus_next_tabable(&menu_ref, true, false);
+                }
+                _ => return,
+            }
+            event.prevent_default();
+        });
+        let mut menu = Column::new()
+            .node_ref(self.menu_ref.clone())
+            .onkeydown(onkeydown)
+            .class("pwt-nav-menu pwt-overflow-auto pwt-border-right")
+            .attribute("style", "min-width:200px;");
+
+        let active = self.active.as_deref().unwrap_or("");
+        for item in ctx.props().menu.iter() {
+            if let Some(new_content) = self.render_item(ctx, item, &mut menu, active, 0, true) {
+                content = Some(new_content);
+            }
+        }
+        Row::new()
+            .class("pwt-flex-fill pwt-align-items-stretch pwt-overflow-auto")
+            .with_child(menu)
+            .with_optional_child(content)
+            .into()
+    }
+}
