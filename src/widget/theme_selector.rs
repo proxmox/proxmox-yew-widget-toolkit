@@ -83,9 +83,9 @@ impl Component for PwtThemeSelector {
 
                 if let Some(el) = document.get_element_by_id("__pwt-theme-loader__") {
                     if self.dark {
-                        let _ = el.set_attribute("href", "proxmox-yew-style-dark.css");
+                        let _ = el.set_attribute("href", "/proxmox-yew-style-dark.css");
                     } else {
-                        let _ = el.set_attribute("href", "proxmox-yew-style-light.css");
+                        let _ = el.set_attribute("href", "/proxmox-yew-style-light.css");
                     }
                 }
 
