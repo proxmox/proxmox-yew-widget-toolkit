@@ -20,6 +20,7 @@ members = [
     "examples/counter",
     "examples/loader",
     "examples/tauri-example",
+    "examples/themes",
 ]
 
 [dependencies]

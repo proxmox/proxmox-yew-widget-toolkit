@@ -53,17 +53,17 @@ impl Component for PwtThemeSelector {
             Msg::ToggleMode => {
                 let window = web_sys::window().unwrap();
                 let document = window.document().unwrap();
-                let body = document.body().unwrap();
-
                 self.dark = !self.dark;
                 crate::store_use_dark_theme(self.dark);
 
-                //let class_name = body.class_name();
-                if self.dark {
-                    body.set_class_name("pwt-theme-dark");
-                } else {
-                    body.set_class_name("");
+                if let Some(el) = document.get_element_by_id("__pwt-theme-loader__") {
+                    if self.dark {
+                        let _ = el.set_attribute("href", "proxmox-yew-style-dark.css");
+                    } else {
+                        let _ = el.set_attribute("href", "proxmox-yew-style-light.css");
+                    }
                 }
+
                 true
             }
         }

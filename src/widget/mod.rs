@@ -91,6 +91,9 @@ pub use tab_bar::{TabBar, TabBarItem, PwtTabBar};
 mod tab_panel;
 pub use tab_panel::*;
 
+mod theme_loader;
+pub use theme_loader::ThemeLoader;
+
 mod theme_selector;
 pub use theme_selector::ThemeSelector;
 
