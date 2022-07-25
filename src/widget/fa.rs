@@ -51,7 +51,7 @@ pub fn pwt_fa(props: &Fa) -> Html {
 
 impl Into<VNode> for Fa {
     fn into(self) -> VNode {
-        let comp = VComp::new::<PwtFa>(Rc::new(self), NodeRef::default(), None);
+        let comp = VComp::new::<PwtFa>(Rc::new(self), None);
         VNode::from(comp)
     }
 }

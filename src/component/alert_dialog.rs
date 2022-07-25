@@ -95,7 +95,7 @@ pub fn pwt_alert_dialog(props: &AlertDialog) -> Html {
 
 impl Into<VNode> for AlertDialog {
     fn into(self) -> VNode {
-        let comp = VComp::new::<PwtAlertDialog>(Rc::new(self), NodeRef::default(), None);
+        let comp = VComp::new::<PwtAlertDialog>(Rc::new(self), None);
         VNode::from(comp)
     }
 }

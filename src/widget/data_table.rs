@@ -559,9 +559,8 @@ where
 
 impl <T> Into<VNode> for DataTable<T> {
     fn into(self) -> VNode {
-        let node_ref = self.node_ref.clone();
         let key = self.key.clone();
-        let comp = VComp::new::<PwtDataTable<T>>(Rc::new(self), node_ref, key);
+        let comp = VComp::new::<PwtDataTable<T>>(Rc::new(self), key);
         VNode::from(comp)
     }
 

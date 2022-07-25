@@ -205,11 +205,9 @@ fn derive_widget(setup: &WidgetSetup, widget: DeriveInput) -> Result<proc_macro2
         output.extend(quote!{
             impl #impl_generics Into<::yew::virtual_dom::VNode> for #ident #ty_generics #where_clause {
                 fn into(self) -> ::yew::virtual_dom::VNode {
-                    // Note: self.std_props.node_ref is handled inside the component
-                    let node_ref = NodeRef::default();
                     let key = self.std_props.key.clone();
                     let comp = ::yew::virtual_dom::VComp::new::<#component_name>(
-                        ::std::rc::Rc::new(self), node_ref, key,
+                        ::std::rc::Rc::new(self), key,
                     );
                     ::yew::virtual_dom::VNode::from(comp)
                 }

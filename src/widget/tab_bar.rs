@@ -193,9 +193,8 @@ impl Component for PwtTabBar {
 
 impl Into<VNode> for TabBar {
     fn into(self) -> VNode {
-        let node_ref = self.node_ref.clone();
         let key = self.key.clone();
-        let comp = VComp::new::<PwtTabBar>(Rc::new(self), node_ref, key);
+        let comp = VComp::new::<PwtTabBar>(Rc::new(self), key);
         VNode::from(comp)
     }
 }

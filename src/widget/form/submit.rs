@@ -95,7 +95,7 @@ impl Component for PwtSubmit {
 
 impl Into<VNode> for Submit {
     fn into(self) -> VNode {
-        let comp = VComp::new::<PwtSubmit>(Rc::new(self), NodeRef::default(), None);
+        let comp = VComp::new::<PwtSubmit>(Rc::new(self), None);
         VNode::from(comp)
     }
 }

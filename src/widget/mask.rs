@@ -183,7 +183,7 @@ impl Component for PwtMask {
 impl Into<VNode> for Mask {
     fn into(self) -> VNode {
         let key = self.key.clone();
-        let comp = VComp::new::<PwtMask>(Rc::new(self), NodeRef::default(), key);
+        let comp = VComp::new::<PwtMask>(Rc::new(self), key);
         VNode::from(comp)
     }
 }

@@ -3,8 +3,6 @@ use std::rc::Rc;
 use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 
-//use pwt::prelude::*;
-
 #[derive(Properties, Clone, PartialEq)]
 pub struct ThemeLoader {
     body: VNode,
@@ -41,7 +39,7 @@ impl Component for PwtThemeLoader {
 
 impl Into<VNode> for ThemeLoader {
     fn into(self) -> VNode {
-        let comp = VComp::new::<PwtThemeLoader>(Rc::new(self), NodeRef::default(), None);
+        let comp = VComp::new::<PwtThemeLoader>(Rc::new(self), None);
         VNode::from(comp)
     }
 }

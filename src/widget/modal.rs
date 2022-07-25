@@ -131,9 +131,8 @@ fn lookup_modal_host(document: &web_sys::Document) -> Element {
 
 impl Into<VNode> for Modal {
     fn into(self) -> VNode {
-        let node_ref = self.node_ref.clone();
         let key = self.key.clone();
-        let comp = VComp::new::<PwtModal>(Rc::new(self), node_ref, key);
+        let comp = VComp::new::<PwtModal>(Rc::new(self), key);
         VNode::from(comp)
     }
 }

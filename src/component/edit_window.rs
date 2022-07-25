@@ -267,7 +267,7 @@ impl Component for PbsEditWindow {
 impl Into<VNode> for EditWindow {
     fn into(self) -> VNode {
         let key = self.key.clone();
-        let comp = VComp::new::<PbsEditWindow>(Rc::new(self), NodeRef::default(), key);
+        let comp = VComp::new::<PbsEditWindow>(Rc::new(self), key);
         VNode::from(comp)
     }
 }

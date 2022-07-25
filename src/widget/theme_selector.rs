@@ -1,5 +1,8 @@
 use std::rc::Rc;
 
+use wasm_bindgen::{prelude::*};
+use wasm_bindgen::JsCast;
+
 use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 
@@ -32,24 +35,40 @@ impl ThemeSelector {
 
 pub struct PwtThemeSelector {
     dark: bool,
+    // keep it alive
+    observer_closure: Closure::<dyn Fn()>,
 }
 
 pub enum Msg {
     ToggleMode,
+    SchemeChanged,
 }
 
 impl Component for PwtThemeSelector {
     type Message = Msg;
     type Properties = ThemeSelector;
 
-    fn create(_ctx: &Context<Self>) -> Self {
+    fn create(ctx: &Context<Self>) -> Self {
+        let onchange = Closure::wrap({
+            let link = ctx.link().clone();
+            Box::new(move || {
+                link.send_message(Msg::SchemeChanged);
+            }) as Box<dyn Fn()>
+        });
+
         Self {
             dark: false,
+            observer_closure: onchange,
         }
     }
 
     fn update(&mut self, _ctx: &Context<Self>, msg: Self::Message) -> bool {
         match msg {
+            Msg::SchemeChanged => {
+                // fixme: do something
+                log::info!("prefers-color-scheme changes");
+                true
+            }
             Msg::ToggleMode => {
                 let window = web_sys::window().unwrap();
                 let document = window.document().unwrap();
@@ -96,6 +115,7 @@ impl Component for PwtThemeSelector {
                     if self.dark != dark {
                         ctx.link().send_message(Msg::ToggleMode);
                     }
+                    list.set_onchange(Some(self.observer_closure.as_ref().unchecked_ref()));
                 }
             }
         }
@@ -104,7 +124,7 @@ impl Component for PwtThemeSelector {
 
 impl Into<VNode> for ThemeSelector {
     fn into(self) -> VNode {
-        let comp = VComp::new::<PwtThemeSelector>(Rc::new(self), NodeRef::default(), None);
+        let comp = VComp::new::<PwtThemeSelector>(Rc::new(self), None);
         VNode::from(comp)
     }
 }

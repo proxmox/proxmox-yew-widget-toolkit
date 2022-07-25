@@ -82,7 +82,7 @@ pub struct KVGrid {
 
 impl Into<VNode> for KVGrid {
     fn into(self) -> VNode {
-        let comp = VComp::new::<PwtKVGrid>(Rc::new(self), NodeRef::default(), None);
+        let comp = VComp::new::<PwtKVGrid>(Rc::new(self), None);
         VNode::from(comp)
     }
 

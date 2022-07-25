@@ -89,7 +89,7 @@ pub struct ObjectGrid {
 
 impl Into<VNode> for ObjectGrid {
     fn into(self) -> VNode {
-        let comp = VComp::new::<PwtObjectGrid>(Rc::new(self), NodeRef::default(), None);
+        let comp = VComp::new::<PwtObjectGrid>(Rc::new(self), None);
         VNode::from(comp)
     }
 

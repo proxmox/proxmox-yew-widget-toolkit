@@ -181,7 +181,7 @@ impl Component for PwtDialog {
 impl Into<VNode> for Dialog {
     fn into(self) -> VNode {
         let key = self.key.clone();
-        let comp = VComp::new::<PwtDialog>(Rc::new(self), NodeRef::default(), key);
+        let comp = VComp::new::<PwtDialog>(Rc::new(self), key);
         VNode::from(comp)
     }
 }

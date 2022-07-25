@@ -97,7 +97,7 @@ impl Component for PwtReset {
 
 impl Into<VNode> for Reset {
     fn into(self) -> VNode {
-        let comp = VComp::new::<PwtReset>(Rc::new(self), NodeRef::default(), None);
+        let comp = VComp::new::<PwtReset>(Rc::new(self), None);
         VNode::from(comp)
     }
 }

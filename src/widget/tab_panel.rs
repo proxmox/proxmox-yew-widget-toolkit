@@ -152,7 +152,7 @@ impl Component for PwtTabPanel {
 impl Into<VNode> for TabPanel {
     fn into(self) -> VNode {
         let key = self.key.clone();
-        let comp = VComp::new::<PwtTabPanel>(Rc::new(self), NodeRef::default(), key);
+        let comp = VComp::new::<PwtTabPanel>(Rc::new(self), key);
         VNode::from(comp)
     }
 }

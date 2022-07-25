@@ -172,7 +172,7 @@ impl Component for PwtTooltip {
 
 impl Into<VNode> for Tooltip {
     fn into(self) -> VNode {
-        let comp = VComp::new::<PwtTooltip>(Rc::new(self), NodeRef::default(), None);
+        let comp = VComp::new::<PwtTooltip>(Rc::new(self), None);
         VNode::from(comp)
     }
 }
