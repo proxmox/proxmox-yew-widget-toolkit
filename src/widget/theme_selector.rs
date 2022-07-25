@@ -62,12 +62,18 @@ impl Component for PwtThemeSelector {
         }
     }
 
-    fn update(&mut self, _ctx: &Context<Self>, msg: Self::Message) -> bool {
+    fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
         match msg {
             Msg::SchemeChanged => {
-                // fixme: do something
-                log::info!("prefers-color-scheme changes");
-                true
+                //log::info!("prefers-color-scheme changes");
+                let window = web_sys::window().unwrap();
+                if let Ok(Some(list)) = window.match_media("(prefers-color-scheme: dark)") {
+                    let dark = list.matches();
+                    if self.dark != dark {
+                        return yew::Component::update(self, ctx, Msg::ToggleMode);
+                    }
+                }
+                false
             }
             Msg::ToggleMode => {
                 let window = web_sys::window().unwrap();
