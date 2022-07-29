@@ -3,6 +3,7 @@ pub use erc::Erc;
 
 pub mod props;
 pub mod state;
+pub mod theme;
 pub mod widget;
 pub mod component;
 
@@ -71,24 +72,6 @@ pub fn local_storage() -> Option<web_sys::Storage> {
     };
 
     Some(store)
-}
-
-pub fn store_use_dark_theme(dark: bool) {
-    if let Some(store) = local_storage() {
-        if let Err(_) = store.set_item("UseDarkTheme", &dark.to_string()) {
-            log::error!("store_use_dark_theme: store.set_item() failed");
-        }
-    }
-}
-
-pub fn load_use_dark_theme() -> Option<bool>{
-    local_storage()
-        .and_then(|store| {
-            store
-                .get_item("UseDarkTheme")
-                .unwrap_or(None)
-                .map(|s| s.parse().unwrap_or(false))
-        })
 }
 
 pub mod prelude {

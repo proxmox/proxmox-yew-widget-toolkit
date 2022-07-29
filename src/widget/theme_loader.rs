@@ -28,9 +28,10 @@ impl Component for PwtThemeLoader {
 
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
-        html!{
+        let default_css = crate::theme::Theme::default().get_css_filename();
+        html! {
             <>
-                <link id="__pwt-theme-loader__" href="proxmox-yew-style-light.css" rel="stylesheet"/>
+                <link id="__pwt-theme-loader__" href={ default_css } rel="stylesheet"/>
                 {props.body.clone()}
             </>
         }
