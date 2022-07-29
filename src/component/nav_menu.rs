@@ -13,7 +13,6 @@ pub struct MenuItem {
     id: AttrValue,
     text: AttrValue,
     icon_cls: Option<AttrValue>,
-    starting_indent: usize,
     content: RenderFn<AttrValue>,
 }
 
@@ -35,23 +34,6 @@ impl MenuItem {
             text: text.into_prop_value(),
             icon_cls: icon_cls.into_prop_value(),
             content: RenderFn::new(content),
-            starting_indent: 0,
-        }
-    }
-
-    pub fn with_indent(
-        id: impl IntoPropValue<AttrValue>,
-        text: impl IntoPropValue<AttrValue>,
-        icon_cls: impl IntoPropValue<Option<AttrValue>>,
-        content: impl Fn(&AttrValue) -> Html + 'static,
-        starting_indent: usize,
-    ) -> Self {
-        Self {
-            id: id.into_prop_value(),
-            text: text.into_prop_value(),
-            icon_cls: icon_cls.into_prop_value(),
-            content: RenderFn::new(content),
-            starting_indent,
         }
     }
 }
@@ -143,7 +125,7 @@ impl PwtNavigationMenu {
             .active
             .as_ref()
             .map_or(false, |active| active == &item.id);
-        let indent = indent_level + item.starting_indent;
+
         let class = classes!(is_active.then(|| "active"), "pwt-nav-link",);
 
         let onclick = ctx.link().callback({
@@ -180,7 +162,7 @@ impl PwtNavigationMenu {
 
         html! {
             <a disabled={!visible} {style} {onclick} {onkeydown} {class} {tabindex}>
-            { (0..indent).map(|_| html!{ <span class="pwt-ps-4" /> }).collect::<Html>() }
+            { (0..indent_level).map(|_| html!{ <span class="pwt-ps-4" /> }).collect::<Html>() }
                 if let Some(icon) = &item.icon_cls {
                     <i class={classes!(icon.to_string(), "pwt-me-2")}/>
                 }
