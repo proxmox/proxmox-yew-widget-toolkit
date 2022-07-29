@@ -71,6 +71,7 @@ use Menu::{Child, Submenu};
 #[derive(PartialEq, Properties)]
 pub struct NavigationMenu {
     menu: Vec<Menu>,
+    default_active: Option<String>,
     on_select: Callback<Option<String>>,
 }
 
@@ -79,7 +80,13 @@ impl NavigationMenu {
         Self {
             menu: Vec::new(),
             on_select: Callback::noop(),
+            default_active: None,
         }
+    }
+
+    pub fn default_active(mut self, active: &str) -> Self {
+        self.default_active = Some(active.to_string());
+        self
     }
 
     pub fn with_child(mut self, item: MenuItem) -> Self {
@@ -241,9 +248,9 @@ impl Component for PwtNavigationMenu {
     type Message = Msg;
     type Properties = NavigationMenu;
 
-    fn create(_ctx: &yew::Context<Self>) -> Self {
+    fn create(ctx: &yew::Context<Self>) -> Self {
         Self {
-            active: None,
+            active: ctx.props().default_active.clone(),
             menu_states: HashMap::new(),
             menu_ref: NodeRef::default(),
         }
