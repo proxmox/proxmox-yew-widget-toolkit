@@ -5,7 +5,7 @@ use yew::virtual_dom::VNode;
 use yew::{html, Component, Html, Properties};
 use yew::html::IntoPropValue;
 
-use crate::props::{ContainerBuilder, EventSubscriber, WidgetBuilder};
+use crate::props::{ContainerBuilder, EventSubscriber, RenderFn, WidgetBuilder};
 use crate::widget::focus::focus_next_tabable;
 use crate::widget::{Column, Row};
 
@@ -14,7 +14,7 @@ pub struct MenuItem {
     text: AttrValue,
     icon_cls: Option<AttrValue>,
     starting_indent: usize,
-    content: Box<dyn Fn() -> Html>,
+    content: RenderFn<AttrValue>,
 }
 
 impl PartialEq for MenuItem {
@@ -28,13 +28,13 @@ impl MenuItem {
         id: impl IntoPropValue<AttrValue>,
         text: impl IntoPropValue<AttrValue>,
         icon_cls: impl IntoPropValue<Option<AttrValue>>,
-        content: impl Fn() -> Html + 'static,
+        content: impl Fn(&AttrValue) -> Html + 'static,
     ) -> Self {
         Self {
             id: id.into_prop_value(),
             text: text.into_prop_value(),
             icon_cls: icon_cls.into_prop_value(),
-            content: Box::new(content),
+            content: RenderFn::new(content),
             starting_indent: 0,
         }
     }
@@ -43,20 +43,16 @@ impl MenuItem {
         id: impl IntoPropValue<AttrValue>,
         text: impl IntoPropValue<AttrValue>,
         icon_cls: impl IntoPropValue<Option<AttrValue>>,
-        content: impl Fn() -> Html + 'static,
+        content: impl Fn(&AttrValue) -> Html + 'static,
         starting_indent: usize,
     ) -> Self {
         Self {
             id: id.into_prop_value(),
             text: text.into_prop_value(),
             icon_cls: icon_cls.into_prop_value(),
-            content: Box::new(content),
+            content: RenderFn::new(content),
             starting_indent,
         }
-    }
-
-    fn content(&self) -> Html {
-        (self.content)()
     }
 }
 
@@ -216,13 +212,13 @@ impl PwtNavigationMenu {
             Menu::Child(child) => {
                 menu.add_child(self.render_child(ctx, child, level, false, visible));
                 if child.id == active {
-                    content = Some(child.content());
+                    content = Some(child.content.apply(&child.id));
                 }
             }
             Menu::Submenu(child, list) => {
                 menu.add_child(self.render_child(ctx, child, level, true, visible));
                 if child.id == active {
-                    content = Some(child.content());
+                    content = Some(child.content.apply(&child.id));
                 }
                 let visible = visible
                     .then(|| *self.menu_states.get(&child.id).unwrap_or(&true))
