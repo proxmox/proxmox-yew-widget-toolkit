@@ -3,14 +3,15 @@ use std::collections::HashMap;
 use yew::prelude::*;
 use yew::virtual_dom::VNode;
 use yew::{html, Component, Html, Properties};
+use yew::html::IntoPropValue;
 
 use crate::props::{ContainerBuilder, EventSubscriber, WidgetBuilder};
 use crate::widget::focus::focus_next_tabable;
 use crate::widget::{Column, Row};
 
 pub struct MenuItem {
-    id: String,
-    text: String,
+    id: AttrValue,
+    text: AttrValue,
     icon_cls: Option<String>,
     starting_indent: usize,
     content: Box<dyn Fn() -> Html>,
@@ -24,14 +25,14 @@ impl PartialEq for MenuItem {
 
 impl MenuItem {
     pub fn new(
-        id: &str,
-        text: &str,
+        id: impl IntoPropValue<AttrValue>,
+        text: impl IntoPropValue<AttrValue>,
         icon_cls: Option<&str>,
         content: impl Fn() -> Html + 'static,
     ) -> Self {
         Self {
-            id: id.to_string(),
-            text: text.to_string(),
+            id: id.into_prop_value(),
+            text: text.into_prop_value(),
             icon_cls: icon_cls.and_then(|cls| Some(cls.to_string())),
             content: Box::new(content),
             starting_indent: 0,
@@ -39,15 +40,15 @@ impl MenuItem {
     }
 
     pub fn with_indent(
-        id: &str,
-        text: &str,
+        id: impl IntoPropValue<AttrValue>,
+        text: impl IntoPropValue<AttrValue>,
         icon_cls: Option<&str>,
         content: impl Fn() -> Html + 'static,
         starting_indent: usize,
     ) -> Self {
         Self {
-            id: id.to_string(),
-            text: text.to_string(),
+            id: id.into_prop_value(),
+            text: text.into_prop_value(),
             icon_cls: icon_cls.and_then(|cls| Some(cls.to_string())),
             content: Box::new(content),
             starting_indent,
@@ -71,8 +72,8 @@ use Menu::{Child, Submenu};
 #[derive(PartialEq, Properties)]
 pub struct NavigationMenu {
     menu: Vec<Menu>,
-    default_active: Option<String>,
-    on_select: Callback<Option<String>>,
+    default_active: Option<AttrValue>,
+    on_select: Callback<Option<AttrValue>>,
 }
 
 impl NavigationMenu {
@@ -84,8 +85,8 @@ impl NavigationMenu {
         }
     }
 
-    pub fn default_active(mut self, active: &str) -> Self {
-        self.default_active = Some(active.to_string());
+    pub fn default_active(mut self, active:  impl IntoPropValue<Option<AttrValue>>) -> Self {
+        self.default_active = active.into_prop_value();
         self
     }
 
@@ -116,22 +117,22 @@ impl NavigationMenu {
         self.menu.push(Menu::Component(component.into()))
     }
 
-    pub fn on_select(mut self, callback: Callback<Option<String>>) -> Self {
+    pub fn on_select(mut self, callback: Callback<Option<AttrValue>>) -> Self {
         self.on_select = callback;
         self
     }
 }
 
 pub enum Msg {
-    Select(Option<String>),
-    MenuToggle(String),
-    MenuClose(String),
-    MenuOpen(String),
+    Select(Option<AttrValue>),
+    MenuToggle(AttrValue),
+    MenuClose(AttrValue),
+    MenuOpen(AttrValue),
 }
 
 pub struct PwtNavigationMenu {
-    active: Option<String>,
-    menu_states: HashMap<String, bool>, // true = open
+    active: Option<AttrValue>,
+    menu_states: HashMap<AttrValue, bool>, // true = open
     menu_ref: NodeRef,
 }
 
@@ -152,12 +153,12 @@ impl PwtNavigationMenu {
         let class = classes!(is_active.then(|| "active"), "pwt-nav-link",);
 
         let onclick = ctx.link().callback({
-            let key = item.id.to_string();
+            let key = item.id.clone();
             move |_event: MouseEvent| Msg::Select(Some(key.clone()))
         });
 
         let on_expander_click = ctx.link().callback({
-            let key = item.id.to_string();
+            let key = item.id.clone();
             move |event: MouseEvent| {
                 event.stop_propagation();
                 Msg::MenuToggle(key.clone())
@@ -165,7 +166,7 @@ impl PwtNavigationMenu {
         });
 
         let onkeydown = ctx.link().batch_callback({
-            let key = item.id.to_string();
+            let key = item.id.clone();
             move |event: KeyboardEvent| match event.key().as_str() {
                 " " => Some(Msg::Select(Some(key.clone()))),
                 "ArrowRight" if is_menu => Some(Msg::MenuOpen(key.clone())),
