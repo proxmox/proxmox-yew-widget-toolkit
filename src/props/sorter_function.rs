@@ -9,7 +9,7 @@ impl<T> SorterFn<T> {
     pub fn new(sorter: impl 'static + Fn(&T, &T) -> Ordering) -> Self {
         Self(Rc::new(sorter))
     }
-    /// Apply the render function
+    /// Apply the sorter function
     pub fn cmp(&self, a: &T, b: &T) -> Ordering {
         (self.0)(a, b)
     }
