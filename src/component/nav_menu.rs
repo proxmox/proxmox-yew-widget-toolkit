@@ -67,8 +67,6 @@ pub enum Menu {
     Component(VNode),
 }
 
-use Menu::{Child, Submenu};
-
 #[derive(PartialEq, Properties)]
 pub struct NavigationMenu {
     menu: Vec<Menu>,
@@ -96,7 +94,7 @@ impl NavigationMenu {
     }
 
     pub fn add_child(&mut self, item: MenuItem) {
-        self.menu.push(Child(item));
+        self.menu.push(Menu::Child(item));
     }
 
     pub fn with_menu(mut self, item: MenuItem, menu: Vec<Menu>) -> Self {
@@ -105,7 +103,7 @@ impl NavigationMenu {
     }
 
     pub fn add_menu(&mut self, item: MenuItem, menu: Vec<Menu>) {
-        self.menu.push(Submenu(item, menu));
+        self.menu.push(Menu::Submenu(item, menu));
     }
 
     pub fn with_component(mut self, component: impl Into<VNode>) -> Self {
@@ -215,13 +213,13 @@ impl PwtNavigationMenu {
     ) -> Option<Html> {
         let mut content = None;
         match item {
-            Child(child) => {
+            Menu::Child(child) => {
                 menu.add_child(self.render_child(ctx, child, level, false, visible));
                 if child.id == active {
                     content = Some(child.content());
                 }
             }
-            Submenu(child, list) => {
+            Menu::Submenu(child, list) => {
                 menu.add_child(self.render_child(ctx, child, level, true, visible));
                 if child.id == active {
                     content = Some(child.content());
