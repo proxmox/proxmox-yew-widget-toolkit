@@ -12,7 +12,7 @@ use crate::widget::{Column, Row};
 pub struct MenuItem {
     id: AttrValue,
     text: AttrValue,
-    icon_cls: Option<String>,
+    icon_cls: Option<AttrValue>,
     starting_indent: usize,
     content: Box<dyn Fn() -> Html>,
 }
@@ -27,13 +27,13 @@ impl MenuItem {
     pub fn new(
         id: impl IntoPropValue<AttrValue>,
         text: impl IntoPropValue<AttrValue>,
-        icon_cls: Option<&str>,
+        icon_cls: impl IntoPropValue<Option<AttrValue>>,
         content: impl Fn() -> Html + 'static,
     ) -> Self {
         Self {
             id: id.into_prop_value(),
             text: text.into_prop_value(),
-            icon_cls: icon_cls.and_then(|cls| Some(cls.to_string())),
+            icon_cls: icon_cls.into_prop_value(),
             content: Box::new(content),
             starting_indent: 0,
         }
@@ -42,14 +42,14 @@ impl MenuItem {
     pub fn with_indent(
         id: impl IntoPropValue<AttrValue>,
         text: impl IntoPropValue<AttrValue>,
-        icon_cls: Option<&str>,
+        icon_cls: impl IntoPropValue<Option<AttrValue>>,
         content: impl Fn() -> Html + 'static,
         starting_indent: usize,
     ) -> Self {
         Self {
             id: id.into_prop_value(),
             text: text.into_prop_value(),
-            icon_cls: icon_cls.and_then(|cls| Some(cls.to_string())),
+            icon_cls: icon_cls.into_prop_value(),
             content: Box::new(content),
             starting_indent,
         }
