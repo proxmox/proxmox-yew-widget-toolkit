@@ -46,11 +46,34 @@ pub struct SubMenu {
     children: Vec<Menu>,
 }
 
+impl SubMenu {
+    pub fn with_item(mut self, item: impl Into<Menu>) -> Self {
+        self.add_item(item);
+        self
+    }
+
+    pub fn add_item(&mut self, item: impl Into<Menu>) {
+        self.children.push(item.into());
+    }
+}
+
 #[derive(Clone, PartialEq)]
 pub enum Menu {
-    Child(MenuItem),
+    Item(MenuItem),
     SubMenu(SubMenu),
     Component(VNode),
+}
+
+impl From<SubMenu> for Menu {
+    fn from(submenu: SubMenu) -> Self {
+        Menu::SubMenu(submenu)
+    }
+}
+
+impl From<MenuItem> for Menu {
+    fn from(item: MenuItem) -> Self {
+        Menu::Item(item)
+    }
 }
 
 #[derive(PartialEq, Clone, Properties)]
@@ -74,22 +97,13 @@ impl NavigationMenu {
         self
     }
 
-    pub fn with_child(mut self, item: MenuItem) -> Self {
-        self.add_child(item);
+    pub fn with_item(mut self, item: impl Into<Menu>) -> Self {
+        self.add_item(item);
         self
     }
 
-    pub fn add_child(&mut self, item: MenuItem) {
-        self.menu.push(Menu::Child(item));
-    }
-
-    pub fn with_menu(mut self, item: MenuItem, menu: Vec<Menu>) -> Self {
-        self.add_menu(item, menu);
-        self
-    }
-
-    pub fn add_menu(&mut self, item: MenuItem, menu: Vec<Menu>) {
-        self.menu.push(Menu::SubMenu(SubMenu { item, children: menu}));
+    pub fn add_item(&mut self, item: impl Into<Menu>) {
+        self.menu.push(item.into());
     }
 
     pub fn with_component(mut self, component: impl Into<VNode>) -> Self {
@@ -199,7 +213,7 @@ impl PwtNavigationMenu {
     ) -> Option<Html> {
         let mut content = None;
         match item {
-            Menu::Child(child) => {
+            Menu::Item(child) => {
                 menu.add_child(self.render_child(ctx, child, level, false, visible));
                 if child.id == active {
                     content = Some(child.content.apply(&child.id));
