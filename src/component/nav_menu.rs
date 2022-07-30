@@ -9,17 +9,12 @@ use crate::props::{ContainerBuilder, EventSubscriber, RenderFn, WidgetBuilder};
 use crate::widget::focus::focus_next_tabable;
 use crate::widget::{Column, Row};
 
+#[derive(Clone, PartialEq)]
 pub struct MenuItem {
     id: AttrValue,
     text: AttrValue,
     icon_cls: Option<AttrValue>,
     content: RenderFn<AttrValue>,
-}
-
-impl PartialEq for MenuItem {
-    fn eq(&self, other: &Self) -> bool {
-        self.id == other.id
-    }
 }
 
 impl MenuItem {
@@ -38,14 +33,14 @@ impl MenuItem {
     }
 }
 
-#[derive(PartialEq)]
+#[derive(Clone, PartialEq)]
 pub enum Menu {
     Child(MenuItem),
     Submenu(MenuItem, Vec<Menu>),
     Component(VNode),
 }
 
-#[derive(PartialEq, Properties)]
+#[derive(PartialEq, Clone, Properties)]
 pub struct NavigationMenu {
     menu: Vec<Menu>,
     default_active: Option<AttrValue>,
