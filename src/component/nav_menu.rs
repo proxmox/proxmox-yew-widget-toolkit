@@ -46,6 +46,12 @@ pub struct SubMenu {
     children: Vec<Menu>,
 }
 
+impl From<MenuItem> for SubMenu {
+    fn from(item: MenuItem) -> Self {
+        item.submenu()
+    }
+}
+
 impl SubMenu {
     pub fn with_item(mut self, item: impl Into<Menu>) -> Self {
         self.add_item(item);
@@ -54,6 +60,15 @@ impl SubMenu {
 
     pub fn add_item(&mut self, item: impl Into<Menu>) {
         self.children.push(item.into());
+    }
+
+    pub fn with_component(mut self, component: impl Into<VNode>) -> Self {
+        self.add_component(component);
+        self
+    }
+
+    pub fn add_component(&mut self, component: impl Into<VNode>) {
+        self.children.push(Menu::Component(component.into()))
     }
 }
 
