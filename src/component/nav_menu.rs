@@ -34,9 +34,15 @@ impl MenuItem {
 }
 
 #[derive(Clone, PartialEq)]
+pub struct SubMenu {
+    item: MenuItem,
+    children: Vec<Menu>,
+}
+
+#[derive(Clone, PartialEq)]
 pub enum Menu {
     Child(MenuItem),
-    Submenu(MenuItem, Vec<Menu>),
+    SubMenu(SubMenu),
     Component(VNode),
 }
 
@@ -76,7 +82,7 @@ impl NavigationMenu {
     }
 
     pub fn add_menu(&mut self, item: MenuItem, menu: Vec<Menu>) {
-        self.menu.push(Menu::Submenu(item, menu));
+        self.menu.push(Menu::SubMenu(SubMenu { item, children: menu}));
     }
 
     pub fn with_component(mut self, component: impl Into<VNode>) -> Self {
@@ -192,15 +198,15 @@ impl PwtNavigationMenu {
                     content = Some(child.content.apply(&child.id));
                 }
             }
-            Menu::Submenu(child, list) => {
-                menu.add_child(self.render_child(ctx, child, level, true, visible));
-                if child.id == active {
-                    content = Some(child.content.apply(&child.id));
+            Menu::SubMenu(SubMenu { item, children }) => {
+                menu.add_child(self.render_child(ctx, item, level, true, visible));
+                if item.id == active {
+                    content = Some(item.content.apply(&item.id));
                 }
                 let visible = visible
-                    .then(|| *self.menu_states.get(&child.id).unwrap_or(&true))
+                    .then(|| *self.menu_states.get(&item.id).unwrap_or(&true))
                     .unwrap_or(false);
-                for sub in list.iter() {
+                for sub in children.iter() {
                     if let Some(new_content) =
                         self.render_item(ctx, sub, menu, active, level + 1, visible)
                     {
