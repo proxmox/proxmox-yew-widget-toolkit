@@ -31,6 +31,13 @@ impl MenuItem {
             content: RenderFn::new(content),
         }
     }
+
+    pub fn submenu(self) -> SubMenu {
+        SubMenu {
+            item: self,
+            children: Vec::new(),
+        }
+    }
 }
 
 #[derive(Clone, PartialEq)]
