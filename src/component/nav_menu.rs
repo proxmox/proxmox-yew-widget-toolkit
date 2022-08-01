@@ -1,7 +1,8 @@
+use std::rc::Rc;
 use std::collections::HashMap;
 
 use yew::prelude::*;
-use yew::virtual_dom::VNode;
+use yew::virtual_dom::{VComp, VNode};
 use yew::{html, Component, Html, Properties};
 use yew::html::IntoPropValue;
 
@@ -326,5 +327,12 @@ impl Component for PwtNavigationMenu {
             .with_child(menu)
             .with_optional_child(content)
             .into()
+    }
+}
+
+impl Into<VNode> for NavigationMenu {
+    fn into(self) -> VNode {
+        let comp = VComp::new::<PwtNavigationMenu>(Rc::new(self), None);
+        VNode::from(comp)
     }
 }
