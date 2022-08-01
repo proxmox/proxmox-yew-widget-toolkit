@@ -117,7 +117,7 @@ impl Component for PwtTabPanel {
 
         let bar = props.bar.clone()
             .class("pwt-p-2 pwt-scheme-neutral-container pwt-border-bottom")
-            .onselect(ctx.link().callback(|key| Msg::Select(key))) ;
+            .on_select(ctx.link().callback(|key| Msg::Select(key))) ;
 
         let content: Html = props.tabs.iter().map(|(key, render_fn)| {
             let active = match &self.active {

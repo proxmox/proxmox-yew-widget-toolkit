@@ -24,7 +24,7 @@ pub struct TabBar {
 
     #[prop_or_default]
     pub tabs: Vec<TabBarItem>,
-    onselect: Option<Callback<Option<Key>>>,
+    on_select: Option<Callback<Option<Key>>>,
 }
 
 
@@ -80,8 +80,8 @@ impl TabBar {
         self.class.push(class);
     }
 
-    pub fn onselect(mut self, cb: impl IntoEventCallback<Option<Key>>) -> Self {
-        self.onselect = cb.into_event_callback();
+    pub fn on_select(mut self, cb: impl IntoEventCallback<Option<Key>>) -> Self {
+        self.on_select = cb.into_event_callback();
         self
     }
 
@@ -115,8 +115,8 @@ impl Component for PwtTabBar {
         match msg {
             Msg::Activate(key) => {
                 self.active = Some(key);
-                if let Some(onselect) = &props.onselect {
-                    onselect.emit(self.active.clone());
+                if let Some(on_select) = &props.on_select {
+                    on_select.emit(self.active.clone());
                 }
                 true
             }
