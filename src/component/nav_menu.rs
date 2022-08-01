@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 use yew::{html, Component, Html, Properties};
-use yew::html::IntoPropValue;
+use yew::html::{IntoPropValue, IntoEventCallback};
 
 use crate::props::{ContainerBuilder, EventSubscriber, RenderFn, WidgetBuilder};
 use crate::widget::focus::focus_next_tabable;
@@ -96,14 +96,14 @@ impl From<MenuItem> for Menu {
 pub struct NavigationMenu {
     menu: Vec<Menu>,
     default_active: Option<AttrValue>,
-    on_select: Callback<Option<AttrValue>>,
+    on_select: Option<Callback<Option<AttrValue>>>,
 }
 
 impl NavigationMenu {
     pub fn new() -> Self {
         Self {
             menu: Vec::new(),
-            on_select: Callback::noop(),
+            on_select: None,
             default_active: None,
         }
     }
@@ -131,8 +131,8 @@ impl NavigationMenu {
         self.menu.push(Menu::Component(component.into()))
     }
 
-    pub fn on_select(mut self, callback: Callback<Option<AttrValue>>) -> Self {
-        self.on_select = callback;
+    pub fn on_select(mut self, cb: impl IntoEventCallback<Option<AttrValue>>) -> Self {
+        self.on_select = cb.into_event_callback();
         self
     }
 }
@@ -275,7 +275,9 @@ impl Component for PwtNavigationMenu {
         match msg {
             Msg::Select(key) => {
                 self.active = key.clone();
-                ctx.props().on_select.emit(key);
+                if let Some(on_select) = &ctx.props().on_select {
+                    on_select.emit(key);
+                }
                 true
             }
             Msg::MenuToggle(key) => {
