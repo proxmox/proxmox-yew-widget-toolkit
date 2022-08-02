@@ -19,6 +19,7 @@ members = [
     
     "examples/counter",
     "examples/loader",
+    "examples/router",
     "examples/tauri-example",
     "examples/themes",
 ]
