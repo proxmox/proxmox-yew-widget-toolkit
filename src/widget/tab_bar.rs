@@ -10,7 +10,7 @@ use crate::state::{NavigationContext, NavigationContextExt};
 #[derive(Clone, PartialEq)]
 pub struct TabBarItem {
     pub key: Key,
-    pub label: String,
+    pub label: AttrValue,
     pub icon_class: Option<Classes>,
 }
 
@@ -68,7 +68,7 @@ impl TabBar {
     pub fn with_item(
         mut self,
         key: impl Into<Key>,
-        label: impl Into<String>,
+        label: impl Into<AttrValue>,
         icon_class: Option<impl Into<Classes>>,
     ) -> Self {
         self.add_item(key, label, icon_class);
@@ -78,7 +78,7 @@ impl TabBar {
     pub fn add_item(
         &mut self,
         key: impl Into<Key>,
-        label: impl Into<String>,
+        label: impl Into<AttrValue>,
         icon_class: Option<impl Into<Classes>>,
     ) {
         self.tabs.push(TabBarItem {

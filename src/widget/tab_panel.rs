@@ -55,7 +55,7 @@ impl TabPanel {
     pub fn with_item(
         self,
         key: impl Into<Key>,
-        label: impl Into<String>,
+        label: impl Into<AttrValue>,
         icon_class: Option<impl Into<Classes>>,
         panel: impl Into<VNode>,
     ) -> Self {
@@ -72,7 +72,7 @@ impl TabPanel {
     pub fn with_item_builder(
         mut self,
         key: impl Into<Key>,
-        label: impl Into<String>,
+        label: impl Into<AttrValue>,
         icon_class: Option<impl Into<Classes>>,
         renderer: impl 'static + Fn(&()) -> Html,
     ) -> Self {
