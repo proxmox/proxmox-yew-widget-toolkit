@@ -118,7 +118,7 @@ impl TabBar {
 }
 
 pub enum Msg {
-    Activate(Key, bool),
+    Select(Key, bool),
 }
 
 pub struct PwtTabBar {
@@ -152,7 +152,7 @@ impl Component for PwtTabBar {
                     //log::info!("CTX CHANGE {:?}", nav_ctx);
                     let path = nav_ctx.path();
                     let key = Key::from(path);
-                    link.send_message(Msg::Activate(key, false));
+                    link.send_message(Msg::Select(key, false));
                 }
             });
             if let Some((nav_ctx, handle)) = ctx.link().context::<NavigationContext>(on_nav_ctx_change) {
@@ -178,7 +178,7 @@ impl Component for PwtTabBar {
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
         let props = ctx.props();
         match msg {
-            Msg::Activate(key, update_route) => {
+            Msg::Select(key, update_route) => {
                 if let Some(active) = &self.active {
                     if &key == active { return false; }
                 }
@@ -214,14 +214,14 @@ impl Component for PwtTabBar {
 
             let onclick = ctx.link().callback({
                 let key = panel.key.clone();
-                move |_| Msg::Activate(key.clone(), true)
+                move |_| Msg::Select(key.clone(), true)
             });
             let onkeyup = Callback::from({
                 let link = ctx.link().clone();
                 let key = panel.key.clone();
                 move |event: KeyboardEvent| {
                     if event.key_code() == 32 {
-                        link.send_message(Msg::Activate(key.clone(), true));
+                        link.send_message(Msg::Select(key.clone(), true));
                     }
                 }
             });
