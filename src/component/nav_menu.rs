@@ -1,5 +1,6 @@
 use std::rc::Rc;
 use std::collections::HashMap;
+use std::ops::Deref;
 
 use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
@@ -7,6 +8,8 @@ use yew::{html, Component, Html, Properties};
 use yew::html::{IntoPropValue, IntoEventCallback};
 
 use crate::props::{ContainerBuilder, EventSubscriber, RenderFn, WidgetBuilder};
+use crate::state::{NavigationContainer, NavigationContext, NavigationContextExt};
+
 use crate::widget::focus::focus_next_tabable;
 use crate::widget::{Column, Row};
 
@@ -94,18 +97,23 @@ impl From<MenuItem> for Menu {
 
 #[derive(PartialEq, Clone, Properties)]
 pub struct NavigationMenu {
+    #[prop_or_default]
     menu: Vec<Menu>,
     default_active: Option<AttrValue>,
+    #[prop_or_default]
+    router: bool,
     on_select: Option<Callback<Option<AttrValue>>>,
 }
 
 impl NavigationMenu {
     pub fn new() -> Self {
-        Self {
-            menu: Vec::new(),
-            on_select: None,
-            default_active: None,
-        }
+        yew::props!(Self {})
+    }
+
+    pub fn router(mut self) -> NavigationContainer {
+        self.router = true;
+        NavigationContainer::new()
+            .with_child(self)
     }
 
     pub fn default_active(mut self, active:  impl IntoPropValue<Option<AttrValue>>) -> Self {
@@ -138,7 +146,7 @@ impl NavigationMenu {
 }
 
 pub enum Msg {
-    Select(Option<AttrValue>),
+    Select(Option<AttrValue>, bool),
     MenuToggle(AttrValue),
     MenuClose(AttrValue),
     MenuOpen(AttrValue),
@@ -148,6 +156,7 @@ pub struct PwtNavigationMenu {
     active: Option<AttrValue>,
     menu_states: HashMap<AttrValue, bool>, // true = open
     menu_ref: NodeRef,
+    _nav_ctx_handle: Option<ContextHandle<NavigationContext>>,
 }
 
 impl PwtNavigationMenu {
@@ -155,20 +164,18 @@ impl PwtNavigationMenu {
         &self,
         ctx: &yew::Context<PwtNavigationMenu>,
         item: &MenuItem,
+        active: &str,
         indent_level: usize,
         is_menu: bool,
         visible: bool,
     ) -> Html {
-        let is_active = self
-            .active
-            .as_ref()
-            .map_or(false, |active| active == &item.id);
+        let is_active = active == item.id.deref();
 
         let class = classes!(is_active.then(|| "active"), "pwt-nav-link",);
 
         let onclick = ctx.link().callback({
             let key = item.id.clone();
-            move |_event: MouseEvent| Msg::Select(Some(key.clone()))
+            move |_event: MouseEvent| Msg::Select(Some(key.clone()), true)
         });
 
         let on_expander_click = ctx.link().callback({
@@ -182,7 +189,7 @@ impl PwtNavigationMenu {
         let onkeydown = ctx.link().batch_callback({
             let key = item.id.clone();
             move |event: KeyboardEvent| match event.key().as_str() {
-                " " => Some(Msg::Select(Some(key.clone()))),
+                " " => Some(Msg::Select(Some(key.clone()), true)),
                 "ArrowRight" if is_menu => Some(Msg::MenuOpen(key.clone())),
                 "ArrowLeft" if is_menu => Some(Msg::MenuClose(key.clone())),
                 _ => None,
@@ -230,13 +237,13 @@ impl PwtNavigationMenu {
         let mut content = None;
         match item {
             Menu::Item(child) => {
-                menu.add_child(self.render_child(ctx, child, level, false, visible));
+                menu.add_child(self.render_child(ctx, child, active, level, false, visible));
                 if child.id == active {
                     content = Some(child.content.apply(&child.id));
                 }
             }
             Menu::SubMenu(SubMenu { item, children }) => {
-                menu.add_child(self.render_child(ctx, item, level, true, visible));
+                menu.add_child(self.render_child(ctx, item, active, level, true, visible));
                 if item.id == active {
                     content = Some(item.content.apply(&item.id));
                 }
@@ -257,6 +264,22 @@ impl PwtNavigationMenu {
         }
         content
     }
+
+    fn get_active_or_default(&self, ctx: &Context<Self>) -> Option<AttrValue> {
+        let props = ctx.props();
+        match &self.active {
+            Some(active) => {
+                if active.is_empty() || active == "_" {
+                    props.default_active.clone()
+                } else {
+                    Some(active.clone())
+                }
+            }
+            None => {
+                props.default_active.clone()
+            }
+        }
+    }
 }
 
 impl Component for PwtNavigationMenu {
@@ -264,18 +287,49 @@ impl Component for PwtNavigationMenu {
     type Properties = NavigationMenu;
 
     fn create(ctx: &yew::Context<Self>) -> Self {
+        let props = ctx.props();
+        let mut active = None;
+        let mut _nav_ctx_handle = None;
+
+        if props.router {
+            let on_nav_ctx_change = Callback::from({
+                let link = ctx.link().clone();
+                move |nav_ctx: NavigationContext| {
+                    //log::info!("CTX CHANGE {:?}", nav_ctx);
+                    let path = nav_ctx.path();
+                    let key = Some(AttrValue::from(path));
+                    link.send_message(Msg::Select(key, false));
+                }
+            });
+            if let Some((nav_ctx, handle)) = ctx.link().context::<NavigationContext>(on_nav_ctx_change) {
+                //log::info!("INIT CTX {:?}", nav_ctx);
+                _nav_ctx_handle = Some(handle);
+                let path = nav_ctx.path();
+                active = Some(AttrValue::from(path));
+            }
+        }
+
         Self {
-            active: ctx.props().default_active.clone(),
+            active,
             menu_states: HashMap::new(),
             menu_ref: NodeRef::default(),
+            _nav_ctx_handle,
         }
     }
 
     fn update(&mut self, ctx: &yew::Context<Self>, msg: Self::Message) -> bool {
+        let props = ctx.props();
         match msg {
-            Msg::Select(key) => {
+            Msg::Select(key, update_route) => {
+                if key == self.active { return false; }
+
                 self.active = key.clone();
-                if let Some(on_select) = &ctx.props().on_select {
+
+                if props.router && update_route {
+                    ctx.link().push_relative_route(key.as_deref().unwrap_or(""));
+                }
+
+                if let Some(on_select) = &props.on_select {
                     on_select.emit(key);
                 }
                 true
@@ -297,6 +351,7 @@ impl Component for PwtNavigationMenu {
     }
 
     fn view(&self, ctx: &yew::Context<Self>) -> yew::Html {
+        let props = ctx.props();
         let mut content: Option<Html> = None;
 
         let menu_ref = self.menu_ref.clone();
@@ -318,12 +373,16 @@ impl Component for PwtNavigationMenu {
             .class("pwt-nav-menu pwt-overflow-auto pwt-border-right")
             .attribute("style", "min-width:200px;");
 
-        let active = self.active.as_deref().unwrap_or("");
-        for item in ctx.props().menu.iter() {
+
+        let active = self.get_active_or_default(ctx);
+        let active = active.as_deref().unwrap_or("");
+
+        for item in props.menu.iter() {
             if let Some(new_content) = self.render_item(ctx, item, &mut menu, active, 0, true) {
                 content = Some(new_content);
             }
         }
+
         Row::new()
             .class("pwt-flex-fill pwt-align-items-stretch pwt-overflow-auto")
             .with_child(menu)
