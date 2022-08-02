@@ -110,7 +110,7 @@ impl NavigationMenu {
         yew::props!(Self {})
     }
 
-    pub fn router(mut self) -> NavigationContainer {
+    pub fn navigation_container(mut self) -> NavigationContainer {
         self.router = true;
         NavigationContainer::new()
             .with_child(self)

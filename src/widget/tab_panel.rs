@@ -46,7 +46,7 @@ impl TabPanel {
         self.class.push(class);
     }
 
-    pub fn router(mut self) -> NavigationContainer {
+    pub fn navigation_container(mut self) -> NavigationContainer {
         self.bar.set_router(true);
         NavigationContainer::new()
             .with_child(self)

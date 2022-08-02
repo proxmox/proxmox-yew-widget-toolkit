@@ -52,7 +52,16 @@ impl TabBar {
         self
     }
 
-    pub(crate) fn set_router(&mut self, enable: bool) {
+    /// Builder style method to enable router functionality
+    pub fn router(mut self, enable: bool) -> Self {
+        self.set_router(enable);
+        self
+    }
+
+    /// Method to enable router functionality.
+    ///
+    /// Save/Load state from parent NavigationContainer
+    pub fn set_router(&mut self, enable: bool) {
         self.router = enable;
     }
 
