@@ -274,18 +274,22 @@ impl PwtNavigationMenu {
 
     fn get_active_or_default(&self, ctx: &Context<Self>) -> Option<AttrValue> {
         let props = ctx.props();
-        match &self.active {
-            Some(active) => {
-                if active.is_empty() || active == "_" {
-                    props.default_active.clone()
-                } else {
-                    Some(active.clone())
-                }
-            }
-            None => {
-                props.default_active.clone()
+        if let Some(active) = &self.active {
+            if !active.is_empty() && active != "_" {
+                return self.active.clone();
             }
         }
+        if props.default_active.is_some() {
+            return props.default_active.clone()
+        }
+        for menu in props.menu.iter() {
+            match menu {
+                Menu::Item(item) => return Some(item.id.clone()),
+                Menu::SubMenu(sub) => return Some(sub.item.id.clone()),
+                _ => {}
+            }
+        }
+        None
     }
 }
 
