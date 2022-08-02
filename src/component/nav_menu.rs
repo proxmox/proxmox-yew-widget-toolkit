@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use std::ops::Deref;
 
 use yew::prelude::*;
-use yew::virtual_dom::{VComp, VNode};
+use yew::virtual_dom::{Key, VComp, VNode};
 use yew::{html, Component, Html, Properties};
 use yew::html::{IntoPropValue, IntoEventCallback};
 
@@ -97,6 +97,7 @@ impl From<MenuItem> for Menu {
 
 #[derive(PartialEq, Clone, Properties)]
 pub struct NavigationMenu {
+    pub key: Option<Key>,
     #[prop_or_default]
     menu: Vec<Menu>,
     default_active: Option<AttrValue>,
@@ -108,6 +109,12 @@ pub struct NavigationMenu {
 impl NavigationMenu {
     pub fn new() -> Self {
         yew::props!(Self {})
+    }
+
+    /// Builder style method to set the yew `key` property
+    pub fn key(mut self, key: impl Into<Key>) -> Self {
+        self.key = Some(key.into());
+        self
     }
 
     pub fn navigation_container(mut self) -> NavigationContainer {
@@ -393,7 +400,8 @@ impl Component for PwtNavigationMenu {
 
 impl Into<VNode> for NavigationMenu {
     fn into(self) -> VNode {
-        let comp = VComp::new::<PwtNavigationMenu>(Rc::new(self), None);
+        let key = self.key.clone();
+        let comp = VComp::new::<PwtNavigationMenu>(Rc::new(self), key);
         VNode::from(comp)
     }
 }
