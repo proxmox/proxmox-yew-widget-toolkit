@@ -5,6 +5,7 @@ use yew::virtual_dom::{Key, VComp, VNode};
 use yew::html::IntoEventCallback;
 
 use crate::widget::focus::focus_next_tabable;
+use crate::state::{NavigationContext, NavigationContextExt};
 
 #[derive(Clone, PartialEq)]
 pub struct TabBarItem {
@@ -25,6 +26,11 @@ pub struct TabBar {
     #[prop_or_default]
     pub tabs: Vec<TabBarItem>,
     on_select: Option<Callback<Option<Key>>>,
+
+    pub default_active: Option<Key>,
+
+    #[prop_or_default]
+    router: bool,
 }
 
 
@@ -44,6 +50,10 @@ impl TabBar {
     pub fn key(mut self, key: impl Into<Key>) -> Self {
         self.key = Some(key.into());
         self
+    }
+
+    pub(crate) fn set_router(&mut self, enable: bool) {
+        self.router = enable;
     }
 
     pub fn with_item(
@@ -85,14 +95,35 @@ impl TabBar {
         self
     }
 
+    fn get_default_active(&self) -> Option<Key> {
+        if self.default_active.is_some() {
+            return self.default_active.clone();
+        }
+
+        if let Some(first) = self.tabs.get(0) {
+            return Some(first.key.clone());
+        }
+
+        None
+    }
 }
 
 pub enum Msg {
-    Activate(Key),
+    Activate(Key, bool),
 }
 
 pub struct PwtTabBar {
     active: Option<Key>,
+    _nav_ctx_handle: Option<ContextHandle<NavigationContext>>,
+}
+
+fn get_active_or_default(props: &TabBar, active: &Option<Key>) -> Option<Key> {
+    if let Some(active_key) = active.as_deref() {
+        if !active_key.is_empty() && active_key != "_" {
+            return active.clone();
+        }
+    }
+    props.get_default_active()
 }
 
 impl Component for PwtTabBar {
@@ -101,23 +132,58 @@ impl Component for PwtTabBar {
 
     fn create(ctx: &Context<Self>) -> Self {
         let props = ctx.props();
-        if let Some(first) = props.tabs.get(0) {
-            ctx.link().send_message(Msg::Activate(first.key.clone()));
+        let mut active = props.get_default_active();
+
+        let mut _nav_ctx_handle = None;
+
+        if props.router {
+            let on_nav_ctx_change = Callback::from({
+                let link = ctx.link().clone();
+                move |nav_ctx: NavigationContext| {
+                    //log::info!("CTX CHANGE {:?}", nav_ctx);
+                    let path = nav_ctx.path();
+                    let key = Key::from(path);
+                    link.send_message(Msg::Activate(key, false));
+                }
+            });
+            if let Some((nav_ctx, handle)) = ctx.link().context::<NavigationContext>(on_nav_ctx_change) {
+                //log::info!("INIT CTX {:?}", nav_ctx);
+                _nav_ctx_handle = Some(handle);
+                let path = nav_ctx.path();
+                active = get_active_or_default(props, &Some(Key::from(path)));
+            }
+        }
+
+        if active.is_some() {
+            if let Some(on_select) = &props.on_select {
+                on_select.emit(active.clone());
+            }
         }
 
         Self {
-            active: None,
+            active,
+            _nav_ctx_handle,
         }
     }
 
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
         let props = ctx.props();
         match msg {
-            Msg::Activate(key) => {
-                self.active = Some(key);
+            Msg::Activate(key, update_route) => {
+                if let Some(active) = &self.active {
+                    if &key == active { return false; }
+                }
+
+                self.active = get_active_or_default(props, &Some(key.clone()));
+
+                if props.router && update_route {
+                    ctx.link().push_relative_route(&key);
+                }
+
                 if let Some(on_select) = &props.on_select {
                     on_select.emit(self.active.clone());
                 }
+
                 true
             }
         }
@@ -126,8 +192,10 @@ impl Component for PwtTabBar {
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
 
+        let active = get_active_or_default(props, &self.active);
+
         let pills = props.tabs.iter().map(|panel| {
-            let is_active = if let Some(active) = &self.active {
+            let is_active = if let Some(active) = &active {
                 &panel.key == active
             } else {
                 false
@@ -137,14 +205,14 @@ impl Component for PwtTabBar {
 
             let onclick = ctx.link().callback({
                 let key = panel.key.clone();
-                move |_| Msg::Activate(key.clone())
+                move |_| Msg::Activate(key.clone(), true)
             });
             let onkeyup = Callback::from({
                 let link = ctx.link().clone();
                 let key = panel.key.clone();
                 move |event: KeyboardEvent| {
                     if event.key_code() == 32 {
-                        link.send_message(Msg::Activate(key.clone()));
+                        link.send_message(Msg::Activate(key.clone(), true));
                     }
                 }
             });

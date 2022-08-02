@@ -8,6 +8,7 @@ use yew::virtual_dom::{Key, VComp, VNode};
 
 use crate::prelude::*;
 use crate::props::RenderFn;
+use crate::state::NavigationContainer;
 use super::{Column, TabBar};
 
 #[derive(Clone, PartialEq, Properties)]
@@ -43,6 +44,12 @@ impl TabPanel {
     /// Method to add a html class
     pub fn add_class(&mut self, class: impl Into<Classes>) {
         self.class.push(class);
+    }
+
+    pub fn router(mut self) -> NavigationContainer {
+        self.bar.set_router(true);
+        NavigationContainer::new()
+            .with_child(self)
     }
 
     pub fn with_item(

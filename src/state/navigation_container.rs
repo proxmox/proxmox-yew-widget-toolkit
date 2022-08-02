@@ -184,7 +184,7 @@ impl Component for PwtNavigationContainer {
 
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
-        log::info!("NAVCTX {:?}", self.nav_ctx);
+        //log::info!("NAVCTX {:?}", self.nav_ctx);
         html!{
             <ContextProvider<NavigationContext> context={self.nav_ctx.clone()}>
                 {props.children.clone()}
