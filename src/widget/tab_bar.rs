@@ -2,7 +2,7 @@ use std::rc::Rc;
 
 use yew::prelude::*;
 use yew::virtual_dom::{Key, VComp, VNode};
-use yew::html::IntoEventCallback;
+use yew::html::{IntoEventCallback, IntoPropValue};
 
 use crate::widget::focus::focus_next_tabable;
 use crate::state::{NavigationContext, NavigationContextExt};
@@ -11,7 +11,7 @@ use crate::state::{NavigationContext, NavigationContextExt};
 pub struct TabBarItem {
     pub key: Key,
     pub label: AttrValue,
-    pub icon_class: Option<Classes>,
+    pub icon_class: Option<AttrValue>,
 }
 
 #[derive(Clone, Default, PartialEq, Properties)]
@@ -69,7 +69,7 @@ impl TabBar {
         mut self,
         key: impl Into<Key>,
         label: impl Into<AttrValue>,
-        icon_class: Option<impl Into<Classes>>,
+        icon_class: impl IntoPropValue<Option<AttrValue>>,
     ) -> Self {
         self.add_item(key, label, icon_class);
         self
@@ -79,12 +79,12 @@ impl TabBar {
         &mut self,
         key: impl Into<Key>,
         label: impl Into<AttrValue>,
-        icon_class: Option<impl Into<Classes>>,
+        icon_class: impl IntoPropValue<Option<AttrValue>>,
     ) {
         self.tabs.push(TabBarItem {
             key: key.into(),
             label: label.into(),
-            icon_class: icon_class.map(|c| c.into()),
+            icon_class: icon_class.into_prop_value(),
         });
     }
 
@@ -231,7 +231,7 @@ impl Component for PwtTabBar {
             html!{
                 <a {onclick} {onkeyup} class={nav_class} {tabindex}>
                     if let Some(class) = &panel.icon_class {
-                        <span class={classes!(class.clone(), "pwt-pe-2")}/>
+                        <span class={classes!(class.to_string(), "pwt-pe-2")}/>
                     }
                     {&panel.label}
                 </a>

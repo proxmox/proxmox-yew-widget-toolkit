@@ -5,6 +5,7 @@ use indexmap::IndexMap;
 
 use yew::prelude::*;
 use yew::virtual_dom::{Key, VComp, VNode};
+use yew::html::IntoPropValue;
 
 use crate::prelude::*;
 use crate::props::RenderFn;
@@ -56,7 +57,7 @@ impl TabPanel {
         self,
         key: impl Into<Key>,
         label: impl Into<AttrValue>,
-        icon_class: Option<impl Into<Classes>>,
+        icon_class: impl IntoPropValue<Option<AttrValue>>,
         panel: impl Into<VNode>,
     ) -> Self {
         let html = panel.into();
@@ -73,7 +74,7 @@ impl TabPanel {
         mut self,
         key: impl Into<Key>,
         label: impl Into<AttrValue>,
-        icon_class: Option<impl Into<Classes>>,
+        icon_class: impl IntoPropValue<Option<AttrValue>>,
         renderer: impl 'static + Fn(&()) -> Html,
     ) -> Self {
         let key = key.into();
@@ -140,12 +141,10 @@ impl Component for PwtTabPanel {
 
             if active {
                 html!{ <div key={key.clone()} class="pwt-flex-fill pwt-overflow-auto">{panel_html} </div>}
-                //panel_html
            } else {
-                html!{ <div key={key.clone()} style="display:none;">{panel_html}</div>}
+                html!{ <div key={key.clone()} class="pwt-d-none">{panel_html}</div>}
             }
         }).collect();
-
 
         Column::new()
             .class(props.class.clone())
