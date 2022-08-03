@@ -15,21 +15,21 @@ use crate::widget::{Column, Row};
 
 #[derive(Clone, PartialEq)]
 pub struct MenuItem {
-    id: AttrValue,
+    id: Key,
     text: AttrValue,
     icon_cls: Option<AttrValue>,
-    content: RenderFn<AttrValue>,
+    content: RenderFn<Key>,
 }
 
 impl MenuItem {
     pub fn new(
-        id: impl IntoPropValue<AttrValue>,
+        id: impl Into<Key>,
         text: impl IntoPropValue<AttrValue>,
         icon_cls: impl IntoPropValue<Option<AttrValue>>,
-        content: impl Fn(&AttrValue) -> Html + 'static,
+        content: impl Fn(&Key) -> Html + 'static,
     ) -> Self {
         Self {
-            id: id.into_prop_value(),
+            id: id.into(),
             text: text.into_prop_value(),
             icon_cls: icon_cls.into_prop_value(),
             content: RenderFn::new(content),
@@ -100,10 +100,10 @@ pub struct NavigationMenu {
     pub key: Option<Key>,
     #[prop_or_default]
     menu: Vec<Menu>,
-    default_active: Option<AttrValue>,
+    default_active: Option<Key>,
     #[prop_or_default]
     router: bool,
-    on_select: Option<Callback<Option<AttrValue>>>,
+    on_select: Option<Callback<Option<Key>>>,
 }
 
 impl NavigationMenu {
@@ -123,7 +123,7 @@ impl NavigationMenu {
             .with_child(self)
     }
 
-    pub fn default_active(mut self, active:  impl IntoPropValue<Option<AttrValue>>) -> Self {
+    pub fn default_active(mut self, active:  impl IntoPropValue<Option<Key>>) -> Self {
         self.default_active = active.into_prop_value();
         self
     }
@@ -146,22 +146,22 @@ impl NavigationMenu {
         self.menu.push(Menu::Component(component.into()))
     }
 
-    pub fn on_select(mut self, cb: impl IntoEventCallback<Option<AttrValue>>) -> Self {
+    pub fn on_select(mut self, cb: impl IntoEventCallback<Option<Key>>) -> Self {
         self.on_select = cb.into_event_callback();
         self
     }
 }
 
 pub enum Msg {
-    Select(Option<AttrValue>, bool),
-    MenuToggle(AttrValue),
-    MenuClose(AttrValue),
-    MenuOpen(AttrValue),
+    Select(Option<Key>, bool),
+    MenuToggle(Key),
+    MenuClose(Key),
+    MenuOpen(Key),
 }
 
 pub struct PwtNavigationMenu {
-    active: Option<AttrValue>,
-    menu_states: HashMap<AttrValue, bool>, // true = open
+    active: Option<Key>,
+    menu_states: HashMap<Key, bool>, // true = open
     menu_ref: NodeRef,
     _nav_ctx_handle: Option<ContextHandle<NavigationContext>>,
 }
@@ -245,13 +245,13 @@ impl PwtNavigationMenu {
         match item {
             Menu::Item(child) => {
                 menu.add_child(self.render_child(ctx, child, active, level, false, visible));
-                if child.id == active {
+                if child.id.deref() == active {
                     content = Some(child.content.apply(&child.id));
                 }
             }
             Menu::SubMenu(SubMenu { item, children }) => {
                 menu.add_child(self.render_child(ctx, item, active, level, true, visible));
-                if item.id == active {
+                if item.id.deref() == active {
                     content = Some(item.content.apply(&item.id));
                 }
                 let visible = visible
@@ -272,9 +272,9 @@ impl PwtNavigationMenu {
         content
     }
 
-    fn get_active_or_default(&self, ctx: &Context<Self>) -> Option<AttrValue> {
+    fn get_active_or_default(&self, ctx: &Context<Self>) -> Option<Key> {
         let props = ctx.props();
-        if let Some(active) = &self.active {
+        if let Some(active) = self.active.as_deref() {
             if !active.is_empty() && active != "_" {
                 return self.active.clone();
             }
@@ -308,7 +308,7 @@ impl Component for PwtNavigationMenu {
                 move |nav_ctx: NavigationContext| {
                     //log::info!("CTX CHANGE {:?}", nav_ctx);
                     let path = nav_ctx.path();
-                    let key = Some(AttrValue::from(path));
+                    let key = Some(Key::from(path));
                     link.send_message(Msg::Select(key, false));
                 }
             });
@@ -316,7 +316,7 @@ impl Component for PwtNavigationMenu {
                 //log::info!("INIT CTX {:?}", nav_ctx);
                 _nav_ctx_handle = Some(handle);
                 let path = nav_ctx.path();
-                active = Some(AttrValue::from(path));
+                active = Some(Key::from(path));
             }
         }
 
