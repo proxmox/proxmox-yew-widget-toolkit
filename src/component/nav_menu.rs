@@ -178,7 +178,11 @@ impl PwtNavigationMenu {
     ) -> Html {
         let is_active = active == item.id.deref();
 
-        let class = classes!(is_active.then(|| "active"), "pwt-nav-link",);
+        let class = classes!(
+            is_active.then(|| "active"),
+            (!visible).then(|| "pwt-d-none"),
+            "pwt-nav-link",
+        );
 
         let onclick = ctx.link().callback({
             let key = item.id.clone();
@@ -210,10 +214,9 @@ impl PwtNavigationMenu {
         } else {
             true
         };
-        let style = (!visible).then(|| "display:none").unwrap_or("");
 
         html! {
-            <a disabled={!visible} {style} {onclick} {onkeydown} {class} {tabindex}>
+            <a disabled={!visible} {onclick} {onkeydown} {class} {tabindex}>
             { (0..indent_level).map(|_| html!{ <span class="pwt-ps-4" /> }).collect::<Html>() }
                 if let Some(icon) = &item.icon_cls {
                     <i class={classes!(icon.to_string(), "pwt-me-2")}/>
