@@ -17,7 +17,7 @@ use crate::widget::{Column, Row};
 pub struct MenuItem {
     id: Key,
     text: AttrValue,
-    icon_cls: Option<AttrValue>,
+    icon_class: Option<AttrValue>,
     content: RenderFn<Key>,
 }
 
@@ -25,13 +25,13 @@ impl MenuItem {
     pub fn new(
         id: impl Into<Key>,
         text: impl IntoPropValue<AttrValue>,
-        icon_cls: impl IntoPropValue<Option<AttrValue>>,
+        icon_class: impl IntoPropValue<Option<AttrValue>>,
         content: impl Fn(&Key) -> Html + 'static,
     ) -> Self {
         Self {
             id: id.into(),
             text: text.into_prop_value(),
-            icon_cls: icon_cls.into_prop_value(),
+            icon_class: icon_class.into_prop_value(),
             content: RenderFn::new(content),
         }
     }
@@ -226,7 +226,7 @@ impl PwtNavigationMenu {
         html! {
             <a disabled={!visible} {onclick} {onkeydown} {class} {tabindex}>
             { (0..indent_level).map(|_| html!{ <span class="pwt-ps-4" /> }).collect::<Html>() }
-                if let Some(icon) = &item.icon_cls {
+                if let Some(icon) = &item.icon_class {
                     <i class={classes!(icon.to_string(), "pwt-me-2")}/>
                 }
             {&item.text}
