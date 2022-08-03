@@ -131,8 +131,9 @@ impl NavigationMenu {
             .with_child(self)
     }
 
-    pub fn default_active(mut self, active:  impl IntoPropValue<Option<Key>>) -> Self {
-        self.default_active = active.into_prop_value();
+    pub fn default_active(mut self, active:  impl IntoPropValue<Option<String>>) -> Self {
+        let active: Option<String> = active.into_prop_value();
+        self.default_active = active.map(|active| Key::from(active));
         self
     }
 
