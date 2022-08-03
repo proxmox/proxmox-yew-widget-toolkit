@@ -97,6 +97,8 @@ impl From<MenuItem> for Menu {
 
 #[derive(PartialEq, Clone, Properties)]
 pub struct NavigationMenu {
+    #[prop_or_default]
+    node_ref: NodeRef,
     pub key: Option<Key>,
     #[prop_or_default]
     menu: Vec<Menu>,
@@ -109,6 +111,12 @@ pub struct NavigationMenu {
 impl NavigationMenu {
     pub fn new() -> Self {
         yew::props!(Self {})
+    }
+
+    /// Builder style method to set the yew `node_ref`
+    pub fn node_ref(mut self, node_ref: ::yew::html::NodeRef) -> Self {
+        self.node_ref = node_ref;
+        self
     }
 
     /// Builder style method to set the yew `key` property
@@ -398,6 +406,7 @@ impl Component for PwtNavigationMenu {
         }
 
         Row::new()
+            .node_ref(props.node_ref.clone())
             .class("pwt-flex-fill pwt-align-items-stretch pwt-overflow-auto")
             .with_child(menu)
             .with_optional_child(content)
