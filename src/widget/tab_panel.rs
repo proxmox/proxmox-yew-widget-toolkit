@@ -20,6 +20,10 @@ pub struct TabPanel {
     #[prop_or_default]
     pub bar: TabBar,
 
+    pub title: Option<AttrValue>,
+    #[prop_or_default]
+    pub tools: Vec<VNode>,
+
     #[prop_or_default]
     pub class: Classes,
 }
@@ -28,6 +32,24 @@ impl TabPanel {
 
     pub fn new() -> Self {
         yew::props!(TabPanel {})
+    }
+
+   pub fn title(mut self, title: impl IntoPropValue<Option<AttrValue>>) -> Self {
+        self.set_title(title);
+        self
+    }
+
+    pub fn set_title(&mut self, title: impl IntoPropValue<Option<AttrValue>>) {
+        self.title = title.into_prop_value();
+    }
+
+    pub fn tool(mut self, tool: impl Into<VNode>) -> Self {
+        self.add_tool(tool);
+        self
+    }
+
+    pub fn add_tool(&mut self, tool: impl Into<VNode>) {
+        self.tools.push(tool.into());
     }
 
     /// Builder style method to set the yew `key` property
@@ -124,7 +146,7 @@ impl Component for PwtTabPanel {
         let props = ctx.props();
 
         let bar = props.bar.clone()
-            .class("pwt-p-2 pwt-scheme-neutral-container pwt-border-bottom")
+            .class("pwt-scheme-neutral-container")
             .on_select(ctx.link().callback(|key| Msg::Select(key))) ;
 
         let content: Html = props.tabs.iter().map(|(key, render_fn)| {
@@ -146,14 +168,25 @@ impl Component for PwtTabPanel {
             }
         }).collect();
 
+        let header;
+
+        if props.title.is_some() || !props.tools.is_empty() {
+
+            let title = super::panel::create_panel_title(props.title.clone(), props.tools.clone())
+                .class("pwt-pb-2");
+            header = html!{<div class="pwt-panel-header">{title}{bar}</div>};
+        } else {
+            header = bar.class("pwt-panel-header").into();
+        };
+
         Column::new()
+            .class("pwt-panel")
             .class(props.class.clone())
-            .with_child(bar)
+            .with_child(header)
             .with_child(content)
             .into()
     }
 }
-
 
 impl Into<VNode> for TabPanel {
     fn into(self) -> VNode {

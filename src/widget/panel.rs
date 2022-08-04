@@ -48,20 +48,8 @@ impl Into<VTag> for Panel {
         self.add_class("pwt-panel");
 
         if self.title.is_some() || !self.tools.is_empty() {
-            let mut header = Row::new()
-                .class("pwt-panel-header pwt-align-items-center pwt-gap-1");
-
-            if let Some(title) = self.title {
-                header.add_child(html!{
-                    <div class="pwt-panel-header-text">{title}</div>
-                });
-            }
-
-            if !self.tools.is_empty() {
-                header.add_child(html!{<div class="pwt-flex-fill"/>});
-                header.add_child(VList::with_children(self.tools, None));
-            }
-
+            let header = create_panel_title(self.title, self.tools)
+                .class("pwt-panel-header");
             self.children.insert(0, header.into());
         }
 
@@ -82,4 +70,23 @@ impl Into<VTag> for Panel {
             children,
         )
     }
+}
+
+pub(crate) fn create_panel_title(title: Option<AttrValue>, tools: Vec<VNode>) -> Row {
+
+    let mut header = Row::new()
+        .class("pwt-align-items-center pwt-gap-1");
+
+    if let Some(title) = title {
+        header.add_child(html!{
+            <div class="pwt-panel-header-text">{title}</div>
+        });
+    }
+
+    if !tools.is_empty() {
+        header.add_child(html!{<div class="pwt-flex-fill"/>});
+        header.add_child(VList::with_children(tools, None));
+    }
+
+    header
 }
