@@ -32,6 +32,7 @@
 //! - [Column]: Vertical container with flex layout
 //! - [Panel]: Container with title.
 //! - [InputPanel]: Container to create simple forms.
+//! - [TabPanel]: A set of layered items where only one item is displayed at a time.
 //! - [Toolbar]: Horizontal container for buttons.
 //! - [VirtualScroll]: Container with virtual scrolling support.
 //!
@@ -89,7 +90,7 @@ mod tab_bar;
 pub use tab_bar::{TabBar, TabBarItem, PwtTabBar};
 
 mod tab_panel;
-pub use tab_panel::*;
+pub use tab_panel::{TabPanel, TabPanelRenderInfo, PwtTabPanel};
 
 mod theme_loader;
 pub use theme_loader::ThemeLoader;

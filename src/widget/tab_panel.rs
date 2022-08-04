@@ -12,11 +12,30 @@ use crate::props::RenderFn;
 use crate::state::NavigationContainer;
 use super::{Column, Row, TabBar};
 
+/// Infos passed to the [TabPanel] render function.
+pub struct TabPanelRenderInfo {
+    /// The key of the item to render
+    pub key: Key,
+    /// Set if this item is visible/active.
+    ///
+    /// So that the item can react on visibility changes.
+    pub visible: bool,
+}
+
+/// A set of layered items where only one item is displayed at a time.
+///
+/// [TabPanel]s (like [super::Panel]s]) may have a title and tool buttons.
+///
+/// Panel item are either static or dynamic. Static items are rendered
+/// once before you add them. Dynamic items use a render function
+/// which is called when the item gets activated the first time. After
+/// that the render function is called whenever another panel gets
+/// activated.
 #[derive(Clone, PartialEq, Properties)]
 pub struct TabPanel {
     pub key: Option<Key>,
     #[prop_or_default]
-    pub tabs: IndexMap<Key, RenderFn<()>>,
+    pub tabs: IndexMap<Key, RenderFn<TabPanelRenderInfo>>,
     #[prop_or_default]
     pub bar: TabBar,
 
@@ -30,24 +49,29 @@ pub struct TabPanel {
 
 impl TabPanel {
 
+    /// Creates a new instance.
     pub fn new() -> Self {
         yew::props!(TabPanel {})
     }
 
-   pub fn title(mut self, title: impl IntoPropValue<Option<AttrValue>>) -> Self {
+    /// Builder style method to set the `title` property
+    pub fn title(mut self, title: impl IntoPropValue<Option<AttrValue>>) -> Self {
         self.set_title(title);
         self
     }
 
+    /// Method to set the `title` property
     pub fn set_title(&mut self, title: impl IntoPropValue<Option<AttrValue>>) {
         self.title = title.into_prop_value();
     }
 
+    /// Builder style method to add a tool
     pub fn tool(mut self, tool: impl Into<VNode>) -> Self {
         self.add_tool(tool);
         self
     }
 
+    /// Method to add a tool
     pub fn add_tool(&mut self, tool: impl Into<VNode>) {
         self.tools.push(tool.into());
     }
@@ -69,22 +93,41 @@ impl TabPanel {
         self.class.push(class);
     }
 
+    /// Embed the [TabPanel] into a [NavigationContainer]
     pub fn navigation_container(mut self) -> NavigationContainer {
         self.bar.set_router(true);
         NavigationContainer::new()
             .with_child(self)
     }
 
+    /// Builder style method to add a static tab panel.
     pub fn with_item(
-        self,
+        mut self,
         key: impl Into<Key>,
         label: impl Into<AttrValue>,
         icon_class: impl IntoPropValue<Option<AttrValue>>,
         panel: impl Into<VNode>,
     ) -> Self {
+        self.add_item(
+            key,
+            label,
+            icon_class,
+            panel,
+        );
+        self
+    }
+
+    /// Method to add a static tab panel.
+    pub fn add_item(
+        &mut self,
+        key: impl Into<Key>,
+        label: impl Into<AttrValue>,
+        icon_class: impl IntoPropValue<Option<AttrValue>>,
+        panel: impl Into<VNode>,
+    ) {
         let html = panel.into();
 
-        self.with_item_builder(
+        self.add_item_builder(
             key,
             label,
             icon_class,
@@ -92,22 +135,30 @@ impl TabPanel {
         )
     }
 
+    /// Builder style method to add a dynamic tab panel.
     pub fn with_item_builder(
         mut self,
         key: impl Into<Key>,
         label: impl Into<AttrValue>,
         icon_class: impl IntoPropValue<Option<AttrValue>>,
-        renderer: impl 'static + Fn(&()) -> Html,
+        renderer: impl 'static + Fn(&TabPanelRenderInfo) -> Html,
     ) -> Self {
-        let key = key.into();
-
-        self.bar.add_item(key.clone(), label, icon_class);
-
-        self.tabs.insert(key, RenderFn::new(renderer));
-
+        self.add_item_builder(key, label, icon_class, renderer);
         self
     }
 
+    /// Method to add a dynamic tab panel.
+    pub fn add_item_builder(
+        &mut self,
+        key: impl Into<Key>,
+        label: impl Into<AttrValue>,
+        icon_class: impl IntoPropValue<Option<AttrValue>>,
+        renderer: impl 'static + Fn(&TabPanelRenderInfo) -> Html,
+    ) {
+        let key = key.into();
+        self.bar.add_item(key.clone(), label, icon_class);
+        self.tabs.insert(key, RenderFn::new(renderer));
+    }
 }
 
 pub enum Msg {
@@ -156,7 +207,10 @@ impl Component for PwtTabPanel {
             };
 
             let panel_html = if self.render_set.contains(key) {
-                render_fn.apply(&())
+                render_fn.apply(&TabPanelRenderInfo{
+                    key: key.clone(),
+                    visible: active,
+                })
             } else {
                 html!{}
             };
