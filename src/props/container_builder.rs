@@ -23,7 +23,7 @@ pub trait ContainerBuilder: Into<VNode> {
     }
 
     /// Method to add a child node
-    fn add_child(&mut self, child: impl Into<::yew::virtual_dom::VNode>) {
+    fn add_child(&mut self, child: impl Into<VNode>) {
         self.as_children_mut().push(child.into());
     }
 
