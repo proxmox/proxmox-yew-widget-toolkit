@@ -1,4 +1,6 @@
 use std::borrow::Cow;
+
+use yew::prelude::*;
 use yew::virtual_dom::{Listeners, VList, VTag};
 
 use pwt_macros::widget;
@@ -20,6 +22,15 @@ impl Row {
     pub fn gap(mut self, gap: usize) -> Self {
         self.gap = gap;
         self
+    }
+
+    pub fn with_flex_spacer(mut self) -> Self {
+        self.add_flex_spacer();
+        self
+    }
+
+    pub fn add_flex_spacer(&mut self) {
+        self.add_child(html!{<div class="pwt-flex-fill"/>});
     }
 }
 

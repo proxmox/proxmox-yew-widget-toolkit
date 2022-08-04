@@ -84,7 +84,7 @@ pub(crate) fn create_panel_title(title: Option<AttrValue>, tools: Vec<VNode>) ->
     }
 
     if !tools.is_empty() {
-        header.add_child(html!{<div class="pwt-flex-fill"/>});
+        header.add_flex_spacer();
         header.add_child(VList::with_children(tools, None));
     }
 
