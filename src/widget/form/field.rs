@@ -49,11 +49,15 @@ impl Field {
         self.default = default.into_prop_value();
     }
 
-    pub fn number(min: Option<f64>, max: Option<f64>, step: Option<f64>) -> Self {
+    pub fn number(
+        min: impl IntoPropValue<Option<f64>>,
+        max: impl IntoPropValue<Option<f64>>,
+        step: impl IntoPropValue<Option<f64>>
+    ) -> Self {
         let mut me = Self::new();
-        me.min = min;
-        me.max = max;
-        me.step = step;
+        me.min = min.into_prop_value();
+        me.max = max.into_prop_value();
+        me.step = step.into_prop_value();
         me.input_type = String::from("number");
         me
     }
