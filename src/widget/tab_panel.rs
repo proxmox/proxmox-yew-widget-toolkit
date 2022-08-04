@@ -4,13 +4,13 @@ use std::collections::HashSet;
 use indexmap::IndexMap;
 
 use yew::prelude::*;
-use yew::virtual_dom::{Key, VComp, VNode};
+use yew::virtual_dom::{Key, VComp, VList, VNode};
 use yew::html::IntoPropValue;
 
 use crate::prelude::*;
 use crate::props::RenderFn;
 use crate::state::NavigationContainer;
-use super::{Column, TabBar};
+use super::{Column, Row, TabBar};
 
 #[derive(Clone, PartialEq, Properties)]
 pub struct TabPanel {
@@ -170,13 +170,21 @@ impl Component for PwtTabPanel {
 
         let header;
 
-        if props.title.is_some() || !props.tools.is_empty() {
-
+        if props.title.is_some() {
             let title = super::panel::create_panel_title(props.title.clone(), props.tools.clone())
                 .class("pwt-pb-2");
             header = html!{<div class="pwt-panel-header">{title}{bar}</div>};
         } else {
-            header = bar.class("pwt-panel-header").into();
+            if !props.tools.is_empty() {
+                header = Row::new()
+                    .class("pwt-panel-header pwt-align-items-center pwt-gap-1")
+                    .with_child(bar)
+                    .with_flex_spacer()
+                    .with_child(VList::with_children(props.tools.clone(), None))
+                    .into()
+            } else {
+                header = bar.class("pwt-panel-header").into();
+            }
         };
 
         Column::new()
