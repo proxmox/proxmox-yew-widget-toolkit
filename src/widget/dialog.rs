@@ -154,6 +154,7 @@ impl Component for PwtDialog {
         });
 
         let mut panel = Panel::new()
+            .class("pwt-overflow-auto")
             .title(props.title.clone())
             .border(false);
 
