@@ -42,9 +42,14 @@ pub struct FieldState {
     options: FieldOptions,
 }
 
+/// Form Context
+///
+/// This struct is used by form like widgets ([crate::widget::form2::Form],
+/// [crate::component::EditWindow]) to provide a shared state for all
+/// input widgets.
 #[derive(Clone, Debug, PartialEq)]
 pub struct FormContext {
-    pub(crate) ctr: usize,
+    ctr: usize, // property change trigger
     on_change: Callback<()>,
     inner: Rc<RefCell<FormContextInner>>,
 }
@@ -64,6 +69,10 @@ impl FormContextInner {
 
 impl FormContext {
 
+    /// Create a new instance.
+    ///
+    /// The `on_change` callback should call [Self::context_change_trigger]
+    /// to notify the ContextProvider.
     pub fn new(on_change: Callback<()>) -> Self {
         Self {
             inner: Rc::new(RefCell::new(FormContextInner::new())),
@@ -72,6 +81,15 @@ impl FormContext {
         }
     }
 
+    /// Trigger a context change.
+    ///
+    /// This simply increases an internal counter, so that the
+    /// [ContextProvider] gets aware of the state change.
+    pub fn context_change_trigger(&mut self) {
+        self.ctr += 1;
+    }
+
+    /// Register a form field.
     pub fn register_field(
         &self,
         name: impl IntoPropValue<AttrValue>,
@@ -97,6 +115,9 @@ impl FormContext {
         self.set_field_state(name, state);
     }
 
+    /// Get the result from the validation function.
+    ///
+    /// Returns `Ok(())` for non-existent fields.
     pub fn get_field_valid(&self, name: impl IntoPropValue<AttrValue>) -> Result<(), String> {
         let name = name.into_prop_value();
         self.inner.borrow()
@@ -106,6 +127,9 @@ impl FormContext {
             .unwrap_or(Ok(()))
     }
 
+    /// Get the field value.
+    ///
+    /// Returns [Value::Null] for non-existent fields.
     pub fn get_field_value(&self, name: impl IntoPropValue<AttrValue>) -> Value {
         let name = name.into_prop_value();
         self.inner.borrow()
@@ -116,6 +140,10 @@ impl FormContext {
 
     }
 
+    /// Get the field value as string.
+    ///
+    /// Return the empty string for non-existent fields, or
+    /// when the field value is not a string.
     pub fn get_field_text(&self, name: impl IntoPropValue<AttrValue>) -> String {
         self.get_field_value(name)
             .as_str()
@@ -123,6 +151,9 @@ impl FormContext {
             .to_string()
     }
 
+    /// Set a field value.
+    ///
+    /// This calls the field validate callback.
     pub fn set_value(
         &self,
         name: impl IntoPropValue<AttrValue>,
@@ -136,7 +167,7 @@ impl FormContext {
         self.validate_field(&name);
     }
 
-    /// Trigger re-validation of some field
+    /// Trigger re-validation of some field.
     pub fn validate_field(
         &self,
         name: impl IntoPropValue<AttrValue>,
@@ -163,18 +194,38 @@ impl FormContext {
         });
     }
 
+    /// Reset all fields to their initial value.
     pub fn reset_form(&self) {
+        let mut changes = false;
         for field in self.inner.borrow_mut().field_state.values_mut() {
             if field.value != field.initial_value {
                 field.value = field.initial_value.clone();
                 field.valid = field.initial_valid.clone();
+                changes = true;
                 //field.version += 1;
                 //field.changed = true;
             }
         }
-        self.on_change.emit(());
+        if changes { self.on_change.emit(()); }
     }
 
+    /// Reset a single field back to its initial value.
+    pub fn reset_field(&self, name: impl IntoPropValue<AttrValue>) {
+        let name = name.into_prop_value();
+        let mut changes = false;
+        if let Some(field) = self.inner.borrow_mut().field_state.get_mut(&name) {
+           if field.value != field.initial_value {
+               field.value = field.initial_value.clone();
+               field.valid = field.initial_valid.clone();
+               changes = true;
+               //field.version += 1;
+               //field.changed = true;
+            }
+        }
+        if changes { self.on_change.emit(()); }
+    }
+
+    /// Returns true if a field value differs from its initial value.
     pub fn dirty(&self) -> bool {
         for (_name, state) in &self.inner.borrow().field_state {
             if state.value != state.initial_value {

@@ -47,8 +47,7 @@ impl Component for PwtForm {
     fn update(&mut self, _ctx: &Context<Self>, msg: Self::Message) -> bool {
         match msg {
             Msg::Update => {
-                log::info!("Form update");
-                self.form_ctx.ctr += 1;
+                self.form_ctx.context_change_trigger();
                 true
             }
         }
