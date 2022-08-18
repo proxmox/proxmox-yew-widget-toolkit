@@ -1,6 +1,7 @@
 use std::rc::Rc;
 use std::cell::RefCell;
 use std::collections::HashMap;
+use std::ops::Deref;
 
 use serde_json::Value;
 
@@ -57,12 +58,14 @@ pub struct FormContext {
 #[derive(Debug, PartialEq)]
 pub struct FormContextInner {
     field_state: HashMap<AttrValue, FieldState>,
+    loaded: bool,
 }
 
 impl FormContextInner {
     pub fn new() -> Self {
         Self {
             field_state: HashMap::new(),
+            loaded: false,
         }
     }
 }
@@ -223,6 +226,34 @@ impl FormContext {
             }
         }
         if changes { self.on_change.emit(()); }
+    }
+
+    /// Set form data and 'loaded' flag
+    ///
+    /// This sets the form data from the provided JSON object.
+    // fixme: This also clears the changed flag for all fields
+    pub fn load_form(&self, data: Value) {
+        let mut form = self.inner.borrow_mut();
+        for (name, field) in form.field_state.iter_mut() {
+            field.initial_value = data[name.deref()].clone();
+            field.initial_valid = if let Some(validate) = &field.validate {
+                validate.validate(&field.initial_value)
+                    .map_err(|e| e.to_string())
+            } else {
+                Ok(())
+            };
+            field.value = field.initial_value.clone();
+            field.valid = field.initial_valid.clone();
+            //field.version += 1;
+            //field.changed = false;
+        }
+        form.loaded = true;
+        self.on_change.emit(());
+    }
+
+    /// Returns the loaded flag (see [Self::load_form])
+    pub fn loaded(&self) -> bool {
+        self.inner.borrow().loaded
     }
 
     /// Returns true if a field value differs from its initial value.
