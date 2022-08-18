@@ -3,7 +3,7 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::ops::Deref;
 
-use serde_json::Value;
+use serde_json::{json, Value};
 
 use yew::prelude::*;
 use yew::html::IntoPropValue;
@@ -153,6 +153,36 @@ impl FormContext {
             .unwrap_or("")
             .to_string()
     }
+
+    /// Get form submit data.
+    ///
+    /// Returns a JSON object with the values of all registered fields
+    /// that have [FieldOptions::submit] set. Empty strings are
+    /// included when [FieldOptions::submit_empty] is set.
+    pub fn get_submit_data(&self) -> Value {
+        let mut data = json!({});
+
+        for (name, state) in self.inner.borrow().field_state.iter() {
+            if !state.options.submit { continue; }
+            let value = state.value.clone();
+            match value {
+                Value::Null => { /* do not include */ },
+                Value::Bool(v) => {
+                    data[name.deref()] = Value::Bool(v);
+                },
+                Value::String(v) => {
+                    if !v.is_empty() || state.options.submit_empty {
+                        data[name.deref()] = Value::String(v);
+                    }
+                }
+                // Array/Object
+                v => data[name] = v,
+            }
+        }
+
+        data
+    }
+
 
     /// Set a field value.
     ///
