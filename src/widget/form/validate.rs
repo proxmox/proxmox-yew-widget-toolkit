@@ -28,3 +28,9 @@ impl<T> ValidateFn<T> {
         (self.0)(data)
     }
 }
+
+impl<T> std::fmt::Debug for ValidateFn<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "ValidateFn({:p})", self.0)
+    }
+}
