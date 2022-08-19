@@ -1,6 +1,6 @@
 use std::rc::Rc;
 use std::cell::RefCell;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::ops::Deref;
 
 use serde_json::{json, Value};
@@ -57,6 +57,7 @@ pub struct FormContext {
 
 #[derive(Debug, PartialEq)]
 pub struct FormContextInner {
+    change_trackers: HashMap<AttrValue, HashSet<AttrValue>>,
     field_state: HashMap<AttrValue, FieldState>,
     loaded: bool,
 }
@@ -64,8 +65,24 @@ pub struct FormContextInner {
 impl FormContextInner {
     pub fn new() -> Self {
         Self {
+            change_trackers: HashMap::new(),
             field_state: HashMap::new(),
             loaded: false,
+        }
+    }
+
+    fn set_field_changed(
+        &mut self,
+        name: &AttrValue,
+    ) {
+        for (_tracker_id, set) in &mut self.change_trackers {
+            set.insert(name.clone());
+        }
+    }
+
+    fn clear_change_trackers(&mut self) {
+        for (_tracker_id, set) in &mut self.change_trackers {
+            set.clear();
         }
     }
 }
@@ -226,24 +243,34 @@ impl FormContext {
 
     /// Reset all fields to their initial value.
     pub fn reset_form(&self) {
-        let mut changes = false;
-        for field in self.inner.borrow_mut().field_state.values_mut() {
-            if field.value != field.initial_value {
-                field.value = field.initial_value.clone();
-                field.valid = field.initial_valid.clone();
-                changes = true;
-                //field.version += 1;
-                //field.changed = true;
+        let mut changes = HashSet::new();
+        let mut form = self.inner.borrow_mut();
+        {
+            for (name, field) in form.field_state.iter_mut() {
+                if field.value != field.initial_value {
+                    field.value = field.initial_value.clone();
+                    field.valid = field.initial_valid.clone();
+                    changes.insert(name.clone());
+                    //field.version += 1;
+                    //field.changed = true;
+                }
             }
         }
-        if changes { self.on_change.emit(()); }
+
+        if !changes.is_empty() {
+            for name in changes.into_iter() {
+                form.set_field_changed(&name);
+            }
+            self.on_change.emit(());
+        }
     }
 
     /// Reset a single field back to its initial value.
     pub fn reset_field(&self, name: impl IntoPropValue<AttrValue>) {
         let name = name.into_prop_value();
         let mut changes = false;
-        if let Some(field) = self.inner.borrow_mut().field_state.get_mut(&name) {
+        let mut form = self.inner.borrow_mut();
+        if let Some(field) = form.field_state.get_mut(&name) {
            if field.value != field.initial_value {
                field.value = field.initial_value.clone();
                field.valid = field.initial_valid.clone();
@@ -252,13 +279,26 @@ impl FormContext {
                //field.changed = true;
             }
         }
-        if changes { self.on_change.emit(()); }
+        if changes {
+            form.set_field_changed(&name);
+            self.on_change.emit(());
+        }
+    }
+
+    /// Register a new change tracker.
+    ///
+    /// After registering, use [Self::get_field_changed] to check if a
+    /// field value has changed.
+    pub fn register_change_tracker(&self, tracker_id: impl IntoPropValue<AttrValue>) {
+        let tracker_id = tracker_id.into_prop_value();
+         let mut form = self.inner.borrow_mut();
+        form.change_trackers.entry(tracker_id).or_insert(HashSet::new());
     }
 
     /// Set form data and 'loaded' flag
     ///
     /// This sets the form data from the provided JSON object.
-    // fixme: This also clears the changed flag for all fields
+    /// This also clears the changed flag for all fields (in all change trackers).
     pub fn load_form(&self, data: Value) {
         let mut form = self.inner.borrow_mut();
         for (name, field) in form.field_state.iter_mut() {
@@ -275,7 +315,24 @@ impl FormContext {
             //field.changed = false;
         }
         form.loaded = true;
+        form.clear_change_trackers();
         self.on_change.emit(());
+    }
+
+    /// Returns the changed flag, and reset it back to false
+    ///
+    /// It is necessary to call [Self::register_change_tracker] before
+    /// using this function (to start change tracking).
+    pub fn get_field_changed(
+        &self,
+        tracker_id: impl IntoPropValue<AttrValue>,
+        name: impl IntoPropValue<AttrValue>,
+    ) -> bool {
+        let tracker_id = tracker_id.into_prop_value();
+        let name = name.into_prop_value();
+        let mut form = self.inner.borrow_mut();
+        let map = form.change_trackers.entry(tracker_id).or_insert(HashSet::new());
+        map.remove(&name)
     }
 
     /// Returns the loaded flag (see [Self::load_form])
@@ -319,7 +376,12 @@ impl FormContext {
                 &old != state
             }
         };
+        if changed {
+            form.set_field_changed(&name);
+        }
+
         drop(form); // release borrow_mut
+
         if changed {
             self.on_change.emit(());
         }
