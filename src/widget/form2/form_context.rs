@@ -350,6 +350,16 @@ impl FormContext {
         false
     }
 
+    /// Returns true if all fields values are valid.
+    pub fn valid(&self) -> bool {
+        for state in self.inner.borrow().field_state.values() {
+            if state.valid.is_err() {
+                return false;
+            }
+        }
+        true
+    }
+
     fn set_field_state(
         &self,
         name: impl IntoPropValue<AttrValue>,

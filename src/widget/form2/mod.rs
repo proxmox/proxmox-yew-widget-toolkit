@@ -7,6 +7,9 @@ pub use field::Field;
 mod reset;
 pub use reset::{Reset, PwtReset};
 
+mod submit;
+pub use submit::{Submit, PwtSubmit};
+
 use std::rc::Rc;
 
 use yew::prelude::*;
