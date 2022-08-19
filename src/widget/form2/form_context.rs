@@ -167,16 +167,13 @@ impl FormContext {
             let value = state.value.clone();
             match value {
                 Value::Null => { /* do not include */ },
-                Value::Bool(v) => {
-                    data[name.deref()] = Value::Bool(v);
-                },
                 Value::String(v) => {
                     if !v.is_empty() || state.options.submit_empty {
                         data[name.deref()] = Value::String(v);
                     }
                 }
-                // Array/Object
-                v => data[name] = v,
+                // Bool/Number/Array/Object
+                v => data[name.deref()] = v,
             }
         }
 
