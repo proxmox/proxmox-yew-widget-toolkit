@@ -10,6 +10,9 @@ pub use reset::{Reset, PwtReset};
 mod submit;
 pub use submit::{Submit, PwtSubmit};
 
+mod checkbox;
+pub use checkbox::{Checkbox, PwtCheckbox};
+
 use std::rc::Rc;
 
 use yew::prelude::*;
