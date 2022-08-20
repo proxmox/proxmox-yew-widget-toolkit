@@ -5,6 +5,8 @@ use web_sys::HtmlInputElement;
 use yew::prelude::*;
 use yew::html::{IntoEventCallback, IntoPropValue};
 
+use proxmox_schema::Schema;
+
 use crate::prelude::*;
 use crate::widget::Tooltip;
 use crate::widget::form::{Input, ValidateFn};
@@ -21,7 +23,7 @@ pub struct Field {
     #[prop_or(AttrValue::Static("text"))]
     pub input_type: AttrValue,
     pub default: Option<AttrValue>,
-    pub validate: Option<ValidateFn<Value>>,
+    pub validate: Option<ValidateFn<String>>,
 
     pub on_change: Option<Callback<String>>,
 }
@@ -52,12 +54,35 @@ impl Field {
         self.default = default.into_prop_value();
     }
 
+    /// Builder style method to set the validate callback
     pub fn validate(
         mut self,
-        validate: impl 'static + Fn(&Value) -> Result<(), Error>,
+        validate: impl 'static + Fn(&String) -> Result<(), Error>,
     ) -> Self {
-        self.validate = Some(ValidateFn::new(validate));
+        self.set_validate(validate);
         self
+    }
+
+    /// Method to set the validate callback
+    pub fn set_validate(
+        &mut self,
+        validate: impl 'static + Fn(&String) -> Result<(), Error>,
+    ) {
+        self.validate = Some(ValidateFn::new(validate));
+    }
+
+    /// Builder style method to set the validation schema
+    pub fn schema(mut self, schema: &'static Schema) -> Self {
+        self.set_schema(schema);
+        self
+    }
+
+    /// Method to set the validation schema
+    pub fn set_schema(&mut self, schema: &'static Schema) {
+        self.set_validate(move |value: &String| {
+            schema.parse_simple_value(value)?;
+            Ok(())
+        });
     }
 
     /// Builder style method to set the on_change callback
@@ -156,7 +181,7 @@ fn create_field_validation_cb(props: Field) -> ValidateFn<Value> {
         */
         
         match &props.validate {
-            Some(cb) => cb.validate(&value.into()),
+            Some(cb) => cb.validate(&value),
             None => Ok(()),
     }
     })
