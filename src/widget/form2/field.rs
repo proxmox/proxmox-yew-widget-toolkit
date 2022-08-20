@@ -183,7 +183,7 @@ fn create_field_validation_cb(props: Field) -> ValidateFn<Value> {
         match &props.validate {
             Some(cb) => cb.validate(&value),
             None => Ok(()),
-    }
+        }
     })
 }
 
@@ -233,8 +233,10 @@ impl Component for PwtField {
         match msg {
             Msg::FormCtxUpdate(form_ctx) => {
                 log::info!("FormCtxUpdate");
-                self.value = form_ctx.get_field_text(&props.name);
                 self.form_ctx = Some(form_ctx);
+                let value = form_ctx.get_field_text(&props.name);
+                if self.value == value { return false; }
+                self.value = value;
                 true
             }
             Msg::Update(value) => {
