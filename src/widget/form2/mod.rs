@@ -13,6 +13,9 @@ pub use submit::{Submit, PwtSubmit};
 mod checkbox;
 pub use checkbox::{Checkbox, PwtCheckbox};
 
+mod combobox;
+pub use combobox::{Combobox, PwtCombobox};
+
 use std::rc::Rc;
 
 use yew::prelude::*;
