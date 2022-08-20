@@ -133,7 +133,6 @@ impl PwtField {
         if let Some(on_change) = &props.on_change {
             on_change.emit(self.value.clone());
         }
- 
     }
 }
 
@@ -233,8 +232,8 @@ impl Component for PwtField {
         match msg {
             Msg::FormCtxUpdate(form_ctx) => {
                 log::info!("FormCtxUpdate");
-                self.form_ctx = Some(form_ctx);
                 let value = form_ctx.get_field_text(&props.name);
+                self.form_ctx = Some(form_ctx);
                 if self.value == value { return false; }
                 self.value = value;
                 true
