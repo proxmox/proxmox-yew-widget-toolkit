@@ -1,4 +1,4 @@
-use anyhow::{bail, Error};
+use anyhow::{bail, format_err,  Error};
 use serde_json::Value;
 use web_sys::HtmlInputElement;
 
@@ -22,6 +22,11 @@ pub struct Field {
     
     #[prop_or(AttrValue::Static("text"))]
     pub input_type: AttrValue,
+
+    pub min: Option<f64>,
+    pub max: Option<f64>,
+    pub step: Option<f64>,
+
     pub default: Option<AttrValue>,
     pub validate: Option<ValidateFn<String>>,
 
@@ -34,6 +39,19 @@ impl Field {
         yew::props!(Self {
             name: name.into_prop_value(),
         })
+    }
+
+    pub fn number(
+        mut self,
+        min: impl IntoPropValue<Option<f64>>,
+        max: impl IntoPropValue<Option<f64>>,
+        step: impl IntoPropValue<Option<f64>>
+    ) -> Self {
+        self.min = min.into_prop_value();
+        self.max = max.into_prop_value();
+        self.step = step.into_prop_value();
+        self.input_type = AttrValue::Static("number");
+        self
     }
 
     pub fn input_type(mut self, input_type: impl IntoPropValue<AttrValue>) -> Self {
@@ -79,6 +97,21 @@ impl Field {
 
     /// Method to set the validation schema
     pub fn set_schema(&mut self, schema: &'static Schema) {
+        match schema {
+            Schema::Integer(s) => {
+                self.min = s.minimum.map(|v| v as f64);
+                self.max = s.maximum.map(|v| v as f64);
+                self.step = Some(1.0);
+                self.input_type = AttrValue::Static("number");
+            }
+            Schema::Number(s) => {
+                self.min = s.minimum;
+                self.max = s.maximum;
+                self.step = Some(1.0);
+                self.input_type = AttrValue::Static("number");
+            }
+            _ => {}
+        }
         self.set_validate(move |value: &String| {
             schema.parse_simple_value(value)?;
             Ok(())
@@ -160,24 +193,22 @@ fn create_field_validation_cb(props: Field) -> ValidateFn<Value> {
             }
         }
 
-        /*
         if props.input_type == "number" {
             let value_f64 = match value.parse::<f64>() {
                 Ok(v) => v,
-                Err(err) => return Err(err.to_string()),
+                Err(err) => return Err(format_err!("unable to parse number: {}", err)),
             };
             if let Some(min) = props.min {
                 if value_f64 < min {
-                    return Err(format!("value must be greate than or equal to '{}'", min));
+                    return Err(format_err!("value must be greate than or equal to '{}'", min));
                 }
             }
             if let Some(max) = props.max {
                 if value_f64 > max {
-                    return Err(format!("value must be less than or equal to '{}'", max));
+                    return Err(format_err!("value must be less than or equal to '{}'", max));
                 }
             }
         }
-        */
         
         match &props.validate {
             Some(cb) => cb.validate(&value),
