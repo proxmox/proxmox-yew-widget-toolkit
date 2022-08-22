@@ -61,11 +61,11 @@ impl Component for PwtForm {
             }
         }
     }
-    
+
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
         let content = props.renderer.apply(&self.form_ctx);
-        
+
         html!{
             <ContextProvider<FormContext> context={self.form_ctx.clone()}>
                 <form novalidate=true>{content}</form>
@@ -80,4 +80,3 @@ impl Into<VNode> for Form {
         VNode::from(comp)
     }
 }
-

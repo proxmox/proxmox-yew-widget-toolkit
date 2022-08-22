@@ -52,12 +52,12 @@ impl Component for PwtReset {
 
     fn create(ctx: &Context<Self>) -> Self {
         let mut form_dirty = true;
-        
+
         let on_form_ctx_change = Callback::from({
             let link = ctx.link().clone();
             move |form_ctx: FormContext| link.send_message(Msg::FormCtxUpdate(form_ctx))
         });
-        
+
         let mut _form_ctx_handle = None;
         let mut form_ctx = None;
         if let Some((form, handle)) = ctx.link().context::<FormContext>(on_form_ctx_change) {
@@ -65,7 +65,7 @@ impl Component for PwtReset {
             form_ctx = Some(form);
             _form_ctx_handle = Some(handle);
         }
-  
+
         Self {
             _form_ctx_handle,
             form_ctx,
@@ -79,7 +79,7 @@ impl Component for PwtReset {
             Msg::FormCtxUpdate(form_ctx) => {
                 let form_dirty = form_ctx.dirty();
                 if self.form_dirty == form_dirty { return false; }
-                
+
                 self.form_dirty = form_dirty;
                 self.form_ctx = Some(form_ctx);
                 true
@@ -103,6 +103,7 @@ impl Component for PwtReset {
 
         let reset = ctx.link().callback({
             move |e: MouseEvent| {
+                log::info!("reset click");
                 let event = e.unchecked_into::<Event>();
                 event.prevent_default(); // prevent reload
                 Msg::Reset
@@ -110,7 +111,13 @@ impl Component for PwtReset {
         });
 
         html!{
-            <button onclick={reset} class="pwt-button" disabled={!form_dirty}>{&props.text}</button>
+            <button
+                type="button" // Note: important, as we do not want type=submit/reset behavior
+                onclick={reset}
+                class="pwt-button"
+                disabled={!form_dirty}>
+            {&props.text}
+            </button>
         }
     }
 }
