@@ -4,7 +4,7 @@ use anyhow::Error;
 
 use yew::prelude::*;
 use yew::virtual_dom::Key;
-use yew::html::IntoEventCallback;
+use yew::html::{IntoEventCallback, IntoPropValue};
 
 use proxmox_schema::Schema;
 
@@ -28,7 +28,7 @@ pub struct Combobox {
     pub editable: bool,
 
     #[prop_or_default]
-    pub items: Rc<Vec<String>>,
+    pub items: Rc<Vec<AttrValue>>,
 
     pub on_change: Option<Callback<String>>,
 
@@ -61,23 +61,23 @@ impl Combobox {
         self.editable = editable;
     }
 
-    pub fn with_item(mut self, item: impl Into<String>) -> Self {
+    pub fn with_item(mut self, item: impl IntoPropValue<AttrValue>) -> Self {
         self.add_item(item);
         self
     }
 
-    pub fn add_item(&mut self, item: impl Into<String>) {
-        Rc::make_mut(&mut self.items).push(item.into());
+    pub fn add_item(&mut self, item: impl IntoPropValue<AttrValue>) {
+        Rc::make_mut(&mut self.items).push(item.into_prop_value());
     }
 
     /// Builder style method to set items
-    pub fn items(mut self, items: Rc<Vec<String>>) -> Self {
+    pub fn items(mut self, items: Rc<Vec<AttrValue>>) -> Self {
         self.set_items(items);
         self
     }
 
     /// Method to set items
-    pub fn set_items(&mut self, items: Rc<Vec<String>>) {
+    pub fn set_items(&mut self, items: Rc<Vec<AttrValue>>) {
         self.items = items;
     }
 
@@ -144,12 +144,12 @@ impl PwtCombobox {
             move |onselect: &Callback<String>| {
                 let columns = vec![
                     DataTableColumn::new("Value")
-                        .render(|value: &String| html!{value.clone()}),
+                        .render(|value: &AttrValue| html!{value}),
                 ];
                 let picker = GridPicker::new(columns)
                     .show_header(false)
                     .onselect(onselect)
-                    .extract_key(|value: &String| Key::from(value.clone()))
+                    .extract_key(|value: &AttrValue| Key::from(value.to_string()))
                     .selection(items.iter().enumerate().find_map(|(n, value)| (value == &selected).then(|| n)))
                     .data(Rc::clone(&items));
 
