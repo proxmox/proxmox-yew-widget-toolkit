@@ -214,6 +214,22 @@ impl FormContext {
         self.validate_field(&name);
     }
 
+    /// Set a field validation callback.
+    ///
+    /// This automatically re-validates the field value.
+    pub fn set_validate(
+        &self,
+        name: impl IntoPropValue<AttrValue>,
+        validate: Option<ValidateFn<Value>>,
+    ) {
+        let name = name.into_prop_value();
+        self.with_field_state_mut(&name, move |state| {
+            state.validate = validate;
+        });
+
+        self.validate_field(&name);
+    }
+
     /// Trigger re-validation of some field.
     pub fn validate_field(
         &self,
