@@ -4,6 +4,12 @@ pub use form_context::{FieldOptions, FormContext};
 mod field;
 pub use field::Field;
 
+mod input;
+pub use input::Input;
+
+mod validate;
+pub use validate::ValidateFn;
+
 mod reset;
 pub use reset::{Reset, PwtReset};
 
