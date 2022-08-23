@@ -16,6 +16,9 @@ pub use checkbox::{Checkbox, PwtCheckbox};
 mod combobox;
 pub use combobox::{Combobox, PwtCombobox};
 
+mod selector;
+pub use selector::{Selector, PwtSelector};
+
 use std::rc::Rc;
 
 use yew::prelude::*;
