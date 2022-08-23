@@ -28,6 +28,7 @@ members = [
 
 [dependencies]
 anyhow = "1.0"
+derivative = "2.2.0"
 lazy_static = "1.4"
 # this is the development version of Yew
 yew = { git = "https://github.com/yewstack/yew/", features = ["csr"] }
