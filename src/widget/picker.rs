@@ -24,7 +24,7 @@ where
 
     pub extract_key: Option<ExtractKeyFn<T>>,
 
-    pub onselect: Option<Callback<String>>,
+    pub onselect: Option<Callback<Key>>,
 
     #[prop_or(true)]
     pub show_header: bool,
@@ -67,7 +67,7 @@ impl<T> GridPicker<T> {
         self
     }
 
-    pub fn onselect(mut self, cb: impl IntoEventCallback<String>) -> Self {
+    pub fn onselect(mut self, cb: impl IntoEventCallback<Key>) -> Self {
         self.onselect = cb.into_event_callback();
         self
     }
@@ -107,7 +107,7 @@ impl<T> GridPicker<T> {
 
             let onclick = Callback::from({
                 let onselect = self.onselect.clone();
-                let value = (*key).to_string();
+                let value = key.clone();
                 move |_| {
                     if let Some(onselect) = &onselect {
                         onselect.emit(value.clone());
@@ -117,7 +117,7 @@ impl<T> GridPicker<T> {
 
             let onkeydown = Callback::from({
                 let onselect = self.onselect.clone();
-                let value = (*key).to_string();
+                let value = key.clone();
                 move |event: KeyboardEvent| {
                     match event.key_code() {
                         32 | 13 => { // space | enter

@@ -147,14 +147,14 @@ pub struct PwtCombobox {
 
 impl PwtCombobox {
 
-    fn create_picker(&self, ctx: &Context<Self>, selected: &str) -> RenderFn<Callback<String>> {
+    fn create_picker(&self, ctx: &Context<Self>, selected: &str) -> RenderFn<Callback<Key>> {
         let props = ctx.props();
 
         RenderFn::new({
             let items = Rc::clone(&props.items);
             let selected = selected.to_owned();
 
-            move |onselect: &Callback<String>| {
+            move |onselect: &Callback<Key>| {
                 let columns = vec![
                     DataTableColumn::new("Value")
                         .render(|value: &AttrValue| html!{value}),

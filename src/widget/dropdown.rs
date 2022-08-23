@@ -6,7 +6,7 @@ use wasm_bindgen::{JsCast, JsValue, UnwrapThrowExt};
 
 use yew::prelude::*;
 use yew::html::{IntoPropValue, IntoEventCallback};
-use yew::virtual_dom::VNode;
+use yew::virtual_dom::{Key, VNode};
 
 use crate::prelude::*;
 use crate::props::{WidgetStdProps, FieldStdProps, RenderFn};
@@ -21,7 +21,7 @@ pub struct Dropdown {
     #[prop_or_default]
     pub editable: bool,
 
-    pub picker: RenderFn<Callback<String>>,
+    pub picker: RenderFn<Callback<Key>>,
     pub tip: Option<VNode>,
 
     pub on_change: Option<Callback<String>>,
@@ -33,7 +33,7 @@ pub struct Dropdown {
 impl Dropdown {
 
     // Create a new instance
-    pub fn new(picker: RenderFn<Callback<String>>) -> Self {
+    pub fn new(picker: RenderFn<Callback<Key>>) -> Self {
         yew::props!{ Self { picker } }
     }
 
@@ -105,7 +105,7 @@ pub enum Msg {
     HidePicker,
     ShowPicker,
     DialogClosed,
-    Select(String),
+    Select(Key),
     Input(String),
 }
 
@@ -189,7 +189,7 @@ impl Component for PwtDropdown {
                 true
             }
             Msg::Select(key) => {
-                self.value = key;
+                self.value = key.to_string();
                 if self.show {
                     self.pending_change = true;
                     yew::Component::update(self, ctx, Msg::HidePicker)
@@ -251,8 +251,8 @@ impl Component for PwtDropdown {
         });
 
         let link = ctx.link().clone();
-        let onselect = Callback::from(move |item: String| {
-            link.send_message(Msg::Select(item));
+        let onselect = Callback::from(move |key: Key| {
+            link.send_message(Msg::Select(key));
         });
 
         let trigger_cls = classes!{

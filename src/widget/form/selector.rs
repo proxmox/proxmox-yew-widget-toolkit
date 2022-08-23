@@ -19,7 +19,7 @@ use pwt_macros::widget;
 pub struct CreatePickerArgs<T> {
     pub list: Rc<Vec<T>>,
     pub selected: Key,
-    pub on_select: Callback<String>,
+    pub on_select: Callback<Key>,
 }
 
 /// Combobox like selector
@@ -371,7 +371,7 @@ impl<T: 'static> Component for PwtSelector<T> {
             let props = props.clone();
             let picker = props.picker.clone();
 
-            move |on_select: &Callback<String>| {
+            move |on_select: &Callback<Key>| {
                 loader.render(|list: Rc<Vec<T>>| {
                     if list.is_empty() {
                         html!{<div class="pwt-p-2">{"List does not contain any items."}</div>}
