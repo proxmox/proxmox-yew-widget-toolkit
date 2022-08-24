@@ -4,8 +4,6 @@ use yew::virtual_dom::VNode;
 
 use super::FieldStdProps;
 
-use crate::state::FieldFormRef;
-
 /// Minimal common form field interface
 pub trait FieldBuilder: Into<VNode> {
     fn as_input_props_mut(&mut self) -> &mut FieldStdProps;
@@ -63,17 +61,6 @@ pub trait FieldBuilder: Into<VNode> {
     /// Method to set the required flag
     fn set_required(&mut self, required: bool) {
         self.as_input_props_mut().required = required;
-    }
-
-    /// Builder style method to set the form reference
-    fn form_ref(mut self, form_ref: FieldFormRef) -> Self {
-        self.set_form_ref(form_ref);
-        self
-    }
-
-    /// Method to set the form reference
-    fn set_form_ref(&mut self, form_ref: FieldFormRef) {
-        self.as_input_props_mut().form_ref = Some(form_ref);
     }
 
     /// Builder style method to set the label_id

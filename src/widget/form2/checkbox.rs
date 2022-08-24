@@ -62,15 +62,19 @@ impl PwtCheckbox {
         }
     }
 
-    fn set_value(&mut self, ctx: &Context<Self>, value: bool                       ) {
-        if self.value == value { return; }
+    fn set_value(&mut self, ctx: &Context<Self>, value: bool) {
+        log::info!("CHECKBOX SET FALUE0 {} {}", self.value, value);
+       if self.value == value { return; }
 
         let props = ctx.props();
 
         self.value = value;
 
         if let Some(form_ctx) = &self.form_ctx {
+            log::info!("CHECKBOX SET FALUE {:?}", value);
             form_ctx.set_value(&props.name, value.into());
+        } else {
+           log::info!("MISING FORM CTX");
         }
 
         if let Some(on_change) = &props.on_change {
@@ -120,12 +124,14 @@ impl Component for PwtCheckbox {
             Msg::FormCtxUpdate(form_ctx) => {
                 self.form_ctx = Some(form_ctx);
                 let value = self.get_value(ctx);
-                if self.value == value { false } else { true }
+                let changed = self.value != value;
+                self.value = value;
+                changed                
             }
             Msg::Toggle => {
-                 if props.input_props.disabled { return false; }
-                 self.set_value(ctx, !self.get_value(ctx));
-                 true
+                if props.input_props.disabled { return false; }
+                self.set_value(ctx, !self.get_value(ctx));
+                true
             }
         }
     }

@@ -15,9 +15,8 @@ use crate::prelude::*;
 use crate::props::{ExtractKeyFn, IntoLoadCallback, LoadCallback, RenderFn};
 use crate::state::Loader;
 use crate::widget::Dropdown;
-use crate::widget::form::ValidateFn;
 
-use super::{FieldOptions, FormContext};
+use super::{FieldOptions, FormContext, ValidateFn};
 
 use pwt_macros::widget;
 
@@ -233,7 +232,6 @@ impl<T: 'static> PwtSelector<T> {
 
     fn update_validator(&mut self, props: &Selector<T>) {
         self.real_validate = self.loader.with_state(|state| {
-            log::info!("UPDATE SELECTOR VALIDATION FUNCTION");
             let data = match &state.data {
                 Some(Ok(list)) => Some(Rc::clone(list)),
                 _ => None,
@@ -262,7 +260,7 @@ impl<T: 'static> PwtSelector<T> {
         }
     }
 
-    fn set_value(&mut self, ctx: &Context<Self>, value: String) {
+    fn set_value(&mut self, ctx: &Context<Self>, value: String, set_default: bool) {
         if self.value == value { return; }
 
         let props = ctx.props();
@@ -270,6 +268,9 @@ impl<T: 'static> PwtSelector<T> {
         self.value = value.clone();
 
         if let Some(form_ctx) = &self.form_ctx {
+            if set_default {
+                form_ctx.set_default(&props.name, value.clone().into());
+            }
             form_ctx.set_value(&props.name, value.into());
         }
 
@@ -363,7 +364,7 @@ impl<T: 'static> Component for PwtSelector<T> {
                         }
 
                         if let Some(default) = default {
-                            self.set_value(ctx, default.to_string().clone());
+                            self.set_value(ctx, default.to_string().clone(), true);
                             return true; // set_value already validates
                         }
                     }
@@ -371,7 +372,7 @@ impl<T: 'static> Component for PwtSelector<T> {
                 true
             }
             Msg::Select(value) => {
-                self.set_value(ctx, value);
+                self.set_value(ctx, value, false);
                 true
             }
         }

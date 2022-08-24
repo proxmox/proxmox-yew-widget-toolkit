@@ -6,13 +6,10 @@ use yew::virtual_dom::{Listeners, VList, VTag};
 use pwt_macros::widget;
 
 use crate::prelude::*;
-use crate::state::FormState;
 
 #[widget(@element, @container)]
 #[derive(Properties, PartialEq, Clone)]
 pub struct InputPanel {
-    form: FormState,
-
     #[prop_or_default]
     pub gap: usize,
 
@@ -30,8 +27,8 @@ pub struct InputPanel {
 
 impl InputPanel {
 
-    pub fn new(form: FormState) -> Self {
-        yew::props!(InputPanel { form })
+    pub fn new() -> Self {
+        yew::props!(Self {})
     }
 
     pub fn gap(mut self, gap: usize) -> Self {
@@ -77,27 +74,24 @@ impl InputPanel {
 
     pub fn with_field(
         mut self,
-        name: impl Into<String>,
         label: impl Into<String>,
         field: impl FieldBuilder,
     ) -> Self {
-        self.add_field(name, false, label, field);
+        self.add_field(false, label, field);
         self
     }
 
     pub fn with_advanced_field(
         mut self,
-        name: impl Into<String>,
         label: impl Into<String>,
         field: impl FieldBuilder,
     ) -> Self {
-        self.add_field(name, true, label, field);
+        self.add_field(true, label, field);
         self
     }
 
     pub fn add_field(
         &mut self,
-        name: impl Into<String>,
         advanced: bool,
         label: impl Into<String>,
         field: impl FieldBuilder,
@@ -118,10 +112,8 @@ impl InputPanel {
                 {label.into()}
             </label>
         });
-        let name = name.into();
-        let field = field
-            .form_ref(self.form.field_ref(&name))
-            .label_id(label_id);
+        
+        let field = field.label_id(label_id);
 
         self.add_child(html!{
             <div {style}>{field.into()}</div>
@@ -130,17 +122,15 @@ impl InputPanel {
 
     pub fn with_right_field(
         mut self,
-        name: impl Into<String>,
         label: impl Into<String>,
         field: impl FieldBuilder,
     ) -> Self {
-        self.add_right_field(name, false, label, field);
+        self.add_right_field(false, label, field);
         self
     }
 
     pub fn add_right_field(
         &mut self,
-        name: impl Into<String>,
         advanced: bool,
         label: impl Into<String>,
         field: impl FieldBuilder,
@@ -161,8 +151,6 @@ impl InputPanel {
                 {label.into()}
             </label>
         });
-        let name = name.into();
-        let field = field.form_ref(self.form.field_ref(&name));
 
         self.add_child(html!{
             <div {style}>{field.into()}</div>
@@ -171,17 +159,15 @@ impl InputPanel {
 
     pub fn with_large_field(
         mut self,
-        name: impl Into<String>,
         label: impl Into<String>,
         field: impl FieldBuilder,
     ) -> Self {
-        self.add_large_field(name, false, label, field);
+        self.add_large_field(false, label, field);
         self
     }
 
     pub fn add_large_field(
         &mut self,
-        name: impl Into<String>,
         advanced: bool,
         label: impl Into<String>,
         field: impl FieldBuilder,
@@ -208,8 +194,8 @@ impl InputPanel {
         self.add_child(html!{
             <label class="pwt-grid-column-1" style={style.clone()}>{label.into()}</label>
         });
-        let name = name.into();
-        let field = field.form_ref(self.form.field_ref(&name));
+
+        // fixme: label_id?
         self.add_child(html!{
             <div class="pwt-fill-grid-row" {style}>{field.into()}</div>
         });

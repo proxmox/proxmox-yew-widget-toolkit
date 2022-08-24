@@ -1,5 +1,5 @@
 mod form_context;
-pub use form_context::{FieldOptions, FormContext};
+pub use form_context::{delete_empty_values, FieldOptions, FormContext};
 
 mod field;
 pub use field::Field;
@@ -23,7 +23,7 @@ mod combobox;
 pub use combobox::{Combobox, PwtCombobox};
 
 mod selector;
-pub use selector::{Selector, PwtSelector};
+pub use selector::{CreatePickerArgs, Selector, PwtSelector};
 
 use std::rc::Rc;
 
@@ -74,12 +74,7 @@ impl Component for PwtForm {
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
         let content = props.renderer.apply(&self.form_ctx);
-
-        html!{
-            <ContextProvider<FormContext> context={self.form_ctx.clone()}>
-                <form novalidate=true>{content}</form>
-            </ContextProvider<FormContext>>
-        }
+        form_context_provider(self.form_ctx.clone(), content)
     }
 }
 
@@ -87,5 +82,13 @@ impl Into<VNode> for Form {
     fn into(self) -> VNode {
         let comp = VComp::new::<PwtForm>(Rc::new(self), None);
         VNode::from(comp)
+    }
+}
+
+pub fn form_context_provider(form_ctx: FormContext, content: impl Into<VNode>) -> Html {
+    html!{
+        <ContextProvider<FormContext> context={form_ctx}>
+            <form novalidate=true>{content}</form>
+        </ContextProvider<FormContext>>
     }
 }

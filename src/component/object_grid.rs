@@ -11,8 +11,9 @@ use crate::props::{
     LoadCallback, IntoLoadCallback, SubmitCallback, IntoSubmitCallback,
     RenderItemFn,
 };
-use crate::state::{FormState, Loader};
+use crate::state::Loader;
 use crate::widget::{Button, Toolbar};
+use crate::widget::form2::FormContext;
 use crate::component::{EditWindow, KVGrid, KVGridRow};
 
 #[derive(Clone, PartialEq)]
@@ -59,7 +60,7 @@ impl ObjectGridRow {
 
     pub fn editor(
         mut self,
-        editor: impl 'static + Fn(&FormState, &str, &Value, &Value) -> Html,
+        editor: impl 'static + Fn(&FormContext, &str, &Value, &Value) -> Html,
     ) -> Self {
         self.editor = Some(RenderItemFn::new(editor));
         self

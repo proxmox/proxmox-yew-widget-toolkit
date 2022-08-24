@@ -11,7 +11,7 @@ use yew::virtual_dom::{Key, VNode};
 use crate::prelude::*;
 use crate::props::{WidgetStdProps, FieldStdProps, RenderFn};
 use crate::widget::Tooltip;
-use crate::widget::form::Input;
+use crate::widget::form2::Input;
 
 use pwt_macros::widget;
 

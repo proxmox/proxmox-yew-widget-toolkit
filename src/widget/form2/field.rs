@@ -9,9 +9,8 @@ use proxmox_schema::Schema;
 
 use crate::prelude::*;
 use crate::widget::Tooltip;
-use crate::widget::form::{Input, ValidateFn};
 
-use super::{FormContext, FieldOptions};
+use super::{FormContext, FieldOptions, Input, ValidateFn};
 
 use pwt_macros::widget;
 
@@ -237,7 +236,6 @@ impl Component for PwtField {
         let real_validate = create_field_validation_cb(props.clone());
         
         if let Some((form, handle)) = ctx.link().context::<FormContext>(on_form_ctx_change) {
-            log::info!("INIT CTX {:?}", form);
             form.register_field(
                 &props.name,
                 value.clone().into(),
@@ -262,7 +260,6 @@ impl Component for PwtField {
         let props = ctx.props();
         match msg {
             Msg::FormCtxUpdate(form_ctx) => {
-                log::info!("FormCtxUpdate");
                 let value = form_ctx.get_field_text(&props.name);
                 self.form_ctx = Some(form_ctx);
                 if self.value == value { return false; }
@@ -271,7 +268,6 @@ impl Component for PwtField {
             }
             Msg::Update(value) => {
                 if props.input_props.disabled { return true; }
-                log::info!("UPDATE {}", value);
                 self.set_value(ctx, value);
                 true
             }

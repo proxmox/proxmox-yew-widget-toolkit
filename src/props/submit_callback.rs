@@ -5,25 +5,25 @@ use std::pin::Pin;
 use anyhow::Error;
 use serde_json::Value;
 
-use crate::state::FormState;
+use crate::widget::form2::FormContext;
 
-pub struct SubmitCallback(Rc<dyn Fn(FormState) -> Pin<Box<dyn Future<Output=Result<Value, Error>>>>>);
+pub struct SubmitCallback(Rc<dyn Fn(FormContext) -> Pin<Box<dyn Future<Output=Result<Value, Error>>>>>);
 
 impl SubmitCallback {
 
     pub fn new<F, R>(callback: F) -> Self
     where
-        F: 'static + Fn(FormState) -> R,
+        F: 'static + Fn(FormContext) -> R,
         R: 'static + Future<Output = Result<Value, Error>>,
     {
-        Self(Rc::new(move |state: FormState| {
+        Self(Rc::new(move |state: FormContext| {
             let future = callback(state);
             Box::pin(future)
         }))
     }
 
-    pub async fn apply(&self, form_state: FormState) -> Result<Value, Error> {
-        (self.0)(form_state).await
+    pub async fn apply(&self, form_ctx: FormContext) -> Result<Value, Error> {
+        (self.0)(form_ctx).await
     }
 }
 
@@ -51,7 +51,7 @@ impl IntoSubmitCallback for Option<SubmitCallback> {
 
 impl<F, R> IntoSubmitCallback for F
 where
-    F: 'static + Fn(FormState) -> R,
+    F: 'static + Fn(FormContext) -> R,
     R: 'static + Future<Output = Result<Value, Error>>
 {
     fn into_submit_callback(self) -> Option<SubmitCallback> {

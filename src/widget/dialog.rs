@@ -45,8 +45,27 @@ impl Dialog {
         self
     }
 
-    pub fn with_child(mut self, child: impl Into<Html>) -> Self {
+    pub fn with_child(mut self, child: impl Into<VNode>) -> Self {
+        self.add_child(child);
+        self
+    }
+    
+    pub fn add_child(&mut self, child: impl Into<VNode>) {
         self.children.push(child.into());
+    }
+    
+    pub fn with_optional_child(
+        mut self,
+        child: Option<impl Into<VNode>>,
+    ) -> Self {
+        if let Some(child) = child {
+            self.add_child(child);
+        } else {
+            // important for VDOM diff
+            // self.add_child(html!{}); // this can still change child order,
+            // so we add a real DOM element for now
+            self.add_child(html!{<div class="pwt-d-none"/>});
+        }
         self
     }
 

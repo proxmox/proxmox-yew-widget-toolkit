@@ -1,13 +1,9 @@
-use serde_json::Value;
 use indexmap::IndexMap;
 
 use yew::prelude::*;
 
-use crate::state::{FieldFormRef, FieldOptions};
-
 #[derive(PartialEq, Clone, Properties)]
 pub struct FieldStdProps {
-    pub form_ref: Option<FieldFormRef>,
     pub label_id: Option<AttrValue>,
 
     pub tabindex: Option<i32>,
@@ -66,15 +62,6 @@ impl FieldStdProps {
 
         if let Some(ref placeholder) = self.placeholder {
             attr_map.insert(AttrValue::Static("placeholder"), placeholder.clone());
-        }
-    }
-
-    pub fn register_form_field(&self, value: Value, valid: Result<(), String>) {
-        if let Some(form_ref) = &self.form_ref {
-            let mut options = FieldOptions::new();
-            options.submit = self.submit;
-            options.submit_empty = self.submit_empty;
-            form_ref.register_field(value, valid, options);
         }
     }
 }

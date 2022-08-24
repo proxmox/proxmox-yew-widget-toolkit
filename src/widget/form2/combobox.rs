@@ -13,9 +13,8 @@ use crate::prelude::*;
 //use crate::props::{FieldStdProps, RenderFn};
 use crate::props::RenderFn;
 use crate::widget::{DataTableColumn, Dropdown, GridPicker};
-use crate::widget::form::ValidateFn;
 
-use super::{FieldOptions, FormContext};
+use super::{FieldOptions, FormContext, ValidateFn};
 
 use pwt_macros::widget;
 

@@ -3,7 +3,7 @@ use serde_json::Value;
 
 use yew::Html;
 
-use crate::state::FormState;
+use crate::widget::form2::FormContext;
 
 /// Wraps `Rc` around `Fn` so it can be passed as a prop.
 pub struct RenderFn<T>(Rc<dyn Fn(&T) -> Html>);
@@ -67,15 +67,15 @@ impl PartialEq for RenderRecordFn {
 
 
 /// For use with ObjectGrid
-pub struct RenderItemFn(Rc<dyn Fn(&FormState, &str, &Value, &Value) -> Html>);
+pub struct RenderItemFn(Rc<dyn Fn(&FormContext, &str, &Value, &Value) -> Html>);
 
 impl RenderItemFn {
     /// Creates a new [`RenderFn`]
-    pub fn new(renderer: impl 'static + Fn(&FormState, &str, &Value, &Value) -> Html) -> Self {
+    pub fn new(renderer: impl 'static + Fn(&FormContext, &str, &Value, &Value) -> Html) -> Self {
         Self(Rc::new(renderer))
     }
     /// Apply the render function
-    pub fn apply(&self, form_state: &FormState, name: &str, value: &Value, record: &Value) -> Html {
+    pub fn apply(&self, form_state: &FormContext, name: &str, value: &Value, record: &Value) -> Html {
         (self.0)(form_state, name, value, record)
     }
 }

@@ -9,7 +9,7 @@ use yew::prelude::*;
 use yew::html::IntoPropValue;
 
 use crate::props::FieldStdProps;
-use crate::widget::form::ValidateFn;
+use super::ValidateFn;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct FieldOptions {
@@ -60,6 +60,7 @@ pub struct FormContextInner {
     change_trackers: HashMap<AttrValue, HashSet<AttrValue>>,
     field_state: HashMap<AttrValue, FieldState>,
     loaded: bool,
+    show_advanced: bool,
 }
 
 impl FormContextInner {
@@ -68,6 +69,7 @@ impl FormContextInner {
             change_trackers: HashMap::new(),
             field_state: HashMap::new(),
             loaded: false,
+            show_advanced: false,
         }
     }
 
@@ -98,6 +100,21 @@ impl FormContext {
             inner: Rc::new(RefCell::new(FormContextInner::new())),
             on_change,
             ctr: 0,
+        }
+    }
+
+    /// Returns the show_advanced flag
+    pub fn show_advanced(&self) -> bool {
+        self.inner.borrow().show_advanced
+    }
+
+    /// Set the show_advanced flag
+    pub fn set_show_advanced(&self, show_advanced: bool) {
+        let mut form = self.inner.borrow_mut();
+
+        if form.show_advanced != show_advanced {
+            form.show_advanced = show_advanced;
+            self.on_change.emit(());
         }
     }
 
@@ -213,7 +230,24 @@ impl FormContext {
 
         self.validate_field(&name);
     }
+    
+    /// Set the field default value (see reset)
+    pub fn set_default(
+        &self,
+        name: impl IntoPropValue<AttrValue>,
+        value: Value,
+    ) {
+        let name = name.into_prop_value();
+        self.with_field_state_mut(&name, move |state| {
+            state.initial_value = value;
+        });
+    }
 
+    /// Clear a field (set to Value::Null)
+    pub fn clear_field(&self, name: impl IntoPropValue<AttrValue>) {
+        self.set_value(name, Value::Null);
+    }
+    
     /// Set a field validation callback.
     ///
     /// This automatically re-validates the field value.
@@ -267,8 +301,6 @@ impl FormContext {
                     field.value = field.initial_value.clone();
                     field.valid = field.initial_valid.clone();
                     changes.insert(name.clone());
-                    //field.version += 1;
-                    //field.changed = true;
                 }
             }
         }
@@ -291,9 +323,7 @@ impl FormContext {
                field.value = field.initial_value.clone();
                field.valid = field.initial_valid.clone();
                changes = true;
-               //field.version += 1;
-               //field.changed = true;
-            }
+           }
         }
         if changes {
             form.set_field_changed(&name);
@@ -318,7 +348,11 @@ impl FormContext {
     pub fn load_form(&self, data: Value) {
         let mut form = self.inner.borrow_mut();
         for (name, field) in form.field_state.iter_mut() {
-            field.initial_value = data[name.deref()].clone();
+            let value = match data.get(name.deref()) {
+                None => continue,
+                Some(value) => value.clone(),
+            };
+            field.initial_value = value;
             field.initial_valid = if let Some(validate) = &field.validate {
                 validate.validate(&field.initial_value)
                     .map_err(|e| e.to_string())
@@ -327,8 +361,6 @@ impl FormContext {
             };
             field.value = field.initial_value.clone();
             field.valid = field.initial_valid.clone();
-            //field.version += 1;
-            //field.changed = false;
         }
         form.loaded = true;
         form.clear_change_trackers();
@@ -413,4 +445,33 @@ impl FormContext {
         }
     }
 
+}
+
+// Propxmox API related helpers
+
+pub fn delete_empty_values(record: &Value, param_list: &[&str]) -> Value {
+    let mut new = json!({});
+    let mut delete: Vec<String> = Vec::new();
+
+    for (param, v) in record.as_object().unwrap().iter() {
+        if !param_list.contains(&param.as_str()) {
+            new[param] = v.clone();
+            continue;
+        }
+        if v.is_null() || (v.is_string() && v.as_str().unwrap().is_empty()) {
+            delete.push(param.to_string());
+        } else {
+            new[param] = v.clone();
+        }
+    }
+
+    for param in param_list {
+        if record.get(param).is_none() {
+            delete.push(param.to_string());
+        }
+    }
+
+    new["delete"] = delete.into();
+
+    new
 }

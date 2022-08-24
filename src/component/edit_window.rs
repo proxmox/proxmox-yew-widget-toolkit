@@ -12,9 +12,8 @@ use crate::props::{
     LoadCallback, IntoLoadCallback, SubmitCallback, IntoSubmitCallback,
     RenderFn,
 };
-use crate::state::FormState;
-use crate::widget::{Dialog, Mask, Row, Toolbar};
-use crate::widget::form::{Checkbox, Submit, Reset};
+use crate::widget::{Column, Dialog, Mask, Row, Toolbar};
+use crate::widget::form2::{form_context_provider, Checkbox, FormContext, Submit, Reset};
 use crate::component::AlertDialog;
 
 #[derive(Clone, PartialEq, Properties)]
@@ -30,7 +29,7 @@ pub struct EditWindow {
     pub advanced_checkbox: bool,
 
 
-    pub renderer: Option<RenderFn<FormState>>,
+    pub renderer: Option<RenderFn<FormContext>>,
     pub loader: Option<LoadCallback<Value>>,
     pub ondone: Option<Callback<()>>,
     pub onsubmit: Option<SubmitCallback>,
@@ -65,7 +64,7 @@ impl EditWindow {
         self
     }
 
-    pub fn renderer(mut self, renderer: impl 'static + Fn(&FormState) -> Html) -> Self {
+    pub fn renderer(mut self, renderer: impl 'static + Fn(&FormContext) -> Html) -> Self {
         self.renderer = Some(RenderFn::new(renderer));
         self
     }
@@ -101,7 +100,7 @@ pub enum Msg {
 
 pub struct PbsEditWindow {
     loading: bool,
-    form_state: FormState,
+    form_ctx: FormContext,
     submit_error: Option<String>,
 }
 
@@ -111,9 +110,8 @@ impl Component for PbsEditWindow {
 
     fn create(ctx: &Context<Self>) -> Self {
         ctx.link().send_message(Msg::Load);
-        let form_change = ctx.link().callback(|_| Msg::FormChange);
         Self {
-            form_state: FormState::new(form_change),
+            form_ctx: FormContext::new(ctx.link().callback(|()| Msg::FormChange)),
             loading: false,
             submit_error: None,
         }
@@ -142,36 +140,23 @@ impl Component for PbsEditWindow {
                 match result {
                     Err(err) => log::error!("Load error: {}", err),
                     Ok(value) => {
-                        self.form_state.load_form(value);
+                        self.form_ctx.load_form(value);
                     }
                 }
                 true
             }
             Msg::FormChange => {
+                self.form_ctx.context_change_trigger();
                 self.submit_error = None;
-
-                let password = self.form_state.get_field_value("password");
-                let confirm = self.form_state.get_field_value("confirm-password");
-
-                let valid = if password == confirm {
-                    Ok(())
-                } else {
-                    Err("Password does not match!".into())
-                };
-
-                self.form_state.with_field_state_mut("confirm-password", move |state| {
-                    state.valid = valid.clone();
-                });
-
                 true
             }
             Msg::Submit => {
                 if let Some(onsubmit) = props.onsubmit.clone() {
                     let link = ctx.link().clone();
-                    let state = self.form_state.clone();
+                    let form_ctx = self.form_ctx.clone();
                     self.loading = true;
                     wasm_bindgen_futures::spawn_local(async move {
-                        let result = onsubmit.apply(state).await;
+                        let result = onsubmit.apply(form_ctx).await;
                         link.send_message(Msg::SubmitResult(result));
                     });
                 }
@@ -202,10 +187,6 @@ impl Component for PbsEditWindow {
         let submit = ctx.link().callback(|_| Msg::Submit);
 
         let edit_mode = props.is_edit();
-        let form = match &props.renderer {
-            Some(renderer) => renderer.apply(&self.form_state),
-            None => html!{},
-        };
 
         let mut toolbar = Toolbar::new()
             .class("pwt-border-top emphased")
@@ -213,14 +194,13 @@ impl Component for PbsEditWindow {
 
         if props.advanced_checkbox {
             let advanced_label_id = crate::widget::get_unique_element_id();
-            let advanced_field = Checkbox::new()
+            let advanced_field = Checkbox::new("__show_advanced__")
                 .class("pwt-ms-1")
                 .label_id(advanced_label_id.clone())
                 .on_change({
-                    let form_state = self.form_state.clone();
+                    let form_ctx = self.form_ctx.clone();
                     move |show| {
-                        log::info!("ADV {}", show);
-                        form_state.set_show_advanced(show);
+                        form_ctx.set_show_advanced(show);
                     }
                 });
 
@@ -232,14 +212,28 @@ impl Component for PbsEditWindow {
             toolbar.add_child(advanced);
         }
 
-        toolbar.add_child(Reset::new().form(&self.form_state));
+        toolbar.add_child(Reset::new());
         toolbar.add_child(
             Submit::new()
                 .text(if edit_mode { "Update" } else { "Add" })
-                .form(&self.form_state)
-                .disabled(!self.form_state.dirty())
-                .onsubmit(submit)
+                .on_submit(submit)
         );
+
+        let renderer = props.renderer.clone();
+        let loading = self.loading;
+
+        let form = match &renderer {
+            Some(renderer) => renderer.apply(&self.form_ctx),
+            None => html!{},
+        };
+
+        let input_panel = Mask::new()
+            .visible(loading)
+            .with_child(
+                Column::new()
+                    .with_child(form)
+                    .with_child(toolbar.clone())
+            );
 
         let alert = match self.submit_error.as_ref() {
             None => None,
@@ -249,17 +243,11 @@ impl Component for PbsEditWindow {
             ),
         };
 
-        let panel = Mask::new()
-            .form_wrapper(true)
-            .visible(self.loading)
-            .with_child(form)
-            .with_optional_child(alert)
-            .with_child(toolbar);
-
         Dialog::new(props.title.clone())
             .node_ref(props.node_ref.clone())
             .onclose(props.ondone.clone())
-            .with_child(panel)
+            .with_child(form_context_provider(self.form_ctx.clone(), input_panel))
+            .with_optional_child(alert)
             .into()
     }
 }
