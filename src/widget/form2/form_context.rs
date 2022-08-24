@@ -230,7 +230,7 @@ impl FormContext {
 
         self.validate_field(&name);
     }
-    
+
     /// Set the field default value (see reset)
     pub fn set_default(
         &self,
@@ -247,7 +247,7 @@ impl FormContext {
     pub fn clear_field(&self, name: impl IntoPropValue<AttrValue>) {
         self.set_value(name, Value::Null);
     }
-    
+
     /// Set a field validation callback.
     ///
     /// This automatically re-validates the field value.
