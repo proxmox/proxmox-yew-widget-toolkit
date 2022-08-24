@@ -12,7 +12,7 @@ use crate::props::{
     LoadCallback, IntoLoadCallback, SubmitCallback, IntoSubmitCallback,
     RenderFn,
 };
-use crate::widget::{Column, Dialog, Mask, Row, Toolbar};
+use crate::widget::{Column, Dialog, Mask, Row};
 use crate::widget::form2::{form_context_provider, Checkbox, FormContext, Submit, Reset};
 use crate::component::AlertDialog;
 
@@ -188,8 +188,10 @@ impl Component for PbsEditWindow {
 
         let edit_mode = props.is_edit();
 
-        let mut toolbar = Toolbar::new()
-            .class("pwt-border-top emphased")
+        let mut toolbar = Row::new()
+            .padding(2)
+            .gap(2)
+            .class("pwt-border-top pwt-bg-color-neutral-emphased")
             .with_flex_spacer();
 
         if props.advanced_checkbox {
