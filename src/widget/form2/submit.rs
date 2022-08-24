@@ -120,7 +120,7 @@ impl Component for PwtSubmit {
 
         html!{
             <button
-                type="button" // Note: important, as we do not want type=submit behavior
+                type="submit"
                 onclick={submit}
                 class="pwt-button primary"
                 disabled={!self.form_valid || props.disabled}>{&props.text}
