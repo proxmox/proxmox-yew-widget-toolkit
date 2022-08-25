@@ -73,6 +73,17 @@
 //!
 //! Components are more complex widget???
 
+//! ## Router
+//!
+//! [Yew](https://yew.rs) provides a framework to implement
+//! [routers](https://yew.rs/docs/concepts/router). To simplify that
+//! further, some widgets can be turned into an
+//! [state::NavigationContainer] which support fully automatic
+//! routing. Please note that navigation container can be nested.
+//!
+//! - [widget::TabPanel::navigation_container]
+//! - [component::NavigationMenu::navigation_container]
+
 pub mod props;
 pub mod state;
 pub mod widget;
