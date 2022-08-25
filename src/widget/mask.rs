@@ -20,7 +20,7 @@ pub struct Mask {
     #[prop_or_default]
     pub children: Vec<VNode>,
     #[prop_or_default]
-    pub text: String,
+    pub text: AttrValue,
 }
 
 impl Mask {
@@ -56,9 +56,13 @@ impl Mask {
         self
     }
 
-    pub fn text(mut self, text: impl Into<String>) -> Self {
-        self.text = text.into();
+    pub fn text(mut self, text: impl IntoPropValue<AttrValue>) -> Self {
+        self.set_text(text);
         self
+    }
+
+    pub fn set_text(&mut self, text: impl IntoPropValue<AttrValue>) {
+        self.text = text.into_prop_value();
     }
 
     pub fn with_child(mut self, child: impl Into<VNode>) -> Self {
