@@ -23,6 +23,21 @@
 //! ```
 //! All builder implements `Into<Html>`.
 //!
+
+//! ## Callbacks
+//!
+//! Widgets with corresponding HTML element implements
+//! [props::EventSubscriber], which provides builder functions most
+//! HTML event. By convention, JavaScript objects that fire events
+//! have a corresponding "onevent" properties (named by prefixing "on"
+//! to the name of the event). We use the same naming convention for
+//! this kink of events.
+//!
+//! Some components compute there own custom events. The naming
+//! convention for those events is "on_event" (please note the
+//! underscore after "on") to distinguish custom events from HTML
+//! element events.
+
 //! ## Widget Overview
 //!
 //! ### Layout widgets
@@ -60,11 +75,9 @@
 //! - [widget::form::Field]: Wrapper around standard HTML fields.
 //! - [widget::form::Selector]: Select value from a picker widget.
 //!
-//! There are also special buttons for reset and submit.
-//!
-//! - [widget::form::Reset]:
-//! - [widget::form::Submit]:
-//!
+//! There are also special buttons for [reset](widget::form::Reset)
+//! and [submit](widget::form::Submit).
+
 
 //! ### Buttons
 //!
