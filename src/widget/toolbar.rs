@@ -37,6 +37,7 @@ impl Toolbar {
     }
 }
 
+#[doc(hidden)]
 pub struct PwtToolbar {
     inner_ref: NodeRef,
 }

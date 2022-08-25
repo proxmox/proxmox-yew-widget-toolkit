@@ -168,6 +168,7 @@ pub enum Msg {
     MenuOpen(Key),
 }
 
+#[doc(hidden)]
 pub struct PwtNavigationMenu {
     active: Option<Key>,
     menu_states: HashMap<Key, bool>, // true = open

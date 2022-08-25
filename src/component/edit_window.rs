@@ -98,13 +98,14 @@ pub enum Msg {
     ClearError,
 }
 
-pub struct PbsEditWindow {
+#[doc(hidden)]
+pub struct PwtEditWindow {
     loading: bool,
     form_ctx: FormContext,
     submit_error: Option<String>,
 }
 
-impl Component for PbsEditWindow {
+impl Component for PwtEditWindow {
     type Message = Msg;
     type Properties = EditWindow;
 
@@ -257,7 +258,7 @@ impl Component for PbsEditWindow {
 impl Into<VNode> for EditWindow {
     fn into(self) -> VNode {
         let key = self.key.clone();
-        let comp = VComp::new::<PbsEditWindow>(Rc::new(self), key);
+        let comp = VComp::new::<PwtEditWindow>(Rc::new(self), key);
         VNode::from(comp)
     }
 }

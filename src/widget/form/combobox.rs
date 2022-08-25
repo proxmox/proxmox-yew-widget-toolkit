@@ -135,6 +135,7 @@ pub enum Msg {
     FormCtxUpdate(FormContext),
 }
 
+#[doc(hidden)]
 pub struct PwtCombobox {
     value: String,
 

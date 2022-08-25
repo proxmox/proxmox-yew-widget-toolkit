@@ -109,6 +109,7 @@ pub enum Msg {
     Input(String),
 }
 
+#[doc(hidden)]
 pub struct PwtDropdown {
     show: bool,
     last_show: bool, // track changes

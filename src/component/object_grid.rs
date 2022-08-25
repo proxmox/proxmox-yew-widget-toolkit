@@ -150,6 +150,7 @@ impl ObjectGrid {
     }
 }
 
+#[doc(hidden)]
 pub struct PwtObjectGrid {
     loader: Loader<Value>,
     selection: Option<Key>,

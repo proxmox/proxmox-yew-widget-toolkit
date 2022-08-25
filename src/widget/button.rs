@@ -50,6 +50,7 @@ impl Button {
     }
 }
 
+#[doc(hidden)]
 pub struct PwtButton;
 
 impl Component for PwtButton {

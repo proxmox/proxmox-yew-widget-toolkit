@@ -71,6 +71,7 @@ pub enum Msg {
     Close,
 }
 
+#[doc(hidden)]
 pub struct PwtDialog {
     open: bool,
     last_active: Option<web_sys::HtmlElement>, // last focused element

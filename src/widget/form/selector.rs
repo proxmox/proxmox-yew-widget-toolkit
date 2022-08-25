@@ -181,6 +181,7 @@ pub enum Msg {
     UpdateList,
 }
 
+#[doc(hidden)]
 pub struct PwtSelector<T> {
     loader: Loader<Vec<T>>,
     last_loader: Option<LoadCallback<Vec<T>>>, //change tracking

@@ -53,6 +53,7 @@ pub enum Msg {
     FormCtxUpdate(FormContext),
 }
 
+#[doc(hidden)]
 pub struct PwtSubmit {
     form_valid: bool,
     form_ctx: Option<FormContext>,

@@ -44,10 +44,12 @@ impl Form {
     }
 }
 
+#[doc(hidden)]
 pub enum Msg {
     Update,
 }
 
+#[doc(hidden)]
 pub struct PwtForm {
     form_ctx: FormContext,
 }

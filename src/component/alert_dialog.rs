@@ -69,6 +69,7 @@ pub fn display_load_result<T>(result: &Option<Result<T, Error>>, render: impl Fn
 }
 
 #[function_component(PwtAlertDialog)]
+#[doc(hidden)]
 pub fn pwt_alert_dialog(props: &AlertDialog) -> Html {
     let onclick = Callback::from({
         let onclose = props.onclose.clone();

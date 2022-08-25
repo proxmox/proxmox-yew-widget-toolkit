@@ -81,6 +81,7 @@ impl Mask {
     }
 }
 
+#[doc(hidden)]
 pub struct PwtMask {
     last_visible: bool, //change tracking
     last_active: Option<web_sys::HtmlElement>, // last focused element

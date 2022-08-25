@@ -236,6 +236,7 @@ impl <T> PartialEq for DataTable<T> {
     }
 }
 
+#[doc(hidden)]
 pub struct PwtDataTable<T> {
     viewport_height: i32,
     scroll_top: i32,

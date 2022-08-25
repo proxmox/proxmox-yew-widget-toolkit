@@ -46,6 +46,7 @@ pub enum Msg {
     FormCtxUpdate(FormContext),
 }
 
+#[doc(hidden)]
 pub struct PwtCheckbox {
     value: bool,
     form_ctx: Option<FormContext>,

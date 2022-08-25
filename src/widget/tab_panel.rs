@@ -165,6 +165,7 @@ pub enum Msg {
     Select(Option<Key>),
 }
 
+#[doc(hidden)]
 pub struct PwtTabPanel {
     active: Option<Key>,
     render_set: HashSet<Key>,

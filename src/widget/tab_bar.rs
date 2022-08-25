@@ -121,6 +121,7 @@ pub enum Msg {
     Select(Key, bool),
 }
 
+#[doc(hidden)]
 pub struct PwtTabBar {
     active: Option<Key>,
     _nav_ctx_handle: Option<ContextHandle<NavigationContext>>,

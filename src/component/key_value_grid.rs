@@ -156,6 +156,7 @@ impl KVGrid {
     }
 }
 
+#[doc(hidden)]
 pub struct PwtKVGrid {
     inner_ref: NodeRef,
     selection: Option<Key>,

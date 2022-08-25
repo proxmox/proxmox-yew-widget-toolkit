@@ -40,6 +40,7 @@ pub enum Msg {
     FormCtxUpdate(FormContext),
 }
 
+#[doc(hidden)]
 pub struct PwtReset {
     form_dirty: bool,
     form_ctx: Option<FormContext>,

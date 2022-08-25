@@ -49,6 +49,7 @@ pub enum Msg {
     Hide,
 }
 
+#[doc(hidden)]
 pub struct PwtTooltip {
     content_ref: NodeRef,
     tooltip_ref: NodeRef,

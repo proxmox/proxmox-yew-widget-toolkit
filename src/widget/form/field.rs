@@ -124,6 +124,7 @@ impl Field {
     }
 }
 
+#[doc(hidden)]
 pub struct PwtField {
     value: String,
 

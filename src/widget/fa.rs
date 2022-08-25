@@ -41,6 +41,7 @@ impl Fa {
 }
 
 #[function_component(PwtFa)]
+#[doc(hidden)]
 pub fn pwt_fa(props: &Fa) -> Html {
 
     html!{
