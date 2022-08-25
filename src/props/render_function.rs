@@ -3,7 +3,7 @@ use serde_json::Value;
 
 use yew::Html;
 
-use crate::widget::form2::FormContext;
+use crate::widget::form::FormContext;
 
 /// Wraps `Rc` around `Fn` so it can be passed as a prop.
 pub struct RenderFn<T>(Rc<dyn Fn(&T) -> Html>);

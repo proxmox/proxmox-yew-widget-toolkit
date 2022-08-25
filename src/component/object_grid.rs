@@ -13,7 +13,7 @@ use crate::props::{
 };
 use crate::state::Loader;
 use crate::widget::{Button, Toolbar};
-use crate::widget::form2::FormContext;
+use crate::widget::form::FormContext;
 use crate::component::{EditWindow, KVGrid, KVGridRow};
 
 #[derive(Clone, PartialEq)]

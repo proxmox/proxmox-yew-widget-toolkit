@@ -5,7 +5,7 @@ use std::pin::Pin;
 use anyhow::Error;
 use serde_json::Value;
 
-use crate::widget::form2::FormContext;
+use crate::widget::form::FormContext;
 
 pub struct SubmitCallback(Rc<dyn Fn(FormContext) -> Pin<Box<dyn Future<Output=Result<Value, Error>>>>>);
 

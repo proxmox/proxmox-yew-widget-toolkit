@@ -13,7 +13,7 @@ use crate::props::{
     RenderFn,
 };
 use crate::widget::{Column, Dialog, Mask, Row};
-use crate::widget::form2::{form_context_provider, Checkbox, FormContext, Submit, Reset};
+use crate::widget::form::{form_context_provider, Checkbox, FormContext, Submit, Reset};
 use crate::component::AlertDialog;
 
 #[derive(Clone, PartialEq, Properties)]

@@ -57,8 +57,7 @@ pub use fa::{Fa, PwtFa};
 
 pub mod focus;
 
-//pub mod form;
-pub mod form2;
+pub mod form;
 
 mod input_panel;
 pub use input_panel::InputPanel;

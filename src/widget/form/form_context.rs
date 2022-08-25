@@ -45,7 +45,7 @@ pub struct FieldState {
 
 /// Form Context
 ///
-/// This struct is used by form like widgets ([crate::widget::form2::Form],
+/// This struct is used by form like widgets ([crate::widget::form::Form],
 /// [crate::component::EditWindow]) to provide a shared state for all
 /// input widgets.
 #[derive(Clone, Debug, PartialEq)]
