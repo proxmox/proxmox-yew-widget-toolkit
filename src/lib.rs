@@ -36,12 +36,39 @@
 //! - [widget::Toolbar]: Horizontal container for buttons.
 //! - [widget::VirtualScroll]: Container with virtual scrolling support.
 //!
+
 //! ### Modal Dialogs
 //!
 //! ### Forms and Fields
 //!
+//! All form fields support a set of common
+//! [properties](props::FieldStdProps), which can be set using the
+//! associated [builder](props::FieldBuilder) functions. All fields
+//! can store there state inside a shared
+//! [context](widget::form::FormContext), which allow the
+//! implementation of complex field interactions.
+//!
+//! The form context is automatically provided when putting the fields
+//! inside a [widget::form::Form] or [component::EditWindow]. Custom
+//! components can provide a form context using
+//! [widget::form::form_context_provider].
+//!
+//! The following field types are available.
+//!
+//! - [widget::form::Checkbox]: Checkbox field
+//! - [widget::form::Combobox]: Select value from a list of options.
+//! - [widget::form::Field]: Wrapper around standard HTML fields.
+//! - [widget::form::Selector]: Select value from a picker widget.
+//!
+//! There are also special buttons for reset and submit.
+//!
+//! - [widget::form::Reset]:
+//! - [widget::form::Submit]:
+//!
+
 //! ### Buttons
 //!
+
 //! ## Components Overview
 //!
 //! Components are more complex widget???
