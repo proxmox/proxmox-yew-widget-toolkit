@@ -4,7 +4,7 @@ use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 
 use crate::prelude::*;
-use crate::theme::Theme;
+use crate::state::Theme;
 use crate::widget::Button;
 
 #[derive(Clone, PartialEq, Properties)]

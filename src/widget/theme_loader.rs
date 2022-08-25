@@ -3,6 +3,8 @@ use std::rc::Rc;
 use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 
+use crate::state::Theme;
+
 #[derive(Properties, Clone, PartialEq)]
 pub struct ThemeLoader {
     body: VNode,
@@ -28,7 +30,7 @@ impl Component for PwtThemeLoader {
 
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
-        let default_css = crate::theme::Theme::default().get_css_filename();
+        let default_css = Theme::default().get_css_filename();
         html! {
             <>
                 <link id="__pwt-theme-loader__" href={ default_css } rel="stylesheet"/>
