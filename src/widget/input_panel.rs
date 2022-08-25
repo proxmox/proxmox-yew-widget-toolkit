@@ -2,6 +2,7 @@ use std::borrow::Cow;
 
 use yew::prelude::*;
 use yew::virtual_dom::{Listeners, VList, VTag};
+use yew::html::IntoPropValue;
 
 use pwt_macros::widget;
 
@@ -74,7 +75,7 @@ impl InputPanel {
 
     pub fn with_field(
         mut self,
-        label: impl Into<String>,
+        label: impl IntoPropValue<AttrValue>,
         field: impl FieldBuilder,
     ) -> Self {
         self.add_field(false, label, field);
@@ -83,7 +84,7 @@ impl InputPanel {
 
     pub fn with_advanced_field(
         mut self,
-        label: impl Into<String>,
+        label: impl IntoPropValue<AttrValue>,
         field: impl FieldBuilder,
     ) -> Self {
         self.add_field(true, label, field);
@@ -93,7 +94,7 @@ impl InputPanel {
     pub fn add_field(
         &mut self,
         advanced: bool,
-        label: impl Into<String>,
+        label: impl IntoPropValue<AttrValue>,
         field: impl FieldBuilder,
     ) {
         self.left_count += 1;
@@ -109,7 +110,7 @@ impl InputPanel {
         let label_id = crate::widget::get_unique_element_id();
         self.add_child(html!{
             <label id={label_id.clone()} class="pwt-grid-column-1" style={style.clone()}>
-                {label.into()}
+                {label.into_prop_value()}
             </label>
         });
         
@@ -122,7 +123,7 @@ impl InputPanel {
 
     pub fn with_right_field(
         mut self,
-        label: impl Into<String>,
+        label: impl IntoPropValue<AttrValue>,
         field: impl FieldBuilder,
     ) -> Self {
         self.add_right_field(false, label, field);
@@ -132,7 +133,7 @@ impl InputPanel {
     pub fn add_right_field(
         &mut self,
         advanced: bool,
-        label: impl Into<String>,
+        label: impl IntoPropValue<AttrValue>,
         field: impl FieldBuilder,
     ) {
         self.two_column = true;
@@ -148,7 +149,7 @@ impl InputPanel {
 
         self.add_child(html!{
             <label class="pwt-grid-column-3 pwt-text-end" style={style.clone()}>
-                {label.into()}
+                {label.into_prop_value()}
             </label>
         });
 
@@ -159,7 +160,7 @@ impl InputPanel {
 
     pub fn with_large_field(
         mut self,
-        label: impl Into<String>,
+        label: impl IntoPropValue<AttrValue>,
         field: impl FieldBuilder,
     ) -> Self {
         self.add_large_field(false, label, field);
@@ -169,7 +170,7 @@ impl InputPanel {
     pub fn add_large_field(
         &mut self,
         advanced: bool,
-        label: impl Into<String>,
+        label: impl IntoPropValue<AttrValue>,
         field: impl FieldBuilder,
     ) {
         self.two_column = true;
@@ -192,7 +193,7 @@ impl InputPanel {
         };
 
         self.add_child(html!{
-            <label class="pwt-grid-column-1" style={style.clone()}>{label.into()}</label>
+            <label class="pwt-grid-column-1" style={style.clone()}>{label.into_prop_value()}</label>
         });
 
         // fixme: label_id?
