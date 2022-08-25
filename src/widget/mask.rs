@@ -21,8 +21,6 @@ pub struct Mask {
     pub children: Vec<VNode>,
     #[prop_or_default]
     pub text: String,
-    #[prop_or_default]
-    pub form_wrapper: bool,
 }
 
 impl Mask {
@@ -55,11 +53,6 @@ impl Mask {
 
     pub fn visible(mut self, visible: bool) -> Self {
         self.visible = visible;
-        self
-    }
-
-    pub fn form_wrapper(mut self, form_wrapper: bool) -> Self {
-        self.form_wrapper = form_wrapper;
         self
     }
 
@@ -162,11 +155,7 @@ impl Component for PwtMask {
 
         html!{
             <div class="pwt-fit" ref={props.node_ref.clone()} style="position:relative;">
-                if props.form_wrapper {
-                    <form class="pwt-fit" novalidate=true>{props.children.clone()}</form>
-                } else {
-                    {props.children.clone()}
-                }
+            {props.children.clone()}
             if props.visible {
                 <div class="pwt-load-mask">
                     <div class="pwt-load-mask-inner">
