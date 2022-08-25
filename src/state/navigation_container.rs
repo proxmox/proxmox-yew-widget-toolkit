@@ -121,6 +121,7 @@ impl ContainerBuilder for NavigationContainer {
     }
 }
 
+#[doc(hidden)]
 pub struct PwtNavigationContainer {
     nav_ctx: NavigationContext,
     _parent_context_handle: Option<ContextHandle<NavigationContext>>,
