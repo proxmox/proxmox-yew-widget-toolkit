@@ -1,3 +1,4 @@
+//! # Basic widgets
 
 mod button;
 pub use button::{Button, PwtButton};

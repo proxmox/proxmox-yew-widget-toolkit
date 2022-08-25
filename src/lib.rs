@@ -84,7 +84,11 @@
 
 //! ## Components Overview
 //!
-//! Components are more complex widget???
+//! Components are more complex objects composed from several basic
+//! widgets, and usually include advanced state handling.
+//!
+//! -
+//!
 
 //! ## Router
 //!
@@ -168,6 +172,16 @@ pub fn local_storage() -> Option<web_sys::Storage> {
 
     Some(store)
 }
+
+/// # Prelude, which include all builder traits.
+///
+/// Many builder function are implemented using trait
+/// implementations. To acces those functions, the trait objects need
+/// to be visiable. The easiest way to do that is:
+///
+/// ```
+/// use pwt::prelude::*;
+/// ```
 
 pub mod prelude {
     pub use crate::props::WidgetBuilder;

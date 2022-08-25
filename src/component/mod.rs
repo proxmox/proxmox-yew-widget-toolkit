@@ -1,3 +1,6 @@
+//! # More complex object with advanced state handling
+
+
 mod alert_dialog;
 pub use alert_dialog::{display_load_result, error_message, AlertDialog, PwtAlertDialog};
 
