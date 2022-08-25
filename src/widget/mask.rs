@@ -7,6 +7,7 @@ use yew::prelude::*;
 use yew::virtual_dom::{Key, VComp, VNode};
 use yew::html::IntoPropValue;
 
+use crate::props::ContainerBuilder;
 use crate::widget::Fa;
 
 #[derive(Clone, PartialEq, Properties)]
@@ -21,6 +22,12 @@ pub struct Mask {
     pub children: Vec<VNode>,
     #[prop_or_default]
     pub text: AttrValue,
+}
+
+impl ContainerBuilder for Mask {
+    fn as_children_mut(&mut self) -> &mut Vec<VNode> {
+        &mut self.children
+    }
 }
 
 impl Mask {
@@ -51,42 +58,26 @@ impl Mask {
         self.key = key.into_prop_value();
     }
 
+    /// Builder style method to set the `vibible` property
     pub fn visible(mut self, visible: bool) -> Self {
-        self.visible = visible;
+        self.set_visible(visible);
         self
     }
 
+    /// Method to set the `vibible` property
+    pub fn set_visible(&mut self, visible: bool) {
+        self.visible = visible;
+    }
+
+    /// Builder style method to set the `text` property
     pub fn text(mut self, text: impl IntoPropValue<AttrValue>) -> Self {
         self.set_text(text);
         self
     }
 
+    /// Method to set the `text` property
     pub fn set_text(&mut self, text: impl IntoPropValue<AttrValue>) {
         self.text = text.into_prop_value();
-    }
-
-    pub fn with_child(mut self, child: impl Into<VNode>) -> Self {
-        self.add_child(child);
-        self
-    }
-
-    pub fn with_optional_child(
-        mut self,
-        child: Option<impl Into<VNode>>,
-    ) -> Self {
-        if let Some(child) = child {
-            self.add_child(child);
-        } else {
-            // important for VDOM diff
-            // self.add_child(html!{}); // this can still change child order,
-            // so we add a real DOM element for now
-            self.add_child(html!{<div class="pwt-d-none"/>});
-        }
-        self
-    }
-
-    pub fn add_child(&mut self, child: impl Into<VNode>) {
-        self.children.push(child.into());
     }
 }
 
