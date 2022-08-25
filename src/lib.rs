@@ -1,6 +1,3 @@
-mod erc;
-pub use erc::Erc;
-
 pub mod props;
 pub mod state;
 pub mod theme;
