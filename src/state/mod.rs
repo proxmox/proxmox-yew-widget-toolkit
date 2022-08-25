@@ -9,5 +9,5 @@ pub use navigation_container::*; // fixme
 mod selection;
 pub use selection::Selection;
 
-pub mod theme;
+mod theme;
 pub use theme::Theme;
