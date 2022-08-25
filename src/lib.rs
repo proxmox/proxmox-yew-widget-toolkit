@@ -1,3 +1,51 @@
+//! # Proxmox Widget Toolkit (for Yew)
+//!
+//! This toolkit provides Yew components to build Single Page
+//! Apps. The main goal is rewriting the existing Proxmox UIs, so the
+//! style/theme of the widgets mimics the current Proxmox UI style.
+//!
+//! ## Builder Pattern
+//!
+//! This toolkit uses the builder pattern to create Yew components. It
+//! is currently not possible to create the components using the Yew
+//! 'html' macro.
+//!
+//! Here's an example of creating a simple list:
+//! ```
+//! Column::new()
+//!    .padding(2)
+//!    .gap(2)
+//!    .with_child("This is the first line (simple Text).")
+//!    .with_child(Button::new("A Button"))
+//!    .with_child(html!{
+//!        <h2>{"heading created using the Yew html macro"}</h2>
+//!    })
+//! ```
+//! All builder implements `Into<Html>`.
+//!
+//! ## Widget Overview
+//!
+//! ### Layout widgets
+//!
+//! - [widget::Container]: Basically a wrapper for `<div>`.
+//! - [widget::Row]: Horizontal container with flex layout
+//! - [widget::Column]: Vertical container with flex layout
+//! - [widget::Panel]: Container with title.
+//! - [widget::InputPanel]: Container to create simple forms.
+//! - [widget::TabPanel]: A set of layered items where only one item is displayed at a time.
+//! - [widget::Toolbar]: Horizontal container for buttons.
+//! - [widget::VirtualScroll]: Container with virtual scrolling support.
+//!
+//! ### Modal Dialogs
+//!
+//! ### Forms and Fields
+//!
+//! ### Buttons
+//!
+//! ## Components Overview
+//!
+//! Components are more complex widget???
+
 pub mod props;
 pub mod state;
 pub mod theme;
