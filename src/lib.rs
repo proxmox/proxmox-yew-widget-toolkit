@@ -139,55 +139,6 @@ extern "C" {
     fn close_dialog(dialog: web_sys::Node);
 }
 
-
-pub fn session_storage() -> Option<web_sys::Storage> {
-    let window = match web_sys::window() {
-        None => {
-            log::error!("session_storage: no window");
-            return None;
-        }
-        Some(window) => window,
-    };
-
-    let store = match window.session_storage() {
-        Ok(Some(store)) => store,
-        Ok(None) => {
-            log::error!("session_storage: no session_storage");
-            return None;
-        }
-        Err(_) => {
-            log::error!("session_storage: security error");
-            return None;
-        }
-    };
-
-    Some(store)
-}
-
-pub fn local_storage() -> Option<web_sys::Storage> {
-    let window = match web_sys::window() {
-        None => {
-            log::error!("local_storage: no window");
-            return None;
-        }
-        Some(window) => window,
-    };
-
-    let store = match window.local_storage() {
-        Ok(Some(store)) => store,
-        Ok(None) => {
-            log::error!("local_storage: no local_storage");
-            return None;
-        }
-        Err(_) => {
-            log::error!("local_storage: security error");
-            return None;
-        }
-    };
-
-    Some(store)
-}
-
 /// # Prelude, which include all builder traits.
 ///
 /// Many builder function are implemented using trait

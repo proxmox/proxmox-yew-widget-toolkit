@@ -1,4 +1,4 @@
-use crate::local_storage;
+use crate::state::local_storage;
 
 use anyhow::{bail, Error};
 
