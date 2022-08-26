@@ -242,13 +242,13 @@ impl Component for PwtEditWindow {
             None => None,
             Some(msg) => Some(
                 AlertDialog::new(msg)
-                    .onclose(ctx.link().callback(|_| Msg::ClearError))
+                    .on_close(ctx.link().callback(|_| Msg::ClearError))
             ),
         };
 
         Dialog::new(props.title.clone())
             .node_ref(props.node_ref.clone())
-            .onclose(props.ondone.clone())
+            .on_close(props.ondone.clone())
             .with_child(form_context_provider(self.form_ctx.clone(), input_panel))
             .with_optional_child(alert)
             .into()

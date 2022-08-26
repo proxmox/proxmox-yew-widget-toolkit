@@ -5,6 +5,7 @@ use wasm_bindgen::JsCast;
 
 use yew::prelude::*;
 use yew::virtual_dom::{Key, VComp, VNode};
+use yew::html::IntoEventCallback;
 
 use crate::prelude::*;
 use crate::widget::{Button, Panel};
@@ -17,7 +18,7 @@ pub struct Dialog {
     pub key: Option<Key>,
 
     pub title: AttrValue,
-    pub onclose: Option<Callback<()>>,
+    pub on_close: Option<Callback<()>>,
 
     #[prop_or_default]
     pub children: Vec<VNode>,
@@ -56,8 +57,8 @@ impl Dialog {
         self
     }
 
-    pub fn onclose(mut self, cb: impl Into<Option<Callback<()>>>) -> Self {
-        self.onclose = cb.into();
+    pub fn on_close(mut self, cb: impl IntoEventCallback<()>) -> Self {
+        self.on_close = cb.into_event_callback();
         self
     }
 
@@ -118,12 +119,12 @@ impl Component for PwtDialog {
             }
             Msg::Close => {
                 if self.open {
-                    if let Some(onclose) = &props.onclose {
+                    if let Some(on_close) = &props.on_close {
                         if let Some(dialog_node) = props.node_ref.get() {
                             crate::close_dialog(dialog_node);
                         }
 
-                        onclose.emit(());
+                        on_close.emit(());
                         self.open = false;
 
                         self.restore_focus();
@@ -147,7 +148,7 @@ impl Component for PwtDialog {
         let props = ctx.props();
         let link = ctx.link().clone();
 
-        let onclose = link.callback(|_| Msg::Close);
+        let on_close = link.callback(|_| Msg::Close);
 
         let oncancel = link.callback(|event: Event| {
             event.stop_propagation();
@@ -160,12 +161,12 @@ impl Component for PwtDialog {
             .title(props.title.clone())
             .border(false);
 
-        if props.onclose.is_some() {
+        if props.on_close.is_some() {
             panel.add_tool(
                 Button::new("×")
                     .aria_label("Close Dialog")
                     .class("rounded primary-container")
-                    .onclick(onclose)
+                    .onclick(on_close)
             );
         };
 

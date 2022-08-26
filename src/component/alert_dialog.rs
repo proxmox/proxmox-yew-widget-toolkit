@@ -4,7 +4,7 @@ use anyhow::Error;
 
 use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
-use yew::html::IntoPropValue;
+use yew::html::{IntoEventCallback, IntoPropValue};
 
 use crate::prelude::*;
 use crate::widget::{Button, Dialog, Fa, Row, Toolbar};
@@ -13,7 +13,7 @@ use crate::widget::{Button, Dialog, Fa, Row, Toolbar};
 pub struct AlertDialog {
     pub title: Option<AttrValue>,
     pub message: String,
-    pub onclose: Option<Callback<()>>,
+    pub on_close: Option<Callback<()>>,
 }
 
 impl AlertDialog {
@@ -31,8 +31,8 @@ impl AlertDialog {
         self.title = title.into_prop_value();
     }
 
-    pub fn onclose(mut self, cb: impl Into<Option<Callback<()>>>) -> Self {
-        self.onclose = cb.into();
+    pub fn on_close(mut self, cb: impl IntoEventCallback<()>) -> Self {
+        self.on_close = cb.into_event_callback();
         self
     }
 
@@ -72,10 +72,10 @@ pub fn display_load_result<T>(result: &Option<Result<T, Error>>, render: impl Fn
 #[doc(hidden)]
 pub fn pwt_alert_dialog(props: &AlertDialog) -> Html {
     let onclick = Callback::from({
-        let onclose = props.onclose.clone();
+        let on_close = props.on_close.clone();
         move |_| {
-            if let Some(onclose) = &onclose {
-                onclose.emit(());
+            if let Some(on_close) = &on_close {
+                on_close.emit(());
             }
         }
     });
@@ -83,7 +83,7 @@ pub fn pwt_alert_dialog(props: &AlertDialog) -> Html {
     let title = format!("{}", props.title.as_deref().unwrap_or("Alert"));
 
     Dialog::new(title.clone())
-        .onclose(props.onclose.clone())
+        .on_close(props.on_close.clone())
         .with_child(error_message(&props.message, "pwt-p-4"))
         .with_child(
             Toolbar::new()
