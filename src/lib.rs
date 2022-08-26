@@ -31,10 +31,10 @@
 //! HTML event. By convention, JavaScript objects that fire events
 //! have a corresponding "onevent" properties (named by prefixing "on"
 //! to the name of the event). We use the same naming convention for
-//! this kink of events.
+//! this kind of callbacks.
 //!
 //! Some components compute there own custom events. The naming
-//! convention for those events is "on_event" (please note the
+//! convention for those callbacks is "on_event" (please note the
 //! underscore after "on") to distinguish custom events from HTML
 //! element events.
 
