@@ -54,6 +54,16 @@
 
 //! ### Modal Dialogs
 //!
+//! The [Dialog](widget::Dialog) widget implements a modal dialog
+//! with a title. The widget is implemented using the relatively new
+//! HTML `<dialog>` tag in order to get correct focus handling.
+//!
+//! The [component::AlertDialog] is a convenient way to display error messages.
+//!
+//! Dialog are also handy for displaying input forms. The specialized
+//! [component::EditWindow] makes it easy to implement such dialogs.
+
+
 //! ### Forms and Fields
 //!
 //! All form fields support a set of common
@@ -85,9 +95,14 @@
 //! ## Components Overview
 //!
 //! Components are more complex objects composed from several basic
-//! widgets, and usually include advanced state handling.
+//! widgets, and usually include advanced state handling (i.e. loading
+//! data from an URL).
 //!
-//! -
+//! - [component::AlertDialog]: Display error messages.
+//! - [component::EditWindow]: Input form inside a modal dialog.
+//! - [component::KVGrid]: Grid with two columns (key and value).
+//! - [component::NavigationMenu]: Navigation menu with routing support.
+//! - [component::ObjectGrid]: Extends [KVGrid](component::KVGrid) with load/edit functionality.
 //!
 
 //! ## Router
