@@ -38,7 +38,7 @@
 //! Some components compute there own custom events. The naming
 //! convention for those callbacks is "on_event" (please note the
 //! underscore after "on") to distinguish custom events from HTML
-//! element events. It is not possible to bind multiple different
+//! element events. It is **not** possible to bind multiple different
 //! callbacks to the same event (only the last callback is called).
 
 //! ## Widget Overview
