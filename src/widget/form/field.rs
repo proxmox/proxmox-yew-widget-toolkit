@@ -178,6 +178,7 @@ fn create_field_validation_cb(props: Field) -> ValidateFn<Value> {
     ValidateFn::new(move |value: &Value| {
         let value = match value {
             Value::Null => String::new(),
+            Value::Number(n) => n.to_string(),
             Value::String(v) => v.clone(),
             _ => { // should not happen
                 log::error!("PwtField: got wrong data type in validate (field '{}')!", props.name);

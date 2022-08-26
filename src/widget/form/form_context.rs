@@ -180,12 +180,13 @@ impl FormContext {
     /// Get the field value as string.
     ///
     /// Return the empty string for non-existent fields, or
-    /// when the field value is not a string.
+    /// when the field value is not a string or number.
     pub fn get_field_text(&self, name: impl IntoPropValue<AttrValue>) -> String {
-        self.get_field_value(name)
-            .as_str()
-            .unwrap_or("")
-            .to_string()
+        match self.get_field_value(name) {
+            Value::Number(n) => n.to_string(),
+            Value::String(v) => v.clone(),
+            _ => String::new(),
+        }
     }
 
     /// Get form submit data.
