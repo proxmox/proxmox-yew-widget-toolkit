@@ -2,7 +2,7 @@ use std::rc::Rc;
 use std::borrow::Cow;
 
 use yew::prelude::*;
-use yew::virtual_dom::{Listeners, VList, VTag};
+use yew::virtual_dom::{ApplyAttributeAs, Listeners, VList, VTag};
 use yew::html::{IntoEventCallback, IntoPropValue};
 
 use pwt_macros::widget;
@@ -155,14 +155,14 @@ impl Component for PwtCheckbox {
         let attr_map = attributes.get_mut_index_map();
         props.input_props.cumulate_attributes(attr_map);
 
-        attr_map.insert(AttrValue::Static("role"), AttrValue::Static("checkbox"));
+        attr_map.insert(AttrValue::Static("role"), (AttrValue::Static("checkbox"), ApplyAttributeAs::Attribute));
 
         if props.input_props.tabindex.is_none() {
-            attr_map.insert(AttrValue::Static("tabindex"), AttrValue::Static("0"));
+            attr_map.insert(AttrValue::Static("tabindex"), (AttrValue::Static("0"), ApplyAttributeAs::Attribute));
         }
 
         if checked {
-            attr_map.insert(AttrValue::Static("aria-checked"), AttrValue::Static("true"));
+            attr_map.insert(AttrValue::Static("aria-checked"), (AttrValue::Static("true"), ApplyAttributeAs::Attribute));
         }
 
         let onclick = ctx.link().callback(|_| Msg::Toggle);

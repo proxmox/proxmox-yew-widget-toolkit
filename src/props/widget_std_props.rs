@@ -1,6 +1,6 @@
 use yew::prelude::*;
 use yew::html::IntoPropValue;
-use yew::virtual_dom::{Attributes, Key};
+use yew::virtual_dom::{ApplyAttributeAs, Attributes, Key};
 
 use super::{Border, Margin, Padding};
 
@@ -36,7 +36,7 @@ impl WidgetStdProps {
 
         let mut attributes = self.attributes.clone();
         let attr_map = attributes.get_mut_index_map();
-        attr_map.insert(AttrValue::Static("class"), class.into_prop_value());
+        attr_map.insert(AttrValue::Static("class"), (class.into_prop_value(), ApplyAttributeAs::Attribute));
 
         attributes
     }

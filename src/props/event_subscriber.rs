@@ -4,7 +4,7 @@ use yew::virtual_dom::{Listener, VNode};
 use yew::{
     AnimationEvent, DragEvent, Event, FocusEvent, InputEvent,
     MouseEvent, KeyboardEvent, PointerEvent, ProgressEvent,
-    TouchEvent, TransitionEvent, WheelEvent,
+    SubmitEvent, TouchEvent, TransitionEvent, WheelEvent,
 };
 
 // Wrapper to implement missing PartialEq
@@ -70,7 +70,7 @@ pub trait EventSubscriber: Into<VNode> {
 
     handler!(onblur, FocusEvent);
     handler!(onfocus, FocusEvent);
-    handler!(onsubmit, FocusEvent);
+    handler!(onsubmit, SubmitEvent);
 
     handler!(onabort, Event);
     handler!(oncancel, Event);

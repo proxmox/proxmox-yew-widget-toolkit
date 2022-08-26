@@ -35,7 +35,7 @@ impl Into<VTag> for Input {
         let attr_map = attributes.get_mut_index_map();
         self.input_props.cumulate_attributes(attr_map);
 
-        let value = attr_map.get(&AttrValue::Static("value")).map(|a| a.clone());
+        let value = attr_map.get(&AttrValue::Static("value")).map(|a| a.0.clone());
         let checked = attr_map.get(&AttrValue::Static("checked")).is_some();
 
         let listeners = Listeners::Pending(
