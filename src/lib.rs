@@ -31,12 +31,15 @@
 //! HTML event. By convention, JavaScript objects that fire events
 //! have a corresponding "onevent" properties (named by prefixing "on"
 //! to the name of the event). We use the same naming convention for
-//! this kind of callbacks.
+//! this kind of callbacks. It is possible to bind multiple different
+//! callbacks to the same event - all callback will be called when the
+//! event occur.
 //!
 //! Some components compute there own custom events. The naming
 //! convention for those callbacks is "on_event" (please note the
 //! underscore after "on") to distinguish custom events from HTML
-//! element events.
+//! element events. It is not possible to bind multiple different
+//! callbacks to the same event (only the last callback is called).
 
 //! ## Widget Overview
 //!
