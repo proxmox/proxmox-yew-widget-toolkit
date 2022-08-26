@@ -3,26 +3,78 @@ use std::borrow::Cow;
 use web_sys::HtmlElement;
 
 use yew::prelude::*;
-use yew::virtual_dom::{Listeners, VList, VTag};
+use yew::virtual_dom::{ApplyAttributeAs, Listeners, VList, VTag};
 use yew::html::IntoPropValue;
-
-use crate::prelude::*;
 
 use pwt_macros::widget;
 
-#[widget(crate::widget::PwtButton, @input, @element)]
+#[widget(crate::widget::PwtButton, @element)]
 #[derive(Properties, PartialEq, Clone)]
 pub struct Button {
     pub text: Option<AttrValue>,
     pub icon_class: Option<Classes>,
+
+    pub tabindex: Option<i32>,
+    pub aria_label: Option<AttrValue>,
+    pub placeholder: Option<AttrValue>,
+
+    #[prop_or_default]
+    pub autofocus: bool,
+
+    #[prop_or_default]
+    pub disabled: bool,
 }
 
 impl Button {
 
+    /// Create a new button.
     pub fn new(text: impl IntoPropValue<Option<AttrValue>>) -> Self {
         yew::props!(Self { text: text.into_prop_value() })
     }
 
+    /// Builder style method to set the html aria-label attribute
+    pub fn aria_label(mut self, label: impl IntoPropValue<Option<AttrValue>>) -> Self {
+        self.set_aria_label(label);
+        self
+    }
+
+    /// Method to set the html aria-label attribute
+    pub fn set_aria_label(&mut self, label: impl IntoPropValue<Option<AttrValue>>) {
+        self.aria_label = label.into_prop_value();
+    }
+
+    /// Builder style method to set the html tabindex attribute
+    pub fn tabindex(mut self, index: impl IntoPropValue<Option<i32>>) -> Self {
+        self.set_tabindex(index);
+        self
+    }
+
+    /// Method to set the html tabindex attribute
+    pub fn set_tabindex(&mut self, index: impl IntoPropValue<Option<i32>>) {
+        self.tabindex = index.into_prop_value();
+    }
+
+    /// Builder style method to set the autofocus flag
+    pub fn autofocus(mut self, autofocus: bool) -> Self {
+        self.set_autofocus(autofocus);
+        self
+    }
+
+    /// Method to set the autofocus flag
+    pub fn set_autofocus(&mut self, autofocus: bool) {
+        self.autofocus = autofocus;
+    }
+
+    /// Builder style method to set the disabled flag
+    pub fn disabled(mut self, disabled: bool) -> Self {
+        self.set_disabled(disabled);
+        self
+    }
+
+    /// Method to set the disabled flag
+    pub fn set_disabled(&mut self, disabled: bool) {
+        self.disabled = disabled;
+    }
 
     pub fn new_icon(icon_class: impl Into<Classes>) -> Self {
         yew::props!(Self {}).icon_class(icon_class)
@@ -63,7 +115,7 @@ impl Component for PwtButton {
 
     fn rendered(&mut self, ctx: &Context<Self>, first_render: bool) {
         let props = ctx.props();
-        if first_render && ctx.props().input_props.autofocus {
+        if first_render && ctx.props().autofocus {
             if let Some(button) = props.std_props.node_ref.cast::<HtmlElement>() {
                 let _ = button.focus();
             }
@@ -76,7 +128,18 @@ impl Component for PwtButton {
         let mut attributes = props.std_props.cumulate_attributes(Some("pwt-button"));
         let attr_map = attributes.get_mut_index_map();
 
-        props.input_props.cumulate_attributes(attr_map);
+        if props.disabled {
+            attr_map.insert(AttrValue::Static("disabled"), (AttrValue::Static(""), ApplyAttributeAs::Attribute));
+        }
+        if props.autofocus {
+            attr_map.insert(AttrValue::Static("autofocus"), (AttrValue::Static(""), ApplyAttributeAs::Attribute));
+        }
+        if let Some(ref aria_label) = props.aria_label {
+            attr_map.insert(AttrValue::Static("aria-label"), (aria_label.clone(), ApplyAttributeAs::Attribute));
+        }
+        if let Some(ref tabindex) = props.tabindex {
+            attr_map.insert(AttrValue::Static("tabindex"), (tabindex.to_string().into(), ApplyAttributeAs::Attribute));
+        }
 
         let mut children = Vec::new();
 
