@@ -259,12 +259,9 @@ impl FormContext {
     ) {
         let name = name.into_prop_value();
 
-        // Note: we do not use with_field_state_mut(&namm) here,
-        // because that would trigger on_change, which can cause an
-        // endless loop...
-        if let Some(state) = self.inner.borrow_mut().field_state.get_mut(&name) {
-            state.validate = validate;
-        }
+        self.with_field_state_mut(&name, move |state| {
+           state.validate = validate;
+        });
 
         self.validate_field(&name);
     }
