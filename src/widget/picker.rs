@@ -1,4 +1,5 @@
 use std::rc::Rc;
+use derivative::Derivative;
 
 use yew::prelude::*;
 use yew::html::IntoEventCallback;
@@ -8,7 +9,9 @@ use crate::widget::DataTableColumn;
 use crate::widget::focus::focus_next_tabable;
 use crate::props::ExtractKeyFn;
 
-#[derive(Properties, Clone)]
+#[derive(Derivative, Properties)]
+// Note: use derivative to avoid Clone/PartialEq requirement on T
+#[derivative(Clone(bound=""), PartialEq(bound=""))]
 pub struct GridPicker<T>
 where
     T: 'static,
@@ -17,7 +20,9 @@ where
     node_ref: NodeRef,
 
     pub columns: Vec<DataTableColumn<T>>,
+
     #[prop_or_default]
+    #[derivative(PartialEq(compare_with="Rc::ptr_eq"))]
     pub items: Rc<Vec<T>>,
 
     pub selection: Option<usize>, // todo: multiselect??
@@ -28,18 +33,6 @@ where
 
     #[prop_or(true)]
     pub show_header: bool,
-}
-
-// Avoid "T: PartialEq" by manual implementation
-impl<T> PartialEq for GridPicker<T> {
-    fn eq(&self, other: &Self) -> bool {
-        self.columns == other.columns &&
-            Rc::ptr_eq(&self.items, &other.items) &&
-            self.node_ref == other.node_ref &&
-            self.selection == other.selection &&
-            self.onselect == other.onselect &&
-            self.show_header == other.show_header
-    }
 }
 
 impl<T> GridPicker<T> {
