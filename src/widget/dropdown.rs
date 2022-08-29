@@ -118,7 +118,6 @@ pub struct PwtDropdown {
     // other widget can grep the focus after a change (if the want)
     pending_change: bool,
     mousedown_listener: Option<EventListener>,
-    input_ref: NodeRef,
     picker_ref: NodeRef,
     picker_id: String,
     popper: Option<JsValue>,
@@ -128,8 +127,8 @@ impl PwtDropdown {
 
     // focus the input elelent (after closing the dropdown dialog)
     // just to be sure (Dialog should do this automatically)
-    fn restore_focus(&mut self) {
-        if let Some(el) = self.input_ref.cast::<web_sys::HtmlElement>() {
+    fn restore_focus(&mut self, props: &Dropdown) {
+        if let Some(el) = props.std_props.node_ref.cast::<web_sys::HtmlElement>() {
             let _ = el.focus();
         }
     }
@@ -146,7 +145,6 @@ impl Component for PwtDropdown {
             pending_change: false,
             value: ctx.props().value.clone().unwrap_or_else(|| String::new()),
             mousedown_listener: None,
-            input_ref: NodeRef::default(),
             picker_ref: NodeRef::default(),
             picker_id: crate::widget::get_unique_element_id(),
             popper: None,
@@ -159,7 +157,7 @@ impl Component for PwtDropdown {
             Msg::DialogClosed => {
                 self.show = false;
                 //log::info!("DialogClosed");
-                self.restore_focus();
+                self.restore_focus(props);
                 if self.pending_change {
                     self.pending_change = false;
                     //log::info!("Pending Change {}", self.value);
@@ -278,7 +276,6 @@ impl Component for PwtDropdown {
         let input: Html = Input::new()
             .with_std_props(&props.std_props)
             .with_input_props(&props.input_props)
-            .node_ref(self.input_ref.clone())
             .class("pwt-input")
             .class("pwt-w-100")
             .attribute("value", value)
@@ -295,7 +292,7 @@ impl Component for PwtDropdown {
         let onclose = ctx.link().callback(|_| Msg::DialogClosed);
 
         let input = html!{
-            <div ref={props.std_props.node_ref.clone()}>
+            <div>
                 <div style="position:relative;"> // allows us to position the trigger-icon relatively
                     {input}
                     <i onclick={trigger_onclick} class={trigger_cls}></i>
@@ -353,9 +350,9 @@ impl Component for PwtDropdown {
 
             let opts = JsValue::from_serde(&opts).unwrap();
 
-            if let Some(content_node) = self.input_ref.get() {
-                if let Some(tooltip_node) = self.picker_ref.get() {
-                    self.popper = Some(crate::create_popper(content_node, tooltip_node, &opts));
+            if let Some(content_node) = props.std_props.node_ref.get() {
+                if let Some(picker_node) = self.picker_ref.get() {
+                    self.popper = Some(crate::create_popper(content_node, picker_node, &opts));
                 }
             }
 
@@ -380,7 +377,7 @@ impl Component for PwtDropdown {
             ));
 
             if props.input_props.autofocus {
-                if let Some(el) = self.input_ref.cast::<web_sys::HtmlElement>() {
+                if let Some(el) = props.std_props.node_ref.cast::<web_sys::HtmlElement>() {
                     let _ = el.focus();
                 }
             }
