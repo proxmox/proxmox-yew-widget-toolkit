@@ -14,12 +14,20 @@ pub trait ContainerBuilder: Into<VNode> {
     /// Note: This adds and empty VList for child is None to make VDom diff more stable.
     /// (Also see bug: <https://github.com/yewstack/yew/issues/2654>)
     fn with_optional_child(mut self, child: Option<impl Into<VNode>>) -> Self {
+        self.add_optional_child(child);
+        self
+    }
+
+    /// Method to add a (optional) child node
+    ///
+    /// Note: This adds and empty VList for child is None to make VDom diff more stable.
+    /// (Also see bug: <https://github.com/yewstack/yew/issues/2654>)
+    fn add_optional_child(&mut self, child: Option<impl Into<VNode>>) {
         if let Some(child) = child {
             self.add_child(child);
         } else {
             self.add_child(VList::new());
         }
-        self
     }
 
     /// Method to add a child node
