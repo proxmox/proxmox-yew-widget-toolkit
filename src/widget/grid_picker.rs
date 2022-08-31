@@ -9,7 +9,7 @@ use yew::html::{IntoEventCallback, IntoPropValue};
 use yew::virtual_dom::{Key, VComp, VNode};
 
 use crate::prelude::*;
-use crate::widget::{get_unique_element_id, Column, DataTableColumn, Row};
+use crate::widget::{get_unique_element_id, Column, Container, DataTableColumn, Row};
 use crate::widget::form::Input;
 use crate::props::ExtractKeyFn;
 
@@ -283,14 +283,14 @@ impl<T: 'static> Component for PwtGridPicker<T> {
             );
             let cell_class = String::from("pwt-text-truncate");
 
-            let cells: Html = props.columns.iter().enumerate().map(|(n, column)| {
+            let cells = props.columns.iter().enumerate().map(|(n, column)| {
                 let item_style = format!("justify-content:{}; grid-column:{};", column.justify, n+1);
                 let class = if selected { Some("selected") } else {None };
 
                 html!{
                     <td {class} style={item_style} aria-hidden={is_list.then(|| "true")}><div class={&cell_class}>{ column.render.apply(item) }</div></td>
                 }
-            }).collect();
+            });
 
             // fixme: avoid multiple onclick handlers
             let onclick = Callback::from({
@@ -306,15 +306,23 @@ impl<T: 'static> Component for PwtGridPicker<T> {
             let id = self.get_unique_item_id(n);
             let aria_selected = if selected { "true" } else { "false" };
 
+            let mut row = Container::new()
+                .tag("tr")
+                .class(class)
+                .attribute("id", id)
+                .attribute("aria-selected", aria_selected)
+                .onclick(onclick)
+                .children(cells);
+
+
             if is_list {
-                html!{
-                    <tr {id} role="option" aria-label={(*key).to_string()} {onclick} {class} aria-selected={aria_selected}>{cells}</tr>
-                }
+                row.set_attribute("role", "option");
+                row.set_attribute("aria-label", (*key).to_string());
             } else {
-                html!{
-                    <tr {id} role="row" {class} {onclick} aria-selected={aria_selected}>{cells}</tr>
-                }
+                row.set_attribute("role", "row");
             }
+
+            row
         }).collect();
 
         let onkeydown = Callback::from({
