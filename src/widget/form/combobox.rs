@@ -133,6 +133,7 @@ impl Combobox {
 pub enum Msg {
     Select(String),
     FormCtxUpdate(FormContext),
+    Reposition,
 }
 
 #[doc(hidden)]
@@ -153,6 +154,7 @@ impl PwtCombobox {
         RenderFn::new({
             let items = Rc::clone(&props.items);
             let selected = selected.to_owned();
+            let link = ctx.link().clone();
 
             move |onselect: &Callback<Key>| {
                 let columns = vec![
@@ -162,6 +164,10 @@ impl PwtCombobox {
                 let picker = GridPicker::new(columns)
                     .show_header(false)
                     .onselect(onselect)
+                    .on_filter_change({
+                        let link = link.clone();
+                        move |()| link.send_message(Msg::Reposition)
+                    })
                     .extract_key(|value: &AttrValue| Key::from(value.to_string()))
                     .selection(items.iter().enumerate().find_map(|(n, value)| (value == &selected).then(|| n)))
                     .data(Rc::clone(&items));
@@ -279,6 +285,9 @@ impl Component for PwtCombobox {
                 self.set_value(ctx, key);
                 true
             }
+            Msg::Reposition => {
+                true // just trigger a redraw
+            }
         }
     }
 
@@ -288,6 +297,7 @@ impl Component for PwtCombobox {
         let (value, valid) = self.get_field_data(props);
 
         Dropdown::new(self.create_picker(ctx, &value))
+            .popup_type("dialog")
             .with_std_props(&props.std_props)
             .with_input_props(&props.input_props)
             .editable(props.editable)

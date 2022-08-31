@@ -2,12 +2,15 @@ use std::rc::Rc;
 use std::marker::PhantomData;
 
 use derivative::Derivative;
+use web_sys::HtmlInputElement;
+
 use yew::prelude::*;
 use yew::html::{IntoEventCallback, IntoPropValue};
 use yew::virtual_dom::{Key, VComp, VNode};
 
-use crate::widget::DataTableColumn;
-use crate::widget::focus::focus_next_tabable;
+use crate::prelude::*;
+use crate::widget::{get_unique_element_id, Column, DataTableColumn, Row};
+use crate::widget::form::Input;
 use crate::props::ExtractKeyFn;
 
 #[derive(Derivative, Properties)]
@@ -33,8 +36,19 @@ where
 
     pub onselect: Option<Callback<Key>>,
 
+    /// Filter change event.
+    ///
+    /// Filter change often change the number of displayed items, so
+    /// the size of the widget is likely to change. This callback is
+    /// useful to reposition the dropdown.
+    pub on_filter_change: Option<Callback<()>>,
+
     #[prop_or(true)]
     pub show_header: bool,
+
+    #[prop_or(true)]
+    //#[prop_or(false)]
+    pub show_filter: bool,
 }
 
 impl<T> GridPicker<T> {
@@ -90,24 +104,148 @@ impl<T> GridPicker<T> {
         self
     }
 
+    pub fn on_filter_change(mut self, cb: impl IntoEventCallback<()>) -> Self {
+        self.on_filter_change = cb.into_event_callback();
+        self
+    }
+
     pub fn show_header(mut self, show_header: bool) -> Self {
         self.show_header = show_header;
         self
     }
+
+    pub fn show_filter(mut self, show_filter: bool) -> Self {
+        self.set_show_filter(show_filter);
+        self
+    }
+
+    pub fn set_show_filter(&mut self, show_filter: bool) {
+        self.show_filter = show_filter;
+    }
+}
+pub enum Msg {
+    CursorDown,
+    CursorUp,
+    CursorSelect,
+    FilterUpdate(String),
 }
 
 #[doc(hidden)]
 pub struct PwtGridPicker<T> {
     _phantom: PhantomData<T>,
+    filter: String,
+    // fixme: last_data: Rc<Vec<T>> // track changes
+    filtered_data: Vec<usize>,
+    cursor: Option<usize>,
+    unique_id: String,
+}
+impl<T: 'static> PwtGridPicker<T> {
+
+    fn update_filter(&mut self, ctx: &Context<Self>, filter: String) {
+        let props = ctx.props();
+        self.filter = filter;
+        if let Some(ref on_filter_change) = props.on_filter_change {
+            on_filter_change.emit(());
+        }
+        self.filtered_data = props.items.iter().enumerate().filter_map(|(n, item)| {
+            let key = match &props.extract_key {
+                None => Key::from(n),
+                Some(extract_fn) => extract_fn.apply(item),
+            };
+
+            if !self.filter.is_empty() {
+                if !key.to_lowercase().contains(&self.filter) {
+                    return None;
+                }
+            }
+            Some(n)
+        }).collect();
+
+        self.cursor = None; // fixme
+    }
+
+    fn get_unique_item_id(&self, n: usize) -> String {
+        format!("{}-item-{}", self.unique_id, n)
+    }
+
+    fn cursor_down(&mut self) {
+        let len = self.filtered_data.len();
+        if len == 0 {
+            self.cursor = None;
+            return;
+        }
+        self.cursor = match self.cursor {
+            Some(n) => if (n + 1) < len { Some(n + 1) }  else { None },
+            None => Some(0),
+        };
+    }
+
+    fn cursor_up(&mut self) {
+        let len = self.filtered_data.len();
+        if len == 0 {
+            self.cursor = None;
+            return;
+        }
+
+        self.cursor = match self.cursor {
+            Some(n) => if n > 0 { Some(n - 1) } else { None },
+            None => Some(len - 1),
+        }
+    }
 }
 
+
 impl<T: 'static> Component for PwtGridPicker<T> {
-    type Message = ();
+    type Message = Msg;
     type Properties = GridPicker<T>;
 
-    fn create(_ctx: &Context<Self>) -> Self {
+    fn create(ctx: &Context<Self>) -> Self {
+        let props = ctx.props();
+
         Self {
             _phantom: PhantomData::<T>,
+            filter: String::new(),
+            filtered_data: props.items.iter().enumerate().filter_map(|(n, _)| Some(n)).collect(),
+            cursor: None,
+            unique_id: get_unique_element_id(),
+        }
+    }
+
+    fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
+        let props = ctx.props();
+        match msg {
+            Msg::FilterUpdate(value) => {
+                self.update_filter(ctx, value);
+                true
+            }
+            Msg::CursorSelect => {
+                let cursor = match self.cursor {
+                    Some(n) => n,
+                    None => return false, // nothing to do
+                };
+
+                let n = self.filtered_data[cursor];
+
+                if let Some(onselect) = &props.onselect {
+                    let item = &props.items[n];
+
+                    let key = match &props.extract_key {
+                        None => Key::from(n),
+                        Some(extract_fn) => extract_fn.apply(item),
+                    };
+
+                    onselect.emit(key);
+                }
+                false
+            }
+            Msg::CursorDown => {
+                self.cursor_down();
+                true
+            }
+            Msg::CursorUp => {
+                self.cursor_up();
+                true
+            }
         }
     }
 
@@ -120,10 +258,29 @@ impl<T: 'static> Component for PwtGridPicker<T> {
 
         let is_list = props.columns.len() == 1; // Simple listbox or grid ?
 
-        let options: Html = props.items.iter().enumerate().map(|(n, item)| {
+        let mut active_descendant = None;
+
+        let options: Html = self.filtered_data.iter().enumerate().map(|(filtered_n, n)| {
+            let n = *n;
+            let item = &props.items[n];
+
+            // fixme: not needed?
+            let key = match &props.extract_key {
+                None => Key::from(n),
+                Some(extract_fn) => extract_fn.apply(item),
+            };
+
             let selected = props.selection.map(|sel| sel == n).unwrap_or(false);
-            let tabindex = if selected { "0" } else { "-1" };
-            let class = classes!(selected.then(|| "selected"));
+            let is_active = self.cursor.map(|cursor| cursor == filtered_n).unwrap_or(false);
+
+            if is_active {
+                active_descendant = Some(self.get_unique_item_id(n));
+            }
+
+            let class = classes!(
+                selected.then(|| "selected"),
+                is_active.then(|| "row-cursor"),
+            );
             let cell_class = String::from("pwt-text-truncate");
 
             let cells: Html = props.columns.iter().enumerate().map(|(n, column)| {
@@ -135,11 +292,7 @@ impl<T: 'static> Component for PwtGridPicker<T> {
                 }
             }).collect();
 
-            let key = match &props.extract_key {
-                None => Key::from(n),
-                Some(extract_fn) => extract_fn.apply(item),
-            };
-
+            // fixme: avoid multiple onclick handlers
             let onclick = Callback::from({
                 let onselect = props.onselect.clone();
                 let value = key.clone();
@@ -150,44 +303,36 @@ impl<T: 'static> Component for PwtGridPicker<T> {
                 }
             });
 
-            let onkeydown = Callback::from({
-                let onselect = props.onselect.clone();
-                let value = key.clone();
-                move |event: KeyboardEvent| {
-                    match event.key_code() {
-                        32 | 13 => { // space | enter
-                            if let Some(onselect) = &onselect {
-                                onselect.emit(value.clone());
-                            } else {
-                                return;
-                            }
-                        }
-                        _ => return,
-                    }
-                    event.prevent_default();
-                }
-            });
+            let id = self.get_unique_item_id(n);
+            let aria_selected = if selected { "true" } else { "false" };
 
             if is_list {
                 html!{
-                    <tr role="option" aria-label={(*key).to_string()} {tabindex} {onclick} {onkeydown} {class}>{cells}</tr>
+                    <tr {id} role="option" aria-label={(*key).to_string()} {onclick} {class} aria-selected={aria_selected}>{cells}</tr>
                 }
             } else {
                 html!{
-                    <tr role="row" {tabindex} {class} {onclick} {onkeydown} aria-selected={selected.then(|| "true")}>{cells}</tr>
+                    <tr {id} role="row" {class} {onclick} aria-selected={aria_selected}>{cells}</tr>
                 }
             }
         }).collect();
 
         let onkeydown = Callback::from({
-            let node_ref = props.node_ref.clone();
+            let link = ctx.link().clone();
             move |event: KeyboardEvent| {
                 match event.key_code() {
                     40 => { // down
-                        focus_next_tabable(&node_ref, false, false);
+                        link.send_message(Msg::CursorDown);
                     }
                     38 => { // up
-                        focus_next_tabable(&node_ref, true, false);
+                        link.send_message(Msg::CursorUp);
+                    }
+                    9 => { // tab
+                        log::info!("TAB");
+                        // fixme: impl?
+                    }
+                    13 => { // RETURN
+                        link.send_message(Msg::CursorSelect);
                     }
                     _ => return,
                 }
@@ -195,12 +340,70 @@ impl<T: 'static> Component for PwtGridPicker<T> {
             }
         });
 
-        html! {
-            <table role={if is_list { "listbox" } else {"grid"}} ref={props.node_ref.clone()} class="pwt-table pwt-fit table-hover table-striped pwt-border" {onkeydown}>
+        let list_id = format!("{}-list", self.unique_id);
+
+        let table = html! {
+            <div class="pwt-flex-fill pwt-overflow-auto">
+                <table id={list_id.clone()} role={if is_list { "listbox" } else {"grid"}} ref={props.node_ref.clone()} class="pwt-fit pwt-table table-hover table-striped pwt-border">
                 if props.show_header { <thead><tr>{headers}</tr></thead> }
-                <tbody>{options}</tbody>
+                <tbody>
+                    {options}
+                </tbody>
             </table>
+            </div>
+        };
+
+        let mut view = Column::new()
+            .class("pwt-flex-fill pwt-overflow-auto")
+            .onkeydown(onkeydown);
+
+        let filter_invalid = self.filtered_data.is_empty();
+
+        if props.show_filter {
+            let filter = Row::new()
+                .attribute("role", "combobox")
+                .attribute("aria-expanded", "true")
+                .attribute("aria-activedescendant", active_descendant.clone())
+                .attribute("aria-controls", list_id.clone())
+                .attribute("aria-haspopup", if is_list { "listbox" } else {"grid"})
+                 .gap(2)
+                .class("pwt-p-2 pwt-border-bottom pwt-w-100 pwt-align-items-center")
+                .with_child(html!{<label for="testinput">{"Filter"}</label>})
+                .with_child(
+                    Input::new()
+                        .attribute("autocomplete", "off")
+                        .class("pwt-input")
+                        .class("pwt-w-100")
+                        .class(if filter_invalid { "is-invalid" } else { "is-valid" })
+                        .attribute("value", self.filter.clone())
+                        .attribute("aria-invalid", filter_invalid.then(|| "true"))
+                        .oninput(ctx.link().callback(move |event: InputEvent| {
+                            let input: HtmlInputElement = event.target_unchecked_into();
+                            Msg::FilterUpdate(input.value())
+                        }))
+                );
+
+            view.add_child(filter);
+            view.add_child(table);
+
+        } else {
+
+            view.set_attribute("tabindex", "0");
+            view.set_attribute("style", "outline: 0;");
+
+            view.set_attribute("role", "combobox");
+            view.set_attribute("aria-expanded", "true");
+            view.set_attribute("aria-activedescendant", active_descendant);
+            view.set_attribute("aria-controls", list_id.clone());
+            view.set_attribute("aria-haspopup", if is_list { "listbox" } else {"grid"});
+            view.add_child(table);
         }
+
+        view.add_optional_child(self.filtered_data.is_empty().then(|| html!{
+            <div class="pwt-p-2 pwt-flex-fill pwt-overflow-auto">{"no data"}</div>
+        }));
+
+        view.into()
     }
 }
 
