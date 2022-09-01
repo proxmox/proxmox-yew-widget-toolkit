@@ -184,8 +184,6 @@ pub enum Msg {
 #[doc(hidden)]
 pub struct PwtSelector<T> {
     loader: Loader<Vec<T>>,
-    last_loader: Option<LoadCallback<Vec<T>>>, //change tracking
-    last_data: Option<Rc<Vec<T>>>, //change tracking
     value: String,
 
     real_validate: ValidateFn<Value>,
@@ -323,8 +321,6 @@ impl<T: 'static> Component for PwtSelector<T> {
             form_ctx,
             value,
             loader,
-            last_loader: props.loader.clone(),
-            last_data: props.data.clone(),
             real_validate,
 
         }
@@ -379,18 +375,16 @@ impl<T: 'static> Component for PwtSelector<T> {
         }
     }
 
-    fn changed(&mut self, ctx: &Context<Self>) -> bool {
+    fn changed(&mut self, ctx: &Context<Self>, old_props: &Self::Properties) -> bool {
         let props = ctx.props();
 
-        let data_changed = !my_data_cmp_fn(&props.data, &self.last_data);
+        let data_changed = !my_data_cmp_fn(&props.data, &old_props.data);
 
         if data_changed {
-            self.last_data = props.data.clone();
             self.loader.set_data(props.data.clone());
         }
 
-        if props.loader != self.last_loader {
-            self.last_loader = props.loader.clone();
+        if props.loader != old_props.loader {
             self.loader.set_loader(props.loader.clone());
             self.loader.load();
         }

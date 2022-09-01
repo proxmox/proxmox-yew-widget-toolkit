@@ -169,6 +169,26 @@ impl<T: 'static> PwtGridPicker<T> {
         format!("{}-item-{}", self.unique_id, n)
     }
 
+    fn scroll_cursor_into_view(&self) {
+        let cursor = match self.cursor {
+            Some(n) => n,
+            None => return,
+        };
+        let n = self.filtered_data[cursor];
+        self.scroll_item_into_view(n, web_sys::ScrollLogicalPosition::Nearest);
+    }
+
+    fn scroll_item_into_view(&self, n: usize, pos: web_sys::ScrollLogicalPosition) {
+        let window = web_sys::window().unwrap();
+        let document = window.document().unwrap();
+        let id = self.get_unique_item_id(n);
+
+        let el = document.get_element_by_id(&id).unwrap();
+        let mut options = web_sys::ScrollIntoViewOptions::new();
+        options.block(pos);
+        el.scroll_into_view_with_scroll_into_view_options(&options);
+    }
+
     fn cursor_down(&mut self) {
         let len = self.filtered_data.len();
         if len == 0 {
@@ -179,6 +199,8 @@ impl<T: 'static> PwtGridPicker<T> {
             Some(n) => if (n + 1) < len { Some(n + 1) }  else { None },
             None => Some(0),
         };
+
+        self.scroll_cursor_into_view();
     }
 
     fn cursor_up(&mut self) {
@@ -191,7 +213,9 @@ impl<T: 'static> PwtGridPicker<T> {
         self.cursor = match self.cursor {
             Some(n) => if n > 0 { Some(n - 1) } else { None },
             None => Some(len - 1),
-        }
+        };
+
+        self.scroll_cursor_into_view();
     }
 }
 
@@ -436,6 +460,27 @@ impl<T: 'static> Component for PwtGridPicker<T> {
 
         view.into()
     }
+
+    fn changed(&mut self, ctx: &Context<Self>, old_props: &Self::Properties) -> bool {
+        let props = ctx.props();
+        if self.cursor.is_none() && old_props.selection.is_none() {
+            if let Some(n) = props.selection {
+                // fixme: does not work while picker is hidden
+                self.scroll_item_into_view(n, web_sys::ScrollLogicalPosition::Center);
+            }
+        }
+        true
+    }
+
+    fn rendered(&mut self, ctx: &Context<Self>, first_render: bool) {
+         let props = ctx.props();
+         if first_render {
+             if let Some(n) = props.selection {
+                 // fixme: does not work while picker is hidden
+                 self.scroll_item_into_view(n, web_sys::ScrollLogicalPosition::Center);
+             }
+         }
+     }
 }
 
 impl<T: 'static> Into<VNode> for GridPicker<T> {

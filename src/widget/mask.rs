@@ -83,7 +83,6 @@ impl Mask {
 
 #[doc(hidden)]
 pub struct PwtMask {
-    last_visible: bool, //change tracking
     last_active: Option<web_sys::HtmlElement>, // last focused element
 }
 
@@ -111,11 +110,10 @@ impl Component for PwtMask {
     type Message = ();
     type Properties = Mask;
 
-    fn create(ctx: &Context<Self>) -> Self {
+    fn create(_ctx: &Context<Self>) -> Self {
         Self {
             last_active: None,
-            last_visible: ctx.props().visible,
-        }
+         }
     }
 
      fn rendered(&mut self, ctx: &Context<Self>, first_render: bool) {
@@ -127,11 +125,10 @@ impl Component for PwtMask {
          }
      }
 
-    fn changed(&mut self, ctx: &Context<Self>) -> bool {
+    fn changed(&mut self, ctx: &Context<Self>, old_props: &Self::Properties) -> bool {
         let props = ctx.props();
         let visible = props.visible;
-        if self.last_visible != visible {
-            self.last_visible = visible;
+        if old_props.visible != visible {
             if visible {
                 self.save_focused_element(&props.node_ref);
             } else {

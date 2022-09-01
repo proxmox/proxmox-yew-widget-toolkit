@@ -372,7 +372,7 @@ where
         }
     }
 
-    fn changed(&mut self, ctx: &Context<Self>) -> bool {
+    fn changed(&mut self, ctx: &Context<Self>, _old_props: &Self::Properties) -> bool {
         let props = ctx.props();
 
         if !Rc::ptr_eq(&self.items, &props.items) { // data changed
