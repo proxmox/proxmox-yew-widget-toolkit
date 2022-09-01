@@ -128,6 +128,7 @@ pub enum Msg {
     CursorUp,
     CursorSelect,
     FilterUpdate(String),
+    ItemClick(usize),
 }
 
 #[doc(hidden)]
@@ -246,6 +247,18 @@ impl<T: 'static> Component for PwtGridPicker<T> {
                 self.cursor_up();
                 true
             }
+            Msg::ItemClick(n) => {
+                let item = &props.items[n];
+
+                let key = match &props.extract_key {
+                    None => Key::from(n),
+                    Some(extract_fn) => extract_fn.apply(item),
+                };
+                if let Some(onselect) = &props.onselect {
+                    onselect.emit(key);
+                }
+                false
+            }
         }
     }
 
@@ -291,17 +304,6 @@ impl<T: 'static> Component for PwtGridPicker<T> {
                 }
             });
 
-            // fixme: avoid multiple onclick handlers
-            let onclick = Callback::from({
-                let onselect = props.onselect.clone();
-                let value = key.clone();
-                move |_| {
-                    if let Some(onselect) = &onselect {
-                        onselect.emit(value.clone());
-                    }
-                }
-            });
-
             let id = self.get_unique_item_id(n);
             let aria_selected = if selected { "true" } else { "false" };
 
@@ -310,9 +312,7 @@ impl<T: 'static> Component for PwtGridPicker<T> {
                 .class(class)
                 .attribute("id", id)
                 .attribute("aria-selected", aria_selected)
-                .onclick(onclick)
                 .children(cells);
-
 
             if is_list {
                 row.set_attribute("role", "option");
@@ -349,11 +349,35 @@ impl<T: 'static> Component for PwtGridPicker<T> {
 
         let list_id = format!("{}-list", self.unique_id);
 
+        let onclick = Callback::from({
+            let link = ctx.link().clone();
+            let unique_row_prefix = format!("{}-item-", self.unique_id);
+            move |event: MouseEvent| {
+                let mut cur_el: Option<web_sys::Element> = event.target_dyn_into();
+                loop {
+                    match cur_el {
+                        Some(el) => {
+                            if el.tag_name() == "TR" {
+                                if let Some(n_str) = el.id().strip_prefix(&unique_row_prefix) {
+                                    let n: usize = n_str.parse().unwrap();
+                                    link.send_message(Msg::ItemClick(n));
+                                    break;
+                                }
+                            }
+                            cur_el = el.parent_element();
+
+                        }
+                        None => break,
+                    }
+                }
+            }
+        });
+
         let table = html! {
             <div class="pwt-flex-fill pwt-overflow-auto">
                 <table id={list_id.clone()} role={if is_list { "listbox" } else {"grid"}} ref={props.node_ref.clone()} class="pwt-fit pwt-table table-hover table-striped pwt-border">
                 if props.show_header { <thead><tr>{headers}</tr></thead> }
-                <tbody>
+                <tbody {onclick}>
                     {options}
                 </tbody>
             </table>
