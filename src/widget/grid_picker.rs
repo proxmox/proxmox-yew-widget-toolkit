@@ -185,7 +185,11 @@ impl<T: 'static> PwtGridPicker<T> {
         let document = window.document().unwrap();
         let id = self.get_unique_item_id(n);
 
-        let el = document.get_element_by_id(&id).unwrap();
+        let el = match document.get_element_by_id(&id) {
+            Some(el) => el,
+            None => return,
+        };
+
         let mut options = web_sys::ScrollIntoViewOptions::new();
         options.block(pos);
         el.scroll_into_view_with_scroll_into_view_options(&options);
@@ -294,6 +298,8 @@ impl<T: 'static> Component for PwtGridPicker<T> {
                 if visible && self.cursor.is_none() {
                     if let Some(n) = props.selection {
                         self.scroll_item_into_view(n, web_sys::ScrollLogicalPosition::Center);
+                        self.cursor = self.filtered_data.iter().position(|x| *x == n);
+                        return true;
                     }
                 }
                 false
