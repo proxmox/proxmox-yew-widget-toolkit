@@ -414,7 +414,7 @@ impl<T: 'static> Component for PwtGridPicker<T> {
 
         let table = html! {
             <div class="pwt-flex-fill pwt-overflow-auto">
-                <table id={list_id.clone()} role={if is_list { "listbox" } else {"grid"}} ref={props.node_ref.clone()} class="pwt-fit pwt-table table-hover table-striped pwt-border">
+                <table id={list_id.clone()} role={if is_list { "listbox" } else {"grid"}} class="pwt-fit pwt-table table-hover table-striped pwt-border">
                 if props.show_header { <thead><tr>{headers}</tr></thead> }
                 <tbody {onclick}>
                     {options}
@@ -424,6 +424,7 @@ impl<T: 'static> Component for PwtGridPicker<T> {
         };
 
         let mut view = Column::new()
+            .node_ref(props.node_ref.clone())
             .class("pwt-flex-fill pwt-overflow-auto")
             .onkeydown(onkeydown);
 
