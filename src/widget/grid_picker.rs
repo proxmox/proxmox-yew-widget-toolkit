@@ -46,9 +46,10 @@ where
     #[prop_or(true)]
     pub show_header: bool,
 
-    #[prop_or(true)]
-    //#[prop_or(false)]
-    pub show_filter: bool,
+    /// Show filter
+    ///
+    /// Automatically set for pickers with more than 10 items.
+    pub show_filter: Option<bool>,
 }
 
 impl<T> GridPicker<T> {
@@ -114,13 +115,13 @@ impl<T> GridPicker<T> {
         self
     }
 
-    pub fn show_filter(mut self, show_filter: bool) -> Self {
+    pub fn show_filter(mut self, show_filter: impl IntoPropValue<Option<bool>>) -> Self {
         self.set_show_filter(show_filter);
         self
     }
 
-    pub fn set_show_filter(&mut self, show_filter: bool) {
-        self.show_filter = show_filter;
+    pub fn set_show_filter(&mut self, show_filter: impl IntoPropValue<Option<bool>>) {
+        self.show_filter = show_filter.into_prop_value();
     }
 }
 pub enum Msg {
@@ -319,6 +320,10 @@ impl<T: 'static> Component for PwtGridPicker<T> {
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
 
+        let show_filter = props.show_filter.unwrap_or_else(|| {
+            if props.items.len() > 10 { true } else { false }
+        });
+
         let headers: Html = props.columns.iter().map(|column| {
             html!{<th>{column.name.clone()}</th>}
         }).collect();
@@ -445,7 +450,7 @@ impl<T: 'static> Component for PwtGridPicker<T> {
 
         let filter_invalid = self.filtered_data.is_empty();
 
-        if props.show_filter {
+        if show_filter {
             let filter = Row::new()
                 .attribute("role", "combobox")
                 .attribute("aria-expanded", "true")
