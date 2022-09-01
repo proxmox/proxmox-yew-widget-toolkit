@@ -150,6 +150,10 @@ impl<T: 'static> PwtGridPicker<T> {
         if let Some(ref on_filter_change) = props.on_filter_change {
             on_filter_change.emit(());
         }
+
+        let old_cursor_n = self.cursor.map(|cursor| self.filtered_data[cursor]);
+        self.cursor = None;
+
         self.filtered_data = props.items.iter().enumerate().filter_map(|(n, item)| {
             let key = match &props.extract_key {
                 None => Key::from(n),
@@ -164,7 +168,12 @@ impl<T: 'static> PwtGridPicker<T> {
             Some(n)
         }).collect();
 
-        self.cursor = None; // fixme
+        self.cursor = match old_cursor_n {
+            Some(n) => self.filtered_data.iter().position(|x| *x == n),
+            None => None,
+        };
+
+        self.scroll_cursor_into_view();
     }
 
     fn get_unique_item_id(&self, n: usize) -> String {
