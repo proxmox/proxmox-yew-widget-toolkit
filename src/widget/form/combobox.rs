@@ -10,8 +10,6 @@ use yew::html::{IntoEventCallback, IntoPropValue};
 use proxmox_schema::Schema;
 
 use crate::prelude::*;
-//use crate::props::{FieldStdProps, RenderFn};
-use crate::props::RenderFn;
 use crate::widget::{DataTableColumn, Dropdown, GridPicker};
 
 use super::{FieldOptions, FormContext, ValidateFn};
@@ -148,35 +146,6 @@ pub struct PwtCombobox {
 
 impl PwtCombobox {
 
-    fn create_picker(&self, ctx: &Context<Self>, selected: &str) -> RenderFn<Callback<Key>> {
-        let props = ctx.props();
-
-        RenderFn::new({
-            let items = Rc::clone(&props.items);
-            let selected = selected.to_owned();
-            let link = ctx.link().clone();
-
-            move |onselect: &Callback<Key>| {
-                let columns = vec![
-                    DataTableColumn::new("Value")
-                        .render(|value: &AttrValue| html!{value}),
-                ];
-                let picker = GridPicker::new(columns)
-                    .show_header(false)
-                    .onselect(onselect)
-                    .on_filter_change({
-                        let link = link.clone();
-                        move |()| link.send_message(Msg::Reposition)
-                    })
-                    .extract_key(|value: &AttrValue| Key::from(value.to_string()))
-                    .selection(items.iter().enumerate().find_map(|(n, value)| (value == &selected).then(|| n)))
-                    .data(Rc::clone(&items));
-
-                picker.into()
-            }
-        })
-    }
-
     fn get_field_data(&self, props: &Combobox) -> (String, Result<(), String>) {
         if let Some(form_ctx) = &self.form_ctx {
             (
@@ -296,7 +265,31 @@ impl Component for PwtCombobox {
 
         let (value, valid) = self.get_field_data(props);
 
-        Dropdown::new(self.create_picker(ctx, &value))
+        let picker = {
+            let items = Rc::clone(&props.items);
+            let selected = value.clone();
+            let link = ctx.link().clone();
+
+            move |_visible, onselect: &Callback<Key>| {
+                let columns = vec![
+                    DataTableColumn::new("Value")
+                        .render(|value: &AttrValue| html!{value}),
+                ];
+                GridPicker::new(columns)
+                    .show_header(false)
+                    .onselect(onselect)
+                    .on_filter_change({
+                        let link = link.clone();
+                        move |()| link.send_message(Msg::Reposition)
+                    })
+                    .extract_key(|value: &AttrValue| Key::from(value.to_string()))
+                    .selection(items.iter().enumerate().find_map(|(n, value)| (value == &selected).then(|| n)))
+                    .data(Rc::clone(&items))
+                    .into()
+            }
+        };
+        
+        Dropdown::new(picker)
             .popup_type("dialog")
             .with_std_props(&props.std_props)
             .with_input_props(&props.input_props)

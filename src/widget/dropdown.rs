@@ -1,4 +1,7 @@
+use std::rc::Rc;
+
 use serde_json::json;
+use derivative::Derivative;
 
 use web_sys::HtmlInputElement;
 use gloo_events::EventListener;
@@ -9,11 +12,31 @@ use yew::html::{IntoPropValue, IntoEventCallback};
 use yew::virtual_dom::{Key, VNode};
 
 use crate::prelude::*;
-use crate::props::{WidgetStdProps, FieldStdProps, RenderFn};
+use crate::props::{WidgetStdProps, FieldStdProps};
 use crate::widget::Tooltip;
 use crate::widget::form::Input;
 
 use pwt_macros::widget;
+
+#[derive(Clone, Derivative)]
+#[derivative(PartialEq)]
+pub struct RenderDropdownPickerFn(
+    #[derivative(PartialEq(compare_with="Rc::ptr_eq"))]
+    Rc<dyn Fn(bool, &Callback<Key>) -> Html>
+);
+
+impl RenderDropdownPickerFn {
+    /// Creates a new [`RenderDropdownPickerFn`]
+    pub fn new(renderer: impl 'static + Fn(bool, &Callback<Key>) -> Html) -> Self {
+        Self(Rc::new(renderer))
+    }
+}
+
+impl<F: 'static + Fn(bool, &Callback<Key>) -> Html> From<F> for RenderDropdownPickerFn {
+    fn from(f: F) -> Self {
+        RenderDropdownPickerFn::new(f)
+    }
+}
 
 #[widget(PwtDropdown, @input, @element)]
 #[derive(Clone, PartialEq, Properties)]
@@ -21,7 +44,7 @@ pub struct Dropdown {
     #[prop_or_default]
     pub editable: bool,
 
-    pub picker: RenderFn<Callback<Key>>,
+    pub picker: RenderDropdownPickerFn,
     pub tip: Option<VNode>,
 
     pub on_change: Option<Callback<String>>,
@@ -33,8 +56,8 @@ pub struct Dropdown {
 impl Dropdown {
 
     // Create a new instance
-    pub fn new(picker: RenderFn<Callback<Key>>) -> Self {
-        yew::props!{ Self { picker } }
+    pub fn new(picker: impl Into<RenderDropdownPickerFn>) -> Self {
+        yew::props!{ Self { picker: picker.into() } }
     }
 
     /// Use common properties from [WidgetStdProps]
@@ -298,7 +321,7 @@ impl Component for PwtDropdown {
                     <i onclick={trigger_onclick} class={trigger_cls}></i>
                 </div>
                 <dialog id={self.picker_id.clone()} ref={self.picker_ref.clone()} {onclose} {oncancel} class="pwt-dropdown" data-show={data_show}>
-                    {props.picker.apply(&onselect)}
+                    {(props.picker.0)(self.show, &onselect)}
                 </dialog>
             </div>
         };

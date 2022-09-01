@@ -397,13 +397,13 @@ impl<T: 'static> Component for PwtSelector<T> {
 
         let (value, valid) = self.get_field_data(props);
 
-        let picker = RenderFn::new({
+        let picker = {
             let value = value.clone();
             let loader = self.loader.clone();
             let props = props.clone();
             let picker = props.picker.clone();
 
-            move |on_select: &Callback<Key>| {
+            move |_visible, on_select: &Callback<Key>| {
                 loader.render(|list: Rc<Vec<T>>| {
                     if list.is_empty() {
                         html!{<div class="pwt-p-2">{"List does not contain any items."}</div>}
@@ -416,7 +416,7 @@ impl<T: 'static> Component for PwtSelector<T> {
                     }
                 })
             }
-        });
+        };
 
         let tip = match &valid {
             Err(msg) => Some(html!{msg}),

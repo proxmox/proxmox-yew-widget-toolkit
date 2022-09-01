@@ -10,7 +10,7 @@ mod container;
 pub use container::Container;
 
 mod dropdown;
-pub use dropdown::{Dropdown, PwtDropdown};
+pub use dropdown::{Dropdown, PwtDropdown, RenderDropdownPickerFn};
 
 mod fa;
 pub use fa::{Fa, PwtFa};
