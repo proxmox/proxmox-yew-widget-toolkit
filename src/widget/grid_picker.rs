@@ -9,7 +9,7 @@ use yew::html::{IntoEventCallback, IntoPropValue};
 use yew::virtual_dom::{Key, VComp, VNode};
 
 use crate::prelude::*;
-use crate::widget::{get_unique_element_id, Column, Container, DataTableColumn, Row};
+use crate::widget::{get_unique_element_id, Column, Container, DataTableColumn, Row, VisibilityObserver};
 use crate::widget::form::Input;
 use crate::props::ExtractKeyFn;
 
@@ -129,6 +129,7 @@ pub enum Msg {
     CursorSelect,
     FilterUpdate(String),
     ItemClick(usize),
+    VisibilityChange(bool),
 }
 
 #[doc(hidden)]
@@ -139,6 +140,7 @@ pub struct PwtGridPicker<T> {
     filtered_data: Vec<usize>,
     cursor: Option<usize>,
     unique_id: String,
+    visibility_observer: Option<VisibilityObserver>,
 }
 impl<T: 'static> PwtGridPicker<T> {
 
@@ -233,6 +235,7 @@ impl<T: 'static> Component for PwtGridPicker<T> {
             filtered_data: props.items.iter().enumerate().filter_map(|(n, _)| Some(n)).collect(),
             cursor: None,
             unique_id: get_unique_element_id(),
+            visibility_observer: None,
         }
     }
 
@@ -280,6 +283,18 @@ impl<T: 'static> Component for PwtGridPicker<T> {
                 };
                 if let Some(onselect) = &props.onselect {
                     onselect.emit(key);
+                }
+                false
+            }
+            Msg::VisibilityChange(visible) => {
+                 if !visible {
+                    self.cursor = None; //clear cursor
+                    return false;
+                }
+                if visible && self.cursor.is_none() {
+                    if let Some(n) = props.selection {
+                        self.scroll_item_into_view(n, web_sys::ScrollLogicalPosition::Center);
+                    }
                 }
                 false
             }
@@ -461,24 +476,15 @@ impl<T: 'static> Component for PwtGridPicker<T> {
         view.into()
     }
 
-    fn changed(&mut self, ctx: &Context<Self>, old_props: &Self::Properties) -> bool {
-        let props = ctx.props();
-        if self.cursor.is_none() && old_props.selection.is_none() {
-            if let Some(n) = props.selection {
-                // fixme: does not work while picker is hidden
-                self.scroll_item_into_view(n, web_sys::ScrollLogicalPosition::Center);
-            }
-        }
-        true
-    }
-
     fn rendered(&mut self, ctx: &Context<Self>, first_render: bool) {
-         let props = ctx.props();
-         if first_render {
-             if let Some(n) = props.selection {
-                 // fixme: does not work while picker is hidden
-                 self.scroll_item_into_view(n, web_sys::ScrollLogicalPosition::Center);
-             }
+        if first_render {
+            let props = ctx.props();
+            if let Some(el) = props.node_ref.cast::<web_sys::Element>() {
+                let link = ctx.link().clone();
+                self.visibility_observer = Some(VisibilityObserver::new(&el, move |visible| {
+                    link.send_message(Msg::VisibilityChange(visible));
+                }));
+            }
          }
      }
 }
