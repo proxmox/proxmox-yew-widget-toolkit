@@ -264,7 +264,6 @@ impl<T: 'static> Component for PwtGridPicker<T> {
             let n = *n;
             let item = &props.items[n];
 
-            // fixme: not needed?
             let key = match &props.extract_key {
                 None => Key::from(n),
                 Some(extract_fn) => extract_fn.apply(item),
@@ -322,7 +321,7 @@ impl<T: 'static> Component for PwtGridPicker<T> {
                 row.set_attribute("role", "row");
             }
 
-            row
+            row.key(key)
         }).collect();
 
         let onkeydown = Callback::from({
