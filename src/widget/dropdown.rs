@@ -13,7 +13,7 @@ use yew::virtual_dom::{Key, VNode};
 
 use crate::prelude::*;
 use crate::props::{WidgetStdProps, FieldStdProps};
-use crate::widget::Tooltip;
+use crate::widget::{Container, Tooltip};
 use crate::widget::form::Input;
 
 use pwt_macros::widget;
@@ -22,17 +22,17 @@ use pwt_macros::widget;
 #[derivative(PartialEq)]
 pub struct RenderDropdownPickerFn(
     #[derivative(PartialEq(compare_with="Rc::ptr_eq"))]
-    Rc<dyn Fn(bool, &Callback<Key>) -> Html>
+    Rc<dyn Fn(&Callback<Key>) -> Html>
 );
 
 impl RenderDropdownPickerFn {
     /// Creates a new [`RenderDropdownPickerFn`]
-    pub fn new(renderer: impl 'static + Fn(bool, &Callback<Key>) -> Html) -> Self {
+    pub fn new(renderer: impl 'static + Fn(&Callback<Key>) -> Html) -> Self {
         Self(Rc::new(renderer))
     }
 }
 
-impl<F: 'static + Fn(bool, &Callback<Key>) -> Html> From<F> for RenderDropdownPickerFn {
+impl<F: 'static + Fn(&Callback<Key>) -> Html> From<F> for RenderDropdownPickerFn {
     fn from(f: F) -> Self {
         RenderDropdownPickerFn::new(f)
     }
@@ -290,13 +290,7 @@ impl Component for PwtDropdown {
 
         let value = props.value.clone().unwrap_or_else(|| self.value.clone());
 
-        let oncancel = ctx.link().callback(|event: Event| {
-            event.stop_propagation();
-            event.prevent_default();
-            Msg::HidePicker
-        });
-
-        let input: Html = Input::new()
+        let input = Input::new()
             .with_std_props(&props.std_props)
             .with_input_props(&props.input_props)
             .class("pwt-input")
@@ -309,22 +303,32 @@ impl Component for PwtDropdown {
             .attribute("aria-haspopup", props.popup_type.clone())
             .oninput(oninput)
             .onkeydown(onkeydown)
-            .onclick(onclick)
-            .into();
+            .onclick(onclick);
 
-        let onclose = ctx.link().callback(|_| Msg::DialogClosed);
-
-        let input = html!{
-            <div>
-                <div style="position:relative;"> // allows us to position the trigger-icon relatively
-                    {input}
-                    <i onclick={trigger_onclick} class={trigger_cls}></i>
-                </div>
-                <dialog id={self.picker_id.clone()} ref={self.picker_ref.clone()} {onclose} {oncancel} class="pwt-dropdown" data-show={data_show}>
-                    {(props.picker.0)(self.show, &onselect)}
-                </dialog>
-            </div>
-        };
+        let input = Container::new()
+            .with_child(
+                Container::new()
+                    .attribute("style", "position:relative;") // allows us to position the trigger-icon relatively
+                    .with_child(input)
+                    .with_child(html!{<i onclick={trigger_onclick} class={trigger_cls}></i>})
+            )
+            .with_child(
+                Container::new()
+                    .tag("dialog")
+                    .class("pwt-dropdown")
+                    .attribute("id", self.picker_id.clone())
+                    .attribute("data-show", data_show)
+                    .node_ref(self.picker_ref.clone())
+                    .onclose(ctx.link().callback(|_| Msg::DialogClosed))
+                    .oncancel(ctx.link().callback(|event: Event| {
+                        event.stop_propagation();
+                        event.prevent_default();
+                        Msg::HidePicker
+                    }))
+                    .with_optional_child(self.show.then(|| {
+                        (props.picker.0)(&onselect)
+                    }))
+            );
 
         let mut tooltip = Tooltip::new()
             .with_child(input);

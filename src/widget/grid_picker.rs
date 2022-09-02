@@ -9,7 +9,7 @@ use yew::html::{IntoEventCallback, IntoPropValue};
 use yew::virtual_dom::{Key, VComp, VNode};
 
 use crate::prelude::*;
-use crate::widget::{get_unique_element_id, Column, Container, DataTableColumn, Row, VisibilityObserver};
+use crate::widget::{get_unique_element_id, Column, Container, DataTableColumn, Row};
 use crate::widget::form::Input;
 use crate::props::ExtractKeyFn;
 
@@ -48,7 +48,7 @@ where
 
     /// Show filter
     ///
-    /// Automatically set for pickers with more than 10 items.
+    /// Defaul behavior is to show the filter for pickers with more than 10 items.
     pub show_filter: Option<bool>,
 }
 
@@ -130,7 +130,6 @@ pub enum Msg {
     CursorSelect,
     FilterUpdate(String),
     ItemClick(usize),
-    VisibilityChange(bool),
 }
 
 #[doc(hidden)]
@@ -141,7 +140,6 @@ pub struct PwtGridPicker<T> {
     filtered_data: Vec<usize>,
     cursor: Option<usize>,
     unique_id: String,
-    visibility_observer: Option<VisibilityObserver>,
 }
 impl<T: 'static> PwtGridPicker<T> {
 
@@ -169,25 +167,25 @@ impl<T: 'static> PwtGridPicker<T> {
             Some(n)
         }).collect();
 
-        self.cursor = match old_cursor_n {
+         self.cursor = match old_cursor_n {
             Some(n) => self.filtered_data.iter().position(|x| *x == n),
             None => None,
         };
 
-        self.scroll_cursor_into_view();
+        self.scroll_cursor_into_view(web_sys::ScrollLogicalPosition::Nearest);
     }
 
     fn get_unique_item_id(&self, n: usize) -> String {
         format!("{}-item-{}", self.unique_id, n)
     }
 
-    fn scroll_cursor_into_view(&self) {
+    fn scroll_cursor_into_view(&self, pos: web_sys::ScrollLogicalPosition) {
         let cursor = match self.cursor {
             Some(n) => n,
             None => return,
         };
         let n = self.filtered_data[cursor];
-        self.scroll_item_into_view(n, web_sys::ScrollLogicalPosition::Nearest);
+        self.scroll_item_into_view(n, pos);
     }
 
     fn scroll_item_into_view(&self, n: usize, pos: web_sys::ScrollLogicalPosition) {
@@ -216,7 +214,7 @@ impl<T: 'static> PwtGridPicker<T> {
             None => Some(0),
         };
 
-        self.scroll_cursor_into_view();
+        self.scroll_cursor_into_view(web_sys::ScrollLogicalPosition::Nearest);
     }
 
     fn cursor_up(&mut self) {
@@ -231,7 +229,7 @@ impl<T: 'static> PwtGridPicker<T> {
             None => Some(len - 1),
         };
 
-        self.scroll_cursor_into_view();
+        self.scroll_cursor_into_view(web_sys::ScrollLogicalPosition::Nearest);
     }
 }
 
@@ -247,9 +245,8 @@ impl<T: 'static> Component for PwtGridPicker<T> {
             _phantom: PhantomData::<T>,
             filter: String::new(),
             filtered_data: props.items.iter().enumerate().filter_map(|(n, _)| Some(n)).collect(),
-            cursor: None,
+            cursor: props.selection,
             unique_id: get_unique_element_id(),
-            visibility_observer: None,
         }
     }
 
@@ -297,20 +294,6 @@ impl<T: 'static> Component for PwtGridPicker<T> {
                 };
                 if let Some(onselect) = &props.onselect {
                     onselect.emit(key);
-                }
-                false
-            }
-            Msg::VisibilityChange(visible) => {
-                 if !visible {
-                    self.cursor = None; //clear cursor
-                    return false;
-                }
-                if visible && self.cursor.is_none() {
-                    if let Some(n) = props.selection {
-                        self.scroll_item_into_view(n, web_sys::ScrollLogicalPosition::Center);
-                        self.cursor = self.filtered_data.iter().position(|x| *x == n);
-                        return true;
-                    }
                 }
                 false
             }
@@ -497,15 +480,9 @@ impl<T: 'static> Component for PwtGridPicker<T> {
         view.into()
     }
 
-    fn rendered(&mut self, ctx: &Context<Self>, first_render: bool) {
+    fn rendered(&mut self, _ctx: &Context<Self>, first_render: bool) {
         if first_render {
-            let props = ctx.props();
-            if let Some(el) = props.node_ref.cast::<web_sys::Element>() {
-                let link = ctx.link().clone();
-                self.visibility_observer = Some(VisibilityObserver::new(&el, move |visible| {
-                    link.send_message(Msg::VisibilityChange(visible));
-                }));
-            }
+            self.scroll_cursor_into_view(web_sys::ScrollLogicalPosition::Center);
          }
      }
 }

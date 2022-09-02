@@ -270,7 +270,7 @@ impl Component for PwtCombobox {
             let selected = value.clone();
             let link = ctx.link().clone();
 
-            move |_visible, onselect: &Callback<Key>| {
+            move |onselect: &Callback<Key>| {
                 let columns = vec![
                     DataTableColumn::new("Value")
                         .render(|value: &AttrValue| html!{value}),

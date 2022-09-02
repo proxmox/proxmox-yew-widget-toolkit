@@ -403,7 +403,7 @@ impl<T: 'static> Component for PwtSelector<T> {
             let props = props.clone();
             let picker = props.picker.clone();
 
-            move |_visible, on_select: &Callback<Key>| {
+            move |on_select: &Callback<Key>| {
                 loader.render(|list: Rc<Vec<T>>| {
                     if list.is_empty() {
                         html!{<div class="pwt-p-2">{"List does not contain any items."}</div>}
