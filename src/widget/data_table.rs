@@ -216,8 +216,6 @@ pub struct PwtDataTable<T> {
     scroll_top: i32,
     visible_rows: i32,
 
-    items: Rc<Vec<T>>, // clone props.items to detect data changes
-
     column_widths: Vec<Option<i32>>, // for column resize
     sorter: Vec<(usize, bool)>,
     item_order: Vec<usize>,
@@ -274,7 +272,6 @@ where
             scroll_top: 0,
             column_widths: Vec::new(),
             sorter: props.sorter.clone(),
-            items: props.items.clone(),
             item_order: PwtDataTable::get_item_order(&props.sorter, ctx),
             selection: Selection::new().multiselect(props.multiselect),
             size_observer: None,
@@ -346,12 +343,10 @@ where
         }
     }
 
-    fn changed(&mut self, ctx: &Context<Self>, _old_props: &Self::Properties) -> bool {
+    fn changed(&mut self, ctx: &Context<Self>, old_props: &Self::Properties) -> bool {
         let props = ctx.props();
 
-        if !Rc::ptr_eq(&self.items, &props.items) { // data changed
-            self.items = props.items.clone();
-
+        if !Rc::ptr_eq(&props.items, &old_props.items) { // data changed
             if props.extract_key.is_none() {
                 self.selection.clear();
             } else {
