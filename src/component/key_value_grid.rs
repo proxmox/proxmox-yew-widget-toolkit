@@ -13,12 +13,12 @@ use crate::widget::focus::focus_next_tabable;
 
 #[derive(Derivative)]
 #[derivative(Clone, PartialEq)]
-pub struct RenderRecordFn(
+pub struct RenderKVGridRecordFn(
     #[derivative(PartialEq(compare_with="Rc::ptr_eq"))]
     Rc<dyn Fn(&str, &Value, &Value) -> Html>
 );
 
-impl RenderRecordFn {
+impl RenderKVGridRecordFn {
     /// Creates a new [`RenderFn`]
     pub fn new(renderer: impl 'static + Fn(&str, &Value, &Value) -> Html) -> Self {
         Self(Rc::new(renderer))
@@ -32,7 +32,7 @@ pub struct KVGridRow {
     pub header: String,
     pub required: bool,
     pub placeholder: Option<String>,
-    pub renderer: Option<RenderRecordFn>,
+    pub renderer: Option<RenderKVGridRecordFn>,
 }
 
 impl KVGridRow {
@@ -76,7 +76,7 @@ impl KVGridRow {
     }
 
     pub fn set_renderer(&mut self, renderer: impl 'static + Fn(&str, &Value, &Value) -> Html) {
-        self.renderer = Some(RenderRecordFn::new(renderer));
+        self.renderer = Some(RenderKVGridRecordFn::new(renderer));
     }
 
 }
