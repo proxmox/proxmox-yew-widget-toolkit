@@ -22,7 +22,7 @@ pub struct RenderObjectGridItemFn(
 );
 
 impl RenderObjectGridItemFn {
-    /// Creates a new [`RenderFn`]
+    /// Creates a new [`RenderObjectGridItemFn`]
     pub fn new(renderer: impl 'static + Fn(&FormContext, &str, &Value, &Value) -> Html) -> Self {
         Self(Rc::new(renderer))
     }

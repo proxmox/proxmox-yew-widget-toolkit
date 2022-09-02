@@ -18,6 +18,7 @@ use crate::widget::form::Input;
 
 use pwt_macros::widget;
 
+/// Render function to create the [Dropdown] picker.
 #[derive(Clone, Derivative)]
 #[derivative(PartialEq)]
 pub struct RenderDropdownPickerFn(
@@ -27,6 +28,10 @@ pub struct RenderDropdownPickerFn(
 
 impl RenderDropdownPickerFn {
     /// Creates a new [`RenderDropdownPickerFn`]
+    ///
+    /// The render function is called with an `on_select`
+    /// callback. The picker needs to call that when an item is
+    /// selected.
     pub fn new(renderer: impl 'static + Fn(&Callback<Key>) -> Html) -> Self {
         Self(Rc::new(renderer))
     }
@@ -38,18 +43,27 @@ impl<F: 'static + Fn(&Callback<Key>) -> Html> From<F> for RenderDropdownPickerFn
     }
 }
 
+/// Base widget to implement [crate::widget::form::Combobox] like widgets.
 #[widget(PwtDropdown, @input, @element)]
 #[derive(Clone, PartialEq, Properties)]
 pub struct Dropdown {
+    /// Make the input editable.
     #[prop_or_default]
     pub editable: bool,
 
+    /// Function to generate the picker widget.
     pub picker: RenderDropdownPickerFn,
+
+    /// Tooltip for the input
     pub tip: Option<VNode>,
 
+    /// Value change callback.
     pub on_change: Option<Callback<String>>,
+
+    /// Sets the input to the provided value.
     pub value: Option<String>,
 
+    /// Sets the "aria-haspopup" property.
     pub popup_type: Option<String>,
 }
 

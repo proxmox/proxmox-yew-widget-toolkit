@@ -131,6 +131,7 @@ fn derive_widget(setup: &WidgetSetup, widget: DeriveInput) -> Result<proc_macro2
 
     if setup.is_input {
         opt_fields.push(quote!{
+            #[doc(hidden)]
             #prop_or_default
             pub input_props: crate::props::FieldStdProps,
         });
@@ -138,15 +139,17 @@ fn derive_widget(setup: &WidgetSetup, widget: DeriveInput) -> Result<proc_macro2
 
     if setup.is_container {
         opt_fields.push(quote!{
+            #[doc(hidden)]
             #prop_or_default
-            pub(crate) children: Vec<::yew::virtual_dom::VNode>,
+            pub children: Vec<::yew::virtual_dom::VNode>,
         });
     }
 
     if setup.is_element {
         opt_fields.push(quote!{
+            #[doc(hidden)]
             #prop_or_default
-            pub(crate) listeners: crate::props::ListenersWrapper,
+            pub listeners: crate::props::ListenersWrapper,
         });
     }
 
@@ -154,6 +157,7 @@ fn derive_widget(setup: &WidgetSetup, widget: DeriveInput) -> Result<proc_macro2
         #(#attrs)*
         #vis struct #ident #generics {
 
+            #[doc(hidden)]
             #prop_or_default
             pub std_props: crate::props::WidgetStdProps,
 

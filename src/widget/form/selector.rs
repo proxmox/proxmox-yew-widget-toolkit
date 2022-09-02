@@ -20,6 +20,7 @@ use super::{FieldOptions, FormContext, ValidateFn};
 
 use pwt_macros::widget;
 
+/// Render function to create the [Selector] picker.
 #[derive(Derivative)]
 #[derivative(Clone(bound=""), PartialEq(bound=""))]
 pub struct RenderSelectorPickerFn<T>(
@@ -28,7 +29,7 @@ pub struct RenderSelectorPickerFn<T>(
 );
 
 impl <T> RenderSelectorPickerFn<T> {
-    /// Creates a new [`RenderDropdownPickerFn`]
+    /// Creates a new [`RenderSelectorPickerFn`]
     pub fn new(renderer: impl 'static + Fn(&Rc<Vec<T>>, Key, &Callback<Key>) -> Html) -> Self {
         Self(Rc::new(renderer))
     }
