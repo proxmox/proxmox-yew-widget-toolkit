@@ -1,8 +1,15 @@
 use std::rc::Rc;
 use std::cmp::Ordering;
 
+use derivative::Derivative;
+
 /// Wraps `Rc` around `Fn` so it can be passed as a prop.
-pub struct SorterFn<T>(Rc<dyn Fn(&T, &T) -> Ordering>);
+#[derive(Derivative)]
+#[derivative(Clone(bound=""), PartialEq(bound=""))]
+pub struct SorterFn<T>(
+    #[derivative(PartialEq(compare_with="Rc::ptr_eq"))]
+    Rc<dyn Fn(&T, &T) -> Ordering>
+);
 
 impl<T> SorterFn<T> {
     /// Creates a new [`SorterFn`]
@@ -12,20 +19,6 @@ impl<T> SorterFn<T> {
     /// Apply the sorter function
     pub fn cmp(&self, a: &T, b: &T) -> Ordering {
         (self.0)(a, b)
-    }
-}
-
-impl<T> Clone for SorterFn<T> {
-    fn clone(&self) -> Self {
-        Self(Rc::clone(&self.0))
-    }
-}
-
-impl<T> PartialEq for SorterFn<T> {
-    fn eq(&self, other: &Self) -> bool {
-        // https://github.com/rust-lang/rust-clippy/issues/6524
-        // #[allow(clippy::vtable_address_comparisons)]
-        Rc::ptr_eq(&self.0, &other.0)
     }
 }
 
