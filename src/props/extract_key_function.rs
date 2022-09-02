@@ -1,9 +1,15 @@
 use std::rc::Rc;
 
+use derivative::Derivative;
 use yew::virtual_dom::Key;
 
 /// Wraps `Rc` around `Fn` so it can be passed as a prop.
-pub struct ExtractKeyFn<T>(Rc<dyn Fn(&T) -> Key>);
+#[derive(Derivative)]
+#[derivative(Clone(bound=""), PartialEq(bound=""))]
+pub struct ExtractKeyFn<T>(
+    #[derivative(PartialEq(compare_with="Rc::ptr_eq"))]
+    Rc<dyn Fn(&T) -> Key>
+);
 
 impl<T> ExtractKeyFn<T> {
     /// Creates a new [`ExtractKeyFn`]
@@ -19,19 +25,5 @@ impl<T> ExtractKeyFn<T> {
 impl<T, F: 'static + Fn(&T) -> Key> From<F> for ExtractKeyFn<T> {
     fn from(f: F) -> Self {
         ExtractKeyFn::new(f)
-    }
-}
-
-impl<T> Clone for ExtractKeyFn<T> {
-    fn clone(&self) -> Self {
-        Self(Rc::clone(&self.0))
-    }
-}
-
-impl<T> PartialEq for ExtractKeyFn<T> {
-    fn eq(&self, other: &Self) -> bool {
-        // https://github.com/rust-lang/rust-clippy/issues/6524
-        // #[allow(clippy::vtable_address_comparisons)]
-        Rc::ptr_eq(&self.0, &other.0)
     }
 }
