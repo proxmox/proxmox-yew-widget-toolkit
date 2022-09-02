@@ -1,6 +1,7 @@
 use std::rc::Rc;
 use std::marker::PhantomData;
 
+use derivative::Derivative;
 use yew::prelude::*;
 use yew::virtual_dom::{Key, VComp, VNode};
 use yew::html::IntoEventCallback;
@@ -11,6 +12,8 @@ use crate::widget::{Fa, SizeObserver};
 use crate::widget::Resizable;
 
 #[derive(Properties)]
+#[derive(Derivative)]
+#[derivative(Clone(bound=""), PartialEq(bound=""))]
 pub struct DataTableColumn<T> {
     #[prop_or(String::from("100px"))]
     pub width: String,
@@ -68,28 +71,6 @@ impl<T> DataTableColumn<T> {
     }
 }
 
-// Avoid "T: Clone" by manual implementation
-impl <T> Clone for  DataTableColumn<T> {
-    fn clone(&self) -> Self {
-        Self {
-            width: self.width.clone(),
-            name: self.name.clone(),
-            justify: self.justify.clone(),
-            render: self.render.clone(),
-            sorter: self.sorter.clone(),
-        }
-    }
-}
-// Avoid "T: PartialEq" by manual implementation
-impl <T> PartialEq for DataTableColumn<T> {
-    fn eq(&self, other: &Self) -> bool {
-        self.width == other.width &&
-            self.name == other.name &&
-            self.justify == other.justify &&
-            self.render == other.render
-    }
-}
-
 pub enum Msg {
     ResizeColumn(usize, i32),
     ViewportResize(i32, i32),
@@ -99,7 +80,9 @@ pub enum Msg {
 }
 
 // DataTable properties
-#[derive(Properties, Clone)]
+#[derive(Properties)]
+#[derive(Derivative)]
+#[derivative(Clone(bound=""), PartialEq(bound=""))]
 pub struct DataTable<T>
 where
     T: 'static,
@@ -112,6 +95,7 @@ where
     pub columns: Vec<DataTableColumn<T>>,
 
     #[prop_or_default]
+    #[derivative(PartialEq(compare_with="Rc::ptr_eq"))]
     pub items: Rc<Vec<T>>,
 
     #[prop_or_default]
@@ -223,16 +207,6 @@ impl <T> DataTable<T> {
     pub fn key(mut self, key: impl Into<Key>) -> Self {
         self.key = Some(key.into());
         self
-    }
-}
-
-// Avoid "T: PartialEq" by manual implementation
-impl <T> PartialEq for DataTable<T> {
-    fn eq(&self, other: &Self) -> bool {
-        self.columns == other.columns &&
-            Rc::ptr_eq(&self.items, &other.items) &&
-            self.bordered == other.bordered &&
-            self.row_height == other.row_height
     }
 }
 
