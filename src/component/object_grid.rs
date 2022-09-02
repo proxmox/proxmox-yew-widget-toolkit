@@ -2,19 +2,31 @@ use std::rc::Rc;
 
 use serde_json::Value;
 use indexmap::IndexMap;
+use derivative::Derivative;
 
 use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode, Key};
 
 use crate::prelude::*;
-use crate::props::{
-    LoadCallback, IntoLoadCallback, SubmitCallback, IntoSubmitCallback,
-    RenderItemFn,
-};
+use crate::props::{LoadCallback, IntoLoadCallback, SubmitCallback, IntoSubmitCallback};
 use crate::state::Loader;
 use crate::widget::{Button, Toolbar};
 use crate::widget::form::FormContext;
 use crate::component::{EditWindow, KVGrid, KVGridRow};
+
+#[derive(Derivative)]
+#[derivative(Clone, PartialEq)]
+pub struct RenderItemFn(
+    #[derivative(PartialEq(compare_with="Rc::ptr_eq"))]
+    Rc<dyn Fn(&FormContext, &str, &Value, &Value) -> Html>
+);
+
+impl RenderItemFn {
+    /// Creates a new [`RenderFn`]
+    pub fn new(renderer: impl 'static + Fn(&FormContext, &str, &Value, &Value) -> Html) -> Self {
+        Self(Rc::new(renderer))
+    }
+}
 
 #[derive(Clone, PartialEq)]
 pub struct ObjectGridRow {
@@ -183,7 +195,7 @@ impl PwtObjectGrid  {
         EditWindow::new(format!("Edit: {}", title))
             .loader(props.loader.clone())
             .ondone(Some(ctx.link().callback(|_| Msg::Close)))
-            .renderer(move |form_state| editor.apply(&form_state, &name, &value, &data))
+            .renderer(move |form_state| (editor.0)(&form_state, &name, &value, &data))
             .onsubmit(props.onsubmit.clone())
             .into()
     }

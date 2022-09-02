@@ -34,7 +34,7 @@ mod padding;
 pub use padding::Padding;
 
 mod render_function;
-pub use render_function::{RenderFn, RenderItemFn};
+pub use render_function::RenderFn;
 
 mod sorter_function;
 pub use sorter_function::{SorterFn, IntoSorterFn};
