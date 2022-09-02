@@ -4,10 +4,16 @@ use std::pin::Pin;
 
 use anyhow::Error;
 use serde_json::Value;
+use derivative::Derivative;
 
 use crate::widget::form::FormContext;
 
-pub struct SubmitCallback(Rc<dyn Fn(FormContext) -> Pin<Box<dyn Future<Output=Result<Value, Error>>>>>);
+#[derive(Derivative)]
+#[derivative(Clone, PartialEq)]
+pub struct SubmitCallback(
+    #[derivative(PartialEq(compare_with="Rc::ptr_eq"))]
+    Rc<dyn Fn(FormContext) -> Pin<Box<dyn Future<Output=Result<Value, Error>>>>>
+);
 
 impl SubmitCallback {
 
@@ -24,18 +30,6 @@ impl SubmitCallback {
 
     pub async fn apply(&self, form_ctx: FormContext) -> Result<Value, Error> {
         (self.0)(form_ctx).await
-    }
-}
-
-impl Clone for SubmitCallback {
-    fn clone(&self) -> Self {
-        Self(Rc::clone(&self.0))
-    }
-}
-
-impl PartialEq for SubmitCallback {
-    fn eq(&self, other: &Self) -> bool {
-        Rc::ptr_eq(&self.0, &other.0)
     }
 }
 
