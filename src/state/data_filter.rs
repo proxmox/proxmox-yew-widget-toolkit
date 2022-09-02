@@ -2,7 +2,8 @@ use std::rc::Rc;
 
 use yew::html::IntoPropValue;
 
-use crate::props::{ExtractKeyFn, FilterFn, IntoFilterFn, SorterFn, IntoSorterFn};
+//use crate::props::{ExtractKeyFn, IntoExtractKeyFn};
+use crate::props::{FilterFn, IntoFilterFn, SorterFn, IntoSorterFn};
 
 fn my_data_eq_fn<T>(a: &Option<Rc<Vec<T>>>, b: &Option<Rc<Vec<T>>>) -> bool {
     match (a, b) {
@@ -15,7 +16,7 @@ fn my_data_eq_fn<T>(a: &Option<Rc<Vec<T>>>, b: &Option<Rc<Vec<T>>>) -> bool {
 pub struct DataFilter<T> {
     data: Option<Rc<Vec<T>>>,
     filtered_data: Vec<usize>,
-    extract_key: Option<ExtractKeyFn<T>>,
+   // extract_key: Option<ExtractKeyFn<T>>,
     sorter: Option<SorterFn<T>>,
     filter: Option<FilterFn<T>>,
 }
@@ -31,7 +32,7 @@ impl <T> DataFilter<T> {
         Self {
             data: None,
             filtered_data: Vec::new(),
-            extract_key: None,
+            //extract_key: None,
             sorter: None,
             filter: None,
         }
@@ -50,14 +51,29 @@ impl <T> DataFilter<T> {
         self.update_filtered_data();
     }
 
-    pub fn extract_key(mut self, extract_fn: impl Into<ExtractKeyFn<T>>) -> Self {
+    pub fn lookup_record(&self, record_num: usize) -> Option<&T> {
+        self.data.as_ref().map(|data| data.get(record_num)).flatten()
+    }
+
+    pub fn lookup_filtered_record(&self, cursor: usize) -> Option<(usize, &T)> {
+        let n = match self.unfiltered_pos(cursor) {
+            Some(n) => n,
+            None => return None,
+        };
+
+        self.lookup_record(n).map(|item| (n, item))
+    }
+
+    /*
+    pub fn extract_key(mut self, extract_fn: impl IntoExtractKeyFn<T>) -> Self {
         self.set_extract_key(extract_fn);
         self
     }
 
-    pub fn set_extract_key(&mut self, extract_fn: impl Into<ExtractKeyFn<T>>) {
-        self.extract_key = Some(extract_fn.into());
+    pub fn set_extract_key(&mut self, extract_fn: impl IntoExtractKeyFn<T>) {
+        self.extract_key = extract_fn.into_extract_key_fn();
     }
+*/
 
     pub fn sorter(mut self, sorter: impl IntoSorterFn<T>) -> Self {
         self.set_sorter(sorter);
@@ -86,6 +102,18 @@ impl <T> DataFilter<T> {
         }
     }
 
+    pub fn unfiltered_pos(&self, cursor: usize) -> Option<usize> {
+        self.filtered_data.get(cursor).map(|n| *n)
+    }
+
+    pub fn filtered_pos(&self, record_num: usize) -> Option<usize> {
+        self.filtered_data.iter().position(|n| *n == record_num)
+    }
+
+    pub fn filtered_data_len(&self) -> usize {
+        self.filtered_data.len()
+    }
+
     fn update_filtered_data(&mut self) {
         let data = match &self.data {
             None => {
@@ -96,8 +124,8 @@ impl <T> DataFilter<T> {
         };
 
         let mut filtered_data: Vec<(usize, &T)> = if let Some(filter) = &self.filter {
-            data.iter().enumerate().filter(|(_n, item)| {
-                filter.apply(item)
+            data.iter().enumerate().filter(|(n, item)| {
+                filter.apply(*n, item)
             }).collect()
         } else {
             data.iter().enumerate().collect()
@@ -113,7 +141,7 @@ impl <T> DataFilter<T> {
 
 impl <'a, T> Iterator for DataFilterIterator<'a, T> {
     // we will be counting with usize
-    type Item = &'a T;
+    type Item = (usize, usize, &'a T);
 
     // next() is the only required method
     fn next(&mut self) -> Option<Self::Item> {
@@ -126,9 +154,10 @@ impl <'a, T> Iterator for DataFilterIterator<'a, T> {
             return None;
         }
 
-        let n = self.data.filtered_data[self.pos];
+        let pos = self.pos;
+        let n = self.data.filtered_data[pos];
         self.pos += 1;
 
-        Some(&data[n])
+        Some((pos, n, &data[n]))
     }
 }

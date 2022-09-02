@@ -1,5 +1,4 @@
 use std::rc::Rc;
-use std::marker::PhantomData;
 
 use derivative::Derivative;
 use web_sys::HtmlInputElement;
@@ -12,6 +11,7 @@ use crate::prelude::*;
 use crate::widget::{get_unique_element_id, Column, Container, DataTableColumn, Row};
 use crate::widget::form::Input;
 use crate::props::ExtractKeyFn;
+use crate::state::DataFilter;
 
 #[derive(Derivative, Properties)]
 // Note: use derivative to avoid Clone/PartialEq requirement on T
@@ -134,10 +134,9 @@ pub enum Msg {
 
 #[doc(hidden)]
 pub struct PwtGridPicker<T> {
-    _phantom: PhantomData<T>,
     filter: String,
     // fixme: last_data: Rc<Vec<T>> // track changes
-    filtered_data: Vec<usize>,
+    data: DataFilter<T>,
     cursor: Option<usize>,
     unique_id: String,
 }
@@ -150,25 +149,43 @@ impl<T: 'static> PwtGridPicker<T> {
             on_filter_change.emit(());
         }
 
-        let old_cursor_n = self.cursor.map(|cursor| self.filtered_data[cursor]);
+        let old_cursor_n = self.cursor.map(|cursor| self.data.unfiltered_pos(cursor)).flatten();
         self.cursor = None;
 
-        self.filtered_data = props.items.iter().enumerate().filter_map(|(n, item)| {
-            let key = match &props.extract_key {
-                None => Key::from(n),
-                Some(extract_fn) => extract_fn.apply(item),
-            };
+        if self.filter.is_empty() {
+            self.data.set_filter(None);
+        } else {
+            self.data.set_filter({
+                let extract_key = props.extract_key.clone();
+                let filter = self.filter.clone();
+                crate::props::FilterFn::new(
+                    move |n, item| {
+                        let key = match &extract_key {
+                            None => Key::from(n),
+                            Some(extract_fn) => extract_fn.apply(item),
+                        };
+                        key.to_lowercase().contains(&filter)
+                    }
+                )
+            });
+            /* fixme: this introduces lifetime problems??
+            self.data.set_filter({
+                let extract_key = props.extract_key.clone();
+                let filter = self.filter.clone();
+                move |n, item| {
+                    let key = match &extract_key {
+                        None => Key::from(n),
+                        Some(extract_fn) => extract_fn.apply(item),
+                    };
 
-            if !self.filter.is_empty() {
-                if !key.to_lowercase().contains(&self.filter) {
-                    return None;
+                    !key.to_lowercase().contains(&filter)
                 }
-            }
-            Some(n)
-        }).collect();
+            })
+             */
+        }
 
-         self.cursor = match old_cursor_n {
-            Some(n) => self.filtered_data.iter().position(|x| *x == n),
+        self.cursor = match old_cursor_n {
+            Some(n) => self.data.filtered_pos(n),
             None => None,
         };
 
@@ -181,11 +198,12 @@ impl<T: 'static> PwtGridPicker<T> {
 
     fn scroll_cursor_into_view(&self, pos: web_sys::ScrollLogicalPosition) {
         let cursor = match self.cursor {
-            Some(n) => n,
+            Some(c) => c,
             None => return,
         };
-        let n = self.filtered_data[cursor];
-        self.scroll_item_into_view(n, pos);
+        if let Some(n) = self.data.unfiltered_pos(cursor) {
+            self.scroll_item_into_view(n, pos);
+        }
     }
 
     fn scroll_item_into_view(&self, n: usize, pos: web_sys::ScrollLogicalPosition) {
@@ -204,7 +222,7 @@ impl<T: 'static> PwtGridPicker<T> {
     }
 
     fn cursor_down(&mut self) {
-        let len = self.filtered_data.len();
+        let len = self.data.filtered_data_len();
         if len == 0 {
             self.cursor = None;
             return;
@@ -218,7 +236,7 @@ impl<T: 'static> PwtGridPicker<T> {
     }
 
     fn cursor_up(&mut self) {
-        let len = self.filtered_data.len();
+        let len = self.data.filtered_data_len();
         if len == 0 {
             self.cursor = None;
             return;
@@ -242,9 +260,8 @@ impl<T: 'static> Component for PwtGridPicker<T> {
         let props = ctx.props();
 
         Self {
-            _phantom: PhantomData::<T>,
             filter: String::new(),
-            filtered_data: props.items.iter().enumerate().filter_map(|(n, _)| Some(n)).collect(),
+            data: DataFilter::new().data(props.items.clone()),
             cursor: props.selection,
             unique_id: get_unique_element_id(),
         }
@@ -259,22 +276,21 @@ impl<T: 'static> Component for PwtGridPicker<T> {
             }
             Msg::CursorSelect => {
                 let cursor = match self.cursor {
-                    Some(n) => n,
+                    Some(c) => c,
                     None => return false, // nothing to do
                 };
 
-                let n = self.filtered_data[cursor];
-
                 if let Some(onselect) = &props.onselect {
-                    let item = &props.items[n];
+                    if let Some((n, item)) = self.data.lookup_filtered_record(cursor) {
+                        let key = match &props.extract_key {
+                            None => Key::from(n),
+                            Some(extract_fn) => extract_fn.apply(item),
+                        };
 
-                    let key = match &props.extract_key {
-                        None => Key::from(n),
-                        Some(extract_fn) => extract_fn.apply(item),
-                    };
-
-                    onselect.emit(key);
+                        onselect.emit(key);
+                    }
                 }
+
                 false
             }
             Msg::CursorDown => {
@@ -286,7 +302,10 @@ impl<T: 'static> Component for PwtGridPicker<T> {
                 true
             }
             Msg::ItemClick(n) => {
-                let item = &props.items[n];
+                let item = match self.data.lookup_record(n) {
+                    Some(item) => item,
+                    None => return false, // should not happen
+                };
 
                 let key = match &props.extract_key {
                     None => Key::from(n),
@@ -315,9 +334,7 @@ impl<T: 'static> Component for PwtGridPicker<T> {
 
         let mut active_descendant = None;
 
-        let options: Html = self.filtered_data.iter().enumerate().map(|(filtered_n, n)| {
-            let n = *n;
-            let item = &props.items[n];
+        let options: Html = self.data.filtered_data().map(|(filtered_pos, n, item)| {
 
             let key = match &props.extract_key {
                 None => Key::from(n),
@@ -325,7 +342,7 @@ impl<T: 'static> Component for PwtGridPicker<T> {
             };
 
             let selected = props.selection.map(|sel| sel == n).unwrap_or(false);
-            let is_active = self.cursor.map(|cursor| cursor == filtered_n).unwrap_or(false);
+            let is_active = self.cursor.map(|cursor| cursor == filtered_pos).unwrap_or(false);
 
             if is_active {
                 active_descendant = Some(self.get_unique_item_id(n));
@@ -431,7 +448,7 @@ impl<T: 'static> Component for PwtGridPicker<T> {
             .class("pwt-flex-fill pwt-overflow-auto")
             .onkeydown(onkeydown);
 
-        let filter_invalid = self.filtered_data.is_empty();
+        let filter_invalid = self.data.filtered_data_len() == 0;
 
         if show_filter {
             let filter = Row::new()
@@ -473,11 +490,17 @@ impl<T: 'static> Component for PwtGridPicker<T> {
             view.add_child(table);
         }
 
-        view.add_optional_child(self.filtered_data.is_empty().then(|| html!{
+        view.add_optional_child((self.data.filtered_data_len() == 0).then(|| html!{
             <div class="pwt-p-2 pwt-flex-fill pwt-overflow-auto">{"no data"}</div>
         }));
 
         view.into()
+    }
+
+    fn changed(&mut self, ctx: &Context<Self>, _old_props: &Self::Properties) -> bool {
+        let props = ctx.props();
+        self.data.set_data(Rc::clone(&props.items));
+        true
     }
 
     fn rendered(&mut self, _ctx: &Context<Self>, first_render: bool) {

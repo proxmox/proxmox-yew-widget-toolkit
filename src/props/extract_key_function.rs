@@ -27,3 +27,25 @@ impl<T, F: 'static + Fn(&T) -> Key> From<F> for ExtractKeyFn<T> {
         ExtractKeyFn::new(f)
     }
 }
+
+pub trait IntoExtractKeyFn<T> {
+    fn into_extract_key_fn(self) -> Option<ExtractKeyFn<T>>;
+}
+
+impl<T> IntoExtractKeyFn<T> for ExtractKeyFn<T> {
+    fn into_extract_key_fn(self) -> Option<ExtractKeyFn<T>> {
+        Some(self)
+    }
+}
+
+impl<T> IntoExtractKeyFn<T> for Option<ExtractKeyFn<T>> {
+    fn into_extract_key_fn(self) -> Option<ExtractKeyFn<T>> {
+        self
+    }
+}
+
+impl<T, F: 'static + Fn(&T) -> Key> IntoExtractKeyFn<T>  for F {
+    fn into_extract_key_fn(self) -> Option<ExtractKeyFn<T>> {
+        Some(ExtractKeyFn::new(self))
+    }
+}
