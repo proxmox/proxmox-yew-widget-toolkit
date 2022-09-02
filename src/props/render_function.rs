@@ -1,4 +1,6 @@
 use std::rc::Rc;
+
+use derivative::Derivative;
 use serde_json::Value;
 
 use yew::Html;
@@ -6,7 +8,12 @@ use yew::Html;
 use crate::widget::form::FormContext;
 
 /// Wraps `Rc` around `Fn` so it can be passed as a prop.
-pub struct RenderFn<T>(Rc<dyn Fn(&T) -> Html>);
+#[derive(Derivative)]
+#[derivative(Clone(bound=""), PartialEq(bound=""))]
+pub struct RenderFn<T>(
+    #[derivative(PartialEq(compare_with="Rc::ptr_eq"))]
+    Rc<dyn Fn(&T) -> Html>
+);
 
 impl<T> RenderFn<T> {
     /// Creates a new [`RenderFn`]
@@ -25,22 +32,14 @@ impl<T, F: 'static + Fn(&T) -> Html> From<F> for RenderFn<T> {
     }
 }
 
-impl<T> Clone for RenderFn<T> {
-    fn clone(&self) -> Self {
-        Self(Rc::clone(&self.0))
-    }
-}
-
-impl<T> PartialEq for RenderFn<T> {
-    fn eq(&self, other: &Self) -> bool {
-        // https://github.com/rust-lang/rust-clippy/issues/6524
-        // #[allow(clippy::vtable_address_comparisons)]
-        Rc::ptr_eq(&self.0, &other.0)
-    }
-}
 
 /// For use with KVGrid
-pub struct RenderRecordFn(Rc<dyn Fn(&str, &Value, &Value) -> Html>);
+#[derive(Derivative)]
+#[derivative(Clone, PartialEq)]
+pub struct RenderRecordFn(
+    #[derivative(PartialEq(compare_with="Rc::ptr_eq"))]
+    Rc<dyn Fn(&str, &Value, &Value) -> Html>
+);
 
 impl RenderRecordFn {
     /// Creates a new [`RenderFn`]
@@ -53,21 +52,14 @@ impl RenderRecordFn {
     }
 }
 
-impl Clone for RenderRecordFn {
-    fn clone(&self) -> Self {
-        Self(Rc::clone(&self.0))
-    }
-}
-
-impl PartialEq for RenderRecordFn {
-    fn eq(&self, other: &Self) -> bool {
-        Rc::ptr_eq(&self.0, &other.0)
-    }
-}
-
 
 /// For use with ObjectGrid
-pub struct RenderItemFn(Rc<dyn Fn(&FormContext, &str, &Value, &Value) -> Html>);
+#[derive(Derivative)]
+#[derivative(Clone, PartialEq)]
+pub struct RenderItemFn(
+    #[derivative(PartialEq(compare_with="Rc::ptr_eq"))]
+    Rc<dyn Fn(&FormContext, &str, &Value, &Value) -> Html>
+);
 
 impl RenderItemFn {
     /// Creates a new [`RenderFn`]
@@ -77,17 +69,5 @@ impl RenderItemFn {
     /// Apply the render function
     pub fn apply(&self, form_state: &FormContext, name: &str, value: &Value, record: &Value) -> Html {
         (self.0)(form_state, name, value, record)
-    }
-}
-
-impl Clone for RenderItemFn {
-    fn clone(&self) -> Self {
-        Self(Rc::clone(&self.0))
-    }
-}
-
-impl PartialEq for RenderItemFn {
-    fn eq(&self, other: &Self) -> bool {
-        Rc::ptr_eq(&self.0, &other.0)
     }
 }
