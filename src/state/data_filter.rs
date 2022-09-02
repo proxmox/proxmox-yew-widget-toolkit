@@ -19,6 +19,7 @@ pub struct DataFilter<T> {
    // extract_key: Option<ExtractKeyFn<T>>,
     sorter: Option<SorterFn<T>>,
     filter: Option<FilterFn<T>>,
+    cursor: Option<usize>,
 }
 
 pub struct DataFilterIterator<'a, T> {
@@ -35,6 +36,7 @@ impl <T> DataFilter<T> {
             //extract_key: None,
             sorter: None,
             filter: None,
+            cursor: None,
         }
     }
 
@@ -115,6 +117,14 @@ impl <T> DataFilter<T> {
     }
 
     fn update_filtered_data(&mut self) {
+
+        let old_cursor_record_num = self
+            .cursor.map(|cursor| self.unfiltered_pos(cursor))
+            .flatten();
+
+        self.cursor = None;
+
+
         let data = match &self.data {
             None => {
                 self.filtered_data = Vec::new();
@@ -136,6 +146,58 @@ impl <T> DataFilter<T> {
         }
 
         self.filtered_data = filtered_data.into_iter().map(|item| item.0).collect();
+
+        self.cursor = match old_cursor_record_num {
+            Some(n) => self.filtered_pos(n),
+            None => None,
+        };
+    }
+    pub fn get_cursor(&self) -> Option<usize> {
+        self.cursor
+    }
+
+    pub fn cursor(mut self, cursor: Option<usize>) -> Self {
+        self.set_cursor(cursor);
+        self
+    }
+
+    pub fn set_cursor(&mut self, cursor: Option<usize>) {
+        self.cursor = match cursor {
+            Some(c) => {
+                let len = self.filtered_data_len();
+                if c < len {
+                    Some(c)
+                } else {
+                    None
+                }
+            }
+            None => None,
+        }
+    }
+
+    pub fn cursor_down(&mut self) {
+        let len = self.filtered_data_len();
+        if len == 0 {
+            self.cursor = None;
+            return;
+        }
+        self.cursor = match self.cursor {
+            Some(n) => if (n + 1) < len { Some(n + 1) }  else { None },
+            None => Some(0),
+        };
+    }
+
+    pub fn cursor_up(&mut self) {
+        let len = self.filtered_data_len();
+        if len == 0 {
+            self.cursor = None;
+            return;
+        }
+
+        self.cursor = match self.cursor {
+            Some(n) => if n > 0 { Some(n - 1) } else { None },
+            None => Some(len - 1),
+        };
     }
 }
 

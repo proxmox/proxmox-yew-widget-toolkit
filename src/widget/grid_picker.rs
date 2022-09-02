@@ -135,9 +135,7 @@ pub enum Msg {
 #[doc(hidden)]
 pub struct PwtGridPicker<T> {
     filter: String,
-    // fixme: last_data: Rc<Vec<T>> // track changes
     data: DataFilter<T>,
-    cursor: Option<usize>,
     unique_id: String,
 }
 impl<T: 'static> PwtGridPicker<T> {
@@ -148,9 +146,6 @@ impl<T: 'static> PwtGridPicker<T> {
         if let Some(ref on_filter_change) = props.on_filter_change {
             on_filter_change.emit(());
         }
-
-        let old_cursor_n = self.cursor.map(|cursor| self.data.unfiltered_pos(cursor)).flatten();
-        self.cursor = None;
 
         if self.filter.is_empty() {
             self.data.set_filter(None);
@@ -184,11 +179,6 @@ impl<T: 'static> PwtGridPicker<T> {
              */
         }
 
-        self.cursor = match old_cursor_n {
-            Some(n) => self.data.filtered_pos(n),
-            None => None,
-        };
-
         self.scroll_cursor_into_view(web_sys::ScrollLogicalPosition::Nearest);
     }
 
@@ -197,7 +187,7 @@ impl<T: 'static> PwtGridPicker<T> {
     }
 
     fn scroll_cursor_into_view(&self, pos: web_sys::ScrollLogicalPosition) {
-        let cursor = match self.cursor {
+        let cursor = match self.data.get_cursor() {
             Some(c) => c,
             None => return,
         };
@@ -220,35 +210,6 @@ impl<T: 'static> PwtGridPicker<T> {
         options.block(pos);
         el.scroll_into_view_with_scroll_into_view_options(&options);
     }
-
-    fn cursor_down(&mut self) {
-        let len = self.data.filtered_data_len();
-        if len == 0 {
-            self.cursor = None;
-            return;
-        }
-        self.cursor = match self.cursor {
-            Some(n) => if (n + 1) < len { Some(n + 1) }  else { None },
-            None => Some(0),
-        };
-
-        self.scroll_cursor_into_view(web_sys::ScrollLogicalPosition::Nearest);
-    }
-
-    fn cursor_up(&mut self) {
-        let len = self.data.filtered_data_len();
-        if len == 0 {
-            self.cursor = None;
-            return;
-        }
-
-        self.cursor = match self.cursor {
-            Some(n) => if n > 0 { Some(n - 1) } else { None },
-            None => Some(len - 1),
-        };
-
-        self.scroll_cursor_into_view(web_sys::ScrollLogicalPosition::Nearest);
-    }
 }
 
 
@@ -261,8 +222,9 @@ impl<T: 'static> Component for PwtGridPicker<T> {
 
         Self {
             filter: String::new(),
-            data: DataFilter::new().data(props.items.clone()),
-            cursor: props.selection,
+            data: DataFilter::new()
+                .data(props.items.clone())
+                .cursor(props.selection),
             unique_id: get_unique_element_id(),
         }
     }
@@ -275,7 +237,7 @@ impl<T: 'static> Component for PwtGridPicker<T> {
                 true
             }
             Msg::CursorSelect => {
-                let cursor = match self.cursor {
+                let cursor = match self.data.get_cursor() {
                     Some(c) => c,
                     None => return false, // nothing to do
                 };
@@ -294,11 +256,13 @@ impl<T: 'static> Component for PwtGridPicker<T> {
                 false
             }
             Msg::CursorDown => {
-                self.cursor_down();
+                self.data.cursor_down();
+                self.scroll_cursor_into_view(web_sys::ScrollLogicalPosition::Nearest);
                 true
             }
             Msg::CursorUp => {
-                self.cursor_up();
+                self.data.cursor_up();
+                self.scroll_cursor_into_view(web_sys::ScrollLogicalPosition::Nearest);
                 true
             }
             Msg::ItemClick(n) => {
@@ -342,7 +306,9 @@ impl<T: 'static> Component for PwtGridPicker<T> {
             };
 
             let selected = props.selection.map(|sel| sel == n).unwrap_or(false);
-            let is_active = self.cursor.map(|cursor| cursor == filtered_pos).unwrap_or(false);
+            let is_active = self.data
+                .get_cursor().map(|cursor| cursor == filtered_pos)
+                .unwrap_or(false);
 
             if is_active {
                 active_descendant = Some(self.get_unique_item_id(n));
