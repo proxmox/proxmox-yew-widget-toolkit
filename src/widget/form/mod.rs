@@ -23,7 +23,7 @@ mod combobox;
 pub use combobox::{Combobox, PwtCombobox};
 
 mod selector;
-pub use selector::{CreatePickerArgs, Selector, PwtSelector};
+pub use selector::{Selector, PwtSelector, RenderSelectorPickerFn};
 
 use std::rc::Rc;
 

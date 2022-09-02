@@ -12,7 +12,7 @@ use yew::html::{IntoEventCallback, IntoPropValue};
 use proxmox_schema::Schema;
 
 use crate::prelude::*;
-use crate::props::{ExtractKeyFn, IntoLoadCallback, LoadCallback, RenderFn};
+use crate::props::{ExtractKeyFn, IntoLoadCallback, LoadCallback};
 use crate::state::Loader;
 use crate::widget::Dropdown;
 
@@ -20,10 +20,24 @@ use super::{FieldOptions, FormContext, ValidateFn};
 
 use pwt_macros::widget;
 
-pub struct CreatePickerArgs<T> {
-    pub list: Rc<Vec<T>>,
-    pub selected: Key,
-    pub on_select: Callback<Key>,
+#[derive(Derivative)]
+#[derivative(Clone(bound=""), PartialEq(bound=""))]
+pub struct RenderSelectorPickerFn<T>(
+    #[derivative(PartialEq(compare_with="Rc::ptr_eq"))]
+    Rc<dyn Fn(&Rc<Vec<T>>, Key, &Callback<Key>) -> Html>
+);
+
+impl <T> RenderSelectorPickerFn<T> {
+    /// Creates a new [`RenderDropdownPickerFn`]
+    pub fn new(renderer: impl 'static + Fn(&Rc<Vec<T>>, Key, &Callback<Key>) -> Html) -> Self {
+        Self(Rc::new(renderer))
+    }
+}
+
+impl<T, F: 'static + Fn(&Rc<Vec<T>>, Key, &Callback<Key>) -> Html> From<F> for RenderSelectorPickerFn<T> {
+    fn from(f: F) -> Self {
+        RenderSelectorPickerFn::new(f)
+    }
 }
 
 fn my_data_cmp_fn<T>(a: &Option<Rc<Vec<T>>>, b: &Option<Rc<Vec<T>>>) -> bool {
@@ -61,7 +75,7 @@ pub struct Selector<T: 'static> {
     /// Onyl used to auto-select the first entry (if default is not set)
     pub extract_key: Option<ExtractKeyFn<T>>,
     pub on_select: Option<Callback<Key>>,
-    pub picker: RenderFn<CreatePickerArgs<T>>,
+    pub picker: RenderSelectorPickerFn<T>,
     pub validate: Option<ValidateFn<(String, Rc<Vec<T>>)>>,
 }
 
@@ -69,11 +83,11 @@ impl<T: 'static> Selector<T> {
 
     pub fn new(
         name: impl IntoPropValue<AttrValue>,
-        picker: RenderFn<CreatePickerArgs<T>>,
+        picker: impl Into<RenderSelectorPickerFn<T>>,
     ) -> Self {
         yew::props!(Self {
             name: name.into_prop_value(),
-            picker,
+            picker: picker.into(),
         })
     }
 
@@ -408,11 +422,7 @@ impl<T: 'static> Component for PwtSelector<T> {
                     if list.is_empty() {
                         html!{<div class="pwt-p-2">{"List does not contain any items."}</div>}
                     } else {
-                        picker.apply(&CreatePickerArgs {
-                            list,
-                            selected: Key::from(value.clone()),
-                            on_select: on_select.clone(),
-                        })
+                        (picker.0)(&list, Key::from(value.clone()), on_select)
                     }
                 })
             }
