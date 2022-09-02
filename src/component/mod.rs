@@ -8,7 +8,7 @@ mod edit_window;
 pub use edit_window::{EditWindow, PwtEditWindow};
 
 mod key_value_grid;
-pub use key_value_grid::{KVGrid, KVGridRow, PwtKVGrid};
+pub use key_value_grid::{KVGrid, KVGridRow, PwtKVGrid, RenderRecordFn};
 
 mod object_grid;
 pub use object_grid::{ObjectGrid, ObjectGridRow, PwtObjectGrid};

@@ -2,13 +2,29 @@ use std::rc::Rc;
 
 use serde_json::Value;
 use indexmap::IndexMap;
+use derivative::Derivative;
 
 use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode, Key};
 use yew::html::IntoEventCallback;
 
-use crate::props::RenderRecordFn;
 use crate::widget::focus::focus_next_tabable;
+/// For use with KVGrid
+
+#[derive(Derivative)]
+#[derivative(Clone, PartialEq)]
+pub struct RenderRecordFn(
+    #[derivative(PartialEq(compare_with="Rc::ptr_eq"))]
+    Rc<dyn Fn(&str, &Value, &Value) -> Html>
+);
+
+impl RenderRecordFn {
+    /// Creates a new [`RenderFn`]
+    pub fn new(renderer: impl 'static + Fn(&str, &Value, &Value) -> Html) -> Self {
+        Self(Rc::new(renderer))
+    }
+}
+
 
 #[derive(Clone, PartialEq)]
 pub struct KVGridRow {
@@ -303,7 +319,7 @@ impl Component for PwtKVGrid {
             });
 
             let text = match &row.renderer {
-                Some(renderer) => renderer.apply(&key, &item, &props.data),
+                Some(renderer) => (renderer.0)(&key, &item, &props.data),
                 None => render_value(&item),
             };
 
