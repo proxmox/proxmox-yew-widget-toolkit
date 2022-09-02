@@ -16,12 +16,12 @@ use crate::component::{EditWindow, KVGrid, KVGridRow};
 
 #[derive(Derivative)]
 #[derivative(Clone, PartialEq)]
-pub struct RenderItemFn(
+pub struct RenderObjectGridItemFn(
     #[derivative(PartialEq(compare_with="Rc::ptr_eq"))]
     Rc<dyn Fn(&FormContext, &str, &Value, &Value) -> Html>
 );
 
-impl RenderItemFn {
+impl RenderObjectGridItemFn {
     /// Creates a new [`RenderFn`]
     pub fn new(renderer: impl 'static + Fn(&FormContext, &str, &Value, &Value) -> Html) -> Self {
         Self(Rc::new(renderer))
@@ -31,7 +31,7 @@ impl RenderItemFn {
 #[derive(Clone, PartialEq)]
 pub struct ObjectGridRow {
     row: KVGridRow,
-    editor: Option<RenderItemFn>,
+    editor: Option<RenderObjectGridItemFn>,
 }
 
 impl ObjectGridRow {
@@ -74,7 +74,7 @@ impl ObjectGridRow {
         mut self,
         editor: impl 'static + Fn(&FormContext, &str, &Value, &Value) -> Html,
     ) -> Self {
-        self.editor = Some(RenderItemFn::new(editor));
+        self.editor = Some(RenderObjectGridItemFn::new(editor));
         self
 
     }
@@ -93,7 +93,7 @@ pub struct ObjectGrid {
     grid: KVGrid,
 
     loader: Option<LoadCallback<Value>>,
-    editors: IndexMap<String, RenderItemFn>,
+    editors: IndexMap<String, RenderObjectGridItemFn>,
 
     data: Option<Value>,
 
