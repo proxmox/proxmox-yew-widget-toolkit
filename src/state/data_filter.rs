@@ -1,4 +1,5 @@
 use std::rc::Rc;
+use std::ops::Range;
 
 use yew::html::IntoPropValue;
 
@@ -25,6 +26,7 @@ pub struct DataFilter<T> {
 pub struct DataFilterIterator<'a, T> {
     data: &'a DataFilter<T>,
     pos: usize,
+    range: Option<Range<usize>>,
 }
 
 impl <T> DataFilter<T> {
@@ -99,7 +101,16 @@ impl <T> DataFilter<T> {
 
     pub fn filtered_data(&self) -> DataFilterIterator<T> {
         DataFilterIterator {
+            range: None,
             pos: 0,
+            data: self,
+        }
+    }
+
+    pub fn filtered_data_range(&self, range: Range<usize>) -> DataFilterIterator<T> {
+        DataFilterIterator {
+            pos: range.start,
+            range: Some(range),
             data: self,
         }
     }
@@ -202,15 +213,19 @@ impl <T> DataFilter<T> {
 }
 
 impl <'a, T> Iterator for DataFilterIterator<'a, T> {
-    // we will be counting with usize
     type Item = (usize, usize, &'a T);
 
-    // next() is the only required method
     fn next(&mut self) -> Option<Self::Item> {
         let data = match &self.data.data {
             Some(data) => data,
             None => return None,
         };
+
+        if let Some(range) = &self.range {
+            if range.end <= self.pos {
+                return None;
+            }
+        }
 
         if self.data.filtered_data.len() <= self.pos {
             return None;

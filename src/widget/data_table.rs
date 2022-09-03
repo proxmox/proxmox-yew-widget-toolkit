@@ -383,10 +383,7 @@ where
 
         let mut content = Vec::new();
 
-        for (i, _n, item) in self.data.filtered_data() {
-            if i < start { continue; } // fixme: fix a better way
-            if i >= end { break; }
-
+        for (i, _n, item) in self.data.filtered_data_range(start..end) {
             let mut row = Vec::new();
 
             let key = match &props.extract_key {
