@@ -1,12 +1,12 @@
 use std::rc::Rc;
-use std::marker::PhantomData;
+use std::cmp::Ordering;
 
 use derivative::Derivative;
 use yew::prelude::*;
 use yew::virtual_dom::{Key, VComp, VNode};
 use yew::html::IntoEventCallback;
 
-use crate::state::Selection;
+use crate::state::{DataFilter, Selection};
 use crate::props::{ExtractKeyFn, SorterFn, IntoSorterFn, RenderFn};
 use crate::widget::{Fa, SizeObserver};
 use crate::widget::Resizable;
@@ -218,43 +218,41 @@ pub struct PwtDataTable<T> {
 
     column_widths: Vec<Option<i32>>, // for column resize
     sorter: Vec<(usize, bool)>,
-    item_order: Vec<usize>,
+
+    data: DataFilter<T>,
 
     selection: Selection,
 
     size_observer: Option<SizeObserver>,
-    _phantom: PhantomData<T>
 }
 
-impl<T> PwtDataTable<T>
-where
-    T: 'static,
-{
-    fn get_item_order(sorter: &[(usize, bool)], ctx: &Context<Self>) -> Vec<usize> {
-        let mut column_sort = Vec::new();
-        for i in 0..ctx.props().items.len() {
-            let item = &ctx.props().items[i];
-            column_sort.push((i, item));
-        }
-        column_sort.sort_by(|a, b| {
-            for (sort_idx, ascending) in sorter {
-                let column = &ctx.props().columns[*sort_idx as usize];
-                if let Some(sorter) = &column.sorter {
-                    match if *ascending {
-                        sorter.cmp(a.1, b.1)
-                    } else {
-                        sorter.cmp(b.1, a.1)
-                    } {
-                        std::cmp::Ordering::Equal => {},
-                        other => return other,
-                    }
-                }
+fn combined_sorter_fn<T: 'static>(
+    sorters: &[(usize, bool)],
+    columns: &[DataTableColumn<T>]
+) -> SorterFn<T> {
+    let sorters: Vec<(SorterFn<T>, bool)> = sorters
+        .iter()
+        .filter_map(|(sort_idx, ascending)| {
+            match &columns[*sort_idx].sorter {
+                None => None,
+                Some(sorter) => Some((sorter.clone(), *ascending)),
             }
-            std::cmp::Ordering::Equal
-        });
+        })
+        .collect();
 
-        column_sort.into_iter().map(|item| item.0).collect()
-    }
+    SorterFn::new(move |a: &T, b: &T| {
+        for (sort_fn, ascending) in &sorters {
+            match if *ascending {
+                sort_fn.cmp(a, b)
+            } else {
+                sort_fn.cmp(b, a)
+            } {
+                Ordering::Equal => { /* continue */ },
+                other => return other,
+            }
+        }
+        Ordering::Equal
+    })
 }
 
 impl <T> Component for PwtDataTable<T>
@@ -266,17 +264,22 @@ where
 
     fn create(ctx: &Context<Self>) -> Self {
         let props = ctx.props();
+
+        let mut data = DataFilter::new()
+            .data(props.items.clone());
+
+        data.set_sorter(combined_sorter_fn(&props.sorter, &props.columns));
+
         Self {
             viewport_height: 0,
             visible_rows: 0,
             scroll_top: 0,
             column_widths: Vec::new(),
             sorter: props.sorter.clone(),
-            item_order: PwtDataTable::get_item_order(&props.sorter, ctx),
+            data,
             selection: Selection::new().multiselect(props.multiselect),
             size_observer: None,
-            _phantom: PhantomData::<T>,
-        }
+         }
     }
 
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
@@ -336,7 +339,7 @@ where
                     }
                 }
 
-                self.item_order = Self::get_item_order(&self.sorter, ctx);
+                self.data.set_sorter(combined_sorter_fn(&self.sorter, &props.columns));
 
                 true
             }
@@ -360,7 +363,7 @@ where
                 onselect.emit(keys);
             }
 
-            self.item_order = Self::get_item_order(&self.sorter, ctx);
+            self.data.set_data(Rc::clone(&props.items));
         }
 
         true
@@ -368,25 +371,26 @@ where
 
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
-        let column_count = props.items.len();
+        let row_count = self.data.filtered_data_len();
         let mut start = (self.scroll_top / props.row_height) as usize;
         if start > 0 { start -= 1; }
         if (start & 1) == 1 { start -= 1; } // make it work with striped rows
 
-        let end = (start+self.visible_rows as usize).min(column_count) as usize;
-        let items = &props.items;
-
-        let mut content = Vec::new();
+        let end = (start+self.visible_rows as usize).min(row_count) as usize;
 
         let cell_class = props.cell_class.clone()
             .unwrap_or_else(|| String::from("pwt-text-truncate pwt-p-2"));
 
-        for i in &self.item_order[start..end] {
-            let item = &items[*i];
+        let mut content = Vec::new();
+
+        for (i, _n, item) in self.data.filtered_data() {
+            if i < start { continue; } // fixme: fix a better way
+            if i >= end { break; }
+
             let mut row = Vec::new();
 
             let key = match &props.extract_key {
-                None => Key::from(*i),
+                None => Key::from(i),
                 Some(extract_fn) => extract_fn.apply(item),
             };
 
@@ -425,7 +429,7 @@ where
             });
         };
 
-        let virtual_height = props.items.len() * props.row_height as usize;
+        let virtual_height = row_count * props.row_height as usize;
 
         let node_ref = props.node_ref.clone();
         let onscroll = ctx.link().batch_callback(move |_: Event| {
