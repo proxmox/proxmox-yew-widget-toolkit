@@ -383,7 +383,7 @@ where
 
         let mut content = Vec::new();
 
-        for (i, record_num, item) in self.data.filtered_data_range(start..end) {
+        for (_i, record_num, item) in self.data.filtered_data_range(start..end) {
             let mut row = Vec::new();
 
             let key = match &props.extract_key {
