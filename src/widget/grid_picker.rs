@@ -305,13 +305,15 @@ impl<T: 'static> Component for PwtGridPicker<T> {
                 Some(extract_fn) => extract_fn.apply(item),
             };
 
+            let id = self.get_unique_item_id(n);
+
             let selected = props.selection.map(|sel| sel == n).unwrap_or(false);
             let is_active = self.data
                 .get_cursor().map(|cursor| cursor == filtered_pos)
                 .unwrap_or(false);
 
             if is_active {
-                active_descendant = Some(self.get_unique_item_id(n));
+                active_descendant = Some(id.clone());
             }
 
             let class = classes!(
@@ -329,7 +331,6 @@ impl<T: 'static> Component for PwtGridPicker<T> {
                 }
             });
 
-            let id = self.get_unique_item_id(n);
             let aria_selected = if selected { "true" } else { "false" };
 
             let mut row = Container::new()
