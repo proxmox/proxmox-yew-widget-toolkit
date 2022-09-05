@@ -383,11 +383,11 @@ where
 
         let mut content = Vec::new();
 
-        for (i, _n, item) in self.data.filtered_data_range(start..end) {
+        for (i, record_num, item) in self.data.filtered_data_range(start..end) {
             let mut row = Vec::new();
 
             let key = match &props.extract_key {
-                None => Key::from(i),
+                None => Key::from(record_num),
                 Some(extract_fn) => extract_fn.apply(item),
             };
 
