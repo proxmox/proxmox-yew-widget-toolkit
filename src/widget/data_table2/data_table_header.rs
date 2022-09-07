@@ -147,7 +147,7 @@ pub struct PwtDataTableHeader<T: 'static> {
 
 impl <T: 'static> PwtDataTableHeader<T> {
 
-    fn comput_grid_style(&self) -> String {
+    fn compute_grid_style(&self) -> String {
 
        let mut grid_style = format!("user-select: none; display:grid; grid-template-columns: ");
 
@@ -268,7 +268,7 @@ impl <T: 'static> Component for PwtDataTableHeader<T> {
                 Container::new()
                     .class("pwt-d-grid")
                     .class("pwt-datatable2-header")
-                    .attribute("style", self.comput_grid_style())
+                    .attribute("style", self.compute_grid_style())
                     .children(rows)
             )
             .into()

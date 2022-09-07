@@ -10,3 +10,6 @@ pub use column::DataTableColumn;
 
 mod data_table_header;
 pub use data_table_header::*;
+
+mod data_table;
+pub use data_table::*;

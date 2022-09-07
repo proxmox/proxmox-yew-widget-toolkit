@@ -1,7 +1,7 @@
 //! State management helpers
 
 mod data_filter;
-pub use data_filter::DataFilter;
+pub use data_filter::{optional_rc_ptr_eq, DataFilter};
 
 mod loader;
 pub use loader::{Loader, LoaderState};

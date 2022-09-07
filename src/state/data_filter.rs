@@ -6,7 +6,7 @@ use yew::html::IntoPropValue;
 //use crate::props::{ExtractKeyFn, IntoExtractKeyFn};
 use crate::props::{FilterFn, IntoFilterFn, SorterFn, IntoSorterFn};
 
-fn my_data_eq_fn<T>(a: &Option<Rc<Vec<T>>>, b: &Option<Rc<Vec<T>>>) -> bool {
+pub fn optional_rc_ptr_eq<T>(a: &Option<Rc<Vec<T>>>, b: &Option<Rc<Vec<T>>>) -> bool {
     match (a, b) {
         (Some(a), Some(b)) => Rc::ptr_eq(a, b),
         (None, None) => true,
@@ -49,7 +49,7 @@ impl <T> DataFilter<T> {
 
     pub fn set_data(&mut self, data: impl IntoPropValue<Option<Rc<Vec<T>>>>) {
         let new_data = data.into_prop_value();
-        if my_data_eq_fn(&self.data, &new_data) { return; }
+        if optional_rc_ptr_eq(&self.data, &new_data) { return; }
 
         self.data = new_data;
         self.update_filtered_data();
