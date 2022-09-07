@@ -31,6 +31,8 @@ pub use resizable::Resizable;
 mod data_table;
 pub use data_table::{PwtDataTable, DataTable, DataTableColumn};
 
+pub mod data_table2;
+
 mod dialog;
 pub use dialog::{Dialog, PwtDialog};
 
