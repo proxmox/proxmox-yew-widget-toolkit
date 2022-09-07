@@ -10,7 +10,7 @@ use yew::html::{IntoEventCallback, IntoPropValue};
 
 
 use crate::prelude::*;
-use crate::widget::{Row, Container};
+use crate::widget::{Row, Container, SizeObserver};
 
 // Note about node_ref property: make it optional, and generate an
 // unique one in Component::create(). That way we can clone Properies without
@@ -23,6 +23,7 @@ pub struct ResizableHeader {
     pub content: Option<VNode>,
     pub on_resize: Option<Callback<i32>>,
     pub on_size_reset: Option<Callback<()>>,
+    pub on_size_change: Option<Callback<i32>>,
 }
 
 impl ResizableHeader {
@@ -67,6 +68,11 @@ impl ResizableHeader {
         self
     }
 
+    /// Builder style method to set the size change callback
+    pub fn on_size_change(mut self, cb: impl IntoEventCallback<i32>) -> Self {
+        self.on_size_change = cb.into_event_callback();
+        self
+    }
 }
 
 pub enum Msg {
@@ -81,6 +87,7 @@ pub struct PwtResizableHeader {
     width: i32,
     mousemove_listener: Option<EventListener>,
     mouseup_listener: Option<EventListener>,
+    size_observer: Option<SizeObserver>,
 }
 
 impl Component for PwtResizableHeader {
@@ -89,11 +96,13 @@ impl Component for PwtResizableHeader {
 
     fn create(ctx: &Context<Self>) -> Self {
         let props = ctx.props();
+
         Self {
             node_ref: props.node_ref.clone().unwrap_or(NodeRef::default()),
             width: 0,
             mousemove_listener: None,
             mouseup_listener: None,
+            size_observer: None,
         }
     }
 
@@ -188,6 +197,22 @@ impl Component for PwtResizableHeader {
             )
          */
             .into()
+    }
+
+    fn rendered(&mut self, ctx: &Context<Self>, first_render: bool) {
+        if first_render {
+            let props = ctx.props();
+            if let Some(el) = self.node_ref.cast::<web_sys::HtmlElement>() {
+                let on_size_change = props.on_size_change.clone();
+                //let width = el.offset_width();
+                //on_size_change.as_ref().map(move |cb| cb.emit(width));
+                self.size_observer = Some(SizeObserver::new(&el, move |(x, _y)| {
+                    if let Some(on_size_change) = &on_size_change {
+                        on_size_change.emit(x + /* border size */ 1);
+                    }
+                }));
+            }
+        }
     }
 }
 

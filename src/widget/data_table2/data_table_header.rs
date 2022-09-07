@@ -4,13 +4,12 @@ use derivative::Derivative;
 
 use yew::prelude::*;
 use yew::virtual_dom::{Key, VComp, VNode};
-use yew::html::{IntoPropValue, Scope};
+use yew::html::{IntoPropValue, IntoEventCallback, Scope};
 
 use crate::prelude::*;
-use crate::widget::{Container, Row};
+use crate::widget::{Container, Column, Row};
 
 use super::{DataTableColumn, Header, HeaderGroup, ResizableHeader};
-
 
 fn header_to_rows<T: 'static>(
     header: &Header<T>,
@@ -45,6 +44,7 @@ fn header_to_rows<T: 'static>(
                                 }
                             })
                             .on_size_reset(link.callback(move |_| Msg::ColumnSizeReset(start_col)))
+                            .on_size_change(link.callback(move |w| Msg::ColumnSizeChange(start_col, w)))
                     )
                     .into()
             );
@@ -101,6 +101,8 @@ pub struct DataTableHeader<T: 'static> {
     //pub columns: Rc<Vec<DataTableColumn<T>>>,
 
     headers: Rc<Vec<Header<T>>>,
+
+    on_size_change: Option<Callback<Vec<usize>>>,
 }
 
 
@@ -121,24 +123,33 @@ impl<T: 'static> DataTableHeader<T> {
         self.node_ref = node_ref.into_prop_value();
         self
     }
+
+    /// Builder style method to set the size change callback
+    pub fn on_size_change(mut self, cb: impl IntoEventCallback<Vec<usize>>) -> Self {
+        self.on_size_change = cb.into_event_callback();
+        self
+    }
 }
+
 
 pub enum Msg {
     ResizeColumn(usize, usize),
     ColumnSizeReset(usize),
+    ColumnSizeChange(usize, i32),
 }
 
 pub struct PwtDataTableHeader<T: 'static> {
     node_ref: NodeRef,
     columns: Vec<DataTableColumn<T>>,
     column_widths: Vec<Option<usize>>, // for column resize
+    observed_widths: Vec<Option<usize>>,
 }
 
 impl <T: 'static> PwtDataTableHeader<T> {
 
     fn comput_grid_style(&self) -> String {
 
-       let mut grid_style = format!("display:grid; grid-template-columns: ");
+       let mut grid_style = format!("user-select: none; display:grid; grid-template-columns: ");
 
         for (col_idx, column) in self.columns.iter().enumerate() {
             if let Some(Some(width)) = self.column_widths.get(col_idx) {
@@ -170,11 +181,12 @@ impl <T: 'static> Component for PwtDataTableHeader<T> {
             node_ref: props.node_ref.clone().unwrap_or(NodeRef::default()),
             columns,
             column_widths: Vec::new(),
+            observed_widths: Vec::new(),
         }
     }
 
-    fn update(&mut self, _ctx: &Context<Self>, msg: Self::Message) -> bool {
-        //let props = ctx.props();
+    fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
+        let props = ctx.props();
         match msg {
             Msg::ResizeColumn(col_num, width) => {
                 //log::info!("resize col {} to {}", col_num, width);
@@ -185,6 +197,19 @@ impl <T: 'static> Component for PwtDataTableHeader<T> {
             Msg::ColumnSizeReset(col_num) => {
                 if let Some(elem) = self.column_widths.get_mut(col_num) {
                     *elem = None;
+                }
+                true
+            }
+            Msg::ColumnSizeChange(col_num, width) => {
+                self.observed_widths.resize((col_num + 1).max(self.observed_widths.len()), None);
+                self.observed_widths[col_num] = Some(width as usize);
+                //log::info!("COL {} SIZE CHANGE {} --- {}", col_num, width, self.observed_widths.len());
+
+                let observed_widths: Vec<usize> = self.observed_widths.iter().filter_map(|w| w.clone()).collect();
+                if self.columns.len() == observed_widths.len() {
+                    if let Some(on_size_change) = &props.on_size_change {
+                        on_size_change.emit(observed_widths);
+                    }
                 }
                 true
             }
@@ -201,18 +226,48 @@ impl <T: 'static> Component for PwtDataTableHeader<T> {
 
         let header = HeaderGroup::new().children(props.headers.as_ref().clone()).into();
 
-        header_to_rows(&header, ctx.link(), 0, 0, &mut rows);
+        let column_count = header_to_rows(&header, ctx.link(), 0, 0, &mut rows);
 
         let rows: Vec<Html> = rows.into_iter().map(|row| row.into_iter()).flatten().collect();
 
-        Row::new()
+        let render_subgrid = |width: &[usize]| {
+            let class = "pwt-datatable2-cell";
+
+            let template = width.iter().fold(String::new(), |mut acc, w| {
+                if !acc.is_empty() {
+                    acc.push(' ');
+                }
+                acc.push_str(&format!("{w}px"));
+                acc
+            });
+
+            let style = format!("grid-column: 1 / -1; display:grid; grid-template-columns: {};", template);
+
+            let subgrid = html!{
+                <div {style}>
+                    <div {class} style="grid-column-start: 1;">{"CHILD1XXXXX"}</div>
+                    <div {class} style="grid-column-start: 2;">{"CHILD2"}</div>
+                    <div {class} style="grid-column-start: 3;">{"CHILD3"}</div>
+                    <div {class} style="grid-column-start: 4;">{"CHILD4"}</div>
+                    <div {class} style="grid-column-start: 5;">{"CHILD5"}</div>
+                    <div {class} style="grid-column-start: 6;">{"CHILD6"}</div>
+                    </div>
+            };
+            subgrid
+        };
+
+        let observer_widths: Vec<usize> = self.observed_widths.iter().filter_map(|w| w.clone()).collect();
+
+        let subgrid = (observer_widths.len() == column_count).then(|| render_subgrid(&observer_widths));
+
+        Column::new()
             .node_ref(self.node_ref.clone())
-            .class("pwt-datatable2-header")
             .class("pwt-justify-content-start")
             .attribute("tabindex", "0")
             .with_child(
                 Container::new()
                     .class("pwt-d-grid")
+                    .class("pwt-datatable2-header")
                     .attribute("style", self.comput_grid_style())
                     .children(rows)
             )
