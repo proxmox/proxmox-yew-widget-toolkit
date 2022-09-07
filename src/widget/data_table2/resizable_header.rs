@@ -22,6 +22,7 @@ pub struct ResizableHeader {
     pub key: Option<Key>,
     pub content: Option<VNode>,
     pub on_resize: Option<Callback<i32>>,
+    pub on_size_reset: Option<Callback<()>>,
 }
 
 impl ResizableHeader {
@@ -57,6 +58,12 @@ impl ResizableHeader {
     /// Builder style method to set the resize callback
     pub fn on_resize(mut self, cb: impl IntoEventCallback<i32>) -> Self {
         self.on_resize = cb.into_event_callback();
+        self
+    }
+
+    /// Builder style method to set the size reset callback (DblClick on the resize handle)
+    pub fn on_size_reset(mut self, cb: impl IntoEventCallback<()>) -> Self {
+        self.on_size_reset = cb.into_event_callback();
         self
     }
 
@@ -162,6 +169,14 @@ impl Component for PwtResizableHeader {
                 Container::new()
                      .class("pwt-datatable2-header-resize-trigger")
                      .onmousedown(ctx.link().callback(|_| Msg::StartResize))
+                     .ondblclick({
+                         let on_size_reset = props.on_size_reset.clone();
+                         move |_| {
+                             if let Some(on_size_reset) = &on_size_reset {
+                                 on_size_reset.emit(());
+                             }
+                         }
+                     })
              )
         /*
             .with_child(

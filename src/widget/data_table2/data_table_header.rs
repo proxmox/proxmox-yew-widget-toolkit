@@ -44,6 +44,7 @@ fn header_to_rows<T: 'static>(
                                     link.send_message(Msg::ResizeColumn(start_col, width));
                                 }
                             })
+                            .on_size_reset(link.callback(move |_| Msg::ColumnSizeReset(start_col)))
                     )
                     .into()
             );
@@ -74,7 +75,7 @@ fn group_to_rows<T: 'static>(
     for child in &group.children {
         span += header_to_rows(child, link, child_start_row, start_col + span, rows);
     }
-    
+
     if let Some(content) = group.content.clone() {
         if span == 0 { span = 1; }
         rows[start_row].push(
@@ -124,6 +125,7 @@ impl<T: 'static> DataTableHeader<T> {
 
 pub enum Msg {
     ResizeColumn(usize, usize),
+    ColumnSizeReset(usize),
 }
 
 pub struct PwtDataTableHeader<T: 'static> {
@@ -135,7 +137,7 @@ pub struct PwtDataTableHeader<T: 'static> {
 impl <T: 'static> PwtDataTableHeader<T> {
 
     fn comput_grid_style(&self) -> String {
-        
+
        let mut grid_style = format!("display:grid; grid-template-columns: ");
 
         for (col_idx, column) in self.columns.iter().enumerate() {
@@ -163,7 +165,7 @@ impl <T: 'static> Component for PwtDataTableHeader<T> {
         for header in props.headers.iter() {
             header.extract_column_list(&mut columns);
         }
-        
+
         Self {
             node_ref: props.node_ref.clone().unwrap_or(NodeRef::default()),
             columns,
@@ -180,7 +182,12 @@ impl <T: 'static> Component for PwtDataTableHeader<T> {
                 self.column_widths[col_num] = Some(width.max(40));
                 true
             }
-
+            Msg::ColumnSizeReset(col_num) => {
+                if let Some(elem) = self.column_widths.get_mut(col_num) {
+                    *elem = None;
+                }
+                true
+            }
         }
     }
 
@@ -193,7 +200,7 @@ impl <T: 'static> Component for PwtDataTableHeader<T> {
         let mut rows = Vec::new();
 
         let header = HeaderGroup::new().children(props.headers.as_ref().clone()).into();
-        
+
         header_to_rows(&header, ctx.link(), 0, 0, &mut rows);
 
         let rows: Vec<Html> = rows.into_iter().map(|row| row.into_iter()).flatten().collect();
