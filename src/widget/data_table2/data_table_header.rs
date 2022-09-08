@@ -238,6 +238,7 @@ impl <T: 'static> Component for PwtDataTableHeader<T> {
                 Container::new()
                     .class("pwt-d-grid")
                     .class("pwt-datatable2-header")
+                    .class("pwt-overflow-hidden")
                     .attribute("style", self.compute_grid_style())
                     .children(rows)
             )

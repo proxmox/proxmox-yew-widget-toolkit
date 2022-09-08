@@ -11,8 +11,8 @@ pub struct DataTableColumn<T> {
     #[prop_or(String::from("100px"))]
     pub width: String,
     pub name: String,
-    #[prop_or(String::from("flex-start"))]
-    pub justify: String, // flex-start, flex-end, center
+    #[prop_or(String::from("left"))]
+    pub justify: String, // left, center, right, justify
     pub render: RenderFn<T>,
     pub sorter: Option<SorterFn<T>>,
 }

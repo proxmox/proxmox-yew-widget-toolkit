@@ -8,7 +8,7 @@ use yew::html::{IntoEventCallback, IntoPropValue};
 
 use crate::prelude::*;
 use crate::state::{optional_rc_ptr_eq, DataFilter};
-use crate::widget::Column;
+use crate::widget::{Container, Column};
 
 use super::{DataTableColumn, DataTableHeader, Header};
 
@@ -25,10 +25,16 @@ pub struct DataTable<T: 'static> {
     node_ref: NodeRef,
     pub key: Option<Key>,
 
+    #[prop_or_default]
+    pub class: Classes,
+
     headers: Rc<Vec<Header<T>>>,
 
     #[derivative(PartialEq(compare_with="optional_rc_ptr_eq::<T>"))]
     pub data: Option<Rc<Vec<T>>>,
+
+    /// set class for table cells (default is "pwt-truncate pwt-p-2")
+    pub cell_class: Option<String>,
 
 }
 
@@ -48,6 +54,17 @@ impl <T: 'static> DataTable<T> {
     pub fn key(mut self, key: impl Into<Key>) -> Self {
         self.key = Some(key.into());
         self
+    }
+
+    /// Builder style method to add a html class
+    pub fn class(mut self, class: impl Into<Classes>) -> Self {
+        self.add_class(class);
+        self
+    }
+
+    /// Method to add a html class
+    pub fn add_class(&mut self, class: impl Into<Classes>) {
+        self.class.push(class);
     }
 
     pub fn data(mut self, data: impl IntoPropValue<Option<Rc<Vec<T>>>>) -> Self {
@@ -115,24 +132,50 @@ impl <T: 'static> Component for PwtDataTable<T> {
                 acc
             });
 
-            let style = format!("grid-column: 1 / -1; display:grid; grid-template-columns: {};", template);
+            let mut table = Container::new()
+                .tag("table")
+                .attribute("style", "table-layout: fixed;width:1px;")
+                .with_child(html!{
+                    <tr>{
+                        width.iter().map(|w| html!{
+                            <td style={format!("width:{w}px;height:0px;")}></td>
+                        }).collect::<Html>()
+                    }</tr>
+                });
 
-            let subgrid = html!{
-                <div {style}>
-                    <div {class} style="grid-column-start: 1;">{"CHILD1XXXXX"}</div>
-                    <div {class} style="grid-column-start: 2;">{"CHILD2"}</div>
-                    <div {class} style="grid-column-start: 3;">{"CHILD3"}</div>
-                    <div {class} style="grid-column-start: 4;">{"CHILD4"}</div>
-                    <div {class} style="grid-column-start: 5;">{"CHILD5"}</div>
-                    <div {class} style="grid-column-start: 6;">{"CHILD6"}</div>
-                    </div>
-            };
-            subgrid
+            let cell_class = props.cell_class.clone()
+                .unwrap_or_else(|| String::from("pwt-text-truncate pwt-p-2"));
+
+            for (_i, record_num, item) in self.store.filtered_data() {
+
+                let mut row = Container::new()
+                    .tag("tr");
+
+                let selected = false;
+
+                for (column_num, column) in self.columns.iter().enumerate() {
+                    let item_style = format!("text-align:{};", column.justify);
+                    let class = if selected { Some("selected") } else {None };
+                    row.add_child(html!{
+                        <td {class} style={item_style}><div class={&cell_class}>{ column.render.apply(item) }</div></td>
+                    });
+                }
+                table.add_child(row);
+            }
+
+
+            let scroll = Container::new()
+                .class("pwt-flex-fill")
+                .class("pwt-overflow-auto")
+                .with_child(table);
+
+            scroll
         };
 
         let subgrid = (!self.column_widths.is_empty()).then(|| render_subgrid(&self.column_widths));
 
         Column::new()
+            .class(props.class.clone())
             .with_child(
                 DataTableHeader::new(props.headers.clone())
                     .on_size_change(ctx.link().callback(Msg::ColumnWidthChange))
