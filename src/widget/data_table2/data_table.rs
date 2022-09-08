@@ -82,6 +82,60 @@ pub struct PwtDataTable<T: 'static> {
     store: DataFilter<T>,
     columns: Vec<DataTableColumn<T>>,
     column_widths: Vec<usize>,
+
+    cell_class: String,
+}
+
+fn render_empty_row_with_sizes(widths: &[usize]) -> Html {
+    Container::new()
+        .tag("tr")
+        .children(
+            widths.iter().map(|w| html!{
+                <td style={format!("width:{w}px;height:0px;")}></td>
+            })
+        )
+        .into()
+}
+
+impl<T: 'static> PwtDataTable<T> {
+
+    fn render_row(&self, item: &T, selected: bool) -> Html {
+
+        Container::new()
+            .tag("tr")
+            .children(
+                self.columns.iter().enumerate().map(|(column_num, column)| {
+                    let item_style = format!("text-align:{};", column.justify);
+                    let class = if selected { Some("selected") } else {None };
+                    Container::new()
+                        .tag("td")
+                        .attribute("style", item_style)
+                        .class(class)
+                        .with_child(html!{
+                            <div class={&self.cell_class}>{
+                                column.render.apply(item)
+                            }</div>
+                        })
+                        .into()
+                })
+            )
+            .into()
+    }
+
+    fn render_table(&self, widths: &[usize]) -> Html {
+        let mut table = Container::new()
+            .tag("table")
+            .attribute("style", "table-layout: fixed;width:1px;")
+            .with_child(render_empty_row_with_sizes(widths));
+
+        for (_i, record_num, item) in self.store.filtered_data() {
+            let selected = false;
+            let row = self.render_row(item, selected);
+            table.add_child(row);
+        }
+
+        table.into()
+    }
 }
 
 impl <T: 'static> Component for PwtDataTable<T> {
@@ -100,10 +154,14 @@ impl <T: 'static> Component for PwtDataTable<T> {
             header.extract_column_list(&mut columns);
         }
 
+        let cell_class = props.cell_class.clone()
+            .unwrap_or_else(|| String::from("pwt-text-truncate pwt-p-2"));
+
         Self {
             store,
             columns,
             column_widths: Vec::new(),
+            cell_class,
         }
     }
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
@@ -119,50 +177,10 @@ impl <T: 'static> Component for PwtDataTable<T> {
 
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
-        //let row_count = self.data.filtered_data_len();
 
-        let render_subgrid = |width: &[usize]| {
-            let class = "pwt-datatable2-cell";
+        let render_subgrid = |widths: &[usize]| {
 
-            let template = width.iter().fold(String::new(), |mut acc, w| {
-                if !acc.is_empty() {
-                    acc.push(' ');
-                }
-                acc.push_str(&format!("{w}px"));
-                acc
-            });
-
-            let mut table = Container::new()
-                .tag("table")
-                .attribute("style", "table-layout: fixed;width:1px;")
-                .with_child(html!{
-                    <tr>{
-                        width.iter().map(|w| html!{
-                            <td style={format!("width:{w}px;height:0px;")}></td>
-                        }).collect::<Html>()
-                    }</tr>
-                });
-
-            let cell_class = props.cell_class.clone()
-                .unwrap_or_else(|| String::from("pwt-text-truncate pwt-p-2"));
-
-            for (_i, record_num, item) in self.store.filtered_data() {
-
-                let mut row = Container::new()
-                    .tag("tr");
-
-                let selected = false;
-
-                for (column_num, column) in self.columns.iter().enumerate() {
-                    let item_style = format!("text-align:{};", column.justify);
-                    let class = if selected { Some("selected") } else {None };
-                    row.add_child(html!{
-                        <td {class} style={item_style}><div class={&cell_class}>{ column.render.apply(item) }</div></td>
-                    });
-                }
-                table.add_child(row);
-            }
-
+            let table = self.render_table(widths);
 
             let scroll = Container::new()
                 .class("pwt-flex-fill")
@@ -172,7 +190,8 @@ impl <T: 'static> Component for PwtDataTable<T> {
             scroll
         };
 
-        let subgrid = (!self.column_widths.is_empty()).then(|| render_subgrid(&self.column_widths));
+        let subgrid = (!self.column_widths.is_empty())
+            .then(|| render_subgrid(&self.column_widths));
 
         Column::new()
             .class(props.class.clone())
