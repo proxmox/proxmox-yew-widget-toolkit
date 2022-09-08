@@ -8,7 +8,7 @@ use crate::props::{SorterFn, IntoSorterFn, RenderFn};
 #[derive(Derivative)]
 #[derivative(Clone(bound=""), PartialEq(bound=""))]
 pub struct DataTableColumn<T> {
-    #[prop_or(String::from("100px"))]
+    #[prop_or(String::from("auto"))]
     pub width: String,
     pub name: String,
     #[prop_or(String::from("left"))]

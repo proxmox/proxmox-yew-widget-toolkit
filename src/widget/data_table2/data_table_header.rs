@@ -227,9 +227,13 @@ impl <T: 'static> Component for PwtDataTableHeader<T> {
 
         let header = HeaderGroup::new().children(props.headers.as_ref().clone()).into();
 
-        header_to_rows(&header, ctx.link(), 0, 0, &mut rows);
+        let column_count = header_to_rows(&header, ctx.link(), 0, 0, &mut rows);
 
         let rows: Vec<Html> = rows.into_iter().map(|row| row.into_iter()).flatten().collect();
+
+        // add some space at the end to make room for the tables vertical scrollbar
+        let last = Container::new()
+            .attribute("style", format!("width: 15px;grid-row:1/10;grid-column-start:{};", column_count + 1));
 
         Column::new()
             .node_ref(self.node_ref.clone())
@@ -241,6 +245,7 @@ impl <T: 'static> Component for PwtDataTableHeader<T> {
                     .class("pwt-overflow-hidden")
                     .attribute("style", self.compute_grid_style())
                     .children(rows)
+                    .with_child(last)
             )
             .onkeydown({
                 let inner_ref =  self.node_ref.clone();
