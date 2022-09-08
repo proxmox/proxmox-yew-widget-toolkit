@@ -13,6 +13,7 @@ use crate::widget::Column;
 use super::{DataTableColumn, DataTableHeader, Header};
 
 pub enum Msg {
+    ColumnWidthChange(Vec<usize>),
 }
 // DataTable properties
 #[derive(Properties)]
@@ -61,8 +62,9 @@ impl <T: 'static> DataTable<T> {
 
 #[doc(hidden)]
 pub struct PwtDataTable<T: 'static> {
-    column_widths: Vec<Option<i32>>, // for column resize
     store: DataFilter<T>,
+    columns: Vec<DataTableColumn<T>>,
+    column_widths: Vec<usize>,
 }
 
 impl <T: 'static> Component for PwtDataTable<T> {
@@ -76,9 +78,25 @@ impl <T: 'static> Component for PwtDataTable<T> {
         let store = DataFilter::new()
             .data(props.data.clone());
 
+        let mut columns = Vec::new();
+        for header in props.headers.iter() {
+            header.extract_column_list(&mut columns);
+        }
+
         Self {
             store,
+            columns,
             column_widths: Vec::new(),
+        }
+    }
+    fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
+        let props = ctx.props();
+        match msg {
+            Msg::ColumnWidthChange(column_widths) => {
+                log::info!("CW {:?}", column_widths);
+                self.column_widths = column_widths;
+                true
+            }
         }
     }
 
@@ -86,10 +104,41 @@ impl <T: 'static> Component for PwtDataTable<T> {
         let props = ctx.props();
         //let row_count = self.data.filtered_data_len();
 
+        let render_subgrid = |width: &[usize]| {
+            let class = "pwt-datatable2-cell";
+
+            let template = width.iter().fold(String::new(), |mut acc, w| {
+                if !acc.is_empty() {
+                    acc.push(' ');
+                }
+                acc.push_str(&format!("{w}px"));
+                acc
+            });
+
+            let style = format!("grid-column: 1 / -1; display:grid; grid-template-columns: {};", template);
+
+            let subgrid = html!{
+                <div {style}>
+                    <div {class} style="grid-column-start: 1;">{"CHILD1XXXXX"}</div>
+                    <div {class} style="grid-column-start: 2;">{"CHILD2"}</div>
+                    <div {class} style="grid-column-start: 3;">{"CHILD3"}</div>
+                    <div {class} style="grid-column-start: 4;">{"CHILD4"}</div>
+                    <div {class} style="grid-column-start: 5;">{"CHILD5"}</div>
+                    <div {class} style="grid-column-start: 6;">{"CHILD6"}</div>
+                    </div>
+            };
+            subgrid
+        };
+
+        let subgrid = (!self.column_widths.is_empty()).then(|| render_subgrid(&self.column_widths));
+
         Column::new()
             .with_child(
                 DataTableHeader::new(props.headers.clone())
+                    .on_size_change(ctx.link().callback(Msg::ColumnWidthChange))
+
             )
+            .with_optional_child(subgrid)
             .into()
     }
 }

@@ -8,6 +8,7 @@ use yew::html::{IntoPropValue, IntoEventCallback, Scope};
 
 use crate::prelude::*;
 use crate::widget::{Container, Column, Row};
+use crate::widget::focus::{focus_next_tabable, init_roving_tabindex};
 
 use super::{DataTableColumn, Header, HeaderGroup, ResizableHeader};
 
@@ -226,44 +227,13 @@ impl <T: 'static> Component for PwtDataTableHeader<T> {
 
         let header = HeaderGroup::new().children(props.headers.as_ref().clone()).into();
 
-        let column_count = header_to_rows(&header, ctx.link(), 0, 0, &mut rows);
+        header_to_rows(&header, ctx.link(), 0, 0, &mut rows);
 
         let rows: Vec<Html> = rows.into_iter().map(|row| row.into_iter()).flatten().collect();
-
-        let render_subgrid = |width: &[usize]| {
-            let class = "pwt-datatable2-cell";
-
-            let template = width.iter().fold(String::new(), |mut acc, w| {
-                if !acc.is_empty() {
-                    acc.push(' ');
-                }
-                acc.push_str(&format!("{w}px"));
-                acc
-            });
-
-            let style = format!("grid-column: 1 / -1; display:grid; grid-template-columns: {};", template);
-
-            let subgrid = html!{
-                <div {style}>
-                    <div {class} style="grid-column-start: 1;">{"CHILD1XXXXX"}</div>
-                    <div {class} style="grid-column-start: 2;">{"CHILD2"}</div>
-                    <div {class} style="grid-column-start: 3;">{"CHILD3"}</div>
-                    <div {class} style="grid-column-start: 4;">{"CHILD4"}</div>
-                    <div {class} style="grid-column-start: 5;">{"CHILD5"}</div>
-                    <div {class} style="grid-column-start: 6;">{"CHILD6"}</div>
-                    </div>
-            };
-            subgrid
-        };
-
-        let observer_widths: Vec<usize> = self.observed_widths.iter().filter_map(|w| w.clone()).collect();
-
-        let subgrid = (observer_widths.len() == column_count).then(|| render_subgrid(&observer_widths));
 
         Column::new()
             .node_ref(self.node_ref.clone())
             .class("pwt-justify-content-start")
-            .attribute("tabindex", "0")
             .with_child(
                 Container::new()
                     .class("pwt-d-grid")
@@ -271,7 +241,28 @@ impl <T: 'static> Component for PwtDataTableHeader<T> {
                     .attribute("style", self.compute_grid_style())
                     .children(rows)
             )
+            .onkeydown({
+                let inner_ref =  self.node_ref.clone();
+                move |event: KeyboardEvent| {
+                    match event.key_code() {
+                        39 => { // left
+                            focus_next_tabable(&inner_ref, false, true);
+                        }
+                        37 => { // right
+                            focus_next_tabable(&inner_ref, true, true);
+                        }
+                        _ => return,
+                    }
+                    event.prevent_default();
+                }
+            })
             .into()
+    }
+
+    fn rendered(&mut self, _ctx: &Context<Self>, first_render: bool) {
+        if first_render {
+            init_roving_tabindex(&self.node_ref);
+        }
     }
 }
 

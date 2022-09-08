@@ -78,7 +78,8 @@ impl ResizableHeader {
 pub enum Msg {
     StartResize,
     StopResize,
-    MouseMove(i32)
+    MouseMove(i32),
+    FocusChange(bool),
 }
 
 #[doc(hidden)]
@@ -88,6 +89,7 @@ pub struct PwtResizableHeader {
     mousemove_listener: Option<EventListener>,
     mouseup_listener: Option<EventListener>,
     size_observer: Option<SizeObserver>,
+    has_focus: bool,
 }
 
 impl Component for PwtResizableHeader {
@@ -103,6 +105,7 @@ impl Component for PwtResizableHeader {
             mousemove_listener: None,
             mouseup_listener: None,
             size_observer: None,
+            has_focus: false,
         }
     }
 
@@ -153,6 +156,10 @@ impl Component for PwtResizableHeader {
 
                 false
             }
+            Msg::FocusChange(has_focus) => {
+                self.has_focus = has_focus;
+                true
+            }
         }
     }
 
@@ -162,7 +169,10 @@ impl Component for PwtResizableHeader {
         Row::new()
             .class("pwt-w-100 pwt-h-100")
             .class("pwt-datatable2-header-item")
+            .attribute("tabindex", "-1")
             .node_ref(self.node_ref.clone())
+            .onfocus(ctx.link().callback(|_| Msg::FocusChange(true)))
+            .onblur(ctx.link().callback(|_| Msg::FocusChange(false)))
             .with_child(
                 Container::new()
                     .class("pwt-align-self-center")
@@ -172,9 +182,10 @@ impl Component for PwtResizableHeader {
             .with_child(
                 Container::new()
                     .class("pwt-datatable2-header-menu-trigger")
+                    .class(self.has_focus.then(|| "focused"))
                     .with_child(html!{<i class="fa fa-lg fa-caret-down"/>})
             )
-             .with_child(
+            .with_child(
                 Container::new()
                      .class("pwt-datatable2-header-resize-trigger")
                      .onmousedown(ctx.link().callback(|_| Msg::StartResize))
