@@ -8,13 +8,17 @@ use yew::html::{IntoEventCallback, IntoPropValue};
 
 use crate::prelude::*;
 use crate::state::{optional_rc_ptr_eq, DataFilter};
-use crate::widget::{Container, Column};
+use crate::widget::{Container, Column, SizeObserver};
 
 use super::{DataTableColumn, DataTableHeader, Header};
 
 pub enum Msg {
     ColumnWidthChange(Vec<usize>),
+    ScrollTo(i32, i32),
+    ViewportResize(i32, i32),
+    RowHeight(usize),
 }
+
 // DataTable properties
 #[derive(Properties)]
 #[derive(Derivative)]
@@ -84,6 +88,18 @@ pub struct PwtDataTable<T: 'static> {
     column_widths: Vec<usize>,
 
     cell_class: String,
+
+    scroll_ref: NodeRef,
+    scroll_top: usize,
+    viewport_height: usize,
+
+    viewport_size_observer: Option<SizeObserver>,
+
+    table_ref: NodeRef,
+    table_height: Option<usize>,
+
+    row_height: usize,
+    visible_rows: usize,
 }
 
 fn render_empty_row_with_sizes(widths: &[usize]) -> Html {
@@ -122,19 +138,37 @@ impl<T: 'static> PwtDataTable<T> {
             .into()
     }
 
-    fn render_table(&self, widths: &[usize]) -> Html {
+    fn render_table(&self, widths: &[usize], offset: usize, start: usize, end: usize) -> Html {
         let mut table = Container::new()
             .tag("table")
-            .attribute("style", "table-layout: fixed;width:1px;")
+            .node_ref(self.table_ref.clone())
+            .attribute("style", format!("table-layout: fixed;width:1px; position:relative;top:{}px;", offset))
             .with_child(render_empty_row_with_sizes(widths));
 
-        for (_i, record_num, item) in self.store.filtered_data() {
+        for (_i, record_num, item) in self.store.filtered_data_range(start..end) {
             let selected = false;
             let row = self.render_row(item, selected);
             table.add_child(row);
         }
 
         table.into()
+    }
+
+    fn render_scroll_content(
+        &self,
+        widths: &[usize],
+        height: usize,
+        offset: usize,
+        start: usize,
+        end: usize,
+    ) -> Html {
+
+        let table = self.render_table(widths, offset, start, end);
+
+        Container::new()
+            .attribute("style", format!("height:{}px", height))
+            .with_child(table)
+            .into()
     }
 }
 
@@ -162,14 +196,36 @@ impl <T: 'static> Component for PwtDataTable<T> {
             columns,
             column_widths: Vec::new(),
             cell_class,
+            scroll_top: 0,
+            viewport_height: 0,
+            viewport_size_observer: None,
+            scroll_ref: NodeRef::default(),
+            table_ref: NodeRef::default(),
+            table_height: None,
+            row_height: 22,
+            visible_rows: 0,
         }
     }
+
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
         let props = ctx.props();
         match msg {
             Msg::ColumnWidthChange(column_widths) => {
-                log::info!("CW {:?}", column_widths);
                 self.column_widths = column_widths;
+                true
+            }
+            Msg::ScrollTo(_x, y) => {
+                self.scroll_top = y.max(0) as usize;
+                true
+            }
+            Msg::ViewportResize(_width, height) => {
+                self.viewport_height = height.max(0) as usize;
+                self.visible_rows = (self.viewport_height / self.row_height) + 3;
+                true
+            }
+            Msg::RowHeight(row_height) => {
+                if row_height == self.row_height { return false; }
+                self.row_height = row_height;
                 true
             }
         }
@@ -178,20 +234,30 @@ impl <T: 'static> Component for PwtDataTable<T> {
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
 
-        let render_subgrid = |widths: &[usize]| {
+        let row_count = self.store.filtered_data_len();
+        let mut start = self.scroll_top / self.row_height;
+        if start > 0 { start -= 1; }
+        if (start & 1) == 1 { start -= 1; } // make it work with striped rows
+        let end = (start + self.visible_rows).min(row_count);
 
-            let table = self.render_table(widths);
+        let offset = start * self.row_height;
+        let height = row_count * self.row_height;
 
-            let scroll = Container::new()
-                .class("pwt-flex-fill")
-                .class("pwt-overflow-auto")
-                .with_child(table);
-
-            scroll
+        let scroll_content = if !self.column_widths.is_empty() {
+            self.render_scroll_content(&self.column_widths, height, offset, start, end)
+        } else {
+            html!{}
         };
 
-        let subgrid = (!self.column_widths.is_empty())
-            .then(|| render_subgrid(&self.column_widths));
+        let viewport = Container::new()
+            .node_ref(self.scroll_ref.clone())
+            .class("pwt-flex-fill")
+            .class("pwt-overflow-auto")
+            .with_child(scroll_content)
+            .onscroll(ctx.link().batch_callback(move |event: Event| {
+                let target: Option<web_sys::HtmlElement> = event.target_dyn_into();
+                target.map(|el| Msg::ScrollTo(el.scroll_left(), el.scroll_top()))
+            }));
 
         Column::new()
             .class(props.class.clone())
@@ -200,8 +266,30 @@ impl <T: 'static> Component for PwtDataTable<T> {
                     .on_size_change(ctx.link().callback(Msg::ColumnWidthChange))
 
             )
-            .with_optional_child(subgrid)
+            .with_child(viewport)
             .into()
+    }
+
+    fn rendered(&mut self, ctx: &Context<Self>, first_render: bool) {
+        if first_render {
+            if let Some(el) = self.scroll_ref.cast::<web_sys::Element>() {
+                let link = ctx.link().clone();
+                let size_observer = SizeObserver::new(&el, move |(width, height)| {
+                    link.send_message(Msg::ViewportResize(width, height));
+                });
+                self.viewport_size_observer = Some(size_observer);
+            }
+        }
+
+        if let Some(el) = self.table_ref.cast::<web_sys::HtmlElement>() {
+            let height = el.offset_height();
+            if (height > 0) && (self.visible_rows > 0) {
+                let row_height = (height as usize) / self.visible_rows;
+                if row_height > self.row_height {
+                    ctx.link().send_message(Msg::RowHeight(row_height));
+                }
+            }
+        }
     }
 }
 
