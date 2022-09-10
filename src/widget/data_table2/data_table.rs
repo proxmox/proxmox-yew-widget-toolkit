@@ -40,6 +40,15 @@ pub struct DataTable<T: 'static> {
     /// set class for table cells (default is "pwt-truncate pwt-p-2")
     pub cell_class: Option<String>,
 
+    #[prop_or_default]
+    pub bordered: bool,
+
+    #[prop_or(true)]
+    pub hover: bool,
+
+    #[prop_or_default]
+    pub striped: bool,
+
 }
 
 impl <T: 'static> DataTable<T> {
@@ -79,6 +88,34 @@ impl <T: 'static> DataTable<T> {
     pub fn set_data(&mut self, data: impl IntoPropValue<Option<Rc<Vec<T>>>>) {
         self.data = data.into_prop_value();
     }
+
+    pub fn striped(mut self, striped: bool) -> Self {
+        self.set_striped(striped);
+        self
+    }
+
+    pub fn set_striped(&mut self, striped: bool) {
+        self.striped = striped;
+    }
+
+    pub fn hover(mut self, hover: bool) -> Self {
+        self.set_hover(hover);
+        self
+    }
+
+    pub fn set_hover(&mut self, hover: bool) {
+        self.hover = hover;
+    }
+
+    pub fn bordered(mut self, bordered: bool) -> Self {
+        self.set_bordered(bordered);
+        self
+    }
+
+    pub fn set_bordered(&mut self, bordered: bool) {
+        self.bordered = bordered;
+    }
+
 }
 
 #[doc(hidden)]
@@ -138,12 +175,25 @@ impl<T: 'static> PwtDataTable<T> {
             .into()
     }
 
-    fn render_table(&self, widths: &[usize], offset: usize, start: usize, end: usize) -> Html {
+    fn render_table(&self, props: &DataTable<T>, offset: usize, start: usize, end: usize) -> Html {
+
+        let table_class = classes!(
+            "datatable",
+            props.hover.then(|| "table-hover"),
+            props.striped.then(|| "table-striped"),
+            props.bordered.then(|| "table-bordered"),
+        );
+
+
         let mut table = Container::new()
             .tag("table")
+            .class("pwt-datatable2-content")
+            .class(props.hover.then(|| "table-hover"))
+            .class(props.striped.then(|| "table-striped"))
+            .class(props.bordered.then(|| "table-bordered"))
             .node_ref(self.table_ref.clone())
             .attribute("style", format!("table-layout: fixed;width:1px; position:relative;top:{}px;", offset))
-            .with_child(render_empty_row_with_sizes(widths));
+            .with_child(render_empty_row_with_sizes(&self.column_widths));
 
         for (_i, record_num, item) in self.store.filtered_data_range(start..end) {
             let selected = false;
@@ -156,14 +206,14 @@ impl<T: 'static> PwtDataTable<T> {
 
     fn render_scroll_content(
         &self,
-        widths: &[usize],
+        props: &DataTable<T>,
         height: usize,
         offset: usize,
         start: usize,
         end: usize,
     ) -> Html {
 
-        let table = self.render_table(widths, offset, start, end);
+        let table = self.render_table(props, offset, start, end);
 
         Container::new()
             .attribute("style", format!("height:{}px", height))
@@ -244,7 +294,7 @@ impl <T: 'static> Component for PwtDataTable<T> {
         let height = row_count * self.row_height;
 
         let scroll_content = if !self.column_widths.is_empty() {
-            self.render_scroll_content(&self.column_widths, height, offset, start, end)
+            self.render_scroll_content(props, height, offset, start, end)
         } else {
             html!{}
         };
