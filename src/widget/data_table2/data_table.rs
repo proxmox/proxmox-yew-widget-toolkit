@@ -215,9 +215,19 @@ impl<T: 'static> PwtDataTable<T> {
 
         let table = self.render_table(props, offset, start, end);
 
+        // firefox scrollbar ignores height, so we need ad some
+        // content at the end.
+        let end_marker = Container::new()
+            .attribute("style", format!(
+                "height: 0px; width: 0px; overflow: hidden; position:relative;top:{}px;",
+                height
+            ))
+            .with_child("End Marker for Firefox");
+
         Container::new()
             .attribute("style", format!("height:{}px", height))
             .with_child(table)
+            .with_child(end_marker)
             .into()
     }
 }
