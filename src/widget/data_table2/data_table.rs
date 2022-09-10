@@ -142,6 +142,7 @@ pub struct PwtDataTable<T: 'static> {
 fn render_empty_row_with_sizes(widths: &[usize]) -> Html {
     Container::new()
         .tag("tr")
+        .key(Key::from("sizes"))
         .children(
             widths.iter().map(|w| html!{
                 <td style={format!("width:{w}px;height:0px;")}></td>
@@ -159,6 +160,7 @@ impl<T: 'static> PwtDataTable<T> {
         Container::new()
             .tag("tr")
             .key(key)
+            .attribute("id", format!("record-nr-{}", record_num))
             .children(
                 self.columns.iter().enumerate().map(|(column_num, column)| {
                     let item_style = format!("text-align:{};", column.justify);
@@ -227,6 +229,7 @@ impl<T: 'static> PwtDataTable<T> {
             ))
             .with_child("End Marker for Firefox");
 
+        let height = height + 15; // add some space at the end
         Container::new()
             .attribute("style", format!("height:{}px", height))
             .with_child(table)
@@ -283,7 +286,7 @@ impl <T: 'static> Component for PwtDataTable<T> {
             }
             Msg::ViewportResize(_width, height) => {
                 self.viewport_height = height.max(0) as usize;
-                self.visible_rows = (self.viewport_height / self.row_height) + 3;
+                self.visible_rows = (self.viewport_height / self.row_height) + 5;
                 true
             }
             Msg::RowHeight(row_height) => {
@@ -301,6 +304,7 @@ impl <T: 'static> Component for PwtDataTable<T> {
         let mut start = self.scroll_top / self.row_height;
         if start > 0 { start -= 1; }
         if (start & 1) == 1 { start -= 1; } // make it work with striped rows
+
         let end = (start + self.visible_rows).min(row_count);
 
         let offset = start * self.row_height;
@@ -315,7 +319,9 @@ impl <T: 'static> Component for PwtDataTable<T> {
         let viewport = Container::new()
             .node_ref(self.scroll_ref.clone())
             .class("pwt-flex-fill")
-            .class("pwt-overflow-auto")
+            .attribute("style", "overflow-y: auto; overflow-x: hidden; outline: 0;")
+             // fixme: howto handle focus?
+            .attribute("tabindex", "0")
             .with_child(scroll_content)
             .onscroll(ctx.link().batch_callback(move |event: Event| {
                 let target: Option<web_sys::HtmlElement> = event.target_dyn_into();
