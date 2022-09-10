@@ -152,10 +152,13 @@ fn render_empty_row_with_sizes(widths: &[usize]) -> Html {
 
 impl<T: 'static> PwtDataTable<T> {
 
-    fn render_row(&self, item: &T, selected: bool) -> Html {
+    fn render_row(&self, item: &T, record_num: usize, selected: bool) -> Html {
+
+        let key = Key::from(record_num); // fixme: use extract key
 
         Container::new()
             .tag("tr")
+            .key(key)
             .children(
                 self.columns.iter().enumerate().map(|(column_num, column)| {
                     let item_style = format!("text-align:{};", column.justify);
@@ -197,7 +200,7 @@ impl<T: 'static> PwtDataTable<T> {
 
         for (_i, record_num, item) in self.store.filtered_data_range(start..end) {
             let selected = false;
-            let row = self.render_row(item, selected);
+            let row = self.render_row(item, record_num, selected);
             table.add_child(row);
         }
 
