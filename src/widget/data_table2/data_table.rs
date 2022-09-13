@@ -43,6 +43,9 @@ pub struct DataTable<T: 'static> {
     #[prop_or_default]
     pub bordered: bool,
 
+    #[prop_or_default]
+    pub borderless: bool,
+
     #[prop_or(true)]
     pub hover: bool,
 
@@ -114,6 +117,15 @@ impl <T: 'static> DataTable<T> {
 
     pub fn set_bordered(&mut self, bordered: bool) {
         self.bordered = bordered;
+    }
+
+    pub fn borderless(mut self, borderless: bool) -> Self {
+        self.set_borderless(borderless);
+        self
+    }
+
+    pub fn set_borderless(&mut self, borderless: bool) {
+        self.borderless = borderless;
     }
 
     /// Builder style method to set the cell class
@@ -199,6 +211,7 @@ impl<T: 'static> PwtDataTable<T> {
             .class(props.hover.then(|| "table-hover"))
             .class(props.striped.then(|| "table-striped"))
             .class(props.bordered.then(|| "table-bordered"))
+            .class(props.borderless.then(|| "table-borderless"))
             .node_ref(self.table_ref.clone())
             .attribute("style", format!("table-layout: fixed;width:1px; position:relative;top:{}px;", offset))
             .with_child(render_empty_row_with_sizes(&self.column_widths));

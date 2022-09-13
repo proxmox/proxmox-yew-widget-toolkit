@@ -219,7 +219,7 @@ impl Component for PwtResizableHeader {
                 //on_size_change.as_ref().map(move |cb| cb.emit(width));
                 self.size_observer = Some(SizeObserver::new(&el, move |(x, _y)| {
                     if let Some(on_size_change) = &on_size_change {
-                        on_size_change.emit(x + /* border size */ 1);
+                        on_size_change.emit(x);
                     }
                 }));
             }
