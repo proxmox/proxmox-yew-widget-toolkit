@@ -6,7 +6,7 @@ mod header_group;
 pub use header_group::*;
 
 mod column;
-pub use column::DataTableColumn;
+pub use column::{DataTableColumn, DataTableColumnWidth};
 
 mod data_table_header;
 pub use data_table_header::*;

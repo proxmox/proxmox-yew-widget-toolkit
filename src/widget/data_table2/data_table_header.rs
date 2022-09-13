@@ -7,10 +7,10 @@ use yew::virtual_dom::{Key, VComp, VNode};
 use yew::html::{IntoPropValue, IntoEventCallback, Scope};
 
 use crate::prelude::*;
-use crate::widget::{Container, Column, Row};
+use crate::widget::Container;
 use crate::widget::focus::{focus_next_tabable, init_roving_tabindex};
 
-use super::{DataTableColumn, Header, HeaderGroup, ResizableHeader};
+use super::{DataTableColumn, DataTableColumnWidth, Header, HeaderGroup, ResizableHeader};
 
 fn header_to_rows<T: 'static>(
     header: &Header<T>,
@@ -98,8 +98,7 @@ pub struct DataTableHeader<T: 'static> {
     pub node_ref: Option<NodeRef>,
     pub key: Option<Key>,
 
-    //#[derivative(PartialEq(compare_with="Rc::ptr_eq"))]
-    //pub columns: Rc<Vec<DataTableColumn<T>>>,
+    pub parent_width: usize,
 
     headers: Rc<Vec<Header<T>>>,
 
@@ -110,8 +109,8 @@ pub struct DataTableHeader<T: 'static> {
 impl<T: 'static> DataTableHeader<T> {
 
     /// Create a new instance.
-    pub fn  new(headers: Rc<Vec<Header<T>>>) -> Self {
-        yew::props!(Self { headers })
+    pub fn  new(parent_width: usize, headers: Rc<Vec<Header<T>>>) -> Self {
+        yew::props!(Self { parent_width,  headers })
     }
 
     pub fn key(mut self, key: impl Into<Key>) -> Self {
@@ -142,25 +141,109 @@ pub enum Msg {
 pub struct PwtDataTableHeader<T: 'static> {
     node_ref: NodeRef,
     columns: Vec<DataTableColumn<T>>,
+
     column_widths: Vec<Option<usize>>, // for column resize
     observed_widths: Vec<Option<usize>>,
+
+    real_widths: Vec<usize>,
+}
+
+static RESERVED_SPACE: usize = 20;
+
+fn compute_column_widths<T: 'static>(
+    columns: &[DataTableColumn<T>],
+    column_widths: &[Option<usize>],
+    parent_width: usize,
+) -> Vec<usize> {
+
+    let parent_width = parent_width.saturating_sub(RESERVED_SPACE); // reserve space
+
+    let mut widths = vec![0; columns.len()];
+    let mut done = vec![false; columns.len()];
+
+    let min_width = 40;
+
+    let mut flex_count = 0;
+
+    for (col_num, column) in columns.iter().enumerate() {
+        if done[col_num] { continue; }
+        if let Some(Some(w)) = column_widths.get(col_num) {
+            widths[col_num] = (*w).max(min_width);
+            done[col_num] = true;
+            continue;
+        }
+        match column.width {
+            DataTableColumnWidth::Auto => {
+                widths[col_num] = 100; // fixme
+                done[col_num] = true;
+                continue;
+            }
+            DataTableColumnWidth::Fixed(w) => {
+                widths[col_num] = w.max(min_width);
+                done[col_num] = true;
+                continue;
+            }
+            DataTableColumnWidth::Flex(flex) => {
+                flex_count += flex;
+            }
+        }
+    }
+
+    if flex_count > 0 {
+        let used_width = widths.iter().fold(0, |mut sum, w| { sum += w; sum });
+        let rest = parent_width.saturating_sub(used_width);
+        let flex_unit: f64 = (rest as f64)/(flex_count as f64);
+
+        for (col_num, column) in columns.iter().enumerate() {
+            if done[col_num] { continue; }
+
+            if let DataTableColumnWidth::Flex(flex) = column.width {
+                let w = (flex as f64) * flex_unit;
+                widths[col_num] = (w as usize).max(min_width);
+                done[col_num] = true;
+            }
+        }
+    }
+
+    let used_width = widths.iter().fold(0, |mut sum, w| { sum += w; sum });
+    let rest = parent_width.saturating_sub(used_width);
+
+    if rest > 0 && !columns.is_empty() {
+        //log::info!("REST {}", rest);
+        for (col_num, column) in columns.iter().enumerate() {
+            if column_widths.get(col_num).is_some() { continue; }
+            match column.width {
+                DataTableColumnWidth::Flex(_flex) => {
+                    widths[columns.len() - 1] += rest;
+                    break;
+                }
+                _ => {}
+            }
+        }
+    }
+
+    widths
 }
 
 impl <T: 'static> PwtDataTableHeader<T> {
 
+    fn resize_columns(&mut self, props: &DataTableHeader<T>) {
+        self.real_widths = compute_column_widths(&self.columns, &self.column_widths, props.parent_width);
+    }
+
     fn compute_grid_style(&self) -> String {
 
-       let mut grid_style = format!("user-select: none; display:grid; grid-template-columns: ");
+        let mut width: usize = self.real_widths.iter().fold(0, |mut sum, w| { sum += w; sum });
+        width += RESERVED_SPACE;
 
-        for (col_idx, column) in self.columns.iter().enumerate() {
-            if let Some(Some(width)) = self.column_widths.get(col_idx) {
-                grid_style.push_str(&format!("{}px", width));
-            } else {
-                grid_style.push_str(&column.width);
-            }
+        let mut grid_style = format!("user-select: none; width:{width}px; display:grid; grid-template-columns: ");
+
+        for (col_idx, _column) in self.columns.iter().enumerate() {
+            grid_style.push_str(&format!("{}px", self.real_widths[col_idx]));
             grid_style.push(' ');
         }
-        grid_style.push(';');
+
+        grid_style.push_str(&format!("{}px;", RESERVED_SPACE));
 
         grid_style
     }
@@ -178,10 +261,14 @@ impl <T: 'static> Component for PwtDataTableHeader<T> {
             header.extract_column_list(&mut columns);
         }
 
+        let column_widths = Vec::new();
+        let real_widths = compute_column_widths(&columns, &column_widths, props.parent_width);
+
         Self {
             node_ref: props.node_ref.clone().unwrap_or(NodeRef::default()),
             columns,
-            column_widths: Vec::new(),
+            real_widths,
+            column_widths,
             observed_widths: Vec::new(),
         }
     }
@@ -190,16 +277,20 @@ impl <T: 'static> Component for PwtDataTableHeader<T> {
         let props = ctx.props();
         match msg {
             Msg::ResizeColumn(col_num, width) => {
-                //log::info!("resize col {} to {}", col_num, width);
+                log::info!("resize col {} to {}", col_num, width);
                 self.column_widths.resize((col_num + 1).max(self.column_widths.len()), None);
                 self.column_widths[col_num] = Some(width.max(40));
+                self.resize_columns(props);
                 true
             }
             Msg::ColumnSizeReset(col_num) => {
                 if let Some(elem) = self.column_widths.get_mut(col_num) {
                     *elem = None;
+                    self.resize_columns(props);
+                    true
+                } else {
+                    false
                 }
-                true
             }
             Msg::ColumnSizeChange(col_num, width) => {
                 self.observed_widths.resize((col_num + 1).max(self.observed_widths.len()), None);
@@ -233,20 +324,15 @@ impl <T: 'static> Component for PwtDataTableHeader<T> {
 
         // add some space at the end to make room for the tables vertical scrollbar
         let last = Container::new()
-            .attribute("style", format!("width: 15px;grid-row:1/10;grid-column-start:{};", column_count + 1));
+            .attribute("style", format!("grid-row: 1 / 10; grid-column-start: {};", column_count + 1));
 
-        Column::new()
-            .node_ref(self.node_ref.clone())
-            .class("pwt-justify-content-start")
-            .with_child(
-                Container::new()
-                    .class("pwt-d-grid")
-                    .class("pwt-datatable2-header")
-                    .class("pwt-overflow-hidden")
-                    .attribute("style", self.compute_grid_style())
-                    .children(rows)
-                    .with_child(last)
-            )
+        Container::new()
+            .tag("table")
+            .class("pwt-d-grid")
+            .class("pwt-datatable2-header")
+            .attribute("style", self.compute_grid_style())
+            .children(rows)
+            .with_child(last)
             .onkeydown({
                 let inner_ref =  self.node_ref.clone();
                 move |event: KeyboardEvent| {
@@ -263,6 +349,16 @@ impl <T: 'static> Component for PwtDataTableHeader<T> {
                 }
             })
             .into()
+    }
+
+    fn changed(&mut self, ctx: &Context<Self>, old_props: &Self::Properties) -> bool {
+        let props = ctx.props();
+        if props.parent_width != old_props.parent_width {
+            log::info!("WIDTH CHANGE");
+            self.resize_columns(props);
+            return true;
+        }
+        false
     }
 
     fn rendered(&mut self, _ctx: &Context<Self>, first_render: bool) {

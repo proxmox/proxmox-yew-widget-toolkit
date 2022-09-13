@@ -1,10 +1,9 @@
 use std::rc::Rc;
-use std::cmp::Ordering;
 
 use derivative::Derivative;
 use yew::prelude::*;
 use yew::virtual_dom::{Key, VComp, VNode};
-use yew::html::{IntoEventCallback, IntoPropValue};
+use yew::html::IntoPropValue;
 
 use crate::prelude::*;
 use crate::state::{optional_rc_ptr_eq, DataFilter};
@@ -16,6 +15,7 @@ pub enum Msg {
     ColumnWidthChange(Vec<usize>),
     ScrollTo(i32, i32),
     ViewportResize(i32, i32),
+    ContainerResize(i32, i32),
     RowHeight(usize),
 }
 
@@ -116,6 +116,12 @@ impl <T: 'static> DataTable<T> {
         self.bordered = bordered;
     }
 
+    /// Builder style method to set the cell class
+    pub fn cell_class(mut self, class: impl IntoPropValue<Option<String>>) -> Self {
+        self.cell_class = class.into_prop_value();
+        self
+    }
+
 }
 
 #[doc(hidden)]
@@ -126,6 +132,7 @@ pub struct PwtDataTable<T: 'static> {
 
     cell_class: String,
 
+    header_scroll_ref: NodeRef,
     scroll_ref: NodeRef,
     scroll_top: usize,
     viewport_height: usize,
@@ -133,10 +140,14 @@ pub struct PwtDataTable<T: 'static> {
     viewport_size_observer: Option<SizeObserver>,
 
     table_ref: NodeRef,
-    table_height: Option<usize>,
 
     row_height: usize,
     visible_rows: usize,
+
+    container_ref: NodeRef,
+    container_size_observer: Option<SizeObserver>,
+    container_width: usize,
+    container_height: usize,
 }
 
 fn render_empty_row_with_sizes(widths: &[usize]) -> Html {
@@ -162,7 +173,7 @@ impl<T: 'static> PwtDataTable<T> {
             .key(key)
             .attribute("id", format!("record-nr-{}", record_num))
             .children(
-                self.columns.iter().enumerate().map(|(column_num, column)| {
+                self.columns.iter().enumerate().map(|(_column_num, column)| {
                     let item_style = format!("text-align:{};", column.justify);
                     let class = if selected { Some("selected") } else {None };
                     Container::new()
@@ -181,14 +192,6 @@ impl<T: 'static> PwtDataTable<T> {
     }
 
     fn render_table(&self, props: &DataTable<T>, offset: usize, start: usize, end: usize) -> Html {
-
-        let table_class = classes!(
-            "datatable",
-            props.hover.then(|| "table-hover"),
-            props.striped.then(|| "table-striped"),
-            props.bordered.then(|| "table-bordered"),
-        );
-
 
         let mut table = Container::new()
             .tag("table")
@@ -265,28 +268,42 @@ impl <T: 'static> Component for PwtDataTable<T> {
             scroll_top: 0,
             viewport_height: 0,
             viewport_size_observer: None,
+            header_scroll_ref: NodeRef::default(),
             scroll_ref: NodeRef::default(),
             table_ref: NodeRef::default(),
-            table_height: None,
+
+            container_ref: NodeRef::default(),
+            container_size_observer: None,
+            container_width: 0,
+            container_height: 0,
+
             row_height: 22,
             visible_rows: 0,
         }
     }
 
-    fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
-        let props = ctx.props();
+    fn update(&mut self, _ctx: &Context<Self>, msg: Self::Message) -> bool {
         match msg {
             Msg::ColumnWidthChange(column_widths) => {
                 self.column_widths = column_widths;
                 true
             }
-            Msg::ScrollTo(_x, y) => {
+            Msg::ScrollTo(x, y) => {
                 self.scroll_top = y.max(0) as usize;
+                if let Some(el) = self.header_scroll_ref.cast::<web_sys::Element>() {
+                    el.scroll_to_with_x_and_y(x as f64, 0.0);
+                }
                 true
             }
             Msg::ViewportResize(_width, height) => {
                 self.viewport_height = height.max(0) as usize;
                 self.visible_rows = (self.viewport_height / self.row_height) + 5;
+                true
+            }
+            Msg::ContainerResize(width, height) => {
+                self.container_width = width.max(0) as usize;
+                self.container_height = height.max(0) as usize;
+                //log::info!("CONTAINERSIZE {} {}", self.container_width, self.container_height);
                 true
             }
             Msg::RowHeight(row_height) => {
@@ -319,7 +336,7 @@ impl <T: 'static> Component for PwtDataTable<T> {
         let viewport = Container::new()
             .node_ref(self.scroll_ref.clone())
             .class("pwt-flex-fill")
-            .attribute("style", "overflow-y: auto; overflow-x: hidden; outline: 0;")
+            .attribute("style", "overflow: auto; outline: 0")
              // fixme: howto handle focus?
             .attribute("tabindex", "0")
             .with_child(scroll_content)
@@ -330,10 +347,16 @@ impl <T: 'static> Component for PwtDataTable<T> {
 
         Column::new()
             .class(props.class.clone())
+            .node_ref(self.container_ref.clone())
             .with_child(
-                DataTableHeader::new(props.headers.clone())
-                    .on_size_change(ctx.link().callback(Msg::ColumnWidthChange))
-
+                Container::new() // scollable for header
+                    .attribute("style", "flex: 0 0 auto;")
+                    .class("pwt-overflow-hidden")
+                    .node_ref(self.header_scroll_ref.clone())
+                    .with_child(
+                        DataTableHeader::new(self.container_width, props.headers.clone())
+                            .on_size_change(ctx.link().callback(Msg::ColumnWidthChange))
+                    )
             )
             .with_child(viewport)
             .into()
@@ -347,6 +370,14 @@ impl <T: 'static> Component for PwtDataTable<T> {
                     link.send_message(Msg::ViewportResize(width, height));
                 });
                 self.viewport_size_observer = Some(size_observer);
+            }
+
+            if let Some(el) = self.container_ref.cast::<web_sys::Element>() {
+                let link = ctx.link().clone();
+                let size_observer = SizeObserver::new(&el, move |(width, height)| {
+                    link.send_message(Msg::ContainerResize(width, height));
+                });
+                self.container_size_observer = Some(size_observer);
             }
         }
 
