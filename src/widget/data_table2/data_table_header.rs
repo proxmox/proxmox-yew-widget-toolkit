@@ -2,6 +2,8 @@ use std::rc::Rc;
 
 use derivative::Derivative;
 
+use gloo_timers::callback::Timeout;
+
 use yew::prelude::*;
 use yew::virtual_dom::{Key, VComp, VNode};
 use yew::html::{IntoPropValue, IntoEventCallback, Scope};
@@ -146,6 +148,8 @@ pub struct PwtDataTableHeader<T: 'static> {
     observed_widths: Vec<Option<usize>>,
 
     real_widths: Vec<usize>,
+
+    timeout: Option<Timeout>,
 }
 
 static RESERVED_SPACE: usize = 20;
@@ -270,6 +274,7 @@ impl <T: 'static> Component for PwtDataTableHeader<T> {
             real_widths,
             column_widths,
             observed_widths: Vec::new(),
+            timeout: None,
         }
     }
 
@@ -299,8 +304,11 @@ impl <T: 'static> Component for PwtDataTableHeader<T> {
 
                 let observed_widths: Vec<usize> = self.observed_widths.iter().filter_map(|w| w.clone()).collect();
                 if self.columns.len() == observed_widths.len() {
-                    if let Some(on_size_change) = &props.on_size_change {
-                        on_size_change.emit(observed_widths);
+                    if let Some(on_size_change) = props.on_size_change.clone() {
+                        // use timeout to reduce the number of on_size_change callbacks
+                        self.timeout = Some(Timeout::new(1, move || {
+                            on_size_change.emit(observed_widths);
+                        }));
                     }
                 }
                 true
