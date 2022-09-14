@@ -14,6 +14,52 @@ use crate::widget::focus::{focus_next_tabable, init_roving_tabindex};
 
 use super::{DataTableColumn, DataTableColumnWidth, Header, HeaderGroup, ResizableHeader};
 
+#[derive(Properties)]
+#[derive(Derivative)]
+#[derivative(Clone(bound=""), PartialEq(bound=""))]
+pub struct DataTableHeader<T: 'static> {
+    pub node_ref: Option<NodeRef>,
+    pub key: Option<Key>,
+
+    parent_width: usize,
+
+    headers: Rc<Vec<Header<T>>>,
+
+    pub on_size_change: Option<Callback<Vec<usize>>>,
+}
+
+
+impl<T: 'static> DataTableHeader<T> {
+
+    /// Create a new instance.
+    pub fn new(parent_width: usize, headers: Rc<Vec<Header<T>>>) -> Self {
+        yew::props!(Self { parent_width,  headers })
+    }
+
+    pub fn key(mut self, key: impl Into<Key>) -> Self {
+        self.key = Some(key.into());
+        self
+    }
+
+    /// Builder style method to set the yew `node_ref`
+    pub fn node_ref(mut self, node_ref: impl IntoPropValue<Option<NodeRef>>) -> Self {
+        self.node_ref = node_ref.into_prop_value();
+        self
+    }
+
+    /// Builder style method to set the size change callback
+    pub fn on_size_change(mut self, cb: impl IntoEventCallback<Vec<usize>>) -> Self {
+        self.on_size_change = cb.into_event_callback();
+        self
+    }
+}
+
+pub enum Msg {
+    ResizeColumn(usize, usize),
+    ColumnSizeReset(usize),
+    ColumnSizeChange(usize, i32),
+}
+
 fn header_to_rows<T: 'static>(
     header: &Header<T>,
     link: &Scope<PwtDataTableHeader<T>>,
@@ -93,53 +139,6 @@ fn group_to_rows<T: 'static>(
     }
 
     span
-}
-
-#[derive(Properties)]
-#[derive(Derivative)]
-#[derivative(Clone(bound=""), PartialEq(bound=""))]
-pub struct DataTableHeader<T: 'static> {
-    pub node_ref: Option<NodeRef>,
-    pub key: Option<Key>,
-
-    pub parent_width: usize,
-
-    headers: Rc<Vec<Header<T>>>,
-
-    on_size_change: Option<Callback<Vec<usize>>>,
-}
-
-
-impl<T: 'static> DataTableHeader<T> {
-
-    /// Create a new instance.
-    pub fn new(parent_width: usize, headers: Rc<Vec<Header<T>>>) -> Self {
-        yew::props!(Self { parent_width,  headers })
-    }
-
-    pub fn key(mut self, key: impl Into<Key>) -> Self {
-        self.key = Some(key.into());
-        self
-    }
-
-    /// Builder style method to set the yew `node_ref`
-    pub fn node_ref(mut self, node_ref: impl IntoPropValue<Option<NodeRef>>) -> Self {
-        self.node_ref = node_ref.into_prop_value();
-        self
-    }
-
-    /// Builder style method to set the size change callback
-    pub fn on_size_change(mut self, cb: impl IntoEventCallback<Vec<usize>>) -> Self {
-        self.on_size_change = cb.into_event_callback();
-        self
-    }
-}
-
-
-pub enum Msg {
-    ResizeColumn(usize, usize),
-    ColumnSizeReset(usize),
-    ColumnSizeChange(usize, i32),
 }
 
 pub struct PwtDataTableHeader<T: 'static> {

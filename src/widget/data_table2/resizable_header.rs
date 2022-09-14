@@ -198,15 +198,6 @@ impl Component for PwtResizableHeader {
                          }
                      })
              )
-        /*
-            .with_child(
-                Container::new()
-                    .class("pwt-datatable2-header-resize-separator")
-                    .attribute("style", format!("left: {}px", self.width))
-
-
-            )
-         */
             .into()
     }
 
