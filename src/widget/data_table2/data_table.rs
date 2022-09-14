@@ -16,7 +16,7 @@ pub enum Msg {
     ScrollTo(i32, i32),
     ViewportResize(i32, i32),
     ContainerResize(i32, i32),
-    TableHeight(usize),
+    TableResize(i32, i32),
 }
 
 // DataTable properties
@@ -236,6 +236,7 @@ pub struct PwtDataTable<T: 'static> {
     viewport_size_observer: Option<SizeObserver>,
 
     table_ref: NodeRef,
+    table_size_observer: Option<SizeObserver>,
 
     row_height: usize,
 
@@ -308,10 +309,12 @@ impl<T: 'static> PwtDataTable<T> {
             .attribute("style", format!("table-layout: fixed;width:1px; position:relative;top:{}px;", offset))
             .with_child(render_empty_row_with_sizes(&self.column_widths));
 
-        for (_i, record_num, item) in self.store.filtered_data_range(start..end) {
-            let selected = false;
-            let row = self.render_row(props, item, record_num, selected);
-            table.add_child(row);
+        if !self.column_widths.is_empty() {
+            for (_i, record_num, item) in self.store.filtered_data_range(start..end) {
+                let selected = false;
+                let row = self.render_row(props, item, record_num, selected);
+                table.add_child(row);
+            }
         }
 
         table.into()
@@ -410,7 +413,9 @@ impl <T: 'static> Component for PwtDataTable<T> {
             viewport_size_observer: None,
             header_scroll_ref: NodeRef::default(),
             scroll_ref: NodeRef::default(),
+
             table_ref: NodeRef::default(),
+            table_size_observer: None,
             table_height: 0,
 
             container_ref: NodeRef::default(),
@@ -448,7 +453,8 @@ impl <T: 'static> Component for PwtDataTable<T> {
                 self.container_width = width.max(0) as usize;
                 true
             }
-            Msg::TableHeight(height) => {
+            Msg::TableResize(_width, height) => {
+                let height = height.max(0) as usize;
                 if self.table_height == height { return false; };
                 self.table_height = height;
                 let visible_rows = self.scroll_info.visible_rows();
@@ -467,19 +473,13 @@ impl <T: 'static> Component for PwtDataTable<T> {
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
 
-        let scroll_content = if !self.column_widths.is_empty() {
-            self.render_scroll_content(props)
-        } else {
-            html!{}
-        };
-
         let viewport = Container::new()
             .node_ref(self.scroll_ref.clone())
             .class("pwt-flex-fill")
             .attribute("style", "overflow: auto; outline: 0")
              // fixme: howto handle focus?
             .attribute("tabindex", "0")
-            .with_child(scroll_content)
+            .with_child(self.render_scroll_content(props))
             .onscroll(ctx.link().batch_callback(move |event: Event| {
                 let target: Option<web_sys::HtmlElement> = event.target_dyn_into();
                 target.map(|el| Msg::ScrollTo(el.scroll_left(), el.scroll_top()))
@@ -531,12 +531,13 @@ impl <T: 'static> Component for PwtDataTable<T> {
                 });
                 self.container_size_observer = Some(size_observer);
             }
-        }
 
-        if let Some(el) = self.table_ref.cast::<web_sys::HtmlElement>() {
-            let height = el.offset_height().max(0) as usize;
-            if self.table_height != height {
-                ctx.link().send_message(Msg::TableHeight(height));
+            if let Some(el) = self.table_ref.cast::<web_sys::HtmlElement>() {
+                let link = ctx.link().clone();
+                let size_observer = SizeObserver::new(&el, move |(width, height)| {
+                    link.send_message(Msg::TableResize(width, height));
+                });
+                self.table_size_observer = Some(size_observer);
             }
         }
     }
