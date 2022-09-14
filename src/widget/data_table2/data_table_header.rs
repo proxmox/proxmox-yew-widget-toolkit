@@ -306,6 +306,18 @@ impl <T: 'static> Component for PwtDataTableHeader<T> {
                 log::info!("resize col {} to {}", col_num, width);
                 self.column_widths.resize((col_num + 1).max(self.column_widths.len()), None);
                 self.column_widths[col_num] = Some(width.max(40));
+
+                // Set flex columns on the left to fixed size to avoid unexpected effects.
+                for i in 0..col_num {
+                    if self.column_widths[i].is_none() {
+                        if let DataTableColumnWidth::Flex(_flex) = self.columns[i].width {
+                            if let Some(Some(observed_width)) = self.observed_widths.get(i) {
+                                self.column_widths[i] = Some(*observed_width + 1);
+                            }
+                        }
+                    }
+                }
+
                 self.resize_columns(props);
                 true
             }
