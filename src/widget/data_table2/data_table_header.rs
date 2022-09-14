@@ -247,12 +247,17 @@ impl <T: 'static> PwtDataTableHeader<T> {
         );
     }
 
-    fn compute_grid_style(&self) -> String {
+    fn compute_grid_style(&self, parent_width: usize) -> String {
 
         let mut width: usize = self.real_widths.iter().fold(0, |mut sum, w| { sum += w; sum });
         width += RESERVED_SPACE;
 
-        let mut grid_style = format!("user-select: none; width:{width}px; display:grid; grid-template-columns:");
+        let fill = parent_width.saturating_sub(width);
+
+        let mut grid_style = format!(
+            "user-select: none; width:{}px; display:grid; grid-template-columns:",
+            width + fill,
+        );
 
         for (col_idx, column) in self.columns.iter().enumerate() {
             let width = self.real_widths[col_idx];
@@ -266,7 +271,7 @@ impl <T: 'static> PwtDataTableHeader<T> {
             grid_style.push_str(&format!("{}px", width));
         }
 
-        grid_style.push_str(&format!(" {}px;", RESERVED_SPACE));
+        grid_style.push_str(&format!(" {}px;", RESERVED_SPACE + fill));
 
         grid_style
     }
@@ -380,7 +385,7 @@ impl <T: 'static> Component for PwtDataTableHeader<T> {
             .tag("table")
             .class("pwt-d-grid")
             .class("pwt-datatable2-header")
-            .attribute("style", self.compute_grid_style())
+            .attribute("style", self.compute_grid_style(props.parent_width))
             .children(rows)
             .with_child(last)
             .onkeydown({
