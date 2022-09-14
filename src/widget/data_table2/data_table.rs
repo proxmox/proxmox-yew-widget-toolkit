@@ -38,7 +38,8 @@ pub struct DataTable<T: 'static> {
     pub data: Option<Rc<Vec<T>>>,
 
     /// set class for table cells (default is "pwt-truncate pwt-p-2")
-    pub cell_class: Option<String>,
+    #[prop_or_default]
+    pub cell_class: Classes,
 
     #[prop_or_default]
     pub bordered: bool,
@@ -81,6 +82,17 @@ impl <T: 'static> DataTable<T> {
     /// Method to add a html class
     pub fn add_class(&mut self, class: impl Into<Classes>) {
         self.class.push(class);
+    }
+
+    /// Builder style method to add a html class for table cells
+    pub fn cell_class(mut self, class: impl Into<Classes>) -> Self {
+        self.add_cell_class(class);
+        self
+    }
+
+    /// Method to add a html class for table cells
+    pub fn add_cell_class(&mut self, class: impl Into<Classes>) {
+        self.cell_class.push(class);
     }
 
     pub fn data(mut self, data: impl IntoPropValue<Option<Rc<Vec<T>>>>) -> Self {
@@ -127,13 +139,6 @@ impl <T: 'static> DataTable<T> {
     pub fn set_borderless(&mut self, borderless: bool) {
         self.borderless = borderless;
     }
-
-    /// Builder style method to set the cell class
-    pub fn cell_class(mut self, class: impl IntoPropValue<Option<String>>) -> Self {
-        self.cell_class = class.into_prop_value();
-        self
-    }
-
 }
 
 #[doc(hidden)]
@@ -142,7 +147,7 @@ pub struct PwtDataTable<T: 'static> {
     columns: Vec<DataTableColumn<T>>,
     column_widths: Vec<usize>,
 
-    cell_class: String,
+    cell_class: Classes,
 
     header_scroll_ref: NodeRef,
     scroll_ref: NodeRef,
@@ -193,7 +198,7 @@ impl<T: 'static> PwtDataTable<T> {
                         .attribute("style", item_style)
                         .class(class)
                         .with_child(html!{
-                            <div class={&self.cell_class}>{
+                            <div class={self.cell_class.clone()}>{
                                 column.render.apply(item)
                             }</div>
                         })
@@ -270,8 +275,11 @@ impl <T: 'static> Component for PwtDataTable<T> {
             header.extract_column_list(&mut columns);
         }
 
-        let cell_class = props.cell_class.clone()
-            .unwrap_or_else(|| String::from("pwt-text-truncate pwt-p-2"));
+        let cell_class = if props.cell_class.is_empty() {
+            Classes::from("pwt-text-truncate pwt-p-2")
+        } else {
+            props.cell_class.clone()
+        };
 
         Self {
             store,
