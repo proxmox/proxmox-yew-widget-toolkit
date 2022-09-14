@@ -113,7 +113,7 @@ pub struct DataTableHeader<T: 'static> {
 impl<T: 'static> DataTableHeader<T> {
 
     /// Create a new instance.
-    pub fn  new(parent_width: usize, headers: Rc<Vec<Header<T>>>) -> Self {
+    pub fn new(parent_width: usize, headers: Rc<Vec<Header<T>>>) -> Self {
         yew::props!(Self { parent_width,  headers })
     }
 
@@ -148,6 +148,7 @@ pub struct PwtDataTableHeader<T: 'static> {
 
     column_widths: Vec<Option<usize>>, // for column resize
     observed_widths: Vec<Option<usize>>,
+    initial_widths: Vec<Option<usize>>, // store first observed widths
 
     real_widths: Vec<usize>,
 
@@ -159,6 +160,7 @@ static RESERVED_SPACE: usize = 20;
 fn compute_column_widths<T: 'static>(
     columns: &[DataTableColumn<T>],
     column_widths: &[Option<usize>],
+    initial_widths: &[Option<usize>],
     parent_width: usize,
 ) -> Vec<usize> {
 
@@ -180,7 +182,10 @@ fn compute_column_widths<T: 'static>(
         }
         match column.width {
             DataTableColumnWidth::Auto => {
-                widths[col_num] = 100; // fixme
+                widths[col_num] = initial_widths
+                    .get(col_num)
+                    .map(|w| match w { Some(w) => *w + 1, None => 0 })
+                    .unwrap_or(0);
                 done[col_num] = true;
                 continue;
             }
@@ -234,7 +239,12 @@ fn compute_column_widths<T: 'static>(
 impl <T: 'static> PwtDataTableHeader<T> {
 
     fn resize_columns(&mut self, props: &DataTableHeader<T>) {
-        self.real_widths = compute_column_widths(&self.columns, &self.column_widths, props.parent_width);
+        self.real_widths = compute_column_widths(
+            &self.columns,
+            &self.column_widths,
+            &self.initial_widths,
+            props.parent_width,
+        );
     }
 
     fn compute_grid_style(&self) -> String {
@@ -242,14 +252,21 @@ impl <T: 'static> PwtDataTableHeader<T> {
         let mut width: usize = self.real_widths.iter().fold(0, |mut sum, w| { sum += w; sum });
         width += RESERVED_SPACE;
 
-        let mut grid_style = format!("user-select: none; width:{width}px; display:grid; grid-template-columns: ");
+        let mut grid_style = format!("user-select: none; width:{width}px; display:grid; grid-template-columns:");
 
-        for (col_idx, _column) in self.columns.iter().enumerate() {
-            grid_style.push_str(&format!("{}px", self.real_widths[col_idx]));
+        for (col_idx, column) in self.columns.iter().enumerate() {
+            let width = self.real_widths[col_idx];
             grid_style.push(' ');
+            if let DataTableColumnWidth::Auto = column.width {
+                if width == 0 {
+                    grid_style.push_str("auto");
+                    continue;
+                }
+            }
+            grid_style.push_str(&format!("{}px", width));
         }
 
-        grid_style.push_str(&format!("{}px;", RESERVED_SPACE));
+        grid_style.push_str(&format!(" {}px;", RESERVED_SPACE));
 
         grid_style
     }
@@ -268,13 +285,15 @@ impl <T: 'static> Component for PwtDataTableHeader<T> {
         }
 
         let column_widths = Vec::new();
-        let real_widths = compute_column_widths(&columns, &column_widths, props.parent_width);
+        let initial_widths = Vec::new();
+        let real_widths = compute_column_widths(&columns, &column_widths, &initial_widths, props.parent_width);
 
         Self {
             node_ref: props.node_ref.clone().unwrap_or(NodeRef::default()),
             columns,
             real_widths,
             column_widths,
+            initial_widths,
             observed_widths: Vec::new(),
             timeout: None,
         }
@@ -302,6 +321,15 @@ impl <T: 'static> Component for PwtDataTableHeader<T> {
             Msg::ColumnSizeChange(col_num, width) => {
                 self.observed_widths.resize((col_num + 1).max(self.observed_widths.len()), None);
                 self.observed_widths[col_num] = Some(width as usize);
+                self.initial_widths.resize((col_num + 1).max(self.initial_widths.len()), None);
+                if let Some(opt_elem) = self.initial_widths.get_mut(col_num) {
+                    if opt_elem.is_none() {
+                        // + 1 pixel to avoid rounding problems
+                        // Note: Element sizes are float, but we only get i32 from SizeObserver
+                        *opt_elem = Some((width + 1) as usize);
+                    }
+
+                }
                 //log::info!("COL {} SIZE CHANGE {} --- {}", col_num, width, self.observed_widths.len());
 
                 let observed_widths: Vec<usize> = self.observed_widths.iter().filter_map(|w| w.clone()).collect();
