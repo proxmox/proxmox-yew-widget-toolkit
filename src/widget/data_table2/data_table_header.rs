@@ -383,6 +383,7 @@ impl <T: 'static> Component for PwtDataTableHeader<T> {
 
         Container::new()
             .tag("table")
+            .node_ref(self.node_ref.clone())
             .class("pwt-d-grid")
             .class("pwt-datatable2-header")
             .attribute("style", self.compute_grid_style(props.parent_width))
