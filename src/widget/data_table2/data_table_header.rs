@@ -32,6 +32,7 @@ fn header_to_rows<T: 'static>(
         Header::Single(column) => {
             rows[start_row].push(
                 Container::new()
+                    .tag("th")
                     .attribute(
                         "style",
                         format!("grid-row: {} / 10;grid-column-start: {}", start_row + 1, start_col + 1)
@@ -83,6 +84,7 @@ fn group_to_rows<T: 'static>(
         if span == 0 { span = 1; }
         rows[start_row].push(
             Container::new()
+                .tag("th")
                 .class("pwt-datatable2-group-header-item")
                 .attribute("style", format!("grid-column: {} / span {}", start_col + 1, span))
                 .with_child(content)
