@@ -156,7 +156,7 @@ impl Component for PwtTooltip {
               ],
            });
 
-            let opts = JsValue::from_serde(&opts).unwrap();
+            let opts = JsValue::from_str(&serde_json::to_string(&opts).unwrap());
 
             if let Some(content_node) = self.content_ref.get() {
                 if let Some(tooltip_node) = self.tooltip_ref.get() {

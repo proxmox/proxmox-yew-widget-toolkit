@@ -444,7 +444,7 @@ impl <T: 'static> Component for PwtDataTable<T> {
                 self.update_scroll_info(props);
                 true
             }
-            Msg::ContainerResize(width, height) => {
+            Msg::ContainerResize(width, _height) => {
                 self.container_width = width.max(0) as usize;
                 true
             }
