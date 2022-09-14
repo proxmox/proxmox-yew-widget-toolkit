@@ -53,44 +53,50 @@ pub struct DataTable<T: 'static> {
     #[prop_or(true)]
     pub striped: bool,
 
+    /// Vertical alignment of cells inside the row.
+    ///
+    /// Possible values are "baseline" (default), "top", "middle" and
+    /// "bottom".
+    vertical_align: Option<AttrValue>,
 }
 
 impl <T: 'static> DataTable<T> {
 
+    /// Create a new instance.
     pub fn new(headers: Rc<Vec<Header<T>>>) -> Self {
         yew::props!(DataTable<T> { headers })
     }
 
-    /// Builder style method to set the yew `node_ref`
+    /// Builder style method to set the yew `node_ref`.
     pub fn node_ref(mut self, node_ref: ::yew::html::NodeRef) -> Self {
         self.node_ref = node_ref;
         self
     }
 
-    /// Builder style method to set the yew `key` property
+    /// Builder style method to set the yew `key` property.
     pub fn key(mut self, key: impl Into<Key>) -> Self {
         self.key = Some(key.into());
         self
     }
 
-    /// Builder style method to add a html class
+    /// Builder style method to add a html class.
     pub fn class(mut self, class: impl Into<Classes>) -> Self {
         self.add_class(class);
         self
     }
 
-    /// Method to add a html class
+    /// Method to add a html class.
     pub fn add_class(&mut self, class: impl Into<Classes>) {
         self.class.push(class);
     }
 
-    /// Builder style method to add a html class for table cells
+    /// Builder style method to add a html class for table cells.
     pub fn cell_class(mut self, class: impl Into<Classes>) -> Self {
         self.add_cell_class(class);
         self
     }
 
-    /// Method to add a html class for table cells
+    /// Method to add a html class for table cells.
     pub fn add_cell_class(&mut self, class: impl Into<Classes>) {
         self.cell_class.push(class);
     }
@@ -104,40 +110,59 @@ impl <T: 'static> DataTable<T> {
         self.data = data.into_prop_value();
     }
 
+    /// Builder style method to set striped mode.
     pub fn striped(mut self, striped: bool) -> Self {
         self.set_striped(striped);
         self
     }
 
+    /// Method to set striped mode.
     pub fn set_striped(&mut self, striped: bool) {
         self.striped = striped;
     }
 
+    /// Builder style method to set hover flag.
     pub fn hover(mut self, hover: bool) -> Self {
         self.set_hover(hover);
         self
     }
 
+    /// Method to set hover flag.
     pub fn set_hover(&mut self, hover: bool) {
         self.hover = hover;
     }
 
+    /// Builder style method to enable vertical borders.
     pub fn bordered(mut self, bordered: bool) -> Self {
         self.set_bordered(bordered);
         self
     }
 
+    /// Method to enable vertical borders.
     pub fn set_bordered(&mut self, bordered: bool) {
         self.bordered = bordered;
     }
 
+    /// Builder style method to disable horizontal borders.
     pub fn borderless(mut self, borderless: bool) -> Self {
         self.set_borderless(borderless);
         self
     }
 
+    /// Method to disable horizontal borders.
     pub fn set_borderless(&mut self, borderless: bool) {
         self.borderless = borderless;
+    }
+
+    /// Builder style method to set the vertical cell alignment.
+    pub fn vertical_align(mut self, align: impl IntoPropValue<Option<AttrValue>>) -> Self {
+        self.set_vertical_align(align);
+        self
+    }
+
+    /// Method to set the vertical cell alignment.
+    pub fn set_vertical_align(&mut self, align: impl IntoPropValue<Option<AttrValue>>) {
+        self.vertical_align = align.into_prop_value();
     }
 }
 
@@ -181,7 +206,7 @@ fn render_empty_row_with_sizes(widths: &[usize]) -> Html {
 
 impl<T: 'static> PwtDataTable<T> {
 
-    fn render_row(&self, item: &T, record_num: usize, selected: bool) -> Html {
+    fn render_row(&self, props: &DataTable<T>, item: &T, record_num: usize, selected: bool) -> Html {
 
         let key = Key::from(record_num); // fixme: use extract key
 
@@ -191,7 +216,11 @@ impl<T: 'static> PwtDataTable<T> {
             .attribute("id", format!("record-nr-{}", record_num))
             .children(
                 self.columns.iter().enumerate().map(|(_column_num, column)| {
-                    let item_style = format!("text-align:{};", column.justify);
+                    let item_style = format!(
+                        "vertical-align: {}; text-align: {};",
+                        props.vertical_align.as_deref().unwrap_or("baseline"),
+                        column.justify,
+                    );
                     let class = if selected { Some("selected") } else {None };
                     Container::new()
                         .tag("td")
@@ -223,7 +252,7 @@ impl<T: 'static> PwtDataTable<T> {
 
         for (_i, record_num, item) in self.store.filtered_data_range(start..end) {
             let selected = false;
-            let row = self.render_row(item, record_num, selected);
+            let row = self.render_row(props, item, record_num, selected);
             table.add_child(row);
         }
 
