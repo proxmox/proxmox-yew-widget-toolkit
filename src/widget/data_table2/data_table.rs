@@ -249,6 +249,8 @@ fn render_empty_row_with_sizes(widths: &[usize]) -> Html {
     Container::new()
         .tag("tr")
         .key(Key::from("sizes"))
+         // Note: This row should not be visible, so avoid borders
+        .attribute("style", "border-top-width: 0px; border-bottom-width: 0px;")
         .children(
             widths.iter().map(|w| html!{
                 <td style={format!("width:{w}px;height:0px;")}></td>
