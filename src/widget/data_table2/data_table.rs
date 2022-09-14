@@ -49,7 +49,7 @@ pub struct DataTable<T: 'static> {
     #[prop_or(true)]
     pub hover: bool,
 
-    #[prop_or_default]
+    #[prop_or(true)]
     pub striped: bool,
 
 }
