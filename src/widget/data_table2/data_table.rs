@@ -16,7 +16,7 @@ pub enum Msg {
     ScrollTo(i32, i32),
     ViewportResize(i32, i32),
     ContainerResize(i32, i32),
-    RowHeight(usize),
+    TableHeight(usize),
 }
 
 // DataTable properties
@@ -63,6 +63,14 @@ pub struct DataTable<T: 'static> {
     ///
     /// Virtual scroll is enabled by default for tables with more than 30 rows.
     pub virtual_scroll: Option<bool>,
+
+    /// Minimum row height (default 22)
+    ///
+    /// Sets the minmum height for table rows. This is also used by
+    /// the virtual scrolling algorithm to compute the maximal number
+    /// of visible rows.
+    #[prop_or(22)]
+    pub min_row_height: usize,
 }
 
 static VIRTUAL_SCROLL_TRIGGER: usize = 30;
@@ -182,6 +190,31 @@ impl <T: 'static> DataTable<T> {
     pub fn set_virtual_scroll(&mut self, virtual_scroll: impl IntoPropValue<Option<bool>>) {
         self.virtual_scroll = virtual_scroll.into_prop_value();
     }
+
+    /// Builder style method to set the minimum row height
+    pub fn min_row_height(mut self, min_row_height: usize) -> Self {
+        self.set_min_row_height(min_row_height);
+        self
+    }
+
+    /// Method to set the minimum row height
+    pub fn set_min_row_height(&mut self, min_row_height: usize) {
+        self.min_row_height = min_row_height;
+    }
+}
+
+#[derive(Default)]
+struct VirtualScrollInfo {
+    start: usize,
+    end: usize,
+    height: usize,
+    offset: usize,
+}
+
+impl VirtualScrollInfo {
+    fn visible_rows(&self) -> usize {
+        self.end.saturating_sub(self.start)
+    }
 }
 
 #[doc(hidden)]
@@ -190,6 +223,7 @@ pub struct PwtDataTable<T: 'static> {
     columns: Vec<DataTableColumn<T>>,
     column_widths: Vec<usize>,
     virtual_scroll: bool,
+    scroll_info: VirtualScrollInfo,
 
     cell_class: Classes,
 
@@ -197,18 +231,17 @@ pub struct PwtDataTable<T: 'static> {
     scroll_ref: NodeRef,
     scroll_top: usize,
     viewport_height: usize,
+    table_height: usize,
 
     viewport_size_observer: Option<SizeObserver>,
 
     table_ref: NodeRef,
 
     row_height: usize,
-    visible_rows: usize,
 
     container_ref: NodeRef,
     container_size_observer: Option<SizeObserver>,
     container_width: usize,
-    container_height: usize,
 }
 
 fn render_empty_row_with_sizes(widths: &[usize]) -> Html {
@@ -228,6 +261,10 @@ impl<T: 'static> PwtDataTable<T> {
     fn render_row(&self, props: &DataTable<T>, item: &T, record_num: usize, selected: bool) -> Html {
 
         let key = Key::from(record_num); // fixme: use extract key
+
+        // Make sure our rows have a minimum height
+        // Note: setting min-height on <tr> or <td> does not work
+        let minheight_cell_style = AttrValue::Rc(format!("height: {}px;", props.min_row_height).into());
 
         Container::new()
             .tag("tr")
@@ -252,7 +289,9 @@ impl<T: 'static> PwtDataTable<T> {
                         })
                         .into()
                 })
+
             )
+            .with_child(html!{<th style={minheight_cell_style.clone()}/>})
             .into()
     }
 
@@ -281,13 +320,11 @@ impl<T: 'static> PwtDataTable<T> {
     fn render_scroll_content(
         &self,
         props: &DataTable<T>,
-        height: usize,
-        offset: usize,
-        start: usize,
-        end: usize,
     ) -> Html {
 
-        let table = self.render_table(props, offset, start, end);
+        let table = self.render_table(props, self.scroll_info.offset, self.scroll_info.start, self.scroll_info.end);
+
+        let height = self.scroll_info.height;
 
         // firefox scrollbar ignores height, so we need ad some
         // content at the end.
@@ -304,6 +341,35 @@ impl<T: 'static> PwtDataTable<T> {
             .with_child(table)
             .with_child(end_marker)
             .into()
+    }
+
+    fn update_scroll_info(
+        &mut self,
+        props: &DataTable<T>,
+    ) {
+        let row_count = self.store.filtered_data_len();
+
+        let mut start = if self.virtual_scroll {
+            self.scroll_top / self.row_height
+        } else {
+            0
+        };
+
+        if start > 0 { start -= 1; }
+        if (start & 1) == 1 { start -= 1; } // make it work with striped rows
+
+        let max_visible_rows = (self.viewport_height / props.min_row_height) + 5;
+        let end = if self.virtual_scroll {
+            (start + max_visible_rows).min(row_count)
+        } else {
+            row_count
+        };
+
+        let offset = start * self.row_height;
+
+        let height = offset + self.table_height + row_count.saturating_sub(end) * self.row_height;
+
+        self.scroll_info = VirtualScrollInfo { start, end, offset, height };
     }
 }
 
@@ -332,11 +398,12 @@ impl <T: 'static> Component for PwtDataTable<T> {
         let row_count = props.data.as_ref().map(|data| data.len()).unwrap_or(0);
         let virtual_scroll = props.virtual_scroll.unwrap_or(row_count >= VIRTUAL_SCROLL_TRIGGER);
 
-        Self {
+        let mut me = Self {
             store,
             columns,
             column_widths: Vec::new(),
             virtual_scroll,
+            scroll_info: VirtualScrollInfo::default(),
             cell_class,
             scroll_top: 0,
             viewport_height: 0,
@@ -344,18 +411,21 @@ impl <T: 'static> Component for PwtDataTable<T> {
             header_scroll_ref: NodeRef::default(),
             scroll_ref: NodeRef::default(),
             table_ref: NodeRef::default(),
+            table_height: 0,
 
             container_ref: NodeRef::default(),
             container_size_observer: None,
             container_width: 0,
-            container_height: 0,
 
-            row_height: 22,
-            visible_rows: 0,
-        }
+            row_height: props.min_row_height,
+        };
+
+        me.update_scroll_info(props);
+        me
     }
 
-    fn update(&mut self, _ctx: &Context<Self>, msg: Self::Message) -> bool {
+    fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
+        let props = ctx.props();
         match msg {
             Msg::ColumnWidthChange(column_widths) => {
                 self.column_widths = column_widths;
@@ -366,27 +436,29 @@ impl <T: 'static> Component for PwtDataTable<T> {
                 if let Some(el) = self.header_scroll_ref.cast::<web_sys::Element>() {
                     el.scroll_to_with_x_and_y(x as f64, 0.0);
                 }
+                self.update_scroll_info(props);
                 true
             }
             Msg::ViewportResize(_width, height) => {
                 self.viewport_height = height.max(0) as usize;
-                if self.virtual_scroll {
-                    self.visible_rows = (self.viewport_height / self.row_height) + 5;
-                } else {
-                    self.visible_rows = self.store.filtered_data_len();
-                }
-
+                self.update_scroll_info(props);
                 true
             }
             Msg::ContainerResize(width, height) => {
                 self.container_width = width.max(0) as usize;
-                self.container_height = height.max(0) as usize;
-                //log::info!("CONTAINERSIZE {} {}", self.container_width, self.container_height);
                 true
             }
-            Msg::RowHeight(row_height) => {
-                if row_height == self.row_height { return false; }
-                self.row_height = row_height;
+            Msg::TableHeight(height) => {
+                if self.table_height == height { return false; };
+                self.table_height = height;
+                let visible_rows = self.scroll_info.visible_rows();
+                if (height > 0) && (visible_rows > 0) {
+                    let row_height = (height as usize) / visible_rows;
+                    if row_height > self.row_height {
+                        self.row_height = row_height;
+                    }
+                }
+                self.update_scroll_info(props);
                 true
             }
         }
@@ -395,30 +467,8 @@ impl <T: 'static> Component for PwtDataTable<T> {
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
 
-        let row_count = self.store.filtered_data_len();
-
-        let mut start = if self.virtual_scroll {
-            self.scroll_top / self.row_height
-        } else {
-            0
-        };
-
-        if start > 0 { start -= 1; }
-        if (start & 1) == 1 { start -= 1; } // make it work with striped rows
-
-        let end = if self.virtual_scroll {
-            (start + self.visible_rows).min(row_count)
-        } else {
-            row_count
-        };
-
-        let offset = start * self.row_height;
-        let height = row_count * self.row_height;
-
-        log::info!("TEST {} {} {} {}", start, end, row_count, self.row_height);
-
         let scroll_content = if !self.column_widths.is_empty() {
-            self.render_scroll_content(props, height, offset, start, end)
+            self.render_scroll_content(props)
         } else {
             html!{}
         };
@@ -484,12 +534,9 @@ impl <T: 'static> Component for PwtDataTable<T> {
         }
 
         if let Some(el) = self.table_ref.cast::<web_sys::HtmlElement>() {
-            let height = el.offset_height();
-            if (height > 0) && (self.visible_rows > 0) {
-                let row_height = (height as usize) / self.visible_rows;
-                if row_height > self.row_height {
-                    ctx.link().send_message(Msg::RowHeight(row_height));
-                }
+            let height = el.offset_height().max(0) as usize;
+            if self.table_height != height {
+                ctx.link().send_message(Msg::TableHeight(height));
             }
         }
     }
