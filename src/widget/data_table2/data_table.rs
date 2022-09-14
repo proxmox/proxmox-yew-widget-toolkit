@@ -57,8 +57,15 @@ pub struct DataTable<T: 'static> {
     ///
     /// Possible values are "baseline" (default), "top", "middle" and
     /// "bottom".
-    vertical_align: Option<AttrValue>,
+    pub vertical_align: Option<AttrValue>,
+
+    /// Virtual Scroll
+    ///
+    /// Virtual scroll is enabled by default for tables with more than 30 rows.
+    pub virtual_scroll: Option<bool>,
 }
+
+static VIRTUAL_SCROLL_TRIGGER: usize = 30;
 
 impl <T: 'static> DataTable<T> {
 
@@ -164,6 +171,17 @@ impl <T: 'static> DataTable<T> {
     pub fn set_vertical_align(&mut self, align: impl IntoPropValue<Option<AttrValue>>) {
         self.vertical_align = align.into_prop_value();
     }
+
+    /// Builder style method to set the virtual scroll flag.
+    pub fn virtual_scroll(mut self, virtual_scroll: impl IntoPropValue<Option<bool>>) -> Self {
+        self.set_virtual_scroll(virtual_scroll);
+        self
+    }
+
+    /// Method to set the virtual scroll flag.
+    pub fn set_virtual_scroll(&mut self, virtual_scroll: impl IntoPropValue<Option<bool>>) {
+        self.virtual_scroll = virtual_scroll.into_prop_value();
+    }
 }
 
 #[doc(hidden)]
@@ -171,6 +189,7 @@ pub struct PwtDataTable<T: 'static> {
     store: DataFilter<T>,
     columns: Vec<DataTableColumn<T>>,
     column_widths: Vec<usize>,
+    virtual_scroll: bool,
 
     cell_class: Classes,
 
@@ -310,10 +329,14 @@ impl <T: 'static> Component for PwtDataTable<T> {
             props.cell_class.clone()
         };
 
+        let row_count = props.data.as_ref().map(|data| data.len()).unwrap_or(0);
+        let virtual_scroll = props.virtual_scroll.unwrap_or(row_count >= VIRTUAL_SCROLL_TRIGGER);
+
         Self {
             store,
             columns,
             column_widths: Vec::new(),
+            virtual_scroll,
             cell_class,
             scroll_top: 0,
             viewport_height: 0,
@@ -347,7 +370,12 @@ impl <T: 'static> Component for PwtDataTable<T> {
             }
             Msg::ViewportResize(_width, height) => {
                 self.viewport_height = height.max(0) as usize;
-                self.visible_rows = (self.viewport_height / self.row_height) + 5;
+                if self.virtual_scroll {
+                    self.visible_rows = (self.viewport_height / self.row_height) + 5;
+                } else {
+                    self.visible_rows = self.store.filtered_data_len();
+                }
+
                 true
             }
             Msg::ContainerResize(width, height) => {
@@ -368,14 +396,26 @@ impl <T: 'static> Component for PwtDataTable<T> {
         let props = ctx.props();
 
         let row_count = self.store.filtered_data_len();
-        let mut start = self.scroll_top / self.row_height;
+
+        let mut start = if self.virtual_scroll {
+            self.scroll_top / self.row_height
+        } else {
+            0
+        };
+
         if start > 0 { start -= 1; }
         if (start & 1) == 1 { start -= 1; } // make it work with striped rows
 
-        let end = (start + self.visible_rows).min(row_count);
+        let end = if self.virtual_scroll {
+            (start + self.visible_rows).min(row_count)
+        } else {
+            row_count
+        };
 
         let offset = start * self.row_height;
         let height = row_count * self.row_height;
+
+        log::info!("TEST {} {} {} {}", start, end, row_count, self.row_height);
 
         let scroll_content = if !self.column_widths.is_empty() {
             self.render_scroll_content(props, height, offset, start, end)
@@ -410,6 +450,18 @@ impl <T: 'static> Component for PwtDataTable<T> {
             )
             .with_child(viewport)
             .into()
+    }
+
+    fn changed(&mut self, ctx: &Context<Self>, old_props: &Self::Properties) -> bool {
+        let props = ctx.props();
+
+        if !optional_rc_ptr_eq(&props.data, &old_props.data) { // data changed
+            self.store.set_data(props.data.clone());
+            let row_count = props.data.as_ref().map(|data| data.len()).unwrap_or(0);
+            self.virtual_scroll = props.virtual_scroll.unwrap_or(row_count >= VIRTUAL_SCROLL_TRIGGER);
+        }
+
+        true
     }
 
     fn rendered(&mut self, ctx: &Context<Self>, first_render: bool) {
