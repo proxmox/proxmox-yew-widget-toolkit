@@ -20,6 +20,10 @@ use crate::widget::{Row, Container, SizeObserver};
 pub struct ResizableHeader {
     pub node_ref: Option<NodeRef>,
     pub key: Option<Key>,
+
+    #[prop_or_default]
+    pub class: Classes,
+
     pub content: Option<VNode>,
     pub on_resize: Option<Callback<i32>>,
     pub on_size_reset: Option<Callback<()>>,
@@ -43,6 +47,17 @@ impl ResizableHeader {
     pub fn node_ref(mut self, node_ref: impl IntoPropValue<Option<NodeRef>>) -> Self {
         self.node_ref = node_ref.into_prop_value();
         self
+    }
+
+    /// Builder style method to add a html class
+    pub fn class(mut self, class: impl Into<Classes>) -> Self {
+        self.add_class(class);
+        self
+    }
+
+    /// Method to add a html class
+    pub fn add_class(&mut self, class: impl Into<Classes>) {
+        self.class.push(class);
     }
 
     /// Builder style method to set the header text
@@ -167,8 +182,8 @@ impl Component for PwtResizableHeader {
         let props = ctx.props();
 
         Row::new()
-            .class("pwt-w-100 pwt-h-100")
             .class("pwt-datatable2-header-item")
+            .class(props.class.clone())
             .attribute("tabindex", "-1")
             .node_ref(self.node_ref.clone())
             .onfocus(ctx.link().callback(|_| Msg::FocusChange(true)))

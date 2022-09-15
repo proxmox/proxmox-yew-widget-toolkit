@@ -37,9 +37,13 @@ pub struct DataTable<T: 'static> {
     #[derivative(PartialEq(compare_with="optional_rc_ptr_eq::<T>"))]
     pub data: Option<Rc<Vec<T>>>,
 
-    /// set class for table cells (default is "pwt-truncate pwt-p-2")
+    /// set class for table cells (default is "pwt-p-2")
     #[prop_or_default]
     pub cell_class: Classes,
+
+    /// set class for header cells (default is "pwt-p-2")
+    #[prop_or_default]
+    pub header_class: Classes,
 
     #[prop_or_default]
     pub bordered: bool,
@@ -114,6 +118,17 @@ impl <T: 'static> DataTable<T> {
     /// Method to add a html class for table cells.
     pub fn add_cell_class(&mut self, class: impl Into<Classes>) {
         self.cell_class.push(class);
+    }
+
+    /// Builder style method to add a html class for header cells.
+    pub fn header_class(mut self, class: impl Into<Classes>) -> Self {
+        self.add_header_class(class);
+        self
+    }
+
+    /// Method to add a html class for header cells.
+    pub fn add_header_class(&mut self, class: impl Into<Classes>) {
+        self.header_class.push(class);
     }
 
     pub fn data(mut self, data: impl IntoPropValue<Option<Rc<Vec<T>>>>) -> Self {
@@ -280,13 +295,13 @@ impl<T: 'static> PwtDataTable<T> {
                         props.vertical_align.as_deref().unwrap_or("baseline"),
                         column.justify,
                     );
-                    let class = if selected { Some("selected") } else {None };
                     Container::new()
                         .tag("td")
+                        .class(self.cell_class.clone())
+                        .class(selected.then(|| "selected"))
                         .attribute("style", item_style)
-                        .class(class)
                         .with_child(html!{
-                            <div class={self.cell_class.clone()}>{
+                            <div>{
                                 column.render.apply(item)
                             }</div>
                         })
@@ -497,6 +512,7 @@ impl <T: 'static> Component for PwtDataTable<T> {
                     .node_ref(self.header_scroll_ref.clone())
                     .with_child(
                         DataTableHeader::new(self.container_width, props.headers.clone())
+                            .header_class(props.header_class.clone())
                             .on_size_change(ctx.link().callback(Msg::ColumnWidthChange))
                     )
             )

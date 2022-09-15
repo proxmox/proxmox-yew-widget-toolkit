@@ -26,6 +26,10 @@ pub struct DataTableHeader<T: 'static> {
     headers: Rc<Vec<Header<T>>>,
 
     pub on_size_change: Option<Callback<Vec<usize>>>,
+
+    /// set class for header cells
+    #[prop_or_default]
+    pub header_class: Classes,
 }
 
 
@@ -52,6 +56,17 @@ impl<T: 'static> DataTableHeader<T> {
         self.on_size_change = cb.into_event_callback();
         self
     }
+
+    /// Builder style method to add a html class for header cells.
+    pub fn header_class(mut self, class: impl Into<Classes>) -> Self {
+        self.add_header_class(class);
+        self
+    }
+
+    /// Method to add a html class for header cells.
+    pub fn add_header_class(&mut self, class: impl Into<Classes>) {
+        self.header_class.push(class);
+    }
 }
 
 pub enum Msg {
@@ -62,6 +77,7 @@ pub enum Msg {
 
 fn header_to_rows<T: 'static>(
     header: &Header<T>,
+    props: &DataTableHeader<T>,
     link: &Scope<PwtDataTableHeader<T>>,
     start_row: usize,
     start_col: usize,
@@ -85,6 +101,8 @@ fn header_to_rows<T: 'static>(
                     )
                     .with_child(
                         ResizableHeader::new()
+                            .class(props.header_class.clone())
+                            .class("pwt-w-100 pwt-h-100")
                             .content(html!{{&column.name}})
                             .on_resize({
                                 let link = link.clone();
@@ -100,13 +118,14 @@ fn header_to_rows<T: 'static>(
             );
             1
         }
-        Header::Group(group) => group_to_rows(group, link, start_row, start_col, rows),
+        Header::Group(group) => group_to_rows(group, props, link, start_row, start_col, rows),
     }
 }
 
 
 fn group_to_rows<T: 'static>(
     group: &HeaderGroup<T>,
+    props: &DataTableHeader<T>,
     link: &Scope<PwtDataTableHeader<T>>,
     start_row: usize,
     start_col: usize,
@@ -123,15 +142,17 @@ fn group_to_rows<T: 'static>(
     let child_start_row =  if group.content.is_some() { start_row + 1 } else { start_row };
     let mut span = 0;
     for child in &group.children {
-        span += header_to_rows(child, link, child_start_row, start_col + span, rows);
+        span += header_to_rows(child, props, link, child_start_row, start_col + span, rows);
     }
 
+    log::info!("HC {:?}", props.header_class);
     if let Some(content) = group.content.clone() {
         if span == 0 { span = 1; }
         rows[start_row].push(
             Container::new()
                 .tag("th")
                 .class("pwt-datatable2-group-header-item")
+                .class(props.header_class.clone())
                 .attribute("style", format!("grid-column: {} / span {}", start_col + 1, span))
                 .with_child(content)
                 .into()
@@ -372,7 +393,7 @@ impl <T: 'static> Component for PwtDataTableHeader<T> {
 
         let header = HeaderGroup::new().children(props.headers.as_ref().clone()).into();
 
-        let column_count = header_to_rows(&header, ctx.link(), 0, 0, &mut rows);
+        let column_count = header_to_rows(&header, props, ctx.link(), 0, 0, &mut rows);
 
         let rows: Vec<Html> = rows.into_iter().map(|row| row.into_iter()).flatten().collect();
 
@@ -409,7 +430,6 @@ impl <T: 'static> Component for PwtDataTableHeader<T> {
     fn changed(&mut self, ctx: &Context<Self>, old_props: &Self::Properties) -> bool {
         let props = ctx.props();
         if props.parent_width != old_props.parent_width {
-            log::info!("WIDTH CHANGE");
             self.resize_columns(props);
             return true;
         }
