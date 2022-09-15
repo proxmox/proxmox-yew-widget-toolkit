@@ -25,6 +25,7 @@ pub enum Msg {
     CursorUp,
     CursorSelect,
     ItemClick(usize),
+    FocusChange(bool),
 }
 
 // DataTable properties
@@ -59,7 +60,7 @@ pub struct DataTable<T: 'static> {
     #[prop_or_default]
     pub borderless: bool,
 
-    #[prop_or(true)]
+    #[prop_or_default]
     pub hover: bool,
 
     #[prop_or(true)]
@@ -243,6 +244,7 @@ impl VirtualScrollInfo {
 #[doc(hidden)]
 pub struct PwtDataTable<T: 'static> {
     unique_id: String,
+    has_focus: bool,
 
     store: DataFilter<T>,
     columns: Vec<DataTableColumn<T>>,
@@ -329,7 +331,7 @@ impl<T: 'static> PwtDataTable<T> {
             .tag("tr")
             .key(key)
             .attribute("id", self.get_unique_item_id(record_num))
-            .class(active.then(|| "row-cursor"))
+            .class((active && self.has_focus).then(|| "row-cursor"))
             .children(
                 self.columns.iter().enumerate().map(|(_column_num, column)| {
                     let item_style = format!(
@@ -479,6 +481,7 @@ impl <T: 'static> Component for PwtDataTable<T> {
 
         let mut me = Self {
             unique_id: get_unique_element_id(),
+            has_focus: false,
             store,
             columns,
             column_widths: Vec::new(),
@@ -583,6 +586,10 @@ impl <T: 'static> Component for PwtDataTable<T> {
 
                 true
             }
+            Msg::FocusChange(has_focus) => {
+                self.has_focus = has_focus;
+                true
+            }
         }
     }
 
@@ -593,9 +600,10 @@ impl <T: 'static> Component for PwtDataTable<T> {
             .node_ref(self.scroll_ref.clone())
             .class("pwt-flex-fill")
             .attribute("style", "overflow: auto; outline: 0")
-             // fixme: howto handle focus?
             .attribute("tabindex", "0")
             .with_child(self.render_scroll_content(props))
+            .onfocusin(ctx.link().callback(|_| Msg::FocusChange(true)))
+            .onfocusout(ctx.link().callback(|_| Msg::FocusChange(false)))
             .onscroll(ctx.link().batch_callback(move |event: Event| {
                 let target: Option<web_sys::HtmlElement> = event.target_dyn_into();
                 target.map(|el| Msg::ScrollTo(el.scroll_left(), el.scroll_top()))

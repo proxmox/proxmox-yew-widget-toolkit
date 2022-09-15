@@ -145,7 +145,6 @@ fn group_to_rows<T: 'static>(
         span += header_to_rows(child, props, link, child_start_row, start_col + span, rows);
     }
 
-    log::info!("HC {:?}", props.header_class);
     if let Some(content) = group.content.clone() {
         if span == 0 { span = 1; }
         rows[start_row].push(
