@@ -127,36 +127,36 @@ impl Component for PwtTooltip {
 
     fn rendered(&mut self, _ctx: &Context<Self>, first_render: bool) {
         if first_render {
-           let opts = json!({
-               "placement": "bottom-start",
-               "strategy": "fixed",
-               "modifiers": [
-                   {
-                       "name": "arrow",
-                   },
-                   {
-                       "name": "preventOverflow",
-                       "options": {
-                           "mainAxis": true, // true by default
-                           "altAxis": false, // false by default
+            let opts = json!({
+                "placement": "bottom-start",
+                "strategy": "fixed",
+                "modifiers": [
+                    {
+                        "name": "arrow",
+                    },
+                    {
+                        "name": "preventOverflow",
+                        "options": {
+                            "mainAxis": true, // true by default
+                            "altAxis": false, // false by default
                         },
-                   },
-                   {
-                       "name": "flip",
-                       "options": {
-                           "fallbackPlacements": ["top-start", "right-start", "left-start"],
-                       },
-                   },
-                   {
-                       "name": "offset",
-                       "options": {
-                           "offset": [4, 4],
-                       },
-                   },
-              ],
-           });
+                    },
+                    {
+                        "name": "flip",
+                        "options": {
+                            "fallbackPlacements": ["top-start", "right-start", "left-start"],
+                        },
+                    },
+                    {
+                        "name": "offset",
+                        "options": {
+                            "offset": [4, 4],
+                        },
+                    },
+                ],
+            });
 
-            let opts = JsValue::from_str(&serde_json::to_string(&opts).unwrap());
+            let opts = crate::to_js_value(&opts).unwrap();
 
             if let Some(content_node) = self.content_ref.get() {
                 if let Some(tooltip_node) = self.tooltip_ref.get() {

@@ -142,6 +142,13 @@ extern "C" {
     fn close_dialog(dialog: web_sys::Node);
 }
 
+// some helpers
+
+use serde::Serialize;
+pub fn to_js_value<T:  Serialize + ?Sized>(value: &T) -> Result<JsValue, serde_wasm_bindgen::Error> {
+    value.serialize(&serde_wasm_bindgen::Serializer::json_compatible())
+}
+
 /// # Prelude, which include all builder traits.
 ///
 /// Many builder function are implemented using trait

@@ -37,7 +37,8 @@ web-sys = { version = "0.3", features = ["DomRect", "Element", "HtmlCollection",
 js-sys = "0.3"
 log = "0.4.6"
 indexmap = { version = "1", features = ["std"] }
-wasm-bindgen = { version = "0.2", features = ["serde-serialize"] }
+wasm-bindgen = { version = "0.2" }
+serde-wasm-bindgen = "0.4"
 wasm-logger = "0.2"
 gloo-events = "0.1"
 gloo-timers = "0.2"

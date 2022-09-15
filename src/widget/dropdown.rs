@@ -389,7 +389,7 @@ impl Component for PwtDropdown {
                 ],
             });
 
-            let opts = JsValue::from_str(&serde_json::to_string(&opts).unwrap());
+            let opts = crate::to_js_value(&opts).unwrap();
 
             if let Some(content_node) = props.std_props.node_ref.get() {
                 if let Some(picker_node) = self.picker_ref.get() {
