@@ -24,6 +24,7 @@ pub enum Msg {
     CursorDown,
     CursorUp,
     CursorSelect,
+    ItemClick(usize),
 }
 
 // DataTable properties
@@ -570,6 +571,18 @@ impl <T: 'static> Component for PwtDataTable<T> {
                 self.scroll_cursor_into_view(web_sys::ScrollLogicalPosition::Nearest);
                 true
             }
+            Msg::ItemClick(record_num) => {
+                let _item = match self.store.lookup_record(record_num) {
+                    Some(item) => item,
+                    None => return false, // should not happen
+                };
+
+                self.store.set_cursor(self.store.filtered_pos(record_num));
+
+                // fixme: handle selection
+
+                true
+            }
         }
     }
 
@@ -596,6 +609,28 @@ impl <T: 'static> Component for PwtDataTable<T> {
                     };
                     link.send_message(Msg::KeyDown(event.key_code()));
                     event.prevent_default();
+                }
+            })
+            .onclick({
+                let link = ctx.link().clone();
+                let unique_row_prefix = format!("{}-item-", self.unique_id);
+                move |event: MouseEvent| {
+                    let mut cur_el: Option<web_sys::Element> = event.target_dyn_into();
+                    loop {
+                        match cur_el {
+                            Some(el) => {
+                                if el.tag_name() == "TR" {
+                                    if let Some(n_str) = el.id().strip_prefix(&unique_row_prefix) {
+                                        let n: usize = n_str.parse().unwrap();
+                                        link.send_message(Msg::ItemClick(n));
+                                        break;
+                                    }
+                                }
+                                cur_el = el.parent_element();
+                            }
+                            None => break,
+                        }
+                    }
                 }
             });
 
