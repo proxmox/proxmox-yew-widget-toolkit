@@ -70,6 +70,8 @@ pub trait EventSubscriber: Into<VNode> {
 
     handler!(onblur, FocusEvent);
     handler!(onfocus, FocusEvent);
+    handler!(onfocusin, FocusEvent);
+    handler!(onfocusout, FocusEvent);
     handler!(onsubmit, SubmitEvent);
 
     handler!(onabort, Event);
