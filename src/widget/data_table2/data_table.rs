@@ -1,13 +1,14 @@
 use std::rc::Rc;
 
 use derivative::Derivative;
+
 use yew::prelude::*;
 use yew::virtual_dom::{Key, VComp, VNode};
 use yew::html::IntoPropValue;
 
 use crate::prelude::*;
 use crate::state::{optional_rc_ptr_eq, DataFilter};
-use crate::widget::{Container, Column, SizeObserver};
+use crate::widget::{get_unique_element_id, Container, Column, SizeObserver};
 
 use super::{DataTableColumn, DataTableHeader, Header};
 
@@ -17,6 +18,9 @@ pub enum Msg {
     ViewportResize(i32, i32),
     ContainerResize(i32, i32),
     TableResize(i32, i32),
+    CursorDown,
+    CursorUp,
+    CursorSelect,
 }
 
 // DataTable properties
@@ -234,6 +238,8 @@ impl VirtualScrollInfo {
 
 #[doc(hidden)]
 pub struct PwtDataTable<T: 'static> {
+    unique_id: String,
+
     store: DataFilter<T>,
     columns: Vec<DataTableColumn<T>>,
     column_widths: Vec<usize>,
@@ -276,7 +282,36 @@ fn render_empty_row_with_sizes(widths: &[usize]) -> Html {
 
 impl<T: 'static> PwtDataTable<T> {
 
-    fn render_row(&self, props: &DataTable<T>, item: &T, record_num: usize, selected: bool) -> Html {
+    fn get_unique_item_id(&self, n: usize) -> String {
+        format!("{}-item-{}", self.unique_id, n)
+    }
+
+    fn scroll_cursor_into_view(&self, pos: web_sys::ScrollLogicalPosition) {
+        let cursor = match self.store.get_cursor() {
+            Some(c) => c,
+            None => return,
+        };
+        if let Some(n) = self.store.unfiltered_pos(cursor) {
+            self.scroll_item_into_view(n, pos);
+        }
+    }
+
+    fn scroll_item_into_view(&self, n: usize, pos: web_sys::ScrollLogicalPosition) {
+        let window = web_sys::window().unwrap();
+        let document = window.document().unwrap();
+        let id = self.get_unique_item_id(n);
+
+        let el = match document.get_element_by_id(&id) {
+            Some(el) => el,
+            None => return,
+        };
+
+        let mut options = web_sys::ScrollIntoViewOptions::new();
+        options.block(pos);
+        el.scroll_into_view_with_scroll_into_view_options(&options);
+    }
+
+    fn  render_row(&self, props: &DataTable<T>, item: &T, record_num: usize, selected: bool, active: bool) -> Html {
 
         let key = Key::from(record_num); // fixme: use extract key
 
@@ -287,7 +322,8 @@ impl<T: 'static> PwtDataTable<T> {
         Container::new()
             .tag("tr")
             .key(key)
-            .attribute("id", format!("record-nr-{}", record_num))
+            .attribute("id", self.get_unique_item_id(record_num))
+            .class(active.then(|| "row-cursor"))
             .children(
                 self.columns.iter().enumerate().map(|(_column_num, column)| {
                     let item_style = format!(
@@ -315,6 +351,8 @@ impl<T: 'static> PwtDataTable<T> {
 
     fn render_table(&self, props: &DataTable<T>, offset: usize, start: usize, end: usize) -> Html {
 
+        let mut active_descendant = None;
+
         let mut table = Container::new()
             .tag("table")
             .class("pwt-datatable2-content")
@@ -327,11 +365,24 @@ impl<T: 'static> PwtDataTable<T> {
             .with_child(render_empty_row_with_sizes(&self.column_widths));
 
         if !self.column_widths.is_empty() {
-            for (_i, record_num, item) in self.store.filtered_data_range(start..end) {
+            for (filtered_pos, record_num, item) in self.store.filtered_data_range(start..end) {
                 let selected = false;
-                let row = self.render_row(props, item, record_num, selected);
+
+                 let active = self.store
+                    .get_cursor().map(|cursor| cursor == filtered_pos)
+                    .unwrap_or(false);
+
+                if active {
+                    active_descendant = Some(record_num);
+                }
+
+                let row = self.render_row(props, item, record_num, selected, active);
                 table.add_child(row);
             }
+        }
+
+        if let Some(active_descendant) = active_descendant {
+            table.set_attribute("aria-activedescendant", self.get_unique_item_id(active_descendant));
         }
 
         table.into()
@@ -403,6 +454,8 @@ impl <T: 'static> Component for PwtDataTable<T> {
 
         let store = DataFilter::new()
             .data(props.data.clone());
+        // fixme: set cursor to first selected item
+        //.cursor(props.selection)
 
         let mut columns = Vec::new();
         for header in props.headers.iter() {
@@ -419,6 +472,7 @@ impl <T: 'static> Component for PwtDataTable<T> {
         let virtual_scroll = props.virtual_scroll.unwrap_or(row_count >= VIRTUAL_SCROLL_TRIGGER);
 
         let mut me = Self {
+            unique_id: get_unique_element_id(),
             store,
             columns,
             column_widths: Vec::new(),
@@ -484,6 +538,18 @@ impl <T: 'static> Component for PwtDataTable<T> {
                 self.update_scroll_info(props);
                 true
             }
+            // Cursor handling
+            Msg::CursorSelect => { /* TODO */ false }
+            Msg::CursorDown => {
+                self.store.cursor_down();
+                self.scroll_cursor_into_view(web_sys::ScrollLogicalPosition::Nearest);
+                true
+            }
+            Msg::CursorUp => {
+                self.store.cursor_up();
+                self.scroll_cursor_into_view(web_sys::ScrollLogicalPosition::Nearest);
+                true
+            }
         }
     }
 
@@ -500,7 +566,20 @@ impl <T: 'static> Component for PwtDataTable<T> {
             .onscroll(ctx.link().batch_callback(move |event: Event| {
                 let target: Option<web_sys::HtmlElement> = event.target_dyn_into();
                 target.map(|el| Msg::ScrollTo(el.scroll_left(), el.scroll_top()))
-            }));
+            }))
+            .onkeydown({
+                let link = ctx.link().clone();
+                move |event: KeyboardEvent| {
+                    let msg = match event.key_code() {
+                        40 => Msg::CursorDown,
+                        38 => Msg::CursorUp,
+                        13 => Msg::CursorSelect,
+                        _ => return,
+                    };
+                    link.send_message(msg);
+                    event.prevent_default();
+                }
+            });
 
         Column::new()
             .class(props.class.clone())
