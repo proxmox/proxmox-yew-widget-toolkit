@@ -2,6 +2,8 @@ use std::rc::Rc;
 
 use derivative::Derivative;
 
+use gloo_timers::callback::Timeout;
+
 use yew::prelude::*;
 use yew::virtual_dom::{Key, VComp, VNode};
 use yew::html::IntoPropValue;
@@ -18,6 +20,7 @@ pub enum Msg {
     ViewportResize(i32, i32),
     ContainerResize(i32, i32),
     TableResize(i32, i32),
+    KeyDown(u32),
     CursorDown,
     CursorUp,
     CursorSelect,
@@ -264,6 +267,8 @@ pub struct PwtDataTable<T: 'static> {
     container_ref: NodeRef,
     container_size_observer: Option<SizeObserver>,
     container_width: usize,
+
+    keypress_timeout: Option<Timeout>,
 }
 
 fn render_empty_row_with_sizes(widths: &[usize]) -> Html {
@@ -494,6 +499,7 @@ impl <T: 'static> Component for PwtDataTable<T> {
             container_width: 0,
 
             row_height: props.min_row_height,
+            keypress_timeout: None,
         };
 
         me.update_scroll_info(props);
@@ -539,6 +545,20 @@ impl <T: 'static> Component for PwtDataTable<T> {
                 true
             }
             // Cursor handling
+            Msg::KeyDown(key_code) => {
+                let msg = match key_code {
+                    40 => Msg::CursorDown,
+                    38 => Msg::CursorUp,
+                    13 => Msg::CursorSelect,
+                    _ => return false,
+                };
+                let link = ctx.link().clone();
+                // delay message to give time to render changes
+                self.keypress_timeout = Some(Timeout::new(1, move || {
+                    link.send_message(msg);
+                }));
+                false
+            }
             Msg::CursorSelect => { /* TODO */ false }
             Msg::CursorDown => {
                 self.store.cursor_down();
@@ -570,13 +590,11 @@ impl <T: 'static> Component for PwtDataTable<T> {
             .onkeydown({
                 let link = ctx.link().clone();
                 move |event: KeyboardEvent| {
-                    let msg = match event.key_code() {
-                        40 => Msg::CursorDown,
-                        38 => Msg::CursorUp,
-                        13 => Msg::CursorSelect,
+                    match event.key_code() {
+                        40 | 38 | 13 => { /* ok */}
                         _ => return,
                     };
-                    link.send_message(msg);
+                    link.send_message(Msg::KeyDown(event.key_code()));
                     event.prevent_default();
                 }
             });
