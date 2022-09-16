@@ -491,7 +491,7 @@ impl <T: 'static> Component for PwtDataTable<T> {
         // fixme: set cursor to first selected item
         //.cursor(props.selection)
 
-
+        store.set_cursor(Some(0));
 
         let mut columns = Vec::new();
         for header in props.headers.iter() {
@@ -618,7 +618,10 @@ impl <T: 'static> Component for PwtDataTable<T> {
                 true
             }
             Msg::FocusChange(has_focus) => {
+                if self.has_focus == has_focus { return false; }
+
                 self.has_focus = has_focus;
+
                 true
             }
             // Sorting
