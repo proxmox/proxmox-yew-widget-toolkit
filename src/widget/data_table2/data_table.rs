@@ -294,13 +294,32 @@ impl<T: 'static> PwtDataTable<T> {
         format!("{}-item-{}", self.unique_id, n)
     }
 
+    fn cursor_row_is_rendered(&self, cursor: usize) -> bool {
+        (self.scroll_info.start..self.scroll_info.end).contains(&cursor)
+    }
+
     fn scroll_cursor_into_view(&self, pos: web_sys::ScrollLogicalPosition) {
         let cursor = match self.store.get_cursor() {
-            Some(c) => c,
+            Some(cursor) => cursor,
             None => return,
         };
+
+        if !self.cursor_row_is_rendered(cursor) {
+            self.scroll_to_cursor(cursor);
+            return;
+        }
+
         if let Some(n) = self.store.unfiltered_pos(cursor) {
             self.scroll_item_into_view(n, pos);
+        }
+    }
+
+    fn scroll_to_cursor(&self, cursor: usize) {
+        log::info!("STC {}", cursor);
+        let height =  (self.row_height * cursor).saturating_sub(self.viewport_height/2);
+
+        if let Some(el) = self.scroll_ref.cast::<web_sys::Element>() {
+            el.set_scroll_top(height as i32);
         }
     }
 
