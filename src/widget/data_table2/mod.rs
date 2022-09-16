@@ -8,7 +8,7 @@ mod header_group;
 pub use header_group::*;
 
 mod column;
-pub use column::{DataTableColumn, DataTableColumnWidth};
+pub use column::DataTableColumn;
 pub(crate) use column::create_combined_sorter_fn;
 
 mod data_table_header;

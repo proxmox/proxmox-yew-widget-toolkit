@@ -5,25 +5,12 @@ use yew::prelude::*;
 
 use crate::props::{SorterFn, IntoSorterFn, RenderFn};
 
-#[derive(Clone, PartialEq)]
-pub enum DataTableColumnWidth {
-    Auto,
-    Fixed(usize),
-    Flex(usize),
-}
-
-impl From<usize> for DataTableColumnWidth {
-    fn from(value: usize) -> Self {
-        Self::Fixed(value)
-    }
-}
-
 #[derive(Properties)]
 #[derive(Derivative)]
 #[derivative(Clone(bound=""), PartialEq(bound=""))]
 pub struct DataTableColumn<T> {
-    #[prop_or(DataTableColumnWidth::Auto)]
-    pub width: DataTableColumnWidth,
+    #[prop_or(AttrValue::Static("auto"))]
+    pub width: AttrValue,
     pub name: String,
     #[prop_or(String::from("left"))]
     pub justify: String, // left, center, right, justify
@@ -40,12 +27,12 @@ impl<T> DataTableColumn<T> {
         })
     }
 
-    pub fn width(mut self, width: impl Into<DataTableColumnWidth>) -> Self {
+    pub fn width(mut self, width: impl Into<AttrValue>) -> Self {
         self.set_width(width);
         self
     }
 
-    pub fn set_width(&mut self, width: impl Into<DataTableColumnWidth>) {
+    pub fn set_width(&mut self, width: impl Into<AttrValue>) {
         self.width = width.into();
     }
 
@@ -55,7 +42,25 @@ impl<T> DataTableColumn<T> {
     }
 
     pub fn set_flex(&mut self, flex: usize) {
-        self.set_width(DataTableColumnWidth::Flex(flex));
+        self.set_width(format!("{flex}fr"));
+    }
+
+    pub fn fixed(mut self, size: usize) -> Self {
+        self.set_fixed(size);
+        self
+    }
+
+    pub fn set_fixed(&mut self, size: usize) {
+        self.set_width(format!("{size}px"));
+    }
+
+    pub fn percentage(mut self, percentage: usize) -> Self {
+        self.set_percentage(percentage);
+        self
+    }
+
+    pub fn set_percentage(&mut self, percentage: usize) {
+        self.set_width(format!("{percentage}%"));
     }
 
     pub fn justify(mut self, justify: impl Into<String>) -> Self {

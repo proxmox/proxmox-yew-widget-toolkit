@@ -12,7 +12,7 @@ use crate::prelude::*;
 use crate::widget::{Container, Fa};
 use crate::widget::focus::{focus_next_tabable, init_roving_tabindex};
 
-use super::{DataTableColumn, DataTableColumnWidth, Header, HeaderGroup, ResizableHeader};
+use super::{DataTableColumn, Header, HeaderGroup, ResizableHeader};
 
 #[derive(Properties)]
 #[derive(Derivative)]
@@ -214,12 +214,7 @@ impl <T: 'static> PwtDataTableHeader<T> {
             if let Some(Some(width)) = self.column_widths.get(col_idx) {
                 grid_style.push_str(&format!("{}px", width));
             } else {
-                //grid_style.push_str(&column.width);
-                match &column.width {
-                    DataTableColumnWidth::Auto => grid_style.push_str("auto"),
-                    DataTableColumnWidth::Fixed(width) => grid_style.push_str(&format!("{width}px")),
-                    DataTableColumnWidth::Flex(flex) => grid_style.push_str(&format!("{flex}fr")),
-                }
+                grid_style.push_str(&column.width);
             }
             grid_style.push(' ');
         }
@@ -264,7 +259,7 @@ impl <T: 'static> Component for PwtDataTableHeader<T> {
                 // Set flex columns on the left to fixed size to avoid unexpected effects.
                 for i in 0..col_num {
                     if self.column_widths[i].is_none() {
-                        if let DataTableColumnWidth::Flex(_flex) = self.columns[i].width {
+                        if self.columns[i].width.contains("fr") { // flex columns
                             if let Some(Some(observed_width)) = self.observed_widths.get(i) {
                                 self.column_widths[i] = Some(*observed_width + 1);
                             }
