@@ -545,7 +545,7 @@ impl <T: 'static> Component for PwtDataTable<T> {
             Msg::ScrollTo(x, y) => {
                 self.scroll_top = y.max(0) as usize;
                 if let Some(el) = self.header_scroll_ref.cast::<web_sys::Element>() {
-                    el.scroll_to_with_x_and_y(x as f64, 0.0);
+                    el.set_scroll_left(x as i32);
                 }
                 self.update_scroll_info(props);
                 true
@@ -697,11 +697,12 @@ impl <T: 'static> Component for PwtDataTable<T> {
             .node_ref(self.container_ref.clone())
             .with_child(
                 Container::new() // scollable for header
-                    .attribute("style", "flex: 0 0 auto;")
-                    .class("pwt-overflow-hidden")
                     .node_ref(self.header_scroll_ref.clone())
+                    .attribute("style", "flex: 0 0 auto")
+                    .class("pwt-overflow-hidden")
+                    .class("pwt-datatable2-header")
                     .with_child(
-                        DataTableHeader::new(self.container_width, props.headers.clone(), self.sorters.sorters())
+                        DataTableHeader::new(props.headers.clone(), self.sorters.sorters())
                             .header_class(props.header_class.clone())
                             .on_size_change(ctx.link().callback(Msg::ColumnWidthChange))
                             .on_sort_change(ctx.link().callback(|(col, ctrl)| Msg::ChangeSort(col, ctrl)))
