@@ -110,9 +110,9 @@ fn header_to_rows<T: 'static>(
             let sort_icon = match sort_order {
                 Some(ascending) => {
                     if ascending {
-                        Fa::new("long-arrow-up").class("pwt-ps-1").into()
+                        Fa::new("long-arrow-up").class("pwt-pe-1").into()
                     } else {
-                        Fa::new("long-arrow-down").class("pwt-ps-1").into()
+                        Fa::new("long-arrow-down").class("pwt-pe-1").into()
                     }
                 }
                 None =>  html!{},
@@ -129,7 +129,7 @@ fn header_to_rows<T: 'static>(
                         ResizableHeader::new()
                             .class(props.header_class.clone())
                             .class("pwt-w-100 pwt-h-100")
-                            .content(html!{<>{&column.name}{sort_icon}</>})
+                            .content(html!{<>{sort_icon}{&column.name}</>})
                             .on_resize({
                                 let link = link.clone();
                                 move |width| {
