@@ -388,6 +388,7 @@ impl<T: 'static> PwtDataTable<T> {
 
         let mut table = Container::new()
         // do not use table tag here to avoid role="table", instead set "pwt-d-table"
+            .attribute("role", "none")
             .class("pwt-d-table")
             .class("pwt-datatable2-content")
             .class(props.hover.then(|| "table-hover"))
@@ -426,15 +427,17 @@ impl<T: 'static> PwtDataTable<T> {
         // firefox scrollbar ignores height, so we need ad some
         // content at the end.
         let end_marker = Container::new()
+            .tag("img")
+            .attribute("role", "none")
             .attribute("style", format!(
                 "height: 0px; width: 0px; overflow: hidden; position:relative;top:{}px;",
                 height
-            ))
-            .with_child(html!{<div arial-label="" role="none">{"Table End Marker"}</div>});
+            ));
 
         let height = height + 15; // add some space at the end
         Container::new()
             .attribute("style", format!("height:{}px", height))
+            .attribute("role", "none")
             .with_child(table)
             .with_child(end_marker)
             .into()
@@ -649,6 +652,7 @@ impl <T: 'static> Component for PwtDataTable<T> {
             .attribute("style", "overflow: auto; outline: 0")
             .attribute("tabindex", "0")
             .attribute("role", "table")
+            .attribute("aria-label", "table body")
             .attribute("aria-activedescendant", active_descendant)
             .attribute("aria-rowcount", row_count.to_string())
             .with_child(self.render_scroll_content(props))
