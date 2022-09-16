@@ -1,3 +1,5 @@
+use std::cmp::Ordering;
+
 use derivative::Derivative;
 use yew::prelude::*;
 
@@ -74,4 +76,33 @@ impl<T> DataTableColumn<T> {
         self.sorter = sorter.into_sorter_fn();
         self
     }
+}
+
+pub(crate) fn create_combined_sorter_fn<T: 'static>(
+    sorters: &[(usize, bool)],
+    columns: &[DataTableColumn<T>]
+) -> SorterFn<T> {
+    let sorters: Vec<(SorterFn<T>, bool)> = sorters
+        .iter()
+        .filter_map(|(sort_idx, ascending)| {
+            match &columns[*sort_idx].sorter {
+                None => None,
+                Some(sorter) => Some((sorter.clone(), *ascending)),
+            }
+        })
+        .collect();
+
+    SorterFn::new(move |a: &T, b: &T| {
+        for (sort_fn, ascending) in &sorters {
+            match if *ascending {
+                sort_fn.cmp(a, b)
+            } else {
+                sort_fn.cmp(b, a)
+            } {
+                Ordering::Equal => { /* continue */ },
+                other => return other,
+            }
+        }
+        Ordering::Equal
+    })
 }

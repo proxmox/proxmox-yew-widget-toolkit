@@ -9,7 +9,7 @@ use yew::virtual_dom::{Key, VComp, VNode};
 use yew::html::{IntoPropValue, IntoEventCallback, Scope};
 
 use crate::prelude::*;
-use crate::widget::Container;
+use crate::widget::{Container, Fa};
 use crate::widget::focus::{focus_next_tabable, init_roving_tabindex};
 
 use super::{DataTableColumn, DataTableColumnWidth, Header, HeaderGroup, ResizableHeader};
@@ -26,18 +26,23 @@ pub struct DataTableHeader<T: 'static> {
     headers: Rc<Vec<Header<T>>>,
 
     pub on_size_change: Option<Callback<Vec<usize>>>,
+    pub on_sort_change: Option<Callback<(usize, bool)>>,
 
     /// set class for header cells
     #[prop_or_default]
     pub header_class: Classes,
+
+    /// Sort order state for columns.
+    sorters: Vec<(usize, bool)>,
 }
 
 
 impl<T: 'static> DataTableHeader<T> {
 
     /// Create a new instance.
-    pub fn new(parent_width: usize, headers: Rc<Vec<Header<T>>>) -> Self {
-        yew::props!(Self { parent_width,  headers })
+    pub fn new(parent_width: usize, headers: Rc<Vec<Header<T>>>, sorters: &[(usize, bool)]) -> Self {
+        let sorters: Vec<(usize, bool)> = sorters.into();
+        yew::props!(Self { parent_width,  headers, sorters })
     }
 
     pub fn key(mut self, key: impl Into<Key>) -> Self {
@@ -54,6 +59,12 @@ impl<T: 'static> DataTableHeader<T> {
     /// Builder style method to set the size change callback
     pub fn on_size_change(mut self, cb: impl IntoEventCallback<Vec<usize>>) -> Self {
         self.on_size_change = cb.into_event_callback();
+        self
+    }
+
+    /// Builder style method to set the sort change callback
+    pub fn on_sort_change(mut self, cb: impl IntoEventCallback<(usize, bool)>) -> Self {
+        self.on_sort_change = cb.into_event_callback();
         self
     }
 
@@ -92,6 +103,21 @@ fn header_to_rows<T: 'static>(
     }
     match header {
         Header::Single(column) => {
+            let sort_order = props.sorters.iter().find_map(|(idx, asc)| {
+                (*idx == start_col).then(|| *asc)
+            });
+
+            let sort_icon = match sort_order {
+                Some(ascending) => {
+                    if ascending {
+                        Fa::new("long-arrow-up").class("pwt-ps-1").into()
+                    } else {
+                        Fa::new("long-arrow-down").class("pwt-ps-1").into()
+                    }
+                }
+                None =>  html!{},
+            };
+
             rows[start_row].push(
                 Container::new()
                     .tag("th")
@@ -103,7 +129,7 @@ fn header_to_rows<T: 'static>(
                         ResizableHeader::new()
                             .class(props.header_class.clone())
                             .class("pwt-w-100 pwt-h-100")
-                            .content(html!{{&column.name}})
+                            .content(html!{<>{&column.name}{sort_icon}</>})
                             .on_resize({
                                 let link = link.clone();
                                 move |width| {
@@ -114,6 +140,14 @@ fn header_to_rows<T: 'static>(
                             .on_size_reset(link.callback(move |_| Msg::ColumnSizeReset(start_col)))
                             .on_size_change(link.callback(move |w| Msg::ColumnSizeChange(start_col, w)))
                     )
+                    .ondblclick({
+                        let on_sort_change = props.on_sort_change.clone();
+                        move |event: MouseEvent| {
+                            if let Some(on_sort_change) = &on_sort_change {
+                                on_sort_change.emit((start_col, event.ctrl_key()));
+                            }
+                        }
+                    })
                     .into()
             );
             1
@@ -432,6 +466,10 @@ impl <T: 'static> Component for PwtDataTableHeader<T> {
             self.resize_columns(props);
             return true;
         }
+        if props.sorters != old_props.sorters {
+            return true;
+        }
+
         false
     }
 

@@ -12,9 +12,10 @@ use crate::prelude::*;
 use crate::state::{optional_rc_ptr_eq, DataFilter};
 use crate::widget::{get_unique_element_id, Container, Column, SizeObserver};
 
-use super::{DataTableColumn, DataTableHeader, Header};
+use super::{create_combined_sorter_fn, ColumnSorterState, DataTableColumn, DataTableHeader, Header};
 
 pub enum Msg {
+    ChangeSort(usize, bool),
     ColumnWidthChange(Vec<usize>),
     ScrollTo(i32, i32),
     ViewportResize(i32, i32),
@@ -84,6 +85,11 @@ pub struct DataTable<T: 'static> {
     /// of visible rows.
     #[prop_or(22)]
     pub min_row_height: usize,
+
+    /// Initial sort order for columns.
+    #[prop_or_default]
+    pub sorters: Vec<(usize, bool)>,
+
 }
 
 static VIRTUAL_SCROLL_TRIGGER: usize = 30;
@@ -245,6 +251,7 @@ impl VirtualScrollInfo {
 pub struct PwtDataTable<T: 'static> {
     unique_id: String,
     has_focus: bool,
+    sorters: ColumnSorterState,
 
     store: DataFilter<T>,
     columns: Vec<DataTableColumn<T>>,
@@ -315,9 +322,7 @@ impl<T: 'static> PwtDataTable<T> {
     }
 
     fn scroll_to_cursor(&self, cursor: usize) {
-        log::info!("STC {}", cursor);
         let height =  (self.row_height * cursor).saturating_sub(self.viewport_height/2);
-
         if let Some(el) = self.scroll_ref.cast::<web_sys::Element>() {
             el.set_scroll_top(height as i32);
         }
@@ -479,15 +484,21 @@ impl <T: 'static> Component for PwtDataTable<T> {
     fn create(ctx: &Context<Self>) -> Self {
         let props = ctx.props();
 
-        let store = DataFilter::new()
+        let sorters = ColumnSorterState::new(&props.sorters);
+
+        let mut store = DataFilter::new()
             .data(props.data.clone());
         // fixme: set cursor to first selected item
         //.cursor(props.selection)
+
+
 
         let mut columns = Vec::new();
         for header in props.headers.iter() {
             header.extract_column_list(&mut columns);
         }
+
+        store.set_sorter(create_combined_sorter_fn(sorters.sorters(), &columns));
 
         let cell_class = if props.cell_class.is_empty() {
             Classes::from("pwt-text-truncate pwt-p-2")
@@ -501,6 +512,7 @@ impl <T: 'static> Component for PwtDataTable<T> {
         let mut me = Self {
             unique_id: get_unique_element_id(),
             has_focus: false,
+            sorters,
             store,
             columns,
             column_widths: Vec::new(),
@@ -609,6 +621,19 @@ impl <T: 'static> Component for PwtDataTable<T> {
                 self.has_focus = has_focus;
                 true
             }
+            // Sorting
+            Msg::ChangeSort(col_idx, ctrl_key) => {
+                if self.columns[col_idx].sorter.is_none() {
+                    return false;
+                }
+                if ctrl_key { // add sorter or reverse direction if exists
+                    self.sorters.add_column_sorter(col_idx);
+                } else {
+                    self.sorters.set_column_sorter(col_idx);
+                }
+                self.store.set_sorter(create_combined_sorter_fn(self.sorters.sorters(), &self.columns));
+                true
+            }
         }
     }
 
@@ -670,9 +695,10 @@ impl <T: 'static> Component for PwtDataTable<T> {
                     .class("pwt-overflow-hidden")
                     .node_ref(self.header_scroll_ref.clone())
                     .with_child(
-                        DataTableHeader::new(self.container_width, props.headers.clone())
+                        DataTableHeader::new(self.container_width, props.headers.clone(), self.sorters.sorters())
                             .header_class(props.header_class.clone())
                             .on_size_change(ctx.link().callback(Msg::ColumnWidthChange))
+                            .on_sort_change(ctx.link().callback(|(col, ctrl)| Msg::ChangeSort(col, ctrl)))
                     )
             )
             .with_child(viewport)
