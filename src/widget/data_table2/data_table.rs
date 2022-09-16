@@ -284,12 +284,13 @@ pub struct PwtDataTable<T: 'static> {
 fn render_empty_row_with_sizes(widths: &[usize]) -> Html {
     Container::new()
         .tag("tr")
+        .attribute("role", "none")
         .key(Key::from("sizes"))
          // Note: This row should not be visible, so avoid borders
         .attribute("style", "border-top-width: 0px; border-bottom-width: 0px;")
         .children(
             widths.iter().map(|w| html!{
-                <td style={format!("width:{w}px;height:0px;")}></td>
+                <td role="none" style={format!("width:{w}px;height:0px;")}></td>
             })
         )
         .into()
@@ -343,7 +344,7 @@ impl<T: 'static> PwtDataTable<T> {
         el.scroll_into_view_with_scroll_into_view_options(&options);
     }
 
-    fn  render_row(&self, props: &DataTable<T>, item: &T, record_num: usize, selected: bool, active: bool) -> Html {
+    fn  render_row(&self, props: &DataTable<T>, item: &T, row_num: usize, record_num: usize, selected: bool, active: bool) -> Html {
 
         let key = Key::from(record_num); // fixme: use extract key
 
@@ -354,6 +355,8 @@ impl<T: 'static> PwtDataTable<T> {
         Container::new()
             .tag("tr")
             .key(key)
+            .attribute("role", "row")
+            .attribute("aria-rowindex", row_num.to_string())
             .attribute("id", self.get_unique_item_id(record_num))
             .class((active && self.has_focus).then(|| "row-cursor"))
             .children(
@@ -383,10 +386,9 @@ impl<T: 'static> PwtDataTable<T> {
 
     fn render_table(&self, props: &DataTable<T>, offset: usize, start: usize, end: usize) -> Html {
 
-        let mut active_descendant = None;
-
         let mut table = Container::new()
-            .tag("table")
+        // do not use table tag here to avoid role="table", instead set "pwt-d-table"
+            .class("pwt-d-table")
             .class("pwt-datatable2-content")
             .class(props.hover.then(|| "table-hover"))
             .class(props.striped.then(|| "table-striped"))
@@ -404,17 +406,9 @@ impl<T: 'static> PwtDataTable<T> {
                     .get_cursor().map(|cursor| cursor == filtered_pos)
                     .unwrap_or(false);
 
-                if active {
-                    active_descendant = Some(record_num);
-                }
-
-                let row = self.render_row(props, item, record_num, selected, active);
+                let row = self.render_row(props, item, filtered_pos, record_num, selected, active);
                 table.add_child(row);
             }
-        }
-
-        if let Some(active_descendant) = active_descendant {
-            table.set_attribute("aria-activedescendant", self.get_unique_item_id(active_descendant));
         }
 
         table.into()
@@ -436,7 +430,7 @@ impl<T: 'static> PwtDataTable<T> {
                 "height: 0px; width: 0px; overflow: hidden; position:relative;top:{}px;",
                 height
             ))
-            .with_child("End Marker for Firefox");
+            .with_child(html!{<div arial-label="" role="none">{"Table End Marker"}</div>});
 
         let height = height + 15; // add some space at the end
         Container::new()
@@ -643,11 +637,20 @@ impl <T: 'static> Component for PwtDataTable<T> {
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
 
-        let viewport = Container::new()
+        let row_count = self.store.filtered_data_len();
+
+        let active_descendant = self.store
+            .get_cursor()
+            .map(|cursor|  self.get_unique_item_id(cursor));
+
+       let viewport = Container::new()
             .node_ref(self.scroll_ref.clone())
             .class("pwt-flex-fill")
             .attribute("style", "overflow: auto; outline: 0")
             .attribute("tabindex", "0")
+            .attribute("role", "table")
+            .attribute("aria-activedescendant", active_descendant)
+            .attribute("aria-rowcount", row_count.to_string())
             .with_child(self.render_scroll_content(props))
             .onfocusin(ctx.link().callback(|_| Msg::FocusChange(true)))
             .onfocusout(ctx.link().callback(|_| Msg::FocusChange(false)))
