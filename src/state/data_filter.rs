@@ -193,7 +193,7 @@ impl <T> DataFilter<T> {
             return;
         }
         self.cursor = match self.cursor {
-            Some(n) => if (n + 1) < len { Some(n + 1) }  else { None },
+            Some(n) => if (n + 1) < len { Some(n + 1) }  else { Some(0) },
             None => Some(0),
         };
     }
@@ -206,7 +206,7 @@ impl <T> DataFilter<T> {
         }
 
         self.cursor = match self.cursor {
-            Some(n) => if n > 0 { Some(n - 1) } else { None },
+            Some(n) => if n > 0 { Some(n - 1) } else { Some(len - 1) },
             None => Some(len - 1),
         };
     }
