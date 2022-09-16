@@ -147,10 +147,10 @@ impl Component for PwtButton {
 
         if let Some(icon_class) = &props.icon_class {
             children.push(html!{
-                <i class={classes!(
+                <i role="none" aria-hidden="true" class={classes!(
                     icon_class.clone(),
                     has_text.then(|| "pwt-me-2"),
-                )} role="status" aria_hidden="true"></i>
+                )}></i>
             })
         }
 

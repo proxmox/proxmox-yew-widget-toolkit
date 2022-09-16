@@ -75,11 +75,13 @@ impl Into<VTag> for Panel {
 pub(crate) fn create_panel_title(title: Option<AttrValue>, tools: Vec<VNode>) -> Row {
 
     let mut header = Row::new()
+        .attribute("role", "group")
+        .attribute("aria-label", "panel header")
         .class("pwt-align-items-center pwt-gap-1");
 
     if let Some(title) = title {
         header.add_child(html!{
-            <div class="pwt-panel-header-text">{title}</div>
+            <div role="none" class="pwt-panel-header-text">{title}</div>
         });
     }
 
