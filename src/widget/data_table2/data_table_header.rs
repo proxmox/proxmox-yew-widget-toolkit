@@ -183,8 +183,8 @@ fn group_to_rows<T: 'static>(
         rows[start_row].push(
             Container::new()
                 .tag("th")
-            //.attribute("role", "group")
                 .attribute("role", "columnheader")
+                .attribute("tabindex", "-1")
                 .class("pwt-datatable2-group-header-item")
                 .class(props.header_class.clone())
                 .attribute("style", format!("grid-column: {} / span {}", start_col + 1, span))
@@ -320,6 +320,7 @@ impl <T: 'static> Component for PwtDataTableHeader<T> {
 
         Container::new()
             .tag("table")
+            .attribute("role", "grid")
             .attribute("aria-label", "table header")
             .node_ref(self.node_ref.clone())
             .class("pwt-d-grid")

@@ -759,7 +759,7 @@ impl <T: 'static> Component for PwtDataTable<T> {
             .class("pwt-flex-fill")
             .attribute("style", "overflow: auto; outline: 0")
             .attribute("tabindex", "0")
-            .attribute("role", "table")
+            .attribute("role", "grid")
             .attribute("aria-label", "table body")
             .attribute("aria-activedescendant", active_descendant)
             .attribute("aria-rowcount", row_count.to_string())
