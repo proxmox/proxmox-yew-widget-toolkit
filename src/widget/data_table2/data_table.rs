@@ -773,7 +773,6 @@ impl <T: 'static> Component for PwtDataTable<T> {
             .onkeydown({
                 let link = ctx.link().clone();
                 move |event: KeyboardEvent| {
-                    log::info!("KK {}",  event.key_code());
                     match event.key_code() {
                         40 | 38 | 13 | 32 | 35 | 36 => { /* ok */}
                         _ => return,
