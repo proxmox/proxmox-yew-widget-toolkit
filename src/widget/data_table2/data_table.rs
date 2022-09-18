@@ -835,6 +835,9 @@ impl <T: 'static> Component for PwtDataTable<T> {
             self.store.set_data(props.data.clone());
             let row_count = props.data.as_ref().map(|data| data.len()).unwrap_or(0);
             self.virtual_scroll = props.virtual_scroll.unwrap_or(row_count >= VIRTUAL_SCROLL_TRIGGER);
+            if let Some(selection) = &props.selection {
+                selection.filter_nonexistent(self.store.filtered_data().map(|t| t.2));
+            }
         }
 
         true

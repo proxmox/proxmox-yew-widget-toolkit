@@ -77,6 +77,14 @@ impl<T> Selection2<T> {
         self.inner.borrow()
             .contains_key(key)
     }
+
+}
+
+impl<'a, T: 'a> Selection2<T> {
+    pub fn filter_nonexistent(&self, data: impl Iterator<Item=&'a T>) {
+        self.inner.borrow_mut()
+            .filter_nonexistent(data, &self.extract_key);
+    }
 }
 
 fn selection_state_equal(
@@ -225,4 +233,30 @@ impl SelectionState {
         keys
     }
 
+    fn filter_nonexistent<'a, T: 'a>(
+        &mut self,
+        mut data: impl Iterator<Item=&'a T>,
+        extract_key: &ExtractKeyFn<T>,
+    ) {
+        match self.multiselect {
+            false => {
+                if let Some(current) = &self.selection {
+                    self.selection = data.find_map(move |rec| {
+                        let key = extract_key.apply(&rec);
+                        (&key == current).then(|| key)
+                    });
+                }
+            }
+            true => {
+                let mut new_map = HashSet::new();
+                for rec in data {
+                    let key = extract_key.apply(&rec);
+                    if self.contains_key(&key) {
+                        new_map.insert(key);
+                    }
+                }
+                self.selection_map = new_map;
+            }
+        }
+    }
 }
