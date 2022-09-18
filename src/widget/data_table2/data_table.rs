@@ -25,7 +25,6 @@ pub enum Msg {
     KeyDown(u32, bool, bool),
     CursorDown(bool, bool),
     CursorUp(bool, bool),
-    CursorSelect(bool, bool),
     ItemClick(usize, bool, bool),
     ItemDblClick(usize),
     FocusChange(bool),
@@ -663,7 +662,24 @@ impl <T: 'static> Component for PwtDataTable<T> {
                 let msg = match key_code {
                     40 => Msg::CursorDown(shift, ctrl),
                     38 => Msg::CursorUp(shift, ctrl),
-                    32 => Msg::CursorSelect(shift, ctrl),
+                    32 => {
+                        self.select_cursor(props, shift, ctrl);
+                        return true;
+                    }
+                    35 => {
+                        /* end */
+                        self.store.set_cursor(None);
+                        self.store.cursor_up();
+                        self.scroll_cursor_into_view(web_sys::ScrollLogicalPosition::Nearest);
+                        return true;
+                    }
+                    36 => {
+                        /* pos1 */
+                        self.store.set_cursor(None);
+                        self.store.cursor_down();
+                        self.scroll_cursor_into_view(web_sys::ScrollLogicalPosition::Nearest);
+                        return true;
+                    }
                     _ => return false,
                 };
                 let link = ctx.link().clone();
@@ -673,7 +689,6 @@ impl <T: 'static> Component for PwtDataTable<T> {
                 }));
                 false
             }
-            Msg::CursorSelect(shift, ctrl) => self.select_cursor(props, shift, ctrl),
             Msg::CursorDown(shift, _ctrl) => {
                 if shift { self.select_cursor(props, shift, false); }
                 self.store.cursor_down();
@@ -758,8 +773,9 @@ impl <T: 'static> Component for PwtDataTable<T> {
             .onkeydown({
                 let link = ctx.link().clone();
                 move |event: KeyboardEvent| {
+                    log::info!("KK {}",  event.key_code());
                     match event.key_code() {
-                        40 | 38 | 13 | 32 => { /* ok */}
+                        40 | 38 | 13 | 32 | 35 | 36 => { /* ok */}
                         _ => return,
                     };
                     link.send_message(Msg::KeyDown(
