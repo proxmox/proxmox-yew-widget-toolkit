@@ -18,13 +18,16 @@ pub struct Selection2<T> {
 
 impl<T> Selection2<T> {
 
-    pub fn new(multiselect: bool, extract_key: impl Into<ExtractKeyFn<T>>) -> Self {
+    pub fn new(extract_key: impl Into<ExtractKeyFn<T>>) -> Self {
         Self {
             extract_key: extract_key.into(),
-            inner: Rc::new(RefCell::new(
-                SelectionState::new(multiselect)
-            )),
+            inner: Rc::new(RefCell::new(SelectionState::new())),
         }
+    }
+
+    pub fn multiselect(self, multiselect: bool) -> Self {
+        self.inner.borrow_mut().set_multiselect(multiselect);
+        self
     }
 
     pub fn on_select(self, cb: impl ::yew::html::IntoEventCallback<Vec<Key>>) -> Self {
@@ -100,14 +103,18 @@ struct SelectionState {
 
 impl SelectionState {
 
-    fn new(multiselect: bool) -> Self {
+    fn new() -> Self {
         Self {
             version: 0,
-            multiselect,
+            multiselect: false,
             selection: None,
             selection_map: HashSet::new(),
             on_select: SelectionListeners::None,
         }
+    }
+
+    fn set_multiselect(&mut self, multiselect: bool) {
+        self.multiselect = multiselect;
     }
 
     fn add_listener(&mut self, cb: impl ::yew::html::IntoEventCallback<Vec<Key>>) {
