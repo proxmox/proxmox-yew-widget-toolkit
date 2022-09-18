@@ -2,6 +2,7 @@ use std::rc::Rc;
 use std::cell::RefCell;
 use std::collections::HashSet;
 
+use yew::prelude::*;
 use derivative::Derivative;
 use yew::virtual_dom::Key;
 
@@ -24,6 +25,12 @@ impl<T> Selection2<T> {
                 SelectionState::new(multiselect)
             )),
         }
+    }
+
+    pub fn on_select(self, cb: impl ::yew::html::IntoEventCallback<Vec<Key>>) -> Self {
+        self.inner.borrow_mut()
+            .add_listener(cb);
+        self
     }
 
     /// Clear the selection
@@ -77,11 +84,18 @@ fn selection_state_equal(
         me.borrow().version == other.borrow().version
 }
 
+enum SelectionListeners {
+    None,
+    Single(Callback<Vec<Key>>),
+    Multiple(Vec<Callback<Vec<Key>>>),
+}
+
 struct SelectionState {
     version: usize, // change tracking
     multiselect: bool,
     selection: Option<Key>, // used for single row
     selection_map: HashSet<Key>, // used for multiselect
+    on_select: SelectionListeners,
 }
 
 impl SelectionState {
@@ -92,6 +106,35 @@ impl SelectionState {
             multiselect,
             selection: None,
             selection_map: HashSet::new(),
+            on_select: SelectionListeners::None,
+        }
+    }
+
+    fn add_listener(&mut self, cb: impl ::yew::html::IntoEventCallback<Vec<Key>>) {
+        if let Some(cb) = cb.into_event_callback() {
+            self.on_select = match &self.on_select {
+                SelectionListeners::None => SelectionListeners::Single(cb),
+                SelectionListeners::Single(prev) => {
+                    SelectionListeners::Multiple(vec![prev.clone(), cb])
+                }
+                SelectionListeners::Multiple(list) => {
+                    let mut list = list.clone();
+                    list.push(cb);
+                    SelectionListeners::Multiple(list)
+                }
+            };
+        }
+    }
+
+    pub fn notify_listeners(&mut self) {
+        match &self.on_select {
+            SelectionListeners::None => { /* do nothing */ },
+            SelectionListeners::Single(cb) => {
+                 cb.emit(self.selected_keys());
+            }
+            SelectionListeners::Multiple(list) => {
+                for cb in list { cb.emit(self.selected_keys()); }
+            }
         }
     }
 
@@ -99,6 +142,7 @@ impl SelectionState {
         self.version += 1;
         self.selection = None;
         self.selection_map = HashSet::new();
+        self.notify_listeners();
     }
 
     pub fn select_key(&mut self, key: impl Into<Key>) {
@@ -110,6 +154,7 @@ impl SelectionState {
                 self.selection_map.insert(key);
             }
         }
+        self.notify_listeners();
     }
 
     pub fn toggle_key(&mut self, key: impl Into<Key>) {
@@ -135,6 +180,7 @@ impl SelectionState {
                 }
             }
         }
+        self.notify_listeners();
     }
 
     pub fn contains_key(&self, key: &Key) -> bool {
@@ -154,4 +200,22 @@ impl SelectionState {
         }
         false
     }
+
+    pub fn selected_keys(&self) -> Vec<Key> {
+        let mut keys = Vec::new();
+
+        match self.multiselect {
+            false => {
+                if let Some(selection) = &self.selection {
+                    keys.push(selection.clone());
+                }
+            }
+            true => {
+                keys = self.selection_map.iter().map(Key::clone).collect();
+            }
+        }
+
+        keys
+    }
+
 }
