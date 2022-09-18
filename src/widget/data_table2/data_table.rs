@@ -307,6 +307,51 @@ fn render_empty_row_with_sizes(widths: &[usize]) -> Html {
 
 impl<T: 'static> PwtDataTable<T> {
 
+    fn select_position(
+        &mut self,
+        selection: &Selection2<T>,
+        cursor: usize,
+        _shift: bool,
+        ctrl: bool,
+    ) {
+        if let Some((_, item)) = self.store.lookup_filtered_record(cursor) {
+            if ctrl {
+                selection.toggle(item);
+            } else {
+                selection.select(item);
+            }
+        }
+    }
+
+    fn select_range(
+        &mut self,
+        selection: &Selection2<T>,
+        last_cursor: Option<usize>,
+        new_cursor: Option<usize>,
+        shift: bool,
+        ctrl: bool,
+    ) {
+        let new_cursor = match new_cursor {
+            Some(new_cursor) => new_cursor,
+            None => return,
+        };
+
+        if shift || ctrl {
+            if let Some(last_cursor) = last_cursor {
+                let (start, end) = if last_cursor <= new_cursor {
+                    (last_cursor, new_cursor)
+                } else {
+                    (new_cursor, last_cursor)
+                };
+                for pos in start..=end {
+                    self.select_position(selection, pos, shift, ctrl);
+                }
+            } else {
+                self.select_position(selection, new_cursor, shift, ctrl);
+            }
+        }
+    }
+
     fn select_cursor(&mut self, props: &DataTable<T>, shift: bool, ctrl: bool) -> bool {
         let selection = match &props.selection {
             Some(selection) => selection,
@@ -644,8 +689,17 @@ impl <T: 'static> Component for PwtDataTable<T> {
                 true
             }
             Msg::ItemClick(record_num, shift, ctrl) => {
-                self.store.set_cursor(self.store.filtered_pos(record_num));
-                if shift || ctrl {  self.select_cursor(props, shift, ctrl); }
+                let last_cursor = self.store.get_cursor();
+                let new_cursor = self.store.filtered_pos(record_num);
+
+                self.store.set_cursor(new_cursor);
+
+                if shift || ctrl {
+                    if let Some(selection) = &props.selection {
+                        self.select_range(selection, last_cursor, new_cursor, shift, ctrl);
+                    }
+                }
+
                 true
             }
             Msg::ItemDblClick(record_num) => {
