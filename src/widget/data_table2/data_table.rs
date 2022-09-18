@@ -9,6 +9,7 @@ use yew::virtual_dom::{Key, VComp, VNode};
 use yew::html::IntoPropValue;
 
 use crate::prelude::*;
+use crate::props::Selection2;
 use crate::state::{optional_rc_ptr_eq, DataFilter};
 use crate::widget::{get_unique_element_id, Container, Column, SizeObserver};
 
@@ -21,13 +22,14 @@ pub enum Msg {
     ViewportResize(i32, i32),
     ContainerResize(i32, i32),
     TableResize(i32, i32),
-    KeyDown(u32),
-    CursorDown,
-    CursorUp,
-    CursorSelect,
-    ItemClick(usize),
+    KeyDown(u32, bool, bool),
+    CursorDown(bool, bool),
+    CursorUp(bool, bool),
+    CursorSelect(bool, bool),
+    ItemClick(usize, bool, bool),
+    ItemDblClick(usize),
     FocusChange(bool),
-}
+ }
 
 // DataTable properties
 #[derive(Properties)]
@@ -90,6 +92,7 @@ pub struct DataTable<T: 'static> {
     #[prop_or_default]
     pub sorters: Vec<(usize, bool)>,
 
+    pub selection: Option<Selection2<T>>,
 }
 
 static VIRTUAL_SCROLL_TRIGGER: usize = 30;
@@ -231,6 +234,12 @@ impl <T: 'static> DataTable<T> {
     pub fn set_min_row_height(&mut self, min_row_height: usize) {
         self.min_row_height = min_row_height;
     }
+
+    /// Builder style method to set the selection model
+    pub fn selection(mut self, selection: impl IntoPropValue<Option<Selection2<T>>>) -> Self {
+        self.selection = selection.into_prop_value();
+        self
+    }
 }
 
 #[derive(Default)]
@@ -298,6 +307,30 @@ fn render_empty_row_with_sizes(widths: &[usize]) -> Html {
 
 impl<T: 'static> PwtDataTable<T> {
 
+    fn select_cursor(&mut self, props: &DataTable<T>, shift: bool, ctrl: bool) -> bool {
+        let selection = match &props.selection {
+            Some(selection) => selection,
+            None => return false,
+        };
+
+        let cursor = match self.store.get_cursor() {
+            Some(c) => c,
+            None => return false, // nothing to do
+        };
+
+        if !(shift || ctrl) { selection.clear(); }
+
+        if let Some((_, item)) = self.store.lookup_filtered_record(cursor) {
+            if ctrl {
+                selection.toggle(item);
+            } else {
+                selection.select(item);
+            }
+            return true;
+        }
+        false
+    }
+
     fn get_unique_item_id(&self, n: usize) -> String {
         format!("{}-item-{}", self.unique_id, n)
     }
@@ -359,6 +392,7 @@ impl<T: 'static> PwtDataTable<T> {
             .attribute("aria-rowindex", row_num.to_string())
             .attribute("id", self.get_unique_item_id(record_num))
             .class((active && self.has_focus).then(|| "row-cursor"))
+            .class(selected.then(|| "selected"))
             .children(
                 self.columns.iter().enumerate().map(|(_column_num, column)| {
                     let item_style = format!(
@@ -369,7 +403,6 @@ impl<T: 'static> PwtDataTable<T> {
                     Container::new()
                         .tag("td")
                         .class(self.cell_class.clone())
-                        .class(selected.then(|| "selected"))
                         .attribute("style", item_style)
                         .with_child(html!{
                             <div>{
@@ -401,9 +434,13 @@ impl<T: 'static> PwtDataTable<T> {
 
         if !self.column_widths.is_empty() {
             for (filtered_pos, record_num, item) in self.store.filtered_data_range(start..end) {
-                let selected = false;
 
-                 let active = self.store
+                let mut selected = false;
+                if let Some(selection) = &props.selection {
+                    selected = selection.contains(item);
+                }
+
+                let active = self.store
                     .get_cursor().map(|cursor| cursor == filtered_pos)
                     .unwrap_or(false);
 
@@ -577,11 +614,11 @@ impl <T: 'static> Component for PwtDataTable<T> {
                 true
             }
             // Cursor handling
-            Msg::KeyDown(key_code) => {
+            Msg::KeyDown(key_code, shift, ctrl) => {
                 let msg = match key_code {
-                    40 => Msg::CursorDown,
-                    38 => Msg::CursorUp,
-                    13 => Msg::CursorSelect,
+                    40 => Msg::CursorDown(shift, ctrl),
+                    38 => Msg::CursorUp(shift, ctrl),
+                    32 => Msg::CursorSelect(shift, ctrl),
                     _ => return false,
                 };
                 let link = ctx.link().clone();
@@ -591,27 +628,29 @@ impl <T: 'static> Component for PwtDataTable<T> {
                 }));
                 false
             }
-            Msg::CursorSelect => { /* TODO */ false }
-            Msg::CursorDown => {
+            Msg::CursorSelect(shift, ctrl) => self.select_cursor(props, shift, ctrl),
+            Msg::CursorDown(shift, _ctrl) => {
+                if shift { self.select_cursor(props, shift, false); }
                 self.store.cursor_down();
+                if shift { self.select_cursor(props, shift, false); }
                 self.scroll_cursor_into_view(web_sys::ScrollLogicalPosition::Nearest);
                 true
             }
-            Msg::CursorUp => {
+            Msg::CursorUp(shift, _ctrl) => {
+                if shift { self.select_cursor(props, shift, false); }
                 self.store.cursor_up();
+                if shift { self.select_cursor(props, shift, false); }
                 self.scroll_cursor_into_view(web_sys::ScrollLogicalPosition::Nearest);
                 true
             }
-            Msg::ItemClick(record_num) => {
-                let _item = match self.store.lookup_record(record_num) {
-                    Some(item) => item,
-                    None => return false, // should not happen
-                };
-
+            Msg::ItemClick(record_num, shift, ctrl) => {
                 self.store.set_cursor(self.store.filtered_pos(record_num));
-
-                // fixme: handle selection
-
+                if shift || ctrl {  self.select_cursor(props, shift, ctrl); }
+                true
+            }
+            Msg::ItemDblClick(record_num) => {
+                self.store.set_cursor(self.store.filtered_pos(record_num));
+                self.select_cursor(props, false, false);
                 true
             }
             Msg::FocusChange(has_focus) => {
@@ -666,32 +705,36 @@ impl <T: 'static> Component for PwtDataTable<T> {
                 let link = ctx.link().clone();
                 move |event: KeyboardEvent| {
                     match event.key_code() {
-                        40 | 38 | 13 => { /* ok */}
+                        40 | 38 | 13 | 32 => { /* ok */}
                         _ => return,
                     };
-                    link.send_message(Msg::KeyDown(event.key_code()));
+                    link.send_message(Msg::KeyDown(
+                        event.key_code(),
+                        event.shift_key(),
+                        event.ctrl_key(),
+                    ));
                     event.prevent_default();
                 }
             })
             .onclick({
                 let link = ctx.link().clone();
-                let unique_row_prefix = format!("{}-item-", self.unique_id);
+                let unique_id = self.unique_id.clone();
                 move |event: MouseEvent| {
-                    let mut cur_el: Option<web_sys::Element> = event.target_dyn_into();
-                    loop {
-                        match cur_el {
-                            Some(el) => {
-                                if el.tag_name() == "TR" {
-                                    if let Some(n_str) = el.id().strip_prefix(&unique_row_prefix) {
-                                        let n: usize = n_str.parse().unwrap();
-                                        link.send_message(Msg::ItemClick(n));
-                                        break;
-                                    }
-                                }
-                                cur_el = el.parent_element();
-                            }
-                            None => break,
-                        }
+                    if let Some(n) = dom_find_record_num(&event, &unique_id) {
+                        link.send_message(Msg::ItemClick(
+                            n,
+                            event.shift_key(),
+                            event.ctrl_key(),
+                          ));
+                    }
+                }
+            })
+            .ondblclick({
+                let link = ctx.link().clone();
+                let unique_id = self.unique_id.clone();
+                move |event: MouseEvent| {
+                    if let Some(n) = dom_find_record_num(&event, &unique_id) {
+                        link.send_message(Msg::ItemDblClick(n));
                     }
                 }
             });
@@ -763,4 +806,29 @@ impl<T: 'static> Into<VNode> for DataTable<T> {
         let comp = VComp::new::<PwtDataTable<T>>(Rc::new(self), key);
         VNode::from(comp)
     }
+}
+
+
+fn dom_find_record_num(event: &MouseEvent, unique_id: &str) -> Option<usize> {
+
+    let unique_row_prefix = format!("{}-item-", unique_id);
+
+    let mut cur_el: Option<web_sys::Element> = event.target_dyn_into();
+    loop {
+        match cur_el {
+            Some(el) => {
+                if el.tag_name() == "TR" {
+                    if let Some(n_str) = el.id().strip_prefix(&unique_row_prefix) {
+                        if let Ok(n) = n_str.parse() {
+                            return Some(n);
+                        }
+                        break; // stop on errors
+                    }
+                }
+                cur_el = el.parent_element();
+            }
+            None => break,
+        }
+    }
+    None
 }
