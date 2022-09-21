@@ -16,7 +16,7 @@ use crate::widget::{get_unique_element_id, Container, Column, SizeObserver};
 use super::{create_combined_sorter_fn, ColumnSorterState, DataTableColumn, DataTableHeader, Header};
 
 pub enum Msg {
-    ChangeSort(usize, bool),
+    ChangeSort(usize, bool, Option<bool>),
     ColumnWidthChange(Vec<usize>),
     ScrollTo(i32, i32),
     ViewportResize(i32, i32),
@@ -730,14 +730,14 @@ impl <T: 'static> Component for PwtDataTable<T> {
                 true
             }
             // Sorting
-            Msg::ChangeSort(col_idx, ctrl_key) => {
+            Msg::ChangeSort(col_idx, ctrl_key, order) => {
                 if self.columns[col_idx].sorter.is_none() {
                     return false;
                 }
                 if ctrl_key { // add sorter or reverse direction if exists
-                    self.sorters.add_column_sorter(col_idx);
+                    self.sorters.add_column_sorter(col_idx, order);
                 } else {
-                    self.sorters.set_column_sorter(col_idx);
+                    self.sorters.set_column_sorter(col_idx, order);
                 }
                 self.store.set_sorter(create_combined_sorter_fn(self.sorters.sorters(), &self.columns));
                 true
@@ -821,7 +821,7 @@ impl <T: 'static> Component for PwtDataTable<T> {
                         DataTableHeader::new(props.headers.clone(), self.sorters.sorters())
                             .header_class(props.header_class.clone())
                             .on_size_change(ctx.link().callback(Msg::ColumnWidthChange))
-                            .on_sort_change(ctx.link().callback(|(col, ctrl)| Msg::ChangeSort(col, ctrl)))
+                            .on_sort_change(ctx.link().callback(|(col, ctrl, order)| Msg::ChangeSort(col, ctrl, order)))
                     )
             )
             .with_child(viewport)

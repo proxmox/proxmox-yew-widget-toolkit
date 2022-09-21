@@ -11,6 +11,9 @@ mod column;
 pub use column::DataTableColumn;
 pub(crate) use column::create_combined_sorter_fn;
 
+mod header_menu;
+pub(crate) use header_menu::HeaderMenu;
+
 mod data_table_header;
 pub use data_table_header::*;
 

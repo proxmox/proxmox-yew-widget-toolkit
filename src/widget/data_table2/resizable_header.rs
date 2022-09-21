@@ -1,7 +1,7 @@
 use std::rc::Rc;
 
 use gloo_events::EventListener;
-use wasm_bindgen::JsCast;
+use wasm_bindgen::{JsCast, JsValue};
 use wasm_bindgen::UnwrapThrowExt;
 
 use yew::prelude::*;
@@ -10,7 +10,10 @@ use yew::html::{IntoEventCallback, IntoPropValue};
 
 
 use crate::prelude::*;
+use crate::props::RenderFn;
 use crate::widget::{Row, Container, SizeObserver};
+use crate::widget::dropdown::focus_selected_element;
+
 
 // Note about node_ref property: make it optional, and generate an
 // unique one in Component::create(). That way we can clone Properies without
@@ -28,6 +31,9 @@ pub struct ResizableHeader {
     pub on_resize: Option<Callback<i32>>,
     pub on_size_reset: Option<Callback<()>>,
     pub on_size_change: Option<Callback<i32>>,
+
+    /// Function to generate the header menu.
+    pub picker: Option<RenderFn<()>>,
 }
 
 impl ResizableHeader {
@@ -88,6 +94,13 @@ impl ResizableHeader {
         self.on_size_change = cb.into_event_callback();
         self
     }
+
+    /// Builder style method to set the menu render callback.
+    pub fn picker(mut self, render_fn: impl Into<RenderFn<()>>) -> Self {
+        self.picker = Some(render_fn.into());
+        self
+    }
+
 }
 
 pub enum Msg {
@@ -95,6 +108,10 @@ pub enum Msg {
     StopResize,
     MouseMove(i32),
     FocusChange(bool),
+    TogglePicker,
+    ShowPicker,
+    HidePicker,
+    PickerClosed,
 }
 
 #[doc(hidden)]
@@ -105,6 +122,21 @@ pub struct PwtResizableHeader {
     mouseup_listener: Option<EventListener>,
     size_observer: Option<SizeObserver>,
     has_focus: bool,
+    picker_ref: NodeRef,
+    show_picker: bool,
+    last_show_picker: bool,
+    popper: Option<JsValue>,
+    mousedown_listener: Option<EventListener>,
+}
+
+impl PwtResizableHeader {
+    // focus the menu header (after closing the menu dialog)
+    // just to be sure (Dialog should do this automatically)
+    fn restore_focus(&mut self) {
+        if let Some(el) = self.node_ref.cast::<web_sys::HtmlElement>() {
+            let _ = el.focus();
+        }
+    }
 }
 
 impl Component for PwtResizableHeader {
@@ -119,9 +151,14 @@ impl Component for PwtResizableHeader {
             width: 0,
             mousemove_listener: None,
             mouseup_listener: None,
+            mousedown_listener: None,
             size_observer: None,
             has_focus: false,
-        }
+            picker_ref: NodeRef::default(),
+            show_picker: false,
+            last_show_picker: false,
+            popper: None,
+         }
     }
 
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
@@ -175,6 +212,32 @@ impl Component for PwtResizableHeader {
                 self.has_focus = has_focus;
                 true
             }
+            Msg::TogglePicker => {
+                //log::info!("TogglePicker");
+                yew::Component::update(self, ctx, if self.show_picker { Msg::HidePicker } else {Msg::ShowPicker})
+            }
+            Msg::HidePicker => {
+                // Note: close_dialog() is async, so we use the
+                // onclose handler (Msg::PickerClosed) to wait for
+                // the real close (else restore_focus() does not work)
+                if let Some(dialog_node) = self.picker_ref.get() {
+                    crate::close_dialog(dialog_node);
+                }
+                //log::info!("HidePicker {}", self.show_picker);
+                false
+            }
+            Msg::PickerClosed => {
+                //log::info!("PickerClosed");
+                self.show_picker = false;
+                self.restore_focus();
+                true
+
+            }
+            Msg::ShowPicker => {
+                self.show_picker = true;
+                //log::info!("ShowPicker {}", self.show_picker);
+                true
+            }
         }
     }
 
@@ -198,6 +261,11 @@ impl Component for PwtResizableHeader {
                 Container::new()
                     .class("pwt-datatable2-header-menu-trigger")
                     .class(self.has_focus.then(|| "focused"))
+                    .ondblclick(|event: MouseEvent| event.stop_propagation())
+                    .onclick(ctx.link().callback(|event: MouseEvent| {
+                        event.stop_propagation();
+                        Msg::TogglePicker
+                    }))
                     .with_child(html!{<i class="fa fa-lg fa-caret-down"/>})
             )
             .with_child(
@@ -212,8 +280,37 @@ impl Component for PwtResizableHeader {
                              }
                          }
                      })
-             )
+            )
+            .with_child(
+                Container::new()
+                    .tag("dialog")
+                    .node_ref(self.picker_ref.clone())
+                    .onclose(ctx.link().callback(|_| Msg::PickerClosed))
+                    .oncancel(ctx.link().callback(|event: Event| {
+                        event.stop_propagation();
+                        event.prevent_default();
+                        Msg::HidePicker
+                    }))
+                    .ondblclick(|event: MouseEvent| event.stop_propagation())
+                    .onclick(|event: MouseEvent| event.stop_propagation())
+                    .class("pwt-dropdown")
+                    .attribute("data-show", self.show_picker.then(|| ""))
+                    .with_optional_child(self.show_picker.then(|| {
+                        if let Some(picker) = &props.picker {
+                            picker.apply(&())
+                        } else {
+                            html!{<div class="pwt-p-2">{"No Menu configured"}</div>}
+                        }
+                    }))
+            )
             .into()
+    }
+
+    fn destroy(&mut self, _ctx: &Context<Self>) {
+        // always close the dialog
+        if let Some(dialog_node) = self.picker_ref.get() {
+            crate::close_dialog(dialog_node);
+        }
     }
 
     fn rendered(&mut self, ctx: &Context<Self>, first_render: bool) {
@@ -228,6 +325,75 @@ impl Component for PwtResizableHeader {
                         on_size_change.emit(x);
                     }
                 }));
+            }
+
+            let opts = serde_json::json!({
+                "placement": "bottom-start",
+                "strategy": "fixed",
+                "modifiers": [
+                    {
+                        "name": "preventOverflow",
+                        "options": {
+                            "mainAxis": true, // true by default
+                            "altAxis": true, // false by default
+                        },
+                    },
+                    {
+                        "name": "flip",
+                        "options": {
+                            "fallbackPlacements": [], // disable fallbacks
+                        },
+                    },
+                ],
+            });
+
+            let opts = crate::to_js_value(&opts).unwrap();
+
+            if let Some(content_node) = self.node_ref.get() {
+                if let Some(picker_node) = self.picker_ref.get() {
+                    self.popper = Some(crate::create_popper(content_node, picker_node, &opts));
+                }
+            }
+
+            let window = web_sys::window().unwrap();
+            let picker_ref = self.picker_ref.clone();
+            let link = ctx.link().clone();
+
+            self.mousedown_listener = Some(EventListener::new(
+                &window,
+                "mousedown",
+                move |e: &Event| {
+                    let e = e.dyn_ref::<web_sys::MouseEvent>().unwrap_throw();
+
+                    if let Some(el) = picker_ref.cast::<web_sys::Element>() {
+                        let x = e.client_x() as f64;
+                        let y = e.client_y() as f64;
+
+                        let rect = el.get_bounding_client_rect();
+                        if x > rect.left() && x < rect.right() && y > rect.top() && y < rect.bottom() {
+                            return;
+                        }
+
+                        link.send_message(Msg::HidePicker);
+                    }
+                },
+            ));
+
+        }
+
+        if let Some(popper) = &self.popper {
+            crate::update_popper(popper);
+        }
+
+        if self.show_picker != self.last_show_picker {
+            self.last_show_picker = self.show_picker;
+            if let Some(dialog_node) = self.picker_ref.get() {
+                if self.show_picker {
+                    crate::show_modal_dialog(dialog_node);
+                    focus_selected_element(&self.picker_ref);
+                } else {
+                    crate::close_dialog(dialog_node);
+                }
             }
         }
     }

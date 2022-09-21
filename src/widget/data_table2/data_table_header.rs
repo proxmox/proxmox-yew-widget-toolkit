@@ -12,7 +12,7 @@ use crate::prelude::*;
 use crate::widget::{Container, Fa};
 use crate::widget::focus::{focus_next_tabable, init_roving_tabindex};
 
-use super::{DataTableColumn, Header, HeaderGroup, ResizableHeader};
+use super::{DataTableColumn, Header, HeaderGroup, HeaderMenu, ResizableHeader};
 
 #[derive(Properties)]
 #[derive(Derivative)]
@@ -24,7 +24,7 @@ pub struct DataTableHeader<T: 'static> {
     headers: Rc<Vec<Header<T>>>,
 
     pub on_size_change: Option<Callback<Vec<usize>>>,
-    pub on_sort_change: Option<Callback<(usize, bool)>>,
+    pub on_sort_change: Option<Callback<(usize, bool, Option<bool>)>>,
 
     /// set class for header cells
     #[prop_or_default]
@@ -61,7 +61,9 @@ impl<T: 'static> DataTableHeader<T> {
     }
 
     /// Builder style method to set the sort change callback
-    pub fn on_sort_change(mut self, cb: impl IntoEventCallback<(usize, bool)>) -> Self {
+    ///
+    /// Callback partameters: (column_num, ctrl, order)
+    pub fn on_sort_change(mut self, cb: impl IntoEventCallback<(usize, bool, Option<bool>)>) -> Self {
         self.on_sort_change = cb.into_event_callback();
         self
     }
@@ -83,6 +85,7 @@ pub enum Msg {
     ColumnSizeReset(usize),
     ColumnSizeChange(usize, i32),
 }
+
 
 fn header_to_rows<T: 'static>(
     header: &Header<T>,
@@ -138,12 +141,30 @@ fn header_to_rows<T: 'static>(
                             })
                             .on_size_reset(link.callback(move |_| Msg::ColumnSizeReset(start_col)))
                             .on_size_change(link.callback(move |w| Msg::ColumnSizeChange(start_col, w)))
+                            .picker({
+                                let on_sort_change = props.on_sort_change.clone();
+                                let headers = Rc::clone(&props.headers);
+                                move |_: &()| {
+                                    HeaderMenu::new(Rc::clone(&headers))
+                                        .on_sort_change({
+                                            let on_sort_change = on_sort_change.clone();
+                                            move |asc| {
+                                                if let Some(on_sort_change) = &on_sort_change {
+
+                                                    log::info!("SC EMIT {}", start_col);
+                                                    on_sort_change.emit((start_col, false, Some(asc)));
+                                                }
+                                            }
+                                        })
+                                        .into()
+                                }
+                            })
                     )
                     .ondblclick({
                         let on_sort_change = props.on_sort_change.clone();
                         move |event: MouseEvent| {
                             if let Some(on_sort_change) = &on_sort_change {
-                                on_sort_change.emit((start_col, event.ctrl_key()));
+                                on_sort_change.emit((start_col, event.ctrl_key(), None));
                             }
                         }
                     })

@@ -21,30 +21,30 @@ impl ColumnSorterState {
     */
     
     /// Set sorter on single column, or reverse direction if exists
-    pub fn set_column_sorter(&mut self, col_idx: usize) {
+    pub fn set_column_sorter(&mut self, col_idx: usize, order: Option<bool>) {
         if self.sorters.len() == 1 {
             let (cur_idx, ascending) = self.sorters[0];
             if cur_idx == col_idx {
-                self.sorters = vec![(col_idx, !ascending)];
+                self.sorters = vec![(col_idx, order.unwrap_or(!ascending))];
             } else {
                 self.sorters = vec![(col_idx, true)];
             }
         } else {
-            self.sorters = vec![(col_idx, true)];
+            self.sorters = vec![(col_idx, order.unwrap_or(true))];
         }
     }
     
     /// Add sorter or reverse direction if exists
-    pub fn add_column_sorter(&mut self, col_idx: usize) {
+    pub fn add_column_sorter(&mut self, col_idx: usize, order: Option<bool>) {
         let mut found = false;
         for (idx, ascending) in self.sorters.iter_mut() {
             if *idx == col_idx {
-                *ascending = !*ascending;
+                *ascending = order.unwrap_or(!*ascending);
                 found = true;
             }
         }
         if !found {
-            self.sorters.push((col_idx, true));
+            self.sorters.push((col_idx, order.unwrap_or(true)));
         }
     }
 

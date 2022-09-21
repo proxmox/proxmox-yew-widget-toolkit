@@ -258,7 +258,7 @@ impl Component for PwtDropdown {
 
         let onclick = ctx.link().callback(|e: MouseEvent| {
             let event = e.unchecked_into::<Event>();
-            event.set_cancel_bubble(false);
+            event.stop_propagation();
             Msg::TogglePicker
         });
         let trigger_onclick = onclick.clone();
