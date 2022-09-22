@@ -23,13 +23,17 @@ pub struct Button {
 
     #[prop_or_default]
     pub disabled: bool,
+
+    #[prop_or_default]
+    pub pressed: bool,
 }
 
 impl Button {
-
     /// Create a new button.
     pub fn new(text: impl IntoPropValue<Option<AttrValue>>) -> Self {
-        yew::props!(Self { text: text.into_prop_value() })
+        yew::props!(Self {
+            text: text.into_prop_value()
+        })
     }
 
     /// Builder style method to set the html aria-label attribute
@@ -74,6 +78,17 @@ impl Button {
     /// Method to set the disabled flag
     pub fn set_disabled(&mut self, disabled: bool) {
         self.disabled = disabled;
+    }
+
+    /// Builder style method to set the pressed flag
+    pub fn pressed(mut self, pressed: bool) -> Self {
+        self.set_pressed(pressed);
+        self
+    }
+
+    /// Method to set the pressed flag
+    pub fn set_pressed(&mut self, pressed: bool) {
+        self.pressed = pressed;
     }
 
     pub fn new_icon(icon_class: impl Into<Classes>) -> Self {
@@ -125,7 +140,10 @@ impl Component for PwtButton {
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
 
-        let mut attributes = props.std_props.cumulate_attributes(Some("pwt-button"));
+        let mut attributes = props.std_props.cumulate_attributes(Some(classes!(
+            "pwt-button",
+            if props.pressed { "pressed" } else { "" }
+        )));
         let attr_map = attributes.get_mut_index_map();
 
         if props.disabled {
