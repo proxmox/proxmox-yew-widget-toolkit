@@ -13,7 +13,7 @@ use crate::props::{Selection2, SorterFn};
 use crate::state::{optional_rc_ptr_eq, DataFilter};
 use crate::widget::{get_unique_element_id, Container, Column, SizeObserver};
 
-use super::{DataTableColumn, DataTableHeader, Header, IndexedHeader};
+use super::{create_indexed_header_list, DataTableColumn, DataTableHeader, Header, IndexedHeader};
 
 pub enum Msg<T: 'static> {
     ChangeSort(SorterFn<T>),
@@ -560,7 +560,7 @@ impl <T: 'static> Component for PwtDataTable<T> {
     fn create(ctx: &Context<Self>) -> Self {
         let props = ctx.props();
 
-        let (headers, ..) = IndexedHeader::convert_header_list(&props.headers, 0, 0, None);
+        let headers = create_indexed_header_list(&props.headers);
 
         let mut store = DataFilter::new()
             .data(props.data.clone());

@@ -137,6 +137,10 @@ impl<T: 'static> IndexedHeaderGroup<T> {
     }
 }
 
+pub fn create_indexed_header_list<T: 'static>(list: &[Header<T>]) -> Vec<IndexedHeader<T>> {
+    IndexedHeader::convert_header_list(list, 0, 0, None).0
+}
+
 impl<T: 'static> IndexedHeader<T> {
 
     pub fn convert_header_list(
