@@ -130,7 +130,7 @@ pub struct IndexedHeaderGroup<T: 'static> {
 }
 
 impl<T: 'static> IndexedHeaderGroup<T> {
-    pub fn extract_column_list(&self, list: &mut Vec<DataTableColumn<T>>) {
+    pub fn extract_column_list(&self, list: &mut Vec<Rc<IndexedHeaderSingle<T>>>) {
         for child in &self.children {
             child.extract_column_list(list);
         }
@@ -236,9 +236,9 @@ impl<T: 'static> IndexedHeader<T> {
         }
     }
 
-    pub fn extract_column_list(&self, list: &mut Vec<DataTableColumn<T>>) {
+    pub fn extract_column_list(&self, list: &mut Vec<Rc<IndexedHeaderSingle<T>>>) {
         match self {
-            Self::Single(single) => list.push(single.column.clone()),
+            Self::Single(single) => list.push(Rc::clone(&single)),
             Self::Group(group) => group.extract_column_list(list),
         }
     }

@@ -3,7 +3,7 @@ use std::cmp::Ordering;
 
 use crate::props::SorterFn;
 
-use super::{IndexedHeader, DataTableColumn};
+use super::{IndexedHeader, IndexedHeaderSingle};
 
 /// Store for header state
 ///
@@ -15,7 +15,7 @@ pub(crate) struct HeaderState<T: 'static> {
     // map cell_idx => &IndexedHeader
     cell_map: Vec<IndexedHeader<T>>,
     // map col_idx => DataTableColumn
-    columns: Vec<DataTableColumn<T>>,
+    columns: Vec<Rc<IndexedHeaderSingle<T>>>,
     // map col_idx => ascending
     sorters: Vec<Option<bool>>,
     // map cell_idx => hidden
@@ -41,7 +41,7 @@ impl<T: 'static> HeaderState<T> {
         }
 
         let sorters = columns.iter()
-            .map(|column| column.sort_order)
+            .map(|column| column.column.sort_order)
             .collect();
 
         Self {
@@ -122,7 +122,7 @@ impl<T: 'static> HeaderState<T> {
         &self.hidden
     }
 
-    pub fn columns(&self) -> &[DataTableColumn<T>] {
+    pub fn columns(&self) -> &[Rc<IndexedHeaderSingle<T>>] {
         &self.columns
     }
 
@@ -133,7 +133,7 @@ impl<T: 'static> HeaderState<T> {
     pub fn copy_observed_widths(&mut self, col_idx: usize, observed_widths: &[Option<usize>]) {
         for i in 0..col_idx.min(self.columns.len()) {
             if self.get_width(i).is_none() {
-                if self.columns[i].width.contains("fr") { // flex columns
+                if self.columns[i].column.width.contains("fr") { // flex columns
                     if let Some(Some(observed_width)) = observed_widths.get(i) {
                         self.set_width(i, Some(*observed_width + 1));
                     }
@@ -153,14 +153,12 @@ impl<T: 'static> HeaderState<T> {
                     None => return None,
                 };
 
-                let column = match self.columns.get(col_idx) {
-                    None => return None,
-                    Some(column) => column,
-                };
-
-                match &column.sorter {
+                match self.columns.get(col_idx) {
                     None => None,
-                    Some(sorter) => Some((sorter.clone(), order)),
+                    Some(cell) => {
+                        cell.column.sorter.as_ref()
+                            .map(|sorter| (sorter.clone(), order))
+                    }
                 }
             })
             .collect();

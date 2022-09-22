@@ -222,11 +222,11 @@ impl <T: 'static> PwtDataTableHeader<T> {
     fn compute_grid_style(&self) -> String {
 
         let mut grid_style = String::from("user-select: none; display:grid; grid-template-columns:");
-        for (col_idx, column) in self.state.columns().iter().enumerate() {
+        for (col_idx, cell) in self.state.columns().iter().enumerate() {
             if let Some(width) = self.state.get_width(col_idx) {
                 grid_style.push_str(&format!("{}px", width));
             } else {
-                grid_style.push_str(&column.width);
+                grid_style.push_str(&cell.column.width);
             }
             grid_style.push(' ');
         }
