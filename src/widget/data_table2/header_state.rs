@@ -126,6 +126,10 @@ impl<T: 'static> HeaderState<T> {
         &self.columns
     }
 
+    pub fn column_count(&self) -> usize {
+        self.columns.len()
+    }
+
     pub fn copy_observed_widths(&mut self, col_idx: usize, observed_widths: &[Option<usize>]) {
         for i in 0..col_idx.min(self.columns.len()) {
             if self.get_width(i).is_none() {

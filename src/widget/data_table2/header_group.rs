@@ -109,6 +109,7 @@ pub enum IndexedHeader<T: 'static> {
 #[derivative(Clone(bound=""), PartialEq(bound=""))]
 pub struct IndexedHeaderSingle<T: 'static> {
     pub cell_idx: usize,
+    pub start_col: usize,
     pub parent: Option<usize>,
     pub column: DataTableColumn<T>,
 }
@@ -117,6 +118,7 @@ pub struct IndexedHeaderSingle<T: 'static> {
 #[derivative(Clone(bound=""), PartialEq(bound=""))]
 pub struct IndexedHeaderGroup<T: 'static> {
     pub cell_idx: usize,
+    pub start_col: usize,
     pub parent: Option<usize>,
     pub colspan: usize,
     pub cell_count: usize,
@@ -140,6 +142,7 @@ impl<T: 'static> IndexedHeader<T> {
     pub fn convert_header_list(
         list: &[Header<T>],
         cell_idx: usize,
+        start_col: usize,
         parent: Option<usize>,
     ) -> (Vec<IndexedHeader<T>>, usize, usize) {
         let mut span = 0;
@@ -151,14 +154,14 @@ impl<T: 'static> IndexedHeader<T> {
         for child in list {
             match child {
                 Header::Single(column) => {
-                    let cell = Self::convert_column(column, cell_idx, parent);
+                    let cell = Self::convert_column(column, cell_idx, start_col + span, parent);
                     indexed_list.push(IndexedHeader::Single(Rc::new(cell)));
                     span += 1;
                     cell_idx += 1;
                     cells += 1;
                 }
                 Header::Group(group) => {
-                    let indexed_group = Self::convert_group(group, cell_idx, parent);
+                    let indexed_group = Self::convert_group(group, cell_idx, start_col + span, parent);
                     span += indexed_group.colspan;
                     cell_idx += indexed_group.cell_count;
                     cells += indexed_group.cell_count;
@@ -169,17 +172,33 @@ impl<T: 'static> IndexedHeader<T> {
         (indexed_list, span, cells)
     }
 
-    pub fn convert_column(column: &DataTableColumn<T>, cell_idx: usize, parent: Option<usize>) -> IndexedHeaderSingle<T> {
+    pub fn convert_column(
+        column: &DataTableColumn<T>,
+        cell_idx: usize,
+        start_col: usize,
+        parent: Option<usize>,
+    ) -> IndexedHeaderSingle<T> {
         IndexedHeaderSingle {
             cell_idx,
+            start_col,
             parent,
             column: column.clone(),
         }
     }
 
-    pub fn convert_group(group: &HeaderGroup<T>, cell_idx: usize, parent: Option<usize>) -> IndexedHeaderGroup<T> {
+    pub fn convert_group(
+        group: &HeaderGroup<T>,
+        cell_idx: usize,
+        start_col: usize,
+        parent: Option<usize>,
+    ) -> IndexedHeaderGroup<T> {
 
-        let (children, span, cells) = Self::convert_header_list(&group.children, cell_idx + 1, Some(cell_idx));
+        let (children, span, cells) = Self::convert_header_list(
+            &group.children,
+            cell_idx + 1,
+            start_col,
+            Some(cell_idx),
+        );
 
         let cell_count = cells + 1;
         let colspan = span.max(1); // at least one column for the group header
@@ -187,6 +206,7 @@ impl<T: 'static> IndexedHeader<T> {
         let indexed_group = IndexedHeaderGroup {
             parent,
             cell_idx,
+            start_col,
             colspan,
             cell_count,
             name: group.name.clone(),

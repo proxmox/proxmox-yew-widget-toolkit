@@ -94,18 +94,12 @@ fn column_to_rows<T: 'static>(
     cell: &IndexedHeaderSingle<T>,
     props: &DataTableHeader<T>,
     link: &Scope<PwtDataTableHeader<T>>,
-    _cell_idx: usize,
     start_row: usize,
-    start_col: usize,
     rows: &mut Vec<Vec<Html>>,
 ) {
-    loop {
-        if rows.len() < (start_row + 1) {
-            rows.push(Vec::new());
-        } else {
-            break;
-        }
-    }
+    rows.resize((start_row + 1).max(rows.len()), Vec::new());
+
+    let start_col = cell.start_col;
 
     let sort_order = state.get_column_sorter(start_col);
     let sort_icon = match sort_order {
@@ -167,34 +161,19 @@ fn header_list_to_rows<T: 'static>(
     list: &[IndexedHeader<T>],
     props: &DataTableHeader<T>,
     link: &Scope<PwtDataTableHeader<T>>,
-    cell_idx: usize,
     start_row: usize,
-    start_col: usize,
     rows: &mut Vec<Vec<Html>>,
-) -> (usize, usize) {
-
-    let mut span = 0;
-    let mut cells = 0;
-    let mut cell_idx = cell_idx;
-
+) {
     for child in list {
         match child {
             IndexedHeader::Single(column) => {
-                column_to_rows(state, column, props, link, cell_idx, start_row, start_col + span, rows);
-                span += 1;
-                cell_idx += 1;
-                cells += 1;
+                column_to_rows(state, column, props, link, start_row, rows);
             }
             IndexedHeader::Group(group) => {
-                let (cols, cell_count) = group_to_rows(state, group, props, link, cell_idx, start_row, start_col + span, rows);
-                span += cols;
-                cell_idx += cell_count;
-                cells += cell_count;
+                group_to_rows(state, group, props, link, start_row, rows);
             }
         }
     }
-
-    (span, cells)
 }
 
 fn group_to_rows<T: 'static>(
@@ -202,23 +181,12 @@ fn group_to_rows<T: 'static>(
     group: &IndexedHeaderGroup<T>,
     props: &DataTableHeader<T>,
     link: &Scope<PwtDataTableHeader<T>>,
-    cell_idx: usize,
     start_row: usize,
-    start_col: usize,
     rows: &mut Vec<Vec<Html>>,
-) -> (usize, usize) {
-    loop {
-        if rows.len() < (start_row + 1) {
-            rows.push(Vec::new());
-        } else {
-            break;
-        }
-    }
+) {
+    rows.resize((start_row + 1).max(rows.len()), Vec::new());
 
-    let (span, cells) = header_list_to_rows(state, &group.children, props, link, cell_idx + 1, start_row + 1, start_col, rows);
-
-    let cells = cells + 1;
-    let span = span.max(1); // at least one column for the group header
+    header_list_to_rows(state, &group.children, props, link, start_row + 1, rows);
 
     rows[start_row].push(
         Container::new()
@@ -227,12 +195,14 @@ fn group_to_rows<T: 'static>(
             .attribute("tabindex", "-1")
             .class("pwt-datatable2-group-header-item")
             .class(props.header_class.clone())
-            .attribute("style", format!("grid-column: {} / span {}", start_col + 1, span))
+            .attribute("style", format!(
+                "grid-column: {} / span {}",
+                group.start_col + 1,
+                group.colspan,
+            ))
             .with_child(group.name.clone())
             .into()
     );
-
-    (span, cells)
 }
 
 pub struct PwtDataTableHeader<T: 'static> {
@@ -341,14 +311,20 @@ impl <T: 'static> Component for PwtDataTableHeader<T> {
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
 
-        //let grid_size = props.grid_size();
-        //log::info!("GRID SIZE {:?}", grid_size);
-
         let mut rows = Vec::new();
 
-        let (column_count, _) = header_list_to_rows(&self.state, props.headers.as_ref(), props, ctx.link(), 0, 0, 0, &mut rows);
+        header_list_to_rows(
+            &self.state,
+            props.headers.as_ref(),
+            props,
+            ctx.link(),
+            0,
+            &mut rows,
+        );
 
         let rows: Vec<Html> = rows.into_iter().map(|row| row.into_iter()).flatten().collect();
+
+        let column_count = self.state.column_count();
 
         // add some space at the end to make room for the tables vertical scrollbar
         let last = Container::new()

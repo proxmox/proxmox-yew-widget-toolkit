@@ -560,7 +560,7 @@ impl <T: 'static> Component for PwtDataTable<T> {
     fn create(ctx: &Context<Self>) -> Self {
         let props = ctx.props();
 
-        let (headers, ..) = IndexedHeader::convert_header_list(&props.headers, 0, None);
+        let (headers, ..) = IndexedHeader::convert_header_list(&props.headers, 0, 0, None);
 
         let mut store = DataFilter::new()
             .data(props.data.clone());
