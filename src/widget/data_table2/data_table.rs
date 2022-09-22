@@ -13,7 +13,7 @@ use crate::props::{Selection2, SorterFn};
 use crate::state::{optional_rc_ptr_eq, DataFilter};
 use crate::widget::{get_unique_element_id, Container, Column, SizeObserver};
 
-use super::{DataTableColumn, DataTableHeader, Header};
+use super::{DataTableColumn, DataTableHeader, Header, IndexedHeader};
 
 pub enum Msg<T: 'static> {
     ChangeSort(SorterFn<T>),
@@ -257,6 +257,9 @@ pub struct PwtDataTable<T: 'static> {
     has_focus: bool,
 
     store: DataFilter<T>,
+
+    headers: Rc<Vec<IndexedHeader<T>>>,
+
     columns: Vec<DataTableColumn<T>>,
     column_widths: Vec<usize>,
     virtual_scroll: bool,
@@ -557,6 +560,8 @@ impl <T: 'static> Component for PwtDataTable<T> {
     fn create(ctx: &Context<Self>) -> Self {
         let props = ctx.props();
 
+        let (headers, ..) = IndexedHeader::convert_header_list(&props.headers, 0, None);
+
         let mut store = DataFilter::new()
             .data(props.data.clone());
         // fixme: set cursor to first selected item
@@ -564,6 +569,7 @@ impl <T: 'static> Component for PwtDataTable<T> {
 
         store.set_cursor(Some(0));
 
+        // fixme: remove
         let mut columns = Vec::new();
         for header in props.headers.iter() {
             header.extract_column_list(&mut columns);
@@ -581,6 +587,7 @@ impl <T: 'static> Component for PwtDataTable<T> {
         let virtual_scroll = props.virtual_scroll.unwrap_or(row_count >= VIRTUAL_SCROLL_TRIGGER);
 
         let mut me = Self {
+            headers: Rc::new(headers),
             unique_id: get_unique_element_id(),
             has_focus: false,
             store,
@@ -801,7 +808,7 @@ impl <T: 'static> Component for PwtDataTable<T> {
                     .class("pwt-overflow-hidden")
                     .class("pwt-datatable2-header")
                     .with_child(
-                        DataTableHeader::new(props.headers.clone())
+                        DataTableHeader::new(self.headers.clone())
                             .header_class(props.header_class.clone())
                             .on_size_change(ctx.link().callback(Msg::ColumnWidthChange))
                             .on_sort_change(ctx.link().callback(Msg::ChangeSort))

@@ -3,7 +3,7 @@ use std::cmp::Ordering;
 
 use crate::props::SorterFn;
 
-use super::{Header, DataTableColumn};
+use super::{IndexedHeader, DataTableColumn};
 
 /// Store for header state
 ///
@@ -11,7 +11,9 @@ use super::{Header, DataTableColumn};
 /// - column hidden
 
 pub(crate) struct HeaderState<T: 'static> {
-    headers: Rc<Vec<Header<T>>>,
+    headers: Rc<Vec<IndexedHeader<T>>>,
+    // map cell_idx => &IndexedHeader
+    cell_map: Vec<IndexedHeader<T>>,
     // map col_idx => DataTableColumn
     columns: Vec<DataTableColumn<T>>,
     // map col_idx => ascending
@@ -23,7 +25,12 @@ pub(crate) struct HeaderState<T: 'static> {
 }
 
 impl<T: 'static> HeaderState<T> {
-    pub fn new(headers: Rc<Vec<Header<T>>>) -> Self {
+    pub fn new(headers: Rc<Vec<IndexedHeader<T>>>) -> Self {
+
+        let mut cell_map = Vec::new();
+        for header in headers.iter() {
+            header.extract_cell_list(&mut cell_map);
+        }
 
         let hidden = Vec::new(); // fixme
 
@@ -42,6 +49,7 @@ impl<T: 'static> HeaderState<T> {
             columns,
             sorters,
             hidden,
+            cell_map,
             widths: Vec::new(),
         }
     }
@@ -89,14 +97,12 @@ impl<T: 'static> HeaderState<T> {
     }
 
     pub fn set_hidden(&mut self, cell_idx: usize, hidden: bool) {
+        log::info!("SH0 {} {}", cell_idx, self.hidden.len());
         self.hidden.resize((cell_idx + 1).max(self.hidden.len()), false);
-        let header = match find_cell(&self.headers, cell_idx, &mut 0) {
-            Some(header) => header,
-            None => return,
-        };
-        
-        let cell_end = get_cell_end(header, cell_idx);
-        for idx in cell_idx..cell_end {
+        log::info!("SH1 {} {}", cell_idx, self.hidden.len());
+        let header = &self.cell_map[cell_idx];
+
+        for idx in header.cell_range() {
             self.hidden.resize((idx + 1).max(self.hidden.len()), false);
             self.hidden[idx] = hidden;
         }
@@ -115,7 +121,7 @@ impl<T: 'static> HeaderState<T> {
     pub fn hidden_cells(&self) -> &[bool] {
         &self.hidden
     }
-    
+
     pub fn columns(&self) -> &[DataTableColumn<T>] {
         &self.columns
     }
@@ -169,40 +175,4 @@ impl<T: 'static> HeaderState<T> {
             Ordering::Equal
         })
     }
-}
-
-fn get_cell_end<T: 'static>(cell: &Header<T>, cell_idx: usize) -> usize {
-    match cell {
-        Header::Single(_) => {
-            return cell_idx + 1;
-        }
-        Header::Group(group) => {
-            let mut cur_idx = cell_idx + 1;
-            for child in &group.children {
-                cur_idx = get_cell_end(child, cur_idx);
-            }
-            return cur_idx;
-        }
-    }
-}
-
-
-fn find_cell<'a, T: 'static>(headers: &'a [Header<T>], cell_idx: usize, cur_idx: &mut usize) -> Option<&'a Header<T>> {
-    for header in headers {
-        if *cur_idx == cell_idx {
-            return Some(header);
-        }
-        match header {
-            Header::Single(_) => {
-                *cur_idx += 1;
-            }
-            Header::Group(group) => {
-                *cur_idx += 1;
-                if let Some(cell) = find_cell(&group.children, cell_idx, cur_idx) {
-                    return Some(cell);
-                }
-            }
-        }
-    }
-    None
 }

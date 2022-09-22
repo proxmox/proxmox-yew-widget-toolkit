@@ -9,7 +9,7 @@ use yew::html::IntoEventCallback;
 use crate::prelude::*;
 use crate::widget::{Column, Container};
 
-use super::Header;
+use super::IndexedHeader;
 
 #[derive(Properties)]
 #[derive(Derivative)]
@@ -20,13 +20,13 @@ pub struct HeaderMenu<T: 'static> {
     pub on_hide_click: Option<Callback<usize>>,
 
     #[derivative(PartialEq(compare_with="Rc::ptr_eq"))]
-    headers: Rc<Vec<Header<T>>>,
+    headers: Rc<Vec<IndexedHeader<T>>>,
     hidden: Vec<bool>,
 }
 
 impl<T: 'static> HeaderMenu<T> {
 
-    pub fn new(headers: Rc<Vec<Header<T>>>, hidden: &[bool]) -> Self {
+    pub fn new(headers: Rc<Vec<IndexedHeader<T>>>, hidden: &[bool]) -> Self {
         yew::props!(Self {
             headers,
             hidden: Vec::from(hidden),
@@ -45,7 +45,7 @@ impl<T: 'static> HeaderMenu<T> {
 }
 
 fn headers_to_menu<T: 'static>(
-    headers: &[Header<T>],
+    headers: &[IndexedHeader<T>],
     props: &HeaderMenu<T>,
     indent_level: usize,
     cell_idx: &mut usize,
@@ -73,12 +73,12 @@ fn headers_to_menu<T: 'static>(
         let hidden = match hidden { true => html!{"X "}, false => html!{"V "} };
 
         match header {
-            Header::Single(column) => {
-                let label = html!{<div {onclick}>{hidden}{indent.clone()}{column.name.clone()}</div>};
+            IndexedHeader::Single(cell) => {
+                let label = html!{<div {onclick}>{hidden}{indent.clone()}{cell.column.name.clone()}</div>};
                 menu.push(label);
                 *cell_idx += 1;
             }
-            Header::Group(group) => {
+            IndexedHeader::Group(group) => {
                 let label = html!{
                     <div {onclick}>
                     {hidden}

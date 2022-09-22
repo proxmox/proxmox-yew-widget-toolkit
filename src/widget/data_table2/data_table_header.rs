@@ -13,7 +13,10 @@ use crate::props::SorterFn;
 use crate::widget::{Container, Fa};
 use crate::widget::focus::{focus_next_tabable, init_roving_tabindex};
 
-use super::{DataTableColumn, Header, HeaderGroup, HeaderMenu, HeaderState, ResizableHeader};
+use super::{
+    IndexedHeader, IndexedHeaderSingle, IndexedHeaderGroup,
+    HeaderMenu, HeaderState, ResizableHeader,
+};
 
 #[derive(Properties)]
 #[derive(Derivative)]
@@ -22,7 +25,7 @@ pub struct DataTableHeader<T: 'static> {
     pub node_ref: Option<NodeRef>,
     pub key: Option<Key>,
 
-    headers: Rc<Vec<Header<T>>>,
+    headers: Rc<Vec<IndexedHeader<T>>>,
 
     pub on_size_change: Option<Callback<Vec<usize>>>,
     pub on_sort_change: Option<Callback<SorterFn<T>>>,
@@ -36,7 +39,7 @@ pub struct DataTableHeader<T: 'static> {
 impl<T: 'static> DataTableHeader<T> {
 
     /// Create a new instance.
-    pub fn new(headers: Rc<Vec<Header<T>>>) -> Self {
+    pub fn new(headers: Rc<Vec<IndexedHeader<T>>>) -> Self {
         yew::props!(Self { headers })
     }
 
@@ -88,7 +91,7 @@ pub enum Msg {
 
 fn column_to_rows<T: 'static>(
     state: &HeaderState<T>,
-    column: &DataTableColumn<T>,
+    cell: &IndexedHeaderSingle<T>,
     props: &DataTableHeader<T>,
     link: &Scope<PwtDataTableHeader<T>>,
     _cell_idx: usize,
@@ -128,7 +131,7 @@ fn column_to_rows<T: 'static>(
                 ResizableHeader::new()
                     .class(props.header_class.clone())
                     .class("pwt-w-100 pwt-h-100")
-                    .content(html!{<>{sort_icon}{&column.name}</>})
+                    .content(html!{<>{sort_icon}{&cell.column.name}</>})
                     .on_resize({
                         let link = link.clone();
                         move |width| {
@@ -161,7 +164,7 @@ fn column_to_rows<T: 'static>(
 
 fn header_list_to_rows<T: 'static>(
     state: &HeaderState<T>,
-    list: &[Header<T>],
+    list: &[IndexedHeader<T>],
     props: &DataTableHeader<T>,
     link: &Scope<PwtDataTableHeader<T>>,
     cell_idx: usize,
@@ -176,13 +179,13 @@ fn header_list_to_rows<T: 'static>(
 
     for child in list {
         match child {
-            Header::Single(column) => {
+            IndexedHeader::Single(column) => {
                 column_to_rows(state, column, props, link, cell_idx, start_row, start_col + span, rows);
                 span += 1;
                 cell_idx += 1;
                 cells += 1;
             }
-            Header::Group(group) => {
+            IndexedHeader::Group(group) => {
                 let (cols, cell_count) = group_to_rows(state, group, props, link, cell_idx, start_row, start_col + span, rows);
                 span += cols;
                 cell_idx += cell_count;
@@ -196,7 +199,7 @@ fn header_list_to_rows<T: 'static>(
 
 fn group_to_rows<T: 'static>(
     state: &HeaderState<T>,
-    group: &HeaderGroup<T>,
+    group: &IndexedHeaderGroup<T>,
     props: &DataTableHeader<T>,
     link: &Scope<PwtDataTableHeader<T>>,
     cell_idx: usize,

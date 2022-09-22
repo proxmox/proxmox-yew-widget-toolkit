@@ -1,3 +1,5 @@
+use std::rc::Rc;
+use std::ops::Range;
 use derivative::Derivative;
 
 use yew::prelude::*;
@@ -93,4 +95,132 @@ impl<T: 'static> HeaderGroup<T> {
             child.extract_column_list(list);
         }
     }
+}
+
+
+#[derive(Derivative)]
+#[derivative(Clone(bound=""), PartialEq(bound=""))]
+pub enum IndexedHeader<T: 'static> {
+    Single(Rc<IndexedHeaderSingle<T>>),
+    Group(Rc<IndexedHeaderGroup<T>>),
+}
+
+#[derive(Derivative)]
+#[derivative(Clone(bound=""), PartialEq(bound=""))]
+pub struct IndexedHeaderSingle<T: 'static> {
+    pub cell_idx: usize,
+    pub parent: Option<usize>,
+    pub column: DataTableColumn<T>,
+}
+
+#[derive(Derivative)]
+#[derivative(Clone(bound=""), PartialEq(bound=""))]
+pub struct IndexedHeaderGroup<T: 'static> {
+    pub cell_idx: usize,
+    pub parent: Option<usize>,
+    pub colspan: usize,
+    pub cell_count: usize,
+    /// The name dispayed in the header.
+    pub name: AttrValue,
+    /// Unique Column Key
+    pub key: Option<Key>,
+    pub children: Vec<IndexedHeader<T>>,
+}
+
+impl<T: 'static> IndexedHeaderGroup<T> {
+    pub fn extract_column_list(&self, list: &mut Vec<DataTableColumn<T>>) {
+        for child in &self.children {
+            child.extract_column_list(list);
+        }
+    }
+}
+
+impl<T: 'static> IndexedHeader<T> {
+
+    pub fn convert_header_list(
+        list: &[Header<T>],
+        cell_idx: usize,
+        parent: Option<usize>,
+    ) -> (Vec<IndexedHeader<T>>, usize, usize) {
+        let mut span = 0;
+        let mut cells = 0;
+        let mut cell_idx = cell_idx;
+
+        let mut indexed_list = Vec::new();
+
+        for child in list {
+            match child {
+                Header::Single(column) => {
+                    let cell = Self::convert_column(column, cell_idx, parent);
+                    indexed_list.push(IndexedHeader::Single(Rc::new(cell)));
+                    span += 1;
+                    cell_idx += 1;
+                    cells += 1;
+                }
+                Header::Group(group) => {
+                    let indexed_group = Self::convert_group(group, cell_idx, parent);
+                    span += indexed_group.colspan;
+                    cell_idx += indexed_group.cell_count;
+                    cells += indexed_group.cell_count;
+                    indexed_list.push(Self::Group(Rc::new(indexed_group)));
+                }
+            }
+        }
+        (indexed_list, span, cells)
+    }
+
+    pub fn convert_column(column: &DataTableColumn<T>, cell_idx: usize, parent: Option<usize>) -> IndexedHeaderSingle<T> {
+        IndexedHeaderSingle {
+            cell_idx,
+            parent,
+            column: column.clone(),
+        }
+    }
+
+    pub fn convert_group(group: &HeaderGroup<T>, cell_idx: usize, parent: Option<usize>) -> IndexedHeaderGroup<T> {
+
+        let (children, span, cells) = Self::convert_header_list(&group.children, cell_idx + 1, Some(cell_idx));
+
+        let cell_count = cells + 1;
+        let colspan = span.max(1); // at least one column for the group header
+
+        let indexed_group = IndexedHeaderGroup {
+            parent,
+            cell_idx,
+            colspan,
+            cell_count,
+            name: group.name.clone(),
+            key: group.key.clone(),
+            children,
+        };
+
+        indexed_group
+    }
+
+    pub fn cell_range(&self) -> Range<usize> {
+       match self {
+           Self::Single(single) => single.cell_idx..(single.cell_idx+1),
+           Self::Group(group) => group.cell_idx..(group.cell_idx + group.cell_count),
+       }
+    }
+
+    pub fn extract_cell_list(&self, list: &mut Vec<IndexedHeader<T>>) {
+        match self {
+            Self::Single(single) => list.push(Self::Single(single.clone())),
+            Self::Group(group) => {
+                list.push(Self::Group(group.clone()));
+                for child in &group.children {
+                    child.extract_cell_list(list);
+                }
+            }
+        }
+    }
+
+    pub fn extract_column_list(&self, list: &mut Vec<DataTableColumn<T>>) {
+        match self {
+            Self::Single(single) => list.push(single.column.clone()),
+            Self::Group(group) => group.extract_column_list(list),
+        }
+    }
+
 }
