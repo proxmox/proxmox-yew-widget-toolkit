@@ -1,7 +1,7 @@
-use std::cmp::Ordering;
-
 use derivative::Derivative;
 use yew::prelude::*;
+use yew::html::IntoPropValue;
+use yew::virtual_dom::Key;
 
 use crate::props::{SorterFn, IntoSorterFn, RenderFn};
 
@@ -13,26 +13,40 @@ pub struct DataTableColumn<T> {
     #[prop_or(AttrValue::Static("auto"))]
     pub width: AttrValue,
     /// The name dispayed in the header.
-    pub name: String,
+    pub name: AttrValue,
+    /// Unique Column Key
+    pub key: Option<Key>,
     /// Horizontal table cell justification.
-    #[prop_or(String::from("left"))]
-    pub justify: String, // left, center, right, justify
+    #[prop_or(AttrValue::Static("left"))]
+    pub justify: AttrValue, // left, center, right, justify
     /// Render function (returns cell content)
     pub render: RenderFn<T>,
     /// Sorter function.
     ///
     /// Need to be set to enable column sorting.
     pub sorter: Option<SorterFn<T>>,
+    /// Sort order
+    ///
+    /// - `Some(true)`: Ascending
+    /// - `Some(false)`: Descending
+    /// - `None`: do not sort this columns
+    pub sort_order: Option<bool>,
 }
 
 impl<T> DataTableColumn<T> {
 
     /// Creates a new instance.
-    pub fn new(name: impl Into<String>) -> Self {
+    pub fn new(name: impl Into<AttrValue>) -> Self {
         yew::props!(Self {
             name: name.into(),
             render: RenderFn::new(|_| html!{ "-" }),
         })
+    }
+
+    /// Builder style method to set the yew `key` property
+    pub fn key(mut self, key: impl Into<Key>) -> Self {
+        self.key = Some(key.into());
+        self
     }
 
     /// Builder style method to set the column width.
@@ -80,13 +94,13 @@ impl<T> DataTableColumn<T> {
     }
 
     /// Builder style method to set the horizontal cell justification.
-    pub fn justify(mut self, justify: impl Into<String>) -> Self {
+    pub fn justify(mut self, justify: impl Into<AttrValue>) -> Self {
         self.set_justify(justify);
         self
     }
 
     /// Method to set the horizontal cell justification.
-    pub fn set_justify(&mut self, justify: impl Into<String>) {
+    pub fn set_justify(&mut self, justify: impl Into<AttrValue>) {
         self.justify = justify.into();
     }
 
@@ -101,33 +115,10 @@ impl<T> DataTableColumn<T> {
         self.sorter = sorter.into_sorter_fn();
         self
     }
-}
 
-pub(crate) fn create_combined_sorter_fn<T: 'static>(
-    sorters: &[(usize, bool)],
-    columns: &[DataTableColumn<T>]
-) -> SorterFn<T> {
-    let sorters: Vec<(SorterFn<T>, bool)> = sorters
-        .iter()
-        .filter_map(|(sort_idx, ascending)| {
-            match &columns[*sort_idx].sorter {
-                None => None,
-                Some(sorter) => Some((sorter.clone(), *ascending)),
-            }
-        })
-        .collect();
-
-    SorterFn::new(move |a: &T, b: &T| {
-        for (sort_fn, ascending) in &sorters {
-            match if *ascending {
-                sort_fn.cmp(a, b)
-            } else {
-                sort_fn.cmp(b, a)
-            } {
-                Ordering::Equal => { /* continue */ },
-                other => return other,
-            }
-        }
-        Ordering::Equal
-    })
+    /// Builder style method to set the sort order
+    pub fn sort_order(mut self, order: impl IntoPropValue<Option<bool>>) -> Self {
+        self.sort_order = order.into_prop_value();
+        self
+    }
 }

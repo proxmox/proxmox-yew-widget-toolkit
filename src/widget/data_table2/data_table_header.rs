@@ -9,10 +9,11 @@ use yew::virtual_dom::{Key, VComp, VNode};
 use yew::html::{IntoPropValue, IntoEventCallback, Scope};
 
 use crate::prelude::*;
+use crate::props::SorterFn;
 use crate::widget::{Container, Fa};
 use crate::widget::focus::{focus_next_tabable, init_roving_tabindex};
 
-use super::{DataTableColumn, Header, HeaderGroup, HeaderMenu, ResizableHeader};
+use super::{DataTableColumn, Header, HeaderGroup, HeaderMenu, HeaderState, ResizableHeader};
 
 #[derive(Properties)]
 #[derive(Derivative)]
@@ -24,23 +25,19 @@ pub struct DataTableHeader<T: 'static> {
     headers: Rc<Vec<Header<T>>>,
 
     pub on_size_change: Option<Callback<Vec<usize>>>,
-    pub on_sort_change: Option<Callback<(usize, bool, Option<bool>)>>,
+    pub on_sort_change: Option<Callback<SorterFn<T>>>,
 
     /// set class for header cells
     #[prop_or_default]
     pub header_class: Classes,
-
-    /// Sort order state for columns.
-    sorters: Vec<(usize, bool)>,
 }
 
 
 impl<T: 'static> DataTableHeader<T> {
 
     /// Create a new instance.
-    pub fn new(headers: Rc<Vec<Header<T>>>, sorters: &[(usize, bool)]) -> Self {
-        let sorters: Vec<(usize, bool)> = sorters.into();
-        yew::props!(Self { headers, sorters })
+    pub fn new(headers: Rc<Vec<Header<T>>>) -> Self {
+        yew::props!(Self { headers })
     }
 
     pub fn key(mut self, key: impl Into<Key>) -> Self {
@@ -63,7 +60,7 @@ impl<T: 'static> DataTableHeader<T> {
     /// Builder style method to set the sort change callback
     ///
     /// Callback partameters: (column_num, ctrl, order)
-    pub fn on_sort_change(mut self, cb: impl IntoEventCallback<(usize, bool, Option<bool>)>) -> Self {
+    pub fn on_sort_change(mut self, cb: impl IntoEventCallback<SorterFn<T>>) -> Self {
         self.on_sort_change = cb.into_event_callback();
         self
     }
@@ -83,18 +80,22 @@ impl<T: 'static> DataTableHeader<T> {
 pub enum Msg {
     ResizeColumn(usize, usize),
     ColumnSizeReset(usize),
-    ColumnSizeChange(usize, i32),
+    ColumnSizeChange(usize, i32), // fixme
+    ColumnSortChange(usize, bool, Option<bool>),
+    HideClick(usize)
 }
 
 
-fn header_to_rows<T: 'static>(
-    header: &Header<T>,
+fn column_to_rows<T: 'static>(
+    state: &HeaderState<T>,
+    column: &DataTableColumn<T>,
     props: &DataTableHeader<T>,
     link: &Scope<PwtDataTableHeader<T>>,
+    _cell_idx: usize,
     start_row: usize,
     start_col: usize,
     rows: &mut Vec<Vec<Html>>,
-) -> usize {
+) {
     loop {
         if rows.len() < (start_row + 1) {
             rows.push(Vec::new());
@@ -102,89 +103,107 @@ fn header_to_rows<T: 'static>(
             break;
         }
     }
-    match header {
-        Header::Single(column) => {
-            let sort_order = props.sorters.iter().find_map(|(idx, asc)| {
-                (*idx == start_col).then(|| *asc)
-            });
 
-            let sort_icon = match sort_order {
-                Some(ascending) => {
-                    if ascending {
-                        Fa::new("long-arrow-up").class("pwt-pe-1").into()
-                    } else {
-                        Fa::new("long-arrow-down").class("pwt-pe-1").into()
-                    }
-                }
-                None =>  html!{},
-            };
+    let sort_order = state.get_column_sorter(start_col);
+    let sort_icon = match sort_order {
+        Some(ascending) => {
+            if ascending {
+                Fa::new("long-arrow-up").class("pwt-pe-1").into()
+            } else {
+                Fa::new("long-arrow-down").class("pwt-pe-1").into()
+            }
+        }
+        None =>  html!{},
+    };
 
-            rows[start_row].push(
-                Container::new()
-                    .tag("th")
-                    .attribute("role", "columnheader")
-                    .attribute(
-                        "style",
-                        format!("grid-row: {} / 10;grid-column-start: {}", start_row + 1, start_col + 1)
-                    )
-                    .with_child(
-                        ResizableHeader::new()
-                            .class(props.header_class.clone())
-                            .class("pwt-w-100 pwt-h-100")
-                            .content(html!{<>{sort_icon}{&column.name}</>})
-                            .on_resize({
-                                let link = link.clone();
-                                move |width| {
-                                    let width: usize = if width > 0 { width as usize } else  { 0 };
-                                    link.send_message(Msg::ResizeColumn(start_col, width));
-                                }
-                            })
-                            .on_size_reset(link.callback(move |_| Msg::ColumnSizeReset(start_col)))
-                            .on_size_change(link.callback(move |w| Msg::ColumnSizeChange(start_col, w)))
-                            .picker({
-                                let on_sort_change = props.on_sort_change.clone();
-                                let headers = Rc::clone(&props.headers);
-                                move |_: &()| {
-                                    HeaderMenu::new(Rc::clone(&headers))
-                                        .on_sort_change({
-                                            let on_sort_change = on_sort_change.clone();
-                                            move |asc| {
-                                                if let Some(on_sort_change) = &on_sort_change {
-
-                                                    log::info!("SC EMIT {}", start_col);
-                                                    on_sort_change.emit((start_col, false, Some(asc)));
-                                                }
-                                            }
-                                        })
-                                        .into()
-                                }
-                            })
-                    )
-                    .ondblclick({
-                        let on_sort_change = props.on_sort_change.clone();
-                        move |event: MouseEvent| {
-                            if let Some(on_sort_change) = &on_sort_change {
-                                on_sort_change.emit((start_col, event.ctrl_key(), None));
-                            }
+    rows[start_row].push(
+        Container::new()
+            .tag("th")
+            .attribute("role", "columnheader")
+            .attribute(
+                "style",
+                format!("grid-row: {} / 10;grid-column-start: {}", start_row + 1, start_col + 1)
+            )
+            .with_child(
+                ResizableHeader::new()
+                    .class(props.header_class.clone())
+                    .class("pwt-w-100 pwt-h-100")
+                    .content(html!{<>{sort_icon}{&column.name}</>})
+                    .on_resize({
+                        let link = link.clone();
+                        move |width| {
+                            let width: usize = if width > 0 { width as usize } else  { 0 };
+                            link.send_message(Msg::ResizeColumn(start_col, width));
                         }
                     })
-                    .into()
-            );
-            1
-        }
-        Header::Group(group) => group_to_rows(group, props, link, start_row, start_col, rows),
-    }
+                    .on_size_reset(link.callback(move |_| Msg::ColumnSizeReset(start_col)))
+                    .on_size_change(link.callback(move |w| Msg::ColumnSizeChange(start_col, w)))
+                    .picker({
+                        let headers = Rc::clone(&props.headers);
+                        let link = link.clone();
+                        let hidden = Vec::from(state.hidden_cells());
+                        move |_: &()| {
+                            HeaderMenu::new(Rc::clone(&headers), &hidden)
+                                .on_sort_change(link.callback(move |asc| {
+                                    Msg::ColumnSortChange(start_col, false, Some(asc))
+                                }))
+                                .on_hide_click(link.callback(Msg::HideClick))
+                                .into()
+                        }
+                    })
+            )
+            .ondblclick(link.callback(move |event: MouseEvent| {
+                Msg::ColumnSortChange(start_col, event.ctrl_key(), None)
+            }))
+            .into()
+    );
 }
 
+fn header_list_to_rows<T: 'static>(
+    state: &HeaderState<T>,
+    list: &[Header<T>],
+    props: &DataTableHeader<T>,
+    link: &Scope<PwtDataTableHeader<T>>,
+    cell_idx: usize,
+    start_row: usize,
+    start_col: usize,
+    rows: &mut Vec<Vec<Html>>,
+) -> (usize, usize) {
+
+    let mut span = 0;
+    let mut cells = 0;
+    let mut cell_idx = cell_idx;
+
+    for child in list {
+        match child {
+            Header::Single(column) => {
+                column_to_rows(state, column, props, link, cell_idx, start_row, start_col + span, rows);
+                span += 1;
+                cell_idx += 1;
+                cells += 1;
+            }
+            Header::Group(group) => {
+                let (cols, cell_count) = group_to_rows(state, group, props, link, cell_idx, start_row, start_col + span, rows);
+                span += cols;
+                cell_idx += cell_count;
+                cells += cell_count;
+            }
+        }
+    }
+
+    (span, cells)
+}
 
 fn group_to_rows<T: 'static>(
+    state: &HeaderState<T>,
     group: &HeaderGroup<T>,
     props: &DataTableHeader<T>,
     link: &Scope<PwtDataTableHeader<T>>,
+    cell_idx: usize,
     start_row: usize,
     start_col: usize,
     rows: &mut Vec<Vec<Html>>,
-) -> usize {
+) -> (usize, usize) {
     loop {
         if rows.len() < (start_row + 1) {
             rows.push(Vec::new());
@@ -193,35 +212,31 @@ fn group_to_rows<T: 'static>(
         }
     }
 
-    let child_start_row =  if group.content.is_some() { start_row + 1 } else { start_row };
-    let mut span = 0;
-    for child in &group.children {
-        span += header_to_rows(child, props, link, child_start_row, start_col + span, rows);
-    }
+    let (span, cells) = header_list_to_rows(state, &group.children, props, link, cell_idx + 1, start_row + 1, start_col, rows);
 
-    if let Some(content) = group.content.clone() {
-        if span == 0 { span = 1; }
-        rows[start_row].push(
-            Container::new()
-                .tag("th")
-                .attribute("role", "columnheader")
-                .attribute("tabindex", "-1")
-                .class("pwt-datatable2-group-header-item")
-                .class(props.header_class.clone())
-                .attribute("style", format!("grid-column: {} / span {}", start_col + 1, span))
-                .with_child(content)
-                .into()
-        );
-    }
+    let cells = cells + 1;
+    let span = span.max(1); // at least one column for the group header
 
-    span
+    rows[start_row].push(
+        Container::new()
+            .tag("th")
+            .attribute("role", "columnheader")
+            .attribute("tabindex", "-1")
+            .class("pwt-datatable2-group-header-item")
+            .class(props.header_class.clone())
+            .attribute("style", format!("grid-column: {} / span {}", start_col + 1, span))
+            .with_child(group.name.clone())
+            .into()
+    );
+
+    (span, cells)
 }
 
 pub struct PwtDataTableHeader<T: 'static> {
     node_ref: NodeRef,
-    columns: Vec<DataTableColumn<T>>,
+    /// Sort order state for columns.
+    state: HeaderState<T>,
 
-    column_widths: Vec<Option<usize>>, // for column resize
     observed_widths: Vec<Option<usize>>,
 
     timeout: Option<Timeout>,
@@ -234,8 +249,8 @@ impl <T: 'static> PwtDataTableHeader<T> {
     fn compute_grid_style(&self) -> String {
 
         let mut grid_style = String::from("user-select: none; display:grid; grid-template-columns:");
-        for (col_idx, column) in self.columns.iter().enumerate() {
-            if let Some(Some(width)) = self.column_widths.get(col_idx) {
+        for (col_idx, column) in self.state.columns().iter().enumerate() {
+            if let Some(width) = self.state.get_width(col_idx) {
                 grid_style.push_str(&format!("{}px", width));
             } else {
                 grid_style.push_str(&column.width);
@@ -255,18 +270,12 @@ impl <T: 'static> Component for PwtDataTableHeader<T> {
 
     fn create(ctx: &Context<Self>) -> Self {
         let props = ctx.props();
-        let mut columns = Vec::new();
 
-        for header in props.headers.iter() {
-            header.extract_column_list(&mut columns);
-        }
-
-        let column_widths = Vec::new();
+        let state = HeaderState::new(Rc::clone(&props.headers));
 
         Self {
             node_ref: props.node_ref.clone().unwrap_or(NodeRef::default()),
-            columns,
-            column_widths,
+            state,
             observed_widths: Vec::new(),
             timeout: None,
         }
@@ -275,30 +284,18 @@ impl <T: 'static> Component for PwtDataTableHeader<T> {
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
         let props = ctx.props();
         match msg {
-            Msg::ResizeColumn(col_num, width) => {
-                log::info!("resize col {} to {}", col_num, width);
-                self.column_widths.resize((col_num + 1).max(self.column_widths.len()), None);
-                self.column_widths[col_num] = Some(width.max(40));
+            Msg::ResizeColumn(col_idx, width) => {
+                log::info!("resize col {} to {}", col_idx, width);
+                self.state.set_width(col_idx, Some(width.max(40)));
 
                 // Set flex columns on the left to fixed size to avoid unexpected effects.
-                for i in 0..col_num {
-                    if self.column_widths[i].is_none() {
-                        if self.columns[i].width.contains("fr") { // flex columns
-                            if let Some(Some(observed_width)) = self.observed_widths.get(i) {
-                                self.column_widths[i] = Some(*observed_width + 1);
-                            }
-                        }
-                    }
-                }
+                self.state.copy_observed_widths(col_idx, &self.observed_widths);
+
                 true
             }
-            Msg::ColumnSizeReset(col_num) => {
-                if let Some(elem) = self.column_widths.get_mut(col_num) {
-                    *elem = None;
-                     true
-                } else {
-                    false
-                }
+            Msg::ColumnSizeReset(col_idx) => {
+                self.state.set_width(col_idx, None);
+                true
             }
             Msg::ColumnSizeChange(col_num, width) => {
                 self.observed_widths.resize((col_num + 1).max(self.observed_widths.len()), None);
@@ -308,7 +305,7 @@ impl <T: 'static> Component for PwtDataTableHeader<T> {
                     .filter_map(|w| w.clone())
                     .collect();
 
-                if self.columns.len() == observed_widths.len() {
+                if self.state.columns().len() == observed_widths.len() {
                     if let Some(on_size_change) = props.on_size_change.clone() {
                         // use timeout to reduce the number of on_size_change callbacks
                         self.timeout = Some(Timeout::new(1, move || {
@@ -316,6 +313,23 @@ impl <T: 'static> Component for PwtDataTableHeader<T> {
                         }));
                     }
                 }
+                true
+            }
+            Msg::ColumnSortChange(col_idx, ctrl_key, opt_order) => {
+                if ctrl_key {
+                    self.state.add_column_sorter(col_idx, opt_order);
+                } else {
+                    self.state.set_column_sorter(col_idx, opt_order);
+                }
+                if let Some(on_sort_change) = &props.on_sort_change {
+                    let sorter = self.state.create_combined_sorter_fn();
+                    on_sort_change.emit(sorter);
+                }
+                true
+            }
+            Msg::HideClick(cell_idx) => {
+                log::info!("HIDECLICK {}", cell_idx);
+                self.state.toggle_hidden(cell_idx);
                 true
             }
         }
@@ -329,9 +343,7 @@ impl <T: 'static> Component for PwtDataTableHeader<T> {
 
         let mut rows = Vec::new();
 
-        let header = HeaderGroup::new().children(props.headers.as_ref().clone()).into();
-
-        let column_count = header_to_rows(&header, props, ctx.link(), 0, 0, &mut rows);
+        let (column_count, _) = header_list_to_rows(&self.state, props.headers.as_ref(), props, ctx.link(), 0, 0, 0, &mut rows);
 
         let rows: Vec<Html> = rows.into_iter().map(|row| row.into_iter()).flatten().collect();
 
@@ -364,15 +376,6 @@ impl <T: 'static> Component for PwtDataTableHeader<T> {
                 }
             })
             .into()
-    }
-
-    fn changed(&mut self, ctx: &Context<Self>, old_props: &Self::Properties) -> bool {
-        let props = ctx.props();
-        if props.sorters != old_props.sorters {
-            return true;
-        }
-
-        false
     }
 
     fn rendered(&mut self, _ctx: &Context<Self>, first_render: bool) {

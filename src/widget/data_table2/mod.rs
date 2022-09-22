@@ -1,5 +1,5 @@
-mod sorter;
-pub(crate) use sorter::ColumnSorterState;
+mod header_state;
+pub(crate) use header_state::HeaderState;
 
 mod resizable_header;
 pub use resizable_header::{ResizableHeader, PwtResizableHeader};
@@ -9,7 +9,6 @@ pub use header_group::*;
 
 mod column;
 pub use column::DataTableColumn;
-pub(crate) use column::create_combined_sorter_fn;
 
 mod header_menu;
 pub(crate) use header_menu::HeaderMenu;

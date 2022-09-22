@@ -9,14 +9,14 @@ use yew::virtual_dom::{Key, VComp, VNode};
 use yew::html::IntoPropValue;
 
 use crate::prelude::*;
-use crate::props::Selection2;
+use crate::props::{Selection2, SorterFn};
 use crate::state::{optional_rc_ptr_eq, DataFilter};
 use crate::widget::{get_unique_element_id, Container, Column, SizeObserver};
 
-use super::{create_combined_sorter_fn, ColumnSorterState, DataTableColumn, DataTableHeader, Header};
+use super::{DataTableColumn, DataTableHeader, Header};
 
-pub enum Msg {
-    ChangeSort(usize, bool, Option<bool>),
+pub enum Msg<T: 'static> {
+    ChangeSort(SorterFn<T>),
     ColumnWidthChange(Vec<usize>),
     ScrollTo(i32, i32),
     ViewportResize(i32, i32),
@@ -86,10 +86,6 @@ pub struct DataTable<T: 'static> {
     /// of visible rows.
     #[prop_or(22)]
     pub min_row_height: usize,
-
-    /// Initial sort order for columns.
-    #[prop_or_default]
-    pub sorters: Vec<(usize, bool)>,
 
     pub selection: Option<Selection2<T>>,
 }
@@ -259,7 +255,6 @@ impl VirtualScrollInfo {
 pub struct PwtDataTable<T: 'static> {
     unique_id: String,
     has_focus: bool,
-    sorters: ColumnSorterState,
 
     store: DataFilter<T>,
     columns: Vec<DataTableColumn<T>>,
@@ -556,13 +551,11 @@ impl<T: 'static> PwtDataTable<T> {
 
 impl <T: 'static> Component for PwtDataTable<T> {
 
-    type Message = Msg;
+    type Message = Msg<T>;
     type Properties = DataTable<T>;
 
     fn create(ctx: &Context<Self>) -> Self {
         let props = ctx.props();
-
-        let sorters = ColumnSorterState::new(&props.sorters);
 
         let mut store = DataFilter::new()
             .data(props.data.clone());
@@ -576,7 +569,7 @@ impl <T: 'static> Component for PwtDataTable<T> {
             header.extract_column_list(&mut columns);
         }
 
-        store.set_sorter(create_combined_sorter_fn(sorters.sorters(), &columns));
+        //store.set_sorter(create_combined_sorter_fn(sorters.sorters(), &columns));
 
         let cell_class = if props.cell_class.is_empty() {
             Classes::from("pwt-text-truncate pwt-p-2")
@@ -590,7 +583,6 @@ impl <T: 'static> Component for PwtDataTable<T> {
         let mut me = Self {
             unique_id: get_unique_element_id(),
             has_focus: false,
-            sorters,
             store,
             columns,
             column_widths: Vec::new(),
@@ -729,17 +721,8 @@ impl <T: 'static> Component for PwtDataTable<T> {
 
                 true
             }
-            // Sorting
-            Msg::ChangeSort(col_idx, ctrl_key, order) => {
-                if self.columns[col_idx].sorter.is_none() {
-                    return false;
-                }
-                if ctrl_key { // add sorter or reverse direction if exists
-                    self.sorters.add_column_sorter(col_idx, order);
-                } else {
-                    self.sorters.set_column_sorter(col_idx, order);
-                }
-                self.store.set_sorter(create_combined_sorter_fn(self.sorters.sorters(), &self.columns));
+            Msg::ChangeSort(sorter_fn) => {
+                self.store.set_sorter(sorter_fn);
                 true
             }
         }
@@ -818,10 +801,10 @@ impl <T: 'static> Component for PwtDataTable<T> {
                     .class("pwt-overflow-hidden")
                     .class("pwt-datatable2-header")
                     .with_child(
-                        DataTableHeader::new(props.headers.clone(), self.sorters.sorters())
+                        DataTableHeader::new(props.headers.clone())
                             .header_class(props.header_class.clone())
                             .on_size_change(ctx.link().callback(Msg::ColumnWidthChange))
-                            .on_sort_change(ctx.link().callback(|(col, ctrl, order)| Msg::ChangeSort(col, ctrl, order)))
+                            .on_sort_change(ctx.link().callback(Msg::ChangeSort))
                     )
             )
             .with_child(viewport)

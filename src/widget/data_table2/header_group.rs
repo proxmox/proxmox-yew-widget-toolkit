@@ -1,6 +1,7 @@
 use derivative::Derivative;
-use yew::virtual_dom::VNode;
-use yew::html::IntoPropValue;
+
+use yew::prelude::*;
+use yew::virtual_dom::Key;
 
 use super::DataTableColumn;
 
@@ -31,20 +32,15 @@ impl<T: 'static> Header<T> {
             Header::Group(group) => group.extract_column_list(list),
         }
     }
-    /*
-    fn grid_size(&self) -> (usize, usize) /* (rows, cols) */ {
-        match self {
-            Header::Single(_header) => (1, 1),
-            Header::Group(group) => group.grid_size(),
-        }
-    }
-     */
 }
 
 #[derive(Derivative)]
 #[derivative(Clone(bound=""), PartialEq(bound=""))]
 pub struct HeaderGroup<T: 'static> {
-    pub content: Option<VNode>,
+    /// The name dispayed in the header.
+    pub name: AttrValue,
+    /// Unique Column Key
+    pub key: Option<Key>,
     pub children: Vec<Header<T>>,
 }
 
@@ -52,19 +48,18 @@ pub struct HeaderGroup<T: 'static> {
 impl<T: 'static> HeaderGroup<T> {
 
     /// Create a new instance.
-    pub fn  new() -> Self {
-        Self { content: None, children: Vec::new() }
+    pub fn  new(name: impl Into<AttrValue>) -> Self {
+        Self {
+            name: name.into(),
+            key: None,
+            children: Vec::new()
+        }
     }
 
-    /// Builder style method to set the header text
-    pub fn content(mut self, content: impl IntoPropValue<Option<VNode>>) -> Self {
-        self.set_content(content);
+    /// Builder style method to set the yew `key` property
+    pub fn key(mut self, key: impl Into<Key>) -> Self {
+        self.key = Some(key.into());
         self
-    }
-
-    /// Method to set the header text
-    pub fn set_content(&mut self, content: impl IntoPropValue<Option<VNode>>) {
-        self.content = content.into_prop_value();
     }
 
     pub fn with_child(mut self, header: impl Into<Header<T>>) -> Self {
@@ -98,23 +93,4 @@ impl<T: 'static> HeaderGroup<T> {
             child.extract_column_list(list);
         }
     }
-
-    /*
-    fn grid_size(&self) -> (usize, usize) /* (rows, cols) */ {
-        let mut rows = 0;
-        let mut cols = 0;
-
-        for child in &self.children {
-            let (child_rows, child_cols) = child.grid_size();
-            cols += child_cols;
-            if child_rows > rows { rows = child_rows; }
-        }
-
-        if self.content.is_some() {
-            rows += 1;
-        }
-
-        (rows, cols)
-    }
-     */
 }
