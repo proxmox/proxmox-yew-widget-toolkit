@@ -31,6 +31,9 @@ pub struct DataTableColumn<T> {
     /// - `Some(false)`: Descending
     /// - `None`: do not sort this columns
     pub sort_order: Option<bool>,
+    /// Hide column
+    #[prop_or_default]
+    pub hidden: bool,
 }
 
 impl<T> DataTableColumn<T> {
@@ -120,5 +123,16 @@ impl<T> DataTableColumn<T> {
     pub fn sort_order(mut self, order: impl IntoPropValue<Option<bool>>) -> Self {
         self.sort_order = order.into_prop_value();
         self
+    }
+
+    /// Builder style method to set the hidden flag.
+    pub fn hidden(mut self, hidden: bool) -> Self {
+        self.set_hidden(hidden);
+        self
+    }
+
+    /// Method to set the hidden flag.
+    pub fn set_hidden(&mut self, hidden: bool) {
+        self.hidden = hidden;
     }
 }

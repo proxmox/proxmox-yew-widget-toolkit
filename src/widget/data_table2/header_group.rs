@@ -44,6 +44,7 @@ pub struct HeaderGroup<T: 'static> {
     /// Unique Column Key
     pub key: Option<Key>,
     pub children: Vec<Header<T>>,
+    pub hidden: bool,
 }
 
 
@@ -54,7 +55,8 @@ impl<T: 'static> HeaderGroup<T> {
         Self {
             name: name.into(),
             key: None,
-            children: Vec::new()
+            hidden: false,
+            children: Vec::new(),
         }
     }
 
@@ -90,6 +92,17 @@ impl<T: 'static> HeaderGroup<T> {
         self.children.extend(children);
     }
 
+    /// Builder style method to set the hidden flag.
+    pub fn hidden(mut self, hidden: bool) -> Self {
+        self.set_hidden(hidden);
+        self
+    }
+
+    /// Method to set the hidden flag.
+    pub fn set_hidden(&mut self, hidden: bool) {
+        self.hidden = hidden;
+    }
+
     pub(crate) fn extract_column_list(&self, list: &mut Vec<DataTableColumn<T>>) {
         for child in &self.children {
             child.extract_column_list(list);
@@ -122,11 +135,11 @@ pub struct IndexedHeaderGroup<T: 'static> {
     pub parent: Option<usize>,
     pub colspan: usize,
     pub cell_count: usize,
-    /// The name dispayed in the header.
+
     pub name: AttrValue,
-    /// Unique Column Key
     pub key: Option<Key>,
     pub children: Vec<IndexedHeader<T>>,
+    pub hidden: bool,
 }
 
 impl<T: 'static> IndexedHeaderGroup<T> {
@@ -215,6 +228,7 @@ impl<T: 'static> IndexedHeader<T> {
             cell_count,
             name: group.name.clone(),
             key: group.key.clone(),
+            hidden: group.hidden,
             children,
         };
 

@@ -100,8 +100,9 @@ fn column_to_rows<T: 'static>(
     rows.resize((start_row + 1).max(rows.len()), Vec::new());
 
     let start_col = cell.start_col;
+    let cell_idx = cell.cell_idx;
 
-    let sort_order = state.get_column_sorter(start_col);
+    let sort_order = state.get_column_sorter(cell_idx);
     let sort_icon = match sort_order {
         Some(ascending) => {
             if ascending {
@@ -142,7 +143,7 @@ fn column_to_rows<T: 'static>(
                         move |_: &()| {
                             HeaderMenu::new(Rc::clone(&headers), &hidden)
                                 .on_sort_change(link.callback(move |asc| {
-                                    Msg::ColumnSortChange(start_col, false, Some(asc))
+                                    Msg::ColumnSortChange(cell_idx, false, Some(asc))
                                 }))
                                 .on_hide_click(link.callback(Msg::HideClick))
                                 .into()
@@ -150,7 +151,7 @@ fn column_to_rows<T: 'static>(
                     })
             )
             .ondblclick(link.callback(move |event: MouseEvent| {
-                Msg::ColumnSortChange(start_col, event.ctrl_key(), None)
+                Msg::ColumnSortChange(cell_idx, event.ctrl_key(), None)
             }))
             .into()
     );
@@ -258,7 +259,6 @@ impl <T: 'static> Component for PwtDataTableHeader<T> {
         let props = ctx.props();
         match msg {
             Msg::ResizeColumn(col_idx, width) => {
-                log::info!("resize col {} to {}", col_idx, width);
                 self.state.set_width(col_idx, Some(width.max(40)));
 
                 // Set flex columns on the left to fixed size to avoid unexpected effects.
@@ -288,11 +288,11 @@ impl <T: 'static> Component for PwtDataTableHeader<T> {
                 }
                 true
             }
-            Msg::ColumnSortChange(col_idx, ctrl_key, opt_order) => {
+            Msg::ColumnSortChange(cell_idx, ctrl_key, opt_order) => {
                 if ctrl_key {
-                    self.state.add_column_sorter(col_idx, opt_order);
+                    self.state.add_column_sorter(cell_idx, opt_order);
                 } else {
-                    self.state.set_column_sorter(col_idx, opt_order);
+                    self.state.set_column_sorter(cell_idx, opt_order);
                 }
                 if let Some(on_sort_change) = &props.on_sort_change {
                     let sorter = self.state.create_combined_sorter_fn();
@@ -301,7 +301,6 @@ impl <T: 'static> Component for PwtDataTableHeader<T> {
                 true
             }
             Msg::HideClick(cell_idx) => {
-                log::info!("HIDECLICK {}", cell_idx);
                 self.state.toggle_hidden(cell_idx);
                 true
             }

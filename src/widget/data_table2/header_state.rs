@@ -5,23 +5,25 @@ use crate::props::SorterFn;
 
 use super::{IndexedHeader, IndexedHeaderSingle};
 
+struct CellState {
+    width: Option<usize>,
+    hidden: bool,
+    sort_order: Option<bool>,
+}
+
 /// Store for header state
 ///
 /// - column sort order
 /// - column hidden
 
-pub(crate) struct HeaderState<T: 'static> {
+pub struct HeaderState<T: 'static> {
     headers: Rc<Vec<IndexedHeader<T>>>,
     // map cell_idx => &IndexedHeader
     cell_map: Vec<IndexedHeader<T>>,
+    // map cell_idx => CellState,
+    cell_state: Vec<CellState>,
     // map col_idx => DataTableColumn
     columns: Vec<Rc<IndexedHeaderSingle<T>>>,
-    // map col_idx => ascending
-    sorters: Vec<Option<bool>>,
-    // map cell_idx => hidden
-    hidden: Vec<bool>,
-    // map col_idx => width
-    widths: Vec<Option<usize>>,
 }
 
 impl<T: 'static> HeaderState<T> {
@@ -32,7 +34,25 @@ impl<T: 'static> HeaderState<T> {
             header.extract_cell_list(&mut cell_map);
         }
 
-        let hidden = Vec::new(); // fixme
+        let mut cell_state = Vec::new();
+        for cell in cell_map.iter() {
+            match cell {
+                IndexedHeader::Single(cell) => {
+                    cell_state.push(CellState {
+                        width: None,
+                        hidden: cell.column.hidden,
+                        sort_order: cell.column.sort_order,
+                    });
+                }
+                IndexedHeader::Group(group) => {
+                   cell_state.push(CellState {
+                        width: None,
+                        hidden: group.hidden,
+                        sort_order: None,
+                    });
+                }
+            }
+        }
 
         let mut columns = Vec::new();
 
@@ -40,77 +60,61 @@ impl<T: 'static> HeaderState<T> {
             header.extract_column_list(&mut columns);
         }
 
-        let sorters = columns.iter()
-            .map(|column| column.column.sort_order)
-            .collect();
-
         Self {
             headers,
             columns,
-            sorters,
-            hidden,
             cell_map,
-            widths: Vec::new(),
+            cell_state,
         }
     }
 
     pub fn get_width(&self, col_num: usize) -> Option<usize> {
-        match self.widths.get(col_num) {
-            Some(Some(width)) => Some(*width),
-            _ => None,
-        }
+        let cell_idx = self.columns[col_num].cell_idx;
+        self.cell_state[cell_idx].width
     }
 
     pub fn set_width(&mut self, col_num: usize, width: Option<usize>) {
-        self.widths.resize((col_num + 1).max(self.widths.len()), None);
-        self.widths[col_num] = width;
+        let cell_idx = self.columns[col_num].cell_idx;
+        self.cell_state[cell_idx].width = width;
     }
 
-    pub fn get_column_sorter(&self, col_num: usize) -> Option<bool> {
-        match self.sorters.get(col_num) {
-            Some(Some(asc)) => Some(*asc),
-            _ => None,
-        }
+    pub fn get_column_sorter(&self, cell_idx: usize) -> Option<bool> {
+        self.cell_state[cell_idx].sort_order
     }
 
     /// Set sorter on single column, or reverse direction if exists
-    pub fn set_column_sorter(&mut self, col_num: usize, order: Option<bool>) {
-        self.sorters.resize((col_num + 1).max(self.sorters.len()), None);
-
-        let order = order.unwrap_or_else(|| match self.sorters[col_num] {
-            Some(asc) => !asc,
-            None => true,
+    pub fn set_column_sorter(&mut self, cell_idx: usize, order: Option<bool>) {
+        let order = order.unwrap_or_else(|| {
+            match self.cell_state[cell_idx].sort_order {
+                Some(order) => !order,
+                None => true,
+            }
         });
-        self.sorters.fill(None);
-        self.sorters[col_num] = Some(order);
+        for cell in self.cell_state.iter_mut() { cell.sort_order = None; }
+        self.cell_state[cell_idx].sort_order = Some(order);
     }
 
     /// Add sorter or reverse direction if exists
-    pub fn add_column_sorter(&mut self, col_num: usize, order: Option<bool>) {
-        self.sorters.resize((col_num + 1).max(self.sorters.len()), None);
-
-        let order = order.unwrap_or_else(|| match self.sorters[col_num] {
-            Some(asc) => !asc,
-            None => true,
+    pub fn add_column_sorter(&mut self, cell_idx: usize, order: Option<bool>) {
+       let order = order.unwrap_or_else(|| {
+            match self.cell_state[cell_idx].sort_order {
+                Some(order) => !order,
+                None => true,
+            }
         });
-        self.sorters[col_num] = Some(order);
+        self.cell_state[cell_idx].sort_order = Some(order);
     }
 
     pub fn set_hidden(&mut self, cell_idx: usize, hidden: bool) {
-        log::info!("SH0 {} {}", cell_idx, self.hidden.len());
-        self.hidden.resize((cell_idx + 1).max(self.hidden.len()), false);
-        log::info!("SH1 {} {}", cell_idx, self.hidden.len());
         let header = &self.cell_map[cell_idx];
 
         for idx in header.cell_range() {
-            self.hidden.resize((idx + 1).max(self.hidden.len()), false);
-            self.hidden[idx] = hidden;
+            self.cell_state[idx].hidden = hidden;
         }
-        log::info!("HIDDEN {:?}", self.hidden);
     }
 
     pub fn get_hidden(&mut self, cell_idx: usize) -> bool {
-        self.hidden.get(cell_idx).map(|h| *h).unwrap_or(false)
+        self.cell_state[cell_idx].hidden
     }
 
     pub fn toggle_hidden(&mut self, cell_idx: usize) {
@@ -118,8 +122,10 @@ impl<T: 'static> HeaderState<T> {
         self.set_hidden(cell_idx, hidden);
     }
 
-    pub fn hidden_cells(&self) -> &[bool] {
-        &self.hidden
+    pub fn hidden_cells(&self) -> Vec<bool> {
+        self.cell_state.iter()
+            .map(|state| state.hidden)
+            .collect()
     }
 
     pub fn columns(&self) -> &[Rc<IndexedHeaderSingle<T>>] {
@@ -144,22 +150,16 @@ impl<T: 'static> HeaderState<T> {
 
     pub fn create_combined_sorter_fn(&self) -> SorterFn<T> {
 
-         let sorters: Vec<(SorterFn<T>, bool)> = self.sorters
+         let sorters: Vec<(SorterFn<T>, bool)> = self.columns
             .iter()
-            .enumerate()
-            .filter_map(|(col_idx, opt_order)| {
-                let order = match opt_order {
-                    Some(order) => *order,
+            .filter_map(|cell| {
+                let cell_idx = cell.cell_idx;
+                let order = match self.get_column_sorter(cell_idx) {
+                    Some(order) => order,
                     None => return None,
                 };
 
-                match self.columns.get(col_idx) {
-                    None => None,
-                    Some(cell) => {
-                        cell.column.sorter.as_ref()
-                            .map(|sorter| (sorter.clone(), order))
-                    }
-                }
+                cell.column.sorter.as_ref().map(|sorter| (sorter.clone(), order))
             })
             .collect();
 
