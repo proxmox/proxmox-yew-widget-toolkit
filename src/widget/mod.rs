@@ -29,7 +29,7 @@ mod resizable;
 pub use resizable::Resizable;
 
 mod data_table;
-pub use data_table::{PwtDataTable, DataTable, DataTableColumn};
+pub use data_table::{DataTable, DataTableColumn, PwtDataTable};
 
 pub mod data_table2;
 
@@ -45,14 +45,17 @@ pub use grid_picker::GridPicker;
 mod row;
 pub use row::Row;
 
+mod segmented_button;
+pub use segmented_button::{PwtSegmentedButton, SegmentedButton};
+
 mod size_observer;
 pub use size_observer::SizeObserver;
 
 mod tab_bar;
-pub use tab_bar::{TabBar, TabBarItem, PwtTabBar};
+pub use tab_bar::{PwtTabBar, TabBar, TabBarItem};
 
 mod tab_panel;
-pub use tab_panel::{TabPanel, TabPanelRenderInfo, PwtTabPanel};
+pub use tab_panel::{PwtTabPanel, TabPanel, TabPanelRenderInfo};
 
 mod theme_loader;
 pub use theme_loader::ThemeLoader;
@@ -61,17 +64,16 @@ mod theme_selector;
 pub use theme_selector::ThemeSelector;
 
 mod toolbar;
-pub use toolbar::{Toolbar, PwtToolbar};
+pub use toolbar::{PwtToolbar, Toolbar};
 
 mod tooltip;
-pub use tooltip::{Tooltip, PwtTooltip};
+pub use tooltip::{PwtTooltip, Tooltip};
 
 mod virtual_scroll;
 pub use virtual_scroll::VirtualScroll;
 
 mod visibility_observer;
 pub use visibility_observer::VisibilityObserver;
-
 
 use std::sync::atomic::{AtomicUsize, Ordering};
 
