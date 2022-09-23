@@ -27,6 +27,11 @@ pub struct ResizableHeader {
     #[prop_or_default]
     pub class: Classes,
 
+    /// Unique element ID
+    pub id: Option<String>,
+    #[prop_or_default]
+    pub active: bool,
+
     pub content: Option<VNode>,
     pub on_resize: Option<Callback<i32>>,
     pub on_size_reset: Option<Callback<()>>,
@@ -49,6 +54,12 @@ impl ResizableHeader {
         self
     }
 
+    /// Builder style method to set the element id
+    pub fn id(mut self, id: impl IntoPropValue<Option<String>>) -> Self {
+        self.id = id.into_prop_value();
+        self
+    }
+
     /// Builder style method to set the yew `node_ref`
     pub fn node_ref(mut self, node_ref: impl IntoPropValue<Option<NodeRef>>) -> Self {
         self.node_ref = node_ref.into_prop_value();
@@ -58,6 +69,12 @@ impl ResizableHeader {
     /// Builder style method to add a html class
     pub fn class(mut self, class: impl Into<Classes>) -> Self {
         self.add_class(class);
+        self
+    }
+
+    /// Builder style method to set the active flag
+    pub fn active(mut self, active: bool) -> Self {
+        self.active = active;
         self
     }
 
@@ -246,8 +263,10 @@ impl Component for PwtResizableHeader {
 
         Row::new()
             .class("pwt-datatable2-header-item")
+            .class(props.active.then(|| "active"))
             .class(props.class.clone())
-            .attribute("tabindex", "-1")
+            .attribute("tabindex", if props.active { "0" } else { "-1" })
+            .attribute("id", props.id.clone())
             .node_ref(self.node_ref.clone())
             .onfocus(ctx.link().callback(|_| Msg::FocusChange(true)))
             .onblur(ctx.link().callback(|_| Msg::FocusChange(false)))

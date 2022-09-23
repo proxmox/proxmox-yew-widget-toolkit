@@ -3,6 +3,7 @@ use std::rc::Rc;
 use derivative::Derivative;
 
 use gloo_timers::callback::Timeout;
+use wasm_bindgen::JsCast;
 
 use yew::prelude::*;
 use yew::virtual_dom::{Key, VComp, VNode};
@@ -10,8 +11,7 @@ use yew::html::{IntoPropValue, IntoEventCallback, Scope};
 
 use crate::prelude::*;
 use crate::props::SorterFn;
-use crate::widget::{Container, Fa};
-use crate::widget::focus::{focus_next_tabable, init_roving_tabindex};
+use crate::widget::{get_unique_element_id, Container, Fa};
 
 use super::{
     IndexedHeader, IndexedHeaderSingle, IndexedHeaderGroup,
@@ -92,152 +92,23 @@ pub enum Msg {
     ColumnSizeReset(usize),
     ColumnSizeChange(usize, i32), // fixme
     ColumnSortChange(usize, bool, Option<bool>),
-    HideClick(usize)
+    HideClick(usize),
+    MoveCursor(bool),
+    FocusCell(usize),
 }
 
 
-fn column_to_rows<T: 'static>(
-    state: &HeaderState<T>,
-    cell: &IndexedHeaderSingle<T>,
-    props: &DataTableHeader<T>,
-    link: &Scope<PwtDataTableHeader<T>>,
-    start_row: usize,
-    start_col: usize,
-    rows: &mut Vec<Vec<Html>>,
-) {
-    rows.resize((start_row + 1).max(rows.len()), Vec::new());
-
-    let column_idx = cell.start_col;
-    let cell_idx = cell.cell_idx;
-
-    let sort_order = state.get_column_sorter(cell_idx);
-    let sort_icon = match sort_order {
-        Some(ascending) => {
-            if ascending {
-                Fa::new("long-arrow-up").class("pwt-pe-1").into()
-            } else {
-                Fa::new("long-arrow-down").class("pwt-pe-1").into()
-            }
-        }
-        None =>  html!{},
-    };
-
-    rows[start_row].push(
-        Container::new()
-            .key(Key::from(cell_idx))
-            .tag("th")
-            .attribute("role", "columnheader")
-            .attribute(
-                "style",
-                format!("grid-row: {} / 10;grid-column-start: {}", start_row + 1, start_col + 1)
-            )
-            .with_child(
-                ResizableHeader::new()
-                    .class(props.header_class.clone())
-                    .class("pwt-w-100 pwt-h-100")
-                    .content(html!{<>{sort_icon}{&cell.column.name}</>})
-                    .on_resize({
-                        let link = link.clone();
-                        move |width| {
-                            let width: usize = if width > 0 { width as usize } else  { 0 };
-                            link.send_message(Msg::ResizeColumn(column_idx, width));
-                        }
-                    })
-                    .on_size_reset(link.callback(move |_| Msg::ColumnSizeReset(column_idx)))
-                    .on_size_change(link.callback(move |w| Msg::ColumnSizeChange(column_idx, w)))
-                    .picker({
-                        let headers = Rc::clone(&props.headers);
-                        let link = link.clone();
-                        let hidden = Vec::from(state.hidden_cells());
-                        move |_: &()| {
-                            HeaderMenu::new(Rc::clone(&headers), &hidden)
-                                .key(format!("header-menu-{cell_idx}"))
-                                .on_sort_change(link.callback(move |asc| {
-                                    Msg::ColumnSortChange(cell_idx, false, Some(asc))
-                                }))
-                                .on_hide_click(link.callback(Msg::HideClick))
-                                .into()
-                        }
-                    })
-            )
-            .ondblclick(link.callback(move |event: MouseEvent| {
-                Msg::ColumnSortChange(cell_idx, event.ctrl_key(), None)
-            }))
-            .into()
-    );
-}
-
-fn header_list_to_rows<T: 'static>(
-    state: &HeaderState<T>,
-    list: &[IndexedHeader<T>],
-    props: &DataTableHeader<T>,
-    link: &Scope<PwtDataTableHeader<T>>,
-    start_row: usize,
-    start_col: usize,
-    rows: &mut Vec<Vec<Html>>,
-) -> usize {
-    let mut span = 0;
-
-    for child in list {
-
-        let cell_idx = child.cell_idx();
-        let hidden = state.get_cell_hidden(cell_idx);
-        if hidden { continue; }
-
-        match child {
-            IndexedHeader::Single(column) => {
-                column_to_rows(state, column, props, link, start_row, start_col + span, rows);
-                span += 1;
-            }
-            IndexedHeader::Group(group) => {
-                let cols = group_to_rows(state, group, props, link, start_row, start_col + span, rows);
-                span += cols;
-            }
-        }
-    }
-
-    span
-}
-
-fn group_to_rows<T: 'static>(
-    state: &HeaderState<T>,
-    group: &IndexedHeaderGroup<T>,
-    props: &DataTableHeader<T>,
-    link: &Scope<PwtDataTableHeader<T>>,
-    start_row: usize,
-    start_col: usize,
-    rows: &mut Vec<Vec<Html>>,
-) -> usize {
-    rows.resize((start_row + 1).max(rows.len()), Vec::new());
-
-    let cell_idx = group.cell_idx;
-
-    let span = header_list_to_rows(state, &group.children, props, link, start_row + 1, start_col, rows);
-    let span = span.max(1); // at least one column for the group header
-
-    rows[start_row].push(
-        Container::new()
-            .tag("th")
-            .key(Key::from(cell_idx))
-            .attribute("role", "columnheader")
-            .attribute("tabindex", "-1")
-            .class("pwt-datatable2-group-header-item")
-            .class(props.header_class.clone())
-            .attribute("style", format!(
-                "grid-column: {} / span {}",
-                start_col + 1,
-                span,
-            ))
-            .with_child(group.name.clone())
-            .into()
-    );
-    span
-}
 
 pub struct PwtDataTableHeader<T: 'static> {
     node_ref: NodeRef,
-    /// Sort order state for columns.
+
+    unique_id: String,
+
+    // Sort order state for columns.
     state: HeaderState<T>,
+
+    // Acticel cell
+    cursor: usize,
 
     observed_widths: Vec<Option<usize>>,
 
@@ -265,6 +136,190 @@ impl <T: 'static> PwtDataTableHeader<T> {
 
         grid_style
     }
+
+
+    fn header_list_to_rows(
+        &self,
+        list: &[IndexedHeader<T>],
+        props: &DataTableHeader<T>,
+        link: &Scope<PwtDataTableHeader<T>>,
+        start_row: usize,
+        start_col: usize,
+        rows: &mut Vec<Vec<Html>>,
+    ) -> usize {
+        let mut span = 0;
+
+        for child in list {
+
+            let cell_idx = child.cell_idx();
+            let hidden = self.state.get_cell_hidden(cell_idx);
+            if hidden { continue; }
+
+            match child {
+                IndexedHeader::Single(column) => {
+                    self.column_to_rows(column, props, link, start_row, start_col + span, rows);
+                    span += 1;
+                }
+                IndexedHeader::Group(group) => {
+                    let cols = self.group_to_rows(group, props, link, start_row, start_col + span, rows);
+                    span += cols;
+                }
+            }
+        }
+
+        span
+    }
+
+    fn unique_cell_id(&self, cell_idx: usize) -> String {
+        format!("{}-cell-{}", self.unique_id, cell_idx)
+    }
+
+    fn column_to_rows(
+        &self,
+        cell: &IndexedHeaderSingle<T>,
+        props: &DataTableHeader<T>,
+        link: &Scope<PwtDataTableHeader<T>>,
+        start_row: usize,
+        start_col: usize,
+        rows: &mut Vec<Vec<Html>>,
+    ) {
+        rows.resize((start_row + 1).max(rows.len()), Vec::new());
+
+        let column_idx = cell.start_col;
+        let cell_idx = cell.cell_idx;
+        let active = self.cursor == cell_idx;
+
+        let unique_id = self.unique_cell_id(cell_idx);
+
+        let sort_order = self.state.get_column_sorter(cell_idx);
+        let sort_icon = match sort_order {
+            Some(ascending) => {
+                if ascending {
+                    Fa::new("long-arrow-up").class("pwt-pe-1").into()
+                } else {
+                    Fa::new("long-arrow-down").class("pwt-pe-1").into()
+                }
+            }
+            None =>  html!{},
+        };
+
+        rows[start_row].push(
+            Container::new()
+                .key(Key::from(cell_idx))
+                .tag("th")
+                .attribute("role", "columnheader")
+                .attribute(
+                    "style",
+                    format!("grid-row: {} / 10;grid-column-start: {}", start_row + 1, start_col + 1)
+                )
+                .with_child(
+                    ResizableHeader::new()
+                        .id(unique_id)
+                        .active(active)
+                        .class(props.header_class.clone())
+                        .class("pwt-w-100 pwt-h-100")
+                        .content(html!{<>{sort_icon}{&cell.column.name}</>})
+                        .on_resize({
+                            let link = link.clone();
+                            move |width| {
+                                let width: usize = if width > 0 { width as usize } else  { 0 };
+                                link.send_message(Msg::ResizeColumn(column_idx, width));
+                            }
+                        })
+                        .on_size_reset(link.callback(move |_| Msg::ColumnSizeReset(column_idx)))
+                        .on_size_change(link.callback(move |w| Msg::ColumnSizeChange(column_idx, w)))
+                        .picker({
+                            let headers = Rc::clone(&props.headers);
+                            let link = link.clone();
+                            let hidden = Vec::from(self.state.hidden_cells());
+                            move |_: &()| {
+                                HeaderMenu::new(Rc::clone(&headers), &hidden)
+                                    .key(format!("header-menu-{cell_idx}"))
+                                    .on_sort_change(link.callback(move |asc| {
+                                        Msg::ColumnSortChange(cell_idx, false, Some(asc))
+                                    }))
+                                    .on_hide_click(link.callback(Msg::HideClick))
+                                    .into()
+                            }
+                        })
+                )
+                .onfocusin(link.callback(move |_| Msg::FocusCell(cell_idx)))
+                .ondblclick(link.callback(move |event: MouseEvent| {
+                    Msg::ColumnSortChange(cell_idx, event.ctrl_key(), None)
+                }))
+                .into()
+        );
+    }
+
+    fn group_to_rows(
+        &self,
+        group: &IndexedHeaderGroup<T>,
+        props: &DataTableHeader<T>,
+        link: &Scope<PwtDataTableHeader<T>>,
+        start_row: usize,
+        start_col: usize,
+        rows: &mut Vec<Vec<Html>>,
+    ) -> usize {
+        rows.resize((start_row + 1).max(rows.len()), Vec::new());
+
+        let cell_idx = group.cell_idx;
+        let active = self.cursor == cell_idx;
+        let unique_id = self.unique_cell_id(cell_idx);
+
+        let span = self.header_list_to_rows(&group.children, props, link, start_row + 1, start_col, rows);
+        let span = span.max(1); // at least one column for the group header
+
+        rows[start_row].push(
+            Container::new()
+                .tag("th")
+                .key(Key::from(cell_idx))
+                .attribute("role", "columnheader")
+                .attribute("tabindex", if active { "0" } else { "-1" })
+                .attribute("id", unique_id)
+                .class("pwt-datatable2-group-header-item")
+                .class(active.then(|| "active"))
+                .class(props.header_class.clone())
+                .attribute("style", format!(
+                    "grid-column: {} / span {}",
+                    start_col + 1,
+                    span,
+                ))
+                .with_child(group.name.clone())
+                .into()
+        );
+        span
+    }
+
+    fn focus_active_cell(&self) {
+        let window = web_sys::window().unwrap();
+        let document = window.document().unwrap();
+
+        let get_cell_el = |cell_idx| -> Option<web_sys::HtmlElement> {
+            let id = self.unique_cell_id(cell_idx);
+            let el = match document.get_element_by_id(&id) {
+                Some(el) => el,
+                None => return None,
+            };
+            match el.dyn_into::<web_sys::HtmlElement>() {
+                Ok(el) => Some(el),
+                Err(_) => None,
+            }
+        };
+
+        for cell_idx in 0..self.state.cell_count() {
+            if let Some(el) = get_cell_el(cell_idx) {
+                el.set_tab_index(-1);
+            }
+        }
+
+        let el = match get_cell_el(self.cursor) {
+            Some(el) => el,
+            None => return,
+        };
+
+        el.set_tab_index(0);
+        let _ = el.focus();
+    }
 }
 
 impl <T: 'static> Component for PwtDataTableHeader<T> {
@@ -277,8 +332,10 @@ impl <T: 'static> Component for PwtDataTableHeader<T> {
         let state = HeaderState::new(Rc::clone(&props.headers));
 
         Self {
+            unique_id: get_unique_element_id(),
             node_ref: props.node_ref.clone().unwrap_or(NodeRef::default()),
             state,
+            cursor: 0,
             observed_widths: Vec::new(),
             timeout: None,
         }
@@ -336,6 +393,20 @@ impl <T: 'static> Component for PwtDataTableHeader<T> {
                 }
                 true
             }
+            Msg::FocusCell(cell_idx) => {
+                self.cursor = cell_idx;
+                self.focus_active_cell();
+                true
+            }
+            Msg::MoveCursor(direction) => {
+                let last = self.state.cell_count().saturating_sub(1);
+                self.cursor = match direction {
+                    false => if self.cursor > 0 { self.cursor - 1 }  else { last },
+                    true => if (self.cursor + 1) <= last { self.cursor + 1 } else { 0 },
+                };
+                self.focus_active_cell();
+                true
+            }
         }
     }
 
@@ -344,8 +415,7 @@ impl <T: 'static> Component for PwtDataTableHeader<T> {
 
         let mut rows = Vec::new();
 
-        header_list_to_rows(
-            &self.state,
+        self.header_list_to_rows(
             props.headers.as_ref(),
             props,
             ctx.link(),
@@ -373,27 +443,17 @@ impl <T: 'static> Component for PwtDataTableHeader<T> {
             .children(rows)
             .with_child(last)
             .onkeydown({
-                let inner_ref =  self.node_ref.clone();
+                let link = ctx.link().clone();
                 move |event: KeyboardEvent| {
                     match event.key_code() {
-                        39 => { // left
-                            focus_next_tabable(&inner_ref, false, true);
-                        }
-                        37 => { // right
-                            focus_next_tabable(&inner_ref, true, true);
-                        }
+                        39 => link.send_message(Msg::MoveCursor(true)),
+                        37 => link.send_message(Msg::MoveCursor(false)),
                         _ => return,
                     }
                     event.prevent_default();
                 }
             })
             .into()
-    }
-
-    fn rendered(&mut self, _ctx: &Context<Self>, first_render: bool) {
-        if first_render {
-            init_roving_tabindex(&self.node_ref);
-        }
     }
 }
 

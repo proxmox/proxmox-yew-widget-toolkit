@@ -159,6 +159,10 @@ impl<T: 'static> HeaderState<T> {
             .collect()
     }
 
+    pub fn cell_count(&self) -> usize {
+        self.cell_map.len()
+    }
+
     pub fn columns(&self) -> &[Rc<IndexedHeaderSingle<T>>] {
         &self.columns
     }
