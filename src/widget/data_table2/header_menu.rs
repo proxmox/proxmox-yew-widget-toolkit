@@ -7,7 +7,7 @@ use yew::virtual_dom::{VComp, VNode};
 use yew::html::IntoEventCallback;
 
 use crate::prelude::*;
-use crate::widget::{Column, Container};
+use crate::widget::{Column, Container, Fa};
 
 use super::IndexedHeader;
 
@@ -70,7 +70,11 @@ fn headers_to_menu<T: 'static>(
         };
 
         let hidden = props.hidden.get(*cell_idx).map(|h| *h).unwrap_or(false);
-        let hidden = match hidden { true => html!{"X "}, false => html!{"V "} };
+        //let hidden = match hidden { true => html!{"X "}, false => html!{"V "} };
+        let hidden = match hidden {
+            true => html!{<i class="pwt-pe-2 fa fa-square-o"/>},
+            false => html!{<i class="pwt-pe-2 fa fa-check-square-o"/>},
+        };
 
         match header {
             IndexedHeader::Single(cell) => {
@@ -113,11 +117,15 @@ impl<T: 'static> Component for PwtHeaderMenu<T> {
 
         let mut list = Column::new()
             .class("pwt-menu")
-            .with_child(html!{<div class="pwt-p-2">{"THIS IS A TEST MENU"}</div>})
             .with_child(
                 Container::new()
                     .class("pwt-menu-item")
-                    .with_child("Sort Ascending")
+                    .with_child(html!{
+                        <>
+                        {Fa::new("long-arrow-up").class("pwt-pe-2")}
+                        {"Sort Ascending"}
+                        </>
+                    })
                     .onclick({
                         let on_sort_change = props.on_sort_change.clone();
                         move |event: MouseEvent| {
@@ -131,7 +139,12 @@ impl<T: 'static> Component for PwtHeaderMenu<T> {
             .with_child(
                 Container::new()
                     .class("pwt-menu-item")
-                    .with_child("Sort Descending")
+                    .with_child(html!{
+                        <>
+                        {Fa::new("long-arrow-down").class("pwt-pe-2")}
+                        {"Sort Descending"}
+                        </>
+                    })
                     .onclick({
                         let on_sort_change = props.on_sort_change.clone();
                         move |event: MouseEvent| {
