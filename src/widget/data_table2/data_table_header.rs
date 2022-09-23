@@ -151,6 +151,7 @@ fn column_to_rows<T: 'static>(
                         let hidden = Vec::from(state.hidden_cells());
                         move |_: &()| {
                             HeaderMenu::new(Rc::clone(&headers), &hidden)
+                                .key(format!("header-menu-{cell_idx}"))
                                 .on_sort_change(link.callback(move |asc| {
                                     Msg::ColumnSortChange(cell_idx, false, Some(asc))
                                 }))

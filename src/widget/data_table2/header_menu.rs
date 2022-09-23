@@ -3,7 +3,7 @@ use std::marker::PhantomData;
 
 use derivative::Derivative;
 use yew::prelude::*;
-use yew::virtual_dom::{VComp, VNode};
+use yew::virtual_dom::{Key, VComp, VNode};
 use yew::html::IntoEventCallback;
 
 use crate::prelude::*;
@@ -15,6 +15,7 @@ use super::IndexedHeader;
 #[derive(Derivative)]
 #[derivative(Clone(bound=""), PartialEq(bound=""))]
 pub struct HeaderMenu<T: 'static> {
+    pub key: Option<Key>,
 
     pub on_sort_change: Option<Callback<bool>>,
     pub on_hide_click: Option<Callback<usize>>,
@@ -31,6 +32,11 @@ impl<T: 'static> HeaderMenu<T> {
             headers,
             hidden: Vec::from(hidden),
         })
+    }
+
+    pub fn key(mut self, key: impl Into<Key>) -> Self {
+        self.key = Some(key.into());
+        self
     }
 
     pub fn on_sort_change(mut self, cb: impl IntoEventCallback<bool>) -> Self {
@@ -171,7 +177,8 @@ impl<T: 'static> Component for PwtHeaderMenu<T> {
 
 impl<T: 'static> Into<VNode> for HeaderMenu<T> {
     fn into(self) -> VNode {
-        let comp = VComp::new::<PwtHeaderMenu<T>>(Rc::new(self), None);
+        let key = self.key.clone();
+        let comp = VComp::new::<PwtHeaderMenu<T>>(Rc::new(self), key);
         VNode::from(comp)
     }
 }
