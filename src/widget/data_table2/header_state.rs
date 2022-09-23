@@ -116,7 +116,7 @@ impl<T: 'static> HeaderState<T> {
             IndexedHeader::Single(_) => { return; /* should not happen at all */ }
         };
 
-        let visible = group.children.iter().find(|cell| !self.get_hidden(cell.cell_idx())).is_some();
+        let visible = group.children.iter().find(|cell| !self.get_cell_hidden(cell.cell_idx())).is_some();
         self.cell_state[cell_idx].hidden = !visible;
         self.bubble_up_hidden(group.parent);
     }
@@ -131,15 +131,28 @@ impl<T: 'static> HeaderState<T> {
         self.bubble_up_hidden(header.parent());
     }
 
-    pub fn get_hidden(&self, cell_idx: usize) -> bool {
+    pub fn get_cell_hidden(&self, cell_idx: usize) -> bool {
         self.cell_state[cell_idx].hidden
     }
 
-    pub fn toggle_hidden(&mut self, cell_idx: usize) {
-        let hidden = !self.get_hidden(cell_idx);
+    pub fn get_column_hidden(&self, col_num: usize) -> bool {
+        let cell_idx = self.columns[col_num].cell_idx;
+        self.cell_state[cell_idx].hidden
+    }
+
+    pub fn toggle_cell_hidden(&mut self, cell_idx: usize) {
+        let hidden = !self.get_cell_hidden(cell_idx);
         self.set_hidden(cell_idx, hidden);
     }
 
+    // Hidden status for colums (Used by the table renderer)
+    pub fn hidden_columns(&self) -> Vec<bool> {
+        self.columns.iter()
+            .map(|cell| self.get_cell_hidden(cell.cell_idx))
+            .collect()
+    }
+
+    // Hidden status for all cells (Used by the header menu)
     pub fn hidden_cells(&self) -> Vec<bool> {
         self.cell_state.iter()
             .map(|state| state.hidden)

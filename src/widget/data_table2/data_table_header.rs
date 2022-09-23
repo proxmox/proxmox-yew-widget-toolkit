@@ -28,6 +28,7 @@ pub struct DataTableHeader<T: 'static> {
     headers: Rc<Vec<IndexedHeader<T>>>,
 
     pub on_size_change: Option<Callback<Vec<usize>>>,
+    pub on_hidden_change: Option<Callback<Vec<bool>>>,
     pub on_sort_change: Option<Callback<SorterFn<T>>>,
 
     /// set class for header cells
@@ -57,6 +58,12 @@ impl<T: 'static> DataTableHeader<T> {
     /// Builder style method to set the size change callback
     pub fn on_size_change(mut self, cb: impl IntoEventCallback<Vec<usize>>) -> Self {
         self.on_size_change = cb.into_event_callback();
+        self
+    }
+
+    /// Builder style method to set the hidden change callback
+    pub fn on_hidden_change(mut self, cb: impl IntoEventCallback<Vec<bool>>) -> Self {
+        self.on_hidden_change = cb.into_event_callback();
         self
     }
 
@@ -95,11 +102,12 @@ fn column_to_rows<T: 'static>(
     props: &DataTableHeader<T>,
     link: &Scope<PwtDataTableHeader<T>>,
     start_row: usize,
+    start_col: usize,
     rows: &mut Vec<Vec<Html>>,
 ) {
     rows.resize((start_row + 1).max(rows.len()), Vec::new());
 
-    let start_col = cell.start_col;
+    let column_idx = cell.start_col;
     let cell_idx = cell.cell_idx;
 
     let sort_order = state.get_column_sorter(cell_idx);
@@ -116,6 +124,7 @@ fn column_to_rows<T: 'static>(
 
     rows[start_row].push(
         Container::new()
+            .key(Key::from(cell_idx))
             .tag("th")
             .attribute("role", "columnheader")
             .attribute(
@@ -131,11 +140,11 @@ fn column_to_rows<T: 'static>(
                         let link = link.clone();
                         move |width| {
                             let width: usize = if width > 0 { width as usize } else  { 0 };
-                            link.send_message(Msg::ResizeColumn(start_col, width));
+                            link.send_message(Msg::ResizeColumn(column_idx, width));
                         }
                     })
-                    .on_size_reset(link.callback(move |_| Msg::ColumnSizeReset(start_col)))
-                    .on_size_change(link.callback(move |w| Msg::ColumnSizeChange(start_col, w)))
+                    .on_size_reset(link.callback(move |_| Msg::ColumnSizeReset(column_idx)))
+                    .on_size_change(link.callback(move |w| Msg::ColumnSizeChange(column_idx, w)))
                     .picker({
                         let headers = Rc::clone(&props.headers);
                         let link = link.clone();
@@ -163,18 +172,30 @@ fn header_list_to_rows<T: 'static>(
     props: &DataTableHeader<T>,
     link: &Scope<PwtDataTableHeader<T>>,
     start_row: usize,
+    start_col: usize,
     rows: &mut Vec<Vec<Html>>,
-) {
+) -> usize {
+    let mut span = 0;
+
     for child in list {
+
+        let cell_idx = child.cell_idx();
+        let hidden = state.get_cell_hidden(cell_idx);
+        if hidden { continue; }
+
         match child {
             IndexedHeader::Single(column) => {
-                column_to_rows(state, column, props, link, start_row, rows);
+                column_to_rows(state, column, props, link, start_row, start_col + span, rows);
+                span += 1;
             }
             IndexedHeader::Group(group) => {
-                group_to_rows(state, group, props, link, start_row, rows);
+                let cols = group_to_rows(state, group, props, link, start_row, start_col + span, rows);
+                span += cols;
             }
         }
     }
+
+    span
 }
 
 fn group_to_rows<T: 'static>(
@@ -183,27 +204,33 @@ fn group_to_rows<T: 'static>(
     props: &DataTableHeader<T>,
     link: &Scope<PwtDataTableHeader<T>>,
     start_row: usize,
+    start_col: usize,
     rows: &mut Vec<Vec<Html>>,
-) {
+) -> usize {
     rows.resize((start_row + 1).max(rows.len()), Vec::new());
 
-    header_list_to_rows(state, &group.children, props, link, start_row + 1, rows);
+    let cell_idx = group.cell_idx;
+
+    let span = header_list_to_rows(state, &group.children, props, link, start_row + 1, start_col, rows);
+    let span = span.max(1); // at least one column for the group header
 
     rows[start_row].push(
         Container::new()
             .tag("th")
+            .key(Key::from(cell_idx))
             .attribute("role", "columnheader")
             .attribute("tabindex", "-1")
             .class("pwt-datatable2-group-header-item")
             .class(props.header_class.clone())
             .attribute("style", format!(
                 "grid-column: {} / span {}",
-                group.start_col + 1,
-                group.colspan,
+                start_col + 1,
+                span,
             ))
             .with_child(group.name.clone())
             .into()
     );
+    span
 }
 
 pub struct PwtDataTableHeader<T: 'static> {
@@ -224,6 +251,7 @@ impl <T: 'static> PwtDataTableHeader<T> {
 
         let mut grid_style = String::from("user-select: none; display:grid; grid-template-columns:");
         for (col_idx, cell) in self.state.columns().iter().enumerate() {
+            if self.state.get_column_hidden(col_idx) { continue; }
             if let Some(width) = self.state.get_width(col_idx) {
                 grid_style.push_str(&format!("{}px", width));
             } else {
@@ -301,7 +329,10 @@ impl <T: 'static> Component for PwtDataTableHeader<T> {
                 true
             }
             Msg::HideClick(cell_idx) => {
-                self.state.toggle_hidden(cell_idx);
+                self.state.toggle_cell_hidden(cell_idx);
+                if let Some(on_hidden_change) = &props.on_hidden_change {
+                    on_hidden_change.emit(self.state.hidden_columns());
+                }
                 true
             }
         }
@@ -318,6 +349,7 @@ impl <T: 'static> Component for PwtDataTableHeader<T> {
             props,
             ctx.link(),
             0,
+            0,
             &mut rows,
         );
 
@@ -327,6 +359,7 @@ impl <T: 'static> Component for PwtDataTableHeader<T> {
 
         // add some space at the end to make room for the tables vertical scrollbar
         let last = Container::new()
+            .key(Key::from("last")) // important: all children need a key
             .attribute("style", format!("grid-row: 1 / 10; grid-column-start: {};", column_count + 1));
 
         Container::new()

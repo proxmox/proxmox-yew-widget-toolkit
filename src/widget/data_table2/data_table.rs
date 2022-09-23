@@ -18,6 +18,7 @@ use super::{create_indexed_header_list, DataTableColumn, DataTableHeader, Header
 pub enum Msg<T: 'static> {
     ChangeSort(SorterFn<T>),
     ColumnWidthChange(Vec<usize>),
+    ColumnHiddenChange(Vec<bool>),
     ScrollTo(i32, i32),
     ViewportResize(i32, i32),
     ContainerResize(i32, i32),
@@ -262,6 +263,7 @@ pub struct PwtDataTable<T: 'static> {
 
     columns: Vec<DataTableColumn<T>>,
     column_widths: Vec<usize>,
+    column_hidden: Vec<bool>,
     virtual_scroll: bool,
     scroll_info: VirtualScrollInfo,
 
@@ -287,7 +289,7 @@ pub struct PwtDataTable<T: 'static> {
     keypress_timeout: Option<Timeout>,
 }
 
-fn render_empty_row_with_sizes(widths: &[usize]) -> Html {
+fn render_empty_row_with_sizes(widths: &[usize], column_hidden: &[bool]) -> Html {
     Container::new()
         .tag("tr")
         .attribute("role", "none")
@@ -295,9 +297,16 @@ fn render_empty_row_with_sizes(widths: &[usize]) -> Html {
          // Note: This row should not be visible, so avoid borders
         .attribute("style", "border-top-width: 0px; border-bottom-width: 0px;")
         .children(
-            widths.iter().map(|w| html!{
-                <td role="none" style={format!("width:{w}px;height:0px;")}></td>
-            })
+            widths.iter().enumerate()
+                .filter(|(column_num, _)| {
+                    match column_hidden.get(*column_num) {
+                        Some(true) => false,
+                        _ => true,
+                    }
+                })
+                .map(|(_, width)| html!{
+                    <td role="none" style={format!("width:{width}px;height:0px;")}></td>
+                })
         )
         .into()
 }
@@ -436,24 +445,30 @@ impl<T: 'static> PwtDataTable<T> {
             .class((active && self.has_focus).then(|| "row-cursor"))
             .class(selected.then(|| "selected"))
             .children(
-                self.columns.iter().enumerate().map(|(_column_num, column)| {
-                    let item_style = format!(
-                        "vertical-align: {}; text-align: {};",
-                        props.vertical_align.as_deref().unwrap_or("baseline"),
-                        column.justify,
-                    );
-                    Container::new()
-                        .tag("td")
-                        .class(self.cell_class.clone())
-                        .attribute("style", item_style)
-                        .with_child(html!{
-                            <div>{
-                                column.render.apply(item)
-                            }</div>
-                        })
-                        .into()
-                })
-
+                self.columns.iter().enumerate()
+                    .filter(|(column_num, _)| {
+                        match self.column_hidden.get(*column_num) {
+                            Some(true) => false,
+                            _ => true,
+                        }
+                    })
+                    .map(|(_column_num, column)| {
+                        let item_style = format!(
+                            "vertical-align: {}; text-align: {};",
+                            props.vertical_align.as_deref().unwrap_or("baseline"),
+                            column.justify,
+                        );
+                        Container::new()
+                            .tag("td")
+                            .class(self.cell_class.clone())
+                            .attribute("style", item_style)
+                            .with_child(html!{
+                                <div>{
+                                    column.render.apply(item)
+                                }</div>
+                            })
+                            .into()
+                    })
             )
             .with_child(html!{<th style={minheight_cell_style.clone()}/>})
             .into()
@@ -472,7 +487,7 @@ impl<T: 'static> PwtDataTable<T> {
             .class(props.borderless.then(|| "table-borderless"))
             .node_ref(self.table_ref.clone())
             .attribute("style", format!("table-layout: fixed;width:1px; position:relative;top:{}px;", offset))
-            .with_child(render_empty_row_with_sizes(&self.column_widths));
+            .with_child(render_empty_row_with_sizes(&self.column_widths, &self.column_hidden));
 
         if !self.column_widths.is_empty() {
             for (filtered_pos, record_num, item) in self.store.filtered_data_range(start..end) {
@@ -593,6 +608,7 @@ impl <T: 'static> Component for PwtDataTable<T> {
             store,
             columns,
             column_widths: Vec::new(),
+            column_hidden: Vec::new(),
             virtual_scroll,
             scroll_info: VirtualScrollInfo::default(),
             cell_class,
@@ -732,6 +748,10 @@ impl <T: 'static> Component for PwtDataTable<T> {
                 self.store.set_sorter(sorter_fn);
                 true
             }
+            Msg::ColumnHiddenChange(column_hidden) => {
+                self.column_hidden = column_hidden;
+                true
+            }
         }
     }
 
@@ -811,6 +831,7 @@ impl <T: 'static> Component for PwtDataTable<T> {
                         DataTableHeader::new(self.headers.clone())
                             .header_class(props.header_class.clone())
                             .on_size_change(ctx.link().callback(Msg::ColumnWidthChange))
+                            .on_hidden_change(ctx.link().callback(Msg::ColumnHiddenChange))
                             .on_sort_change(ctx.link().callback(Msg::ChangeSort))
                     )
             )
