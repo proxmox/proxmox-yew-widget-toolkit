@@ -235,6 +235,20 @@ impl<T: 'static> IndexedHeader<T> {
         indexed_group
     }
 
+    pub fn parent(&self) -> Option<usize> {
+        match self {
+            Self::Single(single) => single.parent,
+            Self::Group(group) => group.parent,
+        }
+    }
+
+    pub fn cell_idx(&self) -> usize {
+        match self {
+            Self::Single(single) => single.cell_idx,
+            Self::Group(group) => group.cell_idx,
+        }
+    }
+
     pub fn cell_range(&self) -> Range<usize> {
        match self {
            Self::Single(single) => single.cell_idx..(single.cell_idx+1),

@@ -17,7 +17,7 @@ struct CellState {
 /// - column hidden
 
 pub struct HeaderState<T: 'static> {
-    headers: Rc<Vec<IndexedHeader<T>>>,
+    //headers: Rc<Vec<IndexedHeader<T>>>,
     // map cell_idx => &IndexedHeader
     cell_map: Vec<IndexedHeader<T>>,
     // map cell_idx => CellState,
@@ -61,7 +61,7 @@ impl<T: 'static> HeaderState<T> {
         }
 
         Self {
-            headers,
+            // headers,
             columns,
             cell_map,
             cell_state,
@@ -105,15 +105,33 @@ impl<T: 'static> HeaderState<T> {
         self.cell_state[cell_idx].sort_order = Some(order);
     }
 
+    fn bubble_up_hidden(&mut self, cell_idx: Option<usize>) {
+        let cell_idx = match cell_idx {
+            Some(cell_idx) => cell_idx,
+            None => return,
+        };
+
+        let group = match &self.cell_map[cell_idx] {
+            IndexedHeader::Group(group) => group,
+            IndexedHeader::Single(_) => { return; /* should not happen at all */ }
+        };
+
+        let visible = group.children.iter().find(|cell| !self.get_hidden(cell.cell_idx())).is_some();
+        self.cell_state[cell_idx].hidden = !visible;
+        self.bubble_up_hidden(group.parent);
+    }
+
     pub fn set_hidden(&mut self, cell_idx: usize, hidden: bool) {
         let header = &self.cell_map[cell_idx];
 
         for idx in header.cell_range() {
             self.cell_state[idx].hidden = hidden;
         }
+
+        self.bubble_up_hidden(header.parent());
     }
 
-    pub fn get_hidden(&mut self, cell_idx: usize) -> bool {
+    pub fn get_hidden(&self, cell_idx: usize) -> bool {
         self.cell_state[cell_idx].hidden
     }
 
