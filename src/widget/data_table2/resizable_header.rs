@@ -29,8 +29,7 @@ pub struct ResizableHeader {
 
     /// Unique element ID
     pub id: Option<String>,
-    #[prop_or_default]
-    pub active: bool,
+    pub tabindex: Option<i32>,
 
     pub content: Option<VNode>,
     pub on_resize: Option<Callback<i32>>,
@@ -72,15 +71,20 @@ impl ResizableHeader {
         self
     }
 
-    /// Builder style method to set the active flag
-    pub fn active(mut self, active: bool) -> Self {
-        self.active = active;
-        self
-    }
-
     /// Method to add a html class
     pub fn add_class(&mut self, class: impl Into<Classes>) {
         self.class.push(class);
+    }
+
+    /// Builder style method to set the html tabindex attribute
+    pub fn tabindex(mut self, index: impl IntoPropValue<Option<i32>>) -> Self {
+        self.set_tabindex(index);
+        self
+    }
+
+    /// Method to set the html tabindex attribute
+    pub fn set_tabindex(&mut self, index: impl IntoPropValue<Option<i32>>) {
+        self.tabindex = index.into_prop_value();
     }
 
     /// Builder style method to set the header text
@@ -263,9 +267,8 @@ impl Component for PwtResizableHeader {
 
         Row::new()
             .class("pwt-datatable2-header-item")
-            .class(props.active.then(|| "active"))
             .class(props.class.clone())
-            .attribute("tabindex", if props.active { "0" } else { "-1" })
+            .attribute("tabindex", props.tabindex.map(|t| t.to_string()))
             .attribute("id", props.id.clone())
             .node_ref(self.node_ref.clone())
             .onfocus(ctx.link().callback(|_| Msg::FocusChange(true)))

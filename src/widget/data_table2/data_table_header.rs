@@ -107,8 +107,8 @@ pub struct PwtDataTableHeader<T: 'static> {
     // Sort order state for columns.
     state: HeaderState<T>,
 
-    // Acticel cell
-    cursor: usize,
+    // Active cell
+    cursor: Option<usize>,
 
     observed_widths: Vec<Option<usize>>,
 
@@ -187,7 +187,8 @@ impl <T: 'static> PwtDataTableHeader<T> {
 
         let column_idx = cell.start_col;
         let cell_idx = cell.cell_idx;
-        let active = self.cursor == cell_idx;
+        let active = self.cursor.map(|cursor| cursor == cell_idx).unwrap_or(false);
+        let tabindex = if active || (self.cursor.is_none() && (cell_idx == 0)) { 0 } else { -1 };
 
         let unique_id = self.unique_cell_id(cell_idx);
 
@@ -215,7 +216,7 @@ impl <T: 'static> PwtDataTableHeader<T> {
                 .with_child(
                     ResizableHeader::new()
                         .id(unique_id)
-                        .active(active)
+                        .tabindex(tabindex)
                         .class(props.header_class.clone())
                         .class("pwt-w-100 pwt-h-100")
                         .content(html!{<>{sort_icon}{&cell.column.name}</>})
@@ -263,7 +264,8 @@ impl <T: 'static> PwtDataTableHeader<T> {
         rows.resize((start_row + 1).max(rows.len()), Vec::new());
 
         let cell_idx = group.cell_idx;
-        let active = self.cursor == cell_idx;
+        let active = self.cursor.map(|cursor| cursor == cell_idx).unwrap_or(false);
+        let tabindex = if active || (self.cursor.is_none() && (cell_idx == 0)) { "0" } else { "-1" };
         let unique_id = self.unique_cell_id(cell_idx);
 
         let span = self.header_list_to_rows(&group.children, props, link, start_row + 1, start_col, rows);
@@ -274,10 +276,9 @@ impl <T: 'static> PwtDataTableHeader<T> {
                 .tag("th")
                 .key(Key::from(cell_idx))
                 .attribute("role", "columnheader")
-                .attribute("tabindex", if active { "0" } else { "-1" })
+                .attribute("tabindex", tabindex)
                 .attribute("id", unique_id)
                 .class("pwt-datatable2-group-header-item")
-                .class(active.then(|| "active"))
                 .class(props.header_class.clone())
                 .attribute("style", format!(
                     "grid-column: {} / span {}",
@@ -312,7 +313,12 @@ impl <T: 'static> PwtDataTableHeader<T> {
             }
         }
 
-        let el = match get_cell_el(self.cursor) {
+        let cell_idx = match self.cursor {
+            Some(cursor) => cursor,
+            None => return,
+        };
+
+        let el = match get_cell_el(cell_idx) {
             Some(el) => el,
             None => return,
         };
@@ -335,7 +341,7 @@ impl <T: 'static> Component for PwtDataTableHeader<T> {
             unique_id: get_unique_element_id(),
             node_ref: props.node_ref.clone().unwrap_or(NodeRef::default()),
             state,
-            cursor: 0,
+            cursor: None,
             observed_widths: Vec::new(),
             timeout: None,
         }
@@ -394,16 +400,20 @@ impl <T: 'static> Component for PwtDataTableHeader<T> {
                 true
             }
             Msg::FocusCell(cell_idx) => {
-                self.cursor = cell_idx;
+                self.cursor = Some(cell_idx);
                 self.focus_active_cell();
                 true
             }
             Msg::MoveCursor(direction) => {
                 let last = self.state.cell_count().saturating_sub(1);
-                self.cursor = match direction {
-                    false => if self.cursor > 0 { self.cursor - 1 }  else { last },
-                    true => if (self.cursor + 1) <= last { self.cursor + 1 } else { 0 },
+                let cursor = match self.cursor {
+                    Some(cursor) => cursor,
+                    None => return false,
                 };
+                self.cursor = Some(match direction {
+                    false => if cursor > 0 { cursor - 1 }  else { last },
+                    true => if (cursor + 1) <= last { cursor + 1 } else { 0 },
+                });
                 self.focus_active_cell();
                 true
             }
