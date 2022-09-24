@@ -232,9 +232,9 @@ impl <T: 'static> PwtDataTableHeader<T> {
                         .picker({
                             let headers = Rc::clone(&props.headers);
                             let link = link.clone();
-                            let hidden = Vec::from(self.state.hidden_cells());
+                            let hidden_cells = Vec::from(self.state.hidden_cells());
                             move |_: &()| {
-                                HeaderMenu::new(Rc::clone(&headers), &hidden)
+                                HeaderMenu::new(Rc::clone(&headers), &hidden_cells)
                                     .key(format!("header-menu-{cell_idx}"))
                                     .on_sort_change(link.callback(move |asc| {
                                         Msg::ColumnSortChange(cell_idx, false, Some(asc))

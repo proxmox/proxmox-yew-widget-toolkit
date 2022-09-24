@@ -267,6 +267,7 @@ impl Component for PwtResizableHeader {
 
         Row::new()
             .class("pwt-datatable2-header-item")
+            .class(self.show_picker.then(|| "focused"))
             .class(props.class.clone())
             .attribute("tabindex", props.tabindex.map(|t| t.to_string()))
             .attribute("id", props.id.clone())
@@ -282,7 +283,7 @@ impl Component for PwtResizableHeader {
             .with_child(
                 Container::new()
                     .class("pwt-datatable2-header-menu-trigger")
-                    .class(self.has_focus.then(|| "focused"))
+                    .class((self.has_focus || self.show_picker).then(|| "focused"))
                     .ondblclick(|event: MouseEvent| event.stop_propagation())
                     .onclick(ctx.link().callback(|event: MouseEvent| {
                         event.stop_propagation();
