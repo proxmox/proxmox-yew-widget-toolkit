@@ -445,9 +445,10 @@ impl <T: 'static> Component for PwtDataTableHeader<T> {
             .onkeydown({
                 let link = ctx.link().clone();
                 move |event: KeyboardEvent| {
+                    log::info!("KD {}", event.key_code());
                     match event.key_code() {
-                        39 => link.send_message(Msg::MoveCursor(true)),
-                        37 => link.send_message(Msg::MoveCursor(false)),
+                        39 | 40 => link.send_message(Msg::MoveCursor(true)),
+                        37 | 38 => link.send_message(Msg::MoveCursor(false)),
                         _ => return,
                     }
                     event.prevent_default();
