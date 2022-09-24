@@ -6,7 +6,7 @@ use yew::html::IntoPropValue;
 //use crate::props::{ExtractKeyFn, IntoExtractKeyFn};
 use crate::props::{FilterFn, IntoFilterFn, SorterFn, IntoSorterFn};
 
-pub fn optional_rc_ptr_eq<T>(a: &Option<Rc<Vec<T>>>, b: &Option<Rc<Vec<T>>>) -> bool {
+pub fn optional_rc_ptr_eq<T>(a: &Option<Rc<T>>, b: &Option<Rc<T>>) -> bool {
     match (a, b) {
         (Some(a), Some(b)) => Rc::ptr_eq(a, b),
         (None, None) => true,

@@ -2,18 +2,37 @@ use std::rc::Rc;
 use std::cell::RefCell;
 use std::collections::HashSet;
 
+use slab::Slab;
 use yew::prelude::*;
 use derivative::Derivative;
 use yew::virtual_dom::Key;
 
 use super::ExtractKeyFn;
+use crate::state::optional_rc_ptr_eq;
 
 #[derive(Derivative)]
 #[derivative(Clone(bound=""), PartialEq(bound=""))]
 pub struct Selection2<T> {
     extract_key: ExtractKeyFn<T>,
+    #[derivative(PartialEq(compare_with="optional_rc_ptr_eq"))]
+    on_select: Option<Rc<SelectionObserver>>,
     #[derivative(PartialEq(compare_with="selection_state_equal"))]
     inner: Rc<RefCell<SelectionState>>,
+}
+
+
+
+/// Owns the selection listener. When dropped, the
+/// listener will be removed fron the Selection.
+pub struct SelectionObserver {
+    key: usize,
+    inner: Rc<RefCell<SelectionState>>,
+}
+
+impl Drop for SelectionObserver {
+    fn drop(&mut self) {
+        self.inner.borrow_mut().remove_listener(self.key);
+    }
 }
 
 impl<T> Selection2<T> {
@@ -21,6 +40,7 @@ impl<T> Selection2<T> {
     pub fn new(extract_key: impl Into<ExtractKeyFn<T>>) -> Self {
         Self {
             extract_key: extract_key.into(),
+            on_select: None,
             inner: Rc::new(RefCell::new(SelectionState::new())),
         }
     }
@@ -30,10 +50,18 @@ impl<T> Selection2<T> {
         self
     }
 
-    pub fn on_select(self, cb: impl ::yew::html::IntoEventCallback<Vec<Key>>) -> Self {
-        self.inner.borrow_mut()
-            .add_listener(cb);
+    pub fn on_select(mut self, cb: impl ::yew::html::IntoEventCallback<Vec<Key>>) -> Self {
+        self.on_select = match cb.into_event_callback() {
+            Some(cb) => Some(Rc::new(self.add_listener(cb))),
+            None => None,
+        };
         self
+    }
+
+    pub fn add_listener(&mut self, cb: Callback<Vec<Key>>) -> SelectionObserver {
+        let key = self.inner.borrow_mut()
+            .add_listener(cb);
+        SelectionObserver { key, inner: self.inner.clone() }
     }
 
     /// Clear the selection
@@ -95,18 +123,12 @@ fn selection_state_equal(
         me.borrow().version == other.borrow().version
 }
 
-enum SelectionListeners {
-    None,
-    Single(Callback<Vec<Key>>),
-    Multiple(Vec<Callback<Vec<Key>>>),
-}
-
 struct SelectionState {
     version: usize, // change tracking
     multiselect: bool,
     selection: Option<Key>, // used for single row
     selection_map: HashSet<Key>, // used for multiselect
-    on_select: SelectionListeners,
+    listeners: Slab<Callback<Vec<Key>>>,
 }
 
 impl SelectionState {
@@ -117,7 +139,7 @@ impl SelectionState {
             multiselect: false,
             selection: None,
             selection_map: HashSet::new(),
-            on_select: SelectionListeners::None,
+            listeners: Slab::new(),
         }
     }
 
@@ -125,31 +147,17 @@ impl SelectionState {
         self.multiselect = multiselect;
     }
 
-    fn add_listener(&mut self, cb: impl ::yew::html::IntoEventCallback<Vec<Key>>) {
-        if let Some(cb) = cb.into_event_callback() {
-            self.on_select = match &self.on_select {
-                SelectionListeners::None => SelectionListeners::Single(cb),
-                SelectionListeners::Single(prev) => {
-                    SelectionListeners::Multiple(vec![prev.clone(), cb])
-                }
-                SelectionListeners::Multiple(list) => {
-                    let mut list = list.clone();
-                    list.push(cb);
-                    SelectionListeners::Multiple(list)
-                }
-            };
-        }
+    fn add_listener(&mut self, cb: Callback<Vec<Key>>) -> usize {
+        self.listeners.insert(cb)
+    }
+
+    fn remove_listener(&mut self, key: usize) {
+        self.listeners.remove(key);
     }
 
     pub fn notify_listeners(&mut self) {
-        match &self.on_select {
-            SelectionListeners::None => { /* do nothing */ },
-            SelectionListeners::Single(cb) => {
-                 cb.emit(self.selected_keys());
-            }
-            SelectionListeners::Multiple(list) => {
-                for cb in list { cb.emit(self.selected_keys()); }
-            }
+        for (_key, listener) in self.listeners.iter() {
+            listener.emit(self.selected_keys());
         }
     }
 

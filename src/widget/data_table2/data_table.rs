@@ -46,7 +46,7 @@ pub struct DataTable<T: 'static> {
 
     headers: Rc<Vec<Header<T>>>,
 
-    #[derivative(PartialEq(compare_with="optional_rc_ptr_eq::<T>"))]
+    #[derivative(PartialEq(compare_with="optional_rc_ptr_eq::<Vec<T>>"))]
     pub data: Option<Rc<Vec<T>>>,
 
     /// set class for table cells (default is "pwt-p-2")

@@ -37,7 +37,7 @@ mod render_function;
 pub use render_function::RenderFn;
 
 mod selection;
-pub use selection::Selection2;
+pub use selection::{Selection2, SelectionObserver};
 
 mod sorter_function;
 pub use sorter_function::{SorterFn, IntoSorterFn};
