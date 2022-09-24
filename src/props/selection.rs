@@ -10,10 +10,12 @@ use yew::virtual_dom::Key;
 use super::ExtractKeyFn;
 use crate::state::optional_rc_ptr_eq;
 
+/// Shared Selection
 #[derive(Derivative)]
 #[derivative(Clone(bound=""), PartialEq(bound=""))]
 pub struct Selection2<T> {
     extract_key: ExtractKeyFn<T>,
+    // Allow to store one SelectionObserver here (for convenience)
     #[derivative(PartialEq(compare_with="optional_rc_ptr_eq"))]
     on_select: Option<Rc<SelectionObserver>>,
     #[derivative(PartialEq(compare_with="selection_state_equal"))]
@@ -22,8 +24,8 @@ pub struct Selection2<T> {
 
 
 
-/// Owns the selection listener. When dropped, the
-/// listener will be removed fron the Selection.
+/// Owns the selection listener callback. When dropped, the
+/// listener callback will be removed fron the Selection.
 pub struct SelectionObserver {
     key: usize,
     inner: Rc<RefCell<SelectionState>>,
@@ -37,6 +39,10 @@ impl Drop for SelectionObserver {
 
 impl<T> Selection2<T> {
 
+    /// Create a new instance.
+    ///
+    /// Each selection requires a method to extract an unique key from
+    /// the data record.
     pub fn new(extract_key: impl Into<ExtractKeyFn<T>>) -> Self {
         Self {
             extract_key: extract_key.into(),
@@ -45,11 +51,18 @@ impl<T> Selection2<T> {
         }
     }
 
+    /// Builder style method to set the multiselect flag.
     pub fn multiselect(self, multiselect: bool) -> Self {
         self.inner.borrow_mut().set_multiselect(multiselect);
         self
     }
 
+    /// Builder style method to set the on_select callback.
+    ///
+    /// This calls [Self::add_listener] to create a new
+    /// [SelectionObserver]. The observer is stored inside the
+    /// [Selection2] object, so each clone can hold a single on_select
+    /// callback.
     pub fn on_select(mut self, cb: impl ::yew::html::IntoEventCallback<Vec<Key>>) -> Self {
         self.on_select = match cb.into_event_callback() {
             Some(cb) => Some(Rc::new(self.add_listener(cb))),
@@ -58,6 +71,10 @@ impl<T> Selection2<T> {
         self
     }
 
+    /// Method to add an selection observer.
+    ///
+    /// This is usually called by [Self::on_select], which stores the
+    /// observer inside the [Selection2] object.
     pub fn add_listener(&mut self, cb: Callback<Vec<Key>>) -> SelectionObserver {
         let key = self.inner.borrow_mut()
             .add_listener(cb);
@@ -70,6 +87,7 @@ impl<T> Selection2<T> {
             .clear();
     }
 
+    /// Add an item to the selection.
     pub fn select<X: std::borrow::Borrow<T>>(&self, item: X) {
         let item: &T = item.borrow();
         let key = self.extract_key.apply(item);
@@ -82,6 +100,7 @@ impl<T> Selection2<T> {
             .select_key(key);
     }
 
+    /// Toggle the selection state for an item.
     pub fn toggle<X: std::borrow::Borrow<T>>(&self, item: X) {
         let item: &T = item.borrow();
         let key = self.extract_key.apply(item);
@@ -94,13 +113,14 @@ impl<T> Selection2<T> {
             .toggle_key(key);
     }
 
+    /// Query if the selection contains an item.
     pub fn contains<X: std::borrow::Borrow<T>>(&self, item: X) -> bool {
         let item: &T = item.borrow();
         let key = self.extract_key.apply(item);
         self.contains_key(&key)
     }
 
-    // Query if the selection contains the key.
+    /// Query if the selection contains the key.
     pub fn contains_key(&self, key: &Key) -> bool {
         self.inner.borrow()
             .contains_key(key)
