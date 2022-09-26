@@ -136,9 +136,17 @@ impl<T> Selection2<T> {
     }
 
     /// Returns all selected keys
+    ///
+    /// Note: This works for single and multiselect mode
     pub fn selected_keys(&self) -> Vec<Key> {
         self.inner.borrow()
             .selected_keys()
+    }
+
+    /// Returns the selected key (only for single select mode)
+    pub fn selected_key(&self) -> Option<Key> {
+        self.inner.borrow()
+            .selected_key()
     }
 }
 
@@ -247,6 +255,13 @@ impl<T> SelectionState<T> {
             }
         }
         false
+    }
+
+    fn selected_key(&self) -> Option<Key> {
+        match self.multiselect {
+            false => self.selection.clone(),
+            true => None,
+        }
     }
 
     fn selected_keys(&self) -> Vec<Key> {
