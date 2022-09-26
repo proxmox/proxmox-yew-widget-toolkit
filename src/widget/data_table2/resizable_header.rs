@@ -297,7 +297,8 @@ impl Component for PwtResizableHeader {
                      .onmousedown(ctx.link().callback(|_| Msg::StartResize))
                      .ondblclick({
                          let on_size_reset = props.on_size_reset.clone();
-                         move |_| {
+                         move |event: MouseEvent| {
+                             event.stop_propagation();
                              if let Some(on_size_reset) = &on_size_reset {
                                  on_size_reset.emit(());
                              }
