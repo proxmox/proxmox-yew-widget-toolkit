@@ -337,6 +337,11 @@ impl <T: 'static> Component for PwtDataTableHeader<T> {
 
         let state = HeaderState::new(Rc::clone(&props.headers));
 
+        if let Some(on_sort_change) = &props.on_sort_change {
+            let sorter = state.create_combined_sorter_fn();
+            on_sort_change.emit(sorter);
+        }
+
         Self {
             unique_id: get_unique_element_id(),
             node_ref: props.node_ref.clone().unwrap_or(NodeRef::default()),
