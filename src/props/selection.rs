@@ -17,21 +17,21 @@ pub struct Selection2<T> {
     extract_key: ExtractKeyFn<T>,
     // Allow to store one SelectionObserver here (for convenience)
     #[derivative(PartialEq(compare_with="optional_rc_ptr_eq"))]
-    on_select: Option<Rc<SelectionObserver>>,
-    #[derivative(PartialEq(compare_with="selection_state_equal"))]
-    inner: Rc<RefCell<SelectionState>>,
+    on_select: Option<Rc<SelectionObserver<T>>>,
+    #[derivative(PartialEq(compare_with="selection_state_equal::<T>"))]
+    inner: Rc<RefCell<SelectionState<T>>>,
 }
 
 
 
 /// Owns the selection listener callback. When dropped, the
 /// listener callback will be removed fron the Selection.
-pub struct SelectionObserver {
+pub struct SelectionObserver<T> {
     key: usize,
-    inner: Rc<RefCell<SelectionState>>,
+    inner: Rc<RefCell<SelectionState<T>>>,
 }
 
-impl Drop for SelectionObserver {
+impl<T> Drop for SelectionObserver<T> {
     fn drop(&mut self) {
         self.inner.borrow_mut().remove_listener(self.key);
     }
@@ -63,7 +63,7 @@ impl<T> Selection2<T> {
     /// [SelectionObserver]. The observer is stored inside the
     /// [Selection2] object, so each clone can hold a single on_select
     /// callback.
-    pub fn on_select(mut self, cb: impl ::yew::html::IntoEventCallback<Vec<Key>>) -> Self {
+    pub fn on_select(mut self, cb: impl ::yew::html::IntoEventCallback<Selection2<T>>) -> Self {
         self.on_select = match cb.into_event_callback() {
             Some(cb) => Some(Rc::new(self.add_listener(cb))),
             None => None,
@@ -75,16 +75,23 @@ impl<T> Selection2<T> {
     ///
     /// This is usually called by [Self::on_select], which stores the
     /// observer inside the [Selection2] object.
-    pub fn add_listener(&mut self, cb: Callback<Vec<Key>>) -> SelectionObserver {
+    pub fn add_listener(&mut self, cb: Callback<Selection2<T>>) -> SelectionObserver<T> {
         let key = self.inner.borrow_mut()
             .add_listener(cb);
         SelectionObserver { key, inner: self.inner.clone() }
+    }
+
+    fn notify_listeners(&self) {
+        for (_key, listener) in self.inner.borrow().listeners.iter() {
+            listener.emit(self.clone());
+        }
     }
 
     /// Clear the selection
     pub fn clear(&self) {
         self.inner.borrow_mut()
             .clear();
+        self.notify_listeners();
     }
 
     /// Add an item to the selection.
@@ -98,6 +105,7 @@ impl<T> Selection2<T> {
     pub fn select_key(&self, key: impl Into<Key>) {
         self.inner.borrow_mut()
             .select_key(key);
+        self.notify_listeners();
     }
 
     /// Toggle the selection state for an item.
@@ -111,6 +119,7 @@ impl<T> Selection2<T> {
     pub fn toggle_key(&self, key: impl Into<Key>) {
         self.inner.borrow_mut()
             .toggle_key(key);
+        self.notify_listeners();
     }
 
     /// Query if the selection contains an item.
@@ -126,6 +135,11 @@ impl<T> Selection2<T> {
             .contains_key(key)
     }
 
+    /// Returns all selected keys
+    pub fn selected_keys(&self) -> Vec<Key> {
+        self.inner.borrow()
+            .selected_keys()
+    }
 }
 
 impl<'a, T: 'a> Selection2<T> {
@@ -135,23 +149,23 @@ impl<'a, T: 'a> Selection2<T> {
     }
 }
 
-fn selection_state_equal(
-    me: &Rc<RefCell<SelectionState>>,
-    other: &Rc<RefCell<SelectionState>>
+fn selection_state_equal<T>(
+    me: &Rc<RefCell<SelectionState<T>>>,
+    other: &Rc<RefCell<SelectionState<T>>>
 ) -> bool {
     Rc::ptr_eq(&me, &other) &&
         me.borrow().version == other.borrow().version
 }
 
-struct SelectionState {
+struct SelectionState<T> {
     version: usize, // change tracking
     multiselect: bool,
     selection: Option<Key>, // used for single row
     selection_map: HashSet<Key>, // used for multiselect
-    listeners: Slab<Callback<Vec<Key>>>,
+    listeners: Slab<Callback<Selection2<T>>>,
 }
 
-impl SelectionState {
+impl<T> SelectionState<T> {
 
     fn new() -> Self {
         Self {
@@ -167,7 +181,7 @@ impl SelectionState {
         self.multiselect = multiselect;
     }
 
-    fn add_listener(&mut self, cb: Callback<Vec<Key>>) -> usize {
+    fn add_listener(&mut self, cb: Callback<Selection2<T>>) -> usize {
         self.listeners.insert(cb)
     }
 
@@ -175,20 +189,13 @@ impl SelectionState {
         self.listeners.remove(key);
     }
 
-    pub fn notify_listeners(&mut self) {
-        for (_key, listener) in self.listeners.iter() {
-            listener.emit(self.selected_keys());
-        }
-    }
-
-    pub fn clear(&mut self) {
+    fn clear(&mut self) {
         self.version += 1;
         self.selection = None;
         self.selection_map = HashSet::new();
-        self.notify_listeners();
-    }
+     }
 
-    pub fn select_key(&mut self, key: impl Into<Key>) {
+    fn select_key(&mut self, key: impl Into<Key>) {
         self.version += 1;
         let key = key.into();
         match self.multiselect {
@@ -197,10 +204,9 @@ impl SelectionState {
                 self.selection_map.insert(key);
             }
         }
-        self.notify_listeners();
     }
 
-    pub fn toggle_key(&mut self, key: impl Into<Key>) {
+    fn toggle_key(&mut self, key: impl Into<Key>) {
         self.version += 1;
         let key = key.into();
         match self.multiselect {
@@ -223,10 +229,9 @@ impl SelectionState {
                 }
             }
         }
-        self.notify_listeners();
     }
 
-    pub fn contains_key(&self, key: &Key) -> bool {
+    fn contains_key(&self, key: &Key) -> bool {
         match self.multiselect {
             false => {
                 if let Some(current) = &self.selection {
@@ -244,7 +249,7 @@ impl SelectionState {
         false
     }
 
-    pub fn selected_keys(&self) -> Vec<Key> {
+    fn selected_keys(&self) -> Vec<Key> {
         let mut keys = Vec::new();
 
         match self.multiselect {
@@ -260,8 +265,11 @@ impl SelectionState {
 
         keys
     }
+}
 
-    fn filter_nonexistent<'a, T: 'a>(
+impl<'a, T: 'a> SelectionState<T> {
+
+    fn filter_nonexistent(
         &mut self,
         mut data: impl Iterator<Item=&'a T>,
         extract_key: &ExtractKeyFn<T>,
