@@ -3,9 +3,11 @@ use std::cell::RefCell;
 use std::collections::HashSet;
 
 use slab::Slab;
-use yew::prelude::*;
 use derivative::Derivative;
+
+use yew::prelude::*;
 use yew::virtual_dom::Key;
+use yew::html::IntoEventCallback;
 
 use super::ExtractKeyFn;
 use crate::state::optional_rc_ptr_eq;
@@ -63,7 +65,7 @@ impl<T> Selection2<T> {
     /// [SelectionObserver]. The observer is stored inside the
     /// [Selection2] object, so each clone can hold a single on_select
     /// callback.
-    pub fn on_select(mut self, cb: impl ::yew::html::IntoEventCallback<Selection2<T>>) -> Self {
+    pub fn on_select(mut self, cb: impl IntoEventCallback<Selection2<T>>) -> Self {
         self.on_select = match cb.into_event_callback() {
             Some(cb) => Some(Rc::new(self.add_listener(cb))),
             None => None,
