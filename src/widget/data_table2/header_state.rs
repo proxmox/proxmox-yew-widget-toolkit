@@ -6,7 +6,7 @@ use crate::props::SorterFn;
 use super::{IndexedHeader, IndexedHeaderSingle};
 
 struct CellState {
-    width: Option<usize>,
+    width: Option<f64>,
     hidden: bool,
     sort_order: Option<bool>,
 }
@@ -68,12 +68,12 @@ impl<T: 'static> HeaderState<T> {
         }
     }
 
-    pub fn get_width(&self, col_num: usize) -> Option<usize> {
+    pub fn get_width(&self, col_num: usize) -> Option<f64> {
         let cell_idx = self.columns[col_num].cell_idx;
         self.cell_state[cell_idx].width
     }
 
-    pub fn set_width(&mut self, col_num: usize, width: Option<usize>) {
+    pub fn set_width(&mut self, col_num: usize, width: Option<f64>) {
         let cell_idx = self.columns[col_num].cell_idx;
         self.cell_state[cell_idx].width = width;
     }
@@ -171,11 +171,11 @@ impl<T: 'static> HeaderState<T> {
         self.columns.len()
     }
 
-    pub fn copy_observed_widths(&mut self, col_idx: usize, observed_widths: &[Option<usize>]) {
+    pub fn copy_observed_widths(&mut self, col_idx: usize, observed_widths: &[Option<f64>]) {
         for i in 0..col_idx.min(self.columns.len()) {
             if self.get_width(i).is_none() {
                 if let Some(Some(observed_width)) = observed_widths.get(i) {
-                    self.set_width(i, Some(*observed_width + 1));
+                    self.set_width(i, Some(*observed_width + 1.0));
                 }
             }
         }

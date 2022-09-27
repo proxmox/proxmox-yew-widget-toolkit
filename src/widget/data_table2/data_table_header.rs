@@ -27,7 +27,7 @@ pub struct DataTableHeader<T: 'static> {
 
     headers: Rc<Vec<IndexedHeader<T>>>,
 
-    pub on_size_change: Option<Callback<Vec<usize>>>,
+    pub on_size_change: Option<Callback<Vec<f64>>>,
     pub on_hidden_change: Option<Callback<Vec<bool>>>,
     pub on_sort_change: Option<Callback<SorterFn<T>>>,
 
@@ -56,7 +56,7 @@ impl<T: 'static> DataTableHeader<T> {
     }
 
     /// Builder style method to set the size change callback
-    pub fn on_size_change(mut self, cb: impl IntoEventCallback<Vec<usize>>) -> Self {
+    pub fn on_size_change(mut self, cb: impl IntoEventCallback<Vec<f64>>) -> Self {
         self.on_size_change = cb.into_event_callback();
         self
     }
@@ -88,9 +88,9 @@ impl<T: 'static> DataTableHeader<T> {
 }
 
 pub enum Msg {
-    ResizeColumn(usize, usize),
+    ResizeColumn(usize, f64),
     ColumnSizeReset(usize),
-    ColumnSizeChange(usize, i32), // fixme
+    ColumnSizeChange(usize, f64),
     ColumnSortChange(usize, bool, Option<bool>),
     HideClick(usize),
     MoveCursor(bool),
@@ -110,7 +110,7 @@ pub struct PwtDataTableHeader<T: 'static> {
     // Active cell
     cursor: Option<usize>,
 
-    observed_widths: Vec<Option<usize>>,
+    observed_widths: Vec<Option<f64>>,
 
     timeout: Option<Timeout>,
 }
@@ -220,13 +220,7 @@ impl <T: 'static> PwtDataTableHeader<T> {
                         .class(props.header_class.clone())
                         .class("pwt-w-100 pwt-h-100")
                         .content(html!{<>{sort_icon}{&cell.column.name}</>})
-                        .on_resize({
-                            let link = link.clone();
-                            move |width| {
-                                let width: usize = if width > 0 { width as usize } else  { 0 };
-                                link.send_message(Msg::ResizeColumn(column_idx, width));
-                            }
-                        })
+                        .on_resize(link.callback(move |width: f64| Msg::ResizeColumn(column_idx, width.max(0.0))))
                         .on_size_reset(link.callback(move |_| Msg::ColumnSizeReset(column_idx)))
                         .on_size_change(link.callback(move |w| Msg::ColumnSizeChange(column_idx, w)))
                         .picker({
@@ -356,7 +350,7 @@ impl <T: 'static> Component for PwtDataTableHeader<T> {
         let props = ctx.props();
         match msg {
             Msg::ResizeColumn(col_idx, width) => {
-                self.state.set_width(col_idx, Some(width.max(40)));
+                self.state.set_width(col_idx, Some(width.max(40.0)));
 
                 // Set flex columns on the left to fixed size to avoid unexpected effects.
                 self.state.copy_observed_widths(col_idx, &self.observed_widths);
@@ -369,9 +363,9 @@ impl <T: 'static> Component for PwtDataTableHeader<T> {
             }
             Msg::ColumnSizeChange(col_num, width) => {
                 self.observed_widths.resize((col_num + 1).max(self.observed_widths.len()), None);
-                self.observed_widths[col_num] = Some(width as usize);
+                self.observed_widths[col_num] = Some(width);
 
-                let observed_widths: Vec<usize> = self.observed_widths.iter()
+                let observed_widths: Vec<f64> = self.observed_widths.iter()
                     .filter_map(|w| w.clone())
                     .collect();
 

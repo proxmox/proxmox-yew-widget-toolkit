@@ -15,15 +15,15 @@ pub struct SizeObserver {
 
 impl SizeObserver {
 
-    pub fn new(el: &Element, callback: impl Into<Callback<(i32, i32)>>) -> Self {
+    pub fn new(el: &Element, callback: impl Into<Callback<(f64, f64)>>) -> Self {
         let callback = callback.into();
-
         let observer_closure = Closure::wrap(
             Box::new(
                 move |entries: Vec<ResizeObserverEntry>| {
                     if entries.len() == 1 {
                         let el = entries[0].target();
-                        callback.emit((el.client_width(), el.client_height()));
+                        let rect = el.get_bounding_client_rect();
+                        callback.emit((rect.width(), rect.height()));
                     } else {
                         unreachable!();
                     }

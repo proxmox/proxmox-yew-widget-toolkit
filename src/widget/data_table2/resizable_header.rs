@@ -32,9 +32,9 @@ pub struct ResizableHeader {
     pub tabindex: Option<i32>,
 
     pub content: Option<VNode>,
-    pub on_resize: Option<Callback<i32>>,
+    pub on_resize: Option<Callback<f64>>,
     pub on_size_reset: Option<Callback<()>>,
-    pub on_size_change: Option<Callback<i32>>,
+    pub on_size_change: Option<Callback<f64>>,
 
     /// Function to generate the header menu.
     pub picker: Option<RenderFn<()>>,
@@ -99,7 +99,7 @@ impl ResizableHeader {
     }
 
     /// Builder style method to set the resize callback
-    pub fn on_resize(mut self, cb: impl IntoEventCallback<i32>) -> Self {
+    pub fn on_resize(mut self, cb: impl IntoEventCallback<f64>) -> Self {
         self.on_resize = cb.into_event_callback();
         self
     }
@@ -111,7 +111,7 @@ impl ResizableHeader {
     }
 
     /// Builder style method to set the size change callback
-    pub fn on_size_change(mut self, cb: impl IntoEventCallback<i32>) -> Self {
+    pub fn on_size_change(mut self, cb: impl IntoEventCallback<f64>) -> Self {
         self.on_size_change = cb.into_event_callback();
         self
     }
@@ -138,7 +138,7 @@ pub enum Msg {
 #[doc(hidden)]
 pub struct PwtResizableHeader {
     node_ref: NodeRef,
-    width: i32,
+    width: f64,
     mousemove_listener: Option<EventListener>,
     mouseup_listener: Option<EventListener>,
     size_observer: Option<SizeObserver>,
@@ -169,7 +169,7 @@ impl Component for PwtResizableHeader {
 
         Self {
             node_ref: props.node_ref.clone().unwrap_or(NodeRef::default()),
-            width: 0,
+            width: 0.0,
             mousemove_listener: None,
             mouseup_listener: None,
             mousedown_listener: None,
@@ -189,9 +189,8 @@ impl Component for PwtResizableHeader {
             Msg::MouseMove(x) => {
                 if let Some(el) = self.node_ref.cast::<web_sys::Element>() {
                     let rect = el.get_bounding_client_rect();
-                    let new_width = x - (rect.x() as i32);
-                    //log::info!("MOVE {} {} {} {}", el.client_left(), rect.x(), x, new_width);
-                    self.width = new_width; //.max(40);
+                    let new_width = (x as f64) - rect.x();
+                    self.width = new_width.max(0.0);
                     if let Some(on_resize) = &props.on_resize {
                         on_resize.emit(self.width);
                     }
@@ -345,6 +344,7 @@ impl Component for PwtResizableHeader {
                 //let width = el.offset_width();
                 //on_size_change.as_ref().map(move |cb| cb.emit(width));
                 self.size_observer = Some(SizeObserver::new(&el, move |(x, _y)| {
+                    log::info!("SZ {}", x);
                     if let Some(on_size_change) = &on_size_change {
                         on_size_change.emit(x);
                     }

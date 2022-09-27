@@ -519,8 +519,8 @@ where
         if first_render {
             if let Some(el) = ctx.props().node_ref.cast::<web_sys::Element>() {
                 let link = ctx.link().clone();
-                let size_observer = SizeObserver::new(&el, move |(width, height)| {
-                    link.send_message(Msg::ViewportResize(width, height));
+                let size_observer = SizeObserver::new(&el, move |(width, height): (f64, f64)| {
+                    link.send_message(Msg::ViewportResize(width as i32, height as i32));
                 });
                 self.size_observer = Some(size_observer);
             }

@@ -17,12 +17,12 @@ use super::{create_indexed_header_list, DataTableColumn, DataTableHeader, Header
 
 pub enum Msg<T: 'static> {
     ChangeSort(SorterFn<T>),
-    ColumnWidthChange(Vec<usize>),
+    ColumnWidthChange(Vec<f64>),
     ColumnHiddenChange(Vec<bool>),
     ScrollTo(i32, i32),
-    ViewportResize(i32, i32),
-    ContainerResize(i32, i32),
-    TableResize(i32, i32),
+    ViewportResize(f64, f64),
+    ContainerResize(f64, f64),
+    TableResize(f64, f64),
     KeyDown(u32, bool, bool),
     CursorDown(bool, bool),
     CursorUp(bool, bool),
@@ -262,7 +262,7 @@ pub struct PwtDataTable<T: 'static> {
     headers: Rc<Vec<IndexedHeader<T>>>,
 
     columns: Vec<DataTableColumn<T>>,
-    column_widths: Vec<usize>,
+    column_widths: Vec<f64>,
     column_hidden: Vec<bool>,
     virtual_scroll: bool,
     scroll_info: VirtualScrollInfo,
@@ -289,7 +289,7 @@ pub struct PwtDataTable<T: 'static> {
     keypress_timeout: Option<Timeout>,
 }
 
-fn render_empty_row_with_sizes(widths: &[usize], column_hidden: &[bool]) -> Html {
+fn render_empty_row_with_sizes(widths: &[f64], column_hidden: &[bool]) -> Html {
     Container::new()
         .tag("tr")
         .attribute("role", "none")
@@ -650,16 +650,16 @@ impl <T: 'static> Component for PwtDataTable<T> {
                 true
             }
             Msg::ViewportResize(_width, height) => {
-                self.viewport_height = height.max(0) as usize;
+                self.viewport_height = height.max(0.0) as usize;
                 self.update_scroll_info(props);
                 true
             }
             Msg::ContainerResize(width, _height) => {
-                self.container_width = width.max(0) as usize;
+                self.container_width = width.max(0.0) as usize;
                 true
             }
             Msg::TableResize(_width, height) => {
-                let height = height.max(0) as usize;
+                let height = height.max(0.0) as usize;
                 if self.table_height == height { return false; };
                 self.table_height = height;
                 let visible_rows = self.scroll_info.visible_rows();
