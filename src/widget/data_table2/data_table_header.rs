@@ -206,7 +206,7 @@ impl <T: 'static> PwtDataTableHeader<T> {
 
         // reserve some space for the sort icon
         let sort_space = match sort_order {
-            None => html"\u{00a0}\u{00a0}"},
+            None => html!{"\u{00a0}\u{00a0}"},
             Some(_) => html!{},
         };
 
