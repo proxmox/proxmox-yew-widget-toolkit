@@ -204,6 +204,12 @@ impl <T: 'static> PwtDataTableHeader<T> {
             None =>  html!{},
         };
 
+        // reserve some space for the sort icon
+        let sort_space = match sort_order {
+            None => html"\u{00a0}\u{00a0}"},
+            Some(_) => html!{},
+        };
+
         rows[start_row].push(
             Container::new()
                 .key(Key::from(cell_idx))
@@ -219,7 +225,7 @@ impl <T: 'static> PwtDataTableHeader<T> {
                         .tabindex(tabindex)
                         .class(props.header_class.clone())
                         .class("pwt-w-100 pwt-h-100")
-                        .content(html!{<>{sort_icon}{&cell.column.name}</>})
+                        .content(html!{<>{sort_icon}{&cell.column.name}{sort_space}</>})
                         .on_resize(link.callback(move |width: f64| Msg::ResizeColumn(column_idx, width.max(0.0))))
                         .on_size_reset(link.callback(move |_| Msg::ColumnSizeReset(column_idx)))
                         .on_size_change(link.callback(move |w| Msg::ColumnSizeChange(column_idx, w)))
