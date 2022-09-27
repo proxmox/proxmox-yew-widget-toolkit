@@ -201,6 +201,9 @@ fn derive_widget(setup: &WidgetSetup, widget: DeriveInput) -> Result<proc_macro2
                 fn as_input_props_mut(&mut self) -> &mut crate::props::FieldStdProps {
                     &mut self.input_props
                 }
+                fn as_input_props(&self) -> & crate::props::FieldStdProps {
+                    &self.input_props
+                }
             }
         });
     }

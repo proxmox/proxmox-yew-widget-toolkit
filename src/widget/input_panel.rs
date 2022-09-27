@@ -108,8 +108,12 @@ impl InputPanel {
         };
 
         let label_id = crate::widget::get_unique_element_id();
-        self.add_child(html!{
-            <label id={label_id.clone()} class="pwt-grid-column-1" style={style.clone()}>
+        let class = classes!(
+            "pwt-grid-column-1",
+            field.is_disabled().then(|| Some("pwt-label-disabled")),
+        );
+        self.add_child(html! {
+            <label id={label_id.clone()} {class} style={style.clone()}>
                 {label.into_prop_value()}
             </label>
         });
@@ -147,8 +151,13 @@ impl InputPanel {
             format!("grid-row: {}; display: none;", self.right_count)
         };
 
-        self.add_child(html!{
-            <label class="pwt-grid-column-3 pwt-text-end" style={style.clone()}>
+        let class = classes!(
+            "pwt-grid-column-3",
+            "pwt-text-end",
+            field.is_disabled().then(|| Some("pwt-label-disabled")),
+        );
+        self.add_child(html! {
+            <label {class} style={style.clone()}>
                 {label.into_prop_value()}
             </label>
         });
@@ -192,8 +201,12 @@ impl InputPanel {
             format!("grid-row: {}; display: none;", self.left_count)
         };
 
-        self.add_child(html!{
-            <label class="pwt-grid-column-1" style={style.clone()}>{label.into_prop_value()}</label>
+        let class = classes!(
+            "pwt-grid-column-1",
+            field.is_disabled().then(|| Some("pwt-label-disabled")),
+        );
+        self.add_child(html! {
+            <label {class} style={style.clone()}>{label.into_prop_value()}</label>
         });
 
         // fixme: label_id?

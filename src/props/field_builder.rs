@@ -7,6 +7,7 @@ use super::FieldStdProps;
 /// Minimal common form field interface
 pub trait FieldBuilder: Into<VNode> {
     fn as_input_props_mut(&mut self) -> &mut FieldStdProps;
+    fn as_input_props(&self) -> &FieldStdProps;
 
     /// Builder style method to set the html aria-label attribute
     fn aria_label(mut self, label: impl IntoPropValue<Option<AttrValue>>) -> Self {
@@ -50,6 +51,10 @@ pub trait FieldBuilder: Into<VNode> {
     /// Method to set the disabled flag
     fn set_disabled(&mut self, disabled: bool) {
         self.as_input_props_mut().disabled = disabled;
+    }
+
+    fn is_disabled(&self) -> bool {
+        self.as_input_props().disabled
     }
 
     /// Builder style method to set the required flag
