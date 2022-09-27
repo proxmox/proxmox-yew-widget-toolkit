@@ -175,7 +175,7 @@ impl<T: 'static> HeaderState<T> {
         for i in 0..col_idx.min(self.columns.len()) {
             if self.get_width(i).is_none() {
                 if let Some(Some(observed_width)) = observed_widths.get(i) {
-                    self.set_width(i, Some(*observed_width + 1.0));
+                    self.set_width(i, Some(*observed_width));
                 }
             }
         }
