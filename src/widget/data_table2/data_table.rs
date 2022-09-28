@@ -305,7 +305,8 @@ fn render_empty_row_with_sizes(widths: &[f64], column_hidden: &[bool]) -> Html {
                     }
                 })
                 .map(|(_, width)| html!{
-                    <td role="none" style={format!("width:{width}px;height:0px;")}></td>
+                    // Note: we substract the border width (1.0) here
+                    <td role="none" style={format!("width:{:.3}px;height:0px;", (width - 1.0).max(0.0))}></td>
                 })
         )
         .into()
