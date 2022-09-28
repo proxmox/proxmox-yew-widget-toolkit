@@ -341,10 +341,7 @@ impl Component for PwtResizableHeader {
             let props = ctx.props();
             if let Some(el) = self.node_ref.cast::<web_sys::HtmlElement>() {
                 let on_size_change = props.on_size_change.clone();
-                //let width = el.offset_width();
-                //on_size_change.as_ref().map(move |cb| cb.emit(width));
                 self.size_observer = Some(SizeObserver::new(&el, move |(x, _y)| {
-                    log::info!("SZ {}", x);
                     if let Some(on_size_change) = &on_size_change {
                         on_size_change.emit(x);
                     }
