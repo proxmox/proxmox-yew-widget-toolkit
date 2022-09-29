@@ -20,7 +20,7 @@ impl ThemeLoader {
 }
 
 enum LoadState {
-    Idle,
+    Initial,
     Loading,
     Loaded,
 }
@@ -154,7 +154,7 @@ impl Component for PwtThemeLoader {
         };
 
         Self {
-            loadstate: LoadState::Idle,
+            loadstate: LoadState::Initial,
             theme,
             theme_css: theme.get_css_filename(system_prefer_dark).to_string(),
             new_theme_css: None,
@@ -196,7 +196,7 @@ impl Component for PwtThemeLoader {
         // Note: Try to keep the VDOM, so just set display on the content
         let style = match &self.loadstate {
             LoadState::Loading | LoadState::Loaded => "display: contents;",
-            LoadState::Idle => "display: none;",
+            LoadState::Initial => "display: none;",
         };
 
         html! {
