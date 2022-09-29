@@ -273,6 +273,18 @@ impl Component for PwtResizableHeader {
             .node_ref(self.node_ref.clone())
             .onfocus(ctx.link().callback(|_| Msg::FocusChange(true)))
             .onblur(ctx.link().callback(|_| Msg::FocusChange(false)))
+            .onkeydown({
+                let link = ctx.link().clone();
+                move |event: KeyboardEvent| {
+                    match event.key_code() {
+                        40 => { // arrow down
+                            event.stop_propagation();
+                            link.send_message(Msg::TogglePicker);
+                        }
+                        _ => {}
+                    }
+                }
+            })
             .with_child(
                 Container::new()
                     .class("pwt-align-self-center")

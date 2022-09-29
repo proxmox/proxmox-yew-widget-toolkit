@@ -248,6 +248,18 @@ impl <T: 'static> PwtDataTableHeader<T> {
                 .ondblclick(link.callback(move |event: MouseEvent| {
                     Msg::ColumnSortChange(cell_idx, event.ctrl_key(), None)
                 }))
+                .onkeydown({
+                    let link = link.clone();
+                    move |event: KeyboardEvent| {
+                        match event.key_code() {
+                            13 => {
+                                link.send_message(Msg::ColumnSortChange(cell_idx, event.ctrl_key(), None));
+                                event.prevent_default();
+                            }
+                            _ => {},
+                        };
+                    }
+                })
                 .into()
         );
     }
@@ -461,8 +473,8 @@ impl <T: 'static> Component for PwtDataTableHeader<T> {
                 let link = ctx.link().clone();
                 move |event: KeyboardEvent| {
                     match event.key_code() {
-                        39 | 40 => link.send_message(Msg::MoveCursor(true)),
-                        37 | 38 => link.send_message(Msg::MoveCursor(false)),
+                        39 => link.send_message(Msg::MoveCursor(true)),
+                        37 => link.send_message(Msg::MoveCursor(false)),
                         _ => return,
                     }
                     event.prevent_default();
