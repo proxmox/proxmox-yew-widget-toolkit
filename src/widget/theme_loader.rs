@@ -1,7 +1,7 @@
 use std::rc::Rc;
 
-use wasm_bindgen::JsCast;
 use wasm_bindgen::closure::Closure;
+use wasm_bindgen::JsCast;
 use web_sys::MediaQueryList;
 use yew::prelude::*;
 use yew::virtual_dom::{Key, VComp, VNode};
@@ -14,7 +14,6 @@ pub struct ThemeLoader {
 }
 
 impl ThemeLoader {
-
     pub fn new(body: impl Into<VNode>) -> Self {
         Self { body: body.into() }
     }
@@ -32,8 +31,8 @@ pub struct PwtThemeLoader {
     theme_css: String,
     new_theme_css: Option<String>,
     media_query: MediaQueryList,
-    scheme_changed_closure: Option<Closure::<dyn Fn()>>,
-    theme_changed_closure: Option<Closure::<dyn Fn()>>,
+    scheme_changed_closure: Option<Closure<dyn Fn()>>,
+    theme_changed_closure: Option<Closure<dyn Fn()>>,
     system_prefer_dark: bool,
 }
 
