@@ -37,8 +37,7 @@ pub struct PwtThemeLoader {
 }
 
 impl PwtThemeLoader {
-
-    fn update_theme(&mut self, theme: Theme, prefer_dark_mode: bool) -> bool {
+    fn update_theme(&mut self, theme: Theme, prefer_dark_mode: bool, loaded: bool) -> bool {
         self.theme = theme;
         self.system_prefer_dark = prefer_dark_mode;
 
@@ -51,8 +50,11 @@ impl PwtThemeLoader {
             self.new_theme_css = Some(new_css);
             self.loadstate = LoadState::Loading;
             true
-        } else if self.new_theme_css.is_some() {
+        } else if self.new_theme_css.is_some() && loaded {
             self.theme_css = self.new_theme_css.take().unwrap();
+            self.loadstate = LoadState::Loaded;
+            true
+        } else if loaded {
             self.loadstate = LoadState::Loaded;
             true
         } else {
@@ -167,24 +169,17 @@ impl Component for PwtThemeLoader {
 
     fn update(&mut self, _ctx: &Context<Self>, msg: Self::Message) -> bool {
         match msg {
-            Msg::Loaded => match self.loadstate {
-                LoadState::Idle => {
-                    self.loadstate = LoadState::Loaded;
-                    true
-                }
-                LoadState::Loading => {
-                    let theme = Theme::load().unwrap_or(Theme::default());
-                    self.update_theme(theme, self.system_prefer_dark)
-                }
-                LoadState::Loaded => false,
-            },
+            Msg::Loaded => {
+                let theme = Theme::load().unwrap_or(Theme::default());
+                self.update_theme(theme, self.system_prefer_dark, true)
+            }
             Msg::ThemeChanged => {
                 let theme = Theme::load().unwrap_or(Theme::default());
-                self.update_theme(theme, self.system_prefer_dark)
+                self.update_theme(theme, self.system_prefer_dark, false)
             }
             Msg::SchemeChanged => {
                 let system_prefer_dark = get_system_prefer_dark_mode();
-                self.update_theme(self.theme, system_prefer_dark)
+                self.update_theme(self.theme, system_prefer_dark, false)
             }
         }
     }
