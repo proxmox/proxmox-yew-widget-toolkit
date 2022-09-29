@@ -6,7 +6,7 @@ use gloo_timers::callback::Timeout;
 
 use yew::prelude::*;
 use yew::virtual_dom::{Key, VComp, VNode};
-use yew::html::IntoPropValue;
+use yew::html::{IntoEventCallback, IntoPropValue};
 
 use crate::prelude::*;
 use crate::props::{Selection2, SorterFn};
@@ -89,6 +89,12 @@ pub struct DataTable<T: 'static> {
     pub min_row_height: usize,
 
     pub selection: Option<Selection2<T>>,
+
+    /// Row click callback (parameter is the record number)
+    pub onrowclick: Option<Callback<usize>>,
+
+    /// Row double click callback (parameter is the record number)
+    pub onrowdblclick: Option<Callback<usize>>,
 }
 
 static VIRTUAL_SCROLL_TRIGGER: usize = 30;
@@ -220,22 +226,35 @@ impl <T: 'static> DataTable<T> {
         self.virtual_scroll = virtual_scroll.into_prop_value();
     }
 
-    /// Builder style method to set the minimum row height
+    /// Builder style method to set the minimum row height.
     pub fn min_row_height(mut self, min_row_height: usize) -> Self {
         self.set_min_row_height(min_row_height);
         self
     }
 
-    /// Method to set the minimum row height
+    /// Method to set the minimum row height.
     pub fn set_min_row_height(&mut self, min_row_height: usize) {
         self.min_row_height = min_row_height;
     }
 
-    /// Builder style method to set the selection model
+    /// Builder style method to set the selection model.
     pub fn selection(mut self, selection: impl IntoPropValue<Option<Selection2<T>>>) -> Self {
         self.selection = selection.into_prop_value();
         self
     }
+
+    /// Builder style method to set the row click callback.
+    pub fn onrowclick(mut self, cb: impl IntoEventCallback<usize>) -> Self {
+        self.onrowclick = cb.into_event_callback();
+        self
+    }
+
+    /// Builder style method to set the row double click callback.
+    pub fn onrowdblclick(mut self, cb: impl IntoEventCallback<usize>) -> Self {
+        self.onrowdblclick = cb.into_event_callback();
+        self
+    }
+
 }
 
 #[derive(Default)]
@@ -683,18 +702,37 @@ impl <T: 'static> Component for PwtDataTable<T> {
                         return true;
                     }
                     35 => {
-                        /* end */
+                        // end
                         self.store.set_cursor(None);
                         self.store.cursor_up();
                         self.scroll_cursor_into_view(web_sys::ScrollLogicalPosition::Nearest);
                         return true;
                     }
                     36 => {
-                        /* pos1 */
+                        // pos1
                         self.store.set_cursor(None);
                         self.store.cursor_down();
                         self.scroll_cursor_into_view(web_sys::ScrollLogicalPosition::Nearest);
                         return true;
+                    }
+                    13 => {
+                        // Return - same behavior as rowdblclick
+                        let cursor = match self.store.get_cursor() {
+                            Some(cursor) => cursor,
+                            None => return false,
+                        };
+                        let record_num = match self.store.unfiltered_pos(cursor) {
+                            Some(record_num) => record_num,
+                            None => return false,
+                        };
+
+                        self.select_cursor(props, false, false);
+
+                        if let Some(callback) = &props.onrowdblclick {
+                            callback.emit(record_num);
+                        }
+
+                        return false;
                     }
                     _ => return false,
                 };
@@ -731,11 +769,20 @@ impl <T: 'static> Component for PwtDataTable<T> {
                     }
                 }
 
+                if let Some(callback) = &props.onrowclick {
+                    callback.emit(record_num);
+                }
+
                 true
             }
             Msg::ItemDblClick(record_num) => {
                 self.store.set_cursor(self.store.filtered_pos(record_num));
                 self.select_cursor(props, false, false);
+
+                if let Some(callback) = &props.onrowdblclick {
+                    callback.emit(record_num);
+                }
+
                 true
             }
             Msg::FocusChange(has_focus) => {
