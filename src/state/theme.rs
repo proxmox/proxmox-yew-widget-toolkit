@@ -2,7 +2,7 @@ use crate::state::local_storage;
 
 use anyhow::{bail, Error};
 
-#[derive(PartialEq, Clone, Copy)]
+#[derive(PartialEq, Debug, Clone, Copy)]
 pub enum Theme {
     System,
     Dark,
@@ -57,9 +57,12 @@ impl Theme {
         Ok(())
     }
 
-    pub fn get_css_filename(&self) -> &'static str {
+    pub fn get_css_filename(&self, prefer_dark_mode: bool) -> &'static str {
         match *self {
-            Theme::System => "proxmox-yew-style-auto.css",
+            Theme::System => match prefer_dark_mode {
+                true => "proxmox-yew-style-dark.css",
+                false => "proxmox-yew-style-light.css",
+            },
             Theme::Dark => "proxmox-yew-style-dark.css",
             Theme::Light => "proxmox-yew-style-light.css",
         }

@@ -68,9 +68,8 @@ impl Component for PwtThemeSelector {
                     log::error!("store theme failed: {err}");
                 }
 
-                if let Some(el) = document.get_element_by_id("__pwt-theme-loader__") {
-                    let _ = el.set_attribute("href", self.theme.get_css_filename());
-                }
+                let event = web_sys::Event::new("pwt-theme-changed").unwrap();
+                let _ = document.dispatch_event(&event);
 
                 true
             }
