@@ -308,7 +308,8 @@ pub struct PwtDataTable<T: 'static> {
     keypress_timeout: Option<Timeout>,
 }
 
-fn render_empty_row_with_sizes(widths: &[f64], column_hidden: &[bool]) -> Html {
+fn render_empty_row_with_sizes(widths: &[f64], column_hidden: &[bool], bordered: bool) -> Html {
+    let border_width = if bordered { 1.0 } else { 0.0 };
     Container::new()
         .tag("tr")
         .attribute("role", "none")
@@ -325,7 +326,7 @@ fn render_empty_row_with_sizes(widths: &[f64], column_hidden: &[bool]) -> Html {
                 })
                 .map(|(_, width)| html!{
                     // Note: we substract the border width (1.0) here
-                    <td role="none" style={format!("width:{:.3}px;height:0px;", (width - 1.0).max(0.0))}></td>
+                    <td role="none" style={format!("width:{:.3}px;height:0px;", (width - border_width).max(0.0))}></td>
                 })
         )
         .into()
@@ -507,7 +508,7 @@ impl<T: 'static> PwtDataTable<T> {
             .class(props.borderless.then(|| "table-borderless"))
             .node_ref(self.table_ref.clone())
             .attribute("style", format!("table-layout: fixed;width:1px; position:relative;top:{}px;", offset))
-            .with_child(render_empty_row_with_sizes(&self.column_widths, &self.column_hidden));
+            .with_child(render_empty_row_with_sizes(&self.column_widths, &self.column_hidden, props.bordered));
 
         if !self.column_widths.is_empty() {
             for (filtered_pos, record_num, item) in self.store.filtered_data_range(start..end) {
