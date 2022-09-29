@@ -20,10 +20,17 @@ impl ThemeLoader {
     }
 }
 
+enum LoadState {
+    Idle,
+    Loading,
+    Loaded,
+}
+
 pub struct PwtThemeLoader {
-    loaded: bool,
+    loadstate: LoadState,
     theme: Theme,
     theme_css: String,
+    new_theme_css: Option<String>,
     media_query: MediaQueryList,
     scheme_changed_closure: Option<Closure::<dyn Fn()>>,
     theme_changed_closure: Option<Closure::<dyn Fn()>>,
@@ -36,10 +43,18 @@ impl PwtThemeLoader {
         self.theme = theme;
         self.system_prefer_dark = prefer_dark_mode;
 
-        let new_css = self.theme.get_css_filename(self.system_prefer_dark).to_string();
-        if self.theme_css != new_css {
-            self.theme_css = new_css;
-            self.loaded = false;
+        let new_css = self
+            .theme
+            .get_css_filename(self.system_prefer_dark)
+            .to_string();
+
+        if self.theme_css != new_css && self.new_theme_css.is_none() {
+            self.new_theme_css = Some(new_css);
+            self.loadstate = LoadState::Loading;
+            true
+        } else if self.new_theme_css.is_some() {
+            self.theme_css = self.new_theme_css.take().unwrap();
+            self.loadstate = LoadState::Loaded;
             true
         } else {
             false
@@ -140,9 +155,10 @@ impl Component for PwtThemeLoader {
         };
 
         Self {
-            loaded: false,
+            loadstate: LoadState::Idle,
             theme,
             theme_css: theme.get_css_filename(system_prefer_dark).to_string(),
+            new_theme_css: None,
             scheme_changed_closure: None,
             media_query,
             theme_changed_closure: None,
@@ -152,10 +168,17 @@ impl Component for PwtThemeLoader {
 
     fn update(&mut self, _ctx: &Context<Self>, msg: Self::Message) -> bool {
         match msg {
-            Msg::Loaded => {
-                self.loaded = true;
-                true
-            }
+            Msg::Loaded => match self.loadstate {
+                LoadState::Idle => {
+                    self.loadstate = LoadState::Loaded;
+                    true
+                }
+                LoadState::Loading => {
+                    let theme = Theme::load().unwrap_or(Theme::default());
+                    self.update_theme(theme, self.system_prefer_dark)
+                }
+                LoadState::Loaded => false,
+            },
             Msg::ThemeChanged => {
                 let theme = Theme::load().unwrap_or(Theme::default());
                 self.update_theme(theme, self.system_prefer_dark)
@@ -172,14 +195,22 @@ impl Component for PwtThemeLoader {
         let onload = ctx.link().callback(|_| Msg::Loaded);
 
         // Note: Try to keep the VDOM, so just set display on the content
-        let style = if self.loaded { "display: contents;" } else { "display: none" };
+        let style = match &self.loadstate {
+            LoadState::Loading | LoadState::Loaded => "display: contents;",
+            LoadState::Idle => "display: none;",
+        };
 
         html! {
             <>
                 // Important: use href as Key, to create a new DOM
                 // element for each href, and thus get an load event
                 // for each href.
-                <link key={Key::from(self.theme_css.clone())} {onload} href={self.theme_css.clone()} rel="stylesheet"/>
+                if let Some(theme) = &self.new_theme_css {
+                    <link key={Key::from(self.theme_css.clone())} href={self.theme_css.clone()} rel="stylesheet"/>
+                    <link key={Key::from(theme.clone())} {onload} href={theme.clone()} rel="stylesheet"/>
+                } else {
+                    <link key={Key::from(self.theme_css.clone())} {onload} href={self.theme_css.clone()} rel="stylesheet"/>
+                }
                 <div key="__theme-loader-content__" {style}>{props.body.clone()}</div>
             </>
         }
