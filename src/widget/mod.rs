@@ -25,6 +25,9 @@ pub use input_panel::InputPanel;
 mod mask;
 pub use mask::{Mask, PwtMask};
 
+mod menu;
+pub use menu::{Menu, MenuItem};
+
 mod resizable;
 pub use resizable::Resizable;
 

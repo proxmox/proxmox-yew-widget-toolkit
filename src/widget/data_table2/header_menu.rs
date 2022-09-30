@@ -193,7 +193,7 @@ impl<T: 'static> Component for PwtHeaderMenu<T> {
                 Container::new()
                     .class("pwt-menu-item")
                     .attribute("tabindex", "-1")
-                     .with_child(html!{
+                    .with_child(html!{
                         <>
                         {Fa::new("long-arrow-down").class("pwt-pe-2")}
                         {"Sort Descending"}
