@@ -2,6 +2,7 @@ use std::rc::Rc;
 
 use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
+use yew::html::IntoPropValue;
 
 use crate::prelude::*;
 use crate::widget::Container;
@@ -37,6 +38,11 @@ impl MenuItem {
     pub fn set_icon_class(&mut self, icon_class: impl Into<Classes>) {
         self.icon_class = Some(icon_class.into());
     }
+
+    pub fn menu(mut self, menu: impl IntoPropValue<Option<Menu>>) -> Self {
+        self.menu = menu.into_prop_value();
+        self
+    }
 }
 
 #[doc(hidden)]
@@ -64,13 +70,29 @@ impl Component for PwtMenuItem {
             html!{<i role="none" aria-hidden="true" class={icon_class}/>}
         });
 
+        let arrow = props.menu.is_some().then(|| {
+            let arrow_class = classes!(
+                "fa",
+                "fa-caret-right",
+                "pwt-menu-item-arrow",
+            );
+            html!{<i role="none" aria-hidden="true" class={arrow_class}/>}
+        });
+
         Container::new()
             .class("pwt-menu-item")
+            .class(props.menu.is_some().then(|| "pwt-menu-submenu"))
             .attribute("tabindex", "-1")
-             .with_child(html!{
-                <i class="pwt-menu-item-indent">{&props.text}</i>
+            .with_child({
+                let class = if props.menu.is_some() {
+                   "pwt-menu-submenu-indent"
+                } else {
+                    "pwt-menu-item-indent"
+                };
+                html!{<i {class}>{&props.text}</i>}
             })
             .with_optional_child(icon)
+            .with_optional_child(arrow)
             .into()
     }
 }
