@@ -1,5 +1,8 @@
 use std::rc::Rc;
 
+use wasm_bindgen::JsValue;
+use serde_json::json;
+
 use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 use yew::html::IntoPropValue;
@@ -8,7 +11,7 @@ use crate::prelude::*;
 use crate::widget::Container;
 
 use super::Menu;
-
+    
 #[derive(Clone, PartialEq, Properties)]
 pub struct MenuItem {
     pub text: AttrValue,
@@ -17,7 +20,13 @@ pub struct MenuItem {
     pub menu: Option<Menu>,
 
     #[prop_or_default]
-    pub disabled: bool, // fixme: impl.
+    pub disabled: bool,
+
+    #[prop_or_default]
+    pub active: bool,
+
+    #[prop_or_default]
+    pub show_submenu: bool,
 }
 
 impl MenuItem {
@@ -28,6 +37,36 @@ impl MenuItem {
         })
     }
 
+    /// Builder style method to set the disabled flag
+    pub fn disabled(mut self, disabled: bool) -> Self {
+        self.set_disabled(disabled);
+        self
+    }
+
+    /// Method to set the disabled flag
+    pub fn set_disabled(&mut self, disabled: bool) {
+        self.disabled = disabled;
+    }
+    
+    pub fn active(mut self, active: bool) -> Self {
+        self.set_active(active);
+        self
+    }
+    
+    pub fn set_active(&mut self, active: bool) {
+        self.active = active;
+    }
+    
+    pub fn show_submenu(mut self, show_submenu: bool) -> Self {
+        self.set_show_submenu(show_submenu);
+        self
+    }
+    
+    pub fn set_show_submenu(&mut self, show_submenu: bool) {
+        self.show_submenu = show_submenu;
+    }
+
+    
     /// Builder style method to set the icon class.
     pub fn icon_class(mut self, icon_class: impl Into<Classes>) -> Self {
         self.set_icon_class(icon_class);
@@ -43,24 +82,53 @@ impl MenuItem {
         self.menu = menu.into_prop_value();
         self
     }
+
+}
+
+pub enum Msg {
 }
 
 #[doc(hidden)]
 pub struct PwtMenuItem {
+    content_ref: NodeRef,
+    submenu_ref: NodeRef,
+    popper: Option<JsValue>,
 }
 
 impl Component for PwtMenuItem {
-    type Message = ();
+    type Message = Msg;
     type Properties = MenuItem;
 
     fn create(_ctx: &Context<Self>) -> Self {
-        Self {}
+        Self {
+            content_ref: NodeRef::default(),
+            submenu_ref: NodeRef::default(),
+            popper: None,
+       }
     }
 
+    /*
+    fn update(&mut self, ctx: &yew::Context<Self>, msg: Self::Message) -> bool {
+        true
+    }
+     */
+    
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
 
-        // fixme: show/hide submenu
+        let show_submenu = props.active && props.show_submenu;
+
+        let mut submenu: Option<Html> = None;
+        if let Some(menu) = &props.menu {
+            let sub = Container::new()
+                .node_ref(self.submenu_ref.clone())
+                .class("pwt-submenu")
+                .class((!show_submenu).then(|| "pwt-d-none"))
+                .with_child(menu.clone())
+                .into();
+
+            submenu = Some(sub);
+        }
 
         let icon = props.icon_class.as_ref().map(|icon_class| {
             let icon_class = classes!(
@@ -80,9 +148,10 @@ impl Component for PwtMenuItem {
         });
 
         Container::new()
+            .node_ref(self.content_ref.clone())
             .class("pwt-menu-item")
-            .class(props.menu.is_some().then(|| "pwt-menu-submenu"))
-            .attribute("tabindex", "-1")
+            .attribute("tabindex", (!props.disabled).then(|| "-1"))
+            .attribute("disabled", props.disabled.then(|| ""))
             .with_child({
                 let class = if props.menu.is_some() {
                    "pwt-menu-submenu-indent"
@@ -93,7 +162,47 @@ impl Component for PwtMenuItem {
             })
             .with_optional_child(icon)
             .with_optional_child(arrow)
+            .with_optional_child(submenu)
             .into()
+    }
+
+    fn rendered(&mut self, ctx: &Context<Self>, first_render: bool) {
+        let props = ctx.props();
+        if props.menu.is_none() { return; }
+
+        if first_render {
+            let opts = json!({
+                "placement": "right-start",
+                "strategy": "fixed",
+                "modifiers": [
+                    {
+                        "name": "preventOverflow",
+                        "options": {
+                            "mainAxis": true, // true by default
+                            "altAxis": true, // false by default
+                        },
+                    },
+                    {
+                        "name": "flip",
+                        "options": {
+                            "fallbackPlacements": [], // disable fallbacks
+                        },
+                    },
+                ],
+            });
+
+            let opts = crate::to_js_value(&opts).unwrap();
+
+            if let Some(content_node) = self.content_ref.get() {
+                if let Some(submenu_node) = self.submenu_ref.get() {
+                    self.popper = Some(crate::create_popper(content_node, submenu_node, &opts));
+                }
+            }
+        }    
+
+        if let Some(popper) = &self.popper {
+            crate::update_popper(popper);
+        }
     }
 }
 

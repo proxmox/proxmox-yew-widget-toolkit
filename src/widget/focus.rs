@@ -61,7 +61,7 @@ pub fn init_roving_tabindex(node_ref: &NodeRef) {
         if let Ok(list) = el.query_selector_all(FOCUSABLE_SELECTOR_ALL) {
             if list.length() == 0 { return; }
 
-            //log::info!("init_roving_tabindex: got {} focusable elements", list.length());
+            log::info!("init_roving_tabindex: got {} focusable elements", list.length());
 
             let mut default_index = 0;
             for i in 0..list.length() {
