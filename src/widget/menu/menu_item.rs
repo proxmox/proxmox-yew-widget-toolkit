@@ -5,13 +5,13 @@ use serde_json::json;
 
 use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
-use yew::html::IntoPropValue;
+use yew::html::{IntoEventCallback, IntoPropValue};
 
 use crate::prelude::*;
 use crate::widget::Container;
 
 use super::Menu;
-    
+
 #[derive(Clone, PartialEq, Properties)]
 pub struct MenuItem {
     pub text: AttrValue,
@@ -27,6 +27,12 @@ pub struct MenuItem {
 
     #[prop_or_default]
     pub show_submenu: bool,
+
+    #[prop_or_default]
+    pub focus_submenu: bool,
+
+    /// Submenu close event
+    pub on_close: Option<Callback<()>>,
 }
 
 impl MenuItem {
@@ -47,26 +53,35 @@ impl MenuItem {
     pub fn set_disabled(&mut self, disabled: bool) {
         self.disabled = disabled;
     }
-    
+
     pub fn active(mut self, active: bool) -> Self {
         self.set_active(active);
         self
     }
-    
+
     pub fn set_active(&mut self, active: bool) {
         self.active = active;
     }
-    
+
     pub fn show_submenu(mut self, show_submenu: bool) -> Self {
         self.set_show_submenu(show_submenu);
         self
     }
-    
+
     pub fn set_show_submenu(&mut self, show_submenu: bool) {
         self.show_submenu = show_submenu;
     }
 
-    
+    pub fn focus_submenu(mut self, focus_submenu: bool) -> Self {
+        self.set_focus_submenu(focus_submenu);
+        self
+    }
+
+    pub fn set_focus_submenu(&mut self, focus_submenu: bool) {
+        self.focus_submenu = focus_submenu;
+    }
+
+
     /// Builder style method to set the icon class.
     pub fn icon_class(mut self, icon_class: impl Into<Classes>) -> Self {
         self.set_icon_class(icon_class);
@@ -81,6 +96,15 @@ impl MenuItem {
     pub fn menu(mut self, menu: impl IntoPropValue<Option<Menu>>) -> Self {
         self.menu = menu.into_prop_value();
         self
+    }
+
+    pub fn on_close(mut self, cb: impl IntoEventCallback<()>) -> Self {
+        self.on_close = cb.into_event_callback();
+        self
+    }
+
+    pub fn has_menu(&self) -> bool {
+        self.menu.is_some()
     }
 
 }
@@ -107,12 +131,6 @@ impl Component for PwtMenuItem {
        }
     }
 
-    /*
-    fn update(&mut self, ctx: &yew::Context<Self>, msg: Self::Message) -> bool {
-        true
-    }
-     */
-    
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
 
@@ -123,8 +141,11 @@ impl Component for PwtMenuItem {
             let sub = Container::new()
                 .node_ref(self.submenu_ref.clone())
                 .class("pwt-submenu")
-                .class((!show_submenu).then(|| "pwt-d-none"))
-                .with_child(menu.clone())
+                .with_optional_child(show_submenu.then(|| {
+                    menu.clone()
+                        .autofocus(props.focus_submenu)
+                        .on_close(props.on_close.clone())
+                }))
                 .into();
 
             submenu = Some(sub);
@@ -154,7 +175,7 @@ impl Component for PwtMenuItem {
             .attribute("disabled", props.disabled.then(|| ""))
             .with_child({
                 let class = if props.menu.is_some() {
-                   "pwt-menu-submenu-indent"
+                    "pwt-menu-submenu-indent"
                 } else {
                     "pwt-menu-item-indent"
                 };
@@ -185,7 +206,7 @@ impl Component for PwtMenuItem {
                     {
                         "name": "flip",
                         "options": {
-                            "fallbackPlacements": [], // disable fallbacks
+                            "fallbackPlacements": ["bottom"],
                         },
                     },
                 ],
@@ -198,7 +219,7 @@ impl Component for PwtMenuItem {
                     self.popper = Some(crate::create_popper(content_node, submenu_node, &opts));
                 }
             }
-        }    
+        }
 
         if let Some(popper) = &self.popper {
             crate::update_popper(popper);

@@ -3,9 +3,10 @@ use std::rc::Rc;
 use wasm_bindgen::JsCast;
 use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
+use yew::html::IntoEventCallback;
 
 use crate::prelude::*;
-use crate::widget::Container;
+use crate::widget::{get_unique_element_id, Container};
 
 mod menu_item;
 pub use menu_item::MenuItem;
@@ -41,7 +42,13 @@ pub struct Menu {
     #[prop_or_default]
     pub class: Classes,
 
-   // on_focus_change: Option<Callback<bool>>,
+    #[prop_or(true)]
+    pub has_focus: bool,
+
+    #[prop_or(true)]
+    pub autofocus: bool,
+
+    pub on_close: Option<Callback<()>>,
 }
 
 impl Menu {
@@ -79,22 +86,46 @@ impl Menu {
     pub fn add_item(&mut self, child: impl Into<MenuEntry>) {
         self.children.push(child.into());
     }
+
+    pub fn autofocus(mut self, autofocus: bool) -> Self {
+        self.set_autofocus(autofocus);
+        self
+    }
+
+    pub fn set_autofocus(&mut self, autofocus: bool) {
+        self.autofocus = autofocus;
+    }
+
+    pub fn on_close(mut self, cb: impl IntoEventCallback<()>) -> Self {
+        self.on_close = cb.into_event_callback();
+        self
+    }
 }
 
 pub enum Msg {
     Next,
     Previous,
-    ActivateItem(usize),
+    ActivateItem(usize, bool),
+    ShowSubmenu(bool, bool),
+    SubmenuClose,
     Redraw,
 }
 
 #[doc(hidden)]
 pub struct PwtMenu {
+    unique_id: String,
     inner_ref: NodeRef,
     cursor: usize,
+    inside_submenu: bool,
+    show_submenu: bool,
 }
 impl PwtMenu {
 
+    fn get_unique_item_id(&self, n: usize) -> String {
+        format!("{}-item-{}", self.unique_id, n)
+    }
+
+    // find the first focusable element inside an menu item
     fn get_focus_el(&self, cursor: usize) -> Option<web_sys::HtmlElement> {
         let menu_el = match self.inner_ref.cast::<web_sys::Element>() {
             Some(el) => el,
@@ -107,20 +138,10 @@ impl PwtMenu {
             _ => return None,
         };
 
-        const FOCUSABLE_SELECTOR: &str = "a:not([disabled]), button:not([disabled]), input[type=text]:not([disabled]), [tabindex]:not([disabled])";
-
-        let focus_el = match item_el.query_selector(FOCUSABLE_SELECTOR) {
-            Ok(Some(focus_el)) => focus_el,
-            _ => return None,
-        };
-
-        match focus_el.dyn_into::<web_sys::HtmlElement>() {
-            Ok(el) => Some(el),
-            _ => None,
-        }
+        get_first_focusable(item_el)
     }
 
-    fn try_focus_item(&mut self, cursor: usize) -> bool {
+    fn try_focus_item(&mut self, cursor: usize, has_focus: bool) -> bool {
 
         let focus_el = match self.get_focus_el(cursor) {
             Some(el) => el,
@@ -132,15 +153,18 @@ impl PwtMenu {
             Err(_) => false,
         };
 
-        focus_el.set_tab_index(0);
+        if has_focus {
+            //log::info!("FOCUS {:?}", focus_el);
+            focus_el.set_tab_index(0);
+        }
 
         res
     }
 
-    fn set_cursor(&mut self, cursor: usize) -> bool {
+    fn set_cursor(&mut self, cursor: usize, has_focus: bool) -> bool {
         let last_cursor = self.cursor;
-        
-        if self.try_focus_item(cursor) {
+
+        if self.try_focus_item(cursor, has_focus) {
             self.cursor = cursor;
 
             if cursor != last_cursor {
@@ -148,7 +172,7 @@ impl PwtMenu {
                     last_el.set_tab_index(-1);
                 }
             }
-            
+
             true
         } else {
             false
@@ -163,7 +187,10 @@ impl Component for PwtMenu {
     fn create(_ctx: &Context<Self>) -> Self {
         Self {
             cursor: 0,
+            unique_id: get_unique_element_id(),
             inner_ref: NodeRef::default(),
+            inside_submenu: false,
+            show_submenu: true,
         }
     }
 
@@ -178,9 +205,10 @@ impl Component for PwtMenu {
                     if cursor >= props.children.len() { return false; }
                     match props.children[cursor] {
                         MenuEntry::Separator => continue,
-                        _ => if self.set_cursor(cursor) { break; },
+                        _ => if self.set_cursor(cursor, !self.inside_submenu) { break; },
                     }
                 }
+                self.show_submenu = true;
                 true
             }
             Msg::Previous => {
@@ -190,16 +218,47 @@ impl Component for PwtMenu {
                     cursor -= 1;
                     match props.children[cursor] {
                         MenuEntry::Separator => continue,
-                        _ => if self.set_cursor(cursor) { break; },
+                        _ => if self.set_cursor(cursor, !self.inside_submenu) { break; },
                     }
                 }
-                if self.try_focus_item(cursor) {
-                    self.cursor = cursor;
-                }
+                self.show_submenu = true;
                 true
             }
-            Msg::ActivateItem(cursor) => {
-                if self.cursor == cursor { return false; }
+            Msg::ShowSubmenu(show, with_keyboard) => {
+                if let Some(MenuEntry::MenuItem(item)) = props.children.get(self.cursor) {
+                    if item.has_menu() {
+                        if self.show_submenu != show {
+                            self.show_submenu = show;
+                            self.inside_submenu = false;
+                            return true;
+                        } else if show {
+                            self.inside_submenu = with_keyboard;
+                            //log::info!("MOVE FOCUS");
+                            return true;
+                       }
+                    }
+                }
+
+                if show == false {
+                    if let Some(on_close) = &props.on_close {
+                        //log::info!("PROPAGATE CLOSE {} {}", self.unique_id, show);
+                        on_close.emit(());
+                    }
+                }
+
+                false
+            }
+            Msg::SubmenuClose => {
+                //log::info!("SUBMENU CLOSE {}", self.unique_id);
+                self.inside_submenu = false;
+                self.show_submenu = false;
+                self.try_focus_item(self.cursor, !self.inside_submenu);
+                true
+            }
+
+            Msg::ActivateItem(cursor, inside_submenu) => {
+                self.inside_submenu = inside_submenu;
+
                 let focus_el = match self.get_focus_el(cursor) {
                     Some(el) => el,
                     None => return false,
@@ -208,7 +267,11 @@ impl Component for PwtMenu {
                     last_el.set_tab_index(-1);
                 }
                 self.cursor = cursor;
-                focus_el.set_tab_index(0);               
+                //log::info!("ACTIVATE {} {} {}", self.unique_id, props.has_focus, inside_submenu);
+                if !inside_submenu {
+                    //log::info!("TABINDE0 {}", self.unique_id);
+                    focus_el.set_tab_index(0);
+                }
                 true
             }
         }
@@ -220,9 +283,10 @@ impl Component for PwtMenu {
         Container::new()
             .node_ref(self.inner_ref.clone())
             .tag("ul")
+            .attribute("id", self.unique_id.clone())
             .class("pwt-menu")
             .class(props.class.clone())
-        //.onfocusin(ctx.link().callback(|_| Msg::FocusChange(true)))
+         //.onfocusin(ctx.link().callback(|_| Msg::FocusChange(true)))
             //.onfocusout(ctx.link().callback(|_| Msg::FocusChange(false)))
             .onkeydown({
                 let link = ctx.link().clone();
@@ -230,6 +294,8 @@ impl Component for PwtMenu {
                     match event.key_code() {
                         40 => link.send_message(Msg::Next),
                         38 => link.send_message(Msg::Previous),
+                        39 | 32 => link.send_message(Msg::ShowSubmenu(true, true)),
+                        37 | 27 => link.send_message(Msg::ShowSubmenu(false, true)),
                         _ => return,
                     }
                     event.stop_propagation();
@@ -248,20 +314,58 @@ impl Component for PwtMenu {
                     MenuEntry::MenuItem(item) => {
                         item.clone()
                             .active(active)
-                            .show_submenu(active)
+                            .on_close(ctx.link().callback(|_| Msg::SubmenuClose))
+                            .show_submenu(active && self.show_submenu)
+                            .focus_submenu(self.inside_submenu)
                             .into()
                     }
                 };
 
+                let item_id = self.get_unique_item_id(i);
                 Container::new()
                     .tag("li")
-                    .attribute("data-index", i.to_string())
-                    .class(active.then(|| "active"))
+                    .attribute("id", item_id.clone())
+                    .attribute("data-index", i.to_string()) // fixme: remove
+                    .class((active).then(|| "active"))
                     .with_child(child)
-                    .onfocusin(ctx.link().callback(move |_| Msg::ActivateItem(i)))
+                    .onmouseover({
+                        let item_id = item_id.clone();
+                        move |event: MouseEvent| {
+                            event.stop_propagation();
+                            dom_focus_submenu(&item_id);
+                        }
+                    })
+                    .onclick(ctx.link().callback({
+                         move |event: MouseEvent| {
+                            event.stop_propagation();
+                            Msg::ShowSubmenu(true, false)
+                        }
+                    }))
+                    .onfocusin(ctx.link().callback(move |event: FocusEvent| {
+                        let inside_submenu = dom_focus_inside_submenu(&event, &item_id);
+                        Msg::ActivateItem(i, inside_submenu)
+                    }))
                     .into()
             }))
+
+            //.with_child(html!{<div class="pwt-p-2">{format!("EL {}", self.unique_id)}</div>})
+            //.with_child(html!{<div class="pwt-p-2">{format!("SHOWSUB {}", self.show_submenu)}</div>})
+            //.with_child(html!{<div class="pwt-p-2">{format!("INSIDE {}", self.inside_submenu)}</div>})
+            //.with_child(html!{<div class="pwt-p-2">{format!("AUTOFOCUS {}", props.autofocus)}</div>})
             .into()
+    }
+
+    fn changed(&mut self, ctx: &Context<Self>, old_props: &Self::Properties) -> bool {
+        let props = ctx.props();
+        if props.autofocus != old_props.autofocus {
+            //log::info!("FOCUSCANGE {}", self.unique_id);
+            if props.autofocus && !self.inside_submenu {
+                if self.set_cursor(self.cursor, props.has_focus && !self.inside_submenu) {
+                    ctx.link().send_message(Msg::Redraw);
+                }
+            }
+        }
+        true
     }
 
     fn rendered(&mut self, ctx: &Context<Self>, first_render: bool) {
@@ -269,14 +373,17 @@ impl Component for PwtMenu {
             let props = ctx.props();
             // initialize roving tabindex
             for i in 0..props.children.len() {
-                if self.set_cursor(i) {
-                    ctx.link().send_message(Msg::Redraw);
-                    break;
+                //log::info!("INIT {} {} {}", self.unique_id, props.autofocus, self.inside_submenu);
+                if props.autofocus && !self.inside_submenu {
+                    if self.set_cursor(i, props.autofocus && !self.inside_submenu) {
+                        ctx.link().send_message(Msg::Redraw);
+                        break;
+                    }
                 }
             }
         }
     }
-    
+
 }
 
 impl Into<VNode> for Menu {
@@ -284,4 +391,64 @@ impl Into<VNode> for Menu {
         let comp = VComp::new::<PwtMenu>(Rc::new(self), None);
         VNode::from(comp)
     }
+}
+
+// Note: With yew, Element.current_target() always points to the HtmlBodyElement
+// see: https://github.com/yewstack/yew/issues/2572
+// We need to use unique element IDs instead.
+fn dom_focus_inside_submenu(event: &FocusEvent, item_id: &str) -> bool {
+    let mut cur_el: Option<web_sys::Element> = event.target_dyn_into();
+    loop {
+        match cur_el {
+            Some(el) => {
+                if el.id() == item_id {
+                    break;
+                }
+                if el.tag_name() == "UL" {
+                    return true;
+                }
+                cur_el = el.parent_element();
+            }
+            None => break,
+        }
+    }
+    false
+}
+
+fn get_first_focusable(item_el: web_sys::Element) -> Option<web_sys::HtmlElement> {
+
+    const FOCUSABLE_SELECTOR: &str = concat!(
+        "a:not([disabled]),",
+        "button:not([disabled]),",
+        "input:not([disabled]),",
+        "[tabindex]:not([disabled])",
+    );
+
+    let focus_el = match item_el.query_selector(FOCUSABLE_SELECTOR) {
+        Ok(Some(focus_el)) => focus_el,
+        _ => return None,
+    };
+
+    match focus_el.dyn_into::<web_sys::HtmlElement>() {
+        Ok(el) => Some(el),
+        _ => None,
+    }
+}
+
+
+fn dom_focus_submenu(item_id: &str) {
+    //log::info!("TRY FOCUS SUB {}", item_id);
+    let window = web_sys::window().unwrap();
+    let document = window.document().unwrap();
+
+    let el = match document.get_element_by_id(item_id) {
+        Some(el) => el,
+        None => return,
+    };
+
+    if let Some(focus_el) = get_first_focusable(el) {
+        //log::info!("TRY FOCUS SUB TZEST {} FID {}", item_id, focus_el.id());
+        let _ = focus_el.focus();
+    }
+
 }
