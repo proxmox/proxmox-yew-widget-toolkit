@@ -1,6 +1,8 @@
 use std::rc::Rc;
 
 use wasm_bindgen::JsCast;
+use gloo_timers::callback::Timeout;
+
 use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 use yew::html::IntoEventCallback;
@@ -123,6 +125,8 @@ impl Menu {
 }
 
 pub enum Msg {
+    FocusChange(bool),
+    DelayedFocusChange(bool),
     Next,
     Previous,
     ActivateItem(usize, bool),
@@ -138,6 +142,7 @@ pub struct PwtMenu {
     cursor: Option<usize>,
     inside_submenu: bool,
     show_submenu: bool,
+    timeout: Option<Timeout>,
 }
 impl PwtMenu {
 
@@ -231,12 +236,27 @@ impl Component for PwtMenu {
             inner_ref: NodeRef::default(),
             inside_submenu: false,
             show_submenu: true,
+            timeout: None,
         }
     }
 
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
         let props = ctx.props();
         match msg {
+            Msg::FocusChange(has_focus) => {
+                let link = ctx.link().clone();
+                self.timeout = Some(Timeout::new(1, move || {
+                    link.send_message(Msg::DelayedFocusChange(has_focus));
+                }));
+                false
+            }
+            Msg::DelayedFocusChange(has_focus) => {
+                if !has_focus {
+                    self.show_submenu = false;
+                    return true;
+                }
+                false
+            }
             Msg::Redraw => true,
             Msg::Next => {
                 let mut cursor = match self.cursor {
@@ -353,7 +373,7 @@ impl Component for PwtMenu {
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
 
-        Container::new()
+        let menu = Container::new()
             .node_ref(self.inner_ref.clone())
             .tag("ul")
             .attribute("id", self.unique_id.clone())
@@ -437,7 +457,16 @@ impl Component for PwtMenu {
             //.with_child(html!{<div class="pwt-p-2">{format!("SHOWSUB {}", self.show_submenu)}</div>})
             //.with_child(html!{<div class="pwt-p-2">{format!("INSIDE {}", self.inside_submenu)}</div>})
             //.with_child(html!{<div class="pwt-p-2">{format!("AUTOFOCUS {}", props.autofocus)}</div>})
-            .into()
+            ;
+
+        if props.menubar {
+            menu
+                .onfocusin(ctx.link().callback(|_| Msg::FocusChange(true)))
+                .onfocusout(ctx.link().callback(|_| Msg::FocusChange(false)))
+                .into()
+        } else {
+            menu.into()
+        }
     }
 
     fn changed(&mut self, ctx: &Context<Self>, old_props: &Self::Properties) -> bool {
