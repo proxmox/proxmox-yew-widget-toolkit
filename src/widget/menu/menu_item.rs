@@ -123,7 +123,7 @@ impl Component for PwtMenuItem {
     fn create(_ctx: &Context<Self>) -> Self {
         let content_ref = NodeRef::default();
         let submenu_ref = NodeRef::default();
-        let popper = MenuPopper::new(content_ref.clone(), submenu_ref.clone());
+        let popper = MenuPopper::new(content_ref.clone(), submenu_ref.clone(), false);
         Self {
             content_ref,
             submenu_ref,

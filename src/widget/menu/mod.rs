@@ -14,6 +14,9 @@ pub(crate) use menu_popper::MenuPopper;
 mod menu_item;
 pub use menu_item::MenuItem;
 
+mod menu_button;
+pub use menu_button::{MenuButton, PwtMenuButton};
+
 #[derive(Clone, PartialEq)]
 pub enum MenuEntry{
     MenuItem(MenuItem),

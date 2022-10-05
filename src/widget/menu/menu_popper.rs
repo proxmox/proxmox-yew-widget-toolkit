@@ -7,22 +7,24 @@ pub struct MenuPopper {
     content_ref: NodeRef,
     submenu_ref: NodeRef,
     popper: Option<JsValue>,
+    prefer_bottom: bool,
 }
 
 impl MenuPopper {
 
-    pub fn new(content_ref: NodeRef, submenu_ref: NodeRef) -> Self {
+    pub fn new(content_ref: NodeRef, submenu_ref: NodeRef, prefer_bottom: bool) -> Self {
         Self {
             popper: None,
             content_ref,
             submenu_ref,
+            prefer_bottom,
         }
     }
 
     pub fn update(&mut self) {
         if self.popper.is_none() {
             let opts = json!({
-                "placement": "right-start",
+                "placement": if self.prefer_bottom { "bottom-start" } else { "right-start"},
                 "strategy": "fixed",
                 "modifiers": [
                     {
@@ -35,7 +37,7 @@ impl MenuPopper {
                     {
                         "name": "flip",
                         "options": {
-                            "fallbackPlacements": ["bottom"],
+                            "fallbackPlacements": [if self.prefer_bottom { "right-start" } else { "bottom-start" }],
                         },
                     },
                 ],
