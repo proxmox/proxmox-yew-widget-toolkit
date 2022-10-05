@@ -8,6 +8,9 @@ use yew::html::IntoEventCallback;
 use crate::prelude::*;
 use crate::widget::{get_unique_element_id, Container};
 
+mod menu_popper;
+pub(crate) use menu_popper::MenuPopper;
+
 mod menu_item;
 pub use menu_item::MenuItem;
 

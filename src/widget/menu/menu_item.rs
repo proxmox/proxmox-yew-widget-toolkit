@@ -1,8 +1,5 @@
 use std::rc::Rc;
 
-use wasm_bindgen::JsValue;
-use serde_json::json;
-
 use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 use yew::html::{IntoEventCallback, IntoPropValue};
@@ -10,7 +7,7 @@ use yew::html::{IntoEventCallback, IntoPropValue};
 use crate::prelude::*;
 use crate::widget::Container;
 
-use super::Menu;
+use super::{Menu, MenuPopper};
 
 #[derive(Clone, PartialEq, Properties)]
 pub struct MenuItem {
@@ -116,7 +113,7 @@ pub enum Msg {
 pub struct PwtMenuItem {
     content_ref: NodeRef,
     submenu_ref: NodeRef,
-    popper: Option<JsValue>,
+    popper: MenuPopper,
 }
 
 impl Component for PwtMenuItem {
@@ -124,11 +121,14 @@ impl Component for PwtMenuItem {
     type Properties = MenuItem;
 
     fn create(_ctx: &Context<Self>) -> Self {
+        let content_ref = NodeRef::default();
+        let submenu_ref = NodeRef::default();
+        let popper = MenuPopper::new(content_ref.clone(), submenu_ref.clone());
         Self {
-            content_ref: NodeRef::default(),
-            submenu_ref: NodeRef::default(),
-            popper: None,
-       }
+            content_ref,
+            submenu_ref,
+            popper,
+        }
     }
 
     fn view(&self, ctx: &Context<Self>) -> Html {
@@ -187,43 +187,10 @@ impl Component for PwtMenuItem {
             .into()
     }
 
-    fn rendered(&mut self, ctx: &Context<Self>, first_render: bool) {
+    fn rendered(&mut self, ctx: &Context<Self>, _first_render: bool) {
         let props = ctx.props();
         if props.menu.is_none() { return; }
-
-        if first_render {
-            let opts = json!({
-                "placement": "right-start",
-                "strategy": "fixed",
-                "modifiers": [
-                    {
-                        "name": "preventOverflow",
-                        "options": {
-                            "mainAxis": true, // true by default
-                            "altAxis": true, // false by default
-                        },
-                    },
-                    {
-                        "name": "flip",
-                        "options": {
-                            "fallbackPlacements": ["bottom"],
-                        },
-                    },
-                ],
-            });
-
-            let opts = crate::to_js_value(&opts).unwrap();
-
-            if let Some(content_node) = self.content_ref.get() {
-                if let Some(submenu_node) = self.submenu_ref.get() {
-                    self.popper = Some(crate::create_popper(content_node, submenu_node, &opts));
-                }
-            }
-        }
-
-        if let Some(popper) = &self.popper {
-            crate::update_popper(popper);
-        }
+        self.popper.update();
     }
 }
 
