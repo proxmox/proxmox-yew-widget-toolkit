@@ -209,17 +209,45 @@ impl PwtMenu {
     fn activate_first_item(&mut self, ctx: &Context<Self>) {
         let props = ctx.props();
 
+        if !props.autofocus {
+            return;
+        }
+
         if self.inside_submenu {
             return;
         }
 
         for i in 0..props.children.len() {
             //log::info!("INIT {} {} {}", self.unique_id, props.autofocus, self.inside_submenu);
-            if props.autofocus {
-                if self.set_cursor(i, true) {
-                    ctx.link().send_message(Msg::Redraw);
-                    break;
-                }
+            if self.set_cursor(i, true) {
+                ctx.link().send_message(Msg::Redraw);
+                break;
+            }
+        }
+    }
+
+    fn init_roving_tabindex(&mut self, ctx: &Context<Self>) {
+        let props = ctx.props();
+
+       if let Some(cursor) = self.cursor {
+            if let Some(focus_el) = self.get_focus_el(cursor) {
+                focus_el.set_tab_index(0);
+                return;
+            }
+        }
+
+        let mut found = false;
+
+        for i in 0..props.children.len() {
+            let focus_el = match self.get_focus_el(i) {
+                Some(el) => el,
+                None => continue,
+            };
+            if !found {
+                found = true;
+                focus_el.set_tab_index(0);
+            } else {
+                focus_el.set_tab_index(-1);
             }
         }
     }
@@ -229,13 +257,14 @@ impl Component for PwtMenu {
     type Message = Msg;
     type Properties = Menu;
 
-    fn create(_ctx: &Context<Self>) -> Self {
+    fn create(ctx: &Context<Self>) -> Self {
+        let props = ctx.props();
         Self {
             cursor: None,
             unique_id: get_unique_element_id(),
             inner_ref: NodeRef::default(),
             inside_submenu: false,
-            show_submenu: true,
+            show_submenu: !props.menubar,
             timeout: None,
         }
     }
@@ -243,6 +272,7 @@ impl Component for PwtMenu {
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
         let props = ctx.props();
         match msg {
+            // Note: only used by menubar
             Msg::FocusChange(has_focus) => {
                 let link = ctx.link().clone();
                 self.timeout = Some(Timeout::new(1, move || {
@@ -250,9 +280,12 @@ impl Component for PwtMenu {
                 }));
                 false
             }
+            // Note: only used by menubar
             Msg::DelayedFocusChange(has_focus) => {
                 if !has_focus {
                     self.show_submenu = false;
+                    self.inside_submenu = false;
+                    self.init_roving_tabindex(ctx);
                     return true;
                 }
                 false
@@ -349,6 +382,7 @@ impl Component for PwtMenu {
 
             Msg::ActivateItem(cursor, inside_submenu) => {
                 self.inside_submenu = inside_submenu;
+                self.show_submenu = true;
 
                 let focus_el = match self.get_focus_el(cursor) {
                     Some(el) => el,
@@ -361,7 +395,7 @@ impl Component for PwtMenu {
                     }
                 }
                 self.cursor = Some(cursor);
-                //log::info!("ACTIVATE {} {} {}", self.unique_id, props.has_focus, inside_submenu);
+                //log::info!("ACTIVATE {} {} {}", self.unique_id, props.autofocus, inside_submenu);
                 if !inside_submenu {
                     focus_el.set_tab_index(0);
                 }
@@ -488,7 +522,12 @@ impl Component for PwtMenu {
 
     fn rendered(&mut self, ctx: &Context<Self>, first_render: bool) {
         if first_render {
-            self.activate_first_item(ctx);
+            let props = ctx.props();
+            if props.menubar {
+                self.init_roving_tabindex(ctx);
+            } else {
+                self.activate_first_item(ctx);
+            }
         }
     }
 
