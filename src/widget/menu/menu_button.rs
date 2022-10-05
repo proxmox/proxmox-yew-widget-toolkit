@@ -160,6 +160,17 @@ impl Component for PwtMenuButton {
             .attribute("style", "z-index: 1;") // fix for menu demo
             .onfocusin(ctx.link().callback(|_| Msg::FocusChange(true)))
             .onfocusout(ctx.link().callback(|_| Msg::FocusChange(false)))
+            .onkeydown({
+                let link = ctx.link().clone();
+                move |event: KeyboardEvent| {
+                    match event.key_code() {
+                        27 => link.send_message(Msg::CloseMenu),
+                        _ => return,
+                    }
+                    event.stop_propagation();
+                    event.prevent_default();
+                }
+            })
             .with_child(
                 Button::new(&props.text)
                     .node_ref(self.content_ref.clone())

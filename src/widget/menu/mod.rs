@@ -354,7 +354,7 @@ impl Component for PwtMenu {
                         40 => link.send_message(Msg::Next),
                         38 => link.send_message(Msg::Previous),
                         39 | 32 => link.send_message(Msg::ShowSubmenu(true, true)),
-                        37 | 27 => link.send_message(Msg::ShowSubmenu(false, true)),
+                        37 => link.send_message(Msg::ShowSubmenu(false, true)),
                         _ => return,
                     }
                     event.stop_propagation();
