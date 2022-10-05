@@ -48,10 +48,7 @@ pub struct Menu {
     #[prop_or_default]
     pub class: Classes,
 
-    #[prop_or(true)]
-    pub has_focus: bool,
-
-    #[prop_or(true)]
+    #[prop_or_default]
     pub autofocus: bool,
 
     #[prop_or_default]
