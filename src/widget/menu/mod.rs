@@ -115,7 +115,7 @@ pub enum Msg {
 pub struct PwtMenu {
     unique_id: String,
     inner_ref: NodeRef,
-    cursor: usize,
+    cursor: Option<usize>,
     inside_submenu: bool,
     show_submenu: bool,
 }
@@ -165,17 +165,37 @@ impl PwtMenu {
         let last_cursor = self.cursor;
 
         if self.try_focus_item(cursor, has_focus) {
-            self.cursor = cursor;
+            self.cursor = Some(cursor);
 
-            if cursor != last_cursor {
-                if let Some(last_el) = self.get_focus_el(last_cursor) {
-                    last_el.set_tab_index(-1);
+            if self.cursor != last_cursor {
+                if let Some(last_cursor) = last_cursor {
+                    if let Some(last_el) = self.get_focus_el(last_cursor) {
+                        last_el.set_tab_index(-1);
+                    }
                 }
             }
 
             true
         } else {
             false
+        }
+    }
+
+    fn activate_first_item(&mut self, ctx: &Context<Self>) {
+        let props = ctx.props();
+
+        if self.inside_submenu {
+            return;
+        }
+
+        for i in 0..props.children.len() {
+            //log::info!("INIT {} {} {}", self.unique_id, props.autofocus, self.inside_submenu);
+            if props.autofocus {
+                if self.set_cursor(i, true) {
+                    ctx.link().send_message(Msg::Redraw);
+                    break;
+                }
+            }
         }
     }
 }
@@ -186,7 +206,7 @@ impl Component for PwtMenu {
 
     fn create(_ctx: &Context<Self>) -> Self {
         Self {
-            cursor: 0,
+            cursor: None,
             unique_id: get_unique_element_id(),
             inner_ref: NodeRef::default(),
             inside_submenu: false,
@@ -199,33 +219,60 @@ impl Component for PwtMenu {
         match msg {
             Msg::Redraw => true,
             Msg::Next => {
-                let mut cursor = self.cursor;
+                let mut cursor = match self.cursor {
+                    Some(cursor) => cursor + 1,
+                    None => 0,
+                };
+
                 loop {
-                    cursor += 1;
                     if cursor >= props.children.len() { return false; }
                     match props.children[cursor] {
-                        MenuEntry::Separator => continue,
-                        _ => if self.set_cursor(cursor, !self.inside_submenu) { break; },
+                        MenuEntry::Separator => {},
+                        _ => if self.set_cursor(cursor, true) { break; },
                     }
+                    cursor += 1;
                 }
                 self.show_submenu = true;
+                self.inside_submenu = false;
                 true
             }
             Msg::Previous => {
-                let mut cursor = self.cursor;
+                let mut cursor = match self.cursor {
+                    Some(cursor) => {
+                        if cursor == 0 {
+                            return false;
+                        } else {
+                            cursor - 1
+                        }
+                    }
+                    None => {
+                        if props.children.len() == 0 {
+                            return false;
+                        } else {
+                            props.children.len() - 1
+                        }
+                    }
+                };
+
                 loop {
+                    match props.children[cursor] {
+                       MenuEntry::Separator => {},
+                        _ => if self.set_cursor(cursor, true) { break; },
+                    }
                     if cursor == 0 { return false; }
                     cursor -= 1;
-                    match props.children[cursor] {
-                        MenuEntry::Separator => continue,
-                        _ => if self.set_cursor(cursor, !self.inside_submenu) { break; },
-                    }
                 }
                 self.show_submenu = true;
+                self.inside_submenu = false;
                 true
             }
             Msg::ShowSubmenu(show, with_keyboard) => {
-                if let Some(MenuEntry::MenuItem(item)) = props.children.get(self.cursor) {
+                let cursor = match self.cursor {
+                    Some(cursor) => cursor,
+                    None => return false,
+                };
+
+                if let Some(MenuEntry::MenuItem(item)) = props.children.get(cursor) {
                     if item.has_menu() {
                         if self.show_submenu != show {
                             self.show_submenu = show;
@@ -250,9 +297,13 @@ impl Component for PwtMenu {
             }
             Msg::SubmenuClose => {
                 //log::info!("SUBMENU CLOSE {}", self.unique_id);
+                let cursor = match self.cursor {
+                    Some(cursor) => cursor,
+                    None => return false,
+                };
                 self.inside_submenu = false;
-                self.show_submenu = false;
-                self.try_focus_item(self.cursor, !self.inside_submenu);
+                self.try_focus_item(cursor, true); // fixme : use set_cursor
+
                 true
             }
 
@@ -263,10 +314,10 @@ impl Component for PwtMenu {
                     Some(el) => el,
                     None => return false,
                 };
-                if let Some(last_el) = self.get_focus_el(self.cursor) {
+                if let Some(last_el) = self.get_focus_el(cursor) {
                     last_el.set_tab_index(-1);
                 }
-                self.cursor = cursor;
+                self.cursor = Some(cursor);
                 //log::info!("ACTIVATE {} {} {}", self.unique_id, props.has_focus, inside_submenu);
                 if !inside_submenu {
                     //log::info!("TABINDE0 {}", self.unique_id);
@@ -303,7 +354,7 @@ impl Component for PwtMenu {
                 }
             })
             .children(props.children.iter().enumerate().map(|(i, entry)| {
-                let active = self.cursor == i;
+                let active = self.cursor == Some(i);
                 let child = match entry {
                     MenuEntry::Separator => {
                         html!{<hr/>}
@@ -360,8 +411,12 @@ impl Component for PwtMenu {
         if props.autofocus != old_props.autofocus {
             //log::info!("FOCUSCANGE {}", self.unique_id);
             if props.autofocus && !self.inside_submenu {
-                if self.set_cursor(self.cursor, props.has_focus && !self.inside_submenu) {
-                    ctx.link().send_message(Msg::Redraw);
+                if let Some(cursor) = self.cursor {
+                    if self.set_cursor(cursor, true) {
+                        ctx.link().send_message(Msg::Redraw);
+                    }
+                } else {
+                    self.activate_first_item(ctx);
                 }
             }
         }
@@ -370,17 +425,7 @@ impl Component for PwtMenu {
 
     fn rendered(&mut self, ctx: &Context<Self>, first_render: bool) {
         if first_render {
-            let props = ctx.props();
-            // initialize roving tabindex
-            for i in 0..props.children.len() {
-                //log::info!("INIT {} {} {}", self.unique_id, props.autofocus, self.inside_submenu);
-                if props.autofocus && !self.inside_submenu {
-                    if self.set_cursor(i, props.autofocus && !self.inside_submenu) {
-                        ctx.link().send_message(Msg::Redraw);
-                        break;
-                    }
-                }
-            }
+            self.activate_first_item(ctx);
         }
     }
 
