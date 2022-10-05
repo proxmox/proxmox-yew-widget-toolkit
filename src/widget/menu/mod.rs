@@ -56,6 +56,9 @@ pub struct Menu {
     #[prop_or_default]
     pub menubar: bool,
 
+    #[prop_or(250)]
+    pub submenu_timeout_ms: u32,
+
     pub on_close: Option<Callback<()>>,
 }
 
@@ -144,6 +147,8 @@ pub enum Msg {
     DelayedNext,
     DelayedPrevious,
     ActivateItem(usize, bool),
+    OnMouseOver(usize),
+    SetActiveSubmenu(usize),
     ShowSubmenu(bool, bool),
     SubmenuClose,
     Redraw,
@@ -159,6 +164,8 @@ pub struct PwtMenu {
     collapsed: bool,
     focus_timeout: Option<Timeout>,
     move_timeout: Option<Timeout>, // for Next/Prev
+    active_submenu: Option<usize>,
+    submenu_timer: Option<Timeout>,
 }
 impl PwtMenu {
 
@@ -207,6 +214,7 @@ impl PwtMenu {
 
         if self.try_focus_item(cursor, has_focus) {
             self.cursor = Some(cursor);
+            self.active_submenu = Some(cursor);
 
             if self.cursor != last_cursor {
                 if let Some(last_cursor) = last_cursor {
@@ -284,11 +292,16 @@ impl Component for PwtMenu {
             collapsed: false,
             focus_timeout: None,
             move_timeout: None,
+            active_submenu: None,
+            submenu_timer: None,
         }
     }
 
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
         let props = ctx.props();
+        if let Some(timeout) = self.submenu_timer.take() {
+            timeout.cancel();
+        }
         match msg {
             // Note: only used by menubar
             Msg::FocusChange(has_focus) => {
@@ -454,6 +467,23 @@ impl Component for PwtMenu {
                 }
                 true
             }
+            Msg::OnMouseOver(index) => {
+                let link = ctx.link().clone();
+                if props.menubar || props.submenu_timeout_ms == 0 {
+                    self.active_submenu = Some(index);
+                    self.show_submenu = true;
+                } else {
+                    self.submenu_timer = Some(Timeout::new(props.submenu_timeout_ms, move || {
+                        link.send_message(Msg::SetActiveSubmenu(index))
+                    }));
+                }
+                true
+            }
+            Msg::SetActiveSubmenu(index) => {
+                self.active_submenu = Some(index);
+                self.show_submenu = true;
+                true
+            }
         }
     }
 
@@ -496,6 +526,7 @@ impl Component for PwtMenu {
             })
             .children(props.children.iter().enumerate().map(|(i, entry)| {
                 let active = self.cursor == Some(i);
+                let submenu_active = self.active_submenu == Some(i);
                 let child = match entry {
                     MenuEntry::Separator => {
                         if props.menubar {
@@ -509,9 +540,9 @@ impl Component for PwtMenu {
                     }
                     MenuEntry::MenuItem(item) => {
                         item.clone()
-                            .active(active)
+                            .active(active || submenu_active)
                             .on_close(ctx.link().callback(|_| Msg::SubmenuClose))
-                            .show_submenu(active && self.show_submenu && !self.collapsed)
+                            .show_submenu(submenu_active && self.show_submenu && !self.collapsed)
                             .focus_submenu(self.inside_submenu)
                             .inside_menubar(props.menubar)
                             .into()
@@ -519,6 +550,7 @@ impl Component for PwtMenu {
                 };
 
                 let item_id = self.get_unique_item_id(i);
+                let link = ctx.link().clone();
                 Container::new()
                     .tag("li")
                     .attribute("id", item_id.clone())
@@ -530,6 +562,7 @@ impl Component for PwtMenu {
                         move |event: MouseEvent| {
                             event.stop_propagation();
                             dom_focus_submenu(&item_id);
+                            link.send_message(Msg::OnMouseOver(i))
                         }
                     })
                     .onclick(ctx.link().callback({
