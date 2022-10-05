@@ -320,13 +320,15 @@ impl Component for PwtMenu {
                     Some(el) => el,
                     None => return false,
                 };
-                if let Some(last_el) = self.get_focus_el(cursor) {
-                    last_el.set_tab_index(-1);
+
+                if let Some(last_cursor) = self.cursor {
+                    if let Some(last_el) = self.get_focus_el(last_cursor) {
+                        last_el.set_tab_index(-1);
+                    }
                 }
                 self.cursor = Some(cursor);
                 //log::info!("ACTIVATE {} {} {}", self.unique_id, props.has_focus, inside_submenu);
                 if !inside_submenu {
-                    //log::info!("TABINDE0 {}", self.unique_id);
                     focus_el.set_tab_index(0);
                 }
                 true
