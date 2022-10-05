@@ -1,6 +1,7 @@
 use std::rc::Rc;
 
 use wasm_bindgen::JsCast;
+use gloo_timers::callback::Timeout;
 
 use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
@@ -63,6 +64,8 @@ impl MenuButton {
 pub enum Msg {
     CloseMenu,
     ToggleMenu,
+    FocusChange(bool),
+    DelayedFocusChange(bool),
 }
 
 #[doc(hidden)]
@@ -72,6 +75,8 @@ pub struct PwtMenuButton {
     popper: MenuPopper,
 
     show_submenu: bool,
+    timeout: Option<Timeout>,
+
 }
 
 impl PwtMenuButton {
@@ -98,10 +103,11 @@ impl Component for PwtMenuButton {
             submenu_ref,
             popper,
             show_submenu: false,
+            timeout: None,
         }
     }
 
-    fn update(&mut self, _ctx: &Context<Self>, msg: Self::Message) -> bool {
+    fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
         match msg {
             Msg::CloseMenu => {
                 self.show_submenu = false;
@@ -111,6 +117,20 @@ impl Component for PwtMenuButton {
             Msg::ToggleMenu =>  {
                 self.show_submenu = !self.show_submenu;
                 true
+            }
+            Msg::FocusChange(has_focus) => {
+                let link = ctx.link().clone();
+                self.timeout = Some(Timeout::new(1, move || {
+                    link.send_message(Msg::DelayedFocusChange(has_focus));
+                }));
+                false
+            }
+            Msg::DelayedFocusChange(has_focus) => {
+                if !has_focus {
+                    self.show_submenu = false;
+                    return true;
+                }
+                false
             }
         }
     }
@@ -137,7 +157,9 @@ impl Component for PwtMenuButton {
         }
 
         Container::new()
-            .attribute("style", "z-index: 1;")
+            .attribute("style", "z-index: 1;") // fix for menu demo
+            .onfocusin(ctx.link().callback(|_| Msg::FocusChange(true)))
+            .onfocusout(ctx.link().callback(|_| Msg::FocusChange(false)))
             .with_child(
                 Button::new(&props.text)
                     .node_ref(self.content_ref.clone())
