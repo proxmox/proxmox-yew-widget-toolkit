@@ -125,7 +125,7 @@ impl Menu {
 }
 
 pub enum Msg {
-    Close,
+    Collapse,
     FocusChange(bool),
     DelayedFocusChange(bool),
     Next,
@@ -143,6 +143,7 @@ pub struct PwtMenu {
     cursor: Option<usize>,
     inside_submenu: bool,
     show_submenu: bool,
+    collapsed: bool,
     timeout: Option<Timeout>,
 }
 impl PwtMenu {
@@ -266,6 +267,7 @@ impl Component for PwtMenu {
             inner_ref: NodeRef::default(),
             inside_submenu: false,
             show_submenu: !props.menubar,
+            collapsed: false,
             timeout: None,
         }
     }
@@ -286,15 +288,17 @@ impl Component for PwtMenu {
                 if !has_focus {
                     self.show_submenu = false;
                     self.inside_submenu = false;
+                    self.collapsed = false;
                     self.init_roving_tabindex(ctx);
                     return true;
                 }
                 false
             }
             // Note: only used by menubar
-            Msg::Close => {
+            Msg::Collapse => {
                 self.show_submenu = false;
                 self.inside_submenu = false;
+                self.collapsed = true;
                 if let Some(cursor) = self.cursor {
                     self.set_cursor(cursor, true);
                 }
@@ -317,6 +321,7 @@ impl Component for PwtMenu {
                     cursor += 1;
                 }
                 self.show_submenu = true;
+                self.collapsed = false;
                 self.inside_submenu = false;
                 true
             }
@@ -347,6 +352,7 @@ impl Component for PwtMenu {
                     cursor -= 1;
                 }
                 self.show_submenu = true;
+                self.collapsed = false;
                 self.inside_submenu = false;
                 true
             }
@@ -357,6 +363,7 @@ impl Component for PwtMenu {
                 };
 
                 if let Some(MenuEntry::MenuItem(item)) = props.children.get(cursor) {
+                    self.collapsed = false;
                     if item.has_menu() {
                         if self.show_submenu != show {
                             self.show_submenu = show;
@@ -390,7 +397,7 @@ impl Component for PwtMenu {
 
                 true
             }
-
+            // Note: called onfocusin
             Msg::ActivateItem(cursor, inside_submenu) => {
                 self.inside_submenu = inside_submenu;
                 self.show_submenu = true;
@@ -405,6 +412,12 @@ impl Component for PwtMenu {
                         last_el.set_tab_index(-1);
                     }
                 }
+
+                if self.cursor != Some(cursor) {
+                    //log::info!("DELETE COLAPSE FLAGE");
+                    self.collapsed = false;
+                }
+
                 self.cursor = Some(cursor);
                 //log::info!("ACTIVATE {} {} {}", self.unique_id, props.autofocus, inside_submenu);
                 if !inside_submenu {
@@ -436,7 +449,7 @@ impl Component for PwtMenu {
                             37 => link.send_message(Msg::Previous),
                             40 | 32 => link.send_message(Msg::ShowSubmenu(true, true)),
                             38 => link.send_message(Msg::ShowSubmenu(false, true)),
-                            27 => link.send_message(Msg::Close),
+                            27 => link.send_message(Msg::Collapse),
                             _ => return,
                         }
                     } else {
@@ -465,7 +478,7 @@ impl Component for PwtMenu {
                         item.clone()
                             .active(active)
                             .on_close(ctx.link().callback(|_| Msg::SubmenuClose))
-                            .show_submenu(active && self.show_submenu)
+                            .show_submenu(active && self.show_submenu && !self.collapsed)
                             .focus_submenu(self.inside_submenu)
                             .inside_menubar(props.menubar)
                             .into()
