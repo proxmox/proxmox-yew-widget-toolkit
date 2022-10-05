@@ -125,6 +125,7 @@ impl Menu {
 }
 
 pub enum Msg {
+    Close,
     FocusChange(bool),
     DelayedFocusChange(bool),
     Next,
@@ -290,6 +291,16 @@ impl Component for PwtMenu {
                 }
                 false
             }
+            // Note: only used by menubar
+            Msg::Close => {
+                self.show_submenu = false;
+                self.inside_submenu = false;
+                if let Some(cursor) = self.cursor {
+                    self.set_cursor(cursor, true);
+                }
+                //log::info!("CLOSE {} {} {}", self.unique_id, self.show_submenu, self.inside_submenu);
+                return true;
+            }
             Msg::Redraw => true,
             Msg::Next => {
                 let mut cursor = match self.cursor {
@@ -407,14 +418,14 @@ impl Component for PwtMenu {
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
 
+        //log::info!("VIEW {} {} {}", self.unique_id, self.show_submenu, self.inside_submenu);
+
         let menu = Container::new()
             .node_ref(self.inner_ref.clone())
             .tag("ul")
             .attribute("id", self.unique_id.clone())
             .class(if props.menubar { "pwt-menubar" } else { "pwt-menu" })
             .class(props.class.clone())
-         //.onfocusin(ctx.link().callback(|_| Msg::FocusChange(true)))
-            //.onfocusout(ctx.link().callback(|_| Msg::FocusChange(false)))
             .onkeydown({
                 let link = ctx.link().clone();
                 let menubar = props.menubar;
@@ -425,6 +436,7 @@ impl Component for PwtMenu {
                             37 => link.send_message(Msg::Previous),
                             40 | 32 => link.send_message(Msg::ShowSubmenu(true, true)),
                             38 => link.send_message(Msg::ShowSubmenu(false, true)),
+                            27 => link.send_message(Msg::Close),
                             _ => return,
                         }
                     } else {
