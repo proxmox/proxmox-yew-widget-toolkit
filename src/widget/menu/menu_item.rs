@@ -28,6 +28,9 @@ pub struct MenuItem {
     #[prop_or_default]
     pub focus_submenu: bool,
 
+    #[prop_or_default]
+    pub(crate) inside_menubar: bool,
+
     /// Submenu close event
     pub on_close: Option<Callback<()>>,
 }
@@ -100,6 +103,11 @@ impl MenuItem {
         self
     }
 
+    pub(crate) fn inside_menubar(mut self, inside_menubar: bool) -> Self {
+        self.inside_menubar = inside_menubar;
+        self
+    }
+
     pub fn has_menu(&self) -> bool {
         self.menu.is_some()
     }
@@ -120,10 +128,13 @@ impl Component for PwtMenuItem {
     type Message = Msg;
     type Properties = MenuItem;
 
-    fn create(_ctx: &Context<Self>) -> Self {
+    fn create(ctx: &Context<Self>) -> Self {
+        let props = ctx.props();
+
         let content_ref = NodeRef::default();
         let submenu_ref = NodeRef::default();
-        let popper = MenuPopper::new(content_ref.clone(), submenu_ref.clone(), false);
+        let popper = MenuPopper::new(content_ref.clone(), submenu_ref.clone(), props.inside_menubar);
+
         Self {
             content_ref,
             submenu_ref,
@@ -143,6 +154,7 @@ impl Component for PwtMenuItem {
                 .class("pwt-submenu")
                 .with_optional_child(show_submenu.then(|| {
                     menu.clone()
+                        .menubar(false) // make sure its vertical
                         .autofocus(props.focus_submenu)
                         .on_close(props.on_close.clone())
                 }))
@@ -154,7 +166,7 @@ impl Component for PwtMenuItem {
         let icon = props.icon_class.as_ref().map(|icon_class| {
             let icon_class = classes!(
                 icon_class.clone(),
-                "pwt-menu-item-icon",
+                if props.inside_menubar { "pwt-menubar-item-icon" }  else { "pwt-menu-item-icon" },
             );
             html!{<i role="none" aria-hidden="true" class={icon_class}/>}
         });
@@ -163,16 +175,17 @@ impl Component for PwtMenuItem {
             let arrow_class = classes!(
                 "fa",
                 "fa-caret-right",
-                "pwt-menu-item-arrow",
+                if props.inside_menubar { "pwt-menubar-item-arrow" } else { "pwt-menu-item-arrow" },
             );
             html!{<i role="none" aria-hidden="true" class={arrow_class}/>}
         });
 
         Container::new()
             .node_ref(self.content_ref.clone())
-            .class("pwt-menu-item")
+            .class(if props.inside_menubar { "pwt-menubar-item" } else { "pwt-menu-item" })
             .attribute("tabindex", (!props.disabled).then(|| "-1"))
             .attribute("disabled", props.disabled.then(|| ""))
+            .with_optional_child(icon)
             .with_child({
                 let class = if props.menu.is_some() {
                     "pwt-menu-submenu-indent"
@@ -181,7 +194,6 @@ impl Component for PwtMenuItem {
                 };
                 html!{<i {class}>{&props.text}</i>}
             })
-            .with_optional_child(icon)
             .with_optional_child(arrow)
             .with_optional_child(submenu)
             .into()

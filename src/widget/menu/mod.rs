@@ -54,6 +54,9 @@ pub struct Menu {
     #[prop_or(true)]
     pub autofocus: bool,
 
+    #[prop_or_default]
+    pub menubar: bool,
+
     pub on_close: Option<Callback<()>>,
 }
 
@@ -62,6 +65,11 @@ impl Menu {
     /// Create a new instance.
     pub fn new() -> Self {
         yew::props!(Self {})
+    }
+
+    /// Create a new menu bar instance (horizontal menu).
+    pub fn new_menubar() -> Self {
+        yew::props!(Self { menubar: true })
     }
 
     /// Builder style method to add a html class.
@@ -100,6 +108,15 @@ impl Menu {
 
     pub fn set_autofocus(&mut self, autofocus: bool) {
         self.autofocus = autofocus;
+    }
+
+    pub(crate) fn menubar(mut self, menubar: bool) -> Self {
+        self.set_menubar(menubar);
+        self
+    }
+
+    pub(crate) fn set_menubar(&mut self, menubar: bool) {
+        self.menubar = menubar;
     }
 
     pub fn on_close(mut self, cb: impl IntoEventCallback<()>) -> Self {
@@ -343,19 +360,30 @@ impl Component for PwtMenu {
             .node_ref(self.inner_ref.clone())
             .tag("ul")
             .attribute("id", self.unique_id.clone())
-            .class("pwt-menu")
+            .class(if props.menubar { "pwt-menubar" } else { "pwt-menu" })
             .class(props.class.clone())
          //.onfocusin(ctx.link().callback(|_| Msg::FocusChange(true)))
             //.onfocusout(ctx.link().callback(|_| Msg::FocusChange(false)))
             .onkeydown({
                 let link = ctx.link().clone();
+                let menubar = props.menubar;
                 move |event: KeyboardEvent| {
-                    match event.key_code() {
-                        40 => link.send_message(Msg::Next),
-                        38 => link.send_message(Msg::Previous),
-                        39 | 32 => link.send_message(Msg::ShowSubmenu(true, true)),
-                        37 => link.send_message(Msg::ShowSubmenu(false, true)),
-                        _ => return,
+                    if menubar {
+                        match event.key_code() {
+                            39 => link.send_message(Msg::Next),
+                            37 => link.send_message(Msg::Previous),
+                            40 | 32 => link.send_message(Msg::ShowSubmenu(true, true)),
+                            38 => link.send_message(Msg::ShowSubmenu(false, true)),
+                            _ => return,
+                        }
+                    } else {
+                        match event.key_code() {
+                            40 => link.send_message(Msg::Next),
+                            38 => link.send_message(Msg::Previous),
+                            39 | 32 => link.send_message(Msg::ShowSubmenu(true, true)),
+                            37 => link.send_message(Msg::ShowSubmenu(false, true)),
+                            _ => return,
+                        }
                     }
                     event.stop_propagation();
                     event.prevent_default();
@@ -376,6 +404,7 @@ impl Component for PwtMenu {
                             .on_close(ctx.link().callback(|_| Msg::SubmenuClose))
                             .show_submenu(active && self.show_submenu)
                             .focus_submenu(self.inside_submenu)
+                            .inside_menubar(props.menubar)
                             .into()
                     }
                 };
