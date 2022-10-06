@@ -141,6 +141,8 @@ pub enum Msg {
     DelayedFocusChange(bool),
     Next,
     Previous,
+    DelayedNext,
+    DelayedPrevious,
     ActivateItem(usize, bool),
     ShowSubmenu(bool, bool),
     SubmenuClose,
@@ -155,7 +157,8 @@ pub struct PwtMenu {
     inside_submenu: bool,
     show_submenu: bool,
     collapsed: bool,
-    timeout: Option<Timeout>,
+    focus_timeout: Option<Timeout>,
+    move_timeout: Option<Timeout>, // for Next/Prev
 }
 impl PwtMenu {
 
@@ -279,7 +282,8 @@ impl Component for PwtMenu {
             inside_submenu: false,
             show_submenu: !props.menubar,
             collapsed: false,
-            timeout: None,
+            focus_timeout: None,
+            move_timeout: None,
         }
     }
 
@@ -290,7 +294,7 @@ impl Component for PwtMenu {
             Msg::FocusChange(has_focus) => {
                 return false;
                 let link = ctx.link().clone();
-                self.timeout = Some(Timeout::new(1, move || {
+                self.focus_timeout = Some(Timeout::new(1, move || {
                     link.send_message(Msg::DelayedFocusChange(has_focus));
                 }));
                 false
@@ -319,6 +323,13 @@ impl Component for PwtMenu {
             }
             Msg::Redraw => true,
             Msg::Next => {
+                let link = ctx.link().clone();
+                self.move_timeout = Some(Timeout::new(1, move || {
+                    link.send_message(Msg::DelayedNext);
+                }));
+                false
+            }
+            Msg::DelayedNext => {
                 let mut cursor = match self.cursor {
                     Some(cursor) => cursor + 1,
                     None => 0,
@@ -338,6 +349,13 @@ impl Component for PwtMenu {
                 true
             }
             Msg::Previous => {
+                let link = ctx.link().clone();
+                self.move_timeout = Some(Timeout::new(1, move || {
+                    link.send_message(Msg::DelayedPrevious);
+                    }));
+                false
+             }
+            Msg::DelayedPrevious => {
                 let mut cursor = match self.cursor {
                     Some(cursor) => {
                         if cursor == 0 {
