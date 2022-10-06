@@ -289,7 +289,7 @@ impl Component for PwtMenu {
             inner_ref: NodeRef::default(),
             inside_submenu: false,
             show_submenu: !props.menubar,
-            collapsed: false,
+            collapsed: true,
             focus_timeout: None,
             move_timeout: None,
             active_submenu: None,
@@ -316,7 +316,7 @@ impl Component for PwtMenu {
                 if !has_focus {
                     self.show_submenu = false;
                     self.inside_submenu = false;
-                    self.collapsed = false;
+                    self.collapsed = true;
                     self.init_roving_tabindex(ctx);
                     return true;
                 }
@@ -457,7 +457,7 @@ impl Component for PwtMenu {
 
                 if self.cursor != Some(cursor) {
                     //log::info!("DELETE COLAPSE FLAGE");
-                    self.collapsed = false;
+                   // self.collapsed = false;
                 }
 
                 self.cursor = Some(cursor);
