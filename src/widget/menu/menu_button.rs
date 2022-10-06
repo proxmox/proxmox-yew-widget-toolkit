@@ -157,7 +157,6 @@ impl Component for PwtMenuButton {
         }
 
         Container::new()
-            .attribute("style", "z-index: 1;") // fix for menu demo
             .onfocusin(ctx.link().callback(|_| Msg::FocusChange(true)))
             .onfocusout(ctx.link().callback(|_| Msg::FocusChange(false)))
             .onkeydown({
