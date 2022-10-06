@@ -469,7 +469,11 @@ impl Component for PwtMenu {
                 let active = self.cursor == Some(i);
                 let child = match entry {
                     MenuEntry::Separator => {
-                        html!{<hr/>}
+                        if props.menubar {
+                            html!{<div aria-hidden="" class="pwt-h-100 pwt-vertical-rule"/>}
+                        } else {
+                            html!{<div aria-hidden="" class="pwt-w-100 pwt-horizontal-rule"/>}
+                        }
                     }
                     MenuEntry::Component(comp) => {
                         comp.clone()
