@@ -31,7 +31,7 @@ impl MenuPopper {
                         "name": "preventOverflow",
                         "options": {
                             "mainAxis": true, // true by default
-                            "altAxis": true, // false by default
+                            "altAxis": false, // false by default
                         },
                     },
                     {
