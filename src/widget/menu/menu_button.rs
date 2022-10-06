@@ -5,7 +5,7 @@ use gloo_timers::callback::Timeout;
 
 use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
-use yew::html::{IntoEventCallback, IntoPropValue};
+use yew::html::{IntoPropValue};
 
 use crate::prelude::*;
 use crate::widget::{Button, Container};

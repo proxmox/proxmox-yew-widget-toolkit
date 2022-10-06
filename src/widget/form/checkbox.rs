@@ -64,18 +64,18 @@ impl PwtCheckbox {
     }
 
     fn set_value(&mut self, ctx: &Context<Self>, value: bool) {
-        log::info!("CHECKBOX SET FALUE0 {} {}", self.value, value);
-       if self.value == value { return; }
+        //log::info!("CHECKBOX SET FALUE0 {} {}", self.value, value);
+        if self.value == value { return; }
 
         let props = ctx.props();
 
         self.value = value;
 
         if let Some(form_ctx) = &self.form_ctx {
-            log::info!("CHECKBOX SET FALUE {:?}", value);
+            //log::info!("CHECKBOX SET FALUE {:?}", value);
             form_ctx.set_value(&props.name, value.into());
         } else {
-           log::info!("MISING FORM CTX");
+            log::info!("MISING FORM CTX");
         }
 
         if let Some(on_change) = &props.on_change {

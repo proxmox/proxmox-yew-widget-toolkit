@@ -16,11 +16,15 @@ pub(crate) use menu_popper::MenuPopper;
 mod menu_item;
 pub use menu_item::MenuItem;
 
+mod menu_checkbox;
+pub use menu_checkbox::{MenuCheckbox, PwtMenuCheckbox};
+
 mod menu_button;
 pub use menu_button::{MenuButton, PwtMenuButton};
 
 #[derive(Clone, PartialEq)]
 pub enum MenuEntry{
+    Checkbox(MenuCheckbox),
     MenuItem(MenuItem),
     Separator,
     Component(VNode),
@@ -29,6 +33,12 @@ pub enum MenuEntry{
 impl From<MenuItem> for MenuEntry {
     fn from(item: MenuItem) -> Self {
         Self::MenuItem(item)
+    }
+}
+
+impl From<MenuCheckbox> for MenuEntry {
+    fn from(checkbox: MenuCheckbox) -> Self {
+        Self::Checkbox(checkbox)
     }
 }
 
@@ -305,6 +315,7 @@ impl Component for PwtMenu {
         match msg {
             // Note: only used by menubar
             Msg::FocusChange(has_focus) => {
+                // return false; // useful to debug menu layout
                 let link = ctx.link().clone();
                 self.focus_timeout = Some(Timeout::new(1, move || {
                     link.send_message(Msg::DelayedFocusChange(has_focus));
@@ -405,6 +416,7 @@ impl Component for PwtMenu {
                 };
 
                 if let Some(MenuEntry::MenuItem(item)) = props.children.get(cursor) {
+                    self.active_submenu = Some(cursor);
                     self.collapsed = false;
                     if item.has_menu() {
                         if self.show_submenu != show {
@@ -426,7 +438,7 @@ impl Component for PwtMenu {
                     }
                 }
 
-                false
+                true
             }
             Msg::SubmenuClose => {
                 //log::info!("SUBMENU CLOSE {}", self.unique_id);
@@ -461,6 +473,7 @@ impl Component for PwtMenu {
                 }
 
                 self.cursor = Some(cursor);
+
                 //log::info!("ACTIVATE {} {} {}", self.unique_id, props.autofocus, inside_submenu);
                 if !inside_submenu {
                     focus_el.set_tab_index(0);
@@ -548,7 +561,10 @@ impl Component for PwtMenu {
                             .inside_menubar(props.menubar)
                             .into()
                     }
-                };
+                    MenuEntry::Checkbox(checkbox) => {
+                        checkbox.clone().into()
+                    }
+               };
 
                 let item_id = self.get_unique_item_id(i);
                 let link = ctx.link().clone();
