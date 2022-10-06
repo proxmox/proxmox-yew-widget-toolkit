@@ -294,9 +294,9 @@ impl Component for PwtField {
             .class(if valid.is_ok() { "is-valid" } else { "is-invalid" })
             .attribute("type", props.input_type.clone())
             .attribute("value", value)
-        //.attribute("min", props.min.map(|v| v.to_string()))
-        //.attribute("max", props.max.map(|v| v.to_string()))
-        //.attribute("step", props.step.map(|v| v.to_string()))
+            .attribute("min", props.min.map(|v| v.to_string()))
+            .attribute("max", props.max.map(|v| v.to_string()))
+            .attribute("step", props.step.map(|v| v.to_string()))
             .oninput(oninput)
             .into();
 
