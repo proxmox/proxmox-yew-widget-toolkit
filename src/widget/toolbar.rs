@@ -24,7 +24,7 @@ impl Toolbar {
     }
 
     pub fn add_spacer(&mut self) {
-        self.add_child(html!{<div class="pwt-user-select-none">{"|"}</div>});
+        self.add_child(html!{<div aria-hidden="" class="pwt-align-self-stretch pwt-vertical-rule"/>});
     }
 
     pub fn with_flex_spacer(mut self) -> Self {
