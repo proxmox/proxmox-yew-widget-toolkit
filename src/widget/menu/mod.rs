@@ -1,11 +1,11 @@
 use std::rc::Rc;
 
-use wasm_bindgen::JsCast;
 use gloo_timers::callback::Timeout;
+use wasm_bindgen::JsCast;
 
+use yew::html::IntoEventCallback;
 use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
-use yew::html::IntoEventCallback;
 
 use crate::prelude::*;
 use crate::widget::{get_unique_element_id, Container};
@@ -23,7 +23,7 @@ mod menu_button;
 pub use menu_button::{MenuButton, PwtMenuButton};
 
 #[derive(Clone, PartialEq)]
-pub enum MenuEntry{
+pub enum MenuEntry {
     Checkbox(MenuCheckbox),
     MenuItem(MenuItem),
     Separator,
@@ -73,7 +73,6 @@ pub struct Menu {
 }
 
 impl Menu {
-
     /// Create a new instance.
     pub fn new() -> Self {
         yew::props!(Self {})
@@ -94,7 +93,6 @@ impl Menu {
     pub fn add_class(&mut self, class: impl Into<Classes>) {
         self.class.push(class);
     }
-
 
     /// Builder style method to add a simple line to separate menu items.
     pub fn with_separator(mut self) -> Self {
@@ -178,7 +176,6 @@ pub struct PwtMenu {
     submenu_timer: Option<Timeout>,
 }
 impl PwtMenu {
-
     fn get_unique_item_id(&self, n: usize) -> String {
         format!("{}-item-{}", self.unique_id, n)
     }
@@ -200,7 +197,6 @@ impl PwtMenu {
     }
 
     fn try_focus_item(&mut self, cursor: usize, has_focus: bool) -> bool {
-
         let focus_el = match self.get_focus_el(cursor) {
             Some(el) => el,
             None => return false,
@@ -263,7 +259,7 @@ impl PwtMenu {
     fn init_roving_tabindex(&mut self, ctx: &Context<Self>) {
         let props = ctx.props();
 
-       if let Some(cursor) = self.cursor {
+        if let Some(cursor) = self.cursor {
             if let Some(focus_el) = self.get_focus_el(cursor) {
                 focus_el.set_tab_index(0);
                 return;
@@ -359,10 +355,16 @@ impl Component for PwtMenu {
                 };
 
                 loop {
-                    if cursor >= props.children.len() { return false; }
+                    if cursor >= props.children.len() {
+                        return false;
+                    }
                     match props.children[cursor] {
-                        MenuEntry::Separator => {},
-                        _ => if self.set_cursor(cursor, true) { break; },
+                        MenuEntry::Separator => {}
+                        _ => {
+                            if self.set_cursor(cursor, true) {
+                                break;
+                            }
+                        }
                     }
                     cursor += 1;
                 }
@@ -375,9 +377,9 @@ impl Component for PwtMenu {
                 let link = ctx.link().clone();
                 self.move_timeout = Some(Timeout::new(1, move || {
                     link.send_message(Msg::DelayedPrevious);
-                    }));
+                }));
                 false
-             }
+            }
             Msg::DelayedPrevious => {
                 let mut cursor = match self.cursor {
                     Some(cursor) => {
@@ -398,10 +400,16 @@ impl Component for PwtMenu {
 
                 loop {
                     match props.children[cursor] {
-                       MenuEntry::Separator => {},
-                        _ => if self.set_cursor(cursor, true) { break; },
+                        MenuEntry::Separator => {}
+                        _ => {
+                            if self.set_cursor(cursor, true) {
+                                break;
+                            }
+                        }
                     }
-                    if cursor == 0 { return false; }
+                    if cursor == 0 {
+                        return false;
+                    }
                     cursor -= 1;
                 }
                 self.show_submenu = true;
@@ -427,7 +435,7 @@ impl Component for PwtMenu {
                             self.inside_submenu = with_keyboard;
                             //log::info!("MOVE FOCUS");
                             return true;
-                       }
+                        }
                     }
                 }
 
@@ -469,7 +477,7 @@ impl Component for PwtMenu {
 
                 if self.cursor != Some(cursor) {
                     //log::info!("DELETE COLAPSE FLAGE");
-                   // self.collapsed = false;
+                    // self.collapsed = false;
                 }
 
                 self.cursor = Some(cursor);
@@ -602,8 +610,7 @@ impl Component for PwtMenu {
             ;
 
         if props.menubar {
-            menu
-                .onfocusin(ctx.link().callback(|_| Msg::FocusChange(true)))
+            menu.onfocusin(ctx.link().callback(|_| Msg::FocusChange(true)))
                 .onfocusout(ctx.link().callback(|_| Msg::FocusChange(false)))
                 .into()
         } else {
@@ -638,7 +645,6 @@ impl Component for PwtMenu {
             }
         }
     }
-
 }
 
 impl Into<VNode> for Menu {
@@ -671,7 +677,6 @@ fn dom_focus_inside_submenu(event: &FocusEvent, item_id: &str) -> bool {
 }
 
 fn get_first_focusable(item_el: web_sys::Element) -> Option<web_sys::HtmlElement> {
-
     const FOCUSABLE_SELECTOR: &str = concat!(
         "a:not([disabled]),",
         "button:not([disabled]),",
@@ -690,7 +695,6 @@ fn get_first_focusable(item_el: web_sys::Element) -> Option<web_sys::HtmlElement
     }
 }
 
-
 fn dom_focus_submenu(item_id: &str) {
     //log::info!("TRY FOCUS SUB {}", item_id);
     let window = web_sys::window().unwrap();
@@ -705,5 +709,4 @@ fn dom_focus_submenu(item_id: &str) {
         //log::info!("TRY FOCUS SUB TZEST {} FID {}", item_id, focus_el.id());
         let _ = focus_el.focus();
     }
-
 }
