@@ -89,15 +89,26 @@ impl Menu {
         self
     }
 
-    /// Builder style method to add a menu item
+    /// Builder style method to add a menu item.
     pub fn with_item(mut self, child: impl Into<MenuEntry>) -> Self {
         self.add_item(child);
         self
     }
 
-    /// Method to add a menu item
+    /// Method to add a menu item.
     pub fn add_item(&mut self, child: impl Into<MenuEntry>) {
         self.children.push(child.into());
+    }
+
+    /// Builder style method to add multiple menu items.
+    pub fn items(mut self, child: impl IntoIterator<Item = MenuEntry>) -> Self {
+        self.add_items(child);
+        self
+    }
+
+    /// Method to add multiple items.
+    pub fn add_items(&mut self, children: impl IntoIterator<Item = MenuEntry>) {
+        self.children.extend(children);
     }
 
     pub fn autofocus(mut self, autofocus: bool) -> Self {
@@ -277,6 +288,7 @@ impl Component for PwtMenu {
         match msg {
             // Note: only used by menubar
             Msg::FocusChange(has_focus) => {
+                return false;
                 let link = ctx.link().clone();
                 self.timeout = Some(Timeout::new(1, move || {
                     link.send_message(Msg::DelayedFocusChange(has_focus));
