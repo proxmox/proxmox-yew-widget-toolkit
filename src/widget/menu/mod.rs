@@ -542,7 +542,6 @@ impl Component for PwtMenu {
                         }
                     }
                     event.stop_propagation();
-                    event.prevent_default();
                 }
             })
             .children(props.children.iter().enumerate().map(|(i, entry)| {
