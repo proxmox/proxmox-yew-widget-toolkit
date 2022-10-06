@@ -292,7 +292,6 @@ impl Component for PwtMenu {
         match msg {
             // Note: only used by menubar
             Msg::FocusChange(has_focus) => {
-                return false;
                 let link = ctx.link().clone();
                 self.focus_timeout = Some(Timeout::new(1, move || {
                     link.send_message(Msg::DelayedFocusChange(has_focus));
