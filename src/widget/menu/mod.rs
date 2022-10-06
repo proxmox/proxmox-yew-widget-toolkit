@@ -527,6 +527,7 @@ impl Component for PwtMenu {
             .children(props.children.iter().enumerate().map(|(i, entry)| {
                 let active = self.cursor == Some(i);
                 let submenu_active = self.active_submenu == Some(i);
+                let show_submenu = submenu_active && self.show_submenu && !(props.menubar && self.collapsed);
                 let child = match entry {
                     MenuEntry::Separator => {
                         if props.menubar {
@@ -542,7 +543,7 @@ impl Component for PwtMenu {
                         item.clone()
                             .active(active || submenu_active)
                             .on_close(ctx.link().callback(|_| Msg::SubmenuClose))
-                            .show_submenu(submenu_active && self.show_submenu && !self.collapsed)
+                            .show_submenu(show_submenu)
                             .focus_submenu(self.inside_submenu)
                             .inside_menubar(props.menubar)
                             .into()
