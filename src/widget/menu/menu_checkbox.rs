@@ -6,6 +6,7 @@ use yew::html::{IntoEventCallback, IntoPropValue};
 
 use crate::prelude::*;
 use crate::widget::{Container};
+use crate::widget::form::{FormContext, FieldOptions};
 
 
 #[derive(Clone, PartialEq, Properties)]
@@ -22,6 +23,7 @@ pub struct MenuCheckbox {
     pub disabled: bool,
 
     pub checked: Option<bool>,
+    pub default: Option<bool>,
 
     pub on_change: Option<Callback<bool>>,
 }
@@ -36,8 +38,21 @@ impl MenuCheckbox {
     }
 
     pub fn checked(mut self, checked: impl IntoPropValue<Option<bool>>) -> Self {
-        self.checked = checked.into_prop_value();
+        self.set_checked(checked);
         self
+    }
+
+    pub fn set_checked(&mut self, checked: impl IntoPropValue<Option<bool>>) {
+        self.checked = checked.into_prop_value();
+    }
+
+    pub fn default(mut self, default: impl IntoPropValue<Option<bool>>) -> Self {
+        self.set_default(default);
+        self
+    }
+
+    pub fn set_default(&mut self, default: impl IntoPropValue<Option<bool>>) {
+        self.default = default.into_prop_value();
     }
 
     /// Builder style method to set the field name.
@@ -72,11 +87,14 @@ impl MenuCheckbox {
 
 pub enum Msg {
     Toggle,
+    FormCtxUpdate(FormContext),
 }
 
 #[doc(hidden)]
 pub struct PwtMenuCheckbox {
     checked: bool,
+    form_ctx: Option<FormContext>,
+    _form_ctx_handle: Option<ContextHandle<FormContext>>,
 }
 
 impl PwtMenuCheckbox {
@@ -88,11 +106,33 @@ impl PwtMenuCheckbox {
             return checked; // use forced value
         }
 
+        if let Some(name) = &props.name {
+            if let Some(form_ctx) = &self.form_ctx {
+                return form_ctx
+                    .get_field_value(name)
+                    .as_bool()
+                    .unwrap_or(false);
+            }
+        }
+
         self.checked
     }
 
-    fn set_value(&mut self, _ctx: &Context<Self>, checked: bool) {
+    fn set_value(&mut self, ctx: &Context<Self>, checked: bool) {
+        if self.checked == checked { return; }
         self.checked = checked;
+
+        let props = ctx.props();
+
+        if let Some(name) = &props.name {
+            if let Some(form_ctx) = &self.form_ctx {
+                form_ctx.set_value(name, self.checked.into());
+            }
+        }
+
+        if let Some(on_change) = &props.on_change {
+            on_change.emit(self.checked);
+        }
     }
 }
 
@@ -100,31 +140,55 @@ impl Component for PwtMenuCheckbox {
     type Message = Msg;
     type Properties = MenuCheckbox;
 
-    fn create(_ctx: &Context<Self>) -> Self {
-        Self {
-            checked: false,
+    fn create(ctx: &Context<Self>) -> Self {
+        let props = ctx.props();
+
+        let mut _form_ctx_handle = None;
+        let mut form_ctx = None;
+
+        if let Some(name) = &props.name {
+            let value = props.checked.or(props.default).unwrap_or(false);
+
+            let on_form_ctx_change = Callback::from({
+                let link = ctx.link().clone();
+                move |form_ctx: FormContext| link.send_message(Msg::FormCtxUpdate(form_ctx))
+            });
+
+
+            if let Some((form, handle)) = ctx.link().context::<FormContext>(on_form_ctx_change) {
+                form.register_field(
+                    name,
+                    value.into(),
+                    None,
+                    FieldOptions::new(),
+                    // fixme: FieldOptions::from_field_props(&props.input_props),
+                );
+
+                form_ctx = Some(form);
+                _form_ctx_handle = Some(handle);
+            }
         }
+
+        Self {
+            _form_ctx_handle,
+            form_ctx,
+            checked: false,
+         }
     }
 
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
         let props = ctx.props();
         match msg {
-            /*
             Msg::FormCtxUpdate(form_ctx) => {
                 self.form_ctx = Some(form_ctx);
                 let value = self.get_value(ctx);
-                let changed = self.value != value;
-                self.value = value;
+                let changed = self.checked != value;
+                self.checked = value;
                 changed
             }
-             */
             Msg::Toggle => {
                 if props.disabled { return false; }
                 self.set_value(ctx, !self.get_value(ctx));
-                if let Some(on_change) = &props.on_change {
-                    on_change.emit(self.checked);
-                }
-
                 true
             }
         }
