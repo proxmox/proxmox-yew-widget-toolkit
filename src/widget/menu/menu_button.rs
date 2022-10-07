@@ -1,17 +1,17 @@
-use std::rc::Rc;
-
 use wasm_bindgen::JsCast;
 use gloo_timers::callback::Timeout;
 
 use yew::prelude::*;
-use yew::virtual_dom::{VComp, VNode};
-use yew::html::{IntoPropValue};
+use yew::html::{IntoEventCallback, IntoPropValue};
 
 use crate::prelude::*;
 use crate::widget::{Button, Container};
 
 use super::{Menu, MenuPopper};
 
+use pwt_macros::widget;
+
+#[widget(PwtMenuButton, @element)]
 #[derive(Clone, PartialEq, Properties)]
 pub struct MenuButton {
     pub text: AttrValue,
@@ -19,8 +19,20 @@ pub struct MenuButton {
     /// Optional Submenu
     pub menu: Option<Menu>,
 
+    /// Automatically popup menu when receiving focus
+    ///
+    /// You can then open the menu programmatically by giving the
+    /// button focus.
+    #[prop_or_default]
+    pub autoshow_menu: bool,
+
     #[prop_or_default]
     pub disabled: bool,
+
+    pub tabindex: Option<i32>,
+
+    // Fires on menu close
+    pub on_close: Option<Callback<()>>,
 }
 
 impl MenuButton {
@@ -32,6 +44,17 @@ impl MenuButton {
         })
     }
 
+    /// Builder style method to set the autoshow_menu flag
+    pub fn autoshow_menu(mut self, autoshow_menu: bool) -> Self {
+        self.set_autoshow_menu(autoshow_menu);
+        self
+    }
+
+    /// Method to set the autoshow_menu flag
+    pub fn set_autoshow_menu(&mut self, autoshow_menu: bool) {
+        self.autoshow_menu = autoshow_menu;
+    }
+
     /// Builder style method to set the disabled flag
     pub fn disabled(mut self, disabled: bool) -> Self {
         self.set_disabled(disabled);
@@ -41,6 +64,17 @@ impl MenuButton {
     /// Method to set the disabled flag
     pub fn set_disabled(&mut self, disabled: bool) {
         self.disabled = disabled;
+    }
+
+    /// Builder style method to set the html tabindex attribute
+    pub fn tabindex(mut self, index: impl IntoPropValue<Option<i32>>) -> Self {
+        self.set_tabindex(index);
+        self
+    }
+
+    /// Method to set the html tabindex attribute
+    pub fn set_tabindex(&mut self, index: impl IntoPropValue<Option<i32>>) {
+        self.tabindex = index.into_prop_value();
     }
 
     /// Builder style method to set the icon class.
@@ -59,30 +93,36 @@ impl MenuButton {
         self.menu = menu.into_prop_value();
         self
     }
+
+    /// Builder style method to set the on_close callback
+    pub fn on_close(mut self, cb: impl IntoEventCallback<()>) -> Self {
+        self.on_close = cb.into_event_callback();
+        self
+    }
 }
 
 pub enum Msg {
+    ShowMenu,
     CloseMenu,
-    ToggleMenu,
     FocusChange(bool),
     DelayedFocusChange(bool),
 }
 
 #[doc(hidden)]
 pub struct PwtMenuButton {
-    content_ref: NodeRef,
     submenu_ref: NodeRef,
     popper: MenuPopper,
 
     show_submenu: bool,
     timeout: Option<Timeout>,
 
+    last_has_focus: bool,
 }
 
 impl PwtMenuButton {
 
-    fn restore_focus(&mut self) {
-        if let Some(node) = self.content_ref.get() {
+    fn restore_focus(&mut self, props: &MenuButton) {
+        if let Some(node) = props.std_props.node_ref.get() {
             if let Some(el) = node.dyn_into::<web_sys::HtmlElement>().ok() {
                 let _ = el.focus();
             }
@@ -94,28 +134,32 @@ impl Component for PwtMenuButton {
     type Message = Msg;
     type Properties = MenuButton;
 
-    fn create(_ctx: &Context<Self>) -> Self {
-        let content_ref = NodeRef::default();
+    fn create(ctx: &Context<Self>) -> Self {
+        let props = ctx.props();
         let submenu_ref = NodeRef::default();
-        let popper = MenuPopper::new(content_ref.clone(), submenu_ref.clone(), true);
+        let popper = MenuPopper::new(props.std_props.node_ref.clone(), submenu_ref.clone(), true);
         Self {
-            content_ref,
             submenu_ref,
             popper,
             show_submenu: false,
             timeout: None,
+            last_has_focus: false,
         }
     }
 
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
+        let props = ctx.props();
         match msg {
-            Msg::CloseMenu => {
-                self.show_submenu = false;
-                self.restore_focus();
+            Msg::ShowMenu =>  {
+                self.show_submenu = true;
                 true
             }
-            Msg::ToggleMenu =>  {
-                self.show_submenu = !self.show_submenu;
+            Msg::CloseMenu => {
+                self.show_submenu = false;
+                self.restore_focus(props);
+                if let Some(on_close) = &props.on_close {
+                    on_close.emit(());
+                }
                 true
             }
             Msg::FocusChange(has_focus) => {
@@ -126,15 +170,20 @@ impl Component for PwtMenuButton {
                 false
             }
             Msg::DelayedFocusChange(has_focus) => {
-                if !has_focus {
+                if has_focus == self.last_has_focus { return false; }
+                self.last_has_focus = has_focus;
+
+                if has_focus {
+                    if props.autoshow_menu {
+                        self.show_submenu = true;
+                    }
+                } else {
                     self.show_submenu = false;
-                    return true;
                 }
-                false
+                true
             }
         }
     }
-
 
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
@@ -156,7 +205,21 @@ impl Component for PwtMenuButton {
             submenu = Some(sub);
         }
 
+        let mut button = Button::new(&props.text)
+            .tabindex(props.tabindex)
+            .icon_class(props.icon_class.clone());
+
+        button.std_props = props.std_props.clone();
+        button.listeners = props.listeners.clone();
+
+        let button = button.onclick(ctx.link().callback(move |event: MouseEvent| {
+            event.stop_propagation();
+            Msg::ShowMenu
+        }));
+
+
         Container::new()
+            .attribute("style", "padding: inherit;")
             .onfocusin(ctx.link().callback(|_| Msg::FocusChange(true)))
             .onfocusout(ctx.link().callback(|_| Msg::FocusChange(false)))
             .onkeydown({
@@ -164,17 +227,14 @@ impl Component for PwtMenuButton {
                 move |event: KeyboardEvent| {
                     match event.key_code() {
                         27 => link.send_message(Msg::CloseMenu),
-                        _ => return,
+                        40 => link.send_message(Msg::ShowMenu),
+                       _ => return,
                     }
                     event.stop_propagation();
                     event.prevent_default();
                 }
             })
-            .with_child(
-                Button::new(&props.text)
-                    .node_ref(self.content_ref.clone())
-                    .onclick(ctx.link().callback(|_| Msg::ToggleMenu))
-            )
+            .with_child(button)
             .with_optional_child(submenu)
             .into()
     }
@@ -183,12 +243,5 @@ impl Component for PwtMenuButton {
         let props = ctx.props();
         if props.menu.is_none() { return; }
         self.popper.update();
-    }
-}
-
-impl Into<VNode> for MenuButton {
-    fn into(self) -> VNode {
-        let comp = VComp::new::<PwtMenuButton>(Rc::new(self), None);
-        VNode::from(comp)
     }
 }
