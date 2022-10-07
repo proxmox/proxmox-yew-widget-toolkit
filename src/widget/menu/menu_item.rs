@@ -94,8 +94,12 @@ impl MenuItem {
     }
 
     pub fn menu(mut self, menu: impl IntoPropValue<Option<Menu>>) -> Self {
-        self.menu = menu.into_prop_value();
+        self.set_menu(menu);
         self
+    }
+
+    pub fn set_menu(&mut self, menu: impl IntoPropValue<Option<Menu>>) {
+         self.menu = menu.into_prop_value();
     }
 
     pub fn on_close(mut self, cb: impl IntoEventCallback<()>) -> Self {
