@@ -53,3 +53,19 @@ impl<T, F: 'static + Fn() -> T> From<F> for BuilderFn<T> {
         BuilderFn::new(f)
     }
 }
+
+pub trait IntoOptionalBuilderFn<T> {
+    fn into_optional_builder_fn(self) -> Option<BuilderFn<T>>;
+}
+
+impl<T> IntoOptionalBuilderFn<T> for Option<BuilderFn<T>> {
+    fn into_optional_builder_fn(self) -> Option<BuilderFn<T>> {
+        self
+    }
+}
+
+impl<T, F: 'static + Fn() -> T> IntoOptionalBuilderFn<T> for F {
+    fn into_optional_builder_fn(self) -> Option<BuilderFn<T>> {
+        Some(BuilderFn::new(self))
+    }
+}

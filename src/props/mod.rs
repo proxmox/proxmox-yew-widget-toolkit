@@ -34,7 +34,7 @@ mod padding;
 pub use padding::Padding;
 
 mod render_function;
-pub use render_function::RenderFn;
+pub use render_function::{RenderFn, BuilderFn, IntoOptionalBuilderFn};
 
 mod selection;
 pub use selection::{Selection2, SelectionObserver};
