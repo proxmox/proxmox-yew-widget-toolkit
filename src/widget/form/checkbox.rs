@@ -19,19 +19,22 @@ pub struct Checkbox {
 
 impl Checkbox {
 
+    /// Creates a new instance.
     pub fn new(name: impl IntoPropValue<AttrValue>) -> Self {
         yew::props!(Self {
             name: name.into_prop_value(),
         })
     }
 
-    pub fn default(mut self, default: bool) -> Self {
+    /// Builder style method to set the field default value.
+    pub fn default(mut self, default: impl IntoPropValue<Option<bool>>) -> Self {
         self.set_default(default);
         self
     }
 
-    pub fn set_default(&mut self, default: bool) {
-        self.default = Some(default);
+    /// Method to set the field default value.
+    pub fn set_default(&mut self, default: impl IntoPropValue<Option<bool>>) {
+        self.default = default.into_prop_value();
     }
 
     /// Builder style method to set the on_change callback
@@ -127,7 +130,7 @@ impl Component for PwtCheckbox {
                 let value = self.get_value(ctx);
                 let changed = self.value != value;
                 self.value = value;
-                changed                
+                changed
             }
             Msg::Toggle => {
                 if props.input_props.disabled { return false; }
