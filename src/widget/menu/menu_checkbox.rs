@@ -79,14 +79,30 @@ pub struct PwtMenuCheckbox {
     checked: bool,
 }
 
+impl PwtMenuCheckbox {
+
+    fn get_value(&self, ctx: &Context<Self>) -> bool {
+        let props = ctx.props();
+
+        if let Some(checked) = props.checked {
+            return checked; // use forced value
+        }
+
+        self.checked
+    }
+
+    fn set_value(&mut self, _ctx: &Context<Self>, checked: bool) {
+        self.checked = checked;
+    }
+}
+
 impl Component for PwtMenuCheckbox {
     type Message = Msg;
     type Properties = MenuCheckbox;
 
-    fn create(ctx: &Context<Self>) -> Self {
-        let props = ctx.props();
+    fn create(_ctx: &Context<Self>) -> Self {
         Self {
-            checked: props.checked.unwrap_or(false),
+            checked: false,
         }
     }
 
@@ -104,8 +120,7 @@ impl Component for PwtMenuCheckbox {
              */
             Msg::Toggle => {
                 if props.disabled { return false; }
-                //self.set_value(ctx, !self.get_value(ctx));
-                self.checked = !self.checked;
+                self.set_value(ctx, !self.get_value(ctx));
                 if let Some(on_change) = &props.on_change {
                     on_change.emit(self.checked);
                 }
@@ -118,7 +133,7 @@ impl Component for PwtMenuCheckbox {
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
 
-        let checked = self.checked;
+        let checked = self.get_value(ctx);
 
         let icon_class = classes!(
             "fa",
