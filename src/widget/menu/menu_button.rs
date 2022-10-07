@@ -5,6 +5,7 @@ use yew::prelude::*;
 use yew::html::{IntoEventCallback, IntoPropValue};
 
 use crate::prelude::*;
+use crate::props::BuilderFn;
 use crate::widget::{Button, Container};
 
 use super::{Menu, MenuPopper};
@@ -18,6 +19,12 @@ pub struct MenuButton {
     pub icon_class: Option<Classes>,
     /// Optional Submenu
     pub menu: Option<Menu>,
+
+    /// Menu Builder
+    ///
+    /// To create menus dynamically. If specified, the 'menu' property
+    /// is ignored.
+    pub menu_builder: Option<BuilderFn<Menu>>,
 
     /// Automatically popup menu when receiving focus
     ///
@@ -91,6 +98,12 @@ impl MenuButton {
     /// Builder style method to set the menu.
     pub fn menu(mut self, menu: impl IntoPropValue<Option<Menu>>) -> Self {
         self.menu = menu.into_prop_value();
+        self
+    }
+
+    /// Builder style method to set the menu builder.
+    pub fn menu_builder(mut self, builder: impl Into<BuilderFn<Menu>>) -> Self {
+        self.menu_builder = Some(builder.into());
         self
     }
 
@@ -190,20 +203,28 @@ impl Component for PwtMenuButton {
 
         let show_submenu = self.show_submenu;
 
-        let mut submenu: Option<Html> = None;
-        if let Some(menu) = &props.menu {
-            let sub = Container::new()
-                .node_ref(self.submenu_ref.clone())
-                .class("pwt-submenu")
-                .with_optional_child(show_submenu.then(|| {
-                    menu.clone()
+        let mut submenu = Container::new()
+            .node_ref(self.submenu_ref.clone())
+            .class("pwt-submenu");
+
+        let mut menu = None;
+        if show_submenu {
+            if let Some(menu_builder) = &props.menu_builder {
+                menu = Some(
+                    menu_builder.apply()
                         .autofocus(true)
                         .on_close(ctx.link().callback(|_| Msg::CloseMenu))
-                }))
-                .into();
-
-            submenu = Some(sub);
+                );
+            } else if let Some(m) = &props.menu {
+                menu = Some(
+                    m.clone()
+                        .autofocus(true)
+                        .on_close(ctx.link().callback(|_| Msg::CloseMenu))
+                );
+            }
         }
+
+        submenu.add_optional_child(menu);
 
         let mut button = Button::new(&props.text)
             .tabindex(props.tabindex)
@@ -235,13 +256,11 @@ impl Component for PwtMenuButton {
                 }
             })
             .with_child(button)
-            .with_optional_child(submenu)
+            .with_child(submenu)
             .into()
     }
 
     fn rendered(&mut self, ctx: &Context<Self>, _first_render: bool) {
-        let props = ctx.props();
-        if props.menu.is_none() { return; }
         self.popper.update();
     }
 }
