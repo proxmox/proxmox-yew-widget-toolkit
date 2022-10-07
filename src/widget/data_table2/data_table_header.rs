@@ -11,11 +11,11 @@ use yew::html::{IntoPropValue, IntoEventCallback, Scope};
 
 use crate::prelude::*;
 use crate::props::SorterFn;
-use crate::widget::{get_unique_element_id, Container, Fa};
+use crate::widget::{get_unique_element_id, Container, Fa, Menu, MenuItem, MenuCheckbox};
 
 use super::{
     IndexedHeader, IndexedHeaderSingle, IndexedHeaderGroup,
-    HeaderMenu, HeaderState, ResizableHeader,
+    HeaderState, ResizableHeader,
 };
 
 #[derive(Properties)]
@@ -92,7 +92,7 @@ pub enum Msg {
     ColumnSizeReset(usize),
     ColumnSizeChange(usize, f64),
     ColumnSortChange(usize, bool, Option<bool>),
-    HideClick(usize),
+    HideClick(usize, bool),
     MoveCursor(bool),
     FocusCell(usize),
 }
@@ -229,19 +229,11 @@ impl <T: 'static> PwtDataTableHeader<T> {
                         .on_resize(link.callback(move |width: f64| Msg::ResizeColumn(column_idx, width.max(0.0))))
                         .on_size_reset(link.callback(move |_| Msg::ColumnSizeReset(column_idx)))
                         .on_size_change(link.callback(move |w| Msg::ColumnSizeChange(column_idx, w)))
-                        .picker({
+                        .menu_builder({
                             let headers = Rc::clone(&props.headers);
                             let link = link.clone();
                             let hidden_cells = Vec::from(self.state.hidden_cells());
-                            move |_: &()| {
-                                HeaderMenu::new(Rc::clone(&headers), &hidden_cells)
-                                    .key(format!("header-menu-{cell_idx}"))
-                                    .on_sort_change(link.callback(move |asc| {
-                                        Msg::ColumnSortChange(cell_idx, false, Some(asc))
-                                    }))
-                                    .on_hide_click(link.callback(Msg::HideClick))
-                                    .into()
-                            }
+                            move || build_header_menu(&headers, &link, cell_idx, &hidden_cells)
                         })
                 )
                 .onfocusin(link.callback(move |_| Msg::FocusCell(cell_idx)))
@@ -409,8 +401,8 @@ impl <T: 'static> Component for PwtDataTableHeader<T> {
                 }
                 true
             }
-            Msg::HideClick(cell_idx) => {
-                self.state.toggle_cell_hidden(cell_idx);
+            Msg::HideClick(cell_idx, visible) => {
+                self.state.set_hidden(cell_idx, !visible);
                 if let Some(on_hidden_change) = &props.on_hidden_change {
                     on_hidden_change.emit(self.state.hidden_columns());
                 }
@@ -418,7 +410,6 @@ impl <T: 'static> Component for PwtDataTableHeader<T> {
             }
             Msg::FocusCell(cell_idx) => {
                 self.cursor = Some(cell_idx);
-                self.focus_active_cell();
                 true
             }
             Msg::MoveCursor(direction) => {
@@ -482,6 +473,74 @@ impl <T: 'static> Component for PwtDataTableHeader<T> {
             })
             .into()
     }
+}
+
+fn build_header_menu<T>(
+    headers: &[IndexedHeader<T>],
+    link: &Scope<PwtDataTableHeader<T>>,
+    cell_idx: usize,
+    hidden_cells: &[bool],
+) -> Menu {
+
+    Menu::new()
+        .with_item(
+            MenuItem::new("Sort Ascending")
+                .icon_class("fa fa-long-arrow-up")
+                .on_select({
+                    let link = link.clone();
+                    move |_| {
+                        link.send_message(Msg::ColumnSortChange(cell_idx, false, Some(true)))
+                    }
+                })
+        )
+        .with_item(
+            MenuItem::new("Sort Descending")
+                .icon_class("fa fa-long-arrow-down")
+                .on_select({
+                    let link = link.clone();
+                    move |_| {
+                        link.send_message(Msg::ColumnSortChange(cell_idx, false, Some(false)))
+                    }
+                })
+        )
+        .with_separator()
+        .with_item(
+            MenuItem::new("Columns")
+                .menu(headers_to_menu(headers, link, &mut 0, hidden_cells))
+        )
+}
+
+fn headers_to_menu<T>(
+    headers: &[IndexedHeader<T>],
+    link: &Scope<PwtDataTableHeader<T>>,
+    cell_idx: &mut usize,
+    hidden_cells: &[bool],
+) -> Menu {
+
+    let mut menu = Menu::new();
+
+    for header in headers {
+        match header {
+            IndexedHeader::Single(cell) => {
+                menu.add_item(
+                    MenuCheckbox::new(cell.column.name.clone())
+                        .checked(!hidden_cells[*cell_idx])
+                        .on_change(link.callback({
+                            let cell_idx = *cell_idx;
+                            move |checked| Msg::HideClick(cell_idx, checked)
+                        }))
+                );
+                *cell_idx += 1;
+            }
+            IndexedHeader::Group(group) => {
+                let mut item = MenuItem::new(group.name.clone());
+                *cell_idx += 1;
+                item.set_menu(headers_to_menu(&group.children, link, cell_idx, hidden_cells));
+                menu.add_item(item);
+             }
+         }
+     }
+    menu
 }
 
 impl<T: 'static> Into<VNode> for DataTableHeader<T> {

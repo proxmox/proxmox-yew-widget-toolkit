@@ -5,7 +5,7 @@ use yew::prelude::*;
 use yew::html::{IntoEventCallback, IntoPropValue};
 
 use crate::prelude::*;
-use crate::props::BuilderFn;
+use crate::props::{BuilderFn, IntoOptionalBuilderFn};
 use crate::widget::{Button, Container};
 
 use super::{Menu, MenuPopper};
@@ -102,8 +102,8 @@ impl MenuButton {
     }
 
     /// Builder style method to set the menu builder.
-    pub fn menu_builder(mut self, builder: impl Into<BuilderFn<Menu>>) -> Self {
-        self.menu_builder = Some(builder.into());
+    pub fn menu_builder(mut self, builder: impl IntoOptionalBuilderFn<Menu>) -> Self {
+        self.menu_builder = builder.into_optional_builder_fn();
         self
     }
 

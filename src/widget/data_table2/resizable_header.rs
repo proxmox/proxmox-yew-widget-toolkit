@@ -1,8 +1,8 @@
 use std::rc::Rc;
 
 use gloo_events::EventListener;
-use wasm_bindgen::{JsCast, JsValue};
-use wasm_bindgen::UnwrapThrowExt;
+use gloo_timers::callback::Timeout;
+use wasm_bindgen::{JsCast, UnwrapThrowExt};
 
 use yew::prelude::*;
 use yew::virtual_dom::{Key, VComp, VNode};
@@ -10,10 +10,8 @@ use yew::html::{IntoEventCallback, IntoPropValue};
 
 
 use crate::prelude::*;
-use crate::props::RenderFn;
-use crate::widget::{Row, Container, SizeObserver};
-use crate::widget::dropdown::focus_selected_element;
-
+use crate::props::{BuilderFn, IntoOptionalBuilderFn};
+use crate::widget::{Menu, MenuButton, Row, Container, SizeObserver};
 
 // Note about node_ref property: make it optional, and generate an
 // unique one in Component::create(). That way we can clone Properies without
@@ -37,7 +35,7 @@ pub struct ResizableHeader {
     pub on_size_change: Option<Callback<f64>>,
 
     /// Function to generate the header menu.
-    pub picker: Option<RenderFn<()>>,
+    pub menu_builder: Option<BuilderFn<Menu>>,
 }
 
 impl ResizableHeader {
@@ -116,12 +114,11 @@ impl ResizableHeader {
         self
     }
 
-    /// Builder style method to set the menu render callback.
-    pub fn picker(mut self, render_fn: impl Into<RenderFn<()>>) -> Self {
-        self.picker = Some(render_fn.into());
+    /// Builder style method to set the menu builder.
+    pub fn menu_builder(mut self, builder: impl IntoOptionalBuilderFn<Menu>) -> Self {
+        self.menu_builder = builder.into_optional_builder_fn();
         self
     }
-
 }
 
 pub enum Msg {
@@ -129,10 +126,10 @@ pub enum Msg {
     StopResize,
     MouseMove(i32),
     FocusChange(bool),
+    DelayedFocusChange(bool),
     TogglePicker,
     ShowPicker,
     HidePicker,
-    PickerClosed,
 }
 
 #[doc(hidden)]
@@ -145,9 +142,7 @@ pub struct PwtResizableHeader {
     has_focus: bool,
     picker_ref: NodeRef,
     show_picker: bool,
-    last_show_picker: bool,
-    popper: Option<JsValue>,
-    mousedown_listener: Option<EventListener>,
+    timeout: Option<Timeout>,
 }
 
 impl PwtResizableHeader {
@@ -172,14 +167,12 @@ impl Component for PwtResizableHeader {
             width: 0.0,
             mousemove_listener: None,
             mouseup_listener: None,
-            mousedown_listener: None,
             size_observer: None,
             has_focus: false,
             picker_ref: NodeRef::default(),
             show_picker: false,
-            last_show_picker: false,
-            popper: None,
-         }
+            timeout: None,
+        }
     }
 
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
@@ -229,6 +222,13 @@ impl Component for PwtResizableHeader {
                 false
             }
             Msg::FocusChange(has_focus) => {
+                let link = ctx.link().clone();
+                self.timeout = Some(Timeout::new(1, move || {
+                    link.send_message(Msg::DelayedFocusChange(has_focus));
+                }));
+                false
+            }
+            Msg::DelayedFocusChange(has_focus) => {
                 self.has_focus = has_focus;
                 true
             }
@@ -237,25 +237,17 @@ impl Component for PwtResizableHeader {
                 yew::Component::update(self, ctx, if self.show_picker { Msg::HidePicker } else {Msg::ShowPicker})
             }
             Msg::HidePicker => {
-                // Note: close_dialog() is async, so we use the
-                // onclose handler (Msg::PickerClosed) to wait for
-                // the real close (else restore_focus() does not work)
-                if let Some(dialog_node) = self.picker_ref.get() {
-                    crate::close_dialog(dialog_node);
-                }
-                //log::info!("HidePicker {}", self.show_picker);
-                false
-            }
-            Msg::PickerClosed => {
-                //log::info!("PickerClosed");
+                //log::info!("HidePicker");
                 self.show_picker = false;
                 self.restore_focus();
                 true
-
             }
             Msg::ShowPicker => {
                 self.show_picker = true;
                 //log::info!("ShowPicker {}", self.show_picker);
+                if let Some(el) = self.picker_ref.cast::<web_sys::HtmlElement>() {
+                    let _ = el.focus();
+                }
                 true
             }
         }
@@ -266,20 +258,21 @@ impl Component for PwtResizableHeader {
 
         Row::new()
             .class("pwt-datatable2-header-item")
-            .class(self.show_picker.then(|| "focused"))
+            //.class(self.show_picker.then(|| "focused"))
+            .class(self.has_focus.then(|| "focused"))
             .class(props.class.clone())
             .attribute("tabindex", props.tabindex.map(|t| t.to_string()))
             .attribute("id", props.id.clone())
             .node_ref(self.node_ref.clone())
-            .onfocus(ctx.link().callback(|_| Msg::FocusChange(true)))
-            .onblur(ctx.link().callback(|_| Msg::FocusChange(false)))
+            .onfocusin(ctx.link().callback(|_| Msg::FocusChange(true)))
+            .onfocusout(ctx.link().callback(|_| Msg::FocusChange(false)))
             .onkeydown({
                 let link = ctx.link().clone();
                 move |event: KeyboardEvent| {
                     match event.key_code() {
                         40 => { // arrow down
                             event.stop_propagation();
-                            link.send_message(Msg::TogglePicker);
+                            link.send_message(Msg::ShowPicker);
                         }
                         _ => {}
                     }
@@ -292,15 +285,17 @@ impl Component for PwtResizableHeader {
                     .with_optional_child(props.content.clone())
             )
             .with_child(
-                Container::new()
+                MenuButton::new("")
+                    .node_ref(self.picker_ref.clone())
+                    .tabindex(-1)
+                    .autoshow_menu(true)
                     .class("pwt-datatable2-header-menu-trigger")
                     .class((self.has_focus || self.show_picker).then(|| "focused"))
+                    .icon_class("fa fa-lg fa-caret-down")
                     .ondblclick(|event: MouseEvent| event.stop_propagation())
-                    .onclick(ctx.link().callback(|event: MouseEvent| {
-                        event.stop_propagation();
-                        Msg::TogglePicker
-                    }))
-                    .with_child(html!{<i class="fa fa-lg fa-caret-down"/>})
+                    .menu_builder(props.menu_builder.clone())
+                    .on_close(ctx.link().callback(|_| Msg::HidePicker))
+
             )
             .with_child(
                 Container::new()
@@ -316,36 +311,7 @@ impl Component for PwtResizableHeader {
                          }
                      })
             )
-            .with_child(
-                Container::new()
-                    .tag("dialog")
-                    .node_ref(self.picker_ref.clone())
-                    .onclose(ctx.link().callback(|_| Msg::PickerClosed))
-                    .oncancel(ctx.link().callback(|event: Event| {
-                        event.stop_propagation();
-                        event.prevent_default();
-                        Msg::HidePicker
-                    }))
-                    .ondblclick(|event: MouseEvent| event.stop_propagation())
-                    .onclick(|event: MouseEvent| event.stop_propagation())
-                    .class("pwt-dropdown")
-                    .attribute("data-show", self.show_picker.then(|| ""))
-                    .with_optional_child(self.show_picker.then(|| {
-                        if let Some(picker) = &props.picker {
-                            picker.apply(&())
-                        } else {
-                            html!{<div class="pwt-p-2">{"No Menu configured"}</div>}
-                        }
-                    }))
-            )
             .into()
-    }
-
-    fn destroy(&mut self, _ctx: &Context<Self>) {
-        // always close the dialog
-        if let Some(dialog_node) = self.picker_ref.get() {
-            crate::close_dialog(dialog_node);
-        }
     }
 
     fn rendered(&mut self, ctx: &Context<Self>, first_render: bool) {
@@ -358,75 +324,6 @@ impl Component for PwtResizableHeader {
                         on_size_change.emit(x);
                     }
                 }));
-            }
-
-            let opts = serde_json::json!({
-                "placement": "bottom-start",
-                "strategy": "fixed",
-                "modifiers": [
-                    {
-                        "name": "preventOverflow",
-                        "options": {
-                            "mainAxis": true, // true by default
-                            "altAxis": true, // false by default
-                        },
-                    },
-                    {
-                        "name": "flip",
-                        "options": {
-                            "fallbackPlacements": [], // disable fallbacks
-                        },
-                    },
-                ],
-            });
-
-            let opts = crate::to_js_value(&opts).unwrap();
-
-            if let Some(content_node) = self.node_ref.get() {
-                if let Some(picker_node) = self.picker_ref.get() {
-                    self.popper = Some(crate::create_popper(content_node, picker_node, &opts));
-                }
-            }
-
-            let window = web_sys::window().unwrap();
-            let picker_ref = self.picker_ref.clone();
-            let link = ctx.link().clone();
-
-            self.mousedown_listener = Some(EventListener::new(
-                &window,
-                "mousedown",
-                move |e: &Event| {
-                    let e = e.dyn_ref::<web_sys::MouseEvent>().unwrap_throw();
-
-                    if let Some(el) = picker_ref.cast::<web_sys::Element>() {
-                        let x = e.client_x() as f64;
-                        let y = e.client_y() as f64;
-
-                        let rect = el.get_bounding_client_rect();
-                        if x > rect.left() && x < rect.right() && y > rect.top() && y < rect.bottom() {
-                            return;
-                        }
-
-                        link.send_message(Msg::HidePicker);
-                    }
-                },
-            ));
-
-        }
-
-        if let Some(popper) = &self.popper {
-            crate::update_popper(popper);
-        }
-
-        if self.show_picker != self.last_show_picker {
-            self.last_show_picker = self.show_picker;
-            if let Some(dialog_node) = self.picker_ref.get() {
-                if self.show_picker {
-                    crate::show_modal_dialog(dialog_node);
-                    focus_selected_element(&self.picker_ref);
-                } else {
-                    crate::close_dialog(dialog_node);
-                }
             }
         }
     }
