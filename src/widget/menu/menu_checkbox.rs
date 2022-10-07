@@ -2,7 +2,7 @@ use std::rc::Rc;
 
 use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
-use yew::html::{IntoPropValue};
+use yew::html::{IntoEventCallback, IntoPropValue};
 
 use crate::prelude::*;
 use crate::widget::{Container};
@@ -20,6 +20,10 @@ pub struct MenuCheckbox {
 
     #[prop_or_default]
     pub disabled: bool,
+
+    pub checked: Option<bool>,
+
+    pub on_change: Option<Callback<bool>>,
 }
 
 impl MenuCheckbox {
@@ -29,6 +33,11 @@ impl MenuCheckbox {
         yew::props!(Self {
             text: text.into()
         })
+    }
+
+    pub fn checked(mut self, checked: impl IntoPropValue<Option<bool>>) -> Self {
+        self.checked = checked.into_prop_value();
+        self
     }
 
     /// Builder style method to set the field name.
@@ -41,7 +50,7 @@ impl MenuCheckbox {
     pub fn set_name(&mut self, name: impl IntoPropValue<Option<AttrValue>>) {
         self.name = name.into_prop_value();
     }
-   
+
     /// Builder style method to set the radio group name.
     pub fn group(mut self, group: impl IntoPropValue<Option<AttrValue>>) -> Self {
         self.set_group(group);
@@ -52,6 +61,13 @@ impl MenuCheckbox {
     pub fn set_group(&mut self, group: impl IntoPropValue<Option<AttrValue>>) {
         self.group = group.into_prop_value();
     }
+
+    /// Builder style method to set the on_change callback.
+    pub fn on_change(mut self, cb: impl IntoEventCallback<bool>) -> Self {
+        self.on_change = cb.into_event_callback();
+        self
+    }
+
 }
 
 pub enum Msg {
@@ -67,9 +83,10 @@ impl Component for PwtMenuCheckbox {
     type Message = Msg;
     type Properties = MenuCheckbox;
 
-    fn create(_ctx: &Context<Self>) -> Self {
+    fn create(ctx: &Context<Self>) -> Self {
+        let props = ctx.props();
         Self {
-            checked: false,
+            checked: props.checked.unwrap_or(false),
         }
     }
 
@@ -89,6 +106,10 @@ impl Component for PwtMenuCheckbox {
                 if props.disabled { return false; }
                 //self.set_value(ctx, !self.get_value(ctx));
                 self.checked = !self.checked;
+                if let Some(on_change) = &props.on_change {
+                    on_change.emit(self.checked);
+                }
+
                 true
             }
         }
@@ -97,13 +118,15 @@ impl Component for PwtMenuCheckbox {
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
 
+        let checked = self.checked;
+
         let icon_class = classes!(
             "fa",
             "fa-fw",
             if props.group.is_some() {
-                if self.checked { "fa-check-circle-o" } else { "fa-circle-o" }
+                if checked { "fa-check-circle-o" } else { "fa-circle-o" }
             } else {
-                if self.checked { "fa-check-square-o" } else { "fa-square-o" }
+                if checked { "fa-check-square-o" } else { "fa-square-o" }
             },
             "pwt-menu-item-icon",
         );
