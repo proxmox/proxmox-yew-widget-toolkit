@@ -33,6 +33,9 @@ pub struct MenuItem {
 
     /// Submenu close event
     pub on_close: Option<Callback<()>>,
+
+    pub on_select: Option<Callback<()>>,
+
 }
 
 impl MenuItem {
@@ -107,6 +110,12 @@ impl MenuItem {
         self
     }
 
+    /// Builder style method to set the on_select callback.
+    pub fn on_select(mut self, cb: impl IntoEventCallback<()>) -> Self {
+        self.on_select = cb.into_event_callback();
+        self
+    }
+
     pub(crate) fn inside_menubar(mut self, inside_menubar: bool) -> Self {
         self.inside_menubar = inside_menubar;
         self
@@ -119,6 +128,7 @@ impl MenuItem {
 }
 
 pub enum Msg {
+    Select,
 }
 
 #[doc(hidden)]
@@ -143,6 +153,20 @@ impl Component for PwtMenuItem {
             content_ref,
             submenu_ref,
             popper,
+        }
+    }
+
+    fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
+        let props = ctx.props();
+
+        match msg {
+            Msg::Select => {
+                if let Some(on_select) = &props.on_select {
+                    on_select.emit(());
+                    // fixme: close menu
+                }
+                false
+            }
         }
     }
 
@@ -200,6 +224,16 @@ impl Component for PwtMenuItem {
             })
             .with_optional_child(arrow)
             .with_optional_child(submenu)
+            .onkeydown({
+                let link = ctx.link().clone();
+                move |event: KeyboardEvent| {
+                    match event.key_code() {
+                        32 => link.send_message(Msg::Select),
+                        _ => {},
+                    }
+                }
+            })
+            .onclick(ctx.link().callback(|_| Msg::Select))
             .into()
     }
 
