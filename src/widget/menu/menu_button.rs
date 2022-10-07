@@ -260,7 +260,7 @@ impl Component for PwtMenuButton {
             .into()
     }
 
-    fn rendered(&mut self, ctx: &Context<Self>, _first_render: bool) {
+    fn rendered(&mut self, _ctx: &Context<Self>, _first_render: bool) {
         self.popper.update();
     }
 }

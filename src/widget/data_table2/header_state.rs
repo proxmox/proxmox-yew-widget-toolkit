@@ -140,10 +140,12 @@ impl<T: 'static> HeaderState<T> {
         self.cell_state[cell_idx].hidden
     }
 
+    /*
     pub fn toggle_cell_hidden(&mut self, cell_idx: usize) {
         let hidden = !self.get_cell_hidden(cell_idx);
         self.set_hidden(cell_idx, hidden);
     }
+    */
 
     // Hidden status for colums (Used by the table renderer)
     pub fn hidden_columns(&self) -> Vec<bool> {
