@@ -108,10 +108,16 @@ impl PwtMenuCheckbox {
 
         if let Some(name) = &props.name {
             if let Some(form_ctx) = &self.form_ctx {
-                return form_ctx
-                    .get_field_value(name)
-                    .as_bool()
-                    .unwrap_or(false);
+                if let Some(group) = &props.group {
+                    return form_ctx
+                        .get_field_value(group)
+                        .as_str() == Some(name);
+                } else {
+                    return form_ctx
+                        .get_field_value(name)
+                        .as_bool()
+                        .unwrap_or(false);
+                }
             }
         }
 
@@ -126,7 +132,11 @@ impl PwtMenuCheckbox {
 
         if let Some(name) = &props.name {
             if let Some(form_ctx) = &self.form_ctx {
-                form_ctx.set_value(name, self.checked.into());
+                if let Some(group) = &props.group {
+                    form_ctx.set_value(group, name.as_str().into());
+                } else {
+                    form_ctx.set_value(name, self.checked.into());
+                }
             }
         }
 
@@ -156,14 +166,23 @@ impl Component for PwtMenuCheckbox {
 
 
             if let Some((form, handle)) = ctx.link().context::<FormContext>(on_form_ctx_change) {
-                form.register_field(
-                    name,
-                    value.into(),
-                    None,
-                    FieldOptions::new(),
-                    // fixme: FieldOptions::from_field_props(&props.input_props),
-                );
-
+                if let Some(group) = &props.group {
+                    form.register_radio_group_option(
+                        group,
+                        name,
+                        value,
+                        FieldOptions::new(),
+                        // fixme: FieldOptions::from_field_props(&props.input_props),
+                    );
+                } else {
+                    form.register_field(
+                        name,
+                        value.into(),
+                        None,
+                        FieldOptions::new(),
+                        // fixme: FieldOptions::from_field_props(&props.input_props),
+                    );
+                }
                 form_ctx = Some(form);
                 _form_ctx_handle = Some(handle);
             }

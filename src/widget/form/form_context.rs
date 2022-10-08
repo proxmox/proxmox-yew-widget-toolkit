@@ -141,15 +141,65 @@ impl FormContext {
             Ok(())
         };
 
-        let state = FieldState {
-            validate,
-            initial_value: value.clone(),
-            initial_valid: valid.clone(),
-            value: value,
-            valid: valid,
-            options,
+        let name = name.into_prop_value();
+
+        let state = match self.inner.borrow().field_state.get(&name) {
+            Some(state) => {
+                // update everything except state.value
+                let mut state = state.clone();
+                state.initial_value = value.clone();
+                state.initial_valid = valid.clone();
+                state.valid = valid;
+                state.options = options;
+                state
+            }
+            None => FieldState {
+                validate,
+                initial_value: value.clone(),
+                initial_valid: valid.clone(),
+                value: value,
+                valid: valid,
+                options,
+            },
         };
+
         self.set_field_state(name, state);
+    }
+
+    /// Register a form radio-group option.
+    pub fn register_radio_group_option(
+        &self,
+        group: impl IntoPropValue<AttrValue>,
+        name: impl IntoPropValue<AttrValue>,
+        checked: bool,
+        options: FieldOptions,
+    ) {
+        let group = group.into_prop_value();
+        let name = name.into_prop_value();
+
+        let value = if checked { Value::from(&*name) } else { Value::from("") };
+
+        let state = match self.inner.borrow().field_state.get(&group) {
+            Some(state) => {
+                let mut state = state.clone();
+                if checked {
+                    state.initial_value = value.clone();
+                    state.value = value;
+                }
+                state.options.submit |= options.submit;
+                state.options.submit_empty |= options.submit_empty;
+                state
+            }
+            None => FieldState {
+                validate: None,
+                initial_value: value.clone(),
+                initial_valid: Ok(()),
+                value,
+                valid: Ok(()),
+                options,
+            },
+        };
+        self.set_field_state(group, state);
     }
 
     /// Get the result from the validation function.
@@ -415,7 +465,8 @@ impl FormContext {
         name: impl IntoPropValue<AttrValue>,
         state: FieldState,
     ) {
-        self.inner.borrow_mut().field_state.insert(name.into_prop_value(), state);
+        let name = name.into_prop_value();
+        self.inner.borrow_mut().field_state.insert(name, state);
         self.on_change.emit(());
     }
 
