@@ -164,12 +164,14 @@ impl Component for PwtButton {
         let has_text = props.text.as_ref().map(|t| !t.is_empty()).unwrap_or(false);
 
         if let Some(icon_class) = &props.icon_class {
-            children.push(html!{
-                <i role="none" aria-hidden="true" class={classes!(
-                    icon_class.clone(),
-                    has_text.then(|| "pwt-me-2"),
-                )}></i>
-            })
+            if !icon_class.is_empty() {
+                children.push(html!{
+                    <i role="none" aria-hidden="true" class={classes!(
+                        icon_class.clone(),
+                        has_text.then(|| "pwt-me-2"),
+                    )}></i>
+                })
+            }
         }
 
         if let Some(text) = &props.text {
