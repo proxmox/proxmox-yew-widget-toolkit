@@ -240,7 +240,8 @@ impl Component for PwtMenuButton {
 
 
         Container::new()
-            .attribute("style", "padding: inherit;")
+        // inherit padding (required for datatable2 header menu trigger)
+            .attribute("style", "padding: inherit; display:contents;")
             .onfocusin(ctx.link().callback(|_| Msg::FocusChange(true)))
             .onfocusout(ctx.link().callback(|_| Msg::FocusChange(false)))
             .onkeydown({
