@@ -99,13 +99,8 @@ pub struct PwtMenuCheckbox {
 
 impl PwtMenuCheckbox {
 
-    fn get_value(&self, ctx: &Context<Self>) -> bool {
+    fn get_value_from_state(&self, ctx: &Context<Self>) -> bool {
         let props = ctx.props();
-
-        if let Some(checked) = props.checked {
-            return checked; // use forced value
-        }
-
         if let Some(name) = &props.name {
             if let Some(form_ctx) = &self.form_ctx {
                 if let Some(group) = &props.group {
@@ -120,12 +115,20 @@ impl PwtMenuCheckbox {
                 }
             }
         }
-
         self.checked
     }
 
+    fn get_value(&self, ctx: &Context<Self>) -> bool {
+        let props = ctx.props();
+
+        if let Some(checked) = props.checked {
+            return checked; // use forced value
+        }
+
+        self.get_value_from_state(ctx)
+    }
+
     fn set_value(&mut self, ctx: &Context<Self>, checked: bool) {
-        if self.checked == checked { return; }
         self.checked = checked;
 
         let props = ctx.props();
@@ -200,7 +203,7 @@ impl Component for PwtMenuCheckbox {
         match msg {
             Msg::FormCtxUpdate(form_ctx) => {
                 self.form_ctx = Some(form_ctx);
-                let value = self.get_value(ctx);
+                let value = self.get_value_from_state(ctx);
                 let changed = self.checked != value;
                 self.checked = value;
                 changed
