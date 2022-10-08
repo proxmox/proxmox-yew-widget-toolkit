@@ -10,8 +10,8 @@ use crate::widget::form::{CheckBoxStateHandle, FieldOptions, FormContext};
 
 #[derive(Clone, PartialEq, Properties)]
 pub struct MenuCheckbox {
-    /// Menu text.
-    pub text: AttrValue,
+    /// Menu text (html inline text)
+    pub text: Html,
     /// Name of the form field (or radio-group value).
     ///
     /// The field register itself with this `name` in the FormContext
@@ -41,7 +41,7 @@ pub struct MenuCheckbox {
 impl MenuCheckbox {
 
     /// Create a new menu button
-    pub fn new(text: impl Into<AttrValue>) -> Self {
+    pub fn new(text: impl Into<Html>) -> Self {
         yew::props!(Self {
             text: text.into()
         })
@@ -179,7 +179,7 @@ impl Component for PwtMenuCheckbox {
             .onclick(onclick)
             .onkeydown(onkeydown)
             .with_child(icon)
-            .with_child(html!{<i class="pwt-menu-item-indent">{&props.text}</i>})
+            .with_child(html!{<i class="pwt-menu-item-indent">{props.text.clone()}</i>})
             .into()
      }
 }
