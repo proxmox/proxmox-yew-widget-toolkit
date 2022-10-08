@@ -18,6 +18,7 @@ pub use submit::{Submit, PwtSubmit};
 
 mod checkbox;
 pub use checkbox::{Checkbox, PwtCheckbox};
+pub(crate) use checkbox::CheckBoxStateHandle;
 
 mod combobox;
 pub use combobox::{Combobox, PwtCombobox};

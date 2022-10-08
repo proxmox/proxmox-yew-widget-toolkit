@@ -3,7 +3,7 @@ use std::borrow::Cow;
 
 use yew::prelude::*;
 use yew::virtual_dom::{ApplyAttributeAs, Listeners, VList, VTag};
-use yew::html::{IntoEventCallback, IntoPropValue};
+use yew::html::{Scope, IntoEventCallback, IntoPropValue};
 
 use pwt_macros::widget;
 
@@ -83,20 +83,79 @@ pub enum Msg {
     FormCtxUpdate(FormContext),
 }
 
-#[doc(hidden)]
-pub struct PwtCheckbox {
-    checked: bool,
+/// Checkbox state handling (used for Checkbox and MenuCheckbox)
+///
+/// Handles FormContext interaction. 
+pub(crate) struct CheckBoxStateHandle {
     form_ctx: Option<FormContext>,
     _form_ctx_handle: Option<ContextHandle<FormContext>>,
+    name: Option<AttrValue>,
+    group: Option<AttrValue>,
+    checked: bool,
+    on_change: Option<Callback<bool>>,
 }
 
-impl PwtCheckbox {
+impl CheckBoxStateHandle {
 
-    fn get_value_from_state(&self, ctx: &Context<Self>) -> bool {
-        let props = ctx.props();
-        if let Some(name) = &props.name {
+    pub fn new<COMP: Component>(
+        scope: &Scope<COMP>,
+        on_form_ctx_change: impl Into<Callback<FormContext>>,
+        name: Option<AttrValue>,
+        group: Option<AttrValue>,
+        checked: bool,
+        options: FieldOptions,
+        on_change: impl IntoEventCallback<bool>,
+    ) -> Self {
+        let mut _form_ctx_handle = None;
+        let mut form_ctx = None;
+
+        if let Some(name) = &name {
+
+            let on_form_ctx_change = on_form_ctx_change.into();
+
+            if let Some((form, handle)) = scope.context::<FormContext>(on_form_ctx_change) {
+                if let Some(group) = &group {
+                    form.register_radio_group_option(
+                        group,
+                        name,
+                        checked,
+                        options,
+                    );
+                } else {
+                    form.register_field(
+                        name,
+                        checked.into(),
+                        None,
+                        options,
+                    );
+                }
+                form_ctx = Some(form);
+                _form_ctx_handle = Some(handle);
+            }
+        }
+
+        Self {
+            _form_ctx_handle,
+            form_ctx,
+            on_change: on_change.into_event_callback(),
+            checked,
+            name,
+            group,
+        }
+    }
+
+    pub fn update(&mut self, form_ctx: FormContext) -> bool {
+        self.form_ctx = Some(form_ctx);
+        let value = self.get_value();
+        let changed = self.checked != value;
+        self.checked = value;
+        changed
+    }
+
+    pub fn get_value(&self) -> bool {
+        if let Some(name) = &self.name {
             if let Some(form_ctx) = &self.form_ctx {
-                if let Some(group) = &props.group {
+                if let Some(group) = &self.group {
                     return form_ctx
                         .get_field_value(group)
                         .as_str() == Some(name);
@@ -111,24 +170,12 @@ impl PwtCheckbox {
         self.checked
     }
 
-    fn get_value(&self, ctx: &Context<Self>) -> bool {
-        let props = ctx.props();
-
-        if let Some(checked) = props.checked {
-            return checked; // use forced value
-        }
-
-        self.get_value_from_state(ctx)
-    }
-
-    fn set_value(&mut self, ctx: &Context<Self>, checked: bool) {
+    pub fn set_value(&mut self, checked: bool) {
         self.checked = checked;
 
-        let props = ctx.props();
-
-        if let Some(name) = &props.name {
+        if let Some(name) = &self.name {
             if let Some(form_ctx) = &self.form_ctx {
-                if let Some(group) = &props.group {
+                if let Some(group) = &self.group {
                     form_ctx.set_value(group, name.as_str().into());
                 } else {
                     form_ctx.set_value(name, self.checked.into());
@@ -136,10 +183,15 @@ impl PwtCheckbox {
             }
         }
 
-        if let Some(on_change) = &props.on_change {
+        if let Some(on_change) = &self.on_change {
             on_change.emit(self.checked);
         }
     }
+}
+
+#[doc(hidden)]
+pub struct PwtCheckbox {
+    state: CheckBoxStateHandle,
 }
 
 impl Component for PwtCheckbox {
@@ -149,59 +201,34 @@ impl Component for PwtCheckbox {
     fn create(ctx: &Context<Self>) -> Self {
         let props = ctx.props();
 
-        let mut _form_ctx_handle = None;
-        let mut form_ctx = None;
-
         let checked = props.checked.or(props.default).unwrap_or(false);
 
-        if let Some(name) = &props.name {
+        let on_form_ctx_change = Callback::from({
+            let link = ctx.link().clone();
+            move |form_ctx: FormContext| link.send_message(Msg::FormCtxUpdate(form_ctx))
+        });
 
-            let on_form_ctx_change = Callback::from({
-                let link = ctx.link().clone();
-                move |form_ctx: FormContext| link.send_message(Msg::FormCtxUpdate(form_ctx))
-            });
-
-            if let Some((form, handle)) = ctx.link().context::<FormContext>(on_form_ctx_change) {
-                if let Some(group) = &props.group {
-                    form.register_radio_group_option(
-                        group,
-                        name,
-                        checked,
-                        FieldOptions::from_field_props(&props.input_props),
-                    );
-                } else {
-                    form.register_field(
-                        name,
-                        checked.into(),
-                        None,
-                        FieldOptions::from_field_props(&props.input_props),
-                    );
-                }
-                form_ctx = Some(form);
-                _form_ctx_handle = Some(handle);
-            }
-        }
-
-        Self {
-            _form_ctx_handle,
-            form_ctx,
+        let state = CheckBoxStateHandle::new(
+            ctx.link(),
+            on_form_ctx_change,
+            props.name.clone(),
+            props.group.clone(),
             checked,
-        }
+            FieldOptions::from_field_props(&props.input_props),
+            props.on_change.clone(),
+        );
+
+        Self { state }
     }
 
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
         let props = ctx.props();
         match msg {
-            Msg::FormCtxUpdate(form_ctx) => {
-                self.form_ctx = Some(form_ctx);
-                let value = self.get_value_from_state(ctx);
-                let changed = self.checked != value;
-                self.checked = value;
-                changed
-            }
+            Msg::FormCtxUpdate(form_ctx) => self.state.update(form_ctx),
             Msg::Toggle => {
                 if props.input_props.disabled { return false; }
-                self.set_value(ctx, !self.get_value(ctx));
+                let value = props.checked.unwrap_or_else(|| self.state.get_value());
+                self.state.set_value(!value);
                 true
             }
         }
@@ -211,7 +238,7 @@ impl Component for PwtCheckbox {
         let props = ctx.props();
 
         let disabled = props.input_props.disabled;
-        let checked = self.get_value(ctx);
+        let checked = props.checked.unwrap_or_else(|| self.state.get_value());
 
         let class = classes!(
             "pwt-checkbox",
