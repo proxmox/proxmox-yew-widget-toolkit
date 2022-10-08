@@ -193,7 +193,7 @@ impl Component for PwtMenuItem {
             submenu = Some(sub);
         }
 
-        let icon = props.icon_class.as_ref().map(|icon_class| {
+        let icon = props.icon_class.as_ref().filter(|c| !c.is_empty()).map(|icon_class| {
             let icon_class = classes!(
                 icon_class.clone(),
                 if props.inside_menubar { "pwt-menubar-item-icon" }  else { "pwt-menu-item-icon" },
