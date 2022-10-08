@@ -589,6 +589,9 @@ impl Component for PwtMenu {
                             link.send_message(Msg::OnMouseOver(i))
                         }
                     })
+                    .ondblclick(Callback::from(move |event: MouseEvent| {
+                        event.stop_propagation();
+                    }))
                     .onclick(ctx.link().callback({
                          move |event: MouseEvent| {
                             event.stop_propagation();
