@@ -244,6 +244,7 @@ impl Component for PwtCheckbox {
 
         let class = classes!(
             "pwt-checkbox",
+            props.group.is_some().then(|| "rounded"),
             "fa",
             "fa-check",
             checked.then(|| "checked"),
