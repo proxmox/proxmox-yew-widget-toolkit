@@ -85,14 +85,18 @@ pub enum Msg {
 
 /// Checkbox state handling (used for Checkbox and MenuCheckbox)
 ///
-/// Handles FormContext interaction. 
+/// Handles FormContext interaction.
 pub(crate) struct CheckBoxStateHandle {
     form_ctx: Option<FormContext>,
     _form_ctx_handle: Option<ContextHandle<FormContext>>,
     name: Option<AttrValue>,
     group: Option<AttrValue>,
-    checked: bool,
     on_change: Option<Callback<bool>>,
+
+    // local state, usage depends whether we have a form_ctx
+    // None => store checked state locally
+    // Some => use it to track/detect changes
+    checked: bool,
 }
 
 impl CheckBoxStateHandle {
@@ -147,44 +151,42 @@ impl CheckBoxStateHandle {
     pub fn update(&mut self, form_ctx: FormContext) -> bool {
         self.form_ctx = Some(form_ctx);
         let value = self.get_value();
+        // we use self.checked to track changes
         let changed = self.checked != value;
         self.checked = value;
         changed
     }
 
     pub fn get_value(&self) -> bool {
-        if let Some(name) = &self.name {
-            if let Some(form_ctx) = &self.form_ctx {
-                if let Some(group) = &self.group {
-                    return form_ctx
-                        .get_field_value(group)
-                        .as_str() == Some(name);
-                } else {
-                    return form_ctx
-                        .get_field_value(name)
-                        .as_bool()
-                        .unwrap_or(false);
-                }
+        if self.name.is_some() && self.form_ctx.is_some() {
+            let name = self.name.as_ref().unwrap();
+            let form_ctx = self.form_ctx.as_ref().unwrap();
+            if let Some(group) = &self.group {
+                form_ctx.get_field_value(group).as_str() == Some(name)
+            } else {
+                form_ctx.get_field_value(name).as_bool().unwrap_or(false)
             }
+        } else {
+            self.checked
         }
-        self.checked
     }
 
     pub fn set_value(&mut self, checked: bool) {
-        self.checked = checked;
 
-        if let Some(name) = &self.name {
-            if let Some(form_ctx) = &self.form_ctx {
-                if let Some(group) = &self.group {
-                    form_ctx.set_value(group, name.as_str().into());
-                } else {
-                    form_ctx.set_value(name, self.checked.into());
-                }
+        if self.name.is_some() && self.form_ctx.is_some() {
+            let name = self.name.as_ref().unwrap();
+            let form_ctx = self.form_ctx.as_ref().unwrap();
+            if let Some(group) = &self.group {
+                form_ctx.set_value(group, name.as_str().into());
+            } else {
+                form_ctx.set_value(name, checked.into());
             }
+        } else {
+            self.checked = checked;
         }
 
         if let Some(on_change) = &self.on_change {
-            on_change.emit(self.checked);
+            on_change.emit(checked);
         }
     }
 }
