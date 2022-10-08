@@ -11,7 +11,9 @@ use super::{Menu, MenuPopper};
 
 #[derive(Clone, PartialEq, Properties)]
 pub struct MenuItem {
-    pub text: AttrValue,
+    /// Menu text (html inline text)
+    pub text: Html,
+    /// Menu icon displayed on the left side.
     pub icon_class: Option<Classes>,
     /// Optional Submenu
     pub menu: Option<Menu>,
@@ -40,7 +42,7 @@ pub struct MenuItem {
 
 impl MenuItem {
     /// Create a new menu item.
-    pub fn new(text: impl Into<AttrValue>) -> Self {
+    pub fn new(text: impl Into<Html>) -> Self {
         yew::props!(Self {
             text: text.into()
         })
@@ -220,7 +222,7 @@ impl Component for PwtMenuItem {
                 } else {
                     "pwt-menu-item-indent"
                 };
-                html!{<i {class}>{&props.text}</i>}
+                html!{<span {class}>{props.text.clone()}</span>}
             })
             .with_optional_child(arrow)
             .with_optional_child(submenu)
