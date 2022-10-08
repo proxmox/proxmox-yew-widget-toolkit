@@ -11,20 +11,28 @@ use crate::widget::form::{FormContext, FieldOptions};
 
 #[derive(Clone, PartialEq, Properties)]
 pub struct MenuCheckbox {
+    /// Menu text.
     pub text: AttrValue,
-
     /// Name of the form field (or radio-group value).
+    ///
+    /// The field register itself with this `name` in the FormContext
+    /// (if any).
     pub name: Option<AttrValue>,
-
     /// Radio group name.
+    ///
+    /// The field is part of this radio-group.
+    ///
+    /// The field register itself as `group` in the FormContext, and use
+    /// `name` as group value.
     pub group: Option<AttrValue>,
-
+    /// Disable field
     #[prop_or_default]
     pub disabled: bool,
-
+    /// Force value.
     pub checked: Option<bool>,
+    /// Default value.
     pub default: Option<bool>,
-
+    /// Change callback
     pub on_change: Option<Callback<bool>>,
 }
 
@@ -159,28 +167,28 @@ impl Component for PwtMenuCheckbox {
         let mut _form_ctx_handle = None;
         let mut form_ctx = None;
 
+        let checked = props.checked.or(props.default).unwrap_or(false);
+
         if let Some(name) = &props.name {
-            let value = props.checked.or(props.default).unwrap_or(false);
 
             let on_form_ctx_change = Callback::from({
                 let link = ctx.link().clone();
                 move |form_ctx: FormContext| link.send_message(Msg::FormCtxUpdate(form_ctx))
             });
 
-
             if let Some((form, handle)) = ctx.link().context::<FormContext>(on_form_ctx_change) {
                 if let Some(group) = &props.group {
                     form.register_radio_group_option(
                         group,
                         name,
-                        value,
+                        checked,
                         FieldOptions::new(),
                         // fixme: FieldOptions::from_field_props(&props.input_props),
                     );
                 } else {
                     form.register_field(
                         name,
-                        value.into(),
+                        checked.into(),
                         None,
                         FieldOptions::new(),
                         // fixme: FieldOptions::from_field_props(&props.input_props),
@@ -194,7 +202,7 @@ impl Component for PwtMenuCheckbox {
         Self {
             _form_ctx_handle,
             form_ctx,
-            checked: false,
+            checked,
          }
     }
 

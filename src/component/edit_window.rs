@@ -197,7 +197,7 @@ impl Component for PwtEditWindow {
 
         if props.advanced_checkbox {
             let advanced_label_id = crate::widget::get_unique_element_id();
-            let advanced_field = Checkbox::new("__show_advanced__")
+            let advanced_field = Checkbox::new()
                 .class("pwt-ms-1")
                 .label_id(advanced_label_id.clone())
                 .on_change({
