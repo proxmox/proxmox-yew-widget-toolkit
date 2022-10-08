@@ -97,8 +97,6 @@ pub enum Msg {
     FocusCell(usize),
 }
 
-
-
 pub struct PwtDataTableHeader<T: 'static> {
     node_ref: NodeRef,
 
@@ -482,6 +480,9 @@ fn build_header_menu<T>(
     hidden_cells: &[bool],
 ) -> Menu {
 
+    let mut columns_menu = Menu::new();
+    headers_to_menu(&mut columns_menu, 0, headers, link, &mut 0, hidden_cells);
+
     Menu::new()
         .with_item(
             MenuItem::new("Sort Ascending")
@@ -506,11 +507,54 @@ fn build_header_menu<T>(
         .with_separator()
         .with_item(
             MenuItem::new("Columns")
-                .menu(headers_to_menu(headers, link, &mut 0, hidden_cells))
+                .menu(columns_menu)
         )
 }
 
 fn headers_to_menu<T>(
+    menu: &mut Menu,
+    indent_level: usize,
+    headers: &[IndexedHeader<T>],
+    link: &Scope<PwtDataTableHeader<T>>,
+    cell_idx: &mut usize,
+    hidden_cells: &[bool],
+) {
+    let indent: Html = (0..indent_level)
+        .map(|_| html!{ <span aria-hidden="" class="pwt-ps-4"/> })
+        .collect();
+
+    for header in headers {
+        let on_change = link.callback({
+            let cell_idx = *cell_idx;
+            move |checked| Msg::HideClick(cell_idx, checked)
+        });
+
+        match header {
+            IndexedHeader::Single(cell) => {
+                let label = html!{<>{indent.clone()}{cell.column.name.clone()}</>};
+                menu.add_item(
+                    MenuCheckbox::new(label)
+                        .checked(!hidden_cells[*cell_idx])
+                        .on_change(on_change)
+                );
+                *cell_idx += 1;
+            }
+            IndexedHeader::Group(group) => {
+                let label = html!{<>{indent.clone()}{group.name.clone()}</>};
+                menu.add_item(
+                    MenuCheckbox::new(label)
+                        .checked(!hidden_cells[*cell_idx])
+                        .on_change(on_change)
+                );
+                *cell_idx += 1;
+                headers_to_menu(menu, indent_level + 1, &group.children, link, cell_idx, hidden_cells);
+            }
+        }
+    }
+}
+
+/*
+fn headers_to_menu_old<T>(
     headers: &[IndexedHeader<T>],
     link: &Scope<PwtDataTableHeader<T>>,
     cell_idx: &mut usize,
@@ -535,13 +579,14 @@ fn headers_to_menu<T>(
             IndexedHeader::Group(group) => {
                 let mut item = MenuItem::new(group.name.clone());
                 *cell_idx += 1;
-                item.set_menu(headers_to_menu(&group.children, link, cell_idx, hidden_cells));
+                item.set_menu(headers_to_menu_old(&group.children, link, cell_idx, hidden_cells));
                 menu.add_item(item);
              }
          }
      }
     menu
 }
+ */
 
 impl<T: 'static> Into<VNode> for DataTableHeader<T> {
     fn into(self) -> VNode {
