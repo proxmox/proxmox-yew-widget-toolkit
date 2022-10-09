@@ -8,7 +8,7 @@ use yew::html::{IntoEventCallback, IntoPropValue};
 use super::FormContext;
 
 #[derive(Clone, PartialEq, Properties)]
-pub struct Submit {
+pub struct SubmitButton {
     #[prop_or_default]
     pub disabled: bool,
 
@@ -18,10 +18,10 @@ pub struct Submit {
     pub text: AttrValue,
 }
 
-impl Submit {
+impl SubmitButton {
 
     pub fn new() -> Self {
-        yew::props!(Submit {})
+        yew::props!(Self {})
     }
 
     pub fn text(mut self, text: impl IntoPropValue<AttrValue>) -> Self {
@@ -54,15 +54,15 @@ pub enum Msg {
 }
 
 #[doc(hidden)]
-pub struct PwtSubmit {
+pub struct PwtSubmitButton {
     form_valid: bool,
     form_ctx: Option<FormContext>,
     _form_ctx_handle: Option<ContextHandle<FormContext>>,
 }
 
-impl Component for PwtSubmit {
+impl Component for PwtSubmitButton {
     type Message = Msg;
-    type Properties = Submit;
+    type Properties = SubmitButton;
 
     fn create(ctx: &Context<Self>) -> Self {
         let mut form_valid = true;
@@ -130,9 +130,9 @@ impl Component for PwtSubmit {
     }
 }
 
-impl Into<VNode> for Submit {
+impl Into<VNode> for SubmitButton {
     fn into(self) -> VNode {
-        let comp = VComp::new::<PwtSubmit>(Rc::new(self), None);
+        let comp = VComp::new::<PwtSubmitButton>(Rc::new(self), None);
         VNode::from(comp)
     }
 }

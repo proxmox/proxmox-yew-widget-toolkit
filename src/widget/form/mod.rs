@@ -16,8 +16,8 @@ pub use validate::ValidateFn;
 mod reset_button;
 pub use reset_button::{ResetButton, PwtResetButton};
 
-mod submit;
-pub use submit::{Submit, PwtSubmit};
+mod submit_button;
+pub use submit_button::{SubmitButton, PwtSubmitButton};
 
 mod checkbox;
 pub use checkbox::{Checkbox, PwtCheckbox};

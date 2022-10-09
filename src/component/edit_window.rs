@@ -13,7 +13,7 @@ use crate::props::{
     RenderFn,
 };
 use crate::widget::{Column, Dialog, Mask, Row};
-use crate::widget::form::{form_context_provider, Checkbox, FormContext, Submit, ResetButton};
+use crate::widget::form::{form_context_provider, Checkbox, FormContext, SubmitButton, ResetButton};
 use crate::component::AlertDialog;
 
 #[derive(Clone, PartialEq, Properties)]
@@ -217,7 +217,7 @@ impl Component for PwtEditWindow {
 
         toolbar.add_child(ResetButton::new());
         toolbar.add_child(
-            Submit::new()
+            SubmitButton::new()
                 .text(if edit_mode { "Update" } else { "Add" })
                 .on_submit(submit)
         );
