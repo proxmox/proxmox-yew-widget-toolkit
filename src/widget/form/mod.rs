@@ -1,6 +1,9 @@
 mod form_context;
 pub use form_context::{delete_empty_values, FieldOptions, FormContext};
 
+mod checkbox_state_handle;
+pub(crate) use checkbox_state_handle::CheckboxStateHandle;
+
 mod field;
 pub use field::Field;
 
@@ -18,7 +21,6 @@ pub use submit::{Submit, PwtSubmit};
 
 mod checkbox;
 pub use checkbox::{Checkbox, PwtCheckbox};
-pub(crate) use checkbox::CheckBoxStateHandle;
 
 mod combobox;
 pub use combobox::{Combobox, PwtCombobox};

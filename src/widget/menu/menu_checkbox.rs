@@ -6,7 +6,7 @@ use yew::html::{IntoEventCallback, IntoPropValue};
 
 use crate::prelude::*;
 use crate::widget::{Container};
-use crate::widget::form::{CheckBoxStateHandle, FieldOptions, FormContext};
+use crate::widget::form::{CheckboxStateHandle, FieldOptions, FormContext};
 
 #[derive(Clone, PartialEq, Properties)]
 pub struct MenuCheckbox {
@@ -102,7 +102,7 @@ pub enum Msg {
 
 #[doc(hidden)]
 pub struct PwtMenuCheckbox {
-    state: CheckBoxStateHandle,
+    state: CheckboxStateHandle,
 }
 
 impl Component for PwtMenuCheckbox {
@@ -119,7 +119,7 @@ impl Component for PwtMenuCheckbox {
             move |form_ctx: FormContext| link.send_message(Msg::FormCtxUpdate(form_ctx))
         });
 
-        let state = CheckBoxStateHandle::new(
+        let state = CheckboxStateHandle::new(
             ctx.link(),
             on_form_ctx_change,
             props.name.clone(),
