@@ -8,16 +8,16 @@ use yew::html::{IntoEventCallback, IntoPropValue};
 use super::FormContext;
 
 #[derive(Clone, PartialEq, Properties)]
-pub struct Reset {
+pub struct ResetButton {
     #[prop_or(AttrValue::Static("Reset"))]
     pub text: AttrValue,
     pub on_reset: Option<Callback<()>>,
 }
 
-impl Reset {
+impl ResetButton {
 
     pub fn new() -> Self {
-        yew::props!(Reset {})
+        yew::props!(Self {})
     }
 
     pub fn text(mut self, text: impl IntoPropValue<AttrValue>) -> Self {
@@ -41,15 +41,15 @@ pub enum Msg {
 }
 
 #[doc(hidden)]
-pub struct PwtReset {
+pub struct PwtResetButton {
     form_dirty: bool,
     form_ctx: Option<FormContext>,
     _form_ctx_handle: Option<ContextHandle<FormContext>>,
 }
 
-impl Component for PwtReset {
+impl Component for PwtResetButton {
     type Message = Msg;
-    type Properties = Reset;
+    type Properties = ResetButton;
 
     fn create(ctx: &Context<Self>) -> Self {
         let mut form_dirty = true;
@@ -123,9 +123,9 @@ impl Component for PwtReset {
     }
 }
 
-impl Into<VNode> for Reset {
+impl Into<VNode> for ResetButton {
     fn into(self) -> VNode {
-        let comp = VComp::new::<PwtReset>(Rc::new(self), None);
+        let comp = VComp::new::<PwtResetButton>(Rc::new(self), None);
         VNode::from(comp)
     }
 }

@@ -13,8 +13,8 @@ pub use input::Input;
 mod validate;
 pub use validate::ValidateFn;
 
-mod reset;
-pub use reset::{Reset, PwtReset};
+mod reset_button;
+pub use reset_button::{ResetButton, PwtResetButton};
 
 mod submit;
 pub use submit::{Submit, PwtSubmit};
