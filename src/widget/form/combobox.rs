@@ -12,7 +12,7 @@ use proxmox_schema::Schema;
 use crate::prelude::*;
 use crate::widget::{DataTableColumn, Dropdown, GridPicker};
 
-use super::{FieldOptions, FormContext, ValidateFn};
+use super::{FieldOptions, FormContext, TextFieldStateHandle, ValidateFn};
 
 use pwt_macros::widget;
 
@@ -23,8 +23,13 @@ use pwt_macros::widget;
 #[widget(PwtCombobox, @input, @element)]
 #[derive(Clone, PartialEq, Properties)]
 pub struct Combobox {
-    pub name: AttrValue,
+    /// Name of the form field.
+    ///
+    /// The field register itself with this `name` in the FormContext
+    /// (if any).
+    pub name: Option<AttrValue>,
 
+    /// Default value.
     pub default: Option<AttrValue>,
 
     #[prop_or_default]
@@ -33,17 +38,28 @@ pub struct Combobox {
     #[prop_or_default]
     pub items: Rc<Vec<AttrValue>>,
 
+    /// Change callback
     pub on_change: Option<Callback<String>>,
 
+    /// Validation function.
     pub validate: Option<ValidateFn<String>>,
 }
 
 impl Combobox {
 
-    pub fn new(name: impl IntoPropValue<AttrValue>) -> Self {
-        yew::props!(Self {
-            name: name.into_prop_value(),
-        })
+    pub fn new() -> Self {
+        yew::props!(Self {})
+    }
+
+    /// Builder style method to set the field name.
+    pub fn name(mut self, name: impl IntoPropValue<Option<AttrValue>>) -> Self {
+        self.set_name(name);
+        self
+    }
+
+    /// Method to set the field name.
+    pub fn set_name(&mut self, name: impl IntoPropValue<Option<AttrValue>>) {
+        self.name = name.into_prop_value();
     }
 
     /// Builder style method to set the default item.
@@ -136,46 +152,7 @@ pub enum Msg {
 
 #[doc(hidden)]
 pub struct PwtCombobox {
-    value: String,
-
-    real_validate: ValidateFn<Value>,
-
-    form_ctx: Option<FormContext>,
-    _form_ctx_handle: Option<ContextHandle<FormContext>>,
-}
-
-impl PwtCombobox {
-
-    fn get_field_data(&self, props: &Combobox) -> (String, Result<(), String>) {
-        if let Some(form_ctx) = &self.form_ctx {
-            (
-                form_ctx.get_field_text(&props.name),
-                form_ctx.get_field_valid(&props.name),
-            )
-        } else {
-            (
-                self.value.clone(),
-                self.real_validate.validate(&self.value.clone().into())
-                    .map_err(|e| e.to_string())
-            )
-        }
-    }
-
-    fn set_value(&mut self, ctx: &Context<Self>, value: String) {
-        if self.value == value { return; }
-
-        let props = ctx.props();
-
-        self.value = value.clone();
-
-        if let Some(form_ctx) = &self.form_ctx {
-            form_ctx.set_value(&props.name, value.into());
-        }
-
-        if let Some(on_change) = &props.on_change {
-            on_change.emit(self.value.clone());
-        }
-    }
+    state: TextFieldStateHandle,
 }
 
 fn create_combobox_validation_cb(props: Combobox) -> ValidateFn<Value> {
@@ -184,7 +161,7 @@ fn create_combobox_validation_cb(props: Combobox) -> ValidateFn<Value> {
             Value::Null => String::new(),
             Value::String(v) => v.clone(),
             _ => { // should not happen
-                log::error!("PwtField: got wrong data type in validate (field '{}')!", props.name);
+                log::error!("PwtField: got wrong data type in validate!");
                 String::new()
             }
         };
@@ -202,6 +179,7 @@ fn create_combobox_validation_cb(props: Combobox) -> ValidateFn<Value> {
         }
     })
 }
+
 impl Component for PwtCombobox {
     type Message = Msg;
     type Properties = Combobox;
@@ -215,43 +193,29 @@ impl Component for PwtCombobox {
             move |form_ctx: FormContext| link.send_message(Msg::FormCtxUpdate(form_ctx))
         });
 
-        let mut _form_ctx_handle = None;
-        let mut form_ctx = None;
 
         let real_validate = create_combobox_validation_cb(props.clone());
 
-        if let Some((form, handle)) = ctx.link().context::<FormContext>(on_form_ctx_change) {
-            form.register_field(
-                &props.name,
-                value.clone().into(),
-                Some(real_validate.clone()),
-                FieldOptions::from_field_props(&props.input_props),
-            );
-
-            form_ctx = Some(form);
-            _form_ctx_handle = Some(handle);
-        }
-
-        Self {
-            _form_ctx_handle,
-            form_ctx,
+        let state = TextFieldStateHandle::new(
+            ctx.link(),
+            on_form_ctx_change,
+            props.name.clone(),
             value,
-            real_validate,
-        }
+            Some(real_validate.clone()),
+            FieldOptions::from_field_props(&props.input_props),
+            props.on_change.clone(),
+        );
+
+        Self { state }
     }
 
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
         let props = ctx.props();
         match msg {
-            Msg::FormCtxUpdate(form_ctx) => {
-                let value = form_ctx.get_field_text(&props.name);
-                self.form_ctx = Some(form_ctx);
-                if self.value == value { return false; }
-                self.value = value;
-                true
-            }
+            Msg::FormCtxUpdate(form_ctx) => self.state.update(form_ctx),
             Msg::Select(key) => {
-                self.set_value(ctx, key);
+                if props.input_props.disabled { return true; }
+                self.state.set_value(key);
                 true
             }
             Msg::Reposition => {
@@ -263,7 +227,7 @@ impl Component for PwtCombobox {
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
 
-        let (value, valid) = self.get_field_data(props);
+        let (value, valid) = self.state.get_field_data();
 
         let picker = {
             let items = Rc::clone(&props.items);
@@ -288,7 +252,7 @@ impl Component for PwtCombobox {
                     .into()
             }
         };
-        
+
         Dropdown::new(picker)
             .popup_type("dialog")
             .with_std_props(&props.std_props)
