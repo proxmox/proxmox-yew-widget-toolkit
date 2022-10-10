@@ -134,33 +134,37 @@ impl FormContext {
         validate: Option<ValidateFn<Value>>,
         options: FieldOptions,
     ) {
-        let valid = if let Some(validate) = &validate {
-            validate.validate(&value)
-                .map_err(|e| e.to_string())
-        } else {
-            Ok(())
-        };
-
         let name = name.into_prop_value();
 
         let state = match self.inner.borrow().field_state.get(&name) {
             Some(state) => {
+                let valid = validate.as_ref().map(|v| {
+                    v.validate(&state.value).map_err(|e| e.to_string())
+                }).unwrap_or(Ok(()));
+
                 // update everything except state.value
                 let mut state = state.clone();
+                state.validate = validate;
                 state.initial_value = value.clone();
                 state.initial_valid = valid.clone();
                 state.valid = valid;
                 state.options = options;
                 state
             }
-            None => FieldState {
-                validate,
-                initial_value: value.clone(),
-                initial_valid: valid.clone(),
-                value: value,
-                valid: valid,
-                options,
-            },
+            None => {
+                let valid = validate.as_ref().map(|v| {
+                    v.validate(&value).map_err(|e| e.to_string())
+                }).unwrap_or(Ok(()));
+
+                FieldState {
+                    validate,
+                    initial_value: value.clone(),
+                    initial_valid: valid.clone(),
+                    value: value,
+                    valid: valid,
+                    options,
+                }
+            }
         };
 
         self.set_field_state(name, state);
