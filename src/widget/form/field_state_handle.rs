@@ -89,11 +89,14 @@ impl TextFieldStateHandle {
         }
     }
 
-    pub fn set_value(&mut self, value: String) {
+    pub fn set_value(&mut self, value: String, set_default: bool) {
 
         if self.name.is_some() && self.form_ctx.is_some() {
             let name = self.name.as_ref().unwrap();
             let form_ctx = self.form_ctx.as_ref().unwrap();
+            if set_default {
+                form_ctx.set_default(name, value.clone().into());
+            }
             form_ctx.set_value(name, value.into());
         } else {
             self.value = value.clone();

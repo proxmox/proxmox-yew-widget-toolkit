@@ -215,7 +215,7 @@ impl Component for PwtCombobox {
             Msg::FormCtxUpdate(form_ctx) => self.state.update(form_ctx),
             Msg::Select(key) => {
                 if props.input_props.disabled { return true; }
-                self.state.set_value(key);
+                self.state.set_value(key, false);
                 true
             }
             Msg::Reposition => {

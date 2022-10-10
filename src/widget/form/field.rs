@@ -241,7 +241,7 @@ impl Component for PwtField {
             Msg::FormCtxUpdate(form_ctx) => self.state.update(form_ctx),
             Msg::Update(value) => {
                 if props.input_props.disabled { return true; }
-                self.state.set_value(value);
+                self.state.set_value(value, false);
                 true
             }
         }
