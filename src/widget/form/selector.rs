@@ -16,7 +16,7 @@ use crate::props::{ExtractKeyFn, IntoLoadCallback, LoadCallback};
 use crate::state::Loader;
 use crate::widget::Dropdown;
 
-use super::{FieldOptions, FormContext, ValidateFn};
+use super::{FieldOptions, FormContext, TextFieldStateHandle, ValidateFn};
 
 use pwt_macros::widget;
 
@@ -61,7 +61,11 @@ fn my_data_cmp_fn<T>(a: &Option<Rc<Vec<T>>>, b: &Option<Rc<Vec<T>>>) -> bool {
 // Note: use derivative to avoid Clone/PartialEq requirement on T
 #[derivative(Clone(bound=""), PartialEq(bound=""))]
 pub struct Selector<T: 'static> {
-    pub name: AttrValue,
+    /// Name of the form field.
+    ///
+    /// The field register itself with this `name` in the FormContext
+    /// (if any).
+    pub name: Option<AttrValue>,
 
     pub loader: Option<LoadCallback<Vec<T>>>,
     #[derivative(PartialEq(compare_with="my_data_cmp_fn"))]
@@ -83,13 +87,22 @@ pub struct Selector<T: 'static> {
 impl<T: 'static> Selector<T> {
 
     pub fn new(
-        name: impl IntoPropValue<AttrValue>,
         picker: impl Into<RenderSelectorPickerFn<T>>,
     ) -> Self {
         yew::props!(Self {
-            name: name.into_prop_value(),
             picker: picker.into(),
         })
+    }
+
+    /// Builder style method to set the field name.
+    pub fn name(mut self, name: impl IntoPropValue<Option<AttrValue>>) -> Self {
+        self.set_name(name);
+        self
+    }
+
+    /// Method to set the field name.
+    pub fn set_name(&mut self, name: impl IntoPropValue<Option<AttrValue>>) {
+        self.name = name.into_prop_value();
     }
 
     /// Builder style method to set the default item.
@@ -199,12 +212,7 @@ pub enum Msg {
 #[doc(hidden)]
 pub struct PwtSelector<T> {
     loader: Loader<Vec<T>>,
-    value: String,
-
-    real_validate: ValidateFn<Value>,
-
-    form_ctx: Option<FormContext>,
-    _form_ctx_handle: Option<ContextHandle<FormContext>>,
+    state: TextFieldStateHandle,
 }
 
 fn create_selector_validation_cb<T: 'static>(props: Selector<T>, data: Option<Rc<Vec<T>>>) -> ValidateFn<Value> {
@@ -213,7 +221,7 @@ fn create_selector_validation_cb<T: 'static>(props: Selector<T>, data: Option<Rc
             Value::Null => String::new(),
             Value::String(v) => v.clone(),
             _ => { // should not happen
-                log::error!("PwtField: got wrong data type in validate (field '{}')!", props.name);
+                log::error!("PwtField: got wrong data type in validate!");
                 String::new()
             }
         };
@@ -245,7 +253,7 @@ fn create_selector_validation_cb<T: 'static>(props: Selector<T>, data: Option<Rc
 impl<T: 'static> PwtSelector<T> {
 
     fn update_validator(&mut self, props: &Selector<T>) {
-        self.real_validate = self.loader.with_state(|state| {
+        let real_validate = self.loader.with_state(|state| {
             let data = match &state.data {
                 Some(Ok(list)) => Some(Rc::clone(list)),
                 _ => None,
@@ -254,42 +262,10 @@ impl<T: 'static> PwtSelector<T> {
         });
 
         // also update the FormContext validator
-        if let Some(form_ctx) = &self.form_ctx {
-            form_ctx.set_validate(&props.name, Some(self.real_validate.clone()));
-        }
-    }
-
-    fn get_field_data(&self, props: &Selector<T>) -> (String, Result<(), String>) {
-        if let Some(form_ctx) = &self.form_ctx {
-            (
-                form_ctx.get_field_text(&props.name),
-                form_ctx.get_field_valid(&props.name),
-            )
-        } else {
-            (
-                self.value.clone(),
-                self.real_validate.validate(&self.value.clone().into())
-                    .map_err(|e| e.to_string())
-            )
-        }
-    }
-
-    fn set_value(&mut self, ctx: &Context<Self>, value: String, set_default: bool) {
-        if self.value == value { return; }
-
-        let props = ctx.props();
-
-        self.value = value.clone();
-
-        if let Some(form_ctx) = &self.form_ctx {
-            if set_default {
-                form_ctx.set_default(&props.name, value.clone().into());
+        if let Some(name) = &props.name {
+            if let Some(form_ctx) = self.state.form_ctx() {
+                form_ctx.set_validate(name, Some(real_validate));
             }
-            form_ctx.set_value(&props.name, value.into());
-        }
-
-        if let Some(on_select) = &props.on_select {
-            on_select.emit(Key::from(self.value.clone()));
         }
     }
 }
@@ -309,9 +285,6 @@ impl<T: 'static> Component for PwtSelector<T> {
 
         let value = String::new();
 
-        let mut _form_ctx_handle = None;
-        let mut form_ctx = None;
-
         let on_form_ctx_change = Callback::from({
             let link = ctx.link().clone();
             move |form_ctx: FormContext| link.send_message(Msg::FormCtxUpdate(form_ctx))
@@ -319,43 +292,37 @@ impl<T: 'static> Component for PwtSelector<T> {
 
         let real_validate = create_selector_validation_cb(props.clone(), props.data.clone());
 
-        if let Some((form, handle)) = ctx.link().context::<FormContext>(on_form_ctx_change) {
-            form.register_field(
-                &props.name,
-                value.clone().into(),
-                Some(real_validate.clone()),
-                FieldOptions::from_field_props(&props.input_props),
-            );
+        let on_change = Callback::from({
+            let on_select = props.on_select.clone();
+            move |value: String| {
+                if let Some(on_select) = &on_select {
+                    on_select.emit(Key::from(value));
+                }
+            }
+        });
 
-            form_ctx = Some(form);
-            _form_ctx_handle = Some(handle);
-        }
-
-        Self {
-            _form_ctx_handle,
-            form_ctx,
+        let state = TextFieldStateHandle::new(
+            ctx.link(),
+            on_form_ctx_change,
+            props.name.clone(),
             value,
-            loader,
-            real_validate,
+            Some(real_validate),
+            FieldOptions::from_field_props(&props.input_props),
+            on_change,
+        );
 
-        }
+        Self { state, loader }
     }
 
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
         let props = ctx.props();
         match msg {
-            Msg::FormCtxUpdate(form_ctx) => {
-                let value = form_ctx.get_field_text(&props.name);
-                self.form_ctx = Some(form_ctx);
-                if self.value == value { return false; }
-                self.value = value;
-                true
-            }
+            Msg::FormCtxUpdate(form_ctx) => self.state.update(form_ctx),
             Msg::UpdateList => {
                 // update validation function, because the closure include the loaded data
                 self.update_validator(props);
 
-                let (value, _valid) = self.get_field_data(props);
+                let (value, _valid) = self.state.get_field_data();
 
                 if self.loader.has_valid_data() {
                     if value.is_empty() {
@@ -376,7 +343,7 @@ impl<T: 'static> Component for PwtSelector<T> {
                         }
 
                         if let Some(default) = default {
-                            self.set_value(ctx, default.to_string().clone(), true);
+                            self.state.set_value(default.to_string().clone(), true);
                             return true; // set_value already validates
                         }
                     }
@@ -384,7 +351,8 @@ impl<T: 'static> Component for PwtSelector<T> {
                 true
             }
             Msg::Select(value) => {
-                self.set_value(ctx, value, false);
+                if props.input_props.disabled { return true; }
+                self.state.set_value(value, false);
                 true
             }
         }
@@ -410,7 +378,7 @@ impl<T: 'static> Component for PwtSelector<T> {
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
 
-        let (value, valid) = self.get_field_data(props);
+        let (value, valid) = self.state.get_field_data();
 
         let picker = {
             let value = value.clone();

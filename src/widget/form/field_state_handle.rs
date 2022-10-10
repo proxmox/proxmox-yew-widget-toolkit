@@ -109,4 +109,8 @@ impl TextFieldStateHandle {
             on_change.emit(self.value.clone());
         }
     }
+
+    pub fn form_ctx(&self) -> Option<&FormContext> {
+        self.form_ctx.as_ref()
+    }
 }
