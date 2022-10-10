@@ -10,15 +10,15 @@ use proxmox_schema::Schema;
 use crate::prelude::*;
 use crate::widget::Tooltip;
 
-use super::{FormContext, FieldOptions, Input, ValidateFn};
+use super::{FormContext, FieldOptions, Input, TextFieldStateHandle, ValidateFn};
 
 use pwt_macros::widget;
 
 #[widget(PwtField, @input, @element)]
 #[derive(Clone, PartialEq, Properties)]
 pub struct Field {
-    pub name: AttrValue,
-    
+    pub name: Option<AttrValue>,
+
     #[prop_or(AttrValue::Static("text"))]
     pub input_type: AttrValue,
 
@@ -34,10 +34,19 @@ pub struct Field {
 
 impl Field {
 
-    pub fn new(name: impl IntoPropValue<AttrValue>) -> Self {
-        yew::props!(Self {
-            name: name.into_prop_value(),
-        })
+    pub fn new() -> Self {
+        yew::props!(Self {})
+    }
+
+    /// Builder style method to set the field name.
+    pub fn name(mut self, name: impl IntoPropValue<Option<AttrValue>>) -> Self {
+        self.set_name(name);
+        self
+    }
+
+    /// Method to set the field name.
+    pub fn set_name(&mut self, name: impl IntoPropValue<Option<AttrValue>>) {
+        self.name = name.into_prop_value();
     }
 
     pub fn number(
@@ -126,54 +135,14 @@ impl Field {
 
 #[doc(hidden)]
 pub struct PwtField {
-    value: String,
-
-    real_validate: ValidateFn<Value>,
-    
-    form_ctx: Option<FormContext>,
-    _form_ctx_handle: Option<ContextHandle<FormContext>>,
-}
-
-impl PwtField {
-
-    fn get_field_data(&self, props: &Field) -> (String, Result<(), String>) {
-        if let Some(form_ctx) = &self.form_ctx {
-            (
-                form_ctx.get_field_text(&props.name),
-                form_ctx.get_field_valid(&props.name),
-            )
-        } else {
-            (
-                self.value.clone(),
-                self.real_validate.validate(&self.value.clone().into())
-                    .map_err(|e| e.to_string())
-            )
-        }
-    }
-
-    fn set_value(&mut self, ctx: &Context<Self>, value: String) {
-
-        if self.value == value { return; }
-        
-        let props = ctx.props();
-        
-        self.value = value.clone();
- 
-        if let Some(form_ctx) = &self.form_ctx {
-            form_ctx.set_value(&props.name, value.into());
-        }
-
-        if let Some(on_change) = &props.on_change {
-            on_change.emit(self.value.clone());
-        }
-    }
+    state: TextFieldStateHandle,
 }
 
 pub enum Msg {
     Update(String),
     FormCtxUpdate(FormContext),
 }
- 
+
 fn create_field_validation_cb(props: Field) -> ValidateFn<Value> {
     ValidateFn::new(move |value: &Value| {
         let value = match value {
@@ -181,7 +150,7 @@ fn create_field_validation_cb(props: Field) -> ValidateFn<Value> {
             Value::Number(n) => n.to_string(),
             Value::String(v) => v.clone(),
             _ => { // should not happen
-                log::error!("PwtField: got wrong data type in validate (field '{}')!", props.name);
+                log::error!("PwtField: got wrong data type in validate!");
                 String::new()
             }
         };
@@ -210,7 +179,7 @@ fn create_field_validation_cb(props: Field) -> ValidateFn<Value> {
                 }
             }
         }
-        
+
         match &props.validate {
             Some(cb) => cb.validate(&value),
             None => Ok(()),
@@ -226,51 +195,34 @@ impl Component for PwtField {
         let props = ctx.props();
 
         let value = props.default.as_deref().unwrap_or("").to_string();
-     
+
         let on_form_ctx_change = Callback::from({
             let link = ctx.link().clone();
             move |form_ctx: FormContext| link.send_message(Msg::FormCtxUpdate(form_ctx))
         });
-        
-        let mut _form_ctx_handle = None;
-        let mut form_ctx = None;
 
         let real_validate = create_field_validation_cb(props.clone());
-        
-        if let Some((form, handle)) = ctx.link().context::<FormContext>(on_form_ctx_change) {
-            form.register_field(
-                &props.name,
-                value.clone().into(),
-                Some(real_validate.clone()),
-                FieldOptions::from_field_props(&props.input_props),
-            );
-  
 
-            form_ctx = Some(form);
-            _form_ctx_handle = Some(handle);
-       }
-
-        Self {
-            _form_ctx_handle,
-            form_ctx,
+        let state = TextFieldStateHandle::new(
+            ctx.link(),
+            on_form_ctx_change,
+            props.name.clone(),
             value,
-            real_validate,
-        }
+            Some(real_validate.clone()),
+            FieldOptions::from_field_props(&props.input_props),
+            props.on_change.clone(),
+        );
+
+        Self { state }
     }
 
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
         let props = ctx.props();
         match msg {
-            Msg::FormCtxUpdate(form_ctx) => {
-                let value = form_ctx.get_field_text(&props.name);
-                self.form_ctx = Some(form_ctx);
-                if self.value == value { return false; }
-                self.value = value;
-                true
-            }
+            Msg::FormCtxUpdate(form_ctx) => self.state.update(form_ctx),
             Msg::Update(value) => {
                 if props.input_props.disabled { return true; }
-                self.set_value(ctx, value);
+                self.state.set_value(value);
                 true
             }
         }
@@ -279,13 +231,13 @@ impl Component for PwtField {
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
 
-        let (value, valid) = self.get_field_data(props);
-               
+        let (value, valid) = self.state.get_field_data();
+
         let oninput = ctx.link().callback(move |event: InputEvent| {
             let input: HtmlInputElement = event.target_unchecked_into();
             Msg::Update(input.value())
         });
-        
+
         let input: Html = Input::new()
             .with_std_props(&props.std_props)
             .with_input_props(&props.input_props)
@@ -310,5 +262,3 @@ impl Component for PwtField {
         tooltip.into()
     }
 }
-
-
