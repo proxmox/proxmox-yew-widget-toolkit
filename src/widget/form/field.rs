@@ -17,18 +17,34 @@ use pwt_macros::widget;
 #[widget(PwtField, @input, @element)]
 #[derive(Clone, PartialEq, Properties)]
 pub struct Field {
+    /// Name of the form field.
+    ///
+    /// The field register itself with this `name` in the FormContext
+    /// (if any).
     pub name: Option<AttrValue>,
 
+    /// Input type (html input element attribute).
     #[prop_or(AttrValue::Static("text"))]
     pub input_type: AttrValue,
 
+    /// Minimum value for number fields.
     pub min: Option<f64>,
+    /// Maximum value for number fields.
     pub max: Option<f64>,
+    /// Step value for number fields.
     pub step: Option<f64>,
 
+    /// Force value.
+    ///
+    /// To implement controlled components (for use without a FormContext).
+    pub value: Option<AttrValue>,
+
+    /// Default value.
     pub default: Option<AttrValue>,
+    /// Validation function.
     pub validate: Option<ValidateFn<String>>,
 
+    /// Change callback
     pub on_change: Option<Callback<String>>,
 }
 
@@ -136,6 +152,7 @@ impl Field {
 #[doc(hidden)]
 pub struct PwtField {
     state: TextFieldStateHandle,
+    real_validate: ValidateFn<Value>,
 }
 
 pub enum Msg {
@@ -194,7 +211,9 @@ impl Component for PwtField {
     fn create(ctx: &Context<Self>) -> Self {
         let props = ctx.props();
 
-        let value = props.default.as_deref().unwrap_or("").to_string();
+        let value = props.value.as_deref()
+            .or(props.default.as_deref())
+            .unwrap_or("").to_string();
 
         let on_form_ctx_change = Callback::from({
             let link = ctx.link().clone();
@@ -213,7 +232,7 @@ impl Component for PwtField {
             props.on_change.clone(),
         );
 
-        Self { state }
+        Self { state, real_validate }
     }
 
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
@@ -231,7 +250,16 @@ impl Component for PwtField {
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
 
-        let (value, valid) = self.state.get_field_data();
+        let (value, valid) = match &props.value {
+            Some(value) => {
+                let value = value.to_string();
+                let valid = self
+                    .real_validate.validate(&value.clone().into())
+                    .map_err(|err| err.to_string());
+                (value, valid)
+            }
+            None => self.state.get_field_data()
+        };
 
         let oninput = ctx.link().callback(move |event: InputEvent| {
             let input: HtmlInputElement = event.target_unchecked_into();
