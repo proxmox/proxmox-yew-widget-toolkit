@@ -10,6 +10,9 @@ use yew::virtual_dom::{VComp, VNode};
 use crate::prelude::*;
 use crate::widget::{get_unique_element_id, Container};
 
+mod menu_event;
+pub use menu_event::MenuEvent;
+
 mod menu_popper;
 pub(crate) use menu_popper::MenuPopper;
 

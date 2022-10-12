@@ -5,8 +5,7 @@ use yew::virtual_dom::{VComp, VNode};
 use yew::html::{IntoEventCallback, IntoPropValue};
 
 use crate::prelude::*;
-use crate::props::{MenuCallback, MenuEvent, IntoMenuCallback};
-use crate::widget::Container;
+use crate::widget::{Container, MenuEvent};
 use crate::widget::form::{CheckboxStateHandle, FieldOptions, FormContext};
 
 #[derive(Clone, PartialEq, Properties)]
@@ -36,7 +35,7 @@ pub struct MenuCheckbox {
     #[prop_or(true)]
     pub submit: bool,
     /// Change callback
-    pub on_change: Option<MenuCallback>,
+    pub on_change: Option<Callback<MenuEvent>>,
 
     /// close event
     pub(crate) on_close: Option<Callback<bool>>,
@@ -92,8 +91,8 @@ impl MenuCheckbox {
     }
 
     /// Builder style method to set the on_change callback.
-    pub fn on_change(mut self, cb: impl IntoMenuCallback) -> Self {
-        self.on_change = cb.into_menu_callback();
+    pub fn on_change(mut self, cb: impl IntoEventCallback<MenuEvent>) -> Self {
+        self.on_change = cb.into_event_callback();
         self
     }
 
@@ -151,8 +150,8 @@ impl Component for PwtMenuCheckbox {
                 if let Some(on_change) = &props.on_change {
                     let mut event = MenuEvent::new();
                     event.checked = value;
-                    let keep_open = on_change.emit(event);
-                    if !keep_open {
+                    on_change.emit(event.clone());
+                    if !event.get_keep_open() {
                         if let Some(on_close) = &props.on_close {
                             on_close.emit(true);
                         }

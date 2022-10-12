@@ -30,9 +30,6 @@ pub use border::Border;
 mod margin;
 pub use margin::Margin;
 
-mod menu_callback;
-pub use menu_callback::{IntoMenuCallback, MenuCallback, MenuEvent};
-
 mod padding;
 pub use padding::Padding;
 

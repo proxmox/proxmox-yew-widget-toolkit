@@ -5,10 +5,9 @@ use yew::virtual_dom::{VComp, VNode};
 use yew::html::{IntoEventCallback, IntoPropValue};
 
 use crate::prelude::*;
-use crate::props::{MenuCallback, MenuEvent, IntoMenuCallback};
 use crate::widget::Container;
 
-use super::{Menu, MenuPopper};
+use super::{Menu, MenuPopper, MenuEvent};
 
 #[derive(Clone, PartialEq, Properties)]
 pub struct MenuItem {
@@ -37,7 +36,7 @@ pub struct MenuItem {
     /// Submenu close event
     pub(crate) on_close: Option<Callback<bool>>,
 
-    pub on_select: Option<MenuCallback>,
+    pub on_select: Option<Callback<MenuEvent>>,
 
 }
 
@@ -114,8 +113,8 @@ impl MenuItem {
     }
 
     /// Builder style method to set the on_select callback.
-    pub fn on_select(mut self, cb: impl IntoMenuCallback) -> Self {
-        self.on_select = cb.into_menu_callback();
+    pub fn on_select(mut self, cb: impl IntoEventCallback<MenuEvent>) -> Self {
+        self.on_select = cb.into_event_callback();
         self
     }
 
@@ -166,8 +165,8 @@ impl Component for PwtMenuItem {
             Msg::Select => {
                 if let Some(on_select) = &props.on_select {
                     let event = MenuEvent::new();
-                    let keep_open = on_select.emit(event);
-                    if !keep_open {
+                    on_select.emit(event.clone());
+                    if !event.get_keep_open() {
                         if let Some(on_close) = &props.on_close {
                             on_close.emit(true);
                         }

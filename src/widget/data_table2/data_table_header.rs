@@ -10,8 +10,8 @@ use yew::virtual_dom::{Key, VComp, VNode};
 use yew::html::{IntoPropValue, IntoEventCallback, Scope};
 
 use crate::prelude::*;
-use crate::props::{MenuCallback, MenuEvent, SorterFn};
-use crate::widget::{get_unique_element_id, Container, Fa, Menu, MenuItem, MenuCheckbox};
+use crate::props::SorterFn;
+use crate::widget::{get_unique_element_id, Container, Fa, Menu, MenuEvent, MenuItem, MenuCheckbox};
 
 use super::{
     IndexedHeader, IndexedHeaderSingle, IndexedHeaderGroup,
@@ -487,24 +487,12 @@ fn build_header_menu<T>(
         .with_item(
             MenuItem::new("Sort Ascending")
                 .icon_class("fa fa-long-arrow-up")
-                .on_select({
-                    let link = link.clone();
-                    move |_| {
-                        link.send_message(Msg::ColumnSortChange(cell_idx, false, Some(true)));
-                        false // Close menu
-                    }
-                })
+                .on_select(link.callback(move |_| Msg::ColumnSortChange(cell_idx, false, Some(true))))
         )
         .with_item(
             MenuItem::new("Sort Descending")
                 .icon_class("fa fa-long-arrow-down")
-                .on_select({
-                    let link = link.clone();
-                    move |_| {
-                        link.send_message(Msg::ColumnSortChange(cell_idx, false, Some(false)));
-                        false // close menu
-                    }
-                })
+                .on_select(link.callback(move |_| Msg::ColumnSortChange(cell_idx, false, Some(false))))
         )
         .with_separator()
         .with_item(
@@ -526,14 +514,13 @@ fn headers_to_menu<T>(
         .collect();
 
     for header in headers {
-        let on_change = MenuCallback::new({
+        let on_change = {
             let cell_idx = *cell_idx;
-            let link = link.clone();
-            move |event: MenuEvent| {
-                link.send_message(Msg::HideClick(cell_idx, event.checked));
-                true // keep menu open
-            }
-        });
+            link.callback(move |event: MenuEvent| {
+                event.keep_open(true);
+                Msg::HideClick(cell_idx, event.checked)
+            })
+        };
 
         match header {
             IndexedHeader::Single(cell) => {

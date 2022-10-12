@@ -26,7 +26,7 @@ mod mask;
 pub use mask::{Mask, PwtMask};
 
 mod menu;
-pub use menu::{Menu, MenuItem, MenuButton, MenuCheckbox};
+pub use menu::{Menu, MenuItem, MenuButton, MenuCheckbox, MenuEvent};
 
 mod resizable;
 pub use resizable::Resizable;
