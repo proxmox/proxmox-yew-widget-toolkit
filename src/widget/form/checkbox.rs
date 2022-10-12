@@ -110,7 +110,6 @@ impl Component for PwtCheckbox {
             props.group.clone(),
             checked,
             FieldOptions::from_field_props(&props.input_props),
-            props.on_change.clone(),
         );
 
         Self { state }
@@ -122,8 +121,11 @@ impl Component for PwtCheckbox {
             Msg::FormCtxUpdate(form_ctx) => self.state.update(form_ctx),
             Msg::Toggle => {
                 if props.input_props.disabled { return false; }
-                let value = props.checked.unwrap_or_else(|| self.state.get_value());
-                self.state.set_value(!value);
+                let value = !props.checked.unwrap_or_else(|| self.state.get_value());
+                self.state.set_value(value);
+                if let Some(on_change) = &props.on_change {
+                    on_change.emit(value);
+                }
                 true
             }
         }

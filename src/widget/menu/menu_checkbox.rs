@@ -5,7 +5,8 @@ use yew::virtual_dom::{VComp, VNode};
 use yew::html::{IntoEventCallback, IntoPropValue};
 
 use crate::prelude::*;
-use crate::widget::{Container};
+use crate::props::{MenuCallback, MenuEvent, IntoMenuCallback};
+use crate::widget::Container;
 use crate::widget::form::{CheckboxStateHandle, FieldOptions, FormContext};
 
 #[derive(Clone, PartialEq, Properties)]
@@ -35,7 +36,10 @@ pub struct MenuCheckbox {
     #[prop_or(true)]
     pub submit: bool,
     /// Change callback
-    pub on_change: Option<Callback<bool>>,
+    pub on_change: Option<MenuCallback>,
+
+    /// close event
+    pub(crate) on_close: Option<Callback<bool>>,
 }
 
 impl MenuCheckbox {
@@ -88,11 +92,15 @@ impl MenuCheckbox {
     }
 
     /// Builder style method to set the on_change callback.
-    pub fn on_change(mut self, cb: impl IntoEventCallback<bool>) -> Self {
-        self.on_change = cb.into_event_callback();
+    pub fn on_change(mut self, cb: impl IntoMenuCallback) -> Self {
+        self.on_change = cb.into_menu_callback();
         self
     }
 
+    pub fn on_close(mut self, cb: impl IntoEventCallback<bool>) -> Self {
+        self.on_close = cb.into_event_callback();
+        self
+    }
 }
 
 pub enum Msg {
@@ -126,7 +134,6 @@ impl Component for PwtMenuCheckbox {
             props.group.clone(),
             checked,
             FieldOptions { submit: props.submit, submit_empty: false },
-            props.on_change.clone(),
         );
 
         Self { state }
@@ -138,8 +145,20 @@ impl Component for PwtMenuCheckbox {
             Msg::FormCtxUpdate(form_ctx) => self.state.update(form_ctx),
             Msg::Toggle => {
                 if props.disabled { return false; }
-                let value = props.checked.unwrap_or_else(|| self.state.get_value());
-                self.state.set_value(!value);
+                let value = !props.checked.unwrap_or_else(|| self.state.get_value());
+                self.state.set_value(value);
+
+                if let Some(on_change) = &props.on_change {
+                    let mut event = MenuEvent::new();
+                    event.checked = value;
+                    let keep_open = on_change.emit(event);
+                    if !keep_open {
+                        if let Some(on_close) = &props.on_close {
+                            on_close.emit(true);
+                        }
+                    }
+                }
+
                 true
             }
         }

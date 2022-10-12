@@ -10,7 +10,7 @@ use yew::virtual_dom::{Key, VComp, VNode};
 use yew::html::{IntoPropValue, IntoEventCallback, Scope};
 
 use crate::prelude::*;
-use crate::props::SorterFn;
+use crate::props::{MenuCallback, MenuEvent, SorterFn};
 use crate::widget::{get_unique_element_id, Container, Fa, Menu, MenuItem, MenuCheckbox};
 
 use super::{
@@ -490,7 +490,8 @@ fn build_header_menu<T>(
                 .on_select({
                     let link = link.clone();
                     move |_| {
-                        link.send_message(Msg::ColumnSortChange(cell_idx, false, Some(true)))
+                        link.send_message(Msg::ColumnSortChange(cell_idx, false, Some(true)));
+                        false // Close menu
                     }
                 })
         )
@@ -500,7 +501,8 @@ fn build_header_menu<T>(
                 .on_select({
                     let link = link.clone();
                     move |_| {
-                        link.send_message(Msg::ColumnSortChange(cell_idx, false, Some(false)))
+                        link.send_message(Msg::ColumnSortChange(cell_idx, false, Some(false)));
+                        false // close menu
                     }
                 })
         )
@@ -524,9 +526,13 @@ fn headers_to_menu<T>(
         .collect();
 
     for header in headers {
-        let on_change = link.callback({
+        let on_change = MenuCallback::new({
             let cell_idx = *cell_idx;
-            move |checked| Msg::HideClick(cell_idx, checked)
+            let link = link.clone();
+            move |event: MenuEvent| {
+                link.send_message(Msg::HideClick(cell_idx, event.checked));
+                true // keep menu open
+            }
         });
 
         match header {

@@ -151,6 +151,7 @@ impl Component for PwtMenuButton {
         let props = ctx.props();
         let submenu_ref = NodeRef::default();
         let popper = MenuPopper::new(props.std_props.node_ref.clone(), submenu_ref.clone(), true);
+
         Self {
             submenu_ref,
             popper,
@@ -237,7 +238,6 @@ impl Component for PwtMenuButton {
             event.stop_propagation();
             Msg::ShowMenu
         }));
-
 
         Container::new()
             .attribute("style", "display:contents;")

@@ -5,6 +5,7 @@ use yew::virtual_dom::{VComp, VNode};
 use yew::html::{IntoEventCallback, IntoPropValue};
 
 use crate::prelude::*;
+use crate::props::{MenuCallback, MenuEvent, IntoMenuCallback};
 use crate::widget::Container;
 
 use super::{Menu, MenuPopper};
@@ -34,9 +35,9 @@ pub struct MenuItem {
     pub(crate) inside_menubar: bool,
 
     /// Submenu close event
-    pub on_close: Option<Callback<()>>,
+    pub(crate) on_close: Option<Callback<bool>>,
 
-    pub on_select: Option<Callback<()>>,
+    pub on_select: Option<MenuCallback>,
 
 }
 
@@ -107,14 +108,14 @@ impl MenuItem {
          self.menu = menu.into_prop_value();
     }
 
-    pub fn on_close(mut self, cb: impl IntoEventCallback<()>) -> Self {
+    pub fn on_close(mut self, cb: impl IntoEventCallback<bool>) -> Self {
         self.on_close = cb.into_event_callback();
         self
     }
 
     /// Builder style method to set the on_select callback.
-    pub fn on_select(mut self, cb: impl IntoEventCallback<()>) -> Self {
-        self.on_select = cb.into_event_callback();
+    pub fn on_select(mut self, cb: impl IntoMenuCallback) -> Self {
+        self.on_select = cb.into_menu_callback();
         self
     }
 
@@ -164,8 +165,18 @@ impl Component for PwtMenuItem {
         match msg {
             Msg::Select => {
                 if let Some(on_select) = &props.on_select {
-                    on_select.emit(());
-                    // fixme: close menu
+                    let event = MenuEvent::new();
+                    let keep_open = on_select.emit(event);
+                    if !keep_open {
+                        if let Some(on_close) = &props.on_close {
+                            on_close.emit(true);
+                        }
+                    }
+                } else {
+                    // Always close menus without on_select callback
+                    if let Some(on_close) = &props.on_close {
+                        on_close.emit(true);
+                    }
                 }
                 false
             }
@@ -201,7 +212,9 @@ impl Component for PwtMenuItem {
             html!{<i role="none" aria-hidden="true" class={icon_class}/>}
         });
 
-        let arrow = props.menu.is_some().then(|| {
+        let has_submenu = props.menu.is_some();
+
+        let arrow = has_submenu.then(|| {
             let arrow_class = classes!(
                 "fa",
                 "fa-caret-right",
@@ -230,12 +243,17 @@ impl Component for PwtMenuItem {
                 let link = ctx.link().clone();
                 move |event: KeyboardEvent| {
                     match event.key_code() {
-                        32 => link.send_message(Msg::Select),
+                        32 => if !has_submenu { link.send_message(Msg::Select) },
                         _ => {},
                     }
                 }
             })
-            .onclick(ctx.link().callback(|_| Msg::Select))
+            .onclick({
+                let link = ctx.link().clone();
+                move |_| {
+                    if !has_submenu { link.send_message(Msg::Select) };
+                }
+            })
             .into()
     }
 

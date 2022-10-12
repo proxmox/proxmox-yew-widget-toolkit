@@ -69,7 +69,7 @@ pub struct Menu {
     #[prop_or(250)]
     pub submenu_timeout_ms: u32,
 
-    pub on_close: Option<Callback<()>>,
+    pub on_close: Option<Callback<bool>>,
 }
 
 impl Menu {
@@ -140,7 +140,7 @@ impl Menu {
         self.menubar = menubar;
     }
 
-    pub fn on_close(mut self, cb: impl IntoEventCallback<()>) -> Self {
+    pub fn on_close(mut self, cb: impl IntoEventCallback<bool>) -> Self {
         self.on_close = cb.into_event_callback();
         self
     }
@@ -158,7 +158,7 @@ pub enum Msg {
     OnMouseOver(usize),
     SetActiveSubmenu(usize),
     ShowSubmenu(bool, bool),
-    SubmenuClose,
+    SubmenuClose(bool),
     Redraw,
 }
 
@@ -442,20 +442,28 @@ impl Component for PwtMenu {
                 if show == false {
                     if let Some(on_close) = &props.on_close {
                         //log::info!("PROPAGATE CLOSE {} {}", self.unique_id, show);
-                        on_close.emit(());
+                        on_close.emit(false);
                     }
                 }
 
                 true
             }
-            Msg::SubmenuClose => {
-                //log::info!("SUBMENU CLOSE {}", self.unique_id);
+            Msg::SubmenuClose(propagate) => {
                 let cursor = match self.cursor {
                     Some(cursor) => cursor,
                     None => return false,
                 };
                 self.inside_submenu = false;
                 self.try_focus_item(cursor, true); // fixme : use set_cursor
+
+                if propagate {
+                    if props.menubar {
+                        self.collapsed = true;
+                    }
+                    if let Some(on_close) = &props.on_close {
+                        on_close.emit(propagate);
+                    }
+                }
 
                 true
             }
@@ -562,14 +570,16 @@ impl Component for PwtMenu {
                     MenuEntry::MenuItem(item) => {
                         item.clone()
                             .active(active || submenu_active)
-                            .on_close(ctx.link().callback(|_| Msg::SubmenuClose))
+                            .on_close(ctx.link().callback(|propagate| Msg::SubmenuClose(propagate)))
                             .show_submenu(show_submenu)
                             .focus_submenu(self.inside_submenu)
                             .inside_menubar(props.menubar)
                             .into()
                     }
                     MenuEntry::Checkbox(checkbox) => {
-                        checkbox.clone().into()
+                        checkbox.clone()
+                            .on_close(ctx.link().callback(|propagate| Msg::SubmenuClose(propagate)))
+                            .into()
                     }
                };
 

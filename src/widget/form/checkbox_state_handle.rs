@@ -1,5 +1,5 @@
 use yew::prelude::*;
-use yew::html::{IntoEventCallback, Scope};
+use yew::html::Scope;
 
 use crate::widget::form::{FieldOptions, FormContext};
 
@@ -11,7 +11,6 @@ pub(crate) struct CheckboxStateHandle {
     _form_ctx_handle: Option<ContextHandle<FormContext>>,
     name: Option<AttrValue>,
     group: Option<AttrValue>,
-    on_change: Option<Callback<bool>>,
 
     // local state, usage depends whether we have a form_ctx
     // None => store checked state locally
@@ -28,7 +27,6 @@ impl CheckboxStateHandle {
         group: Option<AttrValue>,
         checked: bool,
         options: FieldOptions,
-        on_change: impl IntoEventCallback<bool>,
     ) -> Self {
         let mut _form_ctx_handle = None;
         let mut form_ctx = None;
@@ -61,7 +59,6 @@ impl CheckboxStateHandle {
         Self {
             _form_ctx_handle,
             form_ctx,
-            on_change: on_change.into_event_callback(),
             checked,
             name,
             group,
@@ -103,10 +100,6 @@ impl CheckboxStateHandle {
             }
         } else {
             self.checked = checked;
-        }
-
-        if let Some(on_change) = &self.on_change {
-            on_change.emit(checked);
         }
     }
 }
