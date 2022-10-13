@@ -174,6 +174,7 @@ pub struct PwtMenu {
     show_submenu: bool,
     collapsed: bool,
     focus_timeout: Option<Timeout>,
+    has_focus: bool,
     move_timeout: Option<Timeout>, // for Next/Prev
     active_submenu: Option<usize>,
     submenu_timer: Option<Timeout>,
@@ -300,6 +301,7 @@ impl Component for PwtMenu {
             show_submenu: !props.menubar,
             collapsed: true,
             focus_timeout: None,
+            has_focus: false,
             move_timeout: None,
             active_submenu: None,
             submenu_timer: None,
@@ -323,14 +325,15 @@ impl Component for PwtMenu {
             }
             // Note: only used by menubar
             Msg::DelayedFocusChange(has_focus) => {
+                if self.has_focus == has_focus { return false; }
+                self.has_focus = has_focus;
                 if !has_focus {
                     self.show_submenu = false;
                     self.inside_submenu = false;
                     self.collapsed = true;
                     self.init_roving_tabindex(ctx);
-                    return true;
                 }
-                false
+                true
             }
             // Note: only used by menubar
             Msg::Collapse => {
@@ -522,7 +525,7 @@ impl Component for PwtMenu {
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
 
-        //log::info!("VIEW {} {} {}", self.unique_id, self.show_submenu, self.inside_submenu);
+        let focus_on_over = !props.menubar || self.has_focus;
 
         let menu = Container::new()
             .node_ref(self.inner_ref.clone())
@@ -598,8 +601,10 @@ impl Component for PwtMenu {
                         let item_id = item_id.clone();
                         move |event: MouseEvent| {
                             event.stop_propagation();
-                            dom_focus_submenu(&item_id);
-                            link.send_message(Msg::OnMouseOver(i))
+                            if focus_on_over {
+                                dom_focus_submenu(&item_id);
+                                link.send_message(Msg::OnMouseOver(i))
+                            }
                         }
                     })
                     .ondblclick(Callback::from(move |event: MouseEvent| {
