@@ -179,6 +179,7 @@ pub struct PwtMenu {
     active_submenu: Option<usize>,
     submenu_timer: Option<Timeout>,
 }
+
 impl PwtMenu {
     fn get_unique_item_id(&self, n: usize) -> String {
         format!("{}-item-{}", self.unique_id, n)
@@ -541,7 +542,7 @@ impl Component for PwtMenu {
                         match event.key_code() {
                             39 => link.send_message(Msg::Next),
                             37 => link.send_message(Msg::Previous),
-                            40 | 32 => link.send_message(Msg::ShowSubmenu(true, true)),
+                            13 | 40 | 32 => link.send_message(Msg::ShowSubmenu(true, true)),
                             38 => link.send_message(Msg::ShowSubmenu(false, true)),
                             27 => link.send_message(Msg::Collapse),
                             _ => return,
@@ -550,7 +551,7 @@ impl Component for PwtMenu {
                         match event.key_code() {
                             40 => link.send_message(Msg::Next),
                             38 => link.send_message(Msg::Previous),
-                            39 | 32 => link.send_message(Msg::ShowSubmenu(true, true)),
+                            13 | 39 | 32 => link.send_message(Msg::ShowSubmenu(true, true)),
                             37 => link.send_message(Msg::ShowSubmenu(false, true)),
                             _ => return,
                         }
@@ -729,4 +730,21 @@ fn dom_focus_submenu(item_id: &str) {
         //log::info!("TRY FOCUS SUB TZEST {} FID {}", item_id, focus_el.id());
         let _ = focus_el.focus();
     }
+}
+
+/// Generates an artificial `keydown` event for the `Escape` key.
+///
+/// This closes the menu if sent from inside a menubar or menubutton.
+pub fn dispatch_menu_close_event(event: impl AsRef<web_sys::Event>) {
+    let target: web_sys::Element = event.target_unchecked_into();
+
+    let mut options = web_sys::KeyboardEventInit::new();
+    options.bubbles(true);
+    options.cancelable(true);
+    options.key("Escape");
+    options.key_code(27);
+
+    let event = web_sys::KeyboardEvent::new_with_keyboard_event_init_dict("keydown", &options).unwrap();
+
+    let _ = target.dispatch_event(&event);
 }
