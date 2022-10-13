@@ -51,6 +51,12 @@ impl From<Html> for MenuEntry {
     }
 }
 
+pub enum MenubarMsg {
+    Next,
+    Previous,
+    Collapse,
+}
+
 /// Menu - A container for [MenuItem]s.
 ///
 /// The container implements a roving focus to allow keyboard
@@ -69,10 +75,15 @@ pub struct Menu {
     #[prop_or_default]
     pub menubar: bool,
 
+    #[prop_or_default]
+    pub(crate) menubar_child: bool,
+
     #[prop_or(250)]
     pub submenu_timeout_ms: u32,
 
     pub on_close: Option<Callback<bool>>,
+
+    pub(crate) menubar_command: Option<Callback<MenubarMsg>>,
 }
 
 impl Menu {
@@ -143,8 +154,18 @@ impl Menu {
         self.menubar = menubar;
     }
 
+    pub(crate) fn menubar_child(mut self, menubar_child: bool) -> Self {
+        self.menubar_child = menubar_child;
+        self
+    }
+
     pub fn on_close(mut self, cb: impl IntoEventCallback<bool>) -> Self {
         self.on_close = cb.into_event_callback();
+        self
+    }
+
+    pub(crate) fn menubar_command(mut self, cb: impl IntoEventCallback<MenubarMsg>) -> Self {
+        self.menubar_command = cb.into_event_callback();
         self
     }
 }
@@ -528,38 +549,27 @@ impl Component for PwtMenu {
 
         let focus_on_over = !props.menubar || self.has_focus;
 
+        let menubar_command = if props.menubar {
+            let link = ctx.link().clone();
+            Some(Callback::from(move |msg: MenubarMsg| {
+                match msg {
+                    MenubarMsg::Next => link.send_message(Msg::Next),
+                    MenubarMsg::Previous => link.send_message(Msg::Previous),
+                    MenubarMsg::Collapse => link.send_message(Msg::Collapse),
+                }
+            }))
+        } else {
+            props.menubar_command.clone()
+        };
+
         let menu = Container::new()
             .node_ref(self.inner_ref.clone())
             .tag("ul")
             .attribute("id", self.unique_id.clone())
             .class(if props.menubar { "pwt-menubar" } else { "pwt-menu" })
             .class(props.class.clone())
-            .onkeydown({
-                let link = ctx.link().clone();
-                let menubar = props.menubar;
-                move |event: KeyboardEvent| {
-                    if menubar {
-                        match event.key_code() {
-                            39 => link.send_message(Msg::Next),
-                            37 => link.send_message(Msg::Previous),
-                            13 | 40 | 32 => link.send_message(Msg::ShowSubmenu(true, true)),
-                            38 => link.send_message(Msg::ShowSubmenu(false, true)),
-                            27 => link.send_message(Msg::Collapse),
-                            _ => return,
-                        }
-                    } else {
-                        match event.key_code() {
-                            40 => link.send_message(Msg::Next),
-                            38 => link.send_message(Msg::Previous),
-                            13 | 39 | 32 => link.send_message(Msg::ShowSubmenu(true, true)),
-                            37 => link.send_message(Msg::ShowSubmenu(false, true)),
-                            _ => return,
-                        }
-                    }
-                    event.stop_propagation();
-                }
-            })
             .children(props.children.iter().enumerate().map(|(i, entry)| {
+                let mut has_submenu = false;
                 let active = self.cursor == Some(i);
                 let submenu_active = self.active_submenu == Some(i);
                 let show_submenu = submenu_active && self.show_submenu && !(props.menubar && self.collapsed);
@@ -575,9 +585,11 @@ impl Component for PwtMenu {
                         comp.clone()
                     }
                     MenuEntry::MenuItem(item) => {
+                        has_submenu = item.menu.is_some();
                         item.clone()
                             .active(active || submenu_active)
                             .on_close(ctx.link().callback(|propagate| Msg::SubmenuClose(propagate)))
+                            .menubar_command(menubar_command.clone())
                             .show_submenu(show_submenu)
                             .focus_submenu(self.inside_submenu)
                             .inside_menubar(props.menubar)
@@ -588,16 +600,65 @@ impl Component for PwtMenu {
                             .on_close(ctx.link().callback(|propagate| Msg::SubmenuClose(propagate)))
                             .into()
                     }
-               };
+                };
 
                 let item_id = self.get_unique_item_id(i);
                 let link = ctx.link().clone();
+                let menubar_command = props.menubar_command.clone();
+                let menubar = props.menubar;
+                let menubar_child = props.menubar_child;
+
                 Container::new()
                     .tag("li")
                     .attribute("id", item_id.clone())
                     .attribute("data-index", i.to_string()) // fixme: remove
                     .class((active).then(|| "active"))
                     .with_child(child)
+                    .onkeydown({
+                        let item_id = item_id.clone();
+                        let link = ctx.link().clone();
+                       move |event: KeyboardEvent| {
+                            if menubar {
+                                match event.key_code() {
+                                    39 => link.send_message(Msg::Next),
+                                    37 => link.send_message(Msg::Previous),
+                                    13 | 40 | 32 => link.send_message(Msg::ShowSubmenu(true, true)),
+                                    38 => link.send_message(Msg::ShowSubmenu(false, true)),
+                                    27 => link.send_message(Msg::Collapse),
+                                    _ => return,
+                                }
+                            } else {
+                                match event.key_code() {
+                                    40 => link.send_message(Msg::Next),
+                                    38 => link.send_message(Msg::Previous),
+                                    13 | 32 => {
+                                        if has_submenu {
+                                            link.send_message(Msg::ShowSubmenu(true, true));
+                                        }
+                                    }
+                                    39 => {
+                                        if !has_submenu {
+                                            if let Some(menubar_command) = &menubar_command {
+                                                menubar_command.emit(MenubarMsg::Next);
+                                            }
+                                        } else {
+                                            link.send_message(Msg::ShowSubmenu(true, true));
+                                        }
+                                    }
+                                    37 => {
+                                        link.send_message(Msg::ShowSubmenu(false, true));
+                                        if menubar_child {
+                                            if let Some(menubar_command) = &menubar_command {
+                                                menubar_command.emit(MenubarMsg::Previous);
+                                            }
+                                        }
+                                    }
+                                    _ => return,
+                                }
+                            }
+                            event.stop_propagation();
+                        }
+                    })
                     .onmouseover({
                         let item_id = item_id.clone();
                         move |event: MouseEvent| {
@@ -622,13 +683,7 @@ impl Component for PwtMenu {
                         Msg::ActivateItem(i, inside_submenu)
                     }))
                     .into()
-            }))
-
-            //.with_child(html!{<div class="pwt-p-2">{format!("EL {}", self.unique_id)}</div>})
-            //.with_child(html!{<div class="pwt-p-2">{format!("SHOWSUB {}", self.show_submenu)}</div>})
-            //.with_child(html!{<div class="pwt-p-2">{format!("INSIDE {}", self.inside_submenu)}</div>})
-            //.with_child(html!{<div class="pwt-p-2">{format!("AUTOFOCUS {}", props.autofocus)}</div>})
-            ;
+            }));
 
         if props.menubar {
             menu.onfocusin(ctx.link().callback(|_| Msg::FocusChange(true)))
