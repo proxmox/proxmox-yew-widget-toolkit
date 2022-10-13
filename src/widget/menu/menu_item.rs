@@ -7,7 +7,7 @@ use yew::html::{IntoEventCallback, IntoPropValue};
 use crate::prelude::*;
 use crate::widget::Container;
 
-use super::{Menu, MenuPopper, MenuEvent, MenubarMsg};
+use super::{Menu, MenuPopper, MenuEvent, MenuControllerMsg};
 
 #[derive(Clone, PartialEq, Properties)]
 pub struct MenuItem {
@@ -34,8 +34,8 @@ pub struct MenuItem {
     pub(crate) inside_menubar: bool,
 
     /// Submenu close event
-    pub(crate) on_close: Option<Callback<bool>>,
-    pub(crate) menu_controller: Option<Callback<MenubarMsg>>,
+    pub(crate) on_close: Option<Callback<()>>,
+    pub(crate) menu_controller: Option<Callback<MenuControllerMsg>>,
 
     pub on_select: Option<Callback<MenuEvent>>,
 
@@ -108,7 +108,7 @@ impl MenuItem {
          self.menu = menu.into_prop_value();
     }
 
-    pub fn on_close(mut self, cb: impl IntoEventCallback<bool>) -> Self {
+    pub fn on_close(mut self, cb: impl IntoEventCallback<()>) -> Self {
         self.on_close = cb.into_event_callback();
         self
     }
@@ -128,7 +128,7 @@ impl MenuItem {
         self.menu.is_some()
     }
 
-    pub(crate) fn menu_controller(mut self, cb: impl IntoEventCallback<MenubarMsg>) -> Self {
+    pub(crate) fn menu_controller(mut self, cb: impl IntoEventCallback<MenuControllerMsg>) -> Self {
         self.menu_controller = cb.into_event_callback();
         self
     }
@@ -172,14 +172,14 @@ impl Component for PwtMenuItem {
                     let event = MenuEvent::new();
                     on_select.emit(event.clone());
                     if !event.get_keep_open() {
-                        if let Some(on_close) = &props.on_close {
-                            on_close.emit(true);
+                        if let Some(menu_controller) = &props.menu_controller {
+                            menu_controller.emit(MenuControllerMsg::Collapse);
                         }
                     }
                 } else {
                     // Always close menus without on_select callback
-                    if let Some(on_close) = &props.on_close {
-                        on_close.emit(true);
+                    if let Some(menu_controller) = &props.menu_controller {
+                        menu_controller.emit(MenuControllerMsg::Collapse);
                     }
                 }
                 false

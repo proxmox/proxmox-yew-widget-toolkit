@@ -51,7 +51,7 @@ impl From<Html> for MenuEntry {
     }
 }
 
-pub enum MenubarMsg {
+pub enum MenuControllerMsg {
     Next,
     Previous,
     Collapse,
@@ -81,9 +81,9 @@ pub struct Menu {
     #[prop_or(250)]
     pub submenu_timeout_ms: u32,
 
-    pub on_close: Option<Callback<bool>>,
+    pub on_close: Option<Callback<()>>,
 
-    pub(crate) menu_controller: Option<Callback<MenubarMsg>>,
+    pub(crate) menu_controller: Option<Callback<MenuControllerMsg>>,
 }
 
 impl Menu {
@@ -159,12 +159,12 @@ impl Menu {
         self
     }
 
-    pub fn on_close(mut self, cb: impl IntoEventCallback<bool>) -> Self {
+    pub fn on_close(mut self, cb: impl IntoEventCallback<()>) -> Self {
         self.on_close = cb.into_event_callback();
         self
     }
 
-    pub(crate) fn menu_controller(mut self, cb: impl IntoEventCallback<MenubarMsg>) -> Self {
+    pub(crate) fn menu_controller(mut self, cb: impl IntoEventCallback<MenuControllerMsg>) -> Self {
         self.menu_controller = cb.into_event_callback();
         self
     }
@@ -182,7 +182,7 @@ pub enum Msg {
     OnMouseOver(usize),
     SetActiveSubmenu(usize),
     ShowSubmenu(bool, bool),
-    SubmenuClose(bool),
+    SubmenuClose,
     Redraw,
 }
 
@@ -470,28 +470,19 @@ impl Component for PwtMenu {
                 if show == false {
                     if let Some(on_close) = &props.on_close {
                         //log::info!("PROPAGATE CLOSE {} {}", self.unique_id, show);
-                        on_close.emit(false);
+                        on_close.emit(());
                     }
                 }
 
                 true
             }
-            Msg::SubmenuClose(propagate) => {
+            Msg::SubmenuClose => {
                 let cursor = match self.cursor {
                     Some(cursor) => cursor,
                     None => return false,
                 };
                 self.inside_submenu = false;
                 self.try_focus_item(cursor, true); // fixme : use set_cursor
-
-                if propagate {
-                    if props.menubar {
-                        self.collapsed = true;
-                    }
-                    if let Some(on_close) = &props.on_close {
-                        on_close.emit(propagate);
-                    }
-                }
 
                 true
             }
@@ -551,11 +542,11 @@ impl Component for PwtMenu {
 
         let menu_controller = if props.menubar {
             let link = ctx.link().clone();
-            Some(Callback::from(move |msg: MenubarMsg| {
+            Some(Callback::from(move |msg: MenuControllerMsg| {
                 match msg {
-                    MenubarMsg::Next => link.send_message(Msg::Next),
-                    MenubarMsg::Previous => link.send_message(Msg::Previous),
-                    MenubarMsg::Collapse => link.send_message(Msg::Collapse),
+                    MenuControllerMsg::Next => link.send_message(Msg::Next),
+                    MenuControllerMsg::Previous => link.send_message(Msg::Previous),
+                    MenuControllerMsg::Collapse => link.send_message(Msg::Collapse),
                 }
             }))
         } else {
@@ -588,7 +579,7 @@ impl Component for PwtMenu {
                         has_submenu = item.menu.is_some();
                         item.clone()
                             .active(active || submenu_active)
-                            .on_close(ctx.link().callback(|propagate| Msg::SubmenuClose(propagate)))
+                            .on_close(ctx.link().callback(|_| Msg::SubmenuClose))
                             .menu_controller(menu_controller.clone())
                             .show_submenu(show_submenu)
                             .focus_submenu(self.inside_submenu)
@@ -638,7 +629,7 @@ impl Component for PwtMenu {
                                     39 => {
                                         if !has_submenu {
                                             if let Some(menu_controller) = &menu_controller {
-                                                menu_controller.emit(MenubarMsg::Next);
+                                                menu_controller.emit(MenuControllerMsg::Next);
                                             }
                                         } else {
                                             link.send_message(Msg::ShowSubmenu(true, true));
@@ -648,7 +639,7 @@ impl Component for PwtMenu {
                                         link.send_message(Msg::ShowSubmenu(false, true));
                                         if menubar_child {
                                             if let Some(menu_controller) = &menu_controller {
-                                                menu_controller.emit(MenubarMsg::Previous);
+                                                menu_controller.emit(MenuControllerMsg::Previous);
                                             }
                                         }
                                     }

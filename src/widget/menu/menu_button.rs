@@ -8,7 +8,7 @@ use crate::prelude::*;
 use crate::props::{BuilderFn, IntoOptionalBuilderFn};
 use crate::widget::{Button, Container};
 
-use super::{Menu, MenuPopper};
+use super::{Menu, MenuPopper, MenuControllerMsg};
 
 use pwt_macros::widget;
 
@@ -125,7 +125,7 @@ pub enum Msg {
 pub struct PwtMenuButton {
     submenu_ref: NodeRef,
     popper: MenuPopper,
-
+    menu_controller: Callback<MenuControllerMsg>,
     show_submenu: bool,
     timeout: Option<Timeout>,
 
@@ -152,9 +152,21 @@ impl Component for PwtMenuButton {
         let submenu_ref = NodeRef::default();
         let popper = MenuPopper::new(props.std_props.node_ref.clone(), submenu_ref.clone(), true);
 
+        let menu_controller = {
+            let link = ctx.link().clone();
+            Callback::from(move |msg: MenuControllerMsg| {
+                match msg {
+                    MenuControllerMsg::Next => { /* ignore */ },
+                    MenuControllerMsg::Previous => { /* ignore */ },
+                    MenuControllerMsg::Collapse => link.send_message(Msg::CloseMenu),
+                }
+            })
+        };
+
         Self {
             submenu_ref,
             popper,
+            menu_controller,
             show_submenu: false,
             timeout: None,
             last_has_focus: false,
@@ -214,12 +226,14 @@ impl Component for PwtMenuButton {
                 menu = Some(
                     menu_builder.apply()
                         .autofocus(true)
+                        .menu_controller(self.menu_controller.clone())
                         .on_close(ctx.link().callback(|_| Msg::CloseMenu))
                 );
             } else if let Some(m) = &props.menu {
                 menu = Some(
                     m.clone()
                         .autofocus(true)
+                        .menu_controller(self.menu_controller.clone())
                         .on_close(ctx.link().callback(|_| Msg::CloseMenu))
                 );
             }
