@@ -7,6 +7,7 @@ use yew::html::{IntoEventCallback, IntoPropValue};
 use crate::prelude::*;
 use crate::widget::{Container, MenuEvent};
 use crate::widget::form::{CheckboxStateHandle, FieldOptions, FormContext};
+use super::MenubarMsg;
 
 #[derive(Clone, PartialEq, Properties)]
 pub struct MenuCheckbox {
@@ -37,8 +38,7 @@ pub struct MenuCheckbox {
     /// Change callback
     pub on_change: Option<Callback<MenuEvent>>,
 
-    /// close event
-    pub(crate) on_close: Option<Callback<bool>>,
+    pub(crate) menu_controller: Option<Callback<MenubarMsg>>,
 }
 
 impl MenuCheckbox {
@@ -96,8 +96,8 @@ impl MenuCheckbox {
         self
     }
 
-    pub fn on_close(mut self, cb: impl IntoEventCallback<bool>) -> Self {
-        self.on_close = cb.into_event_callback();
+    pub(crate) fn menu_controller(mut self, cb: impl IntoEventCallback<MenubarMsg>) -> Self {
+        self.menu_controller = cb.into_event_callback();
         self
     }
 }
@@ -152,8 +152,8 @@ impl Component for PwtMenuCheckbox {
                     event.checked = value;
                     on_change.emit(event.clone());
                     if !event.get_keep_open() {
-                        if let Some(on_close) = &props.on_close {
-                            on_close.emit(true);
+                        if let Some(menu_controller) = &props.menu_controller {
+                            menu_controller.emit(MenubarMsg::Collapse);
                         }
                     }
                 }

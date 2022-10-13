@@ -597,7 +597,7 @@ impl Component for PwtMenu {
                     }
                     MenuEntry::Checkbox(checkbox) => {
                         checkbox.clone()
-                            .on_close(ctx.link().callback(|propagate| Msg::SubmenuClose(propagate)))
+                            .menu_controller(menu_controller.clone())
                             .into()
                     }
                 };
