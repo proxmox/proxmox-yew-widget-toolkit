@@ -190,6 +190,7 @@ pub enum Msg {
 pub struct PwtMenu {
     unique_id: String,
     inner_ref: NodeRef,
+    menu_controller: Option<Callback<MenuControllerMsg>>,
     cursor: Option<usize>,
     inside_submenu: bool,
     show_submenu: bool,
@@ -315,10 +316,25 @@ impl Component for PwtMenu {
 
     fn create(ctx: &Context<Self>) -> Self {
         let props = ctx.props();
+
+        let menu_controller = if props.menubar {
+            let link = ctx.link().clone();
+            Some(Callback::from(move |msg: MenuControllerMsg| {
+                match msg {
+                    MenuControllerMsg::Next => link.send_message(Msg::Next),
+                    MenuControllerMsg::Previous => link.send_message(Msg::Previous),
+                    MenuControllerMsg::Collapse => link.send_message(Msg::Collapse),
+                }
+            }))
+        } else {
+            props.menu_controller.clone()
+        };
+
         Self {
             cursor: None,
             unique_id: get_unique_element_id(),
             inner_ref: NodeRef::default(),
+            menu_controller,
             inside_submenu: false,
             show_submenu: !props.menubar,
             collapsed: true,
@@ -540,19 +556,6 @@ impl Component for PwtMenu {
 
         let focus_on_over = !props.menubar || self.has_focus;
 
-        let menu_controller = if props.menubar {
-            let link = ctx.link().clone();
-            Some(Callback::from(move |msg: MenuControllerMsg| {
-                match msg {
-                    MenuControllerMsg::Next => link.send_message(Msg::Next),
-                    MenuControllerMsg::Previous => link.send_message(Msg::Previous),
-                    MenuControllerMsg::Collapse => link.send_message(Msg::Collapse),
-                }
-            }))
-        } else {
-            props.menu_controller.clone()
-        };
-
         let menu = Container::new()
             .node_ref(self.inner_ref.clone())
             .tag("ul")
@@ -580,7 +583,7 @@ impl Component for PwtMenu {
                         item.clone()
                             .active(active || submenu_active)
                             .on_close(ctx.link().callback(|_| Msg::SubmenuClose))
-                            .menu_controller(menu_controller.clone())
+                            .menu_controller(self.menu_controller.clone())
                             .show_submenu(show_submenu)
                             .focus_submenu(self.inside_submenu)
                             .inside_menubar(props.menubar)
@@ -588,14 +591,14 @@ impl Component for PwtMenu {
                     }
                     MenuEntry::Checkbox(checkbox) => {
                         checkbox.clone()
-                            .menu_controller(menu_controller.clone())
+                            .menu_controller(self.menu_controller.clone())
                             .into()
                     }
                 };
 
                 let item_id = self.get_unique_item_id(i);
                 let link = ctx.link().clone();
-                let menu_controller = props.menu_controller.clone();
+                let menu_controller = self.menu_controller.clone();
                 let menubar = props.menubar;
                 let menubar_child = props.menubar_child;
 
