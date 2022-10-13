@@ -35,7 +35,7 @@ pub struct MenuItem {
 
     /// Submenu close event
     pub(crate) on_close: Option<Callback<bool>>,
-    pub(crate) menubar_command: Option<Callback<MenubarMsg>>,
+    pub(crate) menu_controller: Option<Callback<MenubarMsg>>,
 
     pub on_select: Option<Callback<MenuEvent>>,
 
@@ -128,8 +128,8 @@ impl MenuItem {
         self.menu.is_some()
     }
 
-    pub(crate) fn menubar_command(mut self, cb: impl IntoEventCallback<MenubarMsg>) -> Self {
-        self.menubar_command = cb.into_event_callback();
+    pub(crate) fn menu_controller(mut self, cb: impl IntoEventCallback<MenubarMsg>) -> Self {
+        self.menu_controller = cb.into_event_callback();
         self
     }
 }
@@ -201,7 +201,7 @@ impl Component for PwtMenuItem {
                     menu.clone()
                         .menubar(false) // make sure its vertical
                         .menubar_child(props.inside_menubar)
-                        .menubar_command(props.menubar_command.clone())
+                        .menu_controller(props.menu_controller.clone())
                         .autofocus(props.focus_submenu)
                         .on_close(props.on_close.clone())
                 }))

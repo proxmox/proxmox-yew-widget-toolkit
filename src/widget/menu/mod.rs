@@ -83,7 +83,7 @@ pub struct Menu {
 
     pub on_close: Option<Callback<bool>>,
 
-    pub(crate) menubar_command: Option<Callback<MenubarMsg>>,
+    pub(crate) menu_controller: Option<Callback<MenubarMsg>>,
 }
 
 impl Menu {
@@ -164,8 +164,8 @@ impl Menu {
         self
     }
 
-    pub(crate) fn menubar_command(mut self, cb: impl IntoEventCallback<MenubarMsg>) -> Self {
-        self.menubar_command = cb.into_event_callback();
+    pub(crate) fn menu_controller(mut self, cb: impl IntoEventCallback<MenubarMsg>) -> Self {
+        self.menu_controller = cb.into_event_callback();
         self
     }
 }
@@ -549,7 +549,7 @@ impl Component for PwtMenu {
 
         let focus_on_over = !props.menubar || self.has_focus;
 
-        let menubar_command = if props.menubar {
+        let menu_controller = if props.menubar {
             let link = ctx.link().clone();
             Some(Callback::from(move |msg: MenubarMsg| {
                 match msg {
@@ -559,7 +559,7 @@ impl Component for PwtMenu {
                 }
             }))
         } else {
-            props.menubar_command.clone()
+            props.menu_controller.clone()
         };
 
         let menu = Container::new()
@@ -589,7 +589,7 @@ impl Component for PwtMenu {
                         item.clone()
                             .active(active || submenu_active)
                             .on_close(ctx.link().callback(|propagate| Msg::SubmenuClose(propagate)))
-                            .menubar_command(menubar_command.clone())
+                            .menu_controller(menu_controller.clone())
                             .show_submenu(show_submenu)
                             .focus_submenu(self.inside_submenu)
                             .inside_menubar(props.menubar)
@@ -604,7 +604,7 @@ impl Component for PwtMenu {
 
                 let item_id = self.get_unique_item_id(i);
                 let link = ctx.link().clone();
-                let menubar_command = props.menubar_command.clone();
+                let menu_controller = props.menu_controller.clone();
                 let menubar = props.menubar;
                 let menubar_child = props.menubar_child;
 
@@ -615,9 +615,8 @@ impl Component for PwtMenu {
                     .class((active).then(|| "active"))
                     .with_child(child)
                     .onkeydown({
-                        let item_id = item_id.clone();
                         let link = ctx.link().clone();
-                       move |event: KeyboardEvent| {
+                        move |event: KeyboardEvent| {
                             if menubar {
                                 match event.key_code() {
                                     39 => link.send_message(Msg::Next),
@@ -638,8 +637,8 @@ impl Component for PwtMenu {
                                     }
                                     39 => {
                                         if !has_submenu {
-                                            if let Some(menubar_command) = &menubar_command {
-                                                menubar_command.emit(MenubarMsg::Next);
+                                            if let Some(menu_controller) = &menu_controller {
+                                                menu_controller.emit(MenubarMsg::Next);
                                             }
                                         } else {
                                             link.send_message(Msg::ShowSubmenu(true, true));
@@ -648,8 +647,8 @@ impl Component for PwtMenu {
                                     37 => {
                                         link.send_message(Msg::ShowSubmenu(false, true));
                                         if menubar_child {
-                                            if let Some(menubar_command) = &menubar_command {
-                                                menubar_command.emit(MenubarMsg::Previous);
+                                            if let Some(menu_controller) = &menu_controller {
+                                                menu_controller.emit(MenubarMsg::Previous);
                                             }
                                         }
                                     }
