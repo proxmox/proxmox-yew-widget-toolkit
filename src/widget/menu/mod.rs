@@ -577,6 +577,7 @@ impl Component for PwtMenu {
         let menu = Container::new()
             .node_ref(self.inner_ref.clone())
             .tag("ul")
+            .attribute("role", if props.menubar { "menubar" } else { "menu" })
             .attribute("id", self.unique_id.clone())
             .class(if props.menubar { "pwt-menubar" } else { "pwt-menu" })
             .class(props.class.clone())
@@ -588,9 +589,9 @@ impl Component for PwtMenu {
                 let child = match entry {
                     MenuEntry::Separator => {
                         if props.menubar {
-                            html!{<div aria-hidden="" class="pwt-h-100 pwt-vertical-rule"/>}
+                            html!{<div role="separator" class="pwt-h-100 pwt-vertical-rule"/>}
                         } else {
-                            html!{<div aria-hidden="" class="pwt-w-100 pwt-horizontal-rule"/>}
+                            html!{<div role="separator" class="pwt-w-100 pwt-horizontal-rule"/>}
                         }
                     }
                     MenuEntry::Component(comp) => {
@@ -624,6 +625,7 @@ impl Component for PwtMenu {
                     .tag("li")
                     .attribute("id", item_id.clone())
                     .attribute("data-index", i.to_string()) // fixme: remove
+                    .attribute("role", "none")
                     .class((active).then(|| "active"))
                     .with_child(child)
                     .onkeydown({

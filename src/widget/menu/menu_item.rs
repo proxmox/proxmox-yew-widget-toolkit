@@ -226,6 +226,7 @@ impl Component for PwtMenuItem {
             let sub = Container::new()
                 .node_ref(self.submenu_ref.clone())
                 .class("pwt-submenu")
+                .attribute("role", "none")
                 .with_optional_child(show_submenu.then(|| {
                     menu.clone()
                         .menubar(false) // make sure its vertical
@@ -263,6 +264,9 @@ impl Component for PwtMenuItem {
             .class(if props.inside_menubar { "pwt-menubar-item" } else { "pwt-menu-item" })
             .attribute("tabindex", (!(props.disabled || props.focusable)).then(|| "-1"))
             .attribute("disabled", props.disabled.then(|| ""))
+            .attribute("role", "menuitem")
+            .attribute("aria-haspopup", has_submenu.then(|| "true"))
+            .attribute("aria-expanded", has_submenu.then(|| if show_submenu { "true" } else { "false" }))
             .with_optional_child(icon)
             .with_child({
                 let class = if props.menu.is_some() {

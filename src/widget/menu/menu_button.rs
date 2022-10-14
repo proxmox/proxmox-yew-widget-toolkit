@@ -220,6 +220,7 @@ impl Component for PwtMenuButton {
         let show_submenu = self.show_submenu;
 
         let mut submenu = Container::new()
+            .attribute("role", "none")
             .node_ref(self.submenu_ref.clone())
             .class("pwt-submenu");
 
@@ -245,6 +246,9 @@ impl Component for PwtMenuButton {
         submenu.add_optional_child(menu);
 
         let mut button = Button::new(&props.text)
+            .attribute("role", "button")
+            .attribute("aria-haspopup", "true")
+            .attribute("aria-expanded", self.show_submenu.then(|| "true"))
             .tabindex(props.tabindex)
             .icon_class(props.icon_class.clone());
 
@@ -258,6 +262,7 @@ impl Component for PwtMenuButton {
 
         Container::new()
             .attribute("style", "display:contents;")
+            .attribute("role", "none")
             .onfocusin(ctx.link().callback(|_| Msg::FocusChange(true)))
             .onfocusout(ctx.link().callback(|_| Msg::FocusChange(false)))
             .onkeydown({

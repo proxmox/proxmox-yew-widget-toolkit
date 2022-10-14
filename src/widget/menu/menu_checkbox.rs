@@ -196,6 +196,8 @@ impl Component for PwtMenuCheckbox {
             .class("pwt-menu-item")
             .attribute("tabindex", (!props.disabled).then(|| "-1"))
             .attribute("disabled", props.disabled.then(|| ""))
+            .attribute("role", if props.group.is_some() { "menuitemradio" } else { "menuitemcheckbox" })
+            .attribute("aria-checked", checked.then(|| "true"))
             .onclick(onclick)
             .onkeydown(onkeydown)
             .with_child(icon)
