@@ -72,29 +72,37 @@ pub struct Menu {
     #[prop_or_default]
     pub autofocus: bool,
 
-    #[prop_or_default]
-    pub menubar: bool,
-
-    #[prop_or_default]
-    pub(crate) menubar_child: bool,
-
     #[prop_or(250)]
     pub submenu_timeout_ms: u32,
 
     pub on_close: Option<Callback<()>>,
 
+    // Methods below are used internally.
+
+    #[prop_or_default]
+    pub(crate) menubar: bool,
+
+    #[prop_or_default]
+    pub(crate) menubar_child: bool,
+
     pub(crate) menu_controller: Option<Callback<MenuControllerMsg>>,
+}
+
+pub struct MenuBar;
+
+impl MenuBar {
+    /// Create a new menu bar.
+    ///
+    /// Which is just a Menu with special horizontal layout.
+    pub fn new() -> Menu {
+        Menu::new().menubar(true)
+    }
 }
 
 impl Menu {
     /// Create a new instance.
     pub fn new() -> Self {
         yew::props!(Self {})
-    }
-
-    /// Create a new menu bar instance (horizontal menu).
-    pub fn new_menubar() -> Self {
-        yew::props!(Self { menubar: true })
     }
 
     /// Builder style method to add a html class.

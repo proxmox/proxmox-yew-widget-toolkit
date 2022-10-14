@@ -30,13 +30,13 @@ pub struct MenuItem {
     pub focusable: bool,
 
     #[prop_or_default]
-    pub active: bool,
+    pub(crate) active: bool,
 
     #[prop_or_default]
-    pub show_submenu: bool,
+    pub(crate) show_submenu: bool,
 
     #[prop_or_default]
-    pub focus_submenu: bool,
+    pub(crate) focus_submenu: bool,
 
     #[prop_or_default]
     pub(crate) inside_menubar: bool,
@@ -79,34 +79,6 @@ impl MenuItem {
         self.focusable = focusable;
     }
 
-    pub fn active(mut self, active: bool) -> Self {
-        self.set_active(active);
-        self
-    }
-
-    pub fn set_active(&mut self, active: bool) {
-        self.active = active;
-    }
-
-    pub fn show_submenu(mut self, show_submenu: bool) -> Self {
-        self.set_show_submenu(show_submenu);
-        self
-    }
-
-    pub fn set_show_submenu(&mut self, show_submenu: bool) {
-        self.show_submenu = show_submenu;
-    }
-
-    pub fn focus_submenu(mut self, focus_submenu: bool) -> Self {
-        self.set_focus_submenu(focus_submenu);
-        self
-    }
-
-    pub fn set_focus_submenu(&mut self, focus_submenu: bool) {
-        self.focus_submenu = focus_submenu;
-    }
-
-
     /// Builder style method to set the icon class.
     pub fn icon_class(mut self, icon_class: impl Into<Classes>) -> Self {
         self.set_icon_class(icon_class);
@@ -118,18 +90,15 @@ impl MenuItem {
         self.icon_class = Some(icon_class.into());
     }
 
+    /// Builder style method to set the submenu.
     pub fn menu(mut self, menu: impl IntoPropValue<Option<Menu>>) -> Self {
         self.set_menu(menu);
         self
     }
 
+    /// Method to set the submenu.
     pub fn set_menu(&mut self, menu: impl IntoPropValue<Option<Menu>>) {
-         self.menu = menu.into_prop_value();
-    }
-
-    pub fn on_close(mut self, cb: impl IntoEventCallback<()>) -> Self {
-        self.on_close = cb.into_event_callback();
-        self
+        self.menu = menu.into_prop_value();
     }
 
     /// Builder style method to set the on_select callback.
@@ -138,12 +107,45 @@ impl MenuItem {
         self
     }
 
+    // Methods below are used internally.
+
+    pub(crate) fn on_close(mut self, cb: impl IntoEventCallback<()>) -> Self {
+        self.on_close = cb.into_event_callback();
+        self
+    }
+
     pub(crate) fn inside_menubar(mut self, inside_menubar: bool) -> Self {
         self.inside_menubar = inside_menubar;
         self
     }
+    pub(crate) fn active(mut self, active: bool) -> Self {
+        self.set_active(active);
+        self
+    }
 
-    pub fn has_menu(&self) -> bool {
+    pub(crate) fn set_active(&mut self, active: bool) {
+        self.active = active;
+    }
+
+    pub(crate) fn show_submenu(mut self, show_submenu: bool) -> Self {
+        self.set_show_submenu(show_submenu);
+        self
+    }
+
+    pub(crate) fn set_show_submenu(&mut self, show_submenu: bool) {
+        self.show_submenu = show_submenu;
+    }
+
+    pub(crate) fn focus_submenu(mut self, focus_submenu: bool) -> Self {
+        self.set_focus_submenu(focus_submenu);
+        self
+    }
+
+    pub(crate) fn set_focus_submenu(&mut self, focus_submenu: bool) {
+        self.focus_submenu = focus_submenu;
+    }
+
+    pub(crate) fn has_menu(&self) -> bool {
         self.menu.is_some()
     }
 
