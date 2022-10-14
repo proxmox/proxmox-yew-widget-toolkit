@@ -21,6 +21,14 @@ pub struct MenuItem {
     #[prop_or_default]
     pub disabled: bool,
 
+    /// Indicates that the `text` contains a focusable element.
+    ///
+    /// If set, the menu item does not add `tabindex: -1` to the
+    /// container. This avoids having nested focusable elements inside
+    /// a single menu item.
+    #[prop_or_default]
+    pub focusable: bool,
+
     #[prop_or_default]
     pub active: bool,
 
@@ -58,6 +66,17 @@ impl MenuItem {
     /// Method to set the disabled flag
     pub fn set_disabled(&mut self, disabled: bool) {
         self.disabled = disabled;
+    }
+
+    /// Builder style method to set the focusable flag
+    pub fn focusable(mut self, focusable: bool) -> Self {
+        self.set_focusable(focusable);
+        self
+    }
+
+    /// Method to set the focusable flag
+    pub fn set_focusable(&mut self, focusable: bool) {
+        self.focusable = focusable;
     }
 
     pub fn active(mut self, active: bool) -> Self {
@@ -232,7 +251,7 @@ impl Component for PwtMenuItem {
         Container::new()
             .node_ref(self.content_ref.clone())
             .class(if props.inside_menubar { "pwt-menubar-item" } else { "pwt-menu-item" })
-            .attribute("tabindex", (!props.disabled).then(|| "-1"))
+            .attribute("tabindex", (!(props.disabled || props.focusable)).then(|| "-1"))
             .attribute("disabled", props.disabled.then(|| ""))
             .with_optional_child(icon)
             .with_child({
