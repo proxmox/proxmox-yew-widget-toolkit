@@ -12,6 +12,9 @@ use super::{Menu, MenuPopper, MenuControllerMsg};
 
 use pwt_macros::widget;
 
+/// A Button that opens a [Menu].
+///
+/// See <https://www.w3.org/WAI/ARIA/apg/patterns/menu/>.
 #[widget(PwtMenuButton, @element)]
 #[derive(Clone, PartialEq, Properties)]
 pub struct MenuButton {

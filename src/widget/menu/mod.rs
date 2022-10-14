@@ -25,11 +25,16 @@ pub use menu_checkbox::{MenuCheckbox, PwtMenuCheckbox};
 mod menu_button;
 pub use menu_button::{MenuButton, PwtMenuButton};
 
+/// Menu entries.
 #[derive(Clone, PartialEq)]
 pub enum MenuEntry {
+    /// Checkbox or radio-group entry.
     Checkbox(MenuCheckbox),
+    /// Normal item with optional icon and optional submenu.
     MenuItem(MenuItem),
+    /// Separator
     Separator,
+    /// Custom entry.
     Component(VNode),
 }
 
@@ -57,10 +62,12 @@ pub enum MenuControllerMsg {
     Collapse,
 }
 
-/// Menu - A container for [MenuItem]s.
+/// Menu - A container for [MenuEntry]s.
 ///
 /// The container implements a roving focus to allow keyboard
 /// navigation.
+///
+/// See <https://www.w3.org/WAI/ARIA/apg/patterns/menu/>.
 #[derive(Clone, PartialEq, Properties)]
 pub struct Menu {
     #[prop_or_default]
@@ -69,15 +76,13 @@ pub struct Menu {
     #[prop_or_default]
     pub class: Classes,
 
-    #[prop_or_default]
-    pub autofocus: bool,
-
     #[prop_or(250)]
     pub submenu_timeout_ms: u32,
 
-    pub on_close: Option<Callback<()>>,
-
     // Methods below are used internally.
+
+    #[prop_or_default]
+    pub(crate) autofocus: bool,
 
     #[prop_or_default]
     pub(crate) menubar: bool,
@@ -86,14 +91,19 @@ pub struct Menu {
     pub(crate) menubar_child: bool,
 
     pub(crate) menu_controller: Option<Callback<MenuControllerMsg>>,
+
+    pub(crate) on_close: Option<Callback<()>>,
 }
 
+/// Operating system like menu bar.
 pub struct MenuBar;
 
 impl MenuBar {
     /// Create a new menu bar.
     ///
-    /// Which is just a Menu with special horizontal layout.
+    /// Which is just a [Menu] with special horizontal layout.
+    ///
+    /// See <https://www.w3.org/WAI/ARIA/apg/patterns/menu/>.
     pub fn new() -> Menu {
         Menu::new().menubar(true)
     }

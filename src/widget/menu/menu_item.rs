@@ -9,15 +9,20 @@ use crate::widget::Container;
 
 use super::{Menu, MenuPopper, MenuEvent, MenuControllerMsg};
 
+/// Menu item widget with optional icon and optional submenu.
 #[derive(Clone, PartialEq, Properties)]
 pub struct MenuItem {
-    /// Menu text (html inline text)
+    /// Menu text (html inline text).
+    ///
+    /// Please set the `focusable` flag it the html contains focusable
+    /// items.
     pub text: Html,
     /// Menu icon displayed on the left side.
     pub icon_class: Option<Classes>,
-    /// Optional Submenu
+    /// Optional submenu.
     pub menu: Option<Menu>,
 
+    /// Disabled flag.
     #[prop_or_default]
     pub disabled: bool,
 
@@ -45,6 +50,9 @@ pub struct MenuItem {
     pub(crate) on_close: Option<Callback<()>>,
     pub(crate) menu_controller: Option<Callback<MenuControllerMsg>>,
 
+    /// Select callback.
+    ///
+    /// Emited when the user activates the entry.
     pub on_select: Option<Callback<MenuEvent>>,
 
 }

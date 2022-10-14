@@ -88,8 +88,8 @@
 //! - [widget::form::Field]: Wrapper around standard HTML fields.
 //! - [widget::form::Selector]: Select value from a picker widget.
 //!
-//! There are also special buttons for [reset](widget::form::Reset)
-//! and [submit](widget::form::Submit).
+//! There are also special buttons for [reset](widget::form::ResetButton)
+//! and [submit](widget::form::SubmitButton).
 
 
 //! ### Buttons
@@ -106,6 +106,9 @@
 //! - [component::KVGrid]: Grid with two columns (key and value).
 //! - [component::NavigationMenu]: Navigation menu with routing support.
 //! - [component::ObjectGrid]: Extends [KVGrid](component::KVGrid) with load/edit functionality.
+//! - [widget::MenuBar]: Operating system like menu bar.
+//! - [widget::MenuButton]: A button that opens a [Menu](widget::Menu).
+
 //!
 
 //! ## Router

@@ -12,18 +12,22 @@ pub struct MenuEvent {
 
 impl MenuEvent {
 
-    pub fn new() -> Self {
+    pub(crate) fn new() -> Self {
         Self {
             checked: false,
             keep_open: Rc::new(Cell::new(false)),
         }
     }
 
+    /// Set the `keep_open` flag.
+    ///
+    /// If set, the menu is kept open. This method can be called from
+    /// inside the callback.
     pub fn keep_open(&self, keep_open: bool) {
         self.keep_open.set(keep_open);
     }
 
-    pub fn get_keep_open(&self) -> bool {
+    pub(crate) fn get_keep_open(&self) -> bool {
         self.keep_open.get()
     }
 }

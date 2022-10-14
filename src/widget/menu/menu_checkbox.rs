@@ -10,6 +10,7 @@ use crate::widget::form::{CheckboxStateHandle, FieldOptions, FormContext};
 
 use super::MenuControllerMsg;
 
+/// Checkbox/RadioGroup widget for [Menu](crate::widget::Menu)s.
 #[derive(Clone, PartialEq, Properties)]
 pub struct MenuCheckbox {
     /// Menu text (html inline text)
@@ -33,7 +34,7 @@ pub struct MenuCheckbox {
     pub checked: Option<bool>,
     /// Default value.
     pub default: Option<bool>,
-    /// Include value in [FormContex::get_submit_data].
+    /// Include value in [FormContext::get_submit_data].
     #[prop_or(true)]
     pub submit: bool,
     /// Change callback
