@@ -13,6 +13,9 @@ pub(crate) use header_group::{
 mod column;
 pub use column::DataTableColumn;
 
+mod tree;
+pub use tree::*;
+
 //mod header_menu;
 //pub(crate) use header_menu::HeaderMenu;
 

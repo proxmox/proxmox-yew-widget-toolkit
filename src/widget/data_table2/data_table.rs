@@ -14,9 +14,10 @@ use crate::state::{optional_rc_ptr_eq, DataFilter};
 use crate::widget::{get_unique_element_id, Container, Column, SizeObserver};
 
 use super::{create_indexed_header_list, DataTableColumn, DataTableHeader, Header, IndexedHeader};
+use super::{TreeNode, FlatTreeNode, ToFlatNodeList};
 
 pub enum Msg<T: 'static> {
-    ChangeSort(SorterFn<T>),
+    ChangeSort(SorterFn<FlatTreeNode<T>>),
     ColumnWidthChange(Vec<f64>),
     ColumnHiddenChange(Vec<bool>),
     ScrollTo(i32, i32),
@@ -46,8 +47,11 @@ pub struct DataTable<T: 'static> {
 
     headers: Rc<Vec<Header<T>>>,
 
-    #[derivative(PartialEq(compare_with="optional_rc_ptr_eq::<Vec<T>>"))]
-    pub data: Option<Rc<Vec<T>>>,
+    #[derivative(PartialEq(compare_with="optional_rc_ptr_eq::<Vec<Rc<T>>>"))]
+    pub data: Option<Rc<Vec<Rc<T>>>>,
+
+    #[derivative(PartialEq(compare_with="optional_rc_ptr_eq::<TreeNode<T>>"))]
+    pub root: Option<Rc<TreeNode<T>>>,
 
     /// set class for table cells (default is "pwt-p-2")
     #[prop_or_default]
@@ -151,13 +155,22 @@ impl <T: 'static> DataTable<T> {
         self.header_class.push(class);
     }
 
-    pub fn data(mut self, data: impl IntoPropValue<Option<Rc<Vec<T>>>>) -> Self {
+    pub fn data(mut self, data: impl IntoPropValue<Option<Rc<Vec<Rc<T>>>>>) -> Self {
         self.set_data(data);
         self
     }
 
-    pub fn set_data(&mut self, data: impl IntoPropValue<Option<Rc<Vec<T>>>>) {
+    pub fn set_data(&mut self, data: impl IntoPropValue<Option<Rc<Vec<Rc<T>>>>>) {
         self.data = data.into_prop_value();
+    }
+
+    pub fn root(mut self, root: impl IntoPropValue<Option<Rc<TreeNode<T>>>>) -> Self {
+        self.set_root(root);
+        self
+    }
+
+    pub fn set_root(&mut self, root: impl IntoPropValue<Option<Rc<TreeNode<T>>>>) {
+        self.root = root.into_prop_value();
     }
 
     /// Builder style method to set striped mode.
@@ -276,7 +289,7 @@ pub struct PwtDataTable<T: 'static> {
     unique_id: String,
     has_focus: bool,
 
-    store: DataFilter<T>,
+    store: DataFilter<FlatTreeNode<T>>,
 
     headers: Rc<Vec<IndexedHeader<T>>>,
 
@@ -449,7 +462,7 @@ impl<T: 'static> PwtDataTable<T> {
         el.scroll_into_view_with_scroll_into_view_options(&options);
     }
 
-    fn  render_row(&self, props: &DataTable<T>, item: &T, row_num: usize, record_num: usize, selected: bool, active: bool) -> Html {
+    fn render_row(&self, props: &DataTable<T>, item: &FlatTreeNode<T>, row_num: usize, record_num: usize, selected: bool, active: bool) -> Html {
 
         let key = Key::from(record_num); // fixme: use extract key
 
@@ -485,7 +498,7 @@ impl<T: 'static> PwtDataTable<T> {
                             .attribute("style", item_style)
                             .with_child(html!{
                                 <div>{
-                                    column.render.apply(item)
+                                    column.render_node.apply(item)
                                 }</div>
                             })
                             .into()
@@ -598,8 +611,14 @@ impl <T: 'static> Component for PwtDataTable<T> {
 
         let headers = create_indexed_header_list(&props.headers);
 
+        let flat_list: Vec<FlatTreeNode<T>> = if let Some(root) = &props.root {
+            root.to_flat_node_list()
+        } else {
+            props.data.to_flat_node_list()
+        };
+
         let mut store = DataFilter::new()
-            .data(props.data.clone());
+            .data(Rc::new(flat_list));
         // fixme: set cursor to first selected item
         //.cursor(props.selection)
 
@@ -892,11 +911,12 @@ impl <T: 'static> Component for PwtDataTable<T> {
         let props = ctx.props();
 
         if !optional_rc_ptr_eq(&props.data, &old_props.data) { // data changed
-            self.store.set_data(props.data.clone());
+            let flat_list: Vec<FlatTreeNode<T>> = props.data.to_flat_node_list();
+            self.store.set_data(Rc::new(flat_list));
             let row_count = props.data.as_ref().map(|data| data.len()).unwrap_or(0);
             self.virtual_scroll = props.virtual_scroll.unwrap_or(row_count >= VIRTUAL_SCROLL_TRIGGER);
             if let Some(selection) = &props.selection {
-                selection.filter_nonexistent(self.store.filtered_data().map(|t| t.2));
+                //fixme: selection.filter_nonexistent(self.store.filtered_data().map(|t| t.2));
             }
         }
 
