@@ -14,6 +14,7 @@ pub struct TreeNode<T> {
 }
 
 pub struct FlatTreeNode<T> {
+    pub parent: Option<usize>,
     pub level: usize,
     pub node: Rc<TreeNode<T>>,
 }
@@ -48,7 +49,7 @@ impl<T> ToFlatNodeList<T> for &Vec<Rc<T>> {
                 expanded: false,
                 children: None,
             };
-            FlatTreeNode { level: 0, node: Rc::new(node) }
+            FlatTreeNode { parent: None, level: 0, node: Rc::new(node) }
         }).collect()
     }
 }
@@ -65,12 +66,13 @@ impl<T> ToFlatNodeList<T> for Option<Rc<Vec<Rc<T>>>> {
 fn flatten_tree_children<T>(
     list: &mut Vec<FlatTreeNode<T>>,
     level: usize,
+    parent: Option<usize>,
     children: &[Rc<TreeNode<T>>],
 ) {
     for tree in children {
-        list.push(FlatTreeNode { level, node: tree.clone() });
+        list.push(FlatTreeNode { parent, level, node: tree.clone() });
         if let Some(children) = &tree.children {
-            flatten_tree_children(list, level + 1, children);
+            flatten_tree_children(list, level + 1, Some(list.len() - 1), children);
         }
     }
 }
@@ -79,6 +81,6 @@ pub fn flatten_tree<T>(
     tree: Rc<TreeNode<T>>,
 ) -> Vec<FlatTreeNode<T>> {
     let mut list = Vec::new();
-    flatten_tree_children(&mut list, 0, &[ tree ]);
+    flatten_tree_children(&mut list, 0, None, &[ tree ]);
     list
 }
