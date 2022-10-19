@@ -1,5 +1,6 @@
 use std::rc::Rc;
 use std::cell::RefCell;
+use std::marker::PhantomData;
 
 use derivative::Derivative;
 
@@ -37,7 +38,7 @@ pub enum Msg<T: 'static> {
 #[derive(Properties)]
 #[derive(Derivative)]
 #[derivative(Clone(bound=""), PartialEq(bound=""))]
-pub struct DataTable<T: 'static> {
+pub struct DataTable<T: 'static, S: DataCollection<T> = TreeFilter<T>> {
 
     #[prop_or_default]
     node_ref: NodeRef,
@@ -47,13 +48,9 @@ pub struct DataTable<T: 'static> {
     pub class: Classes,
 
     headers: Rc<Vec<Header<T>>>,
-    extract_key: ExtractKeyFn<T>,
 
-    #[derivative(PartialEq(compare_with="optional_rc_ptr_eq::<Vec<Rc<T>>>"))]
-    pub data: Option<Rc<Vec<Rc<T>>>>,
-
-    #[derivative(PartialEq(compare_with="optional_list_rc_ptr_eq::<RefCell<TreeNode<T>>>"))]
-    pub root: Option<Vec<Rc<RefCell<TreeNode<T>>>>>,
+    #[derivative(PartialEq(compare_with="Rc::ptr_eq"))]
+    pub store: Rc<RefCell<S>>, // fixme: remove Rc<RefCell
 
     /// set class for table cells (default is "pwt-p-2")
     #[prop_or_default]
@@ -105,11 +102,11 @@ pub struct DataTable<T: 'static> {
 
 static VIRTUAL_SCROLL_TRIGGER: usize = 30;
 
-impl <T: 'static> DataTable<T> {
+impl <T: 'static, S: DataCollection<T> + 'static> DataTable<T, S> {
 
     /// Create a new instance.
-    pub fn new(headers: Rc<Vec<Header<T>>>, extract_key: impl Into<ExtractKeyFn<T>>) -> Self {
-        yew::props!(DataTable<T> { headers, extract_key: extract_key.into() })
+    pub fn new(headers: Rc<Vec<Header<T>>>, store: impl Into<Rc<RefCell<S>>>) -> Self {
+        yew::props!(DataTable<T, S> { headers, store: store.into() })
     }
 
     /// Builder style method to set the yew `node_ref`.
@@ -155,24 +152,6 @@ impl <T: 'static> DataTable<T> {
     /// Method to add a html class for header cells.
     pub fn add_header_class(&mut self, class: impl Into<Classes>) {
         self.header_class.push(class);
-    }
-
-    pub fn data(mut self, data: impl IntoPropValue<Option<Rc<Vec<Rc<T>>>>>) -> Self {
-        self.set_data(data);
-        self
-    }
-
-    pub fn set_data(&mut self, data: impl IntoPropValue<Option<Rc<Vec<Rc<T>>>>>) {
-        self.data = data.into_prop_value();
-    }
-
-    pub fn root(mut self, root: impl IntoPropValue<Option<Vec<Rc<RefCell<TreeNode<T>>>>>>) -> Self {
-        self.set_root(root);
-        self
-    }
-
-    pub fn set_root(&mut self, root: impl IntoPropValue<Option<Vec<Rc<RefCell<TreeNode<T>>>>>>) {
-        self.root = root.into_prop_value();
     }
 
     /// Builder style method to set striped mode.
@@ -287,11 +266,11 @@ impl VirtualScrollInfo {
 }
 
 #[doc(hidden)]
-pub struct PwtDataTable<T: 'static> {
+pub struct PwtDataTable<T: 'static, S: DataCollection<T>> {
     unique_id: String,
     has_focus: bool,
 
-    store: TreeFilter<T>,
+    _phantom_store: PhantomData<S>,
 
     headers: Rc<Vec<IndexedHeader<T>>>,
 
@@ -347,16 +326,17 @@ fn render_empty_row_with_sizes(widths: &[f64], column_hidden: &[bool], bordered:
         .into()
 }
 
-impl<T: 'static> PwtDataTable<T> {
+impl<T: 'static, S: DataCollection<T>> PwtDataTable<T, S> {
 
     fn select_position(
         &mut self,
+        props: &DataTable<T, S>,
         selection: &Selection2<T>,
         cursor: usize,
         _shift: bool,
         ctrl: bool,
     ) {
-        if let Some(item) = self.store.lookup_filtered_record(cursor) {
+        if let Some(item) = props.store.borrow().lookup_filtered_record(cursor) {
             if ctrl {
                 selection.toggle(&*item.borrow());
             } else {
@@ -367,6 +347,7 @@ impl<T: 'static> PwtDataTable<T> {
 
     fn select_range(
         &mut self,
+        props: &DataTable<T, S>,
         selection: &Selection2<T>,
         last_cursor: Option<usize>,
         new_cursor: Option<usize>,
@@ -386,28 +367,28 @@ impl<T: 'static> PwtDataTable<T> {
                     (new_cursor, last_cursor)
                 };
                 for pos in start..=end {
-                    self.select_position(selection, pos, shift, ctrl);
+                    self.select_position(props, selection, pos, shift, ctrl);
                 }
             } else {
-                self.select_position(selection, new_cursor, shift, ctrl);
+                self.select_position(props, selection, new_cursor, shift, ctrl);
             }
         }
     }
 
-    fn select_cursor(&mut self, props: &DataTable<T>, shift: bool, ctrl: bool) -> bool {
+    fn select_cursor(&mut self, props: &DataTable<T, S>, shift: bool, ctrl: bool) -> bool {
         let selection = match &props.selection {
             Some(selection) => selection,
             None => return false,
         };
 
-        let cursor = match self.store.get_cursor() {
+        let cursor = match props.store.borrow().get_cursor() {
             Some(c) => c,
             None => return false, // nothing to do
         };
 
         if !(shift || ctrl) { selection.clear(); }
 
-        if let Some(item) = self.store.lookup_filtered_record(cursor) {
+        if let Some(item) = props.store.borrow().lookup_filtered_record(cursor) {
             if ctrl {
                 selection.toggle(&*item.borrow());
             } else {
@@ -418,9 +399,9 @@ impl<T: 'static> PwtDataTable<T> {
         false
     }
 
-    fn lookup_cursor_record_key(&self, props: &DataTable<T>, cursor: usize) -> Option<Key> {
-        if let Some(item) = self.store.lookup_filtered_record(cursor) {
-            Some(props.extract_key.apply(&item.borrow().record))
+    fn lookup_cursor_record_key(&self, props: &DataTable<T, S>, cursor: usize) -> Option<Key> {
+        if let Some(item) = props.store.borrow().lookup_filtered_record(cursor) {
+            Some(props.store.borrow().extract_key(&item.borrow().record))
         } else {
             None
         }
@@ -434,8 +415,8 @@ impl<T: 'static> PwtDataTable<T> {
         (self.scroll_info.start..self.scroll_info.end).contains(&cursor)
     }
 
-    fn scroll_cursor_into_view(&self, props: &DataTable<T>, pos: web_sys::ScrollLogicalPosition) {
-        let cursor = match self.store.get_cursor() {
+    fn scroll_cursor_into_view(&self, props: &DataTable<T, S>, pos: web_sys::ScrollLogicalPosition) {
+        let cursor = match props.store.borrow().get_cursor() {
             Some(cursor) => cursor,
             None => return,
         };
@@ -472,9 +453,9 @@ impl<T: 'static> PwtDataTable<T> {
         el.scroll_into_view_with_scroll_into_view_options(&options);
     }
 
-    fn render_row(&self, props: &DataTable<T>, item: &TreeNode<T>, row_num: usize, selected: bool, active: bool) -> Html {
+    fn render_row(&self, props: &DataTable<T, S>, item: &TreeNode<T>, row_num: usize, selected: bool, active: bool) -> Html {
 
-        let record_key = props.extract_key.apply(&item.record);
+        let record_key = props.store.borrow().extract_key(&item.record);
         let item_id = self.get_unique_item_id(&record_key);
 
         // Make sure our rows have a minimum height
@@ -519,7 +500,7 @@ impl<T: 'static> PwtDataTable<T> {
             .into()
     }
 
-    fn render_table(&self, props: &DataTable<T>, offset: usize, start: usize, end: usize) -> Html {
+    fn render_table(&self, props: &DataTable<T, S>, offset: usize, start: usize, end: usize) -> Html {
 
         let mut table = Container::new()
         // do not use table tag here to avoid role="table", instead set "pwt-d-table"
@@ -535,7 +516,7 @@ impl<T: 'static> PwtDataTable<T> {
             .with_child(render_empty_row_with_sizes(&self.column_widths, &self.column_hidden, props.bordered));
 
         if !self.column_widths.is_empty() {
-            for (filtered_pos, item) in self.store.filtered_data_range(start..end) {
+            for (filtered_pos, item) in props.store.borrow().filtered_data_range(start..end) {
 
                 let item = item.borrow();
 
@@ -544,7 +525,7 @@ impl<T: 'static> PwtDataTable<T> {
                     selected = selection.contains(&*item);
                 }
 
-                let active = self.store
+                let active = props.store.borrow()
                     .get_cursor().map(|cursor| cursor == filtered_pos)
                     .unwrap_or(false);
 
@@ -558,7 +539,7 @@ impl<T: 'static> PwtDataTable<T> {
 
     fn render_scroll_content(
         &self,
-        props: &DataTable<T>,
+        props: &DataTable<T, S>,
     ) -> Html {
 
         let table = self.render_table(props, self.scroll_info.offset, self.scroll_info.start, self.scroll_info.end);
@@ -586,9 +567,9 @@ impl<T: 'static> PwtDataTable<T> {
 
     fn update_scroll_info(
         &mut self,
-        props: &DataTable<T>,
+        props: &DataTable<T, S>,
     ) {
-        let row_count = self.store.filtered_data_len();
+        let row_count = props.store.borrow().filtered_data_len();
 
         let mut start = if self.virtual_scroll {
             self.scroll_top / self.row_height
@@ -614,28 +595,20 @@ impl<T: 'static> PwtDataTable<T> {
     }
 }
 
-impl <T: 'static> Component for PwtDataTable<T> {
+impl <T: 'static, S: DataCollection<T> + 'static> Component for PwtDataTable<T, S> {
 
     type Message = Msg<T>;
-    type Properties = DataTable<T>;
+    type Properties = DataTable<T, S>;
 
     fn create(ctx: &Context<Self>) -> Self {
         let props = ctx.props();
 
         let headers = create_indexed_header_list(&props.headers);
 
-        let mut store = TreeFilter::new(props.extract_key.clone());
-
-        if props.root.is_some() {
-            store.set_data(props.root.clone()) // fixme: clone?
-        } else {
-            store.set_data_list(props.data.clone());
-        }
-
         // fixme: set cursor to first selected item
         //.cursor(props.selection)
 
-        store.set_cursor(Some(0));
+        props.store.borrow_mut().set_cursor(Some(0));
 
         // fixme: remove
         let mut columns = Vec::new();
@@ -651,14 +624,15 @@ impl <T: 'static> Component for PwtDataTable<T> {
             props.cell_class.clone()
         };
 
-        let row_count = props.data.as_ref().map(|data| data.len()).unwrap_or(0);
+        //let row_count = props.data.as_ref().map(|data| data.len()).unwrap_or(0);
+        let row_count = props.store.borrow().filtered_data_len();
         let virtual_scroll = props.virtual_scroll.unwrap_or(row_count >= VIRTUAL_SCROLL_TRIGGER);
 
         let mut me = Self {
+             _phantom_store: PhantomData::<S>,
             headers: Rc::new(headers),
             unique_id: get_unique_element_id(),
             has_focus: false,
-            store,
             columns,
             column_widths: Vec::new(),
             column_hidden: Vec::new(),
@@ -736,21 +710,21 @@ impl <T: 'static> Component for PwtDataTable<T> {
                     }
                     35 => {
                         // end
-                        self.store.set_cursor(None);
-                        self.store.cursor_up();
+                        props.store.borrow_mut().set_cursor(None);
+                        props.store.borrow_mut().cursor_up();
                         self.scroll_cursor_into_view(props, web_sys::ScrollLogicalPosition::Nearest);
                         return true;
                     }
                     36 => {
                         // pos1
-                        self.store.set_cursor(None);
-                        self.store.cursor_down();
+                        props.store.borrow_mut().set_cursor(None);
+                        props.store.borrow_mut().cursor_down();
                         self.scroll_cursor_into_view(props, web_sys::ScrollLogicalPosition::Nearest);
                         return true;
                     }
                     13 => {
                         // Return - same behavior as rowdblclick
-                        let cursor = match self.store.get_cursor() {
+                        let cursor = match props.store.borrow().get_cursor() {
                             Some(cursor) => cursor,
                             None => return false,
                         };
@@ -778,27 +752,27 @@ impl <T: 'static> Component for PwtDataTable<T> {
             }
             Msg::CursorDown(shift, _ctrl) => {
                 if shift { self.select_cursor(props, shift, false); }
-                self.store.cursor_down();
+                props.store.borrow_mut().cursor_down();
                 if shift { self.select_cursor(props, shift, false); }
                 self.scroll_cursor_into_view(props, web_sys::ScrollLogicalPosition::Nearest);
                 true
             }
             Msg::CursorUp(shift, _ctrl) => {
                 if shift { self.select_cursor(props, shift, false); }
-                self.store.cursor_up();
+                props.store.borrow_mut().cursor_up();
                 if shift { self.select_cursor(props, shift, false); }
                 self.scroll_cursor_into_view(props, web_sys::ScrollLogicalPosition::Nearest);
                 true
             }
             Msg::ItemClick(record_key, shift, ctrl) => {
-                let last_cursor = self.store.get_cursor();
-                let new_cursor = self.store.filtered_record_pos(&record_key);
+                let last_cursor = props.store.borrow().get_cursor();
+                let new_cursor = props.store.borrow().filtered_record_pos(&record_key);
 
-                self.store.set_cursor(new_cursor);
+                props.store.borrow_mut().set_cursor(new_cursor);
 
                 if shift || ctrl {
                     if let Some(selection) = &props.selection {
-                        self.select_range(selection, last_cursor, new_cursor, shift, ctrl);
+                        self.select_range(props, selection, last_cursor, new_cursor, shift, ctrl);
                     }
                 }
 
@@ -809,7 +783,7 @@ impl <T: 'static> Component for PwtDataTable<T> {
                 true
             }
             Msg::ItemDblClick(record_key) => {
-                self.store.set_cursor(self.store.filtered_record_pos(&record_key));
+                props.store.borrow_mut().set_cursor(props.store.borrow().filtered_record_pos(&record_key));
                 self.select_cursor(props, false, false);
 
                 if let Some(callback) = &props.onrowdblclick {
@@ -826,7 +800,7 @@ impl <T: 'static> Component for PwtDataTable<T> {
                 true
             }
             Msg::ChangeSort(sorter_fn) => {
-                self.store.set_sorter(sorter_fn);
+                props.store.borrow_mut().set_sorter(sorter_fn);
                 true
             }
             Msg::ColumnHiddenChange(column_hidden) => {
@@ -839,10 +813,10 @@ impl <T: 'static> Component for PwtDataTable<T> {
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
 
-        let row_count = self.store.filtered_data_len();
+        let row_count = props.store.borrow().filtered_data_len();
 
         let mut active_descendant = None;
-        if let Some(cursor) = self.store.get_cursor() {
+        if let Some(cursor) = props.store.borrow().get_cursor() {
             if let Some(record_key) = self.lookup_cursor_record_key(props, cursor) {
                 active_descendant = Some(self.get_unique_item_id(&record_key));
             }
@@ -926,13 +900,8 @@ impl <T: 'static> Component for PwtDataTable<T> {
     fn changed(&mut self, ctx: &Context<Self>, old_props: &Self::Properties) -> bool {
         let props = ctx.props();
 
-        if !optional_rc_ptr_eq(&props.data, &old_props.data) { // data changed
-            self.store.set_data_list(props.data.clone());
-        }
-
-        if !optional_list_rc_ptr_eq(&props.root, &old_props.root) { // root changed
-            self.store.set_data(props.root.clone()) // fixme: clone?
-        }
+        //if !Rc::ptr_eq(&props.store, &old_props.store) { // store changed
+        //}
 
         true
     }
@@ -966,10 +935,10 @@ impl <T: 'static> Component for PwtDataTable<T> {
     }
 }
 
-impl<T: 'static> Into<VNode> for DataTable<T> {
+impl<T: 'static, S: DataCollection<T> + 'static> Into<VNode> for DataTable<T, S> {
     fn into(self) -> VNode {
         let key = self.key.clone();
-        let comp = VComp::new::<PwtDataTable<T>>(Rc::new(self), key);
+        let comp = VComp::new::<PwtDataTable<T, S>>(Rc::new(self), key);
         VNode::from(comp)
     }
 }

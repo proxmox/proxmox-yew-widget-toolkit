@@ -186,14 +186,14 @@ impl<T> DataCollection<T> for TreeFilter<T> {
 
 impl <T> TreeFilter<T> {
 
-    pub fn new(extract_key: ExtractKeyFn<T>) -> Self {
+    pub fn new(extract_key: impl Into<ExtractKeyFn<T>>) -> Self {
         Self {
             data: None,
             filtered_data: Vec::new(),
             sorter: None,
             filter: None,
             cursor: None,
-            extract_key,
+            extract_key: extract_key.into(),
         }
     }
 
