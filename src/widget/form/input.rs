@@ -36,7 +36,7 @@ impl Into<VTag> for Input {
         self.input_props.cumulate_attributes(attr_map);
 
         let value = attr_map.get(&AttrValue::Static("value")).map(|a| a.0.clone());
-        let checked = attr_map.get(&AttrValue::Static("checked")).is_some();
+        let checked = attr_map.get(&AttrValue::Static("checked")).is_some().then(|| true);
 
         let listeners = Listeners::Pending(
             self.listeners.listeners.into_boxed_slice()
