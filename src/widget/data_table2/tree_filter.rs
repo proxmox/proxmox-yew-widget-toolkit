@@ -1,11 +1,13 @@
 use std::rc::Rc;
+use std::cell::RefCell;
+
 use std::ops::Range;
 
 use yew::html::IntoPropValue;
 use yew::virtual_dom::Key;
 //use crate::props::{ExtractKeyFn, IntoExtractKeyFn};
 use crate::props::{ExtractKeyFn, FilterFn, IntoFilterFn, SorterFn, IntoSorterFn};
-use super::{TreeNode, FlatTreeNode, ToFlatNodeList};
+use super::TreeNode;
 
 pub fn optional_list_rc_ptr_eq<T>(a: &Option<Vec<Rc<T>>>, b: &Option<Vec<Rc<T>>>) -> bool {
     match (a, b) {
@@ -22,43 +24,52 @@ pub fn optional_list_rc_ptr_eq<T>(a: &Option<Vec<Rc<T>>>, b: &Option<Vec<Rc<T>>>
 }
 
 pub struct TreeFilter<T> {
-    data: Option<Vec<Rc<TreeNode<T>>>>,
-    filtered_data: Vec<FlatTreeNode<T>>,
-    sorter: Option<SorterFn<FlatTreeNode<T>>>,
-    filter: Option<FilterFn<FlatTreeNode<T>>>,
+    data: Option<Vec<Rc<RefCell<TreeNode<T>>>>>,
+    filtered_data: Vec<Rc<RefCell<TreeNode<T>>>>,
+    sorter: Option<SorterFn<TreeNode<T>>>,
+    filter: Option<FilterFn<TreeNode<T>>>,
     cursor: Option<usize>,
+    extract_key: ExtractKeyFn<T>,
 }
 
 pub fn flatten_tree_children<T>(
-    list: &mut Vec<FlatTreeNode<T>>,
+    list: &mut Vec<Rc<RefCell<TreeNode<T>>>>,
     level: usize,
     parent: Option<usize>,
-    children: &[Rc<TreeNode<T>>],
-    sorter: &Option<SorterFn<FlatTreeNode<T>>>,
-    filter: &Option<FilterFn<FlatTreeNode<T>>>,
+    children: &[Rc<RefCell<TreeNode<T>>>],
+    sorter: &Option<SorterFn<TreeNode<T>>>,
+    filter: &Option<FilterFn<TreeNode<T>>>,
 ) {
 
-    let mut children: Vec<FlatTreeNode<T>> = children.iter()
-        .map(|child| FlatTreeNode { parent, level, node: child.clone() })
+    let mut children: Vec<Rc<RefCell<TreeNode<T>>>> = children.iter()
         .filter(|item| match filter {
-            Some(filter) => filter.apply(0, item), // fixme: remove fiter record_num param
+            Some(filter) => filter.apply(0, &item.borrow()), // fixme: remove fiter record_num param
             None => true,
+        })
+        .map(|child| {
+            {
+                let mut child = child.borrow_mut();
+                child.level = level;
+                child.parent = parent;
+            }
+            Rc::clone(child)
         })
         .collect();
 
     if let Some(sorter) = sorter {
-        children.sort_by(|a, b| { sorter.cmp(a, b) });
+        children.sort_by(|a, b| { sorter.cmp(&a.borrow(), &b.borrow()) });
     }
 
     for subtree in children {
-        if subtree.node.expanded {
-            let subtree_node = Rc::clone(&subtree.node);
-            list.push(subtree);
-            if let Some(subtree_children) = &subtree_node.children {
+        let subtree_clone = subtree.clone();
+        let subtree = subtree.borrow();
+        if subtree.expanded {
+            list.push(subtree_clone);
+            if let Some(subtree_children) = &subtree.children {
                 flatten_tree_children(list, level + 1,  Some(list.len() - 1), subtree_children, sorter, filter);
             }
         } else {
-            list.push(subtree);
+            list.push(subtree_clone);
         }
     }
 }
@@ -71,13 +82,14 @@ pub struct TreeFilterIterator<'a, T> {
 
 impl <T> TreeFilter<T> {
 
-    pub fn new() -> Self {
+    pub fn new(extract_key: ExtractKeyFn<T>) -> Self {
         Self {
             data: None,
             filtered_data: Vec::new(),
             sorter: None,
             filter: None,
             cursor: None,
+            extract_key,
         }
     }
 
@@ -85,7 +97,7 @@ impl <T> TreeFilter<T> {
         self.set_data_list(list);
         self
     }
-    
+
     pub fn set_data_list(&mut self, list: impl IntoPropValue<Option<Rc<Vec<Rc<T>>>>>) {
         let list = list.into_prop_value();
         let children = list.map(|data| {
@@ -94,18 +106,20 @@ impl <T> TreeFilter<T> {
                     record: record.clone(),
                     expanded: false,
                     children: None,
+                    parent: None,
+                    level: 0,
                 })
-                .fold(Vec::new(), |mut acc, node| { acc.push(Rc::new(node)); acc })
+                .fold(Vec::new(), |mut acc, node| { acc.push(Rc::new(RefCell::new(node))); acc })
         });
         self.set_data(children);
     }
-    
-    pub fn data(mut self, data: impl IntoPropValue<Option<Vec<Rc<TreeNode<T>>>>>) -> Self {
+
+    pub fn data(mut self, data: impl IntoPropValue<Option<Vec<Rc<RefCell<TreeNode<T>>>>>>) -> Self {
         self.set_data(data);
         self
     }
 
-    pub fn set_data(&mut self, data: impl IntoPropValue<Option<Vec<Rc<TreeNode<T>>>>>) {
+    pub fn set_data(&mut self, data: impl IntoPropValue<Option<Vec<Rc<RefCell<TreeNode<T>>>>>>) {
         let new_data = data.into_prop_value();
         if optional_list_rc_ptr_eq(&self.data, &new_data) { return; }
 
@@ -113,32 +127,32 @@ impl <T> TreeFilter<T> {
         self.update_filtered_data();
     }
 
-    pub fn sorter(mut self, sorter: impl IntoSorterFn<FlatTreeNode<T>>) -> Self {
+    pub fn sorter(mut self, sorter: impl IntoSorterFn<TreeNode<T>>) -> Self {
         self.set_sorter(sorter);
         self
     }
 
-    pub fn set_sorter(&mut self, sorter: impl IntoSorterFn<FlatTreeNode<T>>) {
+    pub fn set_sorter(&mut self, sorter: impl IntoSorterFn<TreeNode<T>>) {
         self.sorter = sorter.into_sorter_fn();
         self.update_filtered_data();
     }
 
-    pub fn filter(mut self, filter: impl IntoFilterFn<FlatTreeNode<T>>) -> Self {
+    pub fn filter(mut self, filter: impl IntoFilterFn<TreeNode<T>>) -> Self {
         self.set_filter(filter);
         self
     }
 
-    pub fn set_filter(&mut self, filter: impl IntoFilterFn<FlatTreeNode<T>>) {
+    pub fn set_filter(&mut self, filter: impl IntoFilterFn<TreeNode<T>>) {
         self.filter = filter.into_filter_fn();
         self.update_filtered_data();
     }
 
-    pub fn lookup_filtered_record(&self, cursor: usize) -> Option<&FlatTreeNode<T>> {
+    pub fn lookup_filtered_record(&self, cursor: usize) -> Option<&Rc<RefCell<TreeNode<T>>>> {
         self.filtered_data.get(cursor)
     }
 
-    pub fn filtered_record_pos(&self, key: &Key, extract_key: &ExtractKeyFn<T>) -> Option<usize> {
-        self.filtered_data.iter().position(|item| key == &extract_key.apply(&item.node.record))
+    pub fn filtered_record_pos(&self, key: &Key) -> Option<usize> {
+        self.filtered_data.iter().position(|item| key == &self.extract_key.apply(&item.borrow().record))
     }
 
     pub fn filtered_data_len(&self) -> usize {
@@ -147,8 +161,9 @@ impl <T> TreeFilter<T> {
 
     fn update_filtered_data(&mut self) {
 
-        let old_cursor_record = if let Some(cursor) = self.cursor {
+        let old_cursor_record_key = if let Some(cursor) = self.cursor {
             self.lookup_filtered_record(cursor)
+                .map(|item| self.extract_key.apply(&item.borrow().record))
         } else {
             None
         };
@@ -165,10 +180,11 @@ impl <T> TreeFilter<T> {
         let mut list = Vec::new();
         flatten_tree_children(&mut list, 0, None, data, &self.sorter, &self.filter);
 
-        let new_cursor = match &old_cursor_record {
-            Some(record) => list.iter().position(|item| Rc::ptr_eq(&item.node, &record.node)),
+        let new_cursor = match &old_cursor_record_key {
+            Some(record_key) => self.filtered_record_pos(record_key),
             None => None,
         };
+
         self.cursor = new_cursor;
         self.filtered_data = list;
 
@@ -240,12 +256,11 @@ impl <T> TreeFilter<T> {
 }
 
 impl <'a, T> Iterator for TreeFilterIterator<'a, T> {
-    type Item = (usize, &'a FlatTreeNode<T>);
+    type Item = (usize, &'a Rc<RefCell<TreeNode<T>>>);
 
     fn next(&mut self) -> Option<Self::Item> {
-        let data = match &self.data.data {
-            Some(data) => data,
-            None => return None,
+        if self.data.data.is_none() {
+            return None;
         };
 
         if let Some(range) = &self.range {

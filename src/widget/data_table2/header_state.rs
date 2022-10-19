@@ -3,7 +3,7 @@ use std::cmp::Ordering;
 
 use crate::props::SorterFn;
 
-use super::{IndexedHeader, IndexedHeaderSingle, FlatTreeNode};
+use super::{IndexedHeader, IndexedHeaderSingle, TreeNode};
 
 struct CellState {
     width: Option<f64>,
@@ -183,7 +183,7 @@ impl<T: 'static> HeaderState<T> {
         }
     }
 
-    pub fn create_combined_sorter_fn(&self) -> SorterFn<FlatTreeNode<T>> {
+    pub fn create_combined_sorter_fn(&self) -> SorterFn<TreeNode<T>> {
 
          let sorters: Vec<(SorterFn<T>, bool)> = self.columns
             .iter()
@@ -198,7 +198,7 @@ impl<T: 'static> HeaderState<T> {
             })
             .collect();
 
-        SorterFn::new(move |a: &FlatTreeNode<T>, b: &FlatTreeNode<T>| {
+        SorterFn::new(move |a: &TreeNode<T>, b: &TreeNode<T>| {
             for (sort_fn, ascending) in &sorters {
                 match if *ascending {
                     sort_fn.cmp(a.as_ref(), b.as_ref())

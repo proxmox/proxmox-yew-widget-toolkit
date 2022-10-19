@@ -4,7 +4,7 @@ use yew::html::IntoPropValue;
 use yew::virtual_dom::Key;
 
 use crate::props::{SorterFn, IntoSorterFn, RenderFn};
-use super::FlatTreeNode;
+use super::TreeNode;
 
 #[derive(Properties)]
 #[derive(Derivative)]
@@ -21,7 +21,7 @@ pub struct DataTableColumn<T> {
     #[prop_or(AttrValue::Static("left"))]
     pub justify: AttrValue, // left, center, right, justify
     /// Render function (returns cell content)
-    pub render_node: RenderFn<FlatTreeNode<T>>,
+    pub render_node: RenderFn<TreeNode<T>>,
     /// Sorter function.
     ///
     /// Need to be set to enable column sorting.
@@ -111,14 +111,14 @@ impl<T: 'static> DataTableColumn<T> {
     /// Builder style method to set the render function.
     pub fn render(mut self, render: impl Into<RenderFn<T>>) -> Self {
         let render = render.into();
-        self.render_node(move |node: &FlatTreeNode<T>| {
+        self.render_node(move |node: &TreeNode<T>| {
             let data: &T = node.as_ref();
             render.apply(data)
         })
     }
 
     /// Builder style method to set the render function.
-    pub fn render_node(mut self, render: impl Into<RenderFn<FlatTreeNode<T>>>) -> Self {
+    pub fn render_node(mut self, render: impl Into<RenderFn<TreeNode<T>>>) -> Self {
         self.render_node = render.into();
         self
     }

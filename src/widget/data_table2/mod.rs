@@ -17,7 +17,7 @@ mod tree;
 pub use tree::*;
 
 mod tree_filter;
-pub(crate) use tree_filter::{optional_list_rc_ptr_eq, TreeFilter, TreeFilterIterator};
+pub(crate) use tree_filter::{optional_list_rc_ptr_eq, TreeFilter};
 
 //mod header_menu;
 //pub(crate) use header_menu::HeaderMenu;

@@ -1,4 +1,5 @@
 use std::rc::Rc;
+use std::cell::RefCell;
 
 use derivative::Derivative;
 
@@ -14,10 +15,10 @@ use crate::widget::{get_unique_element_id, Container, Column, SizeObserver};
 use crate::state::optional_rc_ptr_eq;
 
 use super::{create_indexed_header_list, DataTableColumn, DataTableHeader, Header, IndexedHeader};
-use super::{optional_list_rc_ptr_eq, TreeNode, FlatTreeNode, ToFlatNodeList, TreeFilter};
+use super::{optional_list_rc_ptr_eq, TreeNode, TreeFilter};
 
 pub enum Msg<T: 'static> {
-    ChangeSort(SorterFn<FlatTreeNode<T>>),
+    ChangeSort(SorterFn<TreeNode<T>>),
     ColumnWidthChange(Vec<f64>),
     ColumnHiddenChange(Vec<bool>),
     ScrollTo(i32, i32),
@@ -51,8 +52,8 @@ pub struct DataTable<T: 'static> {
     #[derivative(PartialEq(compare_with="optional_rc_ptr_eq::<Vec<Rc<T>>>"))]
     pub data: Option<Rc<Vec<Rc<T>>>>,
 
-    #[derivative(PartialEq(compare_with="optional_list_rc_ptr_eq::<TreeNode<T>>"))]
-    pub root: Option<Vec<Rc<TreeNode<T>>>>,
+    #[derivative(PartialEq(compare_with="optional_list_rc_ptr_eq::<RefCell<TreeNode<T>>>"))]
+    pub root: Option<Vec<Rc<RefCell<TreeNode<T>>>>>,
 
     /// set class for table cells (default is "pwt-p-2")
     #[prop_or_default]
@@ -165,12 +166,12 @@ impl <T: 'static> DataTable<T> {
         self.data = data.into_prop_value();
     }
 
-    pub fn root(mut self, root: impl IntoPropValue<Option<Vec<Rc<TreeNode<T>>>>>) -> Self {
+    pub fn root(mut self, root: impl IntoPropValue<Option<Vec<Rc<RefCell<TreeNode<T>>>>>>) -> Self {
         self.set_root(root);
         self
     }
 
-    pub fn set_root(&mut self, root: impl IntoPropValue<Option<Vec<Rc<TreeNode<T>>>>>) {
+    pub fn set_root(&mut self, root: impl IntoPropValue<Option<Vec<Rc<RefCell<TreeNode<T>>>>>>) {
         self.root = root.into_prop_value();
     }
 
@@ -357,9 +358,9 @@ impl<T: 'static> PwtDataTable<T> {
     ) {
         if let Some(item) = self.store.lookup_filtered_record(cursor) {
             if ctrl {
-                selection.toggle(item);
+                selection.toggle(&*item.borrow());
             } else {
-                selection.select(item);
+                selection.select(&*item.borrow());
             }
         }
     }
@@ -408,9 +409,9 @@ impl<T: 'static> PwtDataTable<T> {
 
         if let Some(item) = self.store.lookup_filtered_record(cursor) {
             if ctrl {
-                selection.toggle(item);
+                selection.toggle(&*item.borrow());
             } else {
-                selection.select(item);
+                selection.select(&*item.borrow());
             }
             return true;
         }
@@ -419,7 +420,7 @@ impl<T: 'static> PwtDataTable<T> {
 
     fn lookup_cursor_record_key(&self, props: &DataTable<T>, cursor: usize) -> Option<Key> {
         if let Some(item) = self.store.lookup_filtered_record(cursor) {
-            Some(props.extract_key.apply(&item.node.record))
+            Some(props.extract_key.apply(&item.borrow().record))
         } else {
             None
         }
@@ -471,9 +472,9 @@ impl<T: 'static> PwtDataTable<T> {
         el.scroll_into_view_with_scroll_into_view_options(&options);
     }
 
-    fn render_row(&self, props: &DataTable<T>, item: &FlatTreeNode<T>, row_num: usize, selected: bool, active: bool) -> Html {
+    fn render_row(&self, props: &DataTable<T>, item: &TreeNode<T>, row_num: usize, selected: bool, active: bool) -> Html {
 
-        let record_key = props.extract_key.apply(&item.node.record);
+        let record_key = props.extract_key.apply(&item.record);
         let item_id = self.get_unique_item_id(&record_key);
 
         // Make sure our rows have a minimum height
@@ -536,16 +537,18 @@ impl<T: 'static> PwtDataTable<T> {
         if !self.column_widths.is_empty() {
             for (filtered_pos, item) in self.store.filtered_data_range(start..end) {
 
+                let item = item.borrow();
+
                 let mut selected = false;
                 if let Some(selection) = &props.selection {
-                    selected = selection.contains(item);
+                    selected = selection.contains(&*item);
                 }
 
                 let active = self.store
                     .get_cursor().map(|cursor| cursor == filtered_pos)
                     .unwrap_or(false);
 
-                let row = self.render_row(props, item, filtered_pos, selected, active);
+                let row = self.render_row(props, &item, filtered_pos, selected, active);
                 table.add_child(row);
             }
         }
@@ -621,7 +624,7 @@ impl <T: 'static> Component for PwtDataTable<T> {
 
         let headers = create_indexed_header_list(&props.headers);
 
-        let mut store = TreeFilter::new();
+        let mut store = TreeFilter::new(props.extract_key.clone());
 
         if props.root.is_some() {
             store.set_data(props.root.clone()) // fixme: clone?
@@ -789,7 +792,7 @@ impl <T: 'static> Component for PwtDataTable<T> {
             }
             Msg::ItemClick(record_key, shift, ctrl) => {
                 let last_cursor = self.store.get_cursor();
-                let new_cursor = self.store.filtered_record_pos(&record_key, &props.extract_key);
+                let new_cursor = self.store.filtered_record_pos(&record_key);
 
                 self.store.set_cursor(new_cursor);
 
@@ -806,7 +809,7 @@ impl <T: 'static> Component for PwtDataTable<T> {
                 true
             }
             Msg::ItemDblClick(record_key) => {
-                self.store.set_cursor(self.store.filtered_record_pos(&record_key, &props.extract_key));
+                self.store.set_cursor(self.store.filtered_record_pos(&record_key));
                 self.select_cursor(props, false, false);
 
                 if let Some(callback) = &props.onrowdblclick {
