@@ -15,7 +15,7 @@ use crate::widget::{get_unique_element_id, Container, Column, SizeObserver};
 use crate::state::optional_rc_ptr_eq;
 
 use super::{create_indexed_header_list, DataTableColumn, DataTableHeader, Header, IndexedHeader};
-use super::{optional_list_rc_ptr_eq, TreeNode, TreeFilter};
+use super::{optional_list_rc_ptr_eq, DataCollection, TreeNode, TreeFilter};
 
 pub enum Msg<T: 'static> {
     ChangeSort(SorterFn<TreeNode<T>>),

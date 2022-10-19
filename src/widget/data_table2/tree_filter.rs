@@ -23,6 +23,48 @@ pub fn optional_list_rc_ptr_eq<T>(a: &Option<Vec<Rc<T>>>, b: &Option<Vec<Rc<T>>>
     }
 }
 
+pub trait DataCollection<T> {
+    fn extract_key(&self, data: &T) -> Key;
+    fn set_sorter(&mut self, sorter: impl IntoSorterFn<TreeNode<T>>);
+    fn set_filter(&mut self, filter: impl IntoFilterFn<TreeNode<T>>);
+    fn lookup_filtered_record(&self, cursor: usize) -> Option<&Rc<RefCell<TreeNode<T>>>>;
+    fn filtered_record_pos(&self, key: &Key) -> Option<usize>;
+    fn filtered_data_len(&self) -> usize;
+
+    fn filtered_data<'a>(&'a self) -> Box<dyn Iterator<Item=(usize, &'a Rc<RefCell<TreeNode<T>>>)> + 'a>;
+    fn filtered_data_range<'a>(&'a self, range: Range<usize>) -> Box<dyn Iterator<Item=(usize, &'a Rc<RefCell<TreeNode<T>>>)> + 'a>;
+
+    // Cursor
+    fn get_cursor(&self) -> Option<usize>;
+    fn set_cursor(&mut self, cursor: Option<usize>);
+
+    fn cursor_down(&mut self) {
+        let len = self.filtered_data_len();
+        if len == 0 {
+            self.set_cursor(None);
+            return;
+        }
+        self.set_cursor(match self.get_cursor() {
+            Some(n) => if (n + 1) < len { Some(n + 1) }  else { Some(0) },
+            None => Some(0),
+        });
+    }
+
+    fn cursor_up(&mut self) {
+        let len = self.filtered_data_len();
+        if len == 0 {
+            self.set_cursor(None);
+            return;
+        }
+
+        self.set_cursor(match self.get_cursor() {
+            Some(n) => if n > 0 { Some(n - 1) } else { Some(len - 1) },
+            None => Some(len - 1),
+        });
+    }
+
+}
+
 pub struct TreeFilter<T> {
     data: Option<Vec<Rc<RefCell<TreeNode<T>>>>>,
     filtered_data: Vec<Rc<RefCell<TreeNode<T>>>>,
@@ -80,6 +122,68 @@ pub struct TreeFilterIterator<'a, T> {
     range: Option<Range<usize>>,
 }
 
+impl<T> DataCollection<T> for TreeFilter<T> {
+    fn extract_key(&self, data: &T) -> Key {
+        self.extract_key.apply(data)
+    }
+
+    fn set_sorter(&mut self, sorter: impl IntoSorterFn<TreeNode<T>>) {
+        self.sorter = sorter.into_sorter_fn();
+        self.update_filtered_data();
+    }
+
+    fn set_filter(&mut self, filter: impl IntoFilterFn<TreeNode<T>>) {
+        self.filter = filter.into_filter_fn();
+        self.update_filtered_data();
+    }
+
+    fn lookup_filtered_record(&self, cursor: usize) -> Option<&Rc<RefCell<TreeNode<T>>>> {
+        self.filtered_data.get(cursor)
+    }
+
+    fn filtered_record_pos(&self, key: &Key) -> Option<usize> {
+        self.filtered_data.iter().position(|item| key == &self.extract_key.apply(&item.borrow().record))
+    }
+
+    fn filtered_data_len(&self) -> usize {
+        self.filtered_data.len()
+    }
+
+    fn get_cursor(&self) -> Option<usize> {
+        self.cursor
+    }
+
+    fn set_cursor(&mut self, cursor: Option<usize>) {
+        self.cursor = match cursor {
+            Some(c) => {
+                let len = self.filtered_data_len();
+                if c < len {
+                    Some(c)
+                } else {
+                    None
+                }
+            }
+            None => None,
+        }
+    }
+
+    fn filtered_data<'a>(&'a self) -> Box<dyn Iterator<Item=(usize, &'a Rc<RefCell<TreeNode<T>>>)> + 'a> {
+        Box::new(TreeFilterIterator {
+            range: None,
+            pos: 0,
+            data: self,
+        })
+    }
+
+    fn filtered_data_range<'a>(&'a self, range: Range<usize>) -> Box<dyn Iterator<Item=(usize, &'a Rc<RefCell<TreeNode<T>>>)> + 'a> {
+        Box::new(TreeFilterIterator {
+            pos: range.start,
+            range: Some(range),
+            data: self,
+        })
+    }
+}
+
 impl <T> TreeFilter<T> {
 
     pub fn new(extract_key: ExtractKeyFn<T>) -> Self {
@@ -132,31 +236,9 @@ impl <T> TreeFilter<T> {
         self
     }
 
-    pub fn set_sorter(&mut self, sorter: impl IntoSorterFn<TreeNode<T>>) {
-        self.sorter = sorter.into_sorter_fn();
-        self.update_filtered_data();
-    }
-
     pub fn filter(mut self, filter: impl IntoFilterFn<TreeNode<T>>) -> Self {
         self.set_filter(filter);
         self
-    }
-
-    pub fn set_filter(&mut self, filter: impl IntoFilterFn<TreeNode<T>>) {
-        self.filter = filter.into_filter_fn();
-        self.update_filtered_data();
-    }
-
-    pub fn lookup_filtered_record(&self, cursor: usize) -> Option<&Rc<RefCell<TreeNode<T>>>> {
-        self.filtered_data.get(cursor)
-    }
-
-    pub fn filtered_record_pos(&self, key: &Key) -> Option<usize> {
-        self.filtered_data.iter().position(|item| key == &self.extract_key.apply(&item.borrow().record))
-    }
-
-    pub fn filtered_data_len(&self) -> usize {
-        self.filtered_data.len()
     }
 
     fn update_filtered_data(&mut self) {
@@ -190,10 +272,6 @@ impl <T> TreeFilter<T> {
 
     }
 
-    pub fn get_cursor(&self) -> Option<usize> {
-        self.cursor
-    }
-
     pub fn cursor(mut self, cursor: Option<usize>) -> Self {
         self.set_cursor(cursor);
         self
@@ -210,47 +288,6 @@ impl <T> TreeFilter<T> {
                 }
             }
             None => None,
-        }
-    }
-
-    pub fn cursor_down(&mut self) {
-        let len = self.filtered_data_len();
-        if len == 0 {
-            self.cursor = None;
-            return;
-        }
-        self.cursor = match self.cursor {
-            Some(n) => if (n + 1) < len { Some(n + 1) }  else { Some(0) },
-            None => Some(0),
-        };
-    }
-
-    pub fn cursor_up(&mut self) {
-        let len = self.filtered_data_len();
-        if len == 0 {
-            self.cursor = None;
-            return;
-        }
-
-        self.cursor = match self.cursor {
-            Some(n) => if n > 0 { Some(n - 1) } else { Some(len - 1) },
-            None => Some(len - 1),
-        };
-    }
-
-    pub fn filtered_data(&self) -> TreeFilterIterator<T> {
-        TreeFilterIterator {
-            range: None,
-            pos: 0,
-            data: self,
-        }
-    }
-
-    pub fn filtered_data_range(&self, range: Range<usize>) -> TreeFilterIterator<T> {
-        TreeFilterIterator {
-            pos: range.start,
-            range: Some(range),
-            data: self,
         }
     }
 }
