@@ -11,12 +11,11 @@ use yew::virtual_dom::{Key, VComp, VNode};
 use yew::html::{IntoEventCallback, IntoPropValue};
 
 use crate::prelude::*;
-use crate::props::{Selection2, SorterFn, ExtractKeyFn};
+use crate::props::{Selection2, SorterFn};
 use crate::widget::{get_unique_element_id, Container, Column, SizeObserver};
-use crate::state::optional_rc_ptr_eq;
 
 use super::{create_indexed_header_list, DataTableColumn, DataTableHeader, Header, IndexedHeader};
-use super::{optional_list_rc_ptr_eq, DataCollection, TreeNode, TreeFilter};
+use super::{DataCollection, DataNode, TreeNode, TreeFilter};
 
 pub enum Msg<T: 'static> {
     ChangeSort(SorterFn<TreeNode<T>>),
@@ -453,9 +452,8 @@ impl<T: 'static, S: DataCollection<T>> PwtDataTable<T, S> {
         el.scroll_into_view_with_scroll_into_view_options(&options);
     }
 
-    fn render_row(&self, props: &DataTable<T, S>, item: &TreeNode<T>, row_num: usize, selected: bool, active: bool) -> Html {
+    fn render_row(&self, props: &DataTable<T, S>, item: &dyn DataNode<T>, record_key: Key, row_num: usize, selected: bool, active: bool) -> Html {
 
-        let record_key = props.store.borrow().extract_key(&item.record);
         let item_id = self.get_unique_item_id(&record_key);
 
         // Make sure our rows have a minimum height
@@ -518,18 +516,18 @@ impl<T: 'static, S: DataCollection<T>> PwtDataTable<T, S> {
         if !self.column_widths.is_empty() {
             for (filtered_pos, item) in props.store.borrow().filtered_data_range(start..end) {
 
-                let item = item.borrow();
+                let record_key = props.store.borrow().extract_key(&*item.record());
 
                 let mut selected = false;
                 if let Some(selection) = &props.selection {
-                    selected = selection.contains(&*item);
+                    selected = selection.contains_key(&record_key);
                 }
 
                 let active = props.store.borrow()
                     .get_cursor().map(|cursor| cursor == filtered_pos)
                     .unwrap_or(false);
 
-                let row = self.render_row(props, &item, filtered_pos, selected, active);
+                let row = self.render_row(props, item.as_ref(), record_key, filtered_pos, selected, active);
                 table.add_child(row);
             }
         }
@@ -783,7 +781,8 @@ impl <T: 'static, S: DataCollection<T> + 'static> Component for PwtDataTable<T, 
                 true
             }
             Msg::ItemDblClick(record_key) => {
-                props.store.borrow_mut().set_cursor(props.store.borrow().filtered_record_pos(&record_key));
+                let cursor = props.store.borrow().filtered_record_pos(&record_key);
+                props.store.borrow_mut().set_cursor(cursor);
                 self.select_cursor(props, false, false);
 
                 if let Some(callback) = &props.onrowdblclick {
@@ -897,8 +896,8 @@ impl <T: 'static, S: DataCollection<T> + 'static> Component for PwtDataTable<T, 
             .into()
     }
 
-    fn changed(&mut self, ctx: &Context<Self>, old_props: &Self::Properties) -> bool {
-        let props = ctx.props();
+    fn changed(&mut self, _ctx: &Context<Self>, _old_props: &Self::Properties) -> bool {
+        //let props = ctx.props();
 
         //if !Rc::ptr_eq(&props.store, &old_props.store) { // store changed
         //}

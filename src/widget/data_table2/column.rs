@@ -4,7 +4,7 @@ use yew::html::IntoPropValue;
 use yew::virtual_dom::Key;
 
 use crate::props::{SorterFn, IntoSorterFn, RenderFn};
-use super::TreeNode;
+use super::{DataNode, RenderDataNode};
 
 #[derive(Properties)]
 #[derive(Derivative)]
@@ -21,7 +21,7 @@ pub struct DataTableColumn<T> {
     #[prop_or(AttrValue::Static("left"))]
     pub justify: AttrValue, // left, center, right, justify
     /// Render function (returns cell content)
-    pub render_node: RenderFn<TreeNode<T>>,
+    pub render_node: RenderDataNode<T>,
     /// Sorter function.
     ///
     /// Need to be set to enable column sorting.
@@ -43,7 +43,7 @@ impl<T: 'static> DataTableColumn<T> {
     pub fn new(name: impl Into<AttrValue>) -> Self {
         yew::props!(Self {
             name: name.into(),
-            render_node: RenderFn::new(|_| html!{ "-" }),
+            render_node: RenderDataNode::new(|_| html!{ "-" }),
         })
     }
 
@@ -109,16 +109,15 @@ impl<T: 'static> DataTableColumn<T> {
     }
 
     /// Builder style method to set the render function.
-    pub fn render(mut self, render: impl Into<RenderFn<T>>) -> Self {
+    pub fn render(self, render: impl Into<RenderFn<T>>) -> Self {
         let render = render.into();
-        self.render_node(move |node: &TreeNode<T>| {
-            let data: &T = node.as_ref();
-            render.apply(data)
+        self.render_node(move |node: &dyn DataNode<T>| {
+            render.apply(&*node.record())
         })
     }
 
     /// Builder style method to set the render function.
-    pub fn render_node(mut self, render: impl Into<RenderFn<TreeNode<T>>>) -> Self {
+    pub fn render_node(mut self, render: impl Into<RenderDataNode<T>>) -> Self {
         self.render_node = render.into();
         self
     }

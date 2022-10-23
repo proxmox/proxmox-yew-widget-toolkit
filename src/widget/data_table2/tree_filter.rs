@@ -2,6 +2,7 @@ use std::rc::Rc;
 use std::cell::RefCell;
 
 use std::ops::Range;
+use std::ops::Deref;
 
 use yew::html::IntoPropValue;
 use yew::virtual_dom::Key;
@@ -23,6 +24,29 @@ pub fn optional_list_rc_ptr_eq<T>(a: &Option<Vec<Rc<T>>>, b: &Option<Vec<Rc<T>>>
     }
 }
 
+pub trait ExtractPrimaryKey {
+    fn extract_key(&self) -> Key;
+}
+
+pub struct DataNodeDerefGuard<'a, T> {
+    pub(crate) guard: Box<(dyn Deref<Target=T> + 'a)>,
+}
+
+impl<T> Deref for DataNodeDerefGuard<'_, T> {
+    type Target = T;
+
+    fn deref(&self) -> &T {
+        &self.guard
+     }
+}
+
+pub trait DataNode<T> {
+    fn record(&self) -> DataNodeDerefGuard<T>;
+    fn level(&self) -> usize;
+    fn expanded(&self) -> bool;
+    fn parent(&self) -> Option<Box<dyn DataNode<T> + '_>>;
+}
+
 pub trait DataCollection<T> {
     fn extract_key(&self, data: &T) -> Key;
     fn set_sorter(&mut self, sorter: impl IntoSorterFn<TreeNode<T>>);
@@ -31,8 +55,10 @@ pub trait DataCollection<T> {
     fn filtered_record_pos(&self, key: &Key) -> Option<usize>;
     fn filtered_data_len(&self) -> usize;
 
-    fn filtered_data<'a>(&'a self) -> Box<dyn Iterator<Item=(usize, &'a Rc<RefCell<TreeNode<T>>>)> + 'a>;
-    fn filtered_data_range<'a>(&'a self, range: Range<usize>) -> Box<dyn Iterator<Item=(usize, &'a Rc<RefCell<TreeNode<T>>>)> + 'a>;
+    fn filtered_data<'a>(&'a self) ->
+        Box<dyn Iterator<Item=(usize, Rc<dyn DataNode<T> + 'a>)> + 'a> { todo!(); }
+    fn filtered_data_range<'a>(&'a self, range: Range<usize>) ->
+        Box<dyn Iterator<Item=(usize, Rc<dyn DataNode<T> + 'a>)> + 'a>;
 
     // Cursor
     fn get_cursor(&self) -> Option<usize>;
@@ -122,7 +148,7 @@ pub struct TreeFilterIterator<'a, T> {
     range: Option<Range<usize>>,
 }
 
-impl<T> DataCollection<T> for TreeFilter<T> {
+impl<T: 'static> DataCollection<T> for TreeFilter<T> {
     fn extract_key(&self, data: &T) -> Key {
         self.extract_key.apply(data)
     }
@@ -167,7 +193,9 @@ impl<T> DataCollection<T> for TreeFilter<T> {
         }
     }
 
-    fn filtered_data<'a>(&'a self) -> Box<dyn Iterator<Item=(usize, &'a Rc<RefCell<TreeNode<T>>>)> + 'a> {
+    fn filtered_data<'a>(
+        &'a self,
+    ) -> Box<dyn Iterator<Item=(usize, Rc<dyn DataNode<T> + 'a>)> + 'a> {
         Box::new(TreeFilterIterator {
             range: None,
             pos: 0,
@@ -175,7 +203,10 @@ impl<T> DataCollection<T> for TreeFilter<T> {
         })
     }
 
-    fn filtered_data_range<'a>(&'a self, range: Range<usize>) -> Box<dyn Iterator<Item=(usize, &'a Rc<RefCell<TreeNode<T>>>)> + 'a> {
+    fn filtered_data_range<'a>(
+        &'a self,
+        range: Range<usize>,
+    ) -> Box<dyn Iterator<Item=(usize, Rc<dyn DataNode<T> + 'a>)> + 'a> {
         Box::new(TreeFilterIterator {
             pos: range.start,
             range: Some(range),
@@ -184,7 +215,7 @@ impl<T> DataCollection<T> for TreeFilter<T> {
     }
 }
 
-impl <T> TreeFilter<T> {
+impl <T: 'static> TreeFilter<T> {
 
     pub fn new(extract_key: impl Into<ExtractKeyFn<T>>) -> Self {
         Self {
@@ -292,8 +323,8 @@ impl <T> TreeFilter<T> {
     }
 }
 
-impl <'a, T> Iterator for TreeFilterIterator<'a, T> {
-    type Item = (usize, &'a Rc<RefCell<TreeNode<T>>>);
+impl <'a, T: 'static> Iterator for TreeFilterIterator<'a, T> {
+    type Item = (usize, Rc<dyn DataNode<T> + 'a>);
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.data.data.is_none() {
@@ -313,6 +344,6 @@ impl <'a, T> Iterator for TreeFilterIterator<'a, T> {
         let pos = self.pos;
         self.pos += 1;
 
-        Some((pos, &self.data.filtered_data[pos]))
+        Some((pos, self.data.filtered_data[pos].clone()))
     }
 }
