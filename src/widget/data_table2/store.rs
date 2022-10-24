@@ -6,7 +6,9 @@ use std::ops::{Deref, DerefMut};
 use derivative::Derivative;
 
 use crate::props::ExtractKeyFn;
-use super::{DataCollection, DataNode, DataNodeDerefGuard, ExtractPrimaryKey};
+use crate::state::{DataCollection, DataNode, DataNodeDerefGuard};
+
+use super::ExtractPrimaryKey;
 
 
 /// Shared list store.

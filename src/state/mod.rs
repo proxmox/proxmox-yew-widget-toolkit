@@ -1,5 +1,8 @@
 //! State management helpers
 
+mod collection;
+pub use collection::{DataCollection, DataNode, DataNodeDerefGuard};
+
 mod data_filter;
 pub use data_filter::{optional_rc_ptr_eq, DataFilter};
 

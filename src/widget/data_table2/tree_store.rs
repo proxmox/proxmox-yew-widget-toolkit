@@ -6,10 +6,9 @@ use derivative::Derivative;
 
 //use crate::props::{ExtractKeyFn, SorterFn};
 use crate::props::ExtractKeyFn;
+use crate::state::{DataCollection, DataNode, DataNodeDerefGuard};
 
-use super::SlabTree;
-
-use super::{DataCollection, DataNode, DataNodeDerefGuard, ExtractPrimaryKey};
+use super::{SlabTree, ExtractPrimaryKey};
 
 /// Shared tree store.
 #[derive(Derivative)]

@@ -3,7 +3,7 @@ use std::cell::RefCell;
 
 use serde::{Serialize, Deserialize};
 
-use super::{DataNode, DataNodeDerefGuard};
+use crate::state::{DataNode, DataNodeDerefGuard};
 
 impl<T> DataNode<T> for RefCell<TreeNode<T>> {
 

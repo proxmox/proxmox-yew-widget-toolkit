@@ -16,7 +16,6 @@ use crate::widget::{get_unique_element_id, Container, Fa, Menu, MenuEvent, MenuI
 use super::{
     IndexedHeader, IndexedHeaderSingle, IndexedHeaderGroup,
     HeaderState, ResizableHeader,
-    TreeNode,
 };
 
 #[derive(Properties)]
@@ -30,7 +29,7 @@ pub struct DataTableHeader<T: 'static> {
 
     pub on_size_change: Option<Callback<Vec<f64>>>,
     pub on_hidden_change: Option<Callback<Vec<bool>>>,
-    pub on_sort_change: Option<Callback<SorterFn<TreeNode<T>>>>,
+    pub on_sort_change: Option<Callback<SorterFn<T>>>,
 
     /// set class for header cells
     #[prop_or_default]
@@ -71,7 +70,7 @@ impl<T: 'static> DataTableHeader<T> {
     /// Builder style method to set the sort change callback
     ///
     /// Callback partameters: (column_num, ctrl, order)
-    pub fn on_sort_change(mut self, cb: impl IntoEventCallback<SorterFn<TreeNode<T>>>) -> Self {
+    pub fn on_sort_change(mut self, cb: impl IntoEventCallback<SorterFn<T>>) -> Self {
         self.on_sort_change = cb.into_event_callback();
         self
     }

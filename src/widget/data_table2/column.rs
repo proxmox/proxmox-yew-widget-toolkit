@@ -3,8 +3,8 @@ use yew::prelude::*;
 use yew::html::IntoPropValue;
 use yew::virtual_dom::Key;
 
-use crate::props::{SorterFn, IntoSorterFn, RenderFn};
-use super::{DataNode, RenderDataNode};
+use crate::props::{SorterFn, IntoSorterFn, RenderFn, RenderDataNode};
+use crate::state::DataNode;
 
 #[derive(Properties)]
 #[derive(Derivative)]

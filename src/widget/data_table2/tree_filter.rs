@@ -8,6 +8,7 @@ use yew::html::IntoPropValue;
 use yew::virtual_dom::Key;
 //use crate::props::{ExtractKeyFn, IntoExtractKeyFn};
 use crate::props::{ExtractKeyFn, FilterFn, IntoFilterFn, SorterFn, IntoSorterFn};
+use crate::state::{DataCollection, DataNode, DataNodeDerefGuard};
 use super::TreeNode;
 
 pub fn optional_list_rc_ptr_eq<T>(a: &Option<Vec<Rc<T>>>, b: &Option<Vec<Rc<T>>>) -> bool {
@@ -28,74 +29,11 @@ pub trait ExtractPrimaryKey {
     fn extract_key(&self) -> Key;
 }
 
-pub struct DataNodeDerefGuard<'a, T> {
-    pub(crate) guard: Box<(dyn Deref<Target=T> + 'a)>,
-}
-
-impl<T> Deref for DataNodeDerefGuard<'_, T> {
-    type Target = T;
-
-    fn deref(&self) -> &T {
-        &self.guard
-     }
-}
-
-pub trait DataNode<T> {
-    fn record(&self) -> DataNodeDerefGuard<T>;
-    fn level(&self) -> usize;
-    fn expanded(&self) -> bool;
-    fn parent(&self) -> Option<Box<dyn DataNode<T> + '_>>;
-}
-
-pub trait DataCollection<T> {
-    fn extract_key(&self, data: &T) -> Key;
-    fn set_sorter(&mut self, sorter: impl IntoSorterFn<TreeNode<T>>);
-    fn set_filter(&mut self, filter: impl IntoFilterFn<TreeNode<T>>);
-    fn lookup_filtered_record(&self, cursor: usize) -> Option<&Rc<RefCell<TreeNode<T>>>>;
-    fn filtered_record_pos(&self, key: &Key) -> Option<usize>;
-    fn filtered_data_len(&self) -> usize;
-
-    fn filtered_data<'a>(&'a self) ->
-        Box<dyn Iterator<Item=(usize, Rc<dyn DataNode<T> + 'a>)> + 'a> { todo!(); }
-    fn filtered_data_range<'a>(&'a self, range: Range<usize>) ->
-        Box<dyn Iterator<Item=(usize, Rc<dyn DataNode<T> + 'a>)> + 'a>;
-
-    // Cursor
-    fn get_cursor(&self) -> Option<usize>;
-    fn set_cursor(&mut self, cursor: Option<usize>);
-
-    fn cursor_down(&mut self) {
-        let len = self.filtered_data_len();
-        if len == 0 {
-            self.set_cursor(None);
-            return;
-        }
-        self.set_cursor(match self.get_cursor() {
-            Some(n) => if (n + 1) < len { Some(n + 1) }  else { Some(0) },
-            None => Some(0),
-        });
-    }
-
-    fn cursor_up(&mut self) {
-        let len = self.filtered_data_len();
-        if len == 0 {
-            self.set_cursor(None);
-            return;
-        }
-
-        self.set_cursor(match self.get_cursor() {
-            Some(n) => if n > 0 { Some(n - 1) } else { Some(len - 1) },
-            None => Some(len - 1),
-        });
-    }
-
-}
-
 pub struct TreeFilter<T> {
     data: Option<Vec<Rc<RefCell<TreeNode<T>>>>>,
     filtered_data: Vec<Rc<RefCell<TreeNode<T>>>>,
-    sorter: Option<SorterFn<TreeNode<T>>>,
-    filter: Option<FilterFn<TreeNode<T>>>,
+    sorter: Option<SorterFn<T>>,
+    filter: Option<FilterFn<T>>,
     cursor: Option<usize>,
     extract_key: ExtractKeyFn<T>,
 }
@@ -105,13 +43,13 @@ pub fn flatten_tree_children<T>(
     level: usize,
     parent: Option<usize>,
     children: &[Rc<RefCell<TreeNode<T>>>],
-    sorter: &Option<SorterFn<TreeNode<T>>>,
-    filter: &Option<FilterFn<TreeNode<T>>>,
+    sorter: &Option<SorterFn<T>>,
+    filter: &Option<FilterFn<T>>,
 ) {
 
     let mut children: Vec<Rc<RefCell<TreeNode<T>>>> = children.iter()
         .filter(|item| match filter {
-            Some(filter) => filter.apply(0, &item.borrow()), // fixme: remove fiter record_num param
+            Some(filter) => filter.apply(0, &item.borrow().record), // fixme: remove fiter record_num param
             None => true,
         })
         .map(|child| {
@@ -125,7 +63,7 @@ pub fn flatten_tree_children<T>(
         .collect();
 
     if let Some(sorter) = sorter {
-        children.sort_by(|a, b| { sorter.cmp(&a.borrow(), &b.borrow()) });
+        children.sort_by(|a, b| { sorter.cmp(&a.borrow().record, &b.borrow().record) });
     }
 
     for subtree in children {
@@ -153,18 +91,20 @@ impl<T: 'static> DataCollection<T> for TreeFilter<T> {
         self.extract_key.apply(data)
     }
 
-    fn set_sorter(&mut self, sorter: impl IntoSorterFn<TreeNode<T>>) {
+    fn set_sorter(&mut self, sorter: impl IntoSorterFn<T>) {
         self.sorter = sorter.into_sorter_fn();
         self.update_filtered_data();
     }
 
-    fn set_filter(&mut self, filter: impl IntoFilterFn<TreeNode<T>>) {
+    fn set_filter(&mut self, filter: impl IntoFilterFn<T>) {
         self.filter = filter.into_filter_fn();
         self.update_filtered_data();
     }
 
-    fn lookup_filtered_record(&self, cursor: usize) -> Option<&Rc<RefCell<TreeNode<T>>>> {
-        self.filtered_data.get(cursor)
+    fn lookup_filtered_record_key(&self, cursor: usize) -> Option<Key> {
+        self.filtered_data.get(cursor).map(|node| {
+            self.extract_key.apply(&node.borrow().record)
+        })
     }
 
     fn filtered_record_pos(&self, key: &Key) -> Option<usize> {
@@ -262,12 +202,12 @@ impl <T: 'static> TreeFilter<T> {
         self.update_filtered_data();
     }
 
-    pub fn sorter(mut self, sorter: impl IntoSorterFn<TreeNode<T>>) -> Self {
+    pub fn sorter(mut self, sorter: impl IntoSorterFn<T>) -> Self {
         self.set_sorter(sorter);
         self
     }
 
-    pub fn filter(mut self, filter: impl IntoFilterFn<TreeNode<T>>) -> Self {
+    pub fn filter(mut self, filter: impl IntoFilterFn<T>) -> Self {
         self.set_filter(filter);
         self
     }
@@ -275,8 +215,7 @@ impl <T: 'static> TreeFilter<T> {
     fn update_filtered_data(&mut self) {
 
         let old_cursor_record_key = if let Some(cursor) = self.cursor {
-            self.lookup_filtered_record(cursor)
-                .map(|item| self.extract_key.apply(&item.borrow().record))
+            self.lookup_filtered_record_key(cursor)
         } else {
             None
         };

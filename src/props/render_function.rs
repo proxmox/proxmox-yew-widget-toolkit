@@ -4,6 +4,8 @@ use derivative::Derivative;
 
 use yew::Html;
 
+use crate::state::DataNode;
+
 /// Wraps `Rc` around `Fn` so it can be passed as a prop.
 #[derive(Derivative)]
 #[derivative(Clone(bound=""), PartialEq(bound=""))]
@@ -67,5 +69,32 @@ impl<T> IntoOptionalBuilderFn<T> for Option<BuilderFn<T>> {
 impl<T, F: 'static + Fn() -> T> IntoOptionalBuilderFn<T> for F {
     fn into_optional_builder_fn(self) -> Option<BuilderFn<T>> {
         Some(BuilderFn::new(self))
+    }
+}
+
+// Note: RenderFn<dyn DataNode<T>> does not work (?Sized problems), so
+// we define a separate render function.
+/// Wraps `Rc` around `Fn` so it can be passed as a prop.
+#[derive(Derivative)]
+#[derivative(Clone(bound=""), PartialEq(bound=""))]
+pub struct RenderDataNode<T>(
+    #[derivative(PartialEq(compare_with="Rc::ptr_eq"))]
+    Rc<dyn Fn(&dyn DataNode<T>) -> Html>
+);
+
+impl<T> RenderDataNode<T> {
+    /// Creates a new [`RenderFn`]
+    pub fn new(renderer: impl 'static + Fn(&dyn DataNode<T>) -> Html) -> Self {
+        Self(Rc::new(renderer))
+    }
+    /// Apply the render function
+    pub fn apply(&self, node: &dyn DataNode<T>) -> Html {
+        (self.0)(node)
+    }
+}
+
+impl<T, F: 'static + Fn(&dyn DataNode<T>) -> Html> From<F> for RenderDataNode<T> {
+    fn from(f: F) -> Self {
+        RenderDataNode::new(f)
     }
 }

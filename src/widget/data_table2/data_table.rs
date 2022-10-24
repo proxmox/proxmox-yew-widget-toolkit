@@ -12,13 +12,14 @@ use yew::html::{IntoEventCallback, IntoPropValue};
 
 use crate::prelude::*;
 use crate::props::{Selection2, SorterFn};
+use crate::state::{DataCollection, DataNode};
 use crate::widget::{get_unique_element_id, Container, Column, SizeObserver};
 
 use super::{create_indexed_header_list, DataTableColumn, DataTableHeader, Header, IndexedHeader};
-use super::{DataCollection, DataNode, TreeNode, TreeFilter};
+use super::{TreeFilter};
 
 pub enum Msg<T: 'static> {
-    ChangeSort(SorterFn<TreeNode<T>>),
+    ChangeSort(SorterFn<T>),
     ColumnWidthChange(Vec<f64>),
     ColumnHiddenChange(Vec<bool>),
     ScrollTo(i32, i32),
@@ -335,11 +336,11 @@ impl<T: 'static, S: DataCollection<T>> PwtDataTable<T, S> {
         _shift: bool,
         ctrl: bool,
     ) {
-        if let Some(item) = props.store.borrow().lookup_filtered_record(cursor) {
+        if let Some(key) = props.store.borrow().lookup_filtered_record_key(cursor) {
             if ctrl {
-                selection.toggle(&*item.borrow());
+                selection.toggle_key(key);
             } else {
-                selection.select(&*item.borrow());
+                selection.select_key(key);
             }
         }
     }
@@ -387,11 +388,11 @@ impl<T: 'static, S: DataCollection<T>> PwtDataTable<T, S> {
 
         if !(shift || ctrl) { selection.clear(); }
 
-        if let Some(item) = props.store.borrow().lookup_filtered_record(cursor) {
+        if let Some(key) = props.store.borrow().lookup_filtered_record_key(cursor) {
             if ctrl {
-                selection.toggle(&*item.borrow());
+                selection.toggle_key(key);
             } else {
-                selection.select(&*item.borrow());
+                selection.select_key(key);
             }
             return true;
         }
@@ -399,11 +400,7 @@ impl<T: 'static, S: DataCollection<T>> PwtDataTable<T, S> {
     }
 
     fn lookup_cursor_record_key(&self, props: &DataTable<T, S>, cursor: usize) -> Option<Key> {
-        if let Some(item) = props.store.borrow().lookup_filtered_record(cursor) {
-            Some(props.store.borrow().extract_key(&item.borrow().record))
-        } else {
-            None
-        }
+        props.store.borrow().lookup_filtered_record_key(cursor)
     }
 
     fn get_unique_item_id(&self, key: &Key) -> String {
