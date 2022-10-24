@@ -2,13 +2,12 @@ use std::rc::Rc;
 use std::cell::RefCell;
 
 use std::ops::Range;
-use std::ops::Deref;
 
 use yew::html::IntoPropValue;
 use yew::virtual_dom::Key;
 //use crate::props::{ExtractKeyFn, IntoExtractKeyFn};
 use crate::props::{ExtractKeyFn, FilterFn, IntoFilterFn, SorterFn, IntoSorterFn};
-use crate::state::{DataCollection, DataNode, DataNodeDerefGuard};
+use crate::state::{DataCollection, DataNode};
 use super::TreeNode;
 
 pub fn optional_list_rc_ptr_eq<T>(a: &Option<Vec<Rc<T>>>, b: &Option<Vec<Rc<T>>>) -> bool {

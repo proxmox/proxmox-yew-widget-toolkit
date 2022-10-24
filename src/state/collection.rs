@@ -1,5 +1,4 @@
 use std::rc::Rc;
-use std::cell::RefCell;
 use std::ops::{Deref, Range};
 
 use yew::virtual_dom::Key;
@@ -22,7 +21,7 @@ pub trait DataCollection<T> {
     fn filtered_data_len(&self) -> usize;
 
     fn filtered_data<'a>(&'a self) ->
-        Box<dyn Iterator<Item=(usize, Rc<dyn DataNode<T> + 'a>)> + 'a> { todo!(); }
+        Box<dyn Iterator<Item=(usize, Rc<dyn DataNode<T> + 'a>)> + 'a>;
     fn filtered_data_range<'a>(&'a self, range: Range<usize>) ->
         Box<dyn Iterator<Item=(usize, Rc<dyn DataNode<T> + 'a>)> + 'a>;
 
