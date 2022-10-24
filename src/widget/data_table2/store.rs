@@ -50,7 +50,7 @@ impl<T: 'static> Store<T> {
         Box::new(StoreIterator {
             range: None,
             pos: 0,
-            state: self.inner.borrow_mut(),
+            state: self.inner.borrow(),
         })
     }
 
@@ -97,6 +97,17 @@ impl<T> Deref for StoreReadGuard<'_, T> {
     }
 }
 
+pub struct StoreNodeRef<'a, T>(Ref<'a, T>);
+
+impl<'a, T> DataNode<T> for StoreNodeRef<'a, T> {
+    fn record(&self) -> DataNodeDerefGuard<T> {
+        let guard: Box<dyn Deref<Target = T>> = Box::new(&*self.0);
+        DataNodeDerefGuard { guard: guard }
+    }
+    fn level(&self) -> usize { 0 }
+    fn expanded(&self) -> bool { false }
+    fn parent(&self) -> Option<Box<dyn DataNode<T> + '_>> { None }
+}
 
 /*
 impl DataCollection<T> for Store<T> {
@@ -135,7 +146,7 @@ pub struct StoreState<T> {
 
     data: Vec<T>,
 
-    filtered_data: Vec<T>,
+    filtered_data: Vec<usize>,
 }
 
 impl<T: 'static> StoreState<T> {
@@ -155,7 +166,8 @@ impl<T: 'static> StoreState<T> {
     }
 
     fn filtered_data<'a>(&'a self) -> Box<dyn Iterator<Item =(usize, Rc<dyn DataNode<T> + 'a>)> + 'a> {
-        Box::new(self.filtered_data.iter().enumerate().map(|(i, record)| {
+        Box::new(self.filtered_data.iter().enumerate().map(|(i, node_id)| {
+            let record = &self.data[*node_id];
             let wrapper: Rc<dyn DataNode<T>> = Rc::new(Wrapper(record));
             (i, wrapper)
         }))
@@ -191,7 +203,7 @@ impl<'a, T> DataNode<T> for Wrapper<'a, T> {
 }
 
 pub struct StoreIterator<'a, T> {
-    state: RefMut<'a, StoreState<T>>,
+    state: Ref<'a, StoreState<T>>,
     pos: usize,
     range: Option<Range<usize>>,
 }
@@ -206,21 +218,19 @@ impl <'a, T: 'static> Iterator for StoreIterator<'a, T> where Self: 'a {
             }
         }
 
-        // fixme: use filtered_data instead of data
-        // if self.state.filtered_data.len() <= self.pos {
-        if self.state.data.len() <= self.pos {
+        if self.state.filtered_data.len() <= self.pos {
             return None;
         }
 
         let pos = self.pos;
         self.pos += 1;
 
-        let data : &'a T = unsafe {
-            std::mem::transmute::<&T, &'a T>(&self.state.data[pos])
-        };
+        let node_id = self.state.filtered_data[pos];
 
-        let wrapper: Rc<dyn DataNode<T>> = Rc::new(Wrapper(data));
+        let myref: Ref<'a, T> = Ref::map(Ref::clone(&self.state), |state| &state.data[node_id]);
 
-        Some((pos, wrapper))
+        let node = Rc::new(StoreNodeRef(myref));
+
+        Some((pos, node))
     }
 }
