@@ -16,12 +16,12 @@ use crate::state::{DataCollection, DataNode, DataNodeDerefGuard};
 /// Shared tree store.
 #[derive(Derivative)]
 #[derivative(Clone(bound=""), PartialEq(bound=""))]
-pub struct SlabTreeStore<T: 'static> {
+pub struct TreeStore<T: 'static> {
     #[derivative(PartialEq(compare_with="inner_state_equal::<T>"))]
     inner: Rc<RefCell<SlabTree<T>>>,
 }
 
-impl<T: ExtractPrimaryKey + 'static> SlabTreeStore<T> {
+impl<T: ExtractPrimaryKey + 'static> TreeStore<T> {
 
     /// Creates a new instance for types implementing [ExtractPrimaryKey].
     ///
@@ -35,7 +35,7 @@ impl<T: ExtractPrimaryKey + 'static> SlabTreeStore<T> {
     }
 }
 
-impl<T: 'static> SlabTreeStore<T> {
+impl<T: 'static> TreeStore<T> {
 
     /// Creates a new instance with the specifies extract key function.
     pub fn with_extract_key(extract_key: impl Into<ExtractKeyFn<T>>) -> Self {
@@ -44,14 +44,14 @@ impl<T: 'static> SlabTreeStore<T> {
         }
     }
 
-    pub fn read(&self) -> SlabTreeStoreReadGuard<T> {
-        SlabTreeStoreReadGuard {
+    pub fn read(&self) -> TreeStoreReadGuard<T> {
+        TreeStoreReadGuard {
             tree: self.inner.borrow(),
         }
     }
 
-    pub fn write(&self) -> SlabTreeStoreWriteGuard<T> {
-        SlabTreeStoreWriteGuard {
+    pub fn write(&self) -> TreeStoreWriteGuard<T> {
+        TreeStoreWriteGuard {
             tree: self.inner.borrow_mut(),
         }
     }
@@ -75,7 +75,7 @@ fn inner_state_equal<T>(
         me.borrow().version == other.borrow().version
 }
 
-impl<T> DataCollection<T> for SlabTreeStore<T> {
+impl<T> DataCollection<T> for TreeStore<T> {
 
     fn extract_key(&self, data: &T) -> Key {
         self.inner.borrow().extract_key.apply(data)
@@ -102,7 +102,7 @@ impl<T> DataCollection<T> for SlabTreeStore<T> {
     }
 
     fn filtered_data<'a>(&'a self) -> Box<dyn Iterator<Item=(usize, Box<dyn DataNode<T> + 'a>)> + 'a> {
-        Box::new(SlabTreeStoreIterator {
+        Box::new(TreeStoreIterator {
             range: None,
             pos: 0,
             tree: self.inner.borrow(),
@@ -114,7 +114,7 @@ impl<T> DataCollection<T> for SlabTreeStore<T> {
         range: Range<usize>,
     ) -> Box<dyn Iterator<Item=(usize, Box<dyn DataNode<T> + 'a>)> + 'a> {
 
-        Box::new(SlabTreeStoreIterator {
+        Box::new(TreeStoreIterator {
             pos: range.start,
             range: Some(range),
             tree: self.inner.borrow(),
@@ -132,11 +132,11 @@ impl<T> DataCollection<T> for SlabTreeStore<T> {
 
 
 
-pub struct SlabTreeStoreWriteGuard<'a, T> {
+pub struct TreeStoreWriteGuard<'a, T> {
     tree: RefMut<'a, SlabTree<T>>,
 }
 
-impl<T> Deref for SlabTreeStoreWriteGuard<'_, T> {
+impl<T> Deref for TreeStoreWriteGuard<'_, T> {
     type Target = SlabTree<T>;
 
     fn deref(&self) -> &Self::Target {
@@ -144,17 +144,17 @@ impl<T> Deref for SlabTreeStoreWriteGuard<'_, T> {
     }
 }
 
-impl<'a, T> DerefMut for SlabTreeStoreWriteGuard<'a, T> {
+impl<'a, T> DerefMut for TreeStoreWriteGuard<'a, T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.tree
     }
 }
 
-pub struct SlabTreeStoreReadGuard<'a, T> {
+pub struct TreeStoreReadGuard<'a, T> {
     tree: Ref<'a, SlabTree<T>>,
 }
 
-impl<T> Deref for SlabTreeStoreReadGuard<'_, T> {
+impl<T> Deref for TreeStoreReadGuard<'_, T> {
     type Target = SlabTree<T>;
 
     fn deref(&self) -> &Self::Target {
@@ -309,13 +309,13 @@ impl<T> SlabTreeNodeShared<T> {
 
 }
 
-pub struct SlabTreeStoreIterator<'a, T: 'static> {
+pub struct TreeStoreIterator<'a, T: 'static> {
     tree: Ref<'a, SlabTree<T>>,
     pos: usize,
     range: Option<Range<usize>>,
 }
 
-impl <'a, T: 'static> Iterator for SlabTreeStoreIterator<'a, T> where Self: 'a {
+impl <'a, T: 'static> Iterator for TreeStoreIterator<'a, T> where Self: 'a {
     type Item = (usize, Box<dyn DataNode<T> + 'a>);
 
     fn next(&mut self) -> Option<Self::Item> {
