@@ -255,6 +255,42 @@ impl<T> SlabTree<T> {
         }
     }
 
+    fn find_node_by_key(&self, key: &Key) -> Option<usize> {
+        self.tree.iter()
+            .find(|(_node_id, entry)| key == &self.extract_key.apply(&entry.record))
+            .map(|(node_id, _)| node_id)
+
+    }
+
+    pub fn get_expanded_key(&self, key: &Key) -> bool {
+        let node_id = match self.find_node_by_key(key) {
+            Some(node_id) => node_id,
+            None => return false,
+        };
+        self.tree.get(node_id).unwrap().expanded
+    }
+
+    pub fn set_expanded_key(&mut self, key: &Key, expanded: bool) {
+        self.record_data_change();
+
+        let node_id = match self.find_node_by_key(key) {
+            Some(node_id) => node_id,
+            None => return,
+        };
+        self.tree.get_mut(node_id).unwrap().expanded = expanded;
+    }
+
+    pub fn toggle_expanded_key(&mut self, key: &Key) {
+        self.record_data_change();
+
+        let node_id = match self.find_node_by_key(key) {
+            Some(node_id) => node_id,
+            None => return,
+        };
+        let entry = self.tree.get_mut(node_id).unwrap();
+        entry.expanded = !entry.expanded;
+    }
+
     fn sort_children(&mut self, children: &mut [usize], sorter: &SorterFn<T>) {
         children.sort_by(|child_id_a, child_id_b| {
             let entry_a = self.tree.get(*child_id_a).unwrap();

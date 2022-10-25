@@ -27,7 +27,7 @@ pub enum Msg<T: 'static> {
     KeyDown(u32, bool, bool),
     CursorDown(bool, bool),
     CursorUp(bool, bool),
-    ItemClick(Key, bool, bool),
+    ItemClick(Key, Option<usize>, bool, bool),
     ItemDblClick(Key),
     FocusChange(bool),
  }
@@ -471,7 +471,7 @@ impl<T: 'static, S: DataCollection<T>> PwtDataTable<T, S> {
                             _ => true,
                         }
                     })
-                    .map(|(_column_num, column)| {
+                    .map(|(column_num, column)| {
                         let item_style = format!(
                             "vertical-align: {}; text-align: {};",
                             props.vertical_align.as_deref().unwrap_or("baseline"),
@@ -481,6 +481,7 @@ impl<T: 'static, S: DataCollection<T>> PwtDataTable<T, S> {
                             .tag("td")
                             .class(self.cell_class.clone())
                             .attribute("style", item_style)
+                            .attribute("data-column-num", column_num.to_string())
                             .with_child(html!{
                                 <div>{
                                     column.render_node.apply(item)
@@ -489,7 +490,7 @@ impl<T: 'static, S: DataCollection<T>> PwtDataTable<T, S> {
                             .into()
                     })
             )
-            .with_child(html!{<th style={minheight_cell_style.clone()}/>})
+            .with_child(html!{<td style={minheight_cell_style.clone()}/>})
             .into()
     }
 
@@ -757,7 +758,7 @@ impl <T: 'static, S: DataCollection<T> + 'static> Component for PwtDataTable<T, 
                 self.scroll_cursor_into_view(props, web_sys::ScrollLogicalPosition::Nearest);
                 true
             }
-            Msg::ItemClick(record_key, shift, ctrl) => {
+            Msg::ItemClick(record_key, opt_col_num, shift, ctrl) => {
                 let last_cursor = props.store.get_cursor();
                 let new_cursor = props.store.filtered_record_pos(&record_key);
 
@@ -766,6 +767,14 @@ impl <T: 'static, S: DataCollection<T> + 'static> Component for PwtDataTable<T, 
                 if shift || ctrl {
                     if let Some(selection) = &props.selection {
                         self.select_range(props, selection, last_cursor, new_cursor, shift, ctrl);
+                    }
+                }
+
+                if let Some(col_num) = opt_col_num {
+                    if let Some(column) = self.columns.get(col_num)  {
+                        if let Some(on_cell_click) = &column.on_cell_click {
+                            on_cell_click.emit(record_key.clone());
+                        }
                     }
                 }
 
@@ -851,9 +860,10 @@ impl <T: 'static, S: DataCollection<T> + 'static> Component for PwtDataTable<T, 
                 let link = ctx.link().clone();
                 let unique_id = self.unique_id.clone();
                 move |event: MouseEvent| {
-                    if let Some(n) = dom_find_record_num(&event, &unique_id) {
+                    if let Some((row_num, col_num)) = dom_find_record_num(&event, &unique_id) {
                         link.send_message(Msg::ItemClick(
-                            n,
+                            row_num,
+                            col_num,
                             event.shift_key(),
                             event.ctrl_key(),
                           ));
@@ -864,8 +874,8 @@ impl <T: 'static, S: DataCollection<T> + 'static> Component for PwtDataTable<T, 
                 let link = ctx.link().clone();
                 let unique_id = self.unique_id.clone();
                 move |event: MouseEvent| {
-                    if let Some(n) = dom_find_record_num(&event, &unique_id) {
-                        link.send_message(Msg::ItemDblClick(n));
+                    if let Some((row_num, _col_num)) = dom_find_record_num(&event, &unique_id) {
+                        link.send_message(Msg::ItemDblClick(row_num));
                     }
                 }
             });
@@ -891,11 +901,12 @@ impl <T: 'static, S: DataCollection<T> + 'static> Component for PwtDataTable<T, 
             .into()
     }
 
-    fn changed(&mut self, _ctx: &Context<Self>, _old_props: &Self::Properties) -> bool {
-        //let props = ctx.props();
+    fn changed(&mut self, ctx: &Context<Self>, old_props: &Self::Properties) -> bool {
+        let props = ctx.props();
 
-        //if !Rc::ptr_eq(&props.store, &old_props.store) { // store changed
-        //}
+        if props.store != old_props.store { // store changed
+            log::info!("STORE CHANGED");
+        }
 
         true
     }
@@ -938,23 +949,43 @@ impl<T: 'static, S: DataCollection<T> + 'static> Into<VNode> for DataTable<T, S>
 }
 
 
-fn dom_find_record_num(event: &MouseEvent, unique_id: &str) -> Option<Key> {
+fn dom_find_record_num(event: &MouseEvent, unique_id: &str) -> Option<(Key, Option<usize>)> {
+    use wasm_bindgen::JsCast;
 
     let unique_row_prefix = format!("{}-item-", unique_id);
+    let mut column_num: Option<usize> = None;
 
-    let mut cur_el: Option<web_sys::Element> = event.target_dyn_into();
+    let mut cur_el: Option<web_sys::HtmlElement> = event.target_dyn_into();
+
+    let click_x = event.client_x() as f64;
+
     loop {
         match cur_el {
             Some(el) => {
                 if el.tag_name() == "TR" {
                     if let Some(n_str) = el.id().strip_prefix(&unique_row_prefix) {
+                        // try to find out the column_num
+                        let children = el.children();
+                        for i in 0..children.length() {
+                            let child: web_sys::HtmlElement = children.item(i).unwrap().dyn_into().unwrap();
+                            let rect = child.get_bounding_client_rect();
+
+                            if rect.x() < click_x && click_x < (rect.x() + rect.width()) {
+                                if let Some(column_num_str) = child.dataset().get("columnNum") {
+                                    if let Ok(n) = column_num_str.parse() {
+                                        column_num = Some(n);
+                                    }
+                                }
+                            }
+                        }
+
                         if n_str.len() > 0 {
-                            return Some(Key::from(n_str));
+                            return Some((Key::from(n_str), column_num));
                         }
                         break; // stop on errors
                     }
                 }
-                cur_el = el.parent_element();
+                cur_el = el.parent_element().map(|el| el.dyn_into().unwrap());
             }
             None => break,
         }

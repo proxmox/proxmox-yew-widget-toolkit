@@ -65,6 +65,17 @@ impl<T: 'static> TreeStore<T> {
         }
     }
 
+    pub fn get_expanded(&self, key: &Key) -> bool {
+        self.inner.borrow().get_expanded_key(key)
+    }
+
+    pub fn set_expanded(&mut self, key: &Key, expanded: bool) {
+        self.inner.borrow_mut().set_expanded_key(key, expanded)
+    }
+
+    pub fn toggle_expanded(&self, key: &Key) {
+        self.inner.borrow_mut().toggle_expanded_key(key)
+    }
 }
 
 fn inner_state_equal<T>(

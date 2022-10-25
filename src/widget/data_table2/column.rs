@@ -1,6 +1,7 @@
 use derivative::Derivative;
 use yew::prelude::*;
-use yew::html::IntoPropValue;
+use yew::html::{IntoPropValue, IntoEventCallback};
+
 use yew::virtual_dom::Key;
 
 use crate::props::{SorterFn, IntoSorterFn, RenderFn, RenderDataNode};
@@ -35,6 +36,10 @@ pub struct DataTableColumn<T> {
     /// Hide column
     #[prop_or_default]
     pub hidden: bool,
+
+    /// Cell click callback (parameter is the record key.)
+    pub on_cell_click: Option<Callback<Key>>,
+
 }
 
 impl<T: 'static> DataTableColumn<T> {
@@ -143,5 +148,11 @@ impl<T: 'static> DataTableColumn<T> {
     /// Method to set the hidden flag.
     pub fn set_hidden(&mut self, hidden: bool) {
         self.hidden = hidden;
+    }
+
+    /// Builder style method to set the cell click callback.
+    pub fn on_cell_click(mut self, cb: impl IntoEventCallback<Key>) -> Self {
+        self.on_cell_click = cb.into_event_callback();
+        self
     }
 }
