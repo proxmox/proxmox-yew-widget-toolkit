@@ -1,3 +1,6 @@
+mod slab_tree;
+pub use slab_tree::{SlabTree, SlabTreeNodeMut};
+
 use std::rc::Rc;
 use std::cell::{Ref, RefCell, RefMut};
 use std::ops::{Deref, DerefMut, Range};
@@ -9,8 +12,6 @@ use yew::virtual_dom::Key;
 //use crate::props::{ExtractKeyFn, SorterFn};
 use crate::props::{ExtractKeyFn, ExtractPrimaryKey, IntoSorterFn, IntoFilterFn};
 use crate::state::{DataCollection, DataNode, DataNodeDerefGuard};
-
-use super::{SlabTree};
 
 /// Shared tree store.
 #[derive(Derivative)]

@@ -13,13 +13,6 @@ pub(crate) use header_group::{
 mod column;
 pub use column::DataTableColumn;
 
-mod slab_tree;
-pub use slab_tree::{SlabTree, SlabTreeNodeMut};
-
-mod tree_store;
-pub use tree_store::*;
-
-
 //mod tree;
 //pub use tree::*;
 //mod tree_filter;

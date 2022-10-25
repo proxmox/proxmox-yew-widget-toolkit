@@ -20,6 +20,9 @@ pub use selection::Selection;
 mod store;
 pub use store::*;
 
+mod tree_store;
+pub use tree_store::*;
+
 mod theme;
 pub use theme::Theme;
 
