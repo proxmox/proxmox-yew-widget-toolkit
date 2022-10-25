@@ -1,7 +1,7 @@
 //! Common Properties types and builder traits
 
 mod extract_key_function;
-pub use extract_key_function::{ExtractKeyFn, IntoExtractKeyFn};
+pub use extract_key_function::{ExtractKeyFn, ExtractPrimaryKey, IntoExtractKeyFn};
 
 mod load_callback;
 pub use load_callback::{set_http_get_method, IntoLoadCallback, LoadCallback};

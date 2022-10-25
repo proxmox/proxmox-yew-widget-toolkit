@@ -7,10 +7,10 @@ use derivative::Derivative;
 use yew::virtual_dom::Key;
 
 //use crate::props::{ExtractKeyFn, SorterFn};
-use crate::props::{ExtractKeyFn, IntoSorterFn, IntoFilterFn};
+use crate::props::{ExtractKeyFn, ExtractPrimaryKey, IntoSorterFn, IntoFilterFn};
 use crate::state::{DataCollection, DataNode, DataNodeDerefGuard};
 
-use super::{SlabTree, ExtractPrimaryKey};
+use super::{SlabTree};
 
 /// Shared tree store.
 #[derive(Derivative)]

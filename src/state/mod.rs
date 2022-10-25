@@ -17,6 +17,9 @@ pub use navigation_container::{
 mod selection;
 pub use selection::Selection;
 
+mod store;
+pub use store::*;
+
 mod theme;
 pub use theme::Theme;
 

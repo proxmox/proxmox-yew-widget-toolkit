@@ -11,11 +11,10 @@ use yew::html::{IntoEventCallback, IntoPropValue};
 
 use crate::prelude::*;
 use crate::props::{Selection2, SorterFn};
-use crate::state::{DataCollection, DataNode};
+use crate::state::{DataCollection, DataNode, Store};
 use crate::widget::{get_unique_element_id, Container, Column, SizeObserver};
 
 use super::{create_indexed_header_list, DataTableColumn, DataTableHeader, Header, IndexedHeader};
-use super::Store;
 
 pub enum Msg<T: 'static> {
     ChangeSort(SorterFn<T>),

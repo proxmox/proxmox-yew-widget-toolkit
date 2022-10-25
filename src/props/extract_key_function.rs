@@ -3,6 +3,14 @@ use std::rc::Rc;
 use derivative::Derivative;
 use yew::virtual_dom::Key;
 
+/// Primary Key extraction
+///
+/// The [super::Store] has a simplified interface for types
+/// implementing this trait.
+pub trait ExtractPrimaryKey {
+    fn extract_key(&self) -> Key;
+}
+
 /// Wraps `Rc` around `Fn` so it can be passed as a prop.
 #[derive(Derivative)]
 #[derivative(Clone(bound=""), PartialEq(bound=""))]

@@ -19,12 +19,9 @@ pub use slab_tree::{SlabTree, SlabTreeNodeMut};
 mod tree_store;
 pub use tree_store::*;
 
-mod tree;
-pub use tree::*;
 
-mod store;
-pub use store::*;
-
+//mod tree;
+//pub use tree::*;
 //mod tree_filter;
 //pub use tree_filter::{TreeFilter, ExtractPrimaryKey};
 
@@ -36,8 +33,3 @@ pub use data_table_header::*;
 
 mod data_table;
 pub use data_table::*;
-
-use yew::virtual_dom::Key;
-pub trait ExtractPrimaryKey {
-    fn extract_key(&self) -> Key;
-}
