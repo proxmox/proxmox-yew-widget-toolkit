@@ -4,8 +4,10 @@ use std::ops::{Deref, DerefMut, Range};
 
 use derivative::Derivative;
 
+use yew::virtual_dom::Key;
+
 //use crate::props::{ExtractKeyFn, SorterFn};
-use crate::props::ExtractKeyFn;
+use crate::props::{ExtractKeyFn, IntoSorterFn, IntoFilterFn};
 use crate::state::{DataCollection, DataNode, DataNodeDerefGuard};
 
 use super::{SlabTree, ExtractPrimaryKey};
@@ -14,7 +16,6 @@ use super::{SlabTree, ExtractPrimaryKey};
 #[derive(Derivative)]
 #[derivative(Clone(bound=""), PartialEq(bound=""))]
 pub struct SlabTreeStore<T: 'static> {
-    extract_key: ExtractKeyFn<T>,
     #[derivative(PartialEq(compare_with="inner_state_equal::<T>"))]
     inner: Rc<RefCell<SlabTree<T>>>,
 }
@@ -26,9 +27,9 @@ impl<T: ExtractPrimaryKey + 'static> SlabTreeStore<T> {
     /// Use [Self::with_extract_key] for types which does not
     /// implement [ExtractPrimaryKey].
     pub fn new() -> Self {
+        let extract_key = ExtractKeyFn::new(|data: &T| data.extract_key());
         Self {
-            extract_key: ExtractKeyFn::new(|data: &T| data.extract_key()),
-            inner: Rc::new(RefCell::new(SlabTree::new())),
+            inner: Rc::new(RefCell::new(SlabTree::new(extract_key))),
         }
     }
 }
@@ -38,8 +39,7 @@ impl<T: 'static> SlabTreeStore<T> {
     /// Creates a new instance with the specifies extract key function.
     pub fn with_extract_key(extract_key: impl Into<ExtractKeyFn<T>>) -> Self {
         Self {
-            extract_key: extract_key.into(),
-            inner: Rc::new(RefCell::new(SlabTree::new())),
+            inner: Rc::new(RefCell::new(SlabTree::new(extract_key.into()))),
         }
     }
 
@@ -64,13 +64,6 @@ impl<T: 'static> SlabTreeStore<T> {
         }
     }
 
-    pub fn filtered_data<'a>(&'a self) -> Box<dyn Iterator<Item=(usize, Box<dyn DataNode<T> + 'a>)> + 'a> {
-        Box::new(SlabTreeStoreIterator {
-            range: None,
-            pos: 0,
-            tree: self.inner.borrow(),
-        })
-    }
 }
 
 fn inner_state_equal<T>(
@@ -80,6 +73,63 @@ fn inner_state_equal<T>(
     Rc::ptr_eq(&me, &other) &&
         me.borrow().version == other.borrow().version
 }
+
+impl<T> DataCollection<T> for SlabTreeStore<T> {
+
+    fn extract_key(&self, data: &T) -> Key {
+        self.inner.borrow().extract_key.apply(data)
+    }
+
+    fn set_sorter(&self, sorter: impl IntoSorterFn<T>) {
+        self.inner.borrow_mut().set_sorter(sorter);
+    }
+
+    fn set_filter(&self, filter: impl IntoFilterFn<T>) {
+        self.inner.borrow_mut().set_filter(filter);
+    }
+
+    fn lookup_filtered_record_key(&self, cursor: usize) -> Option<Key> {
+        self.inner.borrow().lookup_filtered_record_key(cursor)
+    }
+
+    fn filtered_record_pos(&self, key: &Key) -> Option<usize> {
+        self.inner.borrow().filtered_record_pos(key)
+    }
+
+    fn filtered_data_len(&self) -> usize {
+        self.inner.borrow().filtered_data_len()
+    }
+
+    fn filtered_data<'a>(&'a self) -> Box<dyn Iterator<Item=(usize, Box<dyn DataNode<T> + 'a>)> + 'a> {
+        Box::new(SlabTreeStoreIterator {
+            range: None,
+            pos: 0,
+            tree: self.inner.borrow(),
+        })
+    }
+
+    fn filtered_data_range<'a>(
+        &'a self,
+        range: Range<usize>,
+    ) -> Box<dyn Iterator<Item=(usize, Box<dyn DataNode<T> + 'a>)> + 'a> {
+
+        Box::new(SlabTreeStoreIterator {
+            pos: range.start,
+            range: Some(range),
+            tree: self.inner.borrow(),
+        })
+    }
+
+    fn get_cursor(&self) -> Option<usize> {
+        self.inner.borrow().get_cursor()
+    }
+
+    fn set_cursor(&self, cursor: Option<usize>) {
+        self.inner.borrow_mut().set_cursor(cursor)
+    }
+}
+
+
 
 pub struct SlabTreeStoreWriteGuard<'a, T> {
     tree: RefMut<'a, SlabTree<T>>,

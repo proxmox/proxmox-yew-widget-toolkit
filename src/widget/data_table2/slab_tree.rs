@@ -1,6 +1,8 @@
 use slab::Slab;
 
-use crate::props::SorterFn;
+use yew::virtual_dom::Key;
+
+use crate::props::{ExtractKeyFn, IntoFilterFn, IntoSorterFn, SorterFn, FilterFn};
 
 pub(crate) struct SlabTreeEntry<T> {
     //pub(crate) node_id: usize,
@@ -18,6 +20,12 @@ pub struct SlabTree<T> {
 
     pub(crate) version: usize, // for change tracking
     pub(crate) linear_view: Vec<usize>, // node_id list
+
+    pub(crate) extract_key: ExtractKeyFn<T>,
+
+    sorter: Option<SorterFn<T>>,
+    filter: Option<FilterFn<T>>,
+    cursor: Option<usize>,
 }
 
 pub struct SlabTreeNodeMut<'a, T> {
@@ -79,13 +87,115 @@ impl<'a, T> SlabTreeNodeMut<'a, T> {
 
 impl<T> SlabTree<T> {
 
-    pub fn new() -> Self {
+    pub fn new(extract_key: ExtractKeyFn<T>) -> Self {
         let tree = Slab::new();
         Self {
+            extract_key,
             tree,
             children: None,
             version: 0,
             linear_view: Vec::new(),
+            sorter: None,
+            filter: None,
+            cursor: None,
+         }
+    }
+
+    pub fn set_sorter(&mut self, sorter: impl IntoSorterFn<T>) {
+        self.sorter = sorter.into_sorter_fn();
+        self.update_filtered_data();
+    }
+
+    pub fn set_filter(&mut self, filter: impl IntoFilterFn<T>) {
+        self.filter = filter.into_filter_fn();
+        self.update_filtered_data();
+    }
+
+    fn flatten_tree_children(
+        &self,
+        list: &mut Vec<usize>,
+        children: &[usize],
+    ) {
+        let mut children: Vec<usize> = children.iter()
+            .filter(|child_id| {
+                let child_id = **child_id;
+                let entry = self.tree.get(child_id).unwrap();
+                match &self.filter {
+                    Some(filter) => filter.apply(0, &entry.record),
+                    None => true,
+                }
+            })
+            .map(|child_id| *child_id)
+            .collect();
+
+        if let Some(sorter) = &self.sorter {
+            children.sort_by(|child_id_a, child_id_b| {
+                let entry_a = self.tree.get(*child_id_a).unwrap();
+                let entry_b = self.tree.get(*child_id_b).unwrap();
+                sorter.cmp(&entry_a.record, &entry_b.record)
+            });
+        }
+
+        for child_id in children.into_iter() {
+            list.push(child_id);
+            let entry = self.tree.get(child_id).unwrap();
+            if let Some(children) = &entry.children {
+                self.flatten_tree_children(list, children);
+            }
+        }
+    }
+
+    fn update_filtered_data(&mut self) {
+        let mut view = Vec::new();
+
+        if let Some(children) = &self.children {
+            self.flatten_tree_children(&mut view, children);
+        }
+
+        self.linear_view = view;
+    }
+
+    pub fn lookup_filtered_record_key(&self, cursor: usize) -> Option<Key> {
+        let node_id = match self.linear_view.get(cursor) {
+            Some(node_id) => *node_id,
+            None => return None,
+        };
+
+        let entry = match self.tree.get(node_id) {
+            Some(entry) => entry,
+            None => return None,
+        };
+
+        Some(self.extract_key.apply(&entry.record))
+    }
+
+    pub fn filtered_record_pos(&self, key: &Key) -> Option<usize> {
+        self.linear_view.iter()
+            .position(|node_id| {
+                let entry = self.tree.get(*node_id).unwrap();
+                key == &self.extract_key.apply(&entry.record)
+            })
+    }
+
+    pub fn filtered_data_len(&self) -> usize {
+        self.linear_view.len()
+    }
+
+    pub fn get_cursor(&self) -> Option<usize> {
+        self.cursor
+    }
+
+    pub fn set_cursor(&mut self, cursor: Option<usize>) {
+        self.cursor = match cursor {
+            Some(c) => {
+                let len = self.filtered_data_len();
+                if c < len {
+                    Some(c)
+                } else {
+                    None
+                }
+            }
+            None => None,
         }
     }
 

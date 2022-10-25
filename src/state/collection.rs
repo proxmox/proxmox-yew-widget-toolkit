@@ -1,4 +1,3 @@
-use std::rc::Rc;
 use std::ops::{Deref, Range};
 
 use yew::virtual_dom::Key;
@@ -12,24 +11,24 @@ pub trait DataNode<T> {
     fn parent(&self) -> Option<Box<dyn DataNode<T> + '_>>;
 }
 
-pub trait DataCollection<T> {
+pub trait DataCollection<T>: Clone + PartialEq {
     fn extract_key(&self, data: &T) -> Key;
-    fn set_sorter(&mut self, sorter: impl IntoSorterFn<T>);
-    fn set_filter(&mut self, filter: impl IntoFilterFn<T>);
+    fn set_sorter(&self, sorter: impl IntoSorterFn<T>);
+    fn set_filter(&self, filter: impl IntoFilterFn<T>);
     fn lookup_filtered_record_key(&self, cursor: usize) -> Option<Key>;
     fn filtered_record_pos(&self, key: &Key) -> Option<usize>;
     fn filtered_data_len(&self) -> usize;
 
     fn filtered_data<'a>(&'a self) ->
-        Box<dyn Iterator<Item=(usize, Rc<dyn DataNode<T> + 'a>)> + 'a>;
+        Box<dyn Iterator<Item=(usize, Box<dyn DataNode<T> + 'a>)> + 'a>;
     fn filtered_data_range<'a>(&'a self, range: Range<usize>) ->
-        Box<dyn Iterator<Item=(usize, Rc<dyn DataNode<T> + 'a>)> + 'a>;
+        Box<dyn Iterator<Item=(usize, Box<dyn DataNode<T> + 'a>)> + 'a>;
 
     // Cursor
     fn get_cursor(&self) -> Option<usize>;
-    fn set_cursor(&mut self, cursor: Option<usize>);
+    fn set_cursor(&self, cursor: Option<usize>);
 
-    fn cursor_down(&mut self) {
+    fn cursor_down(&self) {
         let len = self.filtered_data_len();
         if len == 0 {
             self.set_cursor(None);
@@ -41,7 +40,7 @@ pub trait DataCollection<T> {
         });
     }
 
-    fn cursor_up(&mut self) {
+    fn cursor_up(&self) {
         let len = self.filtered_data_len();
         if len == 0 {
             self.set_cursor(None);

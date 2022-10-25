@@ -12,7 +12,6 @@ use crate::state::{DataCollection, DataNode, DataNodeDerefGuard};
 
 use super::ExtractPrimaryKey;
 
-
 /// Shared list store.
 #[derive(Derivative)]
 #[derivative(Clone(bound=""), PartialEq(bound=""))]
@@ -48,7 +47,7 @@ impl<T: 'static> Store<T> {
         self.inner.borrow_mut().set_data(data);
     }
 
-    pub fn filtered_data<'a>(&'a self) -> Box<dyn Iterator<Item=(usize, Rc<dyn DataNode<T> + 'a>)> + 'a> {
+    pub fn filtered_data<'a>(&'a self) -> Box<dyn Iterator<Item=(usize, Box<dyn DataNode<T> + 'a>)> + 'a> {
         Box::new(StoreIterator {
             range: None,
             pos: 0,
@@ -117,11 +116,11 @@ impl<T> DataCollection<T> for Store<T> {
         self.inner.borrow().extract_key.apply(data)
     }
 
-    fn set_sorter(&mut self, sorter: impl IntoSorterFn<T>) {
+    fn set_sorter(&self, sorter: impl IntoSorterFn<T>) {
         self.inner.borrow_mut().set_sorter(sorter);
     }
 
-    fn set_filter(&mut self, filter: impl IntoFilterFn<T>) {
+    fn set_filter(&self, filter: impl IntoFilterFn<T>) {
         self.inner.borrow_mut().set_filter(filter);
     }
 
@@ -139,7 +138,7 @@ impl<T> DataCollection<T> for Store<T> {
 
     fn filtered_data<'a>(
         &'a self,
-    ) -> Box<dyn Iterator<Item=(usize, Rc<dyn DataNode<T> + 'a>)> + 'a> {
+    ) -> Box<dyn Iterator<Item=(usize, Box<dyn DataNode<T> + 'a>)> + 'a> {
 
         Box::new(StoreIterator {
             range: None,
@@ -151,7 +150,7 @@ impl<T> DataCollection<T> for Store<T> {
     fn filtered_data_range<'a>(
         &'a self,
         range: Range<usize>,
-    ) -> Box<dyn Iterator<Item=(usize, Rc<dyn DataNode<T> + 'a>)> + 'a> {
+    ) -> Box<dyn Iterator<Item=(usize, Box<dyn DataNode<T> + 'a>)> + 'a> {
 
         Box::new(StoreIterator {
             pos: range.start,
@@ -164,7 +163,7 @@ impl<T> DataCollection<T> for Store<T> {
         self.inner.borrow().get_cursor()
     }
 
-    fn set_cursor(&mut self, cursor: Option<usize>) {
+    fn set_cursor(&self, cursor: Option<usize>) {
         self.inner.borrow_mut().set_cursor(cursor)
     }
 }
@@ -328,7 +327,7 @@ pub struct StoreIterator<'a, T> {
 }
 
 impl <'a, T: 'static> Iterator for StoreIterator<'a, T> where Self: 'a {
-    type Item = (usize, Rc<dyn DataNode<T> + 'a>);
+    type Item = (usize, Box<dyn DataNode<T> + 'a>);
 
     fn next(&mut self) -> Option<Self::Item> {
         if let Some(range) = &self.range {
@@ -348,7 +347,7 @@ impl <'a, T: 'static> Iterator for StoreIterator<'a, T> where Self: 'a {
 
         let myref: Ref<'a, T> = Ref::map(Ref::clone(&self.state), |state| &state.data[node_id]);
 
-        let node = Rc::new(StoreNodeRef(myref));
+        let node = Box::new(StoreNodeRef(myref));
 
         Some((pos, node))
     }

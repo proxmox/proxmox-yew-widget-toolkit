@@ -25,8 +25,8 @@ pub use tree::*;
 mod store;
 pub use store::*;
 
-mod tree_filter;
-pub use tree_filter::{TreeFilter, ExtractPrimaryKey};
+//mod tree_filter;
+//pub use tree_filter::{TreeFilter, ExtractPrimaryKey};
 
 //mod header_menu;
 //pub(crate) use header_menu::HeaderMenu;
@@ -36,3 +36,8 @@ pub use data_table_header::*;
 
 mod data_table;
 pub use data_table::*;
+
+use yew::virtual_dom::Key;
+pub trait ExtractPrimaryKey {
+    fn extract_key(&self) -> Key;
+}
