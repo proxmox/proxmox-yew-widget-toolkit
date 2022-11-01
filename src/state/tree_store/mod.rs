@@ -151,24 +151,32 @@ impl<T: 'static> TreeStore<T> {
         TreeStoreObserver { key, inner: self.inner.clone() }
     }
 
-    fn notify_listeners(&self) {
-        self.inner.borrow().notify_listeners();
-    }
-
+    /// Lock this store for read access.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the value is currently mutably locked.
     pub fn read(&self) -> TreeStoreReadGuard<T> {
         TreeStoreReadGuard {
             tree: self.inner.borrow(),
         }
     }
 
+    /// Lock this store for write access.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the store is already locked.
     pub fn write(&self) -> TreeStoreWriteGuard<T> {
-        // fixme: notify listeners
+        let tree = self.inner.borrow_mut();
+
         TreeStoreWriteGuard {
-            tree: self.inner.borrow_mut(),
+            initial_version: tree.version,
+            tree,
         }
     }
 
-    pub fn append(&mut self, record: T) -> SlabTreeNodeShared<T> {
+    pub fn append(&self, record: T) -> SlabTreeNodeShared<T> {
         let mut tree = self.inner.borrow_mut();
         let node = tree.append(record);
 
@@ -177,7 +185,7 @@ impl<T: 'static> TreeStore<T> {
             inner: self.inner.clone(),
         };
 
-        self.notify_listeners();
+        tree.notify_listeners();
 
         node
     }
@@ -187,13 +195,15 @@ impl<T: 'static> TreeStore<T> {
     }
 
     pub fn set_expanded(&self, key: &Key, expanded: bool) {
-        self.inner.borrow_mut().set_expanded_key(key, expanded);
-        self.notify_listeners();
+        let mut tree = self.inner.borrow_mut();
+        tree.set_expanded_key(key, expanded);
+        tree.notify_listeners();
     }
 
     pub fn toggle_expanded(&self, key: &Key) {
-        self.inner.borrow_mut().toggle_expanded_key(key);
-        self.notify_listeners();
+        let mut tree = self.inner.borrow_mut();
+        tree.toggle_expanded_key(key);
+        tree.notify_listeners();
     }
 }
 
@@ -258,6 +268,7 @@ impl<T> DataCollection<T> for TreeStore<T> {
 
 pub struct TreeStoreWriteGuard<'a, T> {
     tree: RefMut<'a, SlabTree<T>>,
+    initial_version: usize,
 }
 
 impl<T> Deref for TreeStoreWriteGuard<'_, T> {
@@ -271,6 +282,14 @@ impl<T> Deref for TreeStoreWriteGuard<'_, T> {
 impl<'a, T> DerefMut for TreeStoreWriteGuard<'a, T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.tree
+    }
+}
+
+impl<'a, T> Drop for TreeStoreWriteGuard<'a, T> {
+    fn drop(&mut self) {
+        if self.tree.version != self.initial_version {
+            self.tree.notify_listeners();
+        }
     }
 }
 
