@@ -1,7 +1,7 @@
 use slab::Slab;
 
 use yew::virtual_dom::Key;
-
+use yew::Callback;
 use crate::props::{ExtractKeyFn, IntoFilterFn, IntoSorterFn, SorterFn, FilterFn};
 
 pub(crate) struct SlabTreeEntry<T> {
@@ -20,12 +20,15 @@ pub struct SlabTree<T> {
 
     pub(crate) version: usize, // for change tracking
     pub(crate) linear_view: Vec<usize>, // node_id list
+    last_view_version: usize,
 
     pub(crate) extract_key: ExtractKeyFn<T>,
 
     sorter: Option<SorterFn<T>>,
     filter: Option<FilterFn<T>>,
     cursor: Option<usize>,
+
+    listeners: Slab<Callback<()>>,
 }
 
 pub struct SlabTreeNodeMut<'a, T> {
@@ -87,18 +90,34 @@ impl<'a, T> SlabTreeNodeMut<'a, T> {
 
 impl<T> SlabTree<T> {
 
-    pub fn new(extract_key: ExtractKeyFn<T>) -> Self {
+    pub fn new(extract_key: impl Into<ExtractKeyFn<T>>) -> Self {
         let tree = Slab::new();
         Self {
-            extract_key,
+            extract_key: extract_key.into(),
             tree,
             children: None,
             version: 0,
             linear_view: Vec::new(),
+            last_view_version: 0,
             sorter: None,
             filter: None,
             cursor: None,
+            listeners: Slab::new(),
          }
+    }
+
+    pub(crate) fn add_listener(&mut self, cb: Callback<()>) -> usize {
+        self.listeners.insert(cb)
+    }
+
+    pub(crate) fn remove_listener(&mut self, key: usize) {
+        self.listeners.remove(key);
+    }
+
+    pub(crate) fn notify_listeners(&self) {
+        for (_key, listener) in self.listeners.iter() {
+            listener.emit(());
+        }
     }
 
     pub fn set_sorter(&mut self, sorter: impl IntoSorterFn<T>) {
@@ -139,13 +158,19 @@ impl<T> SlabTree<T> {
         for child_id in children.into_iter() {
             list.push(child_id);
             let entry = self.tree.get(child_id).unwrap();
-            if let Some(children) = &entry.children {
-                self.flatten_tree_children(list, children);
+            if entry.expanded {
+                if let Some(children) = &entry.children {
+                    self.flatten_tree_children(list, children);
+                }
             }
         }
     }
 
-    fn update_filtered_data(&mut self) {
+    pub(crate) fn update_filtered_data(&mut self) {
+        if self.version == self.last_view_version {
+            return;
+        }
+
         let mut view = Vec::new();
 
         if let Some(children) = &self.children {
@@ -153,6 +178,7 @@ impl<T> SlabTree<T> {
         }
 
         self.linear_view = view;
+        self.last_view_version = self.version;
     }
 
     pub fn lookup_filtered_record_key(&self, cursor: usize) -> Option<Key> {
@@ -287,6 +313,7 @@ impl<T> SlabTree<T> {
             Some(node_id) => node_id,
             None => return,
         };
+
         let entry = self.tree.get_mut(node_id).unwrap();
         entry.expanded = !entry.expanded;
     }

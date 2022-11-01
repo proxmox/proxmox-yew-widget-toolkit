@@ -905,7 +905,8 @@ impl <T: 'static, S: DataCollection<T> + 'static> Component for PwtDataTable<T, 
         let props = ctx.props();
 
         if props.store != old_props.store { // store changed
-            log::info!("STORE CHANGED");
+            // log::info!("STORE CHANGED");
+            self.update_scroll_info(props);
         }
 
         true

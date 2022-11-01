@@ -8,17 +8,91 @@ use std::ops::{Deref, DerefMut, Range};
 use derivative::Derivative;
 
 use yew::virtual_dom::Key;
+use yew::prelude::*;
+use yew::html::IntoEventCallback;
 
-//use crate::props::{ExtractKeyFn, SorterFn};
 use crate::props::{ExtractKeyFn, ExtractPrimaryKey, IntoSorterFn, IntoFilterFn};
 use crate::state::{DataCollection, DataNode, DataNodeDerefGuard};
 
+/// Hook to use a [TreeStore] with functional components.
+///
+/// This hook returns a [TreeStore] that include version
+/// information. The hook listens to [TreeStore] change events and
+/// increases the version accordingly. This triggers property changes
+/// when passed as property to other components.
+///
+/// Note: A [TreeStore] is a shared state behind `Rc<RefCell<state>>`,
+/// so a simply `PartialEq` would always return true.
+#[hook]
+pub fn use_tree_store<F: FnOnce() -> TreeStore<T>, T: 'static>(init_fn: F) -> TreeStore<T> {
+
+    let redraw = use_state(|| 0);
+
+    let tree = use_state(init_fn);
+    let _on_change = use_state({
+        let tree = tree.clone();
+        let redraw = redraw.clone();
+        move || (*tree).add_listener(
+            Callback::from(move |()| redraw.set(0)) // trigger redraw
+        )
+    });
+
+    // use clone_with_version to trigger property changes
+    (*tree).clone_with_version()
+}
+
+/// Owns the  listener callback. When dropped, the
+/// listener callback will be removed from the [TreeStore].
+pub struct TreeStoreObserver<T> {
+    key: usize,
+    inner: Rc<RefCell<SlabTree<T>>>,
+}
+
+impl<T> Drop for TreeStoreObserver<T> {
+    fn drop(&mut self) {
+        self.inner.borrow_mut().remove_listener(self.key);
+    }
+}
+
 /// Shared tree store.
 #[derive(Derivative)]
-#[derivative(Clone(bound=""), PartialEq(bound=""))]
+#[derivative(Clone(bound=""))]
 pub struct TreeStore<T: 'static> {
-    #[derivative(PartialEq(compare_with="inner_state_equal::<T>"))]
+    // Use [Self::clone_with_version] to set this property.  This is
+    // usefull when used as component property to trigger changes (see
+    // use_tree_store).
+    cached_version: Option<usize>,
+    // Allow to store one TreeStoreObserver here (for convenience)
+    on_change: Option<Rc<TreeStoreObserver<T>>>,
     inner: Rc<RefCell<SlabTree<T>>>,
+}
+
+impl<T: 'static> PartialEq for TreeStore<T> {
+    fn eq(&self, other: &TreeStore<T>) -> bool {
+        let eq0 = match (&self.on_change, &other.on_change) {
+            (Some(ptr1), Some(ptr2)) => Rc::ptr_eq(ptr1, ptr2),
+            (None, None) => true,
+            _ => false,
+        };
+        let eq1 = Rc::ptr_eq(&self.inner, &other.inner);
+
+        // Note: return false as soon as one cached version does not
+        // match the real version.
+
+        let version = self.inner.borrow().version;
+
+        let eq2 = match self.cached_version {
+            Some(v) => v == version,
+            None => true,
+        };
+
+        let eq3 = match other.cached_version {
+            Some(v) => v == version,
+            None => true,
+        };
+
+        eq0 && eq1 && eq2 && eq3
+    }
 }
 
 impl<T: ExtractPrimaryKey + 'static> TreeStore<T> {
@@ -30,7 +104,9 @@ impl<T: ExtractPrimaryKey + 'static> TreeStore<T> {
     pub fn new() -> Self {
         let extract_key = ExtractKeyFn::new(|data: &T| data.extract_key());
         Self {
+            on_change: None,
             inner: Rc::new(RefCell::new(SlabTree::new(extract_key))),
+            cached_version: None,
         }
     }
 }
@@ -40,8 +116,43 @@ impl<T: 'static> TreeStore<T> {
     /// Creates a new instance with the specifies extract key function.
     pub fn with_extract_key(extract_key: impl Into<ExtractKeyFn<T>>) -> Self {
         Self {
+            on_change: None,
             inner: Rc::new(RefCell::new(SlabTree::new(extract_key.into()))),
+            cached_version: None,
         }
+    }
+
+    pub fn on_change(mut self, cb: impl IntoEventCallback<()>) -> Self {
+        self.on_change = match cb.into_event_callback() {
+            Some(cb) => Some(Rc::new(self.add_listener(cb))),
+            None => None,
+        };
+        self
+    }
+
+
+    /// Like Clone, but include the current version.
+    ///
+    /// Useful when used as component property to trigger changes (see
+    /// [use_tree_store]).
+    pub fn clone_with_version(&self) -> Self {
+        let mut clone = self.clone();
+        clone.cached_version = Some(self.inner.borrow().version);
+        clone
+    }
+
+    /// Method to add a change observer.
+    ///
+    /// This is usually called by [Self::on_change], which stores the
+    /// observer inside the [TreeStore] object.
+    pub fn add_listener(&self, cb: Callback<()>) -> TreeStoreObserver<T> {
+        let key = self.inner.borrow_mut()
+            .add_listener(cb);
+        TreeStoreObserver { key, inner: self.inner.clone() }
+    }
+
+    fn notify_listeners(&self) {
+        self.inner.borrow().notify_listeners();
     }
 
     pub fn read(&self) -> TreeStoreReadGuard<T> {
@@ -51,6 +162,7 @@ impl<T: 'static> TreeStore<T> {
     }
 
     pub fn write(&self) -> TreeStoreWriteGuard<T> {
+        // fixme: notify listeners
         TreeStoreWriteGuard {
             tree: self.inner.borrow_mut(),
         }
@@ -59,31 +171,30 @@ impl<T: 'static> TreeStore<T> {
     pub fn append(&mut self, record: T) -> SlabTreeNodeShared<T> {
         let mut tree = self.inner.borrow_mut();
         let node = tree.append(record);
-        SlabTreeNodeShared {
+
+        let node = SlabTreeNodeShared {
             node_id: node.node_id(),
             inner: self.inner.clone(),
-        }
+        };
+
+        self.notify_listeners();
+
+        node
     }
 
     pub fn get_expanded(&self, key: &Key) -> bool {
         self.inner.borrow().get_expanded_key(key)
     }
 
-    pub fn set_expanded(&mut self, key: &Key, expanded: bool) {
-        self.inner.borrow_mut().set_expanded_key(key, expanded)
+    pub fn set_expanded(&self, key: &Key, expanded: bool) {
+        self.inner.borrow_mut().set_expanded_key(key, expanded);
+        self.notify_listeners();
     }
 
     pub fn toggle_expanded(&self, key: &Key) {
-        self.inner.borrow_mut().toggle_expanded_key(key)
+        self.inner.borrow_mut().toggle_expanded_key(key);
+        self.notify_listeners();
     }
-}
-
-fn inner_state_equal<T>(
-    me: &Rc<RefCell<SlabTree<T>>>,
-    other: &Rc<RefCell<SlabTree<T>>>
-) -> bool {
-    Rc::ptr_eq(&me, &other) &&
-        me.borrow().version == other.borrow().version
 }
 
 impl<T> DataCollection<T> for TreeStore<T> {
@@ -109,10 +220,12 @@ impl<T> DataCollection<T> for TreeStore<T> {
     }
 
     fn filtered_data_len(&self) -> usize {
+        self.inner.borrow_mut().update_filtered_data();
         self.inner.borrow().filtered_data_len()
     }
 
     fn filtered_data<'a>(&'a self) -> Box<dyn Iterator<Item=(usize, Box<dyn DataNode<T> + 'a>)> + 'a> {
+        self.inner.borrow_mut().update_filtered_data();
         Box::new(TreeStoreIterator {
             range: None,
             pos: 0,
@@ -124,7 +237,7 @@ impl<T> DataCollection<T> for TreeStore<T> {
         &'a self,
         range: Range<usize>,
     ) -> Box<dyn Iterator<Item=(usize, Box<dyn DataNode<T> + 'a>)> + 'a> {
-
+        self.inner.borrow_mut().update_filtered_data();
         Box::new(TreeStoreIterator {
             pos: range.start,
             range: Some(range),
@@ -344,7 +457,6 @@ impl <'a, T: 'static> Iterator for TreeStoreIterator<'a, T> where Self: 'a {
         self.pos += 1;
 
         let node_id = self.tree.linear_view[pos];
-
         let node = Box::new(SlabTreeNodeRef {
             node_id,
             tree: Ref::clone(&self.tree),
