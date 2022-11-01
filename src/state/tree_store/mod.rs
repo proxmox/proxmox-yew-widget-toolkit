@@ -12,7 +12,7 @@ use yew::prelude::*;
 use yew::html::IntoEventCallback;
 
 use crate::props::{ExtractKeyFn, ExtractPrimaryKey, IntoSorterFn, IntoFilterFn};
-use crate::state::{DataCollection, DataNode, DataNodeDerefGuard};
+use crate::state::{DataStore, DataNode, DataNodeDerefGuard};
 
 /// Hook to use a [TreeStore] with functional components.
 ///
@@ -207,7 +207,7 @@ impl<T: 'static> TreeStore<T> {
     }
 }
 
-impl<T> DataCollection<T> for TreeStore<T> {
+impl<T> DataStore<T> for TreeStore<T> {
 
     fn extract_key(&self, data: &T) -> Key {
         self.inner.borrow().extract_key.apply(data)

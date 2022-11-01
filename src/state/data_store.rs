@@ -11,7 +11,7 @@ pub trait DataNode<T> {
     fn parent(&self) -> Option<Box<dyn DataNode<T> + '_>>;
 }
 
-pub trait DataCollection<T>: Clone + PartialEq {
+pub trait DataStore<T>: Clone + PartialEq {
     fn extract_key(&self, data: &T) -> Key;
     fn set_sorter(&self, sorter: impl IntoSorterFn<T>);
     fn set_filter(&self, filter: impl IntoFilterFn<T>);

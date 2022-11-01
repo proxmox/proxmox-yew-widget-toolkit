@@ -8,7 +8,7 @@ use derivative::Derivative;
 use yew::virtual_dom::Key;
 
 use crate::props::{FilterFn, IntoSorterFn, IntoFilterFn, SorterFn, ExtractKeyFn, ExtractPrimaryKey};
-use crate::state::{DataCollection, DataNode, DataNodeDerefGuard};
+use crate::state::{DataStore, DataNode, DataNodeDerefGuard};
 
 /// Shared list store.
 #[derive(Derivative)]
@@ -108,7 +108,7 @@ impl<'a, T> DataNode<T> for StoreNodeRef<'a, T> {
     fn parent(&self) -> Option<Box<dyn DataNode<T> + '_>> { None }
 }
 
-impl<T> DataCollection<T> for Store<T> {
+impl<T> DataStore<T> for Store<T> {
 
     fn extract_key(&self, data: &T) -> Key {
         self.inner.borrow().extract_key.apply(data)

@@ -7,7 +7,7 @@ use yew::html::IntoPropValue;
 use yew::virtual_dom::Key;
 //use crate::props::{ExtractKeyFn, IntoExtractKeyFn};
 use crate::props::{ExtractKeyFn, FilterFn, IntoFilterFn, SorterFn, IntoSorterFn};
-use crate::state::{DataCollection, DataNode};
+use crate::state::{DataStore, DataNode};
 use super::TreeNode;
 
 pub fn optional_list_rc_ptr_eq<T>(a: &Option<Vec<Rc<T>>>, b: &Option<Vec<Rc<T>>>) -> bool {
@@ -85,7 +85,7 @@ pub struct TreeFilterIterator<'a, T> {
     range: Option<Range<usize>>,
 }
 
-impl<T: 'static> DataCollection<T> for TreeFilter<T> {
+impl<T: 'static> DataStore<T> for TreeFilter<T> {
     fn extract_key(&self, data: &T) -> Key {
         self.extract_key.apply(data)
     }

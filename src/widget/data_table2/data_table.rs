@@ -11,7 +11,7 @@ use yew::html::{IntoEventCallback, IntoPropValue};
 
 use crate::prelude::*;
 use crate::props::{Selection2, SorterFn};
-use crate::state::{DataCollection, DataNode, Store};
+use crate::state::{DataStore, DataNode, Store};
 use crate::widget::{get_unique_element_id, Container, Column, SizeObserver};
 
 use super::{create_indexed_header_list, DataTableColumn, DataTableHeader, Header, IndexedHeader};
@@ -36,7 +36,7 @@ pub enum Msg<T: 'static> {
 #[derive(Properties)]
 #[derive(Derivative)]
 #[derivative(Clone(bound=""), PartialEq(bound=""))]
-pub struct DataTable<T: 'static, S: DataCollection<T> = Store<T>> {
+pub struct DataTable<T: 'static, S: DataStore<T> = Store<T>> {
 
     #[prop_or_default]
     node_ref: NodeRef,
@@ -100,7 +100,7 @@ pub struct DataTable<T: 'static, S: DataCollection<T> = Store<T>> {
 
 static VIRTUAL_SCROLL_TRIGGER: usize = 30;
 
-impl <T: 'static, S: DataCollection<T> + 'static> DataTable<T, S> {
+impl <T: 'static, S: DataStore<T> + 'static> DataTable<T, S> {
 
     /// Create a new instance.
     pub fn new(headers: Rc<Vec<Header<T>>>, store: S) -> Self {
@@ -264,7 +264,7 @@ impl VirtualScrollInfo {
 }
 
 #[doc(hidden)]
-pub struct PwtDataTable<T: 'static, S: DataCollection<T>> {
+pub struct PwtDataTable<T: 'static, S: DataStore<T>> {
     unique_id: String,
     has_focus: bool,
 
@@ -324,7 +324,7 @@ fn render_empty_row_with_sizes(widths: &[f64], column_hidden: &[bool], bordered:
         .into()
 }
 
-impl<T: 'static, S: DataCollection<T>> PwtDataTable<T, S> {
+impl<T: 'static, S: DataStore<T>> PwtDataTable<T, S> {
 
     fn select_position(
         &mut self,
@@ -589,7 +589,7 @@ impl<T: 'static, S: DataCollection<T>> PwtDataTable<T, S> {
     }
 }
 
-impl <T: 'static, S: DataCollection<T> + 'static> Component for PwtDataTable<T, S> {
+impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
 
     type Message = Msg<T>;
     type Properties = DataTable<T, S>;
@@ -941,7 +941,7 @@ impl <T: 'static, S: DataCollection<T> + 'static> Component for PwtDataTable<T, 
     }
 }
 
-impl<T: 'static, S: DataCollection<T> + 'static> Into<VNode> for DataTable<T, S> {
+impl<T: 'static, S: DataStore<T> + 'static> Into<VNode> for DataTable<T, S> {
     fn into(self) -> VNode {
         let key = self.key.clone();
         let comp = VComp::new::<PwtDataTable<T, S>>(Rc::new(self), key);
