@@ -92,10 +92,10 @@ pub struct DataTable<T: 'static, S: DataCollection<T> = Store<T>> {
     pub selection: Option<Selection2<T>>,
 
     /// Row click callback (parameter is the record number)
-    pub onrowclick: Option<Callback<Key>>,
+    pub on_row_click: Option<Callback<Key>>,
 
     /// Row double click callback (parameter is the record number)
-    pub onrowdblclick: Option<Callback<Key>>,
+    pub on_row_dblclick: Option<Callback<Key>>,
 }
 
 static VIRTUAL_SCROLL_TRIGGER: usize = 30;
@@ -236,14 +236,14 @@ impl <T: 'static, S: DataCollection<T> + 'static> DataTable<T, S> {
     }
 
     /// Builder style method to set the row click callback.
-    pub fn onrowclick(mut self, cb: impl IntoEventCallback<Key>) -> Self {
-        self.onrowclick = cb.into_event_callback();
+    pub fn on_row_click(mut self, cb: impl IntoEventCallback<Key>) -> Self {
+        self.on_row_click = cb.into_event_callback();
         self
     }
 
     /// Builder style method to set the row double click callback.
-    pub fn onrowdblclick(mut self, cb: impl IntoEventCallback<Key>) -> Self {
-        self.onrowdblclick = cb.into_event_callback();
+    pub fn on_row_dblclick(mut self, cb: impl IntoEventCallback<Key>) -> Self {
+        self.on_row_dblclick = cb.into_event_callback();
         self
     }
 
@@ -729,7 +729,7 @@ impl <T: 'static, S: DataCollection<T> + 'static> Component for PwtDataTable<T, 
 
                         self.select_cursor(props, false, false);
 
-                        if let Some(callback) = &props.onrowdblclick {
+                        if let Some(callback) = &props.on_row_dblclick {
                             callback.emit(record_key);
                         }
 
@@ -778,7 +778,7 @@ impl <T: 'static, S: DataCollection<T> + 'static> Component for PwtDataTable<T, 
                     }
                 }
 
-                if let Some(callback) = &props.onrowclick {
+                if let Some(callback) = &props.on_row_click {
                     callback.emit(record_key);
                 }
 
@@ -789,7 +789,7 @@ impl <T: 'static, S: DataCollection<T> + 'static> Component for PwtDataTable<T, 
                 props.store.set_cursor(cursor);
                 self.select_cursor(props, false, false);
 
-                if let Some(callback) = &props.onrowdblclick {
+                if let Some(callback) = &props.on_row_dblclick {
                     callback.emit(record_key);
                 }
 
