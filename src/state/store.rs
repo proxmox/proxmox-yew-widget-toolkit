@@ -6,12 +6,31 @@ use std::ops::{Deref, DerefMut};
 use derivative::Derivative;
 use slab::Slab;
 
+use yew::prelude::*;
 use yew::virtual_dom::Key;
 use yew::html::IntoEventCallback;
-use yew::Callback;
 
 use crate::props::{FilterFn, IntoSorterFn, IntoFilterFn, SorterFn, ExtractKeyFn, ExtractPrimaryKey};
 use crate::state::{optional_rc_ptr_eq, DataStore, DataNode, DataNodeDerefGuard};
+
+/// Hook to use a [Store] with functional components.
+///
+/// This hook returns a [Store] that listens to [Store] change
+/// events which trigger a redraw.
+#[hook]
+pub fn use_store<F: FnOnce() -> Store<T>, T: 'static>(init_fn: F) -> Store<T> {
+
+    let redraw = use_state(|| 0);
+
+    let store = use_state(init_fn);
+    let _on_change = use_state({
+        let store = store.clone();
+        let redraw = redraw.clone();
+        move || (*store).add_listener(move |()| redraw.set(0)) // trigger redraw
+    });
+
+    (*store).clone()
+}
 
 /// Shared list store.
 ///

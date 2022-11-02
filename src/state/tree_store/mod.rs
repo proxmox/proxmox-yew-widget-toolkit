@@ -16,10 +16,8 @@ use crate::state::{optional_rc_ptr_eq, DataStore, DataNode, DataNodeDerefGuard};
 
 /// Hook to use a [TreeStore] with functional components.
 ///
-/// This hook returns a [TreeStore] that include version
-/// information. The hook listens to [TreeStore] change events and
-/// increases the version accordingly. This triggers property changes
-/// when passed as property to other components.
+/// This hook returns a [TreeStore] that listens to [TreeStore] change
+/// events which trigger a redraw.
 #[hook]
 pub fn use_tree_store<F: FnOnce() -> TreeStore<T>, T: 'static>(init_fn: F) -> TreeStore<T> {
 
