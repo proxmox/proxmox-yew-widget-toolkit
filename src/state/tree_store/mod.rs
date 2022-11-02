@@ -12,7 +12,7 @@ use yew::prelude::*;
 use yew::html::IntoEventCallback;
 
 use crate::props::{ExtractKeyFn, ExtractPrimaryKey, IntoSorterFn, IntoFilterFn};
-use crate::state::{DataStore, DataNode, DataNodeDerefGuard};
+use crate::state::{optional_rc_ptr_eq, DataStore, DataNode, DataNodeDerefGuard};
 
 /// Hook to use a [TreeStore] with functional components.
 ///
@@ -20,9 +20,6 @@ use crate::state::{DataStore, DataNode, DataNodeDerefGuard};
 /// information. The hook listens to [TreeStore] change events and
 /// increases the version accordingly. This triggers property changes
 /// when passed as property to other components.
-///
-/// Note: A [TreeStore] is a shared state behind `Rc<RefCell<state>>`,
-/// so a simply `PartialEq` would always return true.
 #[hook]
 pub fn use_tree_store<F: FnOnce() -> TreeStore<T>, T: 'static>(init_fn: F) -> TreeStore<T> {
 
@@ -32,13 +29,10 @@ pub fn use_tree_store<F: FnOnce() -> TreeStore<T>, T: 'static>(init_fn: F) -> Tr
     let _on_change = use_state({
         let tree = tree.clone();
         let redraw = redraw.clone();
-        move || (*tree).add_listener(
-            Callback::from(move |()| redraw.set(0)) // trigger redraw
-        )
+        move || (*tree).add_listener(move |()| redraw.set(0)) // trigger redraw
     });
 
-    // use clone_with_version to trigger property changes
-    (*tree).clone_with_version()
+    (*tree).clone()
 }
 
 /// Owns the  listener callback. When dropped, the
@@ -55,44 +49,20 @@ impl<T> Drop for TreeStoreObserver<T> {
 }
 
 /// Shared tree store.
+///
+/// # Note
+///
+/// A [TreeStore] is a shared state behind `Rc<RefCell<state>>`, so
+/// a simply `PartialEq` would always return true. Please register a
+/// listener to get notified about changes.
 #[derive(Derivative)]
-#[derivative(Clone(bound=""))]
+#[derivative(Clone(bound=""), PartialEq(bound=""))]
 pub struct TreeStore<T: 'static> {
-    // Use [Self::clone_with_version] to set this property.  This is
-    // usefull when used as component property to trigger changes (see
-    // use_tree_store).
-    cached_version: Option<usize>,
     // Allow to store one TreeStoreObserver here (for convenience)
+    #[derivative(PartialEq(compare_with="optional_rc_ptr_eq"))]
     on_change: Option<Rc<TreeStoreObserver<T>>>,
+    #[derivative(PartialEq(compare_with="Rc::ptr_eq"))]
     inner: Rc<RefCell<SlabTree<T>>>,
-}
-
-impl<T: 'static> PartialEq for TreeStore<T> {
-    fn eq(&self, other: &TreeStore<T>) -> bool {
-        let eq0 = match (&self.on_change, &other.on_change) {
-            (Some(ptr1), Some(ptr2)) => Rc::ptr_eq(ptr1, ptr2),
-            (None, None) => true,
-            _ => false,
-        };
-        let eq1 = Rc::ptr_eq(&self.inner, &other.inner);
-
-        // Note: return false as soon as one cached version does not
-        // match the real version.
-
-        let version = self.inner.borrow().version;
-
-        let eq2 = match self.cached_version {
-            Some(v) => v == version,
-            None => true,
-        };
-
-        let eq3 = match other.cached_version {
-            Some(v) => v == version,
-            None => true,
-        };
-
-        eq0 && eq1 && eq2 && eq3
-    }
 }
 
 impl<T: ExtractPrimaryKey + 'static> TreeStore<T> {
@@ -106,8 +76,7 @@ impl<T: ExtractPrimaryKey + 'static> TreeStore<T> {
         Self {
             on_change: None,
             inner: Rc::new(RefCell::new(SlabTree::new(extract_key))),
-            cached_version: None,
-        }
+         }
     }
 }
 
@@ -118,7 +87,6 @@ impl<T: 'static> TreeStore<T> {
         Self {
             on_change: None,
             inner: Rc::new(RefCell::new(SlabTree::new(extract_key.into()))),
-            cached_version: None,
         }
     }
 
@@ -128,27 +96,6 @@ impl<T: 'static> TreeStore<T> {
             None => None,
         };
         self
-    }
-
-
-    /// Like Clone, but include the current version.
-    ///
-    /// Useful when used as component property to trigger changes (see
-    /// [use_tree_store]).
-    pub fn clone_with_version(&self) -> Self {
-        let mut clone = self.clone();
-        clone.cached_version = Some(self.inner.borrow().version);
-        clone
-    }
-
-    /// Method to add a change observer.
-    ///
-    /// This is usually called by [Self::on_change], which stores the
-    /// observer inside the [TreeStore] object.
-    pub fn add_listener(&self, cb: Callback<()>) -> TreeStoreObserver<T> {
-        let key = self.inner.borrow_mut()
-            .add_listener(cb);
-        TreeStoreObserver { key, inner: self.inner.clone() }
     }
 
     /// Lock this store for read access.
@@ -208,30 +155,46 @@ impl<T: 'static> TreeStore<T> {
 }
 
 impl<T> DataStore<T> for TreeStore<T> {
+    type Observer = TreeStoreObserver<T>;
 
     fn extract_key(&self, data: &T) -> Key {
         self.inner.borrow().extract_key.apply(data)
     }
 
+    fn add_listener(&self, cb: impl Into<Callback<()>>) -> TreeStoreObserver<T> {
+        let key = self.inner.borrow_mut()
+            .add_listener(cb.into());
+        TreeStoreObserver { key, inner: self.inner.clone() }
+    }
+
     fn set_sorter(&self, sorter: impl IntoSorterFn<T>) {
-        self.inner.borrow_mut().set_sorter(sorter);
+        let mut tree = self.inner.borrow_mut();
+        tree.set_sorter(sorter);
+        tree.notify_listeners();
     }
 
     fn set_filter(&self, filter: impl IntoFilterFn<T>) {
-        self.inner.borrow_mut().set_filter(filter);
+        let mut tree = self.inner.borrow_mut();
+        tree.set_filter(filter);
+        tree.notify_listeners();
     }
 
     fn lookup_filtered_record_key(&self, cursor: usize) -> Option<Key> {
-        self.inner.borrow().lookup_filtered_record_key(cursor)
+        let mut tree = self.inner.borrow_mut();
+        tree.update_filtered_data();
+        tree.lookup_filtered_record_key(cursor)
     }
 
     fn filtered_record_pos(&self, key: &Key) -> Option<usize> {
-        self.inner.borrow().filtered_record_pos(key)
+        let mut tree = self.inner.borrow_mut();
+        tree.update_filtered_data();
+        tree.filtered_record_pos(key)
     }
 
     fn filtered_data_len(&self) -> usize {
-        self.inner.borrow_mut().update_filtered_data();
-        self.inner.borrow().filtered_data_len()
+        let mut tree = self.inner.borrow_mut();
+        tree.update_filtered_data();
+        tree.filtered_data_len()
     }
 
     fn filtered_data<'a>(&'a self) -> Box<dyn Iterator<Item=(usize, Box<dyn DataNode<T> + 'a>)> + 'a> {
@@ -260,7 +223,10 @@ impl<T> DataStore<T> for TreeStore<T> {
     }
 
     fn set_cursor(&self, cursor: Option<usize>) {
-        self.inner.borrow_mut().set_cursor(cursor)
+        let mut tree = self.inner.borrow_mut();
+        tree.update_filtered_data();
+        tree.set_cursor(cursor);
+        tree.notify_listeners();
     }
 }
 

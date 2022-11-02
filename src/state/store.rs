@@ -4,18 +4,43 @@ use std::ops::Range;
 use std::ops::{Deref, DerefMut};
 
 use derivative::Derivative;
+use slab::Slab;
 
 use yew::virtual_dom::Key;
+use yew::html::IntoEventCallback;
+use yew::Callback;
 
 use crate::props::{FilterFn, IntoSorterFn, IntoFilterFn, SorterFn, ExtractKeyFn, ExtractPrimaryKey};
-use crate::state::{DataStore, DataNode, DataNodeDerefGuard};
+use crate::state::{optional_rc_ptr_eq, DataStore, DataNode, DataNodeDerefGuard};
 
 /// Shared list store.
+///
+/// # Note
+///
+/// A [Store] is a shared state behind `Rc<RefCell<state>>`, so
+/// a simply `PartialEq` would always return true. Please register a
+/// listener to get notified about changes.
 #[derive(Derivative)]
 #[derivative(Clone(bound=""), PartialEq(bound=""))]
 pub struct Store<T: 'static> {
-    #[derivative(PartialEq(compare_with="store_state_equal::<T>"))]
+    // Allow to store one StoreObserver here (for convenience)
+    #[derivative(PartialEq(compare_with="optional_rc_ptr_eq"))]
+    on_change: Option<Rc<StoreObserver<T>>>,
+    #[derivative(PartialEq(compare_with="Rc::ptr_eq"))]
     inner: Rc<RefCell<StoreState<T>>>,
+}
+
+/// Owns the  listener callback. When dropped, the
+/// listener callback will be removed from the [Store].
+pub struct StoreObserver<T: 'static> {
+    key: usize,
+    inner: Rc<RefCell<StoreState<T>>>,
+}
+
+impl<T: 'static> Drop for StoreObserver<T> {
+    fn drop(&mut self) {
+        self.inner.borrow_mut().remove_listener(self.key);
+    }
 }
 
 impl<T: ExtractPrimaryKey + 'static> Store<T> {
@@ -27,6 +52,7 @@ impl<T: ExtractPrimaryKey + 'static> Store<T> {
     pub fn new() -> Self {
         let extract_key = ExtractKeyFn::new(|data: &T| data.extract_key());
         Self {
+            on_change: None,
             inner: Rc::new(RefCell::new(StoreState::new(extract_key))),
         }
     }
@@ -37,20 +63,23 @@ impl<T: 'static> Store<T> {
     /// Creates a new instance with the specifies extract key function.
     pub fn with_extract_key(extract_key: impl Into<ExtractKeyFn<T>>) -> Self {
         Self {
+            on_change: None,
             inner: Rc::new(RefCell::new(StoreState::new(extract_key.into()))),
         }
     }
 
-    pub fn set_data(&self, data: Vec<T>) {
-        self.inner.borrow_mut().set_data(data);
+    pub fn on_change(mut self, cb: impl IntoEventCallback<()>) -> Self {
+        self.on_change = match cb.into_event_callback() {
+            Some(cb) => Some(Rc::new(self.add_listener(cb))),
+            None => None,
+        };
+        self
     }
 
-    pub fn filtered_data<'a>(&'a self) -> Box<dyn Iterator<Item=(usize, Box<dyn DataNode<T> + 'a>)> + 'a> {
-        Box::new(StoreIterator {
-            range: None,
-            pos: 0,
-            state: self.inner.borrow(),
-        })
+    pub fn set_data(&self, data: Vec<T>) {
+        let mut state = self.inner.borrow_mut();
+        state.set_data(data);
+        state.notify_listeners();
     }
 
     pub fn read(&self) -> StoreReadGuard<T> {
@@ -60,14 +89,17 @@ impl<T: 'static> Store<T> {
     }
 
     pub fn write(&self) -> StoreWriteGuard<T> {
+        let state = self.inner.borrow_mut();
         StoreWriteGuard {
-            state: self.inner.borrow_mut(),
+            initial_version: state.version,
+            state,
         }
     }
 }
 
-pub struct StoreWriteGuard<'a, T> {
+pub struct StoreWriteGuard<'a, T: 'static> {
     state: RefMut<'a, StoreState<T>>,
+    initial_version: usize,
 }
 
 impl<T> Deref for StoreWriteGuard<'_, T> {
@@ -81,6 +113,14 @@ impl<T> Deref for StoreWriteGuard<'_, T> {
 impl<'a, T> DerefMut for StoreWriteGuard<'a, T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.state.data
+    }
+}
+
+impl<'a, T: 'static> Drop for StoreWriteGuard<'a, T> {
+    fn drop(&mut self) {
+        if self.state.version != self.initial_version {
+            self.state.notify_listeners();
+        }
     }
 }
 
@@ -109,35 +149,52 @@ impl<'a, T> DataNode<T> for StoreNodeRef<'a, T> {
 }
 
 impl<T> DataStore<T> for Store<T> {
+    type Observer = StoreObserver<T>;
 
     fn extract_key(&self, data: &T) -> Key {
         self.inner.borrow().extract_key.apply(data)
     }
 
+    fn add_listener(&self, cb: impl Into<Callback<()>>) -> Self::Observer {
+        let key = self.inner.borrow_mut()
+            .add_listener(cb.into());
+        StoreObserver { key, inner: self.inner.clone() }
+    }
+
     fn set_sorter(&self, sorter: impl IntoSorterFn<T>) {
-        self.inner.borrow_mut().set_sorter(sorter);
+        let mut state = self.inner.borrow_mut();
+        state.set_sorter(sorter);
+        state.notify_listeners();
     }
 
     fn set_filter(&self, filter: impl IntoFilterFn<T>) {
-        self.inner.borrow_mut().set_filter(filter);
+        let mut state = self.inner.borrow_mut();
+        state.set_filter(filter);
+        state.notify_listeners();
     }
 
     fn lookup_filtered_record_key(&self, cursor: usize) -> Option<Key> {
-        self.inner.borrow().lookup_filtered_record_key(cursor)
+        let mut state = self.inner.borrow_mut();
+        state.update_filtered_data();
+        state.lookup_filtered_record_key(cursor)
     }
 
     fn filtered_record_pos(&self, key: &Key) -> Option<usize> {
-        self.inner.borrow().filtered_record_pos(key)
+        let mut state = self.inner.borrow_mut();
+        state.update_filtered_data();
+        state.filtered_record_pos(key)
     }
 
     fn filtered_data_len(&self) -> usize {
-        self.inner.borrow().filtered_data_len()
+        let mut state = self.inner.borrow_mut();
+        state.update_filtered_data();
+        state.filtered_data_len()
     }
 
     fn filtered_data<'a>(
         &'a self,
     ) -> Box<dyn Iterator<Item=(usize, Box<dyn DataNode<T> + 'a>)> + 'a> {
-
+        self.inner.borrow_mut().update_filtered_data();
         Box::new(StoreIterator {
             range: None,
             pos: 0,
@@ -149,7 +206,7 @@ impl<T> DataStore<T> for Store<T> {
         &'a self,
         range: Range<usize>,
     ) -> Box<dyn Iterator<Item=(usize, Box<dyn DataNode<T> + 'a>)> + 'a> {
-
+        self.inner.borrow_mut().update_filtered_data();
         Box::new(StoreIterator {
             pos: range.start,
             range: Some(range),
@@ -162,16 +219,11 @@ impl<T> DataStore<T> for Store<T> {
     }
 
     fn set_cursor(&self, cursor: Option<usize>) {
-        self.inner.borrow_mut().set_cursor(cursor)
+        let mut state = self.inner.borrow_mut();
+        state.update_filtered_data();
+        state.set_cursor(cursor);
+        state.notify_listeners();
     }
-}
-
-fn store_state_equal<T>(
-    me: &Rc<RefCell<StoreState<T>>>,
-    other: &Rc<RefCell<StoreState<T>>>
-) -> bool {
-    Rc::ptr_eq(&me, &other) &&
-        me.borrow().version == other.borrow().version
 }
 
 #[repr(transparent)]
@@ -185,10 +237,13 @@ pub struct StoreState<T> {
     data: Vec<T>,
 
     filtered_data: Vec<usize>,
+    last_view_version: usize,
 
     sorter: Option<SorterFn<T>>,
     filter: Option<FilterFn<T>>,
     cursor: Option<usize>,
+
+    listeners: Slab<Callback<()>>,
 }
 
 impl<T: 'static> StoreState<T> {
@@ -199,29 +254,47 @@ impl<T: 'static> StoreState<T> {
             data: Vec::new(),
             extract_key,
             filtered_data: Vec::new(),
+            last_view_version: 0,
             sorter: None,
             filter: None,
             cursor: None,
+            listeners: Slab::new(),
+        }
+    }
+
+    pub(crate) fn add_listener(&mut self, cb: Callback<()>) -> usize {
+        self.listeners.insert(cb)
+    }
+
+    pub(crate) fn remove_listener(&mut self, key: usize) {
+        self.listeners.remove(key);
+    }
+
+    pub(crate) fn notify_listeners(&self) {
+        for (_key, listener) in self.listeners.iter() {
+            listener.emit(());
         }
     }
 
     fn set_sorter(&mut self, sorter: impl IntoSorterFn<T>) {
+        self.version += 1;
         self.sorter = sorter.into_sorter_fn();
-        self.update_filtered_data();
     }
 
     fn set_filter(&mut self, filter: impl IntoFilterFn<T>) {
+        self.version += 1;
         self.filter = filter.into_filter_fn();
-        self.update_filtered_data();
     }
 
     fn set_data(&mut self, data: Vec<T>) {
         self.version += 1;
         self.data = data;
-        self.update_filtered_data();
     }
 
     fn update_filtered_data(&mut self) {
+        if self.version == self.last_view_version {
+            return;
+        }
 
         let old_cursor_record_key = if let Some(cursor) = self.cursor {
             self.lookup_filtered_record_key(cursor)
@@ -242,6 +315,8 @@ impl<T: 'static> StoreState<T> {
                 sorter.cmp(&self.data[*a], &self.data[*b])
             });
         }
+
+        self.last_view_version = self.version;
 
         self.cursor = match &old_cursor_record_key {
             Some(record_key) => self.filtered_record_pos(record_key),
@@ -272,20 +347,12 @@ impl<T: 'static> StoreState<T> {
         self.filtered_data.len()
     }
 
-    /*
-    fn filtered_data<'a>(&'a self) -> Box<dyn Iterator<Item =(usize, Rc<dyn DataNode<T> + 'a>)> + 'a> {
-        Box::new(self.filtered_data.iter().enumerate().map(|(i, node_id)| {
-            let record = &self.data[*node_id];
-            let wrapper: Rc<dyn DataNode<T>> = Rc::new(Wrapper(record));
-            (i, wrapper)
-        }))
-    }
-     */
     fn get_cursor(&self) -> Option<usize> {
         self.cursor
     }
 
     fn set_cursor(&mut self, cursor: Option<usize>) {
+        self.version += 1;
         self.cursor = match cursor {
             Some(c) => {
                 let len = self.filtered_data_len();

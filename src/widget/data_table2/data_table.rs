@@ -17,6 +17,7 @@ use crate::widget::{get_unique_element_id, Container, Column, SizeObserver};
 use super::{create_indexed_header_list, DataTableColumn, DataTableHeader, Header, IndexedHeader};
 
 pub enum Msg<T: 'static> {
+    DataChange,
     ChangeSort(SorterFn<T>),
     ColumnWidthChange(Vec<f64>),
     ColumnHiddenChange(Vec<bool>),
@@ -268,6 +269,7 @@ pub struct PwtDataTable<T: 'static, S: DataStore<T>> {
     unique_id: String,
     has_focus: bool,
 
+    _store_observer: S::Observer,
     _phantom_store: PhantomData<S>,
 
     headers: Rc<Vec<IndexedHeader<T>>>,
@@ -622,8 +624,11 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
         let row_count = props.store.filtered_data_len();
         let virtual_scroll = props.virtual_scroll.unwrap_or(row_count >= VIRTUAL_SCROLL_TRIGGER);
 
+        let _store_observer = props.store.add_listener(ctx.link().callback(|_| Msg::DataChange));
+
         let mut me = Self {
-             _phantom_store: PhantomData::<S>,
+            _phantom_store: PhantomData::<S>,
+            _store_observer,
             headers: Rc::new(headers),
             unique_id: get_unique_element_id(),
             has_focus: false,
@@ -658,6 +663,10 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
         let props = ctx.props();
         match msg {
+            Msg::DataChange => {
+                self.update_scroll_info(props);
+                true
+            }
             Msg::ColumnWidthChange(column_widths) => {
                 self.column_widths = column_widths;
                 true
@@ -905,7 +914,6 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
         let props = ctx.props();
 
         if props.store != old_props.store { // store changed
-            // log::info!("STORE CHANGED");
             self.update_scroll_info(props);
         }
 

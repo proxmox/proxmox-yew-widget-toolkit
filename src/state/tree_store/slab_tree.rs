@@ -122,12 +122,12 @@ impl<T> SlabTree<T> {
 
     pub fn set_sorter(&mut self, sorter: impl IntoSorterFn<T>) {
         self.sorter = sorter.into_sorter_fn();
-        self.update_filtered_data();
+        self.record_data_change();
     }
 
     pub fn set_filter(&mut self, filter: impl IntoFilterFn<T>) {
         self.filter = filter.into_filter_fn();
-        self.update_filtered_data();
+        self.record_data_change();
     }
 
     fn flatten_tree_children(
@@ -227,7 +227,6 @@ impl<T> SlabTree<T> {
 
     fn record_data_change(&mut self) {
         self.version += 1;
-        // fixme: remove/update linear view
     }
 
     pub fn append(&mut self, record: T) -> SlabTreeNodeMut<T> {

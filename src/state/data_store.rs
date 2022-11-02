@@ -1,6 +1,7 @@
 use std::ops::{Deref, Range};
 
 use yew::virtual_dom::Key;
+use yew::Callback;
 
 use crate::props::{IntoFilterFn, IntoSorterFn};
 
@@ -12,7 +13,16 @@ pub trait DataNode<T> {
 }
 
 pub trait DataStore<T>: Clone + PartialEq {
+    type Observer;
+
     fn extract_key(&self, data: &T) -> Key;
+
+    /// Method to add a change observer.
+    ///
+    /// The returned observer owns the  listener callback. When dropped, the
+    /// listener callback will be removed from the [DataStore].
+    fn add_listener(&self, cb: impl Into<Callback<()>>) -> Self::Observer;
+
     fn set_sorter(&self, sorter: impl IntoSorterFn<T>);
     fn set_filter(&self, filter: impl IntoFilterFn<T>);
     fn lookup_filtered_record_key(&self, cursor: usize) -> Option<Key>;
