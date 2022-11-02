@@ -5,8 +5,8 @@ use yew::virtual_dom::Key;
 
 /// Primary Key extraction
 ///
-/// The [super::Store] has a simplified interface for types
-/// implementing this trait.
+/// The [crate::state::Store] and [crate::state::TreeStore] have a
+/// simplified interface for types implementing this trait.
 pub trait ExtractPrimaryKey {
     fn extract_key(&self) -> Key;
 }

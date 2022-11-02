@@ -120,12 +120,12 @@ impl<T> SlabTree<T> {
         }
     }
 
-    pub fn set_sorter(&mut self, sorter: impl IntoSorterFn<T>) {
+    pub(crate) fn set_sorter(&mut self, sorter: impl IntoSorterFn<T>) {
         self.sorter = sorter.into_sorter_fn();
         self.record_data_change();
     }
 
-    pub fn set_filter(&mut self, filter: impl IntoFilterFn<T>) {
+    pub(crate) fn set_filter(&mut self, filter: impl IntoFilterFn<T>) {
         self.filter = filter.into_filter_fn();
         self.record_data_change();
     }
@@ -181,7 +181,7 @@ impl<T> SlabTree<T> {
         self.last_view_version = self.version;
     }
 
-    pub fn lookup_filtered_record_key(&self, cursor: usize) -> Option<Key> {
+    pub(crate) fn lookup_filtered_record_key(&self, cursor: usize) -> Option<Key> {
         let node_id = match self.linear_view.get(cursor) {
             Some(node_id) => *node_id,
             None => return None,
@@ -195,7 +195,7 @@ impl<T> SlabTree<T> {
         Some(self.extract_key.apply(&entry.record))
     }
 
-    pub fn filtered_record_pos(&self, key: &Key) -> Option<usize> {
+    pub(crate) fn filtered_record_pos(&self, key: &Key) -> Option<usize> {
         self.linear_view.iter()
             .position(|node_id| {
                 let entry = self.tree.get(*node_id).unwrap();
@@ -203,15 +203,15 @@ impl<T> SlabTree<T> {
             })
     }
 
-    pub fn filtered_data_len(&self) -> usize {
+    pub(crate) fn filtered_data_len(&self) -> usize {
         self.linear_view.len()
     }
 
-    pub fn get_cursor(&self) -> Option<usize> {
+    pub(crate) fn get_cursor(&self) -> Option<usize> {
         self.cursor
     }
 
-    pub fn set_cursor(&mut self, cursor: Option<usize>) {
+    pub(crate) fn set_cursor(&mut self, cursor: Option<usize>) {
         self.cursor = match cursor {
             Some(c) => {
                 let len = self.filtered_data_len();
