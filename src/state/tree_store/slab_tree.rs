@@ -14,7 +14,7 @@ pub(crate) struct SlabTreeEntry<T> {
 }
 
 pub struct SlabTree<T> {
-    children: Option<Vec<usize>>,
+    root_id: Option<usize>,
 
     tree: Slab<SlabTreeEntry<T>>,
 
@@ -94,8 +94,8 @@ impl<T> SlabTree<T> {
         let tree = Slab::new();
         Self {
             extract_key: extract_key.into(),
+            root_id: None,
             tree,
-            children: None,
             version: 0,
             linear_view: Vec::new(),
             last_view_version: 0,
@@ -173,8 +173,14 @@ impl<T> SlabTree<T> {
 
         let mut view = Vec::new();
 
-        if let Some(children) = &self.children {
-            self.flatten_tree_children(&mut view, children);
+        if let Some(root_id) = self.root_id {
+            let root = self.tree.get(root_id).unwrap();
+            view.push(root_id);
+            if root.expanded {
+                if let Some(children) = &root.children {
+                    self.flatten_tree_children(&mut view, children);
+                }
+            }
         }
 
         self.linear_view = view;
@@ -229,15 +235,17 @@ impl<T> SlabTree<T> {
         self.version += 1;
     }
 
-    pub fn append(&mut self, record: T) -> SlabTreeNodeMut<T> {
-        let node_id = self.insert_entry(record, None);
-        if let Some(children) = &mut self.children {
-            children.push(node_id);
-        } else {
-            self.children = Some(vec![node_id]);
+    pub fn set_root(&mut self, record: T) -> SlabTreeNodeMut<T> {
+        self.record_data_change();
+
+        let last_root_id = self.root_id;
+        let root_id = self.insert_entry(record, None);
+        self.root_id = Some(root_id);
+        if let Some(last_root_id) = last_root_id {
+            self.remove(last_root_id);
         }
         SlabTreeNodeMut {
-            node_id,
+            node_id: root_id,
             tree: self,
         }
     }
@@ -257,7 +265,21 @@ impl<T> SlabTree<T> {
         }
     }
 
-    pub fn remove(&mut self, node_id: usize) -> Option<T> {
+    pub(crate) fn root_id(&mut self) -> Option<usize> {
+        self.root_id.clone()
+    }
+
+    pub fn root_mut(&mut self) -> Option<SlabTreeNodeMut<T>> {
+        match self.root_id {
+            None => None,
+            Some(root_id) => Some(SlabTreeNodeMut {
+                node_id: root_id,
+                tree: self,
+            }),
+        }
+    }
+
+    pub(crate) fn remove(&mut self, node_id: usize) -> Option<T> {
         if let Some(entry) = self.tree.try_remove(node_id) {
             self.record_data_change();
 
@@ -274,6 +296,11 @@ impl<T> SlabTree<T> {
                     self.remove(child_id);
                 }
             }
+
+            if Some(node_id) == self.root_id {
+                self.root_id = None;
+            }
+
             Some(entry.record)
         } else {
             None
@@ -341,13 +368,12 @@ impl<T> SlabTree<T> {
     /// Sort the tree recursively
     pub fn sort(&mut self, sorter: &SorterFn<T>) {
         self.record_data_change();
-        if let Some(mut children) = self.children.take() {
-            self.sort_children(&mut children, sorter);
-            self.children = Some(children);
+        if let Some(root_id) = self.root_id {
+            self.sort_node(root_id, sorter);
         }
     }
 
-    fn insert_entry(&mut self, record: T, parent_id: Option<usize>) -> usize  {
+    pub(crate) fn insert_entry(&mut self, record: T, parent_id: Option<usize>) -> usize  {
         self.record_data_change();
 
         let level = if let Some(parent_id) = parent_id {

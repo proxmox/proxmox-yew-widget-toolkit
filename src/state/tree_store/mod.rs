@@ -121,9 +121,20 @@ impl<T: 'static> TreeStore<T> {
         }
     }
 
-    pub fn append(&self, record: T) -> SlabTreeNodeShared<T> {
+    pub fn root_mut(&mut self) -> Option<SlabTreeNodeShared<T>> {
         let mut tree = self.inner.borrow_mut();
-        let node = tree.append(record);
+        match tree.root_id() {
+            None => None,
+            Some(root_id) => Some(SlabTreeNodeShared {
+                node_id: root_id,
+                inner: self.inner.clone(),
+            }),
+        }
+    }
+
+    pub fn set_root(&self, record: T) -> SlabTreeNodeShared<T> {
+        let mut tree = self.inner.borrow_mut();
+        let node = tree.set_root(record);
 
         let node = SlabTreeNodeShared {
             node_id: node.node_id(),
@@ -406,10 +417,17 @@ impl<T> SlabTreeNodeShared<T> {
     /// Appends a new node as the last child. Returns a [SlabTreeNodeShared] to the newly added node.
     pub fn append(&mut self, record: T) -> SlabTreeNodeShared<T> {
         let mut tree = self.inner.borrow_mut();
-        let child = tree.append(record);
+        let child_id = tree.insert_entry(record, Some(self.node_id));
+
+        let entry = tree.get_mut(self.node_id).unwrap();
+        if let Some(children) = &mut entry.children {
+            children.push(child_id);
+        } else {
+            entry.children = Some(vec![child_id]);
+        }
 
         SlabTreeNodeShared {
-            node_id: child.node_id(),
+            node_id: child_id,
             inner: self.inner.clone(),
         }
     }
