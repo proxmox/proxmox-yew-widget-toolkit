@@ -171,7 +171,7 @@ impl<T> DataStore<T> for Store<T> {
     type Observer = StoreObserver<T>;
 
     fn extract_key(&self, data: &T) -> Key {
-        self.inner.borrow().extract_key.apply(data)
+        self.inner.borrow().extract_key(data)
     }
 
     fn add_listener(&self, cb: impl Into<Callback<()>>) -> Self::Observer {
@@ -281,6 +281,11 @@ impl<T: 'static> StoreState<T> {
         }
     }
 
+    /// Retunrs the unique record key.
+    pub fn extract_key(&self, data: &T) -> Key {
+        self.extract_key.apply(data)
+    }
+
     pub(crate) fn add_listener(&mut self, cb: Callback<()>) -> usize {
         self.listeners.insert(cb)
     }
@@ -354,12 +359,12 @@ impl<T: 'static> StoreState<T> {
             None => return None,
         };
 
-        Some(self.extract_key.apply(record))
+        Some(self.extract_key(record))
     }
 
     fn filtered_record_pos(&self, key: &Key) -> Option<usize> {
         self.filtered_data.iter()
-            .position(|n| key == &self.extract_key.apply(&self.data[*n]))
+            .position(|n| key == &self.extract_key(&self.data[*n]))
     }
 
     fn filtered_data_len(&self) -> usize {

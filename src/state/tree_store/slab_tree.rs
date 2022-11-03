@@ -56,9 +56,14 @@ impl<'a, T> SlabTreeNodeMut<'a, T> {
         }
     }
 
-    /// Returns the unique node id.
-    pub fn node_id(&self) -> usize {
-        self.node_id
+    // /// Returns the unique node id.
+    // pub fn node_id(&self) -> usize {
+    //     self.node_id
+    // }
+
+    /// Retunrs the unique record key.
+    pub fn key(&self) -> Key {
+        self.tree.extract_key(self.record())
     }
 
     /// Node nesting level
@@ -146,9 +151,14 @@ impl<'a, T: 'static> SlabTreeNodeRef<'a, T> {
         &self.tree.get(self.node_id).unwrap().record
     }
 
-    /// Returns the unique node id.
-    pub fn node_id(&self) -> usize {
-        self.node_id
+    // /// Returns the unique node id.
+    //pub fn node_id(&self) -> usize {
+    //    self.node_id
+    //}
+
+    /// Retunrs the unique record key.
+    pub fn key(&self) -> Key {
+        self.tree.extract_key(self.record())
     }
 
     /// Node nesting level
@@ -196,6 +206,11 @@ impl<T> SlabTree<T> {
             cursor: None,
             listeners: Slab::new(),
          }
+    }
+
+    /// Retunrs the unique record key.
+    pub fn extract_key(&self, data: &T) -> Key {
+        self.extract_key.apply(data)
     }
 
     pub(crate) fn add_listener(&mut self, cb: Callback<()>) -> usize {
@@ -290,14 +305,14 @@ impl<T> SlabTree<T> {
             None => return None,
         };
 
-        Some(self.extract_key.apply(&entry.record))
+        Some(self.extract_key(&entry.record))
     }
 
     pub(crate) fn filtered_record_pos(&self, key: &Key) -> Option<usize> {
         self.linear_view.iter()
             .position(|node_id| {
                 let entry = self.tree.get(*node_id).unwrap();
-                key == &self.extract_key.apply(&entry.record)
+                key == &self.extract_key(&entry.record)
             })
     }
 
@@ -327,6 +342,9 @@ impl<T> SlabTree<T> {
         self.version += 1;
     }
 
+    /// Set the root node.
+    ///
+    /// The current tree (if any) is discarded.
     pub fn set_root(&mut self, record: T) -> SlabTreeNodeMut<T> {
         self.record_data_change();
 
@@ -350,6 +368,7 @@ impl<T> SlabTree<T> {
         self.tree.get_mut(node_id)
     }
 
+    /// Returns the root node.
     pub fn root(&self) -> Option<SlabTreeNodeRef<T>> {
         self.root_id.map(|root_id| SlabTreeNodeRef {
             node_id: root_id,
@@ -357,6 +376,7 @@ impl<T> SlabTree<T> {
         })
     }
 
+    /// Returns the mutable root node.
     pub fn root_mut(&mut self) -> Option<SlabTreeNodeMut<T>> {
         self.root_id.map(|root_id| SlabTreeNodeMut {
             node_id: root_id,
@@ -393,40 +413,11 @@ impl<T> SlabTree<T> {
     }
 
     fn find_node_by_key(&self, key: &Key) -> Option<usize> {
+        // todo: avoid self.tree.iter(), because it is inefficient
+        // (walk down the tree instead)
         self.tree.iter()
-            .find(|(_node_id, entry)| key == &self.extract_key.apply(&entry.record))
+            .find(|(_node_id, entry)| key == &self.extract_key(&entry.record))
             .map(|(node_id, _)| node_id)
-
-    }
-
-    pub fn get_expanded_key(&self, key: &Key) -> bool {
-        let node_id = match self.find_node_by_key(key) {
-            Some(node_id) => node_id,
-            None => return false,
-        };
-        self.tree.get(node_id).unwrap().expanded
-    }
-
-    pub fn set_expanded_key(&mut self, key: &Key, expanded: bool) {
-        self.record_data_change();
-
-        let node_id = match self.find_node_by_key(key) {
-            Some(node_id) => node_id,
-            None => return,
-        };
-        self.tree.get_mut(node_id).unwrap().expanded = expanded;
-    }
-
-    pub fn toggle_expanded_key(&mut self, key: &Key) {
-        self.record_data_change();
-
-        let node_id = match self.find_node_by_key(key) {
-            Some(node_id) => node_id,
-            None => return,
-        };
-
-        let entry = self.tree.get_mut(node_id).unwrap();
-        entry.expanded = !entry.expanded;
     }
 
     fn sort_children(&mut self, children: &mut [usize], sorter: &SorterFn<T>) {
@@ -481,4 +472,27 @@ impl<T> SlabTree<T> {
         vacant_entry.insert(entry);
         node_id
     }
+
+    /// Find a node by its key.
+    pub fn lookup_node(&self, key: &Key) -> Option<SlabTreeNodeRef<T>> {
+        self.find_node_by_key(key)
+            .map(|node_id| {
+                SlabTreeNodeRef {
+                    node_id: node_id,
+                    tree: self,
+                }
+            })
+    }
+
+    /// Find a node by its key (mutable).
+    pub fn lookup_node_mut(&mut self, key: &Key) -> Option<SlabTreeNodeMut<T>> {
+        self.find_node_by_key(key)
+            .map(|node_id| {
+                SlabTreeNodeMut {
+                    node_id: node_id,
+                    tree: self,
+                }
+            })
+    }
+
 }
