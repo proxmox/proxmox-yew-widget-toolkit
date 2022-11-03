@@ -139,6 +139,19 @@ impl<'a, T> SlabTreeNodeMut<'a, T> {
             tree: self.tree,
         })
     }
+
+    /// Find a node by key.
+    pub fn find_node_by_key(&self, key: &Key) -> Option<SlabTreeNodeRef<T>> {
+        self.tree.find_subnode_by_key(self.node_id, key)
+            .map(|node_id| SlabTreeNodeRef { node_id, tree: self.tree })
+    }
+
+    /// Find a node by key (mutable).
+    pub fn find_node_by_key_mut(&mut self, key: &Key) -> Option<SlabTreeNodeMut<T>> {
+        self.tree.find_subnode_by_key(self.node_id, key)
+            .map(|node_id| SlabTreeNodeMut { node_id, tree: self.tree })
+    }
+
 }
 
 /// An immutable reference to a [SlabTree] node.
@@ -190,6 +203,12 @@ impl<'a, T: 'static> SlabTreeNodeRef<'a, T> {
             node_id: parent_id,
             tree: self.tree,
         })
+    }
+
+    /// Find a node by key.
+    pub fn find_node_by_key(&self, key: &Key) -> Option<SlabTreeNodeRef<T>> {
+        self.tree.find_subnode_by_key(self.node_id, key)
+            .map(|node_id| SlabTreeNodeRef { node_id, tree: self.tree })
     }
 }
 
@@ -415,12 +434,32 @@ impl<T> SlabTree<T> {
         }
     }
 
+    fn find_subnode_by_key(&self, node_id: usize, key: &Key) -> Option<usize> {
+        let entry = match self.tree.get(node_id) {
+            Some(entry) => entry,
+            None => return None,
+        };
+
+        if key == &self.extract_key(&entry.record) {
+            return Some(node_id);
+        }
+
+        if let Some(children) = &entry.children {
+            for child_id in children {
+                if let Some(pos) = self.find_subnode_by_key(*child_id, key) {
+                    return Some(pos);
+                }
+            }
+        }
+
+        None
+    }
+
     fn find_node_by_key(&self, key: &Key) -> Option<usize> {
-        // todo: avoid self.tree.iter(), because it is inefficient
-        // (walk down the tree instead)
-        self.tree.iter()
-            .find(|(_node_id, entry)| key == &self.extract_key(&entry.record))
-            .map(|(node_id, _)| node_id)
+        match self.root_id {
+            None => None,
+            Some(root_id) => self.find_subnode_by_key(root_id, key),
+        }
     }
 
     fn sort_children(&mut self, children: &mut [usize], sorter: &SorterFn<T>) {
