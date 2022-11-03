@@ -1,6 +1,8 @@
 mod slab_tree;
 pub use slab_tree::{SlabTree, SlabTreeNodeMut, SlabTreeNodeRef};
 
+mod serde;
+
 use std::rc::Rc;
 use std::cell::{Ref, RefCell, RefMut};
 use std::ops::{Deref, DerefMut, Range};

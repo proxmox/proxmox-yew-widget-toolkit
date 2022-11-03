@@ -182,6 +182,11 @@ impl<'a, T: 'static> SlabTreeNodeRef<'a, T> {
         self.tree.get(self.node_id).unwrap().level
     }
 
+    /// Get the node entry
+    pub(crate) fn get(&self) -> &SlabTreeEntry<T> {
+        self.tree.get(self.node_id).unwrap()
+    }
+
     /// Get the expanded flag
     pub fn expanded(&self) -> bool {
         self.tree.get(self.node_id).unwrap().expanded
