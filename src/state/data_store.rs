@@ -5,6 +5,7 @@ use yew::Callback;
 
 use crate::props::{IntoFilterFn, IntoSorterFn};
 
+#[doc(hidden)]
 pub trait DataNode<T> {
     fn record(&self) -> DataNodeDerefGuard<T>;
     fn level(&self) -> usize;
@@ -12,6 +13,9 @@ pub trait DataNode<T> {
     fn parent(&self) -> Option<Box<dyn DataNode<T> + '_>>;
 }
 
+// Hide docs, because this interface is only used by DataTable,
+// usually not relevant for the user.
+#[doc(hidden)]
 pub trait DataStore<T>: Clone + PartialEq {
     type Observer;
 

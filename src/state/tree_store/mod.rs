@@ -46,7 +46,7 @@ impl<T> Drop for TreeStoreObserver<T> {
     }
 }
 
-/// Shared tree store.
+/// Shared tree store (wrapper for [SlabTree]).
 ///
 /// # Note
 ///
@@ -88,6 +88,12 @@ impl<T: 'static> TreeStore<T> {
         }
     }
 
+    /// Builder style method to set the on_change callback.
+    ///
+    /// This calls [Self::add_listener] to create a new
+    /// [TreeStoreObserver]. The observer is stored inside the
+    /// [TreeStore] object, so each clone can hold a single on_select
+    /// callback.
     pub fn on_change(mut self, cb: impl IntoEventCallback<()>) -> Self {
         self.on_change = match cb.into_event_callback() {
             Some(cb) => Some(Rc::new(self.add_listener(cb))),
@@ -102,9 +108,8 @@ impl<T: 'static> TreeStore<T> {
     ///
     /// Panics if the value is currently mutably locked.
     pub fn read(&self) -> TreeStoreReadGuard<T> {
-        TreeStoreReadGuard {
-            tree: self.inner.borrow(),
-        }
+        let tree = self.inner.borrow();
+        TreeStoreReadGuard { tree }
     }
 
     /// Lock this store for write access.
@@ -124,26 +129,29 @@ impl<T: 'static> TreeStore<T> {
     // DataStore trait implementation, so that we can use those
     // methods without DataStore trait in scope.
 
-    fn extract_key(&self, data: &T) -> Key {
-        self.inner.borrow().extract_key.apply(data)
+    /// Returns the unique record key.
+    pub fn extract_key(&self, data: &T) -> Key {
+        self.inner.borrow().extract_key(data)
     }
 
-    fn add_listener(&self, cb: impl Into<Callback<()>>) -> TreeStoreObserver<T> {
+    /// Method to add an change observer.
+    ///
+    /// This is usually called by [Self::on_change], which stores the
+    /// observer inside the [TreeStore] object.
+    pub fn add_listener(&self, cb: impl Into<Callback<()>>) -> TreeStoreObserver<T> {
         let key = self.inner.borrow_mut()
             .add_listener(cb.into());
         TreeStoreObserver { key, inner: self.inner.clone() }
     }
 
-    fn set_sorter(&self, sorter: impl IntoSorterFn<T>) {
-        let mut tree = self.inner.borrow_mut();
-        tree.set_sorter(sorter);
-        tree.notify_listeners();
+    /// Set the sorter function.
+    pub fn set_sorter(&self, sorter: impl IntoSorterFn<T>) {
+        self.write().set_sorter(sorter);
     }
 
-    fn set_filter(&self, filter: impl IntoFilterFn<T>) {
-        let mut tree = self.inner.borrow_mut();
-        tree.set_filter(filter);
-        tree.notify_listeners();
+    /// Set the filter function.
+    pub fn set_filter(&self, filter: impl IntoFilterFn<T>) {
+        self.write().set_filter(filter);
     }
 
     fn lookup_filtered_record_key(&self, cursor: usize) -> Option<Key> {
@@ -238,7 +246,20 @@ impl<T> DataStore<T> for TreeStore<T> {
 }
 
 
+/// Wraps a borrowed reference to a [TreeStore]
+pub struct TreeStoreReadGuard<'a, T> {
+    tree: Ref<'a, SlabTree<T>>,
+}
 
+impl<T> Deref for TreeStoreReadGuard<'_, T> {
+    type Target = SlabTree<T>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.tree
+    }
+}
+
+/// A wrapper type for a mutably borrowed [TreeStore]
 pub struct TreeStoreWriteGuard<'a, T> {
     tree: RefMut<'a, SlabTree<T>>,
     initial_version: usize,
@@ -266,18 +287,7 @@ impl<'a, T> Drop for TreeStoreWriteGuard<'a, T> {
     }
 }
 
-pub struct TreeStoreReadGuard<'a, T> {
-    tree: Ref<'a, SlabTree<T>>,
-}
-
-impl<T> Deref for TreeStoreReadGuard<'_, T> {
-    type Target = SlabTree<T>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.tree
-    }
-}
-
+#[doc(hidden)]
 pub struct SlabTreeBorrowRef<'a, T: 'static> {
     node_id: usize,
     tree: Ref<'a, SlabTree<T>>,
@@ -352,6 +362,7 @@ impl<T> DerefMut for RecordGuardMut<'_, T> {
     }
 }
 
+#[doc(hidden)]
 pub struct TreeStoreIterator<'a, T: 'static> {
     tree: Ref<'a, SlabTree<T>>,
     pos: usize,

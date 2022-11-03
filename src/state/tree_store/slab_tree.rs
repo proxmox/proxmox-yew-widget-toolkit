@@ -13,6 +13,7 @@ pub(crate) struct SlabTreeEntry<T> {
     pub(crate) children: Option<Vec<usize>>,
 }
 
+/// Tree implementation backup by a vector ([Slab])
 pub struct SlabTree<T> {
     root_id: Option<usize>,
 
@@ -31,6 +32,7 @@ pub struct SlabTree<T> {
     listeners: Slab<Callback<()>>,
 }
 
+/// A mutable reference to a [SlabTree] node.
 pub struct SlabTreeNodeMut<'a, T> {
     pub(crate) node_id: usize,
     pub(crate) tree: &'a mut SlabTree<T>,
@@ -139,6 +141,7 @@ impl<'a, T> SlabTreeNodeMut<'a, T> {
     }
 }
 
+/// An immutable reference to a [SlabTree] node.
 pub struct SlabTreeNodeRef<'a, T: 'static> {
     pub(crate) node_id: usize,
     pub(crate) tree: &'a SlabTree<T>,
@@ -208,7 +211,7 @@ impl<T> SlabTree<T> {
          }
     }
 
-    /// Retunrs the unique record key.
+    /// Returns the unique record key.
     pub fn extract_key(&self, data: &T) -> Key {
         self.extract_key.apply(data)
     }

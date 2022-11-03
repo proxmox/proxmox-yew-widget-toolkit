@@ -32,7 +32,7 @@ pub fn use_store<F: FnOnce() -> Store<T>, T: 'static>(init_fn: F) -> Store<T> {
     (*store).clone()
 }
 
-/// Shared list store.
+/// Shared store for lists of records (`Vec<T>`).
 ///
 /// # Note
 ///
@@ -87,6 +87,12 @@ impl<T: 'static> Store<T> {
         }
     }
 
+    /// Builder style method to set the on_change callback.
+    ///
+    /// This calls [Self::add_listener] to create a new
+    /// [StoreObserver]. The observer is stored inside the
+    /// [Store] object, so each clone can hold a single on_select
+    /// callback.
     pub fn on_change(mut self, cb: impl IntoEventCallback<()>) -> Self {
         self.on_change = match cb.into_event_callback() {
             Some(cb) => Some(Rc::new(self.add_listener(cb))),
@@ -95,18 +101,22 @@ impl<T: 'static> Store<T> {
         self
     }
 
-    pub fn set_data(&self, data: Vec<T>) {
-        let mut state = self.inner.borrow_mut();
-        state.set_data(data);
-        state.notify_listeners();
-    }
-
+    /// Lock this store for read access.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the value is currently mutably locked.
     pub fn read(&self) -> StoreReadGuard<T> {
         StoreReadGuard {
             state: self.inner.borrow(),
         }
     }
 
+    /// Lock this store for write access.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the store is already locked.
     pub fn write(&self) -> StoreWriteGuard<T> {
         let state = self.inner.borrow_mut();
         StoreWriteGuard {
@@ -114,24 +124,53 @@ impl<T: 'static> Store<T> {
             state,
         }
     }
+
+    // DataStore trait implementation, so that we can use those
+    // methods without DataStore trait in scope.
+
+    /// Returns the unique record key.
+    pub fn extract_key(&self, data: &T) -> Key {
+        self.inner.borrow().extract_key(data)
+    }
+
+    /// Method to add an change observer.
+    ///
+    /// This is usually called by [Self::on_change], which stores the
+    /// observer inside the [Store] object.
+    pub fn add_listener(&self, cb: impl Into<Callback<()>>) -> StoreObserver<T> {
+        let key = self.inner.borrow_mut()
+            .add_listener(cb.into());
+        StoreObserver { key, inner: self.inner.clone() }
+    }
+
+    /// Set the sorter function.
+    pub fn set_sorter(&self, sorter: impl IntoSorterFn<T>) {
+        self.write().set_sorter(sorter);
+    }
+
+    /// Set the filter function.
+    pub fn set_filter(&self, filter: impl IntoFilterFn<T>) {
+        self.write().set_filter(filter);
+    }
 }
 
+/// A wrapper type for a mutably borrowed [Store]
 pub struct StoreWriteGuard<'a, T: 'static> {
     state: RefMut<'a, StoreState<T>>,
     initial_version: usize,
 }
 
 impl<T> Deref for StoreWriteGuard<'_, T> {
-    type Target = Vec<T>;
+    type Target = StoreState<T>;
 
     fn deref(&self) -> &Self::Target {
-        &self.state.data
+        &self.state
     }
 }
 
 impl<'a, T> DerefMut for StoreWriteGuard<'a, T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.state.data
+        &mut self.state
     }
 }
 
@@ -143,18 +182,20 @@ impl<'a, T: 'static> Drop for StoreWriteGuard<'a, T> {
     }
 }
 
+/// Wraps a borrowed reference to a [Store]
 pub struct StoreReadGuard<'a, T> {
     state: Ref<'a, StoreState<T>>,
 }
 
 impl<T> Deref for StoreReadGuard<'_, T> {
-    type Target = [T];
+    type Target = StoreState<T>;
 
     fn deref(&self) -> &Self::Target {
-        &self.state.data
+        &self.state
     }
 }
 
+#[doc(hidden)]
 pub struct StoreNodeRef<'a, T>(Ref<'a, T>);
 
 impl<'a, T> DataNode<T> for StoreNodeRef<'a, T> {
@@ -248,6 +289,11 @@ impl<T> DataStore<T> for Store<T> {
 #[repr(transparent)]
 struct Wrapper<'a, T>(&'a T);
 
+/// Implements the [Store] for lists of records (Vec<T>).
+///
+/// This class provides the actual [Store] implementation, and is
+/// accessed vial the [Store::read] and [Store::write] methods.
+
 pub struct StoreState<T> {
     extract_key: ExtractKeyFn<T>,
 
@@ -263,6 +309,20 @@ pub struct StoreState<T> {
     cursor: Option<usize>,
 
     listeners: Slab<Callback<()>>,
+}
+
+impl<T> Deref for StoreState<T> {
+    type Target = Vec<T>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.data
+    }
+}
+
+impl<T> DerefMut for StoreState<T> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.data
+    }
 }
 
 impl<T: 'static> StoreState<T> {
@@ -281,7 +341,7 @@ impl<T: 'static> StoreState<T> {
         }
     }
 
-    /// Retunrs the unique record key.
+    /// Returns the unique record key.
     pub fn extract_key(&self, data: &T) -> Key {
         self.extract_key.apply(data)
     }
@@ -310,7 +370,7 @@ impl<T: 'static> StoreState<T> {
         self.filter = filter.into_filter_fn();
     }
 
-    fn set_data(&mut self, data: Vec<T>) {
+    pub fn set_data(&mut self, data: Vec<T>) {
         self.version += 1;
         self.data = data;
     }
@@ -389,6 +449,21 @@ impl<T: 'static> StoreState<T> {
             None => None,
         }
     }
+
+    /// Find a record position by its key.
+    pub fn record_pos(&self, key: &Key) -> Option<usize> {
+        self.data.iter().position(|record| key == &self.extract_key(record))
+    }
+
+    /// Find a record by its key.
+    pub fn lookup_record(&self, key: &Key) -> Option<&T> {
+        self.record_pos(key).map(|n| &self.data[n])
+    }
+
+    /// Find a record by its key (mutable).
+    pub fn lookup_record_mut(&mut self, key: &Key) -> Option<&mut T> {
+        self.record_pos(key).map(|n| &mut self.data[n])
+    }
 }
 
 impl<'a, T> Deref for Wrapper<'a, T> {
@@ -409,6 +484,7 @@ impl<'a, T> DataNode<T> for Wrapper<'a, T> {
     fn parent(&self) -> Option<Box<dyn DataNode<T> + '_>> { None }
 }
 
+#[doc(hidden)]
 pub struct StoreIterator<'a, T> {
     state: Ref<'a, StoreState<T>>,
     pos: usize,
