@@ -56,25 +56,94 @@ impl<'a, T> SlabTreeNodeMut<'a, T> {
         }
     }
 
+    /// Returns the unique node id.
+    pub fn node_id(&self) -> usize {
+        self.node_id
+    }
+
+    /// Node nesting level
+    pub fn level(&self) -> usize {
+        self.tree.get(self.node_id).unwrap().level
+    }
+
     /// Get the expanded flag
-    pub fn get_expanded(&self) -> bool {
+    pub fn expanded(&self) -> bool {
         self.tree.tree.get(self.node_id).unwrap().expanded
     }
 
     /// Set the expanded flag
     pub fn set_expanded(&mut self, expanded: bool) {
-        if self.get_expanded() != expanded {
+        if self.expanded() != expanded {
             self.tree.record_data_change();
             let entry = self.tree.tree.get_mut(self.node_id).unwrap();
             entry.expanded = expanded;
         }
     }
 
-    /// Mutable reference to the node data.
-    pub fn record(&mut self) -> &mut T {
+    /// Reference to the data record.
+    pub fn record(&self) -> &T {
+        &self.tree.get(self.node_id).unwrap().record
+    }
+
+    /// Mutable reference to the data record.
+    pub fn record_mut(&mut self) -> &mut T {
         self.tree.record_data_change();
         let entry = self.tree.tree.get_mut(self.node_id).unwrap();
         &mut entry.record
+    }
+
+    /// Sort the tree node recursively
+    pub fn sort(&mut self, sorter: &SorterFn<T>) {
+        self.tree.sort_node(self.node_id, sorter);
+    }
+
+    /// Get the parent node.
+    pub fn parent(&self) -> Option<SlabTreeNodeRef<T>> {
+        let entry = match self.tree.get(self.node_id) {
+            Some(entry) => entry,
+            None => return None,
+        };
+
+        let parent_id = match entry.parent_id {
+            Some(parent_id) => parent_id,
+            None => return None,
+        };
+
+        Some(SlabTreeNodeRef {
+            node_id: parent_id,
+            tree: self.tree,
+        })
+    }
+
+    /// Get a mutable ref to the parent node.
+    pub fn parent_mut(&mut self) -> Option<SlabTreeNodeMut<T>> {
+        let entry = match self.tree.get(self.node_id) {
+            Some(entry) => entry,
+            None => return None,
+        };
+
+        let parent_id = match entry.parent_id {
+            Some(parent_id) => parent_id,
+            None => return None,
+        };
+
+        Some(SlabTreeNodeMut {
+            node_id: parent_id,
+            tree: self.tree,
+        })
+    }
+}
+
+pub struct SlabTreeNodeRef<'a, T: 'static> {
+    pub(crate) node_id: usize,
+    pub(crate) tree: &'a SlabTree<T>,
+}
+
+impl<'a, T: 'static> SlabTreeNodeRef<'a, T> {
+
+    /// Reference to the data record.
+    pub fn record(&self) -> &T {
+        &self.tree.get(self.node_id).unwrap().record
     }
 
     /// Returns the unique node id.
@@ -82,9 +151,32 @@ impl<'a, T> SlabTreeNodeMut<'a, T> {
         self.node_id
     }
 
-    /// Sort the tree node recursively
-    pub fn sort(&mut self, sorter: &SorterFn<T>) {
-        self.tree.sort_node(self.node_id, sorter);
+    /// Node nesting level
+    pub fn level(&self) -> usize {
+        self.tree.get(self.node_id).unwrap().level
+    }
+
+    /// Get the expanded flag
+    pub fn expanded(&self) -> bool {
+        self.tree.get(self.node_id).unwrap().expanded
+    }
+
+    /// Get the parent node.
+    pub fn parent(&self) -> Option<SlabTreeNodeRef<T>> {
+        let entry = match self.tree.get(self.node_id) {
+            Some(entry) => entry,
+            None => return None,
+        };
+
+        let parent_id = match entry.parent_id {
+            Some(parent_id) => parent_id,
+            None => return None,
+        };
+
+        Some(SlabTreeNodeRef {
+            node_id: parent_id,
+            tree: self.tree,
+        })
     }
 }
 
@@ -258,25 +350,18 @@ impl<T> SlabTree<T> {
         self.tree.get_mut(node_id)
     }
 
-    pub(crate) fn get_node_ref_mut(&mut self, node_id: usize) -> SlabTreeNodeMut<T> {
-        SlabTreeNodeMut {
-            node_id,
+    pub fn root(&self) -> Option<SlabTreeNodeRef<T>> {
+        self.root_id.map(|root_id| SlabTreeNodeRef {
+            node_id: root_id,
             tree: self,
-        }
-    }
-
-    pub(crate) fn root_id(&mut self) -> Option<usize> {
-        self.root_id.clone()
+        })
     }
 
     pub fn root_mut(&mut self) -> Option<SlabTreeNodeMut<T>> {
-        match self.root_id {
-            None => None,
-            Some(root_id) => Some(SlabTreeNodeMut {
-                node_id: root_id,
-                tree: self,
-            }),
-        }
+        self.root_id.map(|root_id| SlabTreeNodeMut {
+            node_id: root_id,
+            tree: self,
+        })
     }
 
     pub(crate) fn remove(&mut self, node_id: usize) -> Option<T> {

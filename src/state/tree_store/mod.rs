@@ -1,5 +1,5 @@
 mod slab_tree;
-pub use slab_tree::{SlabTree, SlabTreeNodeMut};
+pub use slab_tree::{SlabTree, SlabTreeNodeMut, SlabTreeNodeRef};
 
 use std::rc::Rc;
 use std::cell::{Ref, RefCell, RefMut};
@@ -121,50 +121,8 @@ impl<T: 'static> TreeStore<T> {
         }
     }
 
-    pub fn root_mut(&mut self) -> Option<SlabTreeNodeShared<T>> {
-        let mut tree = self.inner.borrow_mut();
-        match tree.root_id() {
-            None => None,
-            Some(root_id) => Some(SlabTreeNodeShared {
-                node_id: root_id,
-                inner: self.inner.clone(),
-            }),
-        }
-    }
-
-    pub fn set_root(&self, record: T) -> SlabTreeNodeShared<T> {
-        let mut tree = self.inner.borrow_mut();
-        let node = tree.set_root(record);
-
-        let node = SlabTreeNodeShared {
-            node_id: node.node_id(),
-            inner: self.inner.clone(),
-        };
-
-        tree.notify_listeners();
-
-        node
-    }
-
-    pub fn get_expanded(&self, key: &Key) -> bool {
-        self.inner.borrow().get_expanded_key(key)
-    }
-
-    pub fn set_expanded(&self, key: &Key, expanded: bool) {
-        let mut tree = self.inner.borrow_mut();
-        tree.set_expanded_key(key, expanded);
-        tree.notify_listeners();
-    }
-
-    pub fn toggle_expanded(&self, key: &Key) {
-        let mut tree = self.inner.borrow_mut();
-        tree.toggle_expanded_key(key);
-        tree.notify_listeners();
-    }
-}
-
-impl<T> DataStore<T> for TreeStore<T> {
-    type Observer = TreeStoreObserver<T>;
+    // DataStore trait implementation, so that we can use those
+    // methods without DataStore trait in scope.
 
     fn extract_key(&self, data: &T) -> Key {
         self.inner.borrow().extract_key.apply(data)
@@ -206,6 +164,49 @@ impl<T> DataStore<T> for TreeStore<T> {
         tree.filtered_data_len()
     }
 
+    fn get_cursor(&self) -> Option<usize> {
+        self.inner.borrow().get_cursor()
+    }
+
+    fn set_cursor(&self, cursor: Option<usize>) {
+        let mut tree = self.inner.borrow_mut();
+        tree.update_filtered_data();
+        tree.set_cursor(cursor);
+        tree.notify_listeners();
+    }
+}
+
+impl<T> DataStore<T> for TreeStore<T> {
+    type Observer = TreeStoreObserver<T>;
+
+    fn extract_key(&self, data: &T) -> Key {
+        self.extract_key(data)
+    }
+
+    fn add_listener(&self, cb: impl Into<Callback<()>>) -> TreeStoreObserver<T> {
+        self.add_listener(cb)
+    }
+
+    fn set_sorter(&self, sorter: impl IntoSorterFn<T>) {
+        self.set_sorter(sorter);
+    }
+
+    fn set_filter(&self, filter: impl IntoFilterFn<T>) {
+        self.set_filter(filter);
+    }
+
+    fn lookup_filtered_record_key(&self, cursor: usize) -> Option<Key> {
+        self.lookup_filtered_record_key(cursor)
+    }
+
+    fn filtered_record_pos(&self, key: &Key) -> Option<usize> {
+        self.filtered_record_pos(key)
+    }
+
+    fn filtered_data_len(&self) -> usize {
+        self.filtered_data_len()
+    }
+
     fn filtered_data<'a>(&'a self) -> Box<dyn Iterator<Item=(usize, Box<dyn DataNode<T> + 'a>)> + 'a> {
         self.inner.borrow_mut().update_filtered_data();
         Box::new(TreeStoreIterator {
@@ -228,14 +229,11 @@ impl<T> DataStore<T> for TreeStore<T> {
     }
 
     fn get_cursor(&self) -> Option<usize> {
-        self.inner.borrow().get_cursor()
+        self.get_cursor()
     }
 
     fn set_cursor(&self, cursor: Option<usize>) {
-        let mut tree = self.inner.borrow_mut();
-        tree.update_filtered_data();
-        tree.set_cursor(cursor);
-        tree.notify_listeners();
+        self.set_cursor(cursor);
     }
 }
 
@@ -280,12 +278,12 @@ impl<T> Deref for TreeStoreReadGuard<'_, T> {
     }
 }
 
-pub struct SlabTreeNodeRef<'a, T: 'static> {
+pub struct SlabTreeBorrowRef<'a, T: 'static> {
     node_id: usize,
     tree: Ref<'a, SlabTree<T>>,
 }
 
-impl<'a, T> DataNode<T> for SlabTreeNodeRef<'a, T> {
+impl<'a, T> DataNode<T> for SlabTreeBorrowRef<'a, T> {
     fn record(&self) -> DataNodeDerefGuard<T> {
         let guard = Box::new(RecordGuard {
             node_id: self.node_id,
@@ -310,19 +308,13 @@ impl<'a, T> DataNode<T> for SlabTreeNodeRef<'a, T> {
             None => return None,
         };
 
-        let parent = Box::new(SlabTreeNodeRef {
+        let parent = Box::new(SlabTreeBorrowRef {
             node_id: parent_id,
             tree: Ref::clone(&self.tree),
         });
 
         Some(parent)
     }
-
-}
-
-pub struct SlabTreeNodeShared<T> {
-    node_id: usize,
-    inner: Rc<RefCell<SlabTree<T>>>,
 }
 
 pub struct RecordGuard<'a, T> {
@@ -333,38 +325,6 @@ pub struct RecordGuard<'a, T> {
 pub struct RecordGuardMut<'a, T> {
     node_id: usize,
     tree: RefMut<'a, SlabTree<T>>,
-}
-
-impl<T> DataNode<T> for SlabTreeNodeShared<T> {
-    fn record(&self) -> DataNodeDerefGuard<T> {
-        let guard: Box<RecordGuard<T>> = Box::new(SlabTreeNodeShared::record(self));
-        DataNodeDerefGuard { guard }
-    }
-    fn level(&self) -> usize {
-        self.inner.borrow().get(self.node_id).unwrap().level
-    }
-    fn expanded(&self) -> bool {
-        self.inner.borrow().get(self.node_id).unwrap().expanded
-    }
-    fn parent(&self) -> Option<Box<dyn DataNode<T> + '_>> {
-        let tree = self.inner.borrow();
-        let entry = match tree.get(self.node_id) {
-            Some(entry) => entry,
-            None => return None,
-        };
-
-        let parent_id = match entry.parent_id {
-            Some(parent_id) => parent_id,
-            None => return None,
-        };
-
-        let parent = Box::new(SlabTreeNodeShared {
-            node_id: parent_id,
-            inner: Rc::clone(&self.inner),
-        });
-
-        Some(parent)
-    }
 }
 
 impl<T> Deref for RecordGuard<'_, T> {
@@ -392,48 +352,6 @@ impl<T> DerefMut for RecordGuardMut<'_, T> {
     }
 }
 
-impl<T> SlabTreeNodeShared<T> {
-
-    /// Mutable reference to the node data.
-    pub fn record_mut(&self) -> RecordGuardMut<T> {
-        RecordGuardMut {
-            node_id: self.node_id,
-            tree: self.inner.borrow_mut(),
-        }
-    }
-
-    pub fn record(&self) -> RecordGuard<T> {
-        RecordGuard {
-            node_id: self.node_id,
-            tree: self.inner.borrow(),
-        }
-    }
-
-    pub fn set_expanded(&mut self, expanded: bool) {
-        self.inner.borrow_mut().get_node_ref_mut(self.node_id)
-            .set_expanded(expanded);
-    }
-
-    /// Appends a new node as the last child. Returns a [SlabTreeNodeShared] to the newly added node.
-    pub fn append(&mut self, record: T) -> SlabTreeNodeShared<T> {
-        let mut tree = self.inner.borrow_mut();
-        let child_id = tree.insert_entry(record, Some(self.node_id));
-
-        let entry = tree.get_mut(self.node_id).unwrap();
-        if let Some(children) = &mut entry.children {
-            children.push(child_id);
-        } else {
-            entry.children = Some(vec![child_id]);
-        }
-
-        SlabTreeNodeShared {
-            node_id: child_id,
-            inner: self.inner.clone(),
-        }
-    }
-
-}
-
 pub struct TreeStoreIterator<'a, T: 'static> {
     tree: Ref<'a, SlabTree<T>>,
     pos: usize,
@@ -458,7 +376,7 @@ impl <'a, T: 'static> Iterator for TreeStoreIterator<'a, T> where Self: 'a {
         self.pos += 1;
 
         let node_id = self.tree.linear_view[pos];
-        let node = Box::new(SlabTreeNodeRef {
+        let node = Box::new(SlabTreeBorrowRef {
             node_id,
             tree: Ref::clone(&self.tree),
         });
