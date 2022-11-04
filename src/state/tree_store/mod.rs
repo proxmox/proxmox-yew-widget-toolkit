@@ -2,8 +2,11 @@ mod slab_tree;
 pub use slab_tree::{SlabTree, SlabTreeNodeMut, SlabTreeNodeRef};
 pub(crate) use slab_tree::SlabTreeEntry;
 
-mod slab_tree_serde;
-pub use slab_tree_serde::SlabTreeData;
+mod keyed_slab_tree;
+pub use keyed_slab_tree::{KeyedSlabTree, KeyedSlabTreeNodeMut, KeyedSlabTreeNodeRef};
+
+//mod slab_tree_serde;
+//pub use slab_tree_serde::SlabTreeData;
 
 use std::rc::Rc;
 use std::cell::{Ref, RefCell, RefMut};
@@ -41,7 +44,7 @@ pub fn use_tree_store<F: FnOnce() -> TreeStore<T>, T: 'static>(init_fn: F) -> Tr
 /// listener callback will be removed from the [TreeStore].
 pub struct TreeStoreObserver<T> {
     key: usize,
-    inner: Rc<RefCell<SlabTree<T>>>,
+    inner: Rc<RefCell<KeyedSlabTree<T>>>,
 }
 
 impl<T> Drop for TreeStoreObserver<T> {
@@ -50,7 +53,7 @@ impl<T> Drop for TreeStoreObserver<T> {
     }
 }
 
-/// Shared tree store (wrapper for [SlabTree]).
+/// Shared tree store (wrapper for [KeyedSlabTree]).
 ///
 /// # Note
 ///
@@ -64,7 +67,7 @@ pub struct TreeStore<T: 'static> {
     #[derivative(PartialEq(compare_with="optional_rc_ptr_eq"))]
     on_change: Option<Rc<TreeStoreObserver<T>>>,
     #[derivative(PartialEq(compare_with="Rc::ptr_eq"))]
-    inner: Rc<RefCell<SlabTree<T>>>,
+    inner: Rc<RefCell<KeyedSlabTree<T>>>,
 }
 
 impl<T: ExtractPrimaryKey + 'static> TreeStore<T> {
@@ -77,7 +80,7 @@ impl<T: ExtractPrimaryKey + 'static> TreeStore<T> {
         let extract_key = ExtractKeyFn::new(|data: &T| data.extract_key());
         Self {
             on_change: None,
-            inner: Rc::new(RefCell::new(SlabTree::new(extract_key))),
+            inner: Rc::new(RefCell::new(KeyedSlabTree::new(extract_key))),
          }
     }
 }
@@ -88,7 +91,7 @@ impl<T: 'static> TreeStore<T> {
     pub fn with_extract_key(extract_key: impl Into<ExtractKeyFn<T>>) -> Self {
         Self {
             on_change: None,
-            inner: Rc::new(RefCell::new(SlabTree::new(extract_key.into()))),
+            inner: Rc::new(RefCell::new(KeyedSlabTree::new(extract_key.into()))),
         }
     }
 
@@ -125,7 +128,7 @@ impl<T: 'static> TreeStore<T> {
         let tree = self.inner.borrow_mut();
 
         TreeStoreWriteGuard {
-            initial_version: tree.version,
+            initial_version: tree.version(),
             tree,
         }
     }
@@ -252,11 +255,11 @@ impl<T> DataStore<T> for TreeStore<T> {
 
 /// Wraps a borrowed reference to a [TreeStore]
 pub struct TreeStoreReadGuard<'a, T> {
-    tree: Ref<'a, SlabTree<T>>,
+    tree: Ref<'a, KeyedSlabTree<T>>,
 }
 
 impl<T> Deref for TreeStoreReadGuard<'_, T> {
-    type Target = SlabTree<T>;
+    type Target = KeyedSlabTree<T>;
 
     fn deref(&self) -> &Self::Target {
         &self.tree
@@ -265,12 +268,12 @@ impl<T> Deref for TreeStoreReadGuard<'_, T> {
 
 /// A wrapper type for a mutably borrowed [TreeStore]
 pub struct TreeStoreWriteGuard<'a, T> {
-    tree: RefMut<'a, SlabTree<T>>,
+    tree: RefMut<'a, KeyedSlabTree<T>>,
     initial_version: usize,
 }
 
 impl<T> Deref for TreeStoreWriteGuard<'_, T> {
-    type Target = SlabTree<T>;
+    type Target = KeyedSlabTree<T>;
 
     fn deref(&self) -> &Self::Target {
         &self.tree
@@ -285,19 +288,19 @@ impl<'a, T> DerefMut for TreeStoreWriteGuard<'a, T> {
 
 impl<'a, T> Drop for TreeStoreWriteGuard<'a, T> {
     fn drop(&mut self) {
-        if self.tree.version != self.initial_version {
+        if self.tree.version() != self.initial_version {
             self.tree.notify_listeners();
         }
     }
 }
 
 #[doc(hidden)]
-pub struct SlabTreeBorrowRef<'a, T: 'static> {
+pub struct KeyedSlabTreeBorrowRef<'a, T: 'static> {
     node_id: usize,
-    tree: Ref<'a, SlabTree<T>>,
+    tree: Ref<'a, KeyedSlabTree<T>>,
 }
 
-impl<'a, T> DataNode<T> for SlabTreeBorrowRef<'a, T> {
+impl<'a, T> DataNode<T> for KeyedSlabTreeBorrowRef<'a, T> {
     fn record(&self) -> DataNodeDerefGuard<T> {
         let guard = Box::new(RecordGuard {
             node_id: self.node_id,
@@ -322,7 +325,7 @@ impl<'a, T> DataNode<T> for SlabTreeBorrowRef<'a, T> {
             None => return None,
         };
 
-        let parent = Box::new(SlabTreeBorrowRef {
+        let parent = Box::new(KeyedSlabTreeBorrowRef {
             node_id: parent_id,
             tree: Ref::clone(&self.tree),
         });
@@ -333,12 +336,12 @@ impl<'a, T> DataNode<T> for SlabTreeBorrowRef<'a, T> {
 
 pub struct RecordGuard<'a, T> {
     node_id: usize,
-    tree: Ref<'a, SlabTree<T>>,
+    tree: Ref<'a, KeyedSlabTree<T>>,
 }
 
 pub struct RecordGuardMut<'a, T> {
     node_id: usize,
-    tree: RefMut<'a, SlabTree<T>>,
+    tree: RefMut<'a, KeyedSlabTree<T>>,
 }
 
 impl<T> Deref for RecordGuard<'_, T> {
@@ -368,7 +371,7 @@ impl<T> DerefMut for RecordGuardMut<'_, T> {
 
 #[doc(hidden)]
 pub struct TreeStoreIterator<'a, T: 'static> {
-    tree: Ref<'a, SlabTree<T>>,
+    tree: Ref<'a, KeyedSlabTree<T>>,
     pos: usize,
     range: Option<Range<usize>>,
 }
@@ -391,7 +394,7 @@ impl <'a, T: 'static> Iterator for TreeStoreIterator<'a, T> where Self: 'a {
         self.pos += 1;
 
         let node_id = self.tree.linear_view[pos];
-        let node = Box::new(SlabTreeBorrowRef {
+        let node = Box::new(KeyedSlabTreeBorrowRef {
             node_id,
             tree: Ref::clone(&self.tree),
         });
