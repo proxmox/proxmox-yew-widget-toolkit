@@ -1,7 +1,9 @@
 mod slab_tree;
 pub use slab_tree::{SlabTree, SlabTreeNodeMut, SlabTreeNodeRef};
+pub(crate) use slab_tree::SlabTreeEntry;
 
-mod serde;
+mod slab_tree_serde;
+pub use slab_tree_serde::SlabTreeData;
 
 use std::rc::Rc;
 use std::cell::{Ref, RefCell, RefMut};

@@ -4,8 +4,9 @@ use yew::virtual_dom::Key;
 use yew::Callback;
 use crate::props::{ExtractKeyFn, IntoFilterFn, IntoSorterFn, SorterFn, FilterFn};
 
+use super::SlabTreeData;
+
 pub(crate) struct SlabTreeEntry<T> {
-    //pub(crate) node_id: usize,
     pub(crate) parent_id: Option<usize>,
     pub(crate) level: usize,
     pub(crate) record: T,
@@ -385,6 +386,20 @@ impl<T> SlabTree<T> {
             node_id: root_id,
             tree: self,
         }
+    }
+
+    /// Set the whole tree
+    ///
+    /// The current tree (if any) is discarded.   
+    pub fn set_root_tree(&mut self, data: SlabTreeData<T>) {
+        self.record_data_change();
+        if let Some(last_root_id) = self.root_id {
+            self.remove(last_root_id);
+            self.root_id = None;
+        }
+
+        self.tree = data.slab;
+        self.root_id = data.root_id;
     }
 
     pub(crate) fn get(&self, node_id: usize) -> Option<&SlabTreeEntry<T>> {

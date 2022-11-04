@@ -1,0 +1,224 @@
+use std::borrow::Cow;
+
+use slab::Slab;
+
+use serde::{Serialize, Serializer, Deserialize, Deserializer};
+use serde::ser::{SerializeStruct, SerializeSeq};
+use serde::de::{DeserializeSeed, Error, MapAccess, SeqAccess, Visitor};
+
+use super::{SlabTree, SlabTreeEntry, SlabTreeNodeRef};
+
+// { record: {}, expanded: true, children: [ record: { }, ... ] }
+
+struct SlabTreeChildList<'a, T> {
+    children: &'a [usize],
+    tree: &'a SlabTree<T>,
+}
+
+impl<'a, T: 'static + Serialize> Serialize for SlabTreeChildList<'a, T> {
+
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut seq = serializer.serialize_seq(Some(self.children.len()))?;
+        for child_id in self.children {
+            let child = SlabTreeNodeRef {
+                node_id: *child_id,
+                tree: self.tree,
+            };
+            seq.serialize_element(&child)?;
+        }
+        seq.end()
+    }
+}
+
+impl<'a, T: 'static + Serialize> Serialize for SlabTreeNodeRef<'a, T> {
+
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut state = serializer.serialize_struct("TreeNode", 3)?;
+        let entry = self.get();
+
+        state.serialize_field("record", &entry.record)?;
+        if entry.expanded {
+            state.serialize_field("expanded", &entry.expanded)?;
+        } else {
+            state.skip_field("expanded")?;
+        }
+
+        if let Some(children) = &entry.children {
+            let children = SlabTreeChildList {
+                children,
+                tree: self.tree,
+            };
+            state.serialize_field("children", &children)?;
+        } else {
+            state.skip_field("children")?;
+        }
+
+        state.end()
+    }
+}
+
+impl<T: 'static + Serialize> Serialize for SlabTree<T> {
+
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        match self.root() {
+            None => serializer.serialize_struct("TreeNode", 0)?.end(),
+            Some(node_ref) => node_ref.serialize(serializer),
+        }
+    }
+}
+
+pub struct SlabTreeData<T> {
+    pub(crate) root_id: Option<usize>,
+    pub(crate) slab: Slab<SlabTreeEntry<T>>,
+}
+
+struct TreeNodeVisitor<'a, T> {
+    level: usize,
+    tree: &'a mut SlabTreeData<T>,
+}
+
+struct ChildrenVisitor<'a, T> {
+    level: usize,
+    tree: &'a mut SlabTreeData<T>,
+}
+
+impl<'a, 'de, T: Deserialize<'de>> Visitor<'de> for ChildrenVisitor<'a, T> {
+    type Value = Vec<usize>;
+
+    fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+        formatter.write_str("a tree node children")
+    }
+
+    fn visit_seq<A: SeqAccess<'de>>(self, mut seq: A) -> Result<Self::Value, A::Error> {
+        let mut children = Vec::new();
+
+        loop {
+            let visitor = TreeNodeVisitor {
+                tree: self.tree,
+                level: self.level,
+            };
+            match seq.next_element_seed(visitor)? {
+                Some(child) => children.push(child),
+                None => break,
+            }
+        }
+        Ok(children)
+    }
+}
+
+impl<'a, 'de, T: Deserialize<'de>> DeserializeSeed<'de> for ChildrenVisitor<'a, T> {
+    type Value = Vec<usize>;
+
+    fn deserialize<D: Deserializer<'de>>(self, deserializer: D) -> Result<Self::Value, D::Error> {
+
+        let children: Vec<usize> = deserializer.deserialize_seq(self)?;
+        Ok(children)
+    }
+}
+
+static KNOWN_FIELDS: &[&'static str] = &["record", "expanded", "children"];
+
+impl<'a, 'de, T: Deserialize<'de>> Visitor<'de> for TreeNodeVisitor<'a, T> {
+    type Value = usize;
+
+    fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+        formatter.write_str("a tree node")
+    }
+
+    fn visit_map<A: MapAccess<'de>>(self, mut map: A) -> Result<Self::Value, A::Error> {
+        let mut record: Option<T> = None;
+        let mut expanded = false;
+        let mut children: Option<Vec<usize>> = None;
+
+        loop {
+            let key: Cow<str> = match map.next_key()? {
+                None => break,
+                Some(key) => key,
+            };
+
+            match key.as_ref() {
+                "expanded" => {
+                    expanded = map.next_value()?;
+                }
+                "record" => {
+                    record = Some(map.next_value()?);
+                }
+                "children" => {
+                    children = Some(map.next_value_seed(ChildrenVisitor {
+                        tree: self.tree,
+                        level: self.level + 1,
+                    })?);
+                }
+                unknown => {
+                    return Err(A::Error::unknown_field(unknown, KNOWN_FIELDS));
+                }
+            }
+        }
+
+        let record = match record {
+            Some(record) => record,
+            None => {
+                return Err(A::Error::missing_field("record"));
+            }
+        };
+
+        let node_id = self.tree.slab.vacant_key();
+
+        if let Some(children) = children.as_ref() {
+            for child_id in children {
+                let child = self.tree.slab.get_mut(*child_id).unwrap();
+                child.parent_id = Some(node_id);
+            }
+        }
+
+        let data = SlabTreeEntry {
+            record,
+            expanded,
+            parent_id: None, // set by caller
+            level: self.level,
+            children: children,
+        };
+
+        assert!(self.tree.slab.insert(data) == node_id);
+
+        Ok(node_id)
+    }
+}
+
+impl<'de, T: Deserialize<'de>> Deserialize<'de> for SlabTreeData<T> {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<SlabTreeData<T>, D::Error> {
+        let mut tree = SlabTreeData {
+            slab: Slab::new(),
+            root_id: None,
+        };
+
+        let visitor = TreeNodeVisitor { tree: &mut tree, level: 0 };
+
+        let root_id = visitor.deserialize(deserializer)?;
+
+        tree.root_id = Some(root_id);
+
+        Ok(tree)
+    }
+}
+
+impl<'a, 'de, T: Deserialize<'de>> DeserializeSeed<'de> for TreeNodeVisitor<'a, T> {
+    type Value = usize;
+
+    fn deserialize<D: Deserializer<'de>>(self, deserializer: D) -> Result<Self::Value, D::Error> {
+        deserializer.deserialize_struct(
+            "TreeNode",
+            KNOWN_FIELDS,
+            self,
+        )
+    }
+}
