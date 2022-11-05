@@ -6,6 +6,7 @@ use serde::{Serialize, Serializer, Deserialize, Deserializer};
 use serde::ser::{SerializeStruct, SerializeSeq};
 use serde::de::{DeserializeSeed, Error, MapAccess, SeqAccess, Visitor};
 
+use crate::props::ExtractPrimaryKey;
 use super::{SlabTree, KeyedSlabTree, SlabTreeEntry, SlabTreeNodeRef};
 
 // { record: {}, expanded: true, children: [ record: { }, ... ] }
@@ -212,6 +213,18 @@ impl<'de, T: Deserialize<'de>> Deserialize<'de> for SlabTree<T> {
         let root_id = visitor.deserialize(deserializer)?;
 
         tree.root_id = Some(root_id);
+
+        Ok(tree)
+    }
+}
+
+impl<'de, T: Deserialize<'de> + ExtractPrimaryKey> Deserialize<'de> for KeyedSlabTree<T> {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<KeyedSlabTree<T>, D::Error> {
+
+        let data = SlabTree::<T>::deserialize(deserializer)?;
+
+        let mut tree = KeyedSlabTree::new();
+        tree.set_root_tree(data);
 
         Ok(tree)
     }

@@ -76,11 +76,10 @@ impl<T: ExtractPrimaryKey + 'static> TreeStore<T> {
     /// Use [Self::with_extract_key] for types which does not
     /// implement [ExtractPrimaryKey].
     pub fn new() -> Self {
-        let extract_key = ExtractKeyFn::new(|data: &T| data.extract_key());
         Self {
             on_change: None,
-            inner: Rc::new(RefCell::new(KeyedSlabTree::new(extract_key))),
-         }
+            inner: Rc::new(RefCell::new(KeyedSlabTree::new())),
+        }
     }
 }
 
@@ -88,9 +87,10 @@ impl<T: 'static> TreeStore<T> {
 
     /// Creates a new instance with the specifies extract key function.
     pub fn with_extract_key(extract_key: impl Into<ExtractKeyFn<T>>) -> Self {
+        let tree = KeyedSlabTree::with_extract_key(extract_key);
         Self {
             on_change: None,
-            inner: Rc::new(RefCell::new(KeyedSlabTree::new(extract_key.into()))),
+            inner: Rc::new(RefCell::new(tree)),
         }
     }
 

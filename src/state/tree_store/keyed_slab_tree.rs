@@ -2,7 +2,7 @@ use slab::Slab;
 
 use yew::virtual_dom::Key;
 use yew::Callback;
-use crate::props::{ExtractKeyFn, IntoFilterFn, IntoSorterFn, SorterFn, FilterFn};
+use crate::props::{ExtractKeyFn, ExtractPrimaryKey, IntoFilterFn, IntoSorterFn, SorterFn, FilterFn};
 
 use super::{SlabTree, SlabTreeEntry};
 
@@ -96,9 +96,17 @@ impl<T> From<KeyedSlabTree<T>> for SlabTree<T> {
     }
 }
 
+impl<T: ExtractPrimaryKey> KeyedSlabTree<T> {
+
+    pub fn new() -> Self {
+        let extract_key = ExtractKeyFn::new(|data: &T| data.extract_key());
+        Self::with_extract_key(extract_key)
+    }
+}
+
 impl<T> KeyedSlabTree<T> {
 
-    pub fn new(extract_key: impl Into<ExtractKeyFn<T>>) -> Self {
+    pub fn with_extract_key(extract_key: impl Into<ExtractKeyFn<T>>) -> Self {
         Self {
             extract_key: extract_key.into(),
             tree: SlabTree::new(),
