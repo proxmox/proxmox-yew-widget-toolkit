@@ -5,8 +5,7 @@ pub(crate) use slab_tree::SlabTreeEntry;
 mod keyed_slab_tree;
 pub use keyed_slab_tree::{KeyedSlabTree, KeyedSlabTreeNodeMut, KeyedSlabTreeNodeRef};
 
-//mod slab_tree_serde;
-//pub use slab_tree_serde::SlabTreeData;
+mod slab_tree_serde;
 
 use std::rc::Rc;
 use std::cell::{Ref, RefCell, RefMut};

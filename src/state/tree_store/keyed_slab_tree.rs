@@ -15,8 +15,7 @@ use super::{SlabTree, SlabTreeEntry};
 /// - Cursor
 /// - Listener callbacks
 pub struct KeyedSlabTree<T> {
-    tree: SlabTree<T>,
-
+    pub(crate) tree: SlabTree<T>,
     pub(crate) linear_view: Vec<usize>, // node_id list
     last_view_version: usize,
 

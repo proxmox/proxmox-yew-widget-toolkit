@@ -6,16 +6,16 @@ use serde::{Serialize, Serializer, Deserialize, Deserializer};
 use serde::ser::{SerializeStruct, SerializeSeq};
 use serde::de::{DeserializeSeed, Error, MapAccess, SeqAccess, Visitor};
 
-use super::{SlabTree, SlabTreeEntry, SlabTreeNodeRef};
+use super::{SlabTree, KeyedSlabTree, SlabTreeEntry, SlabTreeNodeRef};
 
 // { record: {}, expanded: true, children: [ record: { }, ... ] }
 
-struct SlabTreeChildList<'a, T> {
+struct ChildList<'a, T> {
     children: &'a [usize],
     tree: &'a SlabTree<T>,
 }
 
-impl<'a, T: 'static + Serialize> Serialize for SlabTreeChildList<'a, T> {
+impl<'a, T: 'static + Serialize> Serialize for ChildList<'a, T> {
 
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -40,7 +40,7 @@ impl<'a, T: 'static + Serialize> Serialize for SlabTreeNodeRef<'a, T> {
         S: Serializer,
     {
         let mut state = serializer.serialize_struct("TreeNode", 3)?;
-        let entry = self.get();
+        let entry = self.tree.get(self.node_id).unwrap();
 
         state.serialize_field("record", &entry.record)?;
         if entry.expanded {
@@ -50,7 +50,7 @@ impl<'a, T: 'static + Serialize> Serialize for SlabTreeNodeRef<'a, T> {
         }
 
         if let Some(children) = &entry.children {
-            let children = SlabTreeChildList {
+            let children = ChildList {
                 children,
                 tree: self.tree,
             };
@@ -76,19 +76,24 @@ impl<T: 'static + Serialize> Serialize for SlabTree<T> {
     }
 }
 
-pub struct SlabTreeData<T> {
-    pub(crate) root_id: Option<usize>,
-    pub(crate) slab: Slab<SlabTreeEntry<T>>,
+impl<T: 'static + Serialize> Serialize for KeyedSlabTree<T> {
+
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        self.tree.serialize(serializer)
+    }
 }
 
 struct TreeNodeVisitor<'a, T> {
     level: usize,
-    tree: &'a mut SlabTreeData<T>,
+    tree: &'a mut SlabTree<T>,
 }
 
 struct ChildrenVisitor<'a, T> {
     level: usize,
-    tree: &'a mut SlabTreeData<T>,
+    tree: &'a mut SlabTree<T>,
 }
 
 impl<'a, 'de, T: Deserialize<'de>> Visitor<'de> for ChildrenVisitor<'a, T> {
@@ -194,11 +199,12 @@ impl<'a, 'de, T: Deserialize<'de>> Visitor<'de> for TreeNodeVisitor<'a, T> {
     }
 }
 
-impl<'de, T: Deserialize<'de>> Deserialize<'de> for SlabTreeData<T> {
-    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<SlabTreeData<T>, D::Error> {
-        let mut tree = SlabTreeData {
+impl<'de, T: Deserialize<'de>> Deserialize<'de> for SlabTree<T> {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<SlabTree<T>, D::Error> {
+        let mut tree = SlabTree {
             slab: Slab::new(),
             root_id: None,
+            version: 0,
         };
 
         let visitor = TreeNodeVisitor { tree: &mut tree, level: 0 };
