@@ -80,8 +80,40 @@ macro_rules! impl_slab_node_ref {
 
             Some(<$R>::new(self.tree, parent_id))
         }
+
+        /// Number of children
+        pub fn children_count(&self) -> usize {
+            let entry = match self.tree.get(self.node_id) {
+                Some(entry) => entry,
+                None => return 0,
+            };
+            match &entry.children {
+                Some(children) => children.len(),
+                None => 0,
+            }
+        }
+
+        pub fn child(&self, pos: usize) -> Option<$R> {
+            let entry = match self.tree.get(self.node_id) {
+                Some(entry) => entry,
+                None => return None,
+            };
+
+            let child_id = match &entry.children {
+                Some(children) => {
+                    match children.get(pos) {
+                        Some(child_id) => *child_id,
+                        None => return None,
+                    }
+                }
+                None => return None,
+            };
+
+            Some(<$R>::new(self.tree, child_id))
+        }
     }
 }
+
 #[macro_export]
 macro_rules! impl_slab_node_mut {
     ($M:ty) => {
@@ -135,16 +167,53 @@ macro_rules! impl_slab_node_mut {
 
             Some(<$M>::new(self.tree, parent_id))
         }
+
+        pub fn child_mut(&mut self, pos: usize) -> Option<$M> {
+            let entry = match self.tree.get(self.node_id) {
+                Some(entry) => entry,
+                None => return None,
+            };
+
+            let child_id = match &entry.children {
+                Some(children) => {
+                    match children.get(pos) {
+                        Some(child_id) => *child_id,
+                        None => return None,
+                    }
+                }
+                None => return None,
+            };
+
+            Some(<$M>::new(self.tree, child_id))
+        }
+    }
+}
+
+impl<'a, T> SlabTreeNodeRef<'a, T> {
+    impl_slab_node_ref!{SlabTreeNodeRef<T>}
+
+    pub fn children(&self) -> SlabTreeChildren<T> {
+        let entry = self.tree.get(self.node_id).unwrap();
+        let pos = entry.children.is_some().then(|| 0);
+        SlabTreeChildren {
+            node_ref: self,
+            pos,
+        }
     }
 }
 
 impl<'a, T> SlabTreeNodeMut<'a, T> {
     impl_slab_node_ref!{SlabTreeNodeRef<T>}
     impl_slab_node_mut!{SlabTreeNodeMut<T>}
-}
 
-impl<'a, T: 'static> SlabTreeNodeRef<'a, T> {
-    impl_slab_node_ref!{SlabTreeNodeRef<T>}
+    pub fn children_mut<'b>(&'b mut self) -> SlabTreeChildrenMut<'a, 'b, T> {
+        let entry = self.tree.get(self.node_id).unwrap();
+        let pos = entry.children.is_some().then(|| 0);
+        SlabTreeChildrenMut {
+            node_ref: self,
+            pos,
+        }
+    }
 }
 
 impl<T> SlabTree<T> {
@@ -176,7 +245,7 @@ impl<T> SlabTree<T> {
         let root_id = self.insert_entry(record, None);
         self.root_id = Some(root_id);
         if let Some(last_root_id) = last_root_id {
-            self.remove(last_root_id);
+            self.remove_node_id(last_root_id);
         }
         SlabTreeNodeMut {
             node_id: root_id,
@@ -190,7 +259,7 @@ impl<T> SlabTree<T> {
     pub fn set_root_tree(&mut self, data: impl Into<SlabTree<T>>) {
         self.record_data_change();
         if let Some(last_root_id) = self.root_id {
-            self.remove(last_root_id);
+            self.remove_node_id(last_root_id);
             self.root_id = None;
         }
         let data = data.into();
@@ -222,7 +291,7 @@ impl<T> SlabTree<T> {
         })
     }
 
-    pub(crate) fn remove(&mut self, node_id: usize) -> Option<T> {
+    pub(crate) fn remove_node_id(&mut self, node_id: usize) -> Option<T> {
         if let Some(entry) = self.slab.try_remove(node_id) {
             self.record_data_change();
 
@@ -236,7 +305,7 @@ impl<T> SlabTree<T> {
 
             if let Some(children) = entry.children {
                 for child_id in children {
-                    self.remove(child_id);
+                    self.remove_node_id(child_id);
                 }
             }
 
@@ -300,5 +369,57 @@ impl<T> SlabTree<T> {
         };
         vacant_entry.insert(entry);
         node_id
+    }
+}
+
+pub struct SlabTreeChildren<'a, T> {
+    pos: Option<usize>,
+    node_ref: &'a SlabTreeNodeRef<'a, T>,
+}
+
+impl<'a, T> Iterator for SlabTreeChildren<'a, T> {
+    type Item = SlabTreeNodeRef<'a, T>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let pos = match self.pos {
+            Some(pos) => pos,
+            None => return None,
+        };
+        match self.node_ref.child(pos) {
+            None => return None,
+            child => {
+                self.pos = Some(pos + 1);
+                child
+            }
+        }
+    }
+}
+
+pub struct SlabTreeChildrenMut<'a, 'b, T> {
+    pos: Option<usize>,
+    node_ref: &'b mut SlabTreeNodeMut<'a, T>,
+}
+
+impl<'a, 'b, T> Iterator for SlabTreeChildrenMut<'a, 'b, T> {
+    type Item = SlabTreeNodeMut<'a, T>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let pos = match self.pos {
+            Some(pos) => pos,
+            None => return None,
+        };
+        let child = match self.node_ref.child_mut(pos) {
+            None => return None,
+            Some(child) => {
+                self.pos = Some(pos + 1);
+                // fixme: is this correct???
+                let child: SlabTreeNodeMut<'a, T> = unsafe {
+                    std::mem::transmute::<SlabTreeNodeMut<T>, SlabTreeNodeMut<'a, T> >(child)
+                };
+                Some(child)
+            }
+        };
+
+        child
     }
 }
