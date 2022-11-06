@@ -111,6 +111,13 @@ macro_rules! impl_slab_node_ref {
 
             Some(<$R>::new(self.tree, child_id))
         }
+
+        pub fn visit_children(&self, visitor: &mut impl FnMut(&$R)) {
+            for i in 0..self.children_count() {
+                let child = self.child(i).unwrap();
+                child.visit(visitor);
+            }
+        }
     }
 }
 
@@ -186,6 +193,18 @@ macro_rules! impl_slab_node_mut {
 
             Some(<$M>::new(self.tree, child_id))
         }
+
+        pub fn visit_mut(&mut self, visitor: &mut impl FnMut(&mut $M)) {
+            visitor(self);
+            self.visit_children_mut(visitor);
+        }
+
+        pub fn visit_children_mut(&mut self, visitor: &mut impl FnMut(&mut $M)) {
+            for i in 0..self.children_count() {
+                let mut child = self.child_mut(i).unwrap();
+                child.visit_mut(visitor);
+            }
+        }
     }
 }
 
@@ -200,6 +219,11 @@ impl<'a, T> SlabTreeNodeRef<'a, T> {
             pos,
         }
     }
+
+    pub fn visit(&self, visitor:  &mut impl FnMut(&SlabTreeNodeRef<T>)) {
+        visitor(self);
+        self.visit_children(visitor);
+    }
 }
 
 impl<'a, T> SlabTreeNodeMut<'a, T> {
@@ -213,6 +237,12 @@ impl<'a, T> SlabTreeNodeMut<'a, T> {
             node_ref: self,
             pos,
         }
+    }
+
+    pub fn visit(&self, visitor: &mut impl FnMut(&SlabTreeNodeRef<T>)) {
+        let node_ref = SlabTreeNodeRef::new(self.tree, self.node_id);
+        visitor(&node_ref);
+        self.visit_children(visitor);
     }
 }
 

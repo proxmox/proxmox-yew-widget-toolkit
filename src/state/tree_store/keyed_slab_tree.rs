@@ -29,7 +29,7 @@ pub struct KeyedSlabTree<T> {
 }
 
 /// An immutable reference to a [KeyedSlabTree] node.
-pub struct KeyedSlabTreeNodeRef<'a, T: 'static> {
+pub struct KeyedSlabTreeNodeRef<'a, T> {
     pub(crate) node_id: usize,
     pub(crate) tree: &'a KeyedSlabTree<T>,
 }
@@ -56,6 +56,12 @@ impl<'a, T> KeyedSlabTreeNodeMut<'a, T> {
     crate::impl_slab_node_ref!{KeyedSlabTreeNodeRef<T>}
     crate::impl_slab_node_mut!{KeyedSlabTreeNodeMut<T>}
 
+    pub fn visit(&self, visitor: &mut impl FnMut(&KeyedSlabTreeNodeRef<T>)) {
+        let node_ref = KeyedSlabTreeNodeRef::new(self.tree, self.node_id);
+        visitor(&node_ref);
+        self.visit_children(visitor);
+    }
+
     /// Retunrs the unique record key.
     pub fn key(&self) -> Key {
         self.tree.extract_key(self.record())
@@ -72,11 +78,15 @@ impl<'a, T> KeyedSlabTreeNodeMut<'a, T> {
         self.tree.find_subnode_by_key(self.node_id, key)
             .map(|node_id| KeyedSlabTreeNodeMut { node_id, tree: self.tree })
     }
-
 }
 
-impl<'a, T: 'static> KeyedSlabTreeNodeRef<'a, T> {
+impl<'a, T> KeyedSlabTreeNodeRef<'a, T> {
     crate::impl_slab_node_ref!{KeyedSlabTreeNodeRef<T>}
+
+    pub fn visit(&self, visitor: &mut impl FnMut(&KeyedSlabTreeNodeRef<T>)) {
+        visitor(self);
+        self.visit_children(visitor);
+    }
 
     /// Retunrs the unique record key.
     pub fn key(&self) -> Key {
