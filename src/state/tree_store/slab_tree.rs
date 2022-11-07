@@ -161,7 +161,7 @@ macro_rules! impl_slab_node_mut {
         }
 
         /// Get a mutable ref to the parent node.
-        pub fn parent_mut(&mut self) -> Option<$M> {
+        pub unsafe fn parent_mut(&mut self) -> Option<$M> {
             let entry = match self.tree.get(self.node_id) {
                 Some(entry) => entry,
                 None => return None,
@@ -431,7 +431,7 @@ pub struct SlabTreeChildrenMut<'a, 'b, T> {
 }
 
 impl<'a, 'b, T> Iterator for SlabTreeChildrenMut<'a, 'b, T> {
-    type Item = SlabTreeNodeMut<'a, T>;
+    type Item = SlabTreeNodeMut<'b, T>;
 
     fn next(&mut self) -> Option<Self::Item> {
         let pos = match self.pos {
@@ -443,8 +443,8 @@ impl<'a, 'b, T> Iterator for SlabTreeChildrenMut<'a, 'b, T> {
             Some(child) => {
                 self.pos = Some(pos + 1);
                 // fixme: is this correct???
-                let child: SlabTreeNodeMut<'a, T> = unsafe {
-                    std::mem::transmute::<SlabTreeNodeMut<T>, SlabTreeNodeMut<'a, T> >(child)
+                let child: SlabTreeNodeMut<'b, T> = unsafe {
+                    std::mem::transmute::<SlabTreeNodeMut<T>, SlabTreeNodeMut<'b, T> >(child)
                 };
                 Some(child)
             }
