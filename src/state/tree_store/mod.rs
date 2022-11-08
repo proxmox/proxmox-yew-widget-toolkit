@@ -1,9 +1,12 @@
 mod slab_tree;
-pub use slab_tree::{SlabTree, SlabTreeNodeMut, SlabTreeNodeRef, SlabTreeChildren};
+pub use slab_tree::{SlabTree, SlabTreeNodeMut, SlabTreeNodeRef, SlabTreeChildren, SlabTreeChildrenMut};
 pub(crate) use slab_tree::SlabTreeEntry;
 
 mod keyed_slab_tree;
-pub use keyed_slab_tree::{KeyedSlabTree, KeyedSlabTreeNodeMut, KeyedSlabTreeNodeRef};
+pub use keyed_slab_tree::{
+    KeyedSlabTree, KeyedSlabTreeNodeMut, KeyedSlabTreeNodeRef,
+    KeyedSlabTreeChildren, KeyedSlabTreeChildrenMut,
+};
 
 mod slab_tree_serde;
 

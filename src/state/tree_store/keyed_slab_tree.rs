@@ -119,6 +119,8 @@ impl<'a, T> KeyedSlabTreeNodeMut<'a, T> {
                 return result;
             }
         }
+
+        None
     }
 }
 
@@ -433,6 +435,7 @@ impl<T> KeyedSlabTree<T> {
 
 }
 
+/// [KeyedSlabTree] iterator over a node`s children.
 pub struct KeyedSlabTreeChildren<'a, T> {
     pos: Option<usize>,
     node_id: usize,
@@ -472,6 +475,7 @@ impl<'a, T> Iterator for KeyedSlabTreeChildren<'a, T> {
     }
 }
 
+/// [KeyedSlabTree] iterator over a node`s children (mutable).
 pub struct KeyedSlabTreeChildrenMut<'a, T> {
     pos: Option<usize>,
     node_id: usize,

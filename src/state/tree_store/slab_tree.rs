@@ -11,6 +11,13 @@ pub(crate) struct SlabTreeEntry<T> {
 }
 
 /// Tree implementation backup by a vector ([Slab])
+///
+/// # Note
+///
+/// The API is carefully designed to avoid multiple mutable references
+/// to the same node, i.e. there is no interface to get a mutable
+/// reference to the parent node. Because of this, it is also impossible to
+/// have methods like `node.remove()` (remove self from parent).
 pub struct SlabTree<T> {
     pub(crate) root_id: Option<usize>,
     pub(crate) slab: Slab<SlabTreeEntry<T>>,
@@ -418,6 +425,7 @@ impl<T> SlabTree<T> {
     }
 }
 
+/// [SlabTree] iterator over a node`s children.
 pub struct SlabTreeChildren<'a, T> {
     pos: Option<usize>,
     node_id: usize,
@@ -457,6 +465,7 @@ impl<'a, T> Iterator for SlabTreeChildren<'a, T> {
     }
 }
 
+/// [SlabTree] iterator over a node`s children (mutable).
 pub struct SlabTreeChildrenMut<'a, T> {
     pos: Option<usize>,
     node_id: usize,
