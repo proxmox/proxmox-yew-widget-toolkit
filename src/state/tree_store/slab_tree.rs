@@ -1,6 +1,6 @@
-use slab::Slab;
+use std::cmp::Ordering;
 
-use crate::props::SorterFn;
+use slab::Slab;
 
 pub(crate) struct SlabTreeEntry<T> {
     pub(crate) parent_id: Option<usize>,
@@ -164,10 +164,19 @@ macro_rules! impl_slab_node_mut {
         }
 
         /// Sort the tree node recursively
-        pub fn sort(&mut self, sorter: &SorterFn<T>) {
-            self.tree.sort_node(self.node_id, sorter);
+        pub fn sort(&mut self)
+        where
+            T: Ord,
+        {
+            self.tree.sort_node(self.node_id, &mut T::cmp);
         }
 
+        pub fn sort_by<F>(&mut self, mut compare: F)
+        where
+            F: FnMut(&T, &T) -> Ordering,
+        {
+            self.tree.sort_node(self.node_id, &mut compare);
+        }
 
         /// Get a mutable ref to the child at position `pos`.
         pub fn child_mut(&mut self, pos: usize) -> Option<$M> {
@@ -372,32 +381,49 @@ impl<T> SlabTree<T> {
         }
     }
 
-    fn sort_children(&mut self, children: &mut [usize], sorter: &SorterFn<T>) {
+    fn sort_children<F>(&mut self, children: &mut [usize], compare: &mut F)
+    where
+        F: FnMut(&T, &T) -> Ordering,
+    {
         children.sort_by(|child_id_a, child_id_b| {
             let entry_a = self.get(*child_id_a).unwrap();
             let entry_b = self.get(*child_id_b).unwrap();
-            sorter.cmp(&entry_a.record, &entry_b.record)
+            compare(&entry_a.record, &entry_b.record)
         });
 
         for child_id in children {
-            self.sort_node(*child_id, sorter);
+            self.sort_node(*child_id, compare);
         }
     }
 
-    pub(crate) fn sort_node(&mut self, node_id: usize, sorter: &SorterFn<T>) {
+    pub(crate) fn sort_node<F>(&mut self, node_id: usize, compare: &mut F)
+    where
+        F: FnMut(&T, &T) -> Ordering,
+    {
         self.record_data_change();
         let mut children = self.get_mut(node_id).unwrap().children.take();
         if let Some(children) = &mut children {
-            self.sort_children(children, sorter);
+            self.sort_children(children, compare);
         }
         self.get_mut(node_id).unwrap().children = children;
     }
 
+    /// Sort the tree node recursively
+    pub fn sort(&mut self)
+    where
+        T: Ord,
+    {
+        self.sort_by(&mut T::cmp);
+    }
+
     /// Sort the tree recursively
-    pub fn sort(&mut self, sorter: &SorterFn<T>) {
+    pub fn sort_by<F>(&mut self, mut compare: F)
+    where
+        F: FnMut(&T, &T) -> Ordering,
+    {
         self.record_data_change();
         if let Some(root_id) = self.root_id {
-            self.sort_node(root_id, sorter);
+            self.sort_node(root_id, &mut compare);
         }
     }
 
@@ -507,5 +533,49 @@ impl<'a, T> Iterator for SlabTreeChildrenMut<'a, T> {
         };
 
         Some(child)
+    }
+}
+
+#[cfg(test)]
+mod test {
+
+    use super::*;
+
+    fn node_to_string(node: &mut SlabTreeNodeMut<usize>) -> String {
+        fn print_node(node: &mut SlabTreeNodeMut<usize>, out: &mut String) {
+            out.push_str(&format!("{}", node.record()));
+            let count = node.children_count();
+            if count > 0 {
+                out.push('{');
+                for i in 0..count {
+                    if i > 0 { out.push(','); }
+                    print_node(&mut node.child_mut(i).unwrap(), out);
+                }
+                out.push('}');
+            }
+        }
+
+        let mut out = String::new();
+        out.push('{');
+        print_node(node, &mut out);
+        out.push('}');
+        out
+    }
+
+    #[test]
+    fn test1() {
+        let mut tree = SlabTree::new();
+
+        let mut root = tree.set_root(0);
+        assert_eq!(node_to_string(&mut root), "{0}");
+
+        root.append(1);
+        root.append(3);
+        root.append(2);
+
+        assert_eq!(node_to_string(&mut root), "{0{1,3,2}}");
+
+        root.sort();
+        assert_eq!(node_to_string(&mut root), "{0{1,2,3}}");
     }
 }

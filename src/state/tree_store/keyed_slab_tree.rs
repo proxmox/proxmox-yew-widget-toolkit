@@ -1,3 +1,5 @@
+use std::cmp::Ordering;
+
 use slab::Slab;
 
 use yew::virtual_dom::Key;
@@ -402,13 +404,27 @@ impl<T> KeyedSlabTree<T> {
         }
     }
 
-    pub(crate) fn sort_node(&mut self, node_id: usize, sorter: &SorterFn<T>) {
-        self.tree.sort_node(node_id, sorter);
+    pub(crate) fn sort_node<F>(&mut self, node_id: usize, compare: &mut F)
+    where
+        F: FnMut(&T, &T) -> Ordering,
+    {
+        self.tree.sort_node(node_id, compare);
+    }
+
+    /// Sort the tree node recursively
+    pub fn sort(&mut self)
+    where
+        T: Ord,
+    {
+        self.tree.sort_by(&mut T::cmp);
     }
 
     /// Sort the tree recursively
-    pub fn sort(&mut self, sorter: &SorterFn<T>) {
-        self.tree.sort(sorter);
+    pub fn sort_by<F>(&mut self, compare: F)
+    where
+        F: FnMut(&T, &T) -> Ordering,
+    {
+        self.tree.sort_by(compare);
     }
 
     /// Find a node by its key.
