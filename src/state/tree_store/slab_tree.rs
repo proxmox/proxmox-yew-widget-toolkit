@@ -563,7 +563,7 @@ mod test {
     }
 
     #[test]
-    fn test1() {
+    fn test_basics() {
         let mut tree = SlabTree::new();
 
         let mut root = tree.set_root(0);
@@ -577,5 +577,47 @@ mod test {
 
         root.sort();
         assert_eq!(node_to_string(&mut root), "{0{1,2,3}}");
+
+        root.remove_child(1);
+        assert_eq!(node_to_string(&mut root), "{0{1,3}}");
+        root.remove_child(1);
+        assert_eq!(node_to_string(&mut root), "{0{1}}");
+        root.remove_child(1);
+        assert_eq!(node_to_string(&mut root), "{0{1}}");
+        root.remove_child(0);
+        assert_eq!(node_to_string(&mut root), "{0}");
     }
+
+    #[test]
+    fn test_serde() {
+        use serde_json::json;
+
+        let tree_data = json!({
+            "record": 0,
+            "expanded": true,
+            "children": [
+                { "record": 1 },
+                { "record": 4 },
+                {
+                    "record": 3,
+                    "expanded": true,
+                    "children": [
+                        { "record": 31 },
+                        { "record": 33 },
+                        { "record": 32 },
+                    ],
+                },
+            ],
+        });
+
+        let mut tree: SlabTree<usize> = serde_json::from_value(tree_data).unwrap();
+        assert_eq!(node_to_string(&mut tree.root_mut().unwrap()), "{0{1,4,3{31,33,32}}}");
+
+        tree.sort();
+
+        let text = serde_json::to_string_pretty(&tree).unwrap();
+        let mut tree: SlabTree<usize> = serde_json::from_str(&text).unwrap();
+        assert_eq!(node_to_string(&mut tree.root_mut().unwrap()), "{0{1,3{31,32,33},4}}");
+    }
+
 }
