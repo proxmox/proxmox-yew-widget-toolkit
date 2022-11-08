@@ -12,14 +12,17 @@
 //!
 //! Here's an example of creating a simple list:
 //! ```
+//! use pwt::prelude::*;
+//! use pwt::widget::{Button, Column};
 //! Column::new()
 //!    .padding(2)
 //!    .gap(2)
 //!    .with_child("This is the first line (simple Text).")
 //!    .with_child(Button::new("A Button"))
-//!    .with_child(html!{
-//!        <h2>{"heading created using the Yew html macro"}</h2>
-//!    })
+//!    //.with_child(html!{
+//!    //    <h2>{"heading created using the Yew html macro"}</h2>
+//!    //})
+//!    ;
 //! ```
 //! All builder implements `Into<Html>`.
 //!
@@ -144,6 +147,17 @@ extern "C" {
     fn show_modal_dialog(dialog: web_sys::Node);
     fn close_dialog(dialog: web_sys::Node);
 }
+
+// Create wrapper which panics if called from target_arch!=wasm32
+// This allows us to run tests with "cargo test".
+#[cfg(not(target_arch="wasm32"))]
+pub fn create_popper(_content: web_sys::Node, _tip: web_sys::Node, _opts: &JsValue) -> JsValue { unreachable!() }
+#[cfg(not(target_arch="wasm32"))]
+pub fn update_popper(_popper: &JsValue) { unreachable!() }
+#[cfg(not(target_arch="wasm32"))]
+pub fn show_modal_dialog(_dialog: web_sys::Node) { unreachable!() }
+#[cfg(not(target_arch="wasm32"))]
+pub fn close_dialog(_dialog: web_sys::Node) { unreachable!() }
 
 // some helpers
 
