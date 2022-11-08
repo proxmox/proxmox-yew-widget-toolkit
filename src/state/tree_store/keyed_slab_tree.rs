@@ -55,8 +55,8 @@ impl<'a, T> KeyedSlabTreeNodeMut<'a, T> {
 }
 
 impl<'a, T> KeyedSlabTreeNodeMut<'a, T> {
-    crate::impl_slab_node_ref!{KeyedSlabTreeNodeRef<T>}
-    crate::impl_slab_node_mut!{KeyedSlabTreeNodeMut<T>}
+    crate::impl_slab_node_ref!(KeyedSlabTreeNodeRef<T>);
+    crate::impl_slab_node_mut!(KeyedSlabTreeNodeMut<T>, KeyedSlabTree<T>);
 
     /// Iterate over children.
     pub fn children(&self) -> KeyedSlabTreeChildren<T> {
@@ -127,7 +127,7 @@ impl<'a, T> KeyedSlabTreeNodeMut<'a, T> {
 }
 
 impl<'a, T> KeyedSlabTreeNodeRef<'a, T> {
-    crate::impl_slab_node_ref!{KeyedSlabTreeNodeRef<T>}
+    crate::impl_slab_node_ref!(KeyedSlabTreeNodeRef<T>);
 
     /// Iterate over children.
     pub fn children(&self) -> KeyedSlabTreeChildren<T> {
@@ -370,6 +370,24 @@ impl<T> KeyedSlabTree<T> {
 
     pub(crate) fn remove_node_id(&mut self, node_id: usize) -> Option<T> {
         self.tree.remove_node_id(node_id)
+    }
+
+    pub(crate) fn remove_tree_node_id(&mut self, node_id: usize) -> Option<KeyedSlabTree<T>> {
+        match self.tree.remove_tree_node_id(node_id) {
+            Some(tree) => {
+                Some(KeyedSlabTree {
+                    extract_key: self.extract_key.clone(),
+                    tree,
+                    linear_view: Vec::new(),
+                    last_view_version: 0,
+                    sorter: None,
+                    filter: None,
+                    cursor: None,
+                    listeners: Slab::new(),
+                })
+            }
+            None => None,
+        }
     }
 
     pub(crate) fn insert_entry(&mut self, record: T, parent_id: Option<usize>) -> usize  {
