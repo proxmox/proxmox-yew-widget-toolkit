@@ -613,6 +613,15 @@ mod test {
         let mut tree: SlabTree<usize> = serde_json::from_value(tree_data).unwrap();
         assert_eq!(node_to_string(&mut tree.root_mut().unwrap()), "{0{1,4,3{31,33,32}}}");
 
+        let mut node_count = 0;
+        let mut max_level = 0;
+        tree.root().unwrap().visit(&mut |node| {
+            node_count += 1;
+            max_level = max_level.max(node.level());
+        });
+        assert_eq!(node_count, 7);
+        assert_eq!(max_level, 2);
+
         tree.sort();
 
         let text = serde_json::to_string_pretty(&tree).unwrap();
