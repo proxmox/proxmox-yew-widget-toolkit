@@ -56,6 +56,29 @@ impl<'a, T> KeyedSlabTreeNodeMut<'a, T> {
     crate::impl_slab_node_ref!{KeyedSlabTreeNodeRef<T>}
     crate::impl_slab_node_mut!{KeyedSlabTreeNodeMut<T>}
 
+    /// Iterate over children.
+    pub fn children(&self) -> KeyedSlabTreeChildren<T> {
+        let entry = self.tree.get(self.node_id).unwrap();
+        let pos = entry.children.is_some().then(|| 0);
+        KeyedSlabTreeChildren {
+            node_id: self.node_id,
+            tree: self.tree,
+            pos,
+        }
+    }
+
+    /// Iterate over children (mutable).
+    pub fn children_mut(&mut self) -> KeyedSlabTreeChildrenMut<T> {
+        let entry = self.tree.get(self.node_id).unwrap();
+        let pos = entry.children.is_some().then(|| 0);
+        KeyedSlabTreeChildrenMut {
+            node_id: self.node_id,
+            tree: self.tree,
+            pos,
+        }
+    }
+
+    /// Visit a subtree in pre-order (mutable)
     pub fn visit(&self, visitor: &mut impl FnMut(&KeyedSlabTreeNodeRef<T>)) {
         let node_ref = KeyedSlabTreeNodeRef::new(self.tree, self.node_id);
         visitor(&node_ref);
@@ -78,11 +101,42 @@ impl<'a, T> KeyedSlabTreeNodeMut<'a, T> {
         self.tree.find_subnode_by_key(self.node_id, key)
             .map(|node_id| KeyedSlabTreeNodeMut { node_id, tree: self.tree })
     }
+
+    /// Remove a descendent node by key.
+    ///
+    /// # Note
+    ///
+    /// This cannot be used to remove `self` from the tree.
+    ///
+    pub fn remove_descendent_by_key(&mut self, key: &Key) -> Option<T> {
+        if let Some(pos) = self.children().position(|child| &child.key() == key) {
+            return self.remove_child(pos);
+        }
+
+        for mut child in self.children_mut() {
+            let result = child.remove_descendent_by_key(key);
+            if result.is_some() {
+                return result;
+            }
+        }
+    }
 }
 
 impl<'a, T> KeyedSlabTreeNodeRef<'a, T> {
     crate::impl_slab_node_ref!{KeyedSlabTreeNodeRef<T>}
 
+    /// Iterate over children.
+    pub fn children(&self) -> KeyedSlabTreeChildren<T> {
+        let entry = self.tree.get(self.node_id).unwrap();
+        let pos = entry.children.is_some().then(|| 0);
+        KeyedSlabTreeChildren {
+            node_id: self.node_id,
+            tree: self.tree,
+            pos,
+        }
+    }
+
+    /// Visit a subtree in pre-order
     pub fn visit(&self, visitor: &mut impl FnMut(&KeyedSlabTreeNodeRef<T>)) {
         visitor(self);
         self.visit_children(visitor);
@@ -310,6 +364,10 @@ impl<T> KeyedSlabTree<T> {
         })
     }
 
+    pub(crate) fn remove_node_id(&mut self, node_id: usize) -> Option<T> {
+        self.tree.remove_node_id(node_id)
+    }
+
     pub(crate) fn insert_entry(&mut self, record: T, parent_id: Option<usize>) -> usize  {
         self.tree.insert_entry(record, parent_id)
     }
@@ -373,4 +431,87 @@ impl<T> KeyedSlabTree<T> {
             })
     }
 
+}
+
+pub struct KeyedSlabTreeChildren<'a, T> {
+    pos: Option<usize>,
+    node_id: usize,
+    tree: &'a KeyedSlabTree<T>,
+}
+
+impl<'a, T> Iterator for KeyedSlabTreeChildren<'a, T> {
+    type Item = KeyedSlabTreeNodeRef<'a, T>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let pos = match self.pos {
+            Some(pos) => pos,
+            None => return None,
+        };
+
+        let entry = match self.tree.get(self.node_id) {
+            Some(entry) => entry,
+            None => return None,
+        };
+
+        let child_id = match &entry.children {
+            Some(children) => {
+                match children.get(pos) {
+                    Some(child_id) => *child_id,
+                    None => return None,
+                }
+            }
+            None => return None,
+        };
+
+        self.pos = Some(pos + 1);
+
+        Some(KeyedSlabTreeNodeRef {
+            node_id: child_id,
+            tree: self.tree,
+        })
+    }
+}
+
+pub struct KeyedSlabTreeChildrenMut<'a, T> {
+    pos: Option<usize>,
+    node_id: usize,
+    tree: &'a mut KeyedSlabTree<T>,
+}
+
+impl<'a, T> Iterator for KeyedSlabTreeChildrenMut<'a, T> {
+    type Item = KeyedSlabTreeNodeMut<'a, T>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let pos = match self.pos {
+            Some(pos) => pos,
+            None => return None,
+        };
+        let entry = match self.tree.get(self.node_id) {
+            Some(entry) => entry,
+            None => return None,
+        };
+
+        let child_id = match &entry.children {
+            Some(children) => {
+                match children.get(pos) {
+                    Some(child_id) => *child_id,
+                    None => return None,
+                }
+            }
+            None => return None,
+        };
+
+        self.pos = Some(pos + 1);
+
+        let child = KeyedSlabTreeNodeMut {
+            node_id: child_id,
+            tree: self.tree,
+        };
+
+        let child = unsafe {
+            std::mem::transmute::<KeyedSlabTreeNodeMut<T>, KeyedSlabTreeNodeMut<'a, T> >(child)
+        };
+
+        Some(child)
+    }
 }

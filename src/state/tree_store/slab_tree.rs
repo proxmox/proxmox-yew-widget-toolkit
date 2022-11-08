@@ -112,6 +112,7 @@ macro_rules! impl_slab_node_ref {
             Some(<$R>::new(self.tree, child_id))
         }
 
+        /// Visit all children in pre-order
         pub fn visit_children(&self, visitor: &mut impl FnMut(&$R)) {
             for i in 0..self.children_count() {
                 let child = self.child(i).unwrap();
@@ -160,21 +161,8 @@ macro_rules! impl_slab_node_mut {
             self.tree.sort_node(self.node_id, sorter);
         }
 
-        /// Get a mutable ref to the parent node.
-        pub unsafe fn parent_mut(&mut self) -> Option<$M> {
-            let entry = match self.tree.get(self.node_id) {
-                Some(entry) => entry,
-                None => return None,
-            };
 
-            let parent_id = match entry.parent_id {
-                Some(parent_id) => parent_id,
-                None => return None,
-            };
-
-            Some(<$M>::new(self.tree, parent_id))
-        }
-
+        /// Get a mutable ref to the child at position `pos`.
         pub fn child_mut(&mut self, pos: usize) -> Option<$M> {
             let entry = match self.tree.get(self.node_id) {
                 Some(entry) => entry,
@@ -194,11 +182,23 @@ macro_rules! impl_slab_node_mut {
             Some(<$M>::new(self.tree, child_id))
         }
 
+        /// Remove the child at position `pos`.
+        pub fn remove_child(&mut self, pos: usize) -> Option<T> {
+            let child_id = match self.child(pos) {
+                Some(child) => child.node_id,
+                None => return None,
+            };
+
+            self.tree.remove_node_id(child_id)
+        }
+
+        /// Visit a subtree in pre-order (mutable)
         pub fn visit_mut(&mut self, visitor: &mut impl FnMut(&mut $M)) {
             visitor(self);
             self.visit_children_mut(visitor);
         }
 
+        /// Visit all children in pre-order (mutable)
         pub fn visit_children_mut(&mut self, visitor: &mut impl FnMut(&mut $M)) {
             for i in 0..self.children_count() {
                 let mut child = self.child_mut(i).unwrap();
@@ -211,15 +211,18 @@ macro_rules! impl_slab_node_mut {
 impl<'a, T> SlabTreeNodeRef<'a, T> {
     impl_slab_node_ref!{SlabTreeNodeRef<T>}
 
+    /// Iterate over children.
     pub fn children(&self) -> SlabTreeChildren<T> {
         let entry = self.tree.get(self.node_id).unwrap();
         let pos = entry.children.is_some().then(|| 0);
         SlabTreeChildren {
-            node_ref: self,
+            node_id: self.node_id,
+            tree: self.tree,
             pos,
         }
     }
 
+    /// Visit a subtree in pre-order
     pub fn visit(&self, visitor:  &mut impl FnMut(&SlabTreeNodeRef<T>)) {
         visitor(self);
         self.visit_children(visitor);
@@ -230,11 +233,24 @@ impl<'a, T> SlabTreeNodeMut<'a, T> {
     impl_slab_node_ref!{SlabTreeNodeRef<T>}
     impl_slab_node_mut!{SlabTreeNodeMut<T>}
 
-    pub fn children_mut<'b>(&'b mut self) -> SlabTreeChildrenMut<'a, 'b, T> {
+    /// Iterate over children.
+    pub fn children(&self) -> SlabTreeChildren<T> {
+        let entry = self.tree.get(self.node_id).unwrap();
+        let pos = entry.children.is_some().then(|| 0);
+        SlabTreeChildren {
+            node_id: self.node_id,
+            tree: self.tree,
+            pos,
+        }
+    }
+
+    /// Iterate over children (mutable).
+    pub fn children_mut(&mut self) -> SlabTreeChildrenMut<T> {
         let entry = self.tree.get(self.node_id).unwrap();
         let pos = entry.children.is_some().then(|| 0);
         SlabTreeChildrenMut {
-            node_ref: self,
+            node_id: self.node_id,
+            tree: self.tree,
             pos,
         }
     }
@@ -404,7 +420,8 @@ impl<T> SlabTree<T> {
 
 pub struct SlabTreeChildren<'a, T> {
     pos: Option<usize>,
-    node_ref: &'a SlabTreeNodeRef<'a, T>,
+    node_id: usize,
+    tree: &'a SlabTree<T>,
 }
 
 impl<'a, T> Iterator for SlabTreeChildren<'a, T> {
@@ -415,41 +432,71 @@ impl<'a, T> Iterator for SlabTreeChildren<'a, T> {
             Some(pos) => pos,
             None => return None,
         };
-        match self.node_ref.child(pos) {
+
+        let entry = match self.tree.get(self.node_id) {
+            Some(entry) => entry,
             None => return None,
-            child => {
-                self.pos = Some(pos + 1);
-                child
+        };
+
+        let child_id = match &entry.children {
+            Some(children) => {
+                match children.get(pos) {
+                    Some(child_id) => *child_id,
+                    None => return None,
+                }
             }
-        }
+            None => return None,
+        };
+
+        self.pos = Some(pos + 1);
+
+        Some(SlabTreeNodeRef {
+            node_id: child_id,
+            tree: self.tree,
+        })
     }
 }
 
-pub struct SlabTreeChildrenMut<'a, 'b, T> {
+pub struct SlabTreeChildrenMut<'a, T> {
     pos: Option<usize>,
-    node_ref: &'b mut SlabTreeNodeMut<'a, T>,
+    node_id: usize,
+    tree: &'a mut SlabTree<T>,
 }
 
-impl<'a, 'b, T> Iterator for SlabTreeChildrenMut<'a, 'b, T> {
-    type Item = SlabTreeNodeMut<'b, T>;
+impl<'a, T> Iterator for SlabTreeChildrenMut<'a, T> {
+    type Item = SlabTreeNodeMut<'a, T>;
 
     fn next(&mut self) -> Option<Self::Item> {
         let pos = match self.pos {
             Some(pos) => pos,
             None => return None,
         };
-        let child = match self.node_ref.child_mut(pos) {
+        let entry = match self.tree.get(self.node_id) {
+            Some(entry) => entry,
             None => return None,
-            Some(child) => {
-                self.pos = Some(pos + 1);
-                // fixme: is this correct???
-                let child: SlabTreeNodeMut<'b, T> = unsafe {
-                    std::mem::transmute::<SlabTreeNodeMut<T>, SlabTreeNodeMut<'b, T> >(child)
-                };
-                Some(child)
-            }
         };
 
-        child
+        let child_id = match &entry.children {
+            Some(children) => {
+                match children.get(pos) {
+                    Some(child_id) => *child_id,
+                    None => return None,
+                }
+            }
+            None => return None,
+        };
+
+        self.pos = Some(pos + 1);
+
+        let child = SlabTreeNodeMut {
+            node_id: child_id,
+            tree: self.tree,
+        };
+
+        let child = unsafe {
+            std::mem::transmute::<SlabTreeNodeMut<T>, SlabTreeNodeMut<'a, T> >(child)
+        };
+
+        Some(child)
     }
 }
