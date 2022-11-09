@@ -233,7 +233,7 @@ impl<T> KeyedSlabTree<T> {
         let mut children: Vec<usize> = children.iter()
             .filter(|child_id| {
                 let child_id = **child_id;
-                let entry = self.tree.get(child_id).unwrap();
+                let entry = self.get(child_id).unwrap();
                 match &self.filter {
                     Some(filter) => filter.apply(0, &entry.record),
                     None => true,
@@ -244,15 +244,15 @@ impl<T> KeyedSlabTree<T> {
 
         if let Some(sorter) = &self.sorter {
             children.sort_by(|child_id_a, child_id_b| {
-                let entry_a = self.tree.get(*child_id_a).unwrap();
-                let entry_b = self.tree.get(*child_id_b).unwrap();
+                let entry_a = self.get(*child_id_a).unwrap();
+                let entry_b = self.get(*child_id_b).unwrap();
                 sorter.cmp(&entry_a.record, &entry_b.record)
             });
         }
 
         for child_id in children.into_iter() {
             list.push(child_id);
-            let entry = self.tree.get(child_id).unwrap();
+            let entry = self.get(child_id).unwrap();
             if entry.expanded {
                 if let Some(children) = &entry.children {
                     self.flatten_tree_children(list, children);
@@ -269,7 +269,7 @@ impl<T> KeyedSlabTree<T> {
         let mut view = Vec::new();
 
         if let Some(root_id) = self.tree.root_id {
-            let root = self.tree.get(root_id).unwrap();
+            let root = self.get(root_id).unwrap();
             view.push(root_id);
             if root.expanded {
                 if let Some(children) = &root.children {
@@ -288,7 +288,7 @@ impl<T> KeyedSlabTree<T> {
             None => return None,
         };
 
-        let entry = match self.tree.get(node_id) {
+        let entry = match self.get(node_id) {
             Some(entry) => entry,
             None => return None,
         };
@@ -299,7 +299,7 @@ impl<T> KeyedSlabTree<T> {
     pub(crate) fn filtered_record_pos(&self, key: &Key) -> Option<usize> {
         self.linear_view.iter()
             .position(|node_id| {
-                let entry = self.tree.get(*node_id).unwrap();
+                let entry = self.get(*node_id).unwrap();
                 key == &self.extract_key(&entry.record)
             })
     }
@@ -368,6 +368,10 @@ impl<T> KeyedSlabTree<T> {
         })
     }
 
+    fn append_subtree_node(&mut self, subtree: &mut SlabTree<T>, subtree_node: usize, level: usize, parent: usize) -> usize {
+        self.tree.append_subtree_node(subtree, subtree_node, level, parent)
+    }
+
     pub(crate) fn remove_node_id(&mut self, node_id: usize) -> Option<T> {
         self.tree.remove_node_id(node_id)
     }
@@ -390,12 +394,12 @@ impl<T> KeyedSlabTree<T> {
         }
     }
 
-    pub(crate) fn insert_entry(&mut self, record: T, parent_id: Option<usize>) -> usize  {
-        self.tree.insert_entry(record, parent_id)
+    pub(crate) fn insert_record(&mut self, record: T, parent_id: Option<usize>) -> usize  {
+        self.tree.insert_record(record, parent_id)
     }
 
     fn find_subnode_by_key(&self, node_id: usize, key: &Key) -> Option<usize> {
-        let entry = match self.tree.get(node_id) {
+        let entry = match self.get(node_id) {
             Some(entry) => entry,
             None => return None,
         };

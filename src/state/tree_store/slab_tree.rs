@@ -61,13 +61,6 @@ macro_rules! impl_slab_node_ref {
             self.tree.get(self.node_id).unwrap().level
         }
 
-        /*
-        /// Get the node entry
-        pub(crate) fn get(&self) -> &SlabTreeEntry<T> {
-            self.tree.get(self.node_id).unwrap()
-        }
-         */
-
         /// Get the expanded flag
         pub fn expanded(&self) -> bool {
             self.tree.get(self.node_id).unwrap().expanded
@@ -135,7 +128,7 @@ macro_rules! impl_slab_node_mut {
         /// Appends a new node as the last child. Returns a mutable ref to the newly added node.
         pub fn append(&mut self, record: T) -> $M {
 
-            let child_id = self.tree.insert_entry(record, Some(self.node_id));
+            let child_id = self.tree.insert_record(record, Some(self.node_id));
 
             let entry = self.tree.get_mut(self.node_id).unwrap();
             if let Some(children) = &mut entry.children {
@@ -144,6 +137,17 @@ macro_rules! impl_slab_node_mut {
                 entry.children = Some(vec![child_id]);
             }
 
+            <$M>::new(self.tree, child_id)
+        }
+
+        /// Appends a subtree as the last child. Returns a mutable ref to the newly added tree.
+        ///
+        /// # Panics
+        ///
+        /// If subtree is empty.
+        pub fn append_tree(&mut self, mut subtree: SlabTree<T>) -> $M {
+            let root_id = subtree.root().unwrap().node_id;
+            let child_id = self.tree.append_subtree_node(&mut subtree, root_id, self.level(), self.node_id);
             <$M>::new(self.tree, child_id)
         }
 
@@ -315,7 +319,7 @@ impl<T> SlabTree<T> {
         self.record_data_change();
 
         let last_root_id = self.root_id;
-        let root_id = self.insert_entry(record, None);
+        let root_id = self.insert_record(record, None);
         self.root_id = Some(root_id);
         if let Some(last_root_id) = last_root_id {
             self.remove_node_id(last_root_id);
@@ -392,6 +396,36 @@ impl<T> SlabTree<T> {
         }
     }
 
+    pub(crate) fn append_subtree_node(&mut self, subtree: &mut SlabTree<T>, subtree_node: usize, level: usize, parent: usize) -> usize {
+        subtree.root_id = None; // make sure nobody use nodes in this tree again
+        let mut child_entry = subtree.slab.remove(subtree_node);
+        child_entry.level = level + 1;
+        child_entry.parent_id = Some(parent);
+
+        let child_entry_children = child_entry.children.take();
+
+        let child_id = self.slab.insert(child_entry);
+
+        let entry = self.get_mut(parent).unwrap();
+        if let Some(children) = &mut entry.children {
+            children.push(child_id);
+        } else {
+            entry.children = Some(vec![child_id]);
+        }
+
+        if let Some(child_entry_children) = child_entry_children {
+            let mut new_children = Vec::new();
+            for id in child_entry_children {
+                new_children.push(self.append_subtree_node(subtree, id, level + 1, child_id));
+            }
+            let child_entry = self.get_mut(child_id).unwrap();
+            child_entry.children = Some(new_children);
+        }
+
+        child_id
+    }
+
+    // Removes a whole subtree and move it into the target tree.
     fn remove_subtree(
         &mut self,
         node_id: usize,
@@ -495,7 +529,7 @@ impl<T> SlabTree<T> {
         }
     }
 
-    pub(crate) fn insert_entry(&mut self, record: T, parent_id: Option<usize>) -> usize  {
+    pub(crate) fn insert_record(&mut self, record: T, parent_id: Option<usize>) -> usize  {
         self.record_data_change();
 
         let level = if let Some(parent_id) = parent_id {
@@ -667,10 +701,14 @@ mod test {
         let mut child = child.append(21);
         child.append(200);
         child.append(201);
-        
+
         assert_eq!(node_to_string(&mut root), "{0{1,2{20,21{200,201}}}}");
         let mut subtree = root.remove_child_tree(1).unwrap();
         assert_eq!(node_to_string(&mut subtree.root_mut().unwrap()), "{2{20,21{200,201}}}");
+        assert_eq!(node_to_string(&mut root), "{0{1}}");
+
+        root.append_tree(subtree);
+        assert_eq!(node_to_string(&mut root), "{0{1,2{20,21{200,201}}}}");
     }
 
     #[test]
