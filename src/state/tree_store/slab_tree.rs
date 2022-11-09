@@ -163,19 +163,20 @@ macro_rules! impl_slab_node_mut {
             &mut entry.record
         }
 
-        /// Sort the tree node recursively
-        pub fn sort(&mut self)
+        /// Sort the tree node (optionally recursively)
+        pub fn sort(&mut self, recursive: bool)
         where
             T: Ord,
         {
-            self.tree.sort_node(self.node_id, &mut T::cmp);
+            self.tree.sort_node(recursive, self.node_id, &mut T::cmp);
         }
 
-        pub fn sort_by<F>(&mut self, mut compare: F)
+        /// Sort the tree node (optionally recursively)
+        pub fn sort_by<F>(&mut self, recursive: bool, mut compare: F)
         where
             F: FnMut(&T, &T) -> Ordering,
         {
-            self.tree.sort_node(self.node_id, &mut compare);
+            self.tree.sort_node(recursive,self.node_id, &mut compare);
         }
 
         /// Get a mutable ref to the child at position `pos`.
@@ -446,7 +447,7 @@ impl<T> SlabTree<T> {
         }
     }
 
-    fn sort_children<F>(&mut self, children: &mut [usize], compare: &mut F)
+    fn sort_children<F>(&mut self, recursive: bool, children: &mut [usize], compare: &mut F)
     where
         F: FnMut(&T, &T) -> Ordering,
     {
@@ -456,39 +457,41 @@ impl<T> SlabTree<T> {
             compare(&entry_a.record, &entry_b.record)
         });
 
-        for child_id in children {
-            self.sort_node(*child_id, compare);
+        if recursive {
+            for child_id in children {
+                self.sort_node(recursive, *child_id, compare);
+            }
         }
     }
 
-    pub(crate) fn sort_node<F>(&mut self, node_id: usize, compare: &mut F)
+    pub(crate) fn sort_node<F>(&mut self, recursive: bool, node_id: usize, compare: &mut F)
     where
         F: FnMut(&T, &T) -> Ordering,
     {
         self.record_data_change();
         let mut children = self.get_mut(node_id).unwrap().children.take();
         if let Some(children) = &mut children {
-            self.sort_children(children, compare);
+            self.sort_children(recursive, children, compare);
         }
         self.get_mut(node_id).unwrap().children = children;
     }
 
     /// Sort the tree node recursively
-    pub fn sort(&mut self)
+    pub fn sort(&mut self, recursive: bool)
     where
         T: Ord,
     {
-        self.sort_by(&mut T::cmp);
+        self.sort_by(recursive, &mut T::cmp);
     }
 
     /// Sort the tree recursively
-    pub fn sort_by<F>(&mut self, mut compare: F)
+    pub fn sort_by<F>(&mut self, recursive: bool, mut compare: F)
     where
         F: FnMut(&T, &T) -> Ordering,
     {
         self.record_data_change();
         if let Some(root_id) = self.root_id {
-            self.sort_node(root_id, &mut compare);
+            self.sort_node(recursive, root_id, &mut compare);
         }
     }
 
@@ -640,7 +643,7 @@ mod test {
 
         assert_eq!(node_to_string(&mut root), "{0{1,3,2}}");
 
-        root.sort();
+        root.sort(true);
         assert_eq!(node_to_string(&mut root), "{0{1,2,3}}");
 
         root.remove_child(1);
@@ -664,7 +667,7 @@ mod test {
         let mut child = child.append(21);
         child.append(200);
         child.append(201);
-
+        
         assert_eq!(node_to_string(&mut root), "{0{1,2{20,21{200,201}}}}");
         let mut subtree = root.remove_child_tree(1).unwrap();
         assert_eq!(node_to_string(&mut subtree.root_mut().unwrap()), "{2{20,21{200,201}}}");
@@ -704,7 +707,7 @@ mod test {
         assert_eq!(node_count, 7);
         assert_eq!(max_level, 2);
 
-        tree.sort();
+        tree.sort(true);
 
         let text = serde_json::to_string_pretty(&tree).unwrap();
         let mut tree: SlabTree<usize> = serde_json::from_str(&text).unwrap();

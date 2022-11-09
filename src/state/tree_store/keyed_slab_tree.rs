@@ -422,27 +422,27 @@ impl<T> KeyedSlabTree<T> {
         }
     }
 
-    pub(crate) fn sort_node<F>(&mut self, node_id: usize, compare: &mut F)
+    pub(crate) fn sort_node<F>(&mut self, recursive: bool, node_id: usize, compare: &mut F)
     where
         F: FnMut(&T, &T) -> Ordering,
     {
-        self.tree.sort_node(node_id, compare);
+        self.tree.sort_node(recursive, node_id, compare);
     }
 
     /// Sort the tree node recursively
-    pub fn sort(&mut self)
+    pub fn sort(&mut self, recursive: bool)
     where
         T: Ord,
     {
-        self.tree.sort_by(&mut T::cmp);
+        self.tree.sort_by(recursive, &mut T::cmp);
     }
 
     /// Sort the tree recursively
-    pub fn sort_by<F>(&mut self, compare: F)
+    pub fn sort_by<F>(&mut self, recursive: bool, compare: F)
     where
         F: FnMut(&T, &T) -> Ordering,
     {
-        self.tree.sort_by(compare);
+        self.tree.sort_by(recursive, compare);
     }
 
     /// Find a node by its key.
