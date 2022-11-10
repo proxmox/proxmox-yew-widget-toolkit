@@ -703,6 +703,34 @@ mod test {
     }
 
     #[test]
+    fn test_iterator() {
+        let mut tree = SlabTree::new();
+
+        let mut root = tree.set_root(0);
+        assert_eq!(node_to_string(&mut root), "{0}");
+
+        root.append(1);
+        root.append(3);
+        root.append(2);
+
+        assert_eq!(node_to_string(&mut root), "{0{1,3,2}}");
+
+        let list: Vec<usize> = root.children().map(|c| *c.record()).collect();
+        assert_eq!(&list, &[1,3,2]);
+        let list: Vec<usize> = root.children_mut().map(|mut c| {
+            *c.record_mut() += 1;
+            *c.record()
+        }).collect();
+        assert_eq!(&list, &[2, 4 ,3]);
+
+
+        for mut child in root.children_mut() {
+            child.append(child.record() + 10);
+        }
+        assert_eq!(node_to_string(&mut root), "{0{2{12},4{14},3{13}}}");
+    }
+
+    #[test]
     fn test_subtree() {
         let mut tree = SlabTree::new();
 
