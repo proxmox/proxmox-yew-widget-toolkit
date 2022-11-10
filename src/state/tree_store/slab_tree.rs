@@ -558,38 +558,45 @@ pub struct SlabTreeChildren<'a, T> {
     tree: &'a SlabTree<T>,
 }
 
-impl<'a, T> Iterator for SlabTreeChildren<'a, T> {
-    type Item = SlabTreeNodeRef<'a, T>;
+macro_rules! impl_slab_tree_child_iter {
+    ($I:ident, $N:ident) => {
 
-    fn next(&mut self) -> Option<Self::Item> {
-        let pos = match self.pos {
-            Some(pos) => pos,
-            None => return None,
-        };
+        impl<'a, T> Iterator for $I<'a, T> {
+            type Item = $N<'a, T>;
 
-        let entry = match self.tree.get(self.node_id) {
-            Some(entry) => entry,
-            None => return None,
-        };
-
-        let child_id = match &entry.children {
-            Some(children) => {
-                match children.get(pos) {
-                    Some(child_id) => *child_id,
+            fn next(&mut self) -> Option<Self::Item> {
+                let pos = match self.pos {
+                    Some(pos) => pos,
                     None => return None,
-                }
+                };
+
+                let entry = match self.tree.get(self.node_id) {
+                    Some(entry) => entry,
+                    None => return None,
+                };
+
+                let child_id = match &entry.children {
+                    Some(children) => {
+                        match children.get(pos) {
+                            Some(child_id) => *child_id,
+                            None => return None,
+                        }
+                    }
+                    None => return None,
+                };
+
+                self.pos = Some(pos + 1);
+
+                Some($N {
+                    node_id: child_id,
+                    tree: self.tree,
+                })
             }
-            None => return None,
-        };
-
-        self.pos = Some(pos + 1);
-
-        Some(SlabTreeNodeRef {
-            node_id: child_id,
-            tree: self.tree,
-        })
+        }
     }
 }
+
+impl_slab_tree_child_iter!(SlabTreeChildren, SlabTreeNodeRef);
 
 /// [SlabTree] iterator over a node`s children (mutable).
 pub struct SlabTreeChildrenMut<'a, T> {
@@ -598,43 +605,50 @@ pub struct SlabTreeChildrenMut<'a, T> {
     tree: &'a mut SlabTree<T>,
 }
 
-impl<'a, T> Iterator for SlabTreeChildrenMut<'a, T> {
-    type Item = SlabTreeNodeMut<'a, T>;
+macro_rules! impl_slab_tree_child_iter_mut {
+    ($I:ident, $N:ident) => {
 
-    fn next(&mut self) -> Option<Self::Item> {
-        let pos = match self.pos {
-            Some(pos) => pos,
-            None => return None,
-        };
-        let entry = match self.tree.get(self.node_id) {
-            Some(entry) => entry,
-            None => return None,
-        };
+        impl<'a, T> Iterator for $I<'a, T> {
+            type Item = $N<'a, T>;
 
-        let child_id = match &entry.children {
-            Some(children) => {
-                match children.get(pos) {
-                    Some(child_id) => *child_id,
+            fn next(&mut self) -> Option<Self::Item> {
+                let pos = match self.pos {
+                    Some(pos) => pos,
                     None => return None,
-                }
+                };
+                let entry = match self.tree.get(self.node_id) {
+                    Some(entry) => entry,
+                    None => return None,
+                };
+
+                let child_id = match &entry.children {
+                    Some(children) => {
+                        match children.get(pos) {
+                            Some(child_id) => *child_id,
+                            None => return None,
+                        }
+                    }
+                    None => return None,
+                };
+
+                self.pos = Some(pos + 1);
+
+                let child = $N {
+                    node_id: child_id,
+                    tree: self.tree,
+                };
+
+                let child = unsafe {
+                    std::mem::transmute::<$N<T>, $N<'a, T> >(child)
+                };
+
+                Some(child)
             }
-            None => return None,
-        };
-
-        self.pos = Some(pos + 1);
-
-        let child = SlabTreeNodeMut {
-            node_id: child_id,
-            tree: self.tree,
-        };
-
-        let child = unsafe {
-            std::mem::transmute::<SlabTreeNodeMut<T>, SlabTreeNodeMut<'a, T> >(child)
-        };
-
-        Some(child)
+        }
     }
 }
+
+impl_slab_tree_child_iter_mut!(SlabTreeChildrenMut, SlabTreeNodeMut);
 
 #[cfg(test)]
 mod test {

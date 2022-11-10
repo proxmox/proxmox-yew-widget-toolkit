@@ -480,38 +480,7 @@ pub struct KeyedSlabTreeChildren<'a, T> {
     tree: &'a KeyedSlabTree<T>,
 }
 
-impl<'a, T> Iterator for KeyedSlabTreeChildren<'a, T> {
-    type Item = KeyedSlabTreeNodeRef<'a, T>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        let pos = match self.pos {
-            Some(pos) => pos,
-            None => return None,
-        };
-
-        let entry = match self.tree.get(self.node_id) {
-            Some(entry) => entry,
-            None => return None,
-        };
-
-        let child_id = match &entry.children {
-            Some(children) => {
-                match children.get(pos) {
-                    Some(child_id) => *child_id,
-                    None => return None,
-                }
-            }
-            None => return None,
-        };
-
-        self.pos = Some(pos + 1);
-
-        Some(KeyedSlabTreeNodeRef {
-            node_id: child_id,
-            tree: self.tree,
-        })
-    }
-}
+impl_slab_tree_child_iter!(KeyedSlabTreeChildren, KeyedSlabTreeNodeRef);
 
 /// [KeyedSlabTree] iterator over a node`s children (mutable).
 pub struct KeyedSlabTreeChildrenMut<'a, T> {
@@ -520,40 +489,4 @@ pub struct KeyedSlabTreeChildrenMut<'a, T> {
     tree: &'a mut KeyedSlabTree<T>,
 }
 
-impl<'a, T> Iterator for KeyedSlabTreeChildrenMut<'a, T> {
-    type Item = KeyedSlabTreeNodeMut<'a, T>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        let pos = match self.pos {
-            Some(pos) => pos,
-            None => return None,
-        };
-        let entry = match self.tree.get(self.node_id) {
-            Some(entry) => entry,
-            None => return None,
-        };
-
-        let child_id = match &entry.children {
-            Some(children) => {
-                match children.get(pos) {
-                    Some(child_id) => *child_id,
-                    None => return None,
-                }
-            }
-            None => return None,
-        };
-
-        self.pos = Some(pos + 1);
-
-        let child = KeyedSlabTreeNodeMut {
-            node_id: child_id,
-            tree: self.tree,
-        };
-
-        let child = unsafe {
-            std::mem::transmute::<KeyedSlabTreeNodeMut<T>, KeyedSlabTreeNodeMut<'a, T> >(child)
-        };
-
-        Some(child)
-    }
-}
+impl_slab_tree_child_iter_mut!(KeyedSlabTreeChildrenMut, KeyedSlabTreeNodeMut);
