@@ -1,3 +1,4 @@
+#[macro_use]
 mod slab_tree;
 pub use slab_tree::{SlabTree, SlabTreeNodeMut, SlabTreeNodeRef, SlabTreeChildren, SlabTreeChildrenMut};
 pub(crate) use slab_tree::SlabTreeEntry;

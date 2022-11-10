@@ -55,8 +55,8 @@ impl<'a, T> KeyedSlabTreeNodeMut<'a, T> {
 }
 
 impl<'a, T> KeyedSlabTreeNodeMut<'a, T> {
-    crate::impl_slab_node_ref!(KeyedSlabTreeNodeRef<T>);
-    crate::impl_slab_node_mut!(KeyedSlabTreeNodeMut<T>, KeyedSlabTree<T>);
+    impl_slab_node_ref!(KeyedSlabTreeNodeRef<T>);
+    impl_slab_node_mut!(KeyedSlabTreeNodeMut<T>, KeyedSlabTree<T>);
 
     /// Iterate over children.
     pub fn children(&self) -> KeyedSlabTreeChildren<T> {
@@ -127,7 +127,7 @@ impl<'a, T> KeyedSlabTreeNodeMut<'a, T> {
 }
 
 impl<'a, T> KeyedSlabTreeNodeRef<'a, T> {
-    crate::impl_slab_node_ref!(KeyedSlabTreeNodeRef<T>);
+    impl_slab_node_ref!(KeyedSlabTreeNodeRef<T>);
 
     /// Iterate over children.
     pub fn children(&self) -> KeyedSlabTreeChildren<T> {

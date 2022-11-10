@@ -48,7 +48,6 @@ impl<'a, T> SlabTreeNodeMut<'a, T> {
     }
 }
 
-#[macro_export]
 macro_rules! impl_slab_node_ref {
     ($R:ty) => {
         /// Reference to the data record.
@@ -122,7 +121,6 @@ macro_rules! impl_slab_node_ref {
     }
 }
 
-#[macro_export]
 macro_rules! impl_slab_node_mut {
     ($M:ty, $T:ty) => {
         /// Appends a new node as the last child. Returns a mutable ref to the newly added node.
