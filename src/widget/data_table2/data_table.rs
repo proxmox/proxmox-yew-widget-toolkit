@@ -92,6 +92,10 @@ pub struct DataTable<T: 'static, S: DataStore<T> = Store<T>> {
 
     pub selection: Option<Selection2<T>>,
 
+    /// Automatically select the focused row.
+    #[prop_or(true)]
+    pub select_on_focus: bool,
+
     /// Row click callback (parameter is the record number)
     pub on_row_click: Option<Callback<Key>>,
 
@@ -749,17 +753,27 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
                 }));
                 false
             }
-            Msg::CursorDown(shift, _ctrl) => {
+            Msg::CursorDown(shift, ctrl) => {
                 if shift { self.select_cursor(props, shift, false); }
                 props.store.cursor_down();
                 if shift { self.select_cursor(props, shift, false); }
+
+                if !(shift || ctrl) && props.select_on_focus {
+                    self.select_cursor(props, false, false);
+                }
+
                 self.scroll_cursor_into_view(props, web_sys::ScrollLogicalPosition::Nearest);
                 true
             }
-            Msg::CursorUp(shift, _ctrl) => {
+            Msg::CursorUp(shift, ctrl) => {
                 if shift { self.select_cursor(props, shift, false); }
                 props.store.cursor_up();
                 if shift { self.select_cursor(props, shift, false); }
+
+                if !(shift ||ctrl) && props.select_on_focus {
+                    self.select_cursor(props, false, false);
+                }
+
                 self.scroll_cursor_into_view(props, web_sys::ScrollLogicalPosition::Nearest);
                 true
             }
@@ -772,6 +786,10 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
                 if shift || ctrl {
                     if let Some(selection) = &props.selection {
                         self.select_range(props, selection, last_cursor, new_cursor, shift, ctrl);
+                    }
+                } else {
+                    if props.select_on_focus {
+                        self.select_cursor(props, false, false);
                     }
                 }
 
