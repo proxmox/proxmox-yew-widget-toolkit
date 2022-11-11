@@ -14,7 +14,11 @@ use crate::props::{Selection2, SorterFn};
 use crate::state::{DataStore, DataNode, Store};
 use crate::widget::{get_unique_element_id, Container, Column, SizeObserver};
 
-use super::{create_indexed_header_list, DataTableColumn, DataTableHeader, Header, IndexedHeader};
+use super::{
+    create_indexed_header_list,
+    DataTableColumn, DataTableHeader, DataTableMouseEvent,
+    Header, IndexedHeader,
+};
 
 pub enum Msg<T: 'static> {
     DataChange,
@@ -28,8 +32,8 @@ pub enum Msg<T: 'static> {
     KeyDown(u32, bool, bool),
     CursorDown(bool, bool),
     CursorUp(bool, bool),
-    ItemClick(Key, Option<usize>, bool, bool),
-    ItemDblClick(Key),
+    ItemClick(Key, Option<usize>, MouseEvent),
+    ItemDblClick(Key, MouseEvent),
     FocusChange(bool),
  }
 
@@ -97,10 +101,10 @@ pub struct DataTable<T: 'static, S: DataStore<T> = Store<T>> {
     pub select_on_focus: bool,
 
     /// Row click callback (parameter is the record number)
-    pub on_row_click: Option<Callback<Key>>,
+    pub on_row_click: Option<Callback<DataTableMouseEvent>>,
 
     /// Row double click callback (parameter is the record number)
-    pub on_row_dblclick: Option<Callback<Key>>,
+    pub on_row_dblclick: Option<Callback<DataTableMouseEvent>>,
 }
 
 static VIRTUAL_SCROLL_TRIGGER: usize = 30;
@@ -241,13 +245,13 @@ impl <T: 'static, S: DataStore<T> + 'static> DataTable<T, S> {
     }
 
     /// Builder style method to set the row click callback.
-    pub fn on_row_click(mut self, cb: impl IntoEventCallback<Key>) -> Self {
+    pub fn on_row_click(mut self, cb: impl IntoEventCallback<DataTableMouseEvent>) -> Self {
         self.on_row_click = cb.into_event_callback();
         self
     }
 
     /// Builder style method to set the row double click callback.
-    pub fn on_row_dblclick(mut self, cb: impl IntoEventCallback<Key>) -> Self {
+    pub fn on_row_dblclick(mut self, cb: impl IntoEventCallback<DataTableMouseEvent>) -> Self {
         self.on_row_dblclick = cb.into_event_callback();
         self
     }
@@ -731,16 +735,18 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
                             Some(cursor) => cursor,
                             None => return false,
                         };
-                        let record_key = match self.lookup_cursor_record_key(props, cursor) {
+
+                        let _record_key = match self.lookup_cursor_record_key(props, cursor) {
                             Some(record_key) => record_key,
                             None => return false,
                         };
 
                         self.select_cursor(props, false, false);
 
-                        if let Some(callback) = &props.on_row_dblclick {
-                            callback.emit(record_key);
-                        }
+                        // fixme: ???
+                        //if let Some(callback) = &props.on_row_dblclick {
+                            //callback.emit(record_key);
+                        //}
 
                         return false;
                     }
@@ -777,9 +783,12 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
                 self.scroll_cursor_into_view(props, web_sys::ScrollLogicalPosition::Nearest);
                 true
             }
-            Msg::ItemClick(record_key, opt_col_num, shift, ctrl) => {
+            Msg::ItemClick(record_key, opt_col_num, event) => {
                 let last_cursor = props.store.get_cursor();
                 let new_cursor = props.store.filtered_record_pos(&record_key);
+
+                let shift = event.shift_key();
+                let ctrl = event.ctrl_key();
 
                 props.store.set_cursor(new_cursor);
 
@@ -796,24 +805,27 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
                 if let Some(col_num) = opt_col_num {
                     if let Some(column) = self.columns.get(col_num)  {
                         if let Some(on_cell_click) = &column.on_cell_click {
-                            on_cell_click.emit(record_key.clone());
+                            let event = DataTableMouseEvent::new(record_key.clone(), event.clone());
+                            on_cell_click.emit(event);
                         }
                     }
                 }
 
                 if let Some(callback) = &props.on_row_click {
-                    callback.emit(record_key);
+                    let event = DataTableMouseEvent::new(record_key.clone(), event);
+                    callback.emit(event);
                 }
 
                 true
             }
-            Msg::ItemDblClick(record_key) => {
+            Msg::ItemDblClick(record_key, event) => {
                 let cursor = props.store.filtered_record_pos(&record_key);
                 props.store.set_cursor(cursor);
                 self.select_cursor(props, false, false);
 
                 if let Some(callback) = &props.on_row_dblclick {
-                    callback.emit(record_key);
+                    let event = DataTableMouseEvent::new(record_key.clone(), event);
+                    callback.emit(event);
                 }
 
                 true
@@ -887,8 +899,7 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
                         link.send_message(Msg::ItemClick(
                             row_num,
                             col_num,
-                            event.shift_key(),
-                            event.ctrl_key(),
+                            event,
                           ));
                     }
                 }
@@ -898,7 +909,7 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
                 let unique_id = self.unique_id.clone();
                 move |event: MouseEvent| {
                     if let Some((row_num, _col_num)) = dom_find_record_num(&event, &unique_id) {
-                        link.send_message(Msg::ItemDblClick(row_num));
+                        link.send_message(Msg::ItemDblClick(row_num, event));
                     }
                 }
             });

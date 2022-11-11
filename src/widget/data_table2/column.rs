@@ -7,6 +7,8 @@ use yew::virtual_dom::Key;
 use crate::props::{SorterFn, IntoSorterFn, RenderFn, RenderDataNode};
 use crate::state::DataNode;
 
+use super::DataTableMouseEvent;
+
 #[derive(Properties)]
 #[derive(Derivative)]
 #[derivative(Clone(bound=""), PartialEq(bound=""))]
@@ -38,7 +40,7 @@ pub struct DataTableColumn<T> {
     pub hidden: bool,
 
     /// Cell click callback (parameter is the record key.)
-    pub on_cell_click: Option<Callback<Key>>,
+    pub on_cell_click: Option<Callback<DataTableMouseEvent>>,
 
 }
 
@@ -151,7 +153,7 @@ impl<T: 'static> DataTableColumn<T> {
     }
 
     /// Builder style method to set the cell click callback.
-    pub fn on_cell_click(mut self, cb: impl IntoEventCallback<Key>) -> Self {
+    pub fn on_cell_click(mut self, cb: impl IntoEventCallback<DataTableMouseEvent>) -> Self {
         self.on_cell_click = cb.into_event_callback();
         self
     }

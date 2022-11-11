@@ -1,3 +1,6 @@
+mod events;
+pub use events::{DataTableKeyboardEvent, DataTableMouseEvent};
+
 mod header_state;
 pub(crate) use header_state::HeaderState;
 
@@ -14,7 +17,7 @@ mod column;
 pub use column::DataTableColumn;
 
 mod data_table_header;
-pub use data_table_header::*;
+pub use data_table_header::DataTableHeader;
 
 mod data_table;
-pub use data_table::*;
+pub use data_table::{DataTable, PwtDataTable};
