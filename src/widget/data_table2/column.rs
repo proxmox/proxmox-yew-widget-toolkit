@@ -9,6 +9,7 @@ use crate::state::DataNode;
 
 use super::DataTableMouseEvent;
 
+/// DataTable column properties.
 #[derive(Properties)]
 #[derive(Derivative)]
 #[derivative(Clone(bound=""), PartialEq(bound=""))]

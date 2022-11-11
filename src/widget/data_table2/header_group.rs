@@ -7,6 +7,11 @@ use yew::virtual_dom::Key;
 
 use super::DataTableColumn;
 
+/// DataTable header definition.
+///
+/// This structure makes it possible to describe a nested header
+/// hierachy, where a parent header can group one or more child
+/// headers.
 #[derive(Derivative)]
 #[derivative(Clone(bound=""), PartialEq(bound=""))]
 pub enum Header<T: 'static> {
@@ -36,6 +41,7 @@ impl<T: 'static> Header<T> {
     }
 }
 
+/// Group of [headers](Header).
 #[derive(Derivative)]
 #[derivative(Clone(bound=""), PartialEq(bound=""))]
 pub struct HeaderGroup<T: 'static> {

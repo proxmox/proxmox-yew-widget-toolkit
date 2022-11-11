@@ -7,7 +7,7 @@ use wasm_bindgen::JsCast;
 
 use yew::prelude::*;
 use yew::virtual_dom::{Key, VComp, VNode};
-use yew::html::{IntoPropValue, IntoEventCallback, Scope};
+use yew::html::{IntoEventCallback, Scope};
 
 use crate::prelude::*;
 use crate::props::SorterFn;
@@ -21,6 +21,7 @@ use super::{
 #[derive(Properties)]
 #[derive(Derivative)]
 #[derivative(Clone(bound=""), PartialEq(bound=""))]
+#[doc(hidden)] // only used inside this crate
 pub struct DataTableHeader<T: 'static> {
     pub node_ref: Option<NodeRef>,
     pub key: Option<Key>,
@@ -44,6 +45,7 @@ impl<T: 'static> DataTableHeader<T> {
         yew::props!(Self { headers })
     }
 
+    /*
     pub fn key(mut self, key: impl Into<Key>) -> Self {
         self.key = Some(key.into());
         self
@@ -54,7 +56,8 @@ impl<T: 'static> DataTableHeader<T> {
         self.node_ref = node_ref.into_prop_value();
         self
     }
-
+     */
+    
     /// Builder style method to set the size change callback
     pub fn on_size_change(mut self, cb: impl IntoEventCallback<Vec<f64>>) -> Self {
         self.on_size_change = cb.into_event_callback();

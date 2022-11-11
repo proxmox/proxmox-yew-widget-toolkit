@@ -8,7 +8,6 @@ use yew::prelude::*;
 use yew::virtual_dom::{Key, VComp, VNode};
 use yew::html::{IntoEventCallback, IntoPropValue};
 
-
 use crate::prelude::*;
 use crate::props::{BuilderFn, IntoOptionalBuilderFn};
 use crate::widget::{Menu, MenuButton, Row, Container, SizeObserver};
@@ -18,6 +17,7 @@ use crate::widget::{Menu, MenuButton, Row, Container, SizeObserver};
 // generating NodeRef duplicates!
 
 #[derive(Clone, PartialEq, Properties)]
+#[doc(hidden)] // only used inside this crate
 pub struct ResizableHeader {
     pub node_ref: Option<NodeRef>,
     pub key: Option<Key>,
@@ -45,23 +45,25 @@ impl ResizableHeader {
         yew::props!(Self {})
     }
 
+    /*
     /// Builder style method to set the yew `key` property
     pub fn key(mut self, key: impl Into<Key>) -> Self {
         self.key = Some(key.into());
         self
     }
-
+    /// Builder style method to set the yew `node_ref`
+    pub fn node_ref(mut self, node_ref: impl IntoPropValue<Option<NodeRef>>) -> Self {
+        self.node_ref = node_ref.into_prop_value();
+        self
+    }
+     */
+    
     /// Builder style method to set the element id
     pub fn id(mut self, id: impl IntoPropValue<Option<String>>) -> Self {
         self.id = id.into_prop_value();
         self
     }
 
-    /// Builder style method to set the yew `node_ref`
-    pub fn node_ref(mut self, node_ref: impl IntoPropValue<Option<NodeRef>>) -> Self {
-        self.node_ref = node_ref.into_prop_value();
-        self
-    }
 
     /// Builder style method to add a html class
     pub fn class(mut self, class: impl Into<Classes>) -> Self {
@@ -127,7 +129,6 @@ pub enum Msg {
     MouseMove(i32),
     FocusChange(bool),
     DelayedFocusChange(bool),
-    TogglePicker,
     ShowPicker,
     HidePicker,
 }
@@ -231,10 +232,6 @@ impl Component for PwtResizableHeader {
             Msg::DelayedFocusChange(has_focus) => {
                 self.has_focus = has_focus;
                 true
-            }
-            Msg::TogglePicker => {
-                //log::info!("TogglePicker");
-                yew::Component::update(self, ctx, if self.show_picker { Msg::HidePicker } else {Msg::ShowPicker})
             }
             Msg::HidePicker => {
                 //log::info!("HidePicker");

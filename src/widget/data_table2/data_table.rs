@@ -37,7 +37,16 @@ pub enum Msg<T: 'static> {
     FocusChange(bool),
  }
 
-// DataTable properties
+/// DataTable properties
+///
+/// Features:
+///
+/// - Virtual scrolling.
+/// - Trees and Lists.
+/// - Selection/Cursor management
+/// - Nested Header definitions.
+/// - Header menus (hide, sort, ...)
+
 #[derive(Properties)]
 #[derive(Derivative)]
 #[derivative(Clone(bound=""), PartialEq(bound=""))]
@@ -52,26 +61,30 @@ pub struct DataTable<T: 'static, S: DataStore<T> = Store<T>> {
 
     headers: Rc<Vec<Header<T>>>,
 
-    /// The data collection.
-    pub store: S,
+    // The data collection ([Store] or [TreeStore](crate::state::TreeStore)).
+    store: S,
 
-    /// set class for table cells (default is "pwt-p-2")
+    /// Set class for table cells (default is "pwt-p-2").
     #[prop_or_default]
     pub cell_class: Classes,
 
-    /// set class for header cells (default is "pwt-p-2")
+    /// Set class for header cells (default is "pwt-p-2").
     #[prop_or_default]
     pub header_class: Classes,
 
+    /// Show vertical borders.
     #[prop_or_default]
     pub bordered: bool,
 
+    /// Disable horizontal borders.
     #[prop_or_default]
     pub borderless: bool,
 
+    /// Emphase rows when you mouse over them.
     #[prop_or_default]
     pub hover: bool,
 
+    /// Use a striped color scheme for rows.
     #[prop_or(true)]
     pub striped: bool,
 
@@ -94,6 +107,7 @@ pub struct DataTable<T: 'static, S: DataStore<T> = Store<T>> {
     #[prop_or(22)]
     pub min_row_height: usize,
 
+    /// Selection object.
     pub selection: Option<Selection2<T>>,
 
     /// Automatically select the focused row.
@@ -112,6 +126,8 @@ static VIRTUAL_SCROLL_TRIGGER: usize = 30;
 impl <T: 'static, S: DataStore<T> + 'static> DataTable<T, S> {
 
     /// Create a new instance.
+    ///
+    /// The store is either a [Store] or [TreeStore](crate::state::TreeStore).
     pub fn new(headers: Rc<Vec<Header<T>>>, store: S) -> Self {
         yew::props!(DataTable<T, S> { headers, store })
     }
