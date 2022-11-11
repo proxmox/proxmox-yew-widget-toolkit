@@ -277,7 +277,6 @@ pub struct PwtDataTable<T: 'static, S: DataStore<T>> {
     columns: Vec<DataTableColumn<T>>,
     column_widths: Vec<f64>,
     column_hidden: Vec<bool>,
-    virtual_scroll: bool,
     scroll_info: VirtualScrollInfo,
 
     cell_class: Classes,
@@ -567,7 +566,9 @@ impl<T: 'static, S: DataStore<T>> PwtDataTable<T, S> {
     ) {
         let row_count = props.store.filtered_data_len();
 
-        let mut start = if self.virtual_scroll {
+        let virtual_scroll = props.virtual_scroll.unwrap_or(row_count >= VIRTUAL_SCROLL_TRIGGER);
+
+        let mut start = if virtual_scroll {
             self.scroll_top / self.row_height
         } else {
             0
@@ -577,7 +578,7 @@ impl<T: 'static, S: DataStore<T>> PwtDataTable<T, S> {
         if (start & 1) == 1 { start -= 1; } // make it work with striped rows
 
         let max_visible_rows = (self.viewport_height / props.min_row_height) + 5;
-        let end = if self.virtual_scroll {
+        let end = if virtual_scroll {
             (start + max_visible_rows).min(row_count)
         } else {
             row_count
@@ -620,10 +621,6 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
             props.cell_class.clone()
         };
 
-        //let row_count = props.data.as_ref().map(|data| data.len()).unwrap_or(0);
-        let row_count = props.store.filtered_data_len();
-        let virtual_scroll = props.virtual_scroll.unwrap_or(row_count >= VIRTUAL_SCROLL_TRIGGER);
-
         let _store_observer = props.store.add_listener(ctx.link().callback(|_| Msg::DataChange));
 
         let mut me = Self {
@@ -635,7 +632,6 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
             columns,
             column_widths: Vec::new(),
             column_hidden: Vec::new(),
-            virtual_scroll,
             scroll_info: VirtualScrollInfo::default(),
             cell_class,
             scroll_top: 0,
