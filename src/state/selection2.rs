@@ -12,9 +12,36 @@ use yew::html::IntoEventCallback;
 use crate::props::ExtractKeyFn;
 use super::optional_rc_ptr_eq;
 
+/// Hook to use a [Selection2] with functional components.
+///
+/// This hook returns a [Selection2] that listens to change events
+/// which trigger a redraw.
+#[hook]
+pub fn use_selection<F: FnOnce() -> Selection2>(init_fn: F) -> Selection2 {
+
+    let redraw = use_state(|| 0);
+
+    let selection = use_state(init_fn);
+    let _on_change = use_state({
+        let selection = selection.clone();
+        let redraw = redraw.clone();
+        move || (*selection).add_listener(move |_| redraw.set(0)) // trigger redraw
+    });
+
+    (*selection).clone()
+}
+
 /// Shared Selection
 ///
 /// Stores a list of selected [Key]s.
+///
+/// Functional components can use the [use_selection] hook.
+///
+/// # Note
+///
+/// A [Selection2] is a shared state behind `Rc<RefCell<state>>`, so
+/// a simply `PartialEq` would always return true. Please register a
+/// listener to get notified about changes.
 #[derive(Derivative)]
 #[derivative(Clone(bound=""), PartialEq(bound=""))]
 pub struct Selection2 {
@@ -24,8 +51,6 @@ pub struct Selection2 {
     #[derivative(PartialEq(compare_with="Rc::ptr_eq"))]
     inner: Rc<RefCell<SelectionState>>,
 }
-
-
 
 /// Owns the selection listener callback. When dropped, the
 /// listener callback will be removed fron the Selection.
@@ -74,9 +99,9 @@ impl Selection2 {
     ///
     /// This is usually called by [Self::on_select], which stores the
     /// observer inside the [Selection2] object.
-    pub fn add_listener(&mut self, cb: Callback<Selection2>) -> SelectionObserver {
+    pub fn add_listener(&self, cb: impl Into<Callback<Selection2>>) -> SelectionObserver {
         let key = self.inner.borrow_mut()
-            .add_listener(cb);
+            .add_listener(cb.into());
         SelectionObserver { key, inner: self.inner.clone() }
     }
 
@@ -131,6 +156,7 @@ impl Selection2 {
 
 impl Selection2 {
 
+    /// Remove vanished keys from the selection.
     pub fn filter_nonexistent<'a, T: 'a>(
         &mut self,
         data: impl Iterator<Item=&'a T>,

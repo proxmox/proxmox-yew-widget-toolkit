@@ -58,6 +58,8 @@ impl<T> Drop for TreeStoreObserver<T> {
 
 /// Shared tree store (wrapper for [KeyedSlabTree]).
 ///
+/// Functional components can use the [use_tree_store] hook.
+///
 /// # Note
 ///
 /// A [TreeStore] is a shared state behind `Rc<RefCell<state>>`, so

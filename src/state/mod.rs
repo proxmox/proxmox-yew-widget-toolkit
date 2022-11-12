@@ -18,7 +18,7 @@ mod selection;
 pub use selection::Selection;
 
 mod selection2;
-pub use selection2::{Selection2, SelectionObserver};
+pub use selection2::{use_selection, Selection2, SelectionObserver};
 
 mod store;
 pub use store::*;

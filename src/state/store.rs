@@ -34,6 +34,8 @@ pub fn use_store<F: FnOnce() -> Store<T>, T: 'static>(init_fn: F) -> Store<T> {
 
 /// Shared store for lists of records (`Vec<T>`).
 ///
+/// Functional components can use the [use_store] hook.
+///
 /// # Note
 ///
 /// A [Store] is a shared state behind `Rc<RefCell<state>>`, so
