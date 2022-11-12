@@ -16,8 +16,8 @@ pub(crate) use header_group::{
 mod column;
 pub use column::DataTableColumn;
 
-mod data_table_header;
-pub(crate) use data_table_header::DataTableHeader;
+mod header_widget;
+pub(crate) use header_widget::HeaderWidget;
 
 mod data_table;
 pub use data_table::{DataTable, PwtDataTable};

@@ -22,7 +22,7 @@ use super::{
 #[derive(Derivative)]
 #[derivative(Clone(bound=""), PartialEq(bound=""))]
 #[doc(hidden)] // only used inside this crate
-pub struct DataTableHeader<T: 'static> {
+pub struct HeaderWidget<T: 'static> {
     pub node_ref: Option<NodeRef>,
     pub key: Option<Key>,
 
@@ -38,7 +38,7 @@ pub struct DataTableHeader<T: 'static> {
 }
 
 
-impl<T: 'static> DataTableHeader<T> {
+impl<T: 'static> HeaderWidget<T> {
 
     /// Create a new instance.
     pub fn new(headers: Rc<Vec<IndexedHeader<T>>>) -> Self {
@@ -100,7 +100,7 @@ pub enum Msg {
     FocusCell(usize),
 }
 
-pub struct PwtDataTableHeader<T: 'static> {
+pub struct PwtHeaderWidget<T: 'static> {
     node_ref: NodeRef,
 
     unique_id: String,
@@ -118,7 +118,7 @@ pub struct PwtDataTableHeader<T: 'static> {
 
 static RESERVED_SPACE: usize = 20;
 
-impl <T: 'static> PwtDataTableHeader<T> {
+impl <T: 'static> PwtHeaderWidget<T> {
 
     fn compute_grid_style(&self) -> String {
 
@@ -142,8 +142,8 @@ impl <T: 'static> PwtDataTableHeader<T> {
     fn header_list_to_rows(
         &self,
         list: &[IndexedHeader<T>],
-        props: &DataTableHeader<T>,
-        link: &Scope<PwtDataTableHeader<T>>,
+        props: &HeaderWidget<T>,
+        link: &Scope<PwtHeaderWidget<T>>,
         start_row: usize,
         start_col: usize,
         rows: &mut Vec<Vec<Html>>,
@@ -178,8 +178,8 @@ impl <T: 'static> PwtDataTableHeader<T> {
     fn column_to_rows(
         &self,
         cell: &IndexedHeaderSingle<T>,
-        props: &DataTableHeader<T>,
-        link: &Scope<PwtDataTableHeader<T>>,
+        props: &HeaderWidget<T>,
+        link: &Scope<PwtHeaderWidget<T>>,
         start_row: usize,
         start_col: usize,
         rows: &mut Vec<Vec<Html>>,
@@ -260,8 +260,8 @@ impl <T: 'static> PwtDataTableHeader<T> {
     fn group_to_rows(
         &self,
         group: &IndexedHeaderGroup<T>,
-        props: &DataTableHeader<T>,
-        link: &Scope<PwtDataTableHeader<T>>,
+        props: &HeaderWidget<T>,
+        link: &Scope<PwtHeaderWidget<T>>,
         start_row: usize,
         start_col: usize,
         rows: &mut Vec<Vec<Html>>,
@@ -333,9 +333,9 @@ impl <T: 'static> PwtDataTableHeader<T> {
     }
 }
 
-impl <T: 'static> Component for PwtDataTableHeader<T> {
+impl <T: 'static> Component for PwtHeaderWidget<T> {
     type Message = Msg;
-    type Properties = DataTableHeader<T>;
+    type Properties = HeaderWidget<T>;
 
     fn create(ctx: &Context<Self>) -> Self {
         let props = ctx.props();
@@ -478,7 +478,7 @@ impl <T: 'static> Component for PwtDataTableHeader<T> {
 
 fn build_header_menu<T>(
     headers: &[IndexedHeader<T>],
-    link: &Scope<PwtDataTableHeader<T>>,
+    link: &Scope<PwtHeaderWidget<T>>,
     cell_idx: usize,
     hidden_cells: &[bool],
 ) -> Menu {
@@ -508,7 +508,7 @@ fn headers_to_menu<T>(
     menu: &mut Menu,
     indent_level: usize,
     headers: &[IndexedHeader<T>],
-    link: &Scope<PwtDataTableHeader<T>>,
+    link: &Scope<PwtHeaderWidget<T>>,
     cell_idx: &mut usize,
     hidden_cells: &[bool],
 ) {
@@ -552,7 +552,7 @@ fn headers_to_menu<T>(
 /*
 fn headers_to_menu_old<T>(
     headers: &[IndexedHeader<T>],
-    link: &Scope<PwtDataTableHeader<T>>,
+    link: &Scope<PwtHeaderWidget<T>>,
     cell_idx: &mut usize,
     hidden_cells: &[bool],
 ) -> Menu {
@@ -584,10 +584,10 @@ fn headers_to_menu_old<T>(
 }
  */
 
-impl<T: 'static> Into<VNode> for DataTableHeader<T> {
+impl<T: 'static> Into<VNode> for HeaderWidget<T> {
     fn into(self) -> VNode {
         let key = self.key.clone();
-        let comp = VComp::new::<PwtDataTableHeader<T>>(Rc::new(self), key);
+        let comp = VComp::new::<PwtHeaderWidget<T>>(Rc::new(self), key);
         VNode::from(comp)
     }
 }

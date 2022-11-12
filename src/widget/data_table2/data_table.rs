@@ -16,7 +16,7 @@ use crate::widget::{get_unique_element_id, Container, Column, SizeObserver};
 
 use super::{
     create_indexed_header_list,
-    DataTableColumn, DataTableHeader, DataTableMouseEvent,
+    DataTableColumn, HeaderWidget, DataTableMouseEvent,
     Header, IndexedHeader,
 };
 
@@ -940,7 +940,7 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
                     .class("pwt-overflow-hidden")
                     .class("pwt-datatable2-header")
                     .with_child(
-                        DataTableHeader::new(self.headers.clone())
+                        HeaderWidget::new(self.headers.clone())
                             .header_class(props.header_class.clone())
                             .on_size_change(ctx.link().callback(Msg::ColumnWidthChange))
                             .on_hidden_change(ctx.link().callback(Msg::ColumnHiddenChange))
