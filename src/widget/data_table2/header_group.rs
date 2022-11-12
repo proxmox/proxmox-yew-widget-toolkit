@@ -14,47 +14,47 @@ use super::DataTableColumn;
 /// headers.
 #[derive(Derivative)]
 #[derivative(Clone(bound=""), PartialEq(bound=""))]
-pub enum Header<T: 'static> {
+pub enum DataTableHeader<T: 'static> {
     Single(DataTableColumn<T>),
-    Group(HeaderGroup<T>),
+    Group(DataTableHeaderGroup<T>),
 }
 
-impl<T: 'static> From<DataTableColumn<T>> for Header<T> {
+impl<T: 'static> From<DataTableColumn<T>> for DataTableHeader<T> {
     fn from(column: DataTableColumn<T>) -> Self {
         Self::Single(column)
     }
 }
 
-impl<T: 'static> From<HeaderGroup<T>> for Header<T> {
-    fn from(group: HeaderGroup<T>) -> Self {
+impl<T: 'static> From<DataTableHeaderGroup<T>> for DataTableHeader<T> {
+    fn from(group: DataTableHeaderGroup<T>) -> Self {
         Self::Group(group)
     }
 }
 
-impl<T: 'static> Header<T> {
+impl<T: 'static> DataTableHeader<T> {
 
     pub(crate) fn extract_column_list(&self, list: &mut Vec<DataTableColumn<T>>) {
         match self {
-            Header::Single(column) => list.push(column.clone()),
-            Header::Group(group) => group.extract_column_list(list),
+            DataTableHeader::Single(column) => list.push(column.clone()),
+            DataTableHeader::Group(group) => group.extract_column_list(list),
         }
     }
 }
 
-/// Group of [headers](Header).
+/// Group of [headers](DataTableHeader).
 #[derive(Derivative)]
 #[derivative(Clone(bound=""), PartialEq(bound=""))]
-pub struct HeaderGroup<T: 'static> {
+pub struct DataTableHeaderGroup<T: 'static> {
     /// The name dispayed in the header.
     pub name: AttrValue,
     /// Unique Column Key
     pub key: Option<Key>,
-    pub children: Vec<Header<T>>,
+    pub children: Vec<DataTableHeader<T>>,
     pub hidden: bool,
 }
 
 
-impl<T: 'static> HeaderGroup<T> {
+impl<T: 'static> DataTableHeaderGroup<T> {
 
     /// Create a new instance.
     pub fn  new(name: impl Into<AttrValue>) -> Self {
@@ -72,28 +72,28 @@ impl<T: 'static> HeaderGroup<T> {
         self
     }
 
-    pub fn with_child(mut self, header: impl Into<Header<T>>) -> Self {
+    pub fn with_child(mut self, header: impl Into<DataTableHeader<T>>) -> Self {
         self.add_child(header);
         self
     }
 
-    pub fn add_child(&mut self, header: impl Into<Header<T>>) {
+    pub fn add_child(&mut self, header: impl Into<DataTableHeader<T>>) {
         self.children.push(header.into())
     }
 
     /// Builder style method to add multiple children
-    pub fn children(mut self, child: impl IntoIterator<Item = Header<T>>) -> Self {
+    pub fn children(mut self, child: impl IntoIterator<Item = DataTableHeader<T>>) -> Self {
         self.add_children(child);
         self
     }
 
     /// Method to add multiple children.
-    pub fn add_children(&mut self, children: impl IntoIterator<Item = Header<T>>) {
+    pub fn add_children(&mut self, children: impl IntoIterator<Item = DataTableHeader<T>>) {
         self.children.extend(children);
     }
 
     /// Method to set the children property.
-    pub fn set_children(&mut self, children: impl IntoIterator<Item = Header<T>>) {
+    pub fn set_children(&mut self, children: impl IntoIterator<Item = DataTableHeader<T>>) {
         self.children.clear();
         self.children.extend(children);
     }
@@ -156,14 +156,14 @@ impl<T: 'static> IndexedHeaderGroup<T> {
     }
 }
 
-pub fn create_indexed_header_list<T: 'static>(list: &[Header<T>]) -> Vec<IndexedHeader<T>> {
+pub fn create_indexed_header_list<T: 'static>(list: &[DataTableHeader<T>]) -> Vec<IndexedHeader<T>> {
     IndexedHeader::convert_header_list(list, 0, 0, None).0
 }
 
 impl<T: 'static> IndexedHeader<T> {
 
     pub fn convert_header_list(
-        list: &[Header<T>],
+        list: &[DataTableHeader<T>],
         cell_idx: usize,
         start_col: usize,
         parent: Option<usize>,
@@ -176,14 +176,14 @@ impl<T: 'static> IndexedHeader<T> {
 
         for child in list {
             match child {
-                Header::Single(column) => {
+                DataTableHeader::Single(column) => {
                     let cell = Self::convert_column(column, cell_idx, start_col + span, parent);
                     indexed_list.push(IndexedHeader::Single(Rc::new(cell)));
                     span += 1;
                     cell_idx += 1;
                     cells += 1;
                 }
-                Header::Group(group) => {
+                DataTableHeader::Group(group) => {
                     let indexed_group = Self::convert_group(group, cell_idx, start_col + span, parent);
                     span += indexed_group.colspan;
                     cell_idx += indexed_group.cell_count;
@@ -210,7 +210,7 @@ impl<T: 'static> IndexedHeader<T> {
     }
 
     pub fn convert_group(
-        group: &HeaderGroup<T>,
+        group: &DataTableHeaderGroup<T>,
         cell_idx: usize,
         start_col: usize,
         parent: Option<usize>,

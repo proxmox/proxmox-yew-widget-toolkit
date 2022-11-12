@@ -17,7 +17,7 @@ use crate::widget::{get_unique_element_id, Container, Column, SizeObserver};
 use super::{
     create_indexed_header_list,
     DataTableColumn, HeaderWidget, DataTableMouseEvent,
-    Header, IndexedHeader,
+    DataTableHeader, IndexedHeader,
 };
 
 pub enum Msg<T: 'static> {
@@ -59,7 +59,7 @@ pub struct DataTable<T: 'static, S: DataStore<T> = Store<T>> {
     #[prop_or_default]
     pub class: Classes,
 
-    headers: Rc<Vec<Header<T>>>,
+    headers: Rc<Vec<DataTableHeader<T>>>,
 
     // The data collection ([Store] or [TreeStore](crate::state::TreeStore)).
     store: S,
@@ -128,7 +128,7 @@ impl <T: 'static, S: DataStore<T> + 'static> DataTable<T, S> {
     /// Create a new instance.
     ///
     /// The store is either a [Store] or [TreeStore](crate::state::TreeStore).
-    pub fn new(headers: Rc<Vec<Header<T>>>, store: S) -> Self {
+    pub fn new(headers: Rc<Vec<DataTableHeader<T>>>, store: S) -> Self {
         yew::props!(DataTable<T, S> { headers, store })
     }
 
