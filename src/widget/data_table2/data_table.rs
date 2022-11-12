@@ -108,7 +108,7 @@ pub struct DataTable<T: 'static, S: DataStore<T> = Store<T>> {
     pub min_row_height: usize,
 
     /// Selection object.
-    pub selection: Option<Selection2<T>>,
+    pub selection: Option<Selection2>,
 
     /// Automatically select the focused row.
     #[prop_or(true)]
@@ -255,7 +255,7 @@ impl <T: 'static, S: DataStore<T> + 'static> DataTable<T, S> {
     }
 
     /// Builder style method to set the selection model.
-    pub fn selection(mut self, selection: impl IntoPropValue<Option<Selection2<T>>>) -> Self {
+    pub fn selection(mut self, selection: impl IntoPropValue<Option<Selection2>>) -> Self {
         self.selection = selection.into_prop_value();
         self
     }
@@ -354,16 +354,16 @@ impl<T: 'static, S: DataStore<T>> PwtDataTable<T, S> {
     fn select_position(
         &mut self,
         props: &DataTable<T, S>,
-        selection: &Selection2<T>,
+        selection: &Selection2,
         cursor: usize,
         _shift: bool,
         ctrl: bool,
     ) {
         if let Some(key) = props.store.lookup_filtered_record_key(cursor) {
             if ctrl {
-                selection.toggle_key(key);
+                selection.toggle(key);
             } else {
-                selection.select_key(key);
+                selection.select(key);
             }
         }
     }
@@ -371,7 +371,7 @@ impl<T: 'static, S: DataStore<T>> PwtDataTable<T, S> {
     fn select_range(
         &mut self,
         props: &DataTable<T, S>,
-        selection: &Selection2<T>,
+        selection: &Selection2,
         last_cursor: Option<usize>,
         new_cursor: Option<usize>,
         shift: bool,
@@ -413,9 +413,9 @@ impl<T: 'static, S: DataStore<T>> PwtDataTable<T, S> {
 
         if let Some(key) = props.store.lookup_filtered_record_key(cursor) {
             if ctrl {
-                selection.toggle_key(key);
+                selection.toggle(key);
             } else {
-                selection.select_key(key);
+                selection.select(key);
             }
             return true;
         }
@@ -541,7 +541,7 @@ impl<T: 'static, S: DataStore<T>> PwtDataTable<T, S> {
 
                 let mut selected = false;
                 if let Some(selection) = &props.selection {
-                    selected = selection.contains_key(&record_key);
+                    selected = selection.contains(&record_key);
                 }
 
                 let active = props.store

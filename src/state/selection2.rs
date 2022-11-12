@@ -13,42 +13,39 @@ use crate::props::ExtractKeyFn;
 use super::optional_rc_ptr_eq;
 
 /// Shared Selection
+///
+/// Stores a list of selected [Key]s.
 #[derive(Derivative)]
 #[derivative(Clone(bound=""), PartialEq(bound=""))]
-pub struct Selection2<T> {
-    extract_key: ExtractKeyFn<T>,
+pub struct Selection2 {
     // Allow to store one SelectionObserver here (for convenience)
     #[derivative(PartialEq(compare_with="optional_rc_ptr_eq"))]
-    on_select: Option<Rc<SelectionObserver<T>>>,
-    #[derivative(PartialEq(compare_with="selection_state_equal::<T>"))]
-    inner: Rc<RefCell<SelectionState<T>>>,
+    on_select: Option<Rc<SelectionObserver>>,
+    #[derivative(PartialEq(compare_with="Rc::ptr_eq"))]
+    inner: Rc<RefCell<SelectionState>>,
 }
 
 
 
 /// Owns the selection listener callback. When dropped, the
 /// listener callback will be removed fron the Selection.
-pub struct SelectionObserver<T> {
+pub struct SelectionObserver {
     key: usize,
-    inner: Rc<RefCell<SelectionState<T>>>,
+    inner: Rc<RefCell<SelectionState>>,
 }
 
-impl<T> Drop for SelectionObserver<T> {
+impl Drop for SelectionObserver {
     fn drop(&mut self) {
         self.inner.borrow_mut().remove_listener(self.key);
     }
 }
 
-impl<T> Selection2<T> {
+impl Selection2 {
 
     /// Create a new instance.
-    ///
-    /// Each selection requires a method to extract an unique key from
-    /// the data record.
-    pub fn new(extract_key: impl Into<ExtractKeyFn<T>>) -> Self {
+    pub fn new() -> Self {
         Self {
-            extract_key: extract_key.into(),
-            on_select: None,
+             on_select: None,
             inner: Rc::new(RefCell::new(SelectionState::new())),
         }
     }
@@ -65,7 +62,7 @@ impl<T> Selection2<T> {
     /// [SelectionObserver]. The observer is stored inside the
     /// [Selection2] object, so each clone can hold a single on_select
     /// callback.
-    pub fn on_select(mut self, cb: impl IntoEventCallback<Selection2<T>>) -> Self {
+    pub fn on_select(mut self, cb: impl IntoEventCallback<Selection2>) -> Self {
         self.on_select = match cb.into_event_callback() {
             Some(cb) => Some(Rc::new(self.add_listener(cb))),
             None => None,
@@ -77,7 +74,7 @@ impl<T> Selection2<T> {
     ///
     /// This is usually called by [Self::on_select], which stores the
     /// observer inside the [Selection2] object.
-    pub fn add_listener(&mut self, cb: Callback<Selection2<T>>) -> SelectionObserver<T> {
+    pub fn add_listener(&mut self, cb: Callback<Selection2>) -> SelectionObserver {
         let key = self.inner.borrow_mut()
             .add_listener(cb);
         SelectionObserver { key, inner: self.inner.clone() }
@@ -96,45 +93,24 @@ impl<T> Selection2<T> {
         self.notify_listeners();
     }
 
-    /// Add an item to the selection.
-    pub fn select<X: std::borrow::Borrow<T>>(&self, item: X) {
-        let item: &T = item.borrow();
-        let key = self.extract_key.apply(item);
-        self.select_key(key);
-    }
-
     /// Add a key to the selection.
-    pub fn select_key(&self, key: impl Into<Key>) {
+    pub fn select(&self, key: impl Into<Key>) {
         self.inner.borrow_mut()
-            .select_key(key);
+            .select(key);
         self.notify_listeners();
-    }
-
-    /// Toggle the selection state for an item.
-    pub fn toggle<X: std::borrow::Borrow<T>>(&self, item: X) {
-        let item: &T = item.borrow();
-        let key = self.extract_key.apply(item);
-        self.toggle_key(key);
     }
 
     /// Toggle the selection state for key.
-    pub fn toggle_key(&self, key: impl Into<Key>) {
+    pub fn toggle(&self, key: impl Into<Key>) {
         self.inner.borrow_mut()
-            .toggle_key(key);
+            .toggle(key);
         self.notify_listeners();
     }
 
-    /// Query if the selection contains an item.
-    pub fn contains<X: std::borrow::Borrow<T>>(&self, item: X) -> bool {
-        let item: &T = item.borrow();
-        let key = self.extract_key.apply(item);
-        self.contains_key(&key)
-    }
-
     /// Query if the selection contains the key.
-    pub fn contains_key(&self, key: &Key) -> bool {
+    pub fn contains(&self, key: &Key) -> bool {
         self.inner.borrow()
-            .contains_key(key)
+            .contains(key)
     }
 
     /// Returns all selected keys
@@ -152,30 +128,29 @@ impl<T> Selection2<T> {
     }
 }
 
-impl<'a, T: 'a> Selection2<T> {
-    pub fn filter_nonexistent(&self, data: impl Iterator<Item=&'a T>) {
+
+impl Selection2 {
+
+    pub fn filter_nonexistent<'a, T: 'a>(
+        &mut self,
+        data: impl Iterator<Item=&'a T>,
+        extract_key: &ExtractKeyFn<T>,
+    ) {
         self.inner.borrow_mut()
-            .filter_nonexistent(data, &self.extract_key);
+            .filter_nonexistent(data, extract_key);
     }
 }
 
-fn selection_state_equal<T>(
-    me: &Rc<RefCell<SelectionState<T>>>,
-    other: &Rc<RefCell<SelectionState<T>>>
-) -> bool {
-    Rc::ptr_eq(&me, &other) &&
-        me.borrow().version == other.borrow().version
-}
 
-struct SelectionState<T> {
+struct SelectionState {
     version: usize, // change tracking
     multiselect: bool,
     selection: Option<Key>, // used for single row
     selection_map: HashSet<Key>, // used for multiselect
-    listeners: Slab<Callback<Selection2<T>>>,
+    listeners: Slab<Callback<Selection2>>,
 }
 
-impl<T> SelectionState<T> {
+impl SelectionState {
 
     fn new() -> Self {
         Self {
@@ -191,7 +166,7 @@ impl<T> SelectionState<T> {
         self.multiselect = multiselect;
     }
 
-    fn add_listener(&mut self, cb: Callback<Selection2<T>>) -> usize {
+    fn add_listener(&mut self, cb: Callback<Selection2>) -> usize {
         self.listeners.insert(cb)
     }
 
@@ -205,7 +180,7 @@ impl<T> SelectionState<T> {
         self.selection_map = HashSet::new();
      }
 
-    fn select_key(&mut self, key: impl Into<Key>) {
+    fn select(&mut self, key: impl Into<Key>) {
         self.version += 1;
         let key = key.into();
         match self.multiselect {
@@ -216,7 +191,7 @@ impl<T> SelectionState<T> {
         }
     }
 
-    fn toggle_key(&mut self, key: impl Into<Key>) {
+    fn toggle(&mut self, key: impl Into<Key>) {
         self.version += 1;
         let key = key.into();
         match self.multiselect {
@@ -241,7 +216,7 @@ impl<T> SelectionState<T> {
         }
     }
 
-    fn contains_key(&self, key: &Key) -> bool {
+    fn contains(&self, key: &Key) -> bool {
         match self.multiselect {
             false => {
                 if let Some(current) = &self.selection {
@@ -284,9 +259,9 @@ impl<T> SelectionState<T> {
     }
 }
 
-impl<'a, T: 'a> SelectionState<T> {
+impl SelectionState {
 
-    fn filter_nonexistent(
+    fn filter_nonexistent<'a, T: 'a>(
         &mut self,
         mut data: impl Iterator<Item=&'a T>,
         extract_key: &ExtractKeyFn<T>,
@@ -304,7 +279,7 @@ impl<'a, T: 'a> SelectionState<T> {
                 let mut new_map = HashSet::new();
                 for rec in data {
                     let key = extract_key.apply(&rec);
-                    if self.contains_key(&key) {
+                    if self.contains(&key) {
                         new_map.insert(key);
                     }
                 }
