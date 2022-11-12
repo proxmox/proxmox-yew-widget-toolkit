@@ -16,7 +16,7 @@ use crate::widget::{get_unique_element_id, Container, Column, SizeObserver};
 
 use super::{
     create_indexed_header_list,
-    DataTableColumn, HeaderWidget, DataTableMouseEvent,
+    DataTableColumn, HeaderWidget, DataTableMouseEvent, DataTableKeyboardEvent,
     DataTableHeader, IndexedHeader,
 };
 
@@ -29,7 +29,7 @@ pub enum Msg<T: 'static> {
     ViewportResize(f64, f64),
     ContainerResize(f64, f64),
     TableResize(f64, f64),
-    KeyDown(u32, bool, bool),
+    KeyDown(KeyboardEvent),
     CursorDown(bool, bool),
     CursorUp(bool, bool),
     ItemClick(Key, Option<usize>, MouseEvent),
@@ -114,11 +114,14 @@ pub struct DataTable<T: 'static, S: DataStore<T> = Store<T>> {
     #[prop_or(true)]
     pub select_on_focus: bool,
 
-    /// Row click callback (parameter is the record number)
+    /// Row click callback
     pub on_row_click: Option<Callback<DataTableMouseEvent>>,
 
-    /// Row double click callback (parameter is the record number)
+    /// Row double click callback
     pub on_row_dblclick: Option<Callback<DataTableMouseEvent>>,
+
+    /// Row keydown callback
+    pub on_row_keydown: Option<Callback<DataTableKeyboardEvent>>,
 }
 
 static VIRTUAL_SCROLL_TRIGGER: usize = 30;
@@ -269,6 +272,12 @@ impl <T: 'static, S: DataStore<T> + 'static> DataTable<T, S> {
     /// Builder style method to set the row double click callback.
     pub fn on_row_dblclick(mut self, cb: impl IntoEventCallback<DataTableMouseEvent>) -> Self {
         self.on_row_dblclick = cb.into_event_callback();
+        self
+    }
+
+    /// Builder style method to set the row keydown callback.
+    pub fn on_row_keydown(mut self, cb: impl IntoEventCallback<DataTableKeyboardEvent>) -> Self {
+        self.on_row_keydown = cb.into_event_callback();
         self
     }
 
@@ -723,7 +732,20 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
                 true
             }
             // Cursor handling
-            Msg::KeyDown(key_code, shift, ctrl) => {
+            Msg::KeyDown(event) => {
+                let key_code = event.key_code();
+                let shift = event.shift_key();
+                let ctrl = event.ctrl_key();
+
+                if let Some(cursor) = props.store.get_cursor() {
+                    if let Some(record_key) = self.lookup_cursor_record_key(props, cursor) {
+                        if let Some(callback) = &props.on_row_keydown {
+                            let event = DataTableKeyboardEvent::new(record_key, event);
+                            callback.emit(event);
+                        }
+                    }
+                }
+
                 let msg = match key_code {
                     40 => Msg::CursorDown(shift, ctrl),
                     38 => Msg::CursorUp(shift, ctrl),
@@ -758,11 +780,6 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
                         };
 
                         self.select_cursor(props, false, false);
-
-                        // fixme: ???
-                        //if let Some(callback) = &props.on_row_dblclick {
-                            //callback.emit(record_key);
-                        //}
 
                         return false;
                     }
@@ -895,16 +912,8 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
             .onkeydown({
                 let link = ctx.link().clone();
                 move |event: KeyboardEvent| {
-                    match event.key_code() {
-                        40 | 38 | 13 | 32 | 35 | 36 => { /* ok */}
-                        _ => return,
-                    };
-                    link.send_message(Msg::KeyDown(
-                        event.key_code(),
-                        event.shift_key(),
-                        event.ctrl_key(),
-                    ));
                     event.prevent_default();
+                    link.send_message(Msg::KeyDown(event));
                 }
             })
             .onclick({
