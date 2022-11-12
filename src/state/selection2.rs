@@ -120,9 +120,9 @@ impl Selection2 {
 
     /// Add a key to the selection.
     pub fn select(&self, key: impl Into<Key>) {
-        self.inner.borrow_mut()
+        let changed = self.inner.borrow_mut()
             .select(key);
-        self.notify_listeners();
+        if changed { self.notify_listeners() };
     }
 
     /// Toggle the selection state for key.
@@ -206,15 +206,17 @@ impl SelectionState {
         self.selection_map = HashSet::new();
      }
 
-    fn select(&mut self, key: impl Into<Key>) {
-        self.version += 1;
+    fn select(&mut self, key: impl Into<Key>) -> bool {
         let key = key.into();
+        if self.contains(&key) { return false; }
+        self.version += 1;
         match self.multiselect {
             false => self.selection = Some(key),
             true => {
                 self.selection_map.insert(key);
             }
         }
+        true
     }
 
     fn toggle(&mut self, key: impl Into<Key>) {
