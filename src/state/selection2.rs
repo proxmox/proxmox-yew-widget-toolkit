@@ -118,6 +118,11 @@ impl Selection2 {
         self.notify_listeners();
     }
 
+    /// Returns true if the selection is empty.
+    pub fn is_empty(&self) -> bool {
+        self.inner.borrow().is_empty()
+    }
+
     /// Add a key to the selection.
     pub fn select(&self, key: impl Into<Key>) {
         let changed = self.inner.borrow_mut()
@@ -204,7 +209,14 @@ impl SelectionState {
         self.version += 1;
         self.selection = None;
         self.selection_map = HashSet::new();
-     }
+    }
+
+    fn is_empty(&self) -> bool {
+        match self.multiselect {
+            false => self.selection.is_none(),
+            true => self.selection_map.is_empty(),
+        }
+    }
 
     fn select(&mut self, key: impl Into<Key>) -> bool {
         let key = key.into();
