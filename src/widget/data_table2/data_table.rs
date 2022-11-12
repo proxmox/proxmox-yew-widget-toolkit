@@ -10,8 +10,8 @@ use yew::virtual_dom::{Key, VComp, VNode};
 use yew::html::{IntoEventCallback, IntoPropValue};
 
 use crate::prelude::*;
-use crate::props::{Selection2, SorterFn};
-use crate::state::{DataStore, DataNode, Store};
+use crate::props::SorterFn;
+use crate::state::{DataStore, DataNode, Selection2, Store};
 use crate::widget::{get_unique_element_id, Container, Column, SizeObserver};
 
 use super::{

@@ -36,9 +36,6 @@ pub use padding::Padding;
 mod render_function;
 pub use render_function::{RenderFn, RenderDataNode, BuilderFn, IntoOptionalBuilderFn};
 
-mod selection;
-pub use selection::{Selection2, SelectionObserver};
-
 mod sorter_function;
 pub use sorter_function::{SorterFn, IntoSorterFn};
 

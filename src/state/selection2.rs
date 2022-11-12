@@ -9,8 +9,8 @@ use yew::prelude::*;
 use yew::virtual_dom::Key;
 use yew::html::IntoEventCallback;
 
-use super::ExtractKeyFn;
-use crate::state::optional_rc_ptr_eq;
+use crate::props::ExtractKeyFn;
+use super::optional_rc_ptr_eq;
 
 /// Shared Selection
 #[derive(Derivative)]
