@@ -372,11 +372,11 @@ impl<T> KeyedSlabTree<T> {
         self.tree.append_subtree_node(subtree, subtree_node, level, parent)
     }
 
-    pub(crate) fn remove_node_id(&mut self, node_id: usize) -> Option<T> {
+    fn remove_node_id(&mut self, node_id: usize) -> Option<T> {
         self.tree.remove_node_id(node_id)
     }
 
-    pub(crate) fn remove_tree_node_id(&mut self, node_id: usize) -> Option<KeyedSlabTree<T>> {
+    fn remove_tree_node_id(&mut self, node_id: usize) -> Option<KeyedSlabTree<T>> {
         match self.tree.remove_tree_node_id(node_id) {
             Some(tree) => {
                 Some(KeyedSlabTree {
@@ -394,7 +394,7 @@ impl<T> KeyedSlabTree<T> {
         }
     }
 
-    pub(crate) fn insert_record(&mut self, record: T, parent_id: Option<usize>) -> usize  {
+    fn insert_record(&mut self, record: T, parent_id: Option<usize>) -> usize  {
         self.tree.insert_record(record, parent_id)
     }
 

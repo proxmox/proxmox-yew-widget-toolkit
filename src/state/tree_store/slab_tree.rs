@@ -239,6 +239,20 @@ macro_rules! impl_slab_node_mut {
             self.tree.remove_tree_node_id(child_id)
         }
 
+        /// Remove all children.
+        pub fn remove_all_children(&mut self) {
+            let mut entry = self.tree.get_mut(self.node_id).unwrap();
+            if entry.children.is_none() {
+                return;
+            }
+            if let Some(children) = &mut entry.children.take() {
+                entry.children = Some(Vec::new());
+                for child_id in children {
+                    self.tree.remove_node_id(*child_id);
+                }
+            }
+        }
+
         /// Visit a subtree in pre-order (mutable)
         pub fn visit_mut(&mut self, visitor: &mut impl FnMut(&mut $M)) {
             visitor(self);
