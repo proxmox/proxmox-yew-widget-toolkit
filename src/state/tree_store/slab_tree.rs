@@ -149,6 +149,24 @@ macro_rules! impl_slab_node_mut {
             <$M>::new(self.tree, child_id)
         }
 
+        /// Appends a subtree without the root node.
+        pub fn append_tree_without_root(&mut self, mut subtree: SlabTree<T>) {
+            let root_id = match subtree.root() {
+                Some(root) => root.node_id,
+                None => return,
+            };
+            let root_entry = subtree.slab.remove(root_id);
+            subtree.root_id = None;
+
+            if let Some(children) = &root_entry.children {
+                for id in children {
+                    self.tree.append_subtree_node(
+                        &mut subtree, *id, self.level(), self.node_id,
+                    );
+                }
+            }
+        }
+
         /// Set the expanded flag
         pub fn set_expanded(&mut self, expanded: bool) {
             if self.expanded() != expanded {
@@ -396,6 +414,8 @@ impl<T> SlabTree<T> {
 
     pub(crate) fn append_subtree_node(&mut self, subtree: &mut SlabTree<T>, subtree_node: usize, level: usize, parent: usize) -> usize {
         subtree.root_id = None; // make sure nobody use nodes in this tree again
+        self.record_data_change();
+
         let mut child_entry = subtree.slab.remove(subtree_node);
         child_entry.level = level + 1;
         child_entry.parent_id = Some(parent);
