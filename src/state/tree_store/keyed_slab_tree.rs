@@ -28,6 +28,8 @@ pub struct KeyedSlabTree<T> {
     cursor: Option<usize>,
 
     listeners: Slab<Callback<()>>,
+
+    pub(crate) view_root: bool,
 }
 
 /// An immutable reference to a [KeyedSlabTree] node.
@@ -184,7 +186,14 @@ impl<T> KeyedSlabTree<T> {
             filter: None,
             cursor: None,
             listeners: Slab::new(),
+            view_root: true,
          }
+    }
+
+    /// Set flag to show/hide the root node.
+    pub fn set_view_root(&mut self, view_root: bool) {
+        self.record_data_change();
+        self.view_root = view_root;
     }
 
     /// Tree version number (incread by any modification).
@@ -270,8 +279,8 @@ impl<T> KeyedSlabTree<T> {
 
         if let Some(root_id) = self.tree.root_id {
             let root = self.get(root_id).unwrap();
-            view.push(root_id);
-            if root.expanded {
+            if self.view_root { view.push(root_id); }
+            if !self.view_root || root.expanded {
                 if let Some(children) = &root.children {
                     self.flatten_tree_children(&mut view, children);
                 }
@@ -388,6 +397,7 @@ impl<T> KeyedSlabTree<T> {
                     filter: None,
                     cursor: None,
                     listeners: Slab::new(),
+                    view_root: true,
                 })
             }
             None => None,

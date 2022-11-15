@@ -100,6 +100,11 @@ impl<T: 'static> TreeStore<T> {
         }
     }
 
+    /// Builder style method to set the 'view_root' flag.
+    pub fn view_root(mut self, view_root: bool) -> Self {
+        self.write().set_view_root(view_root);
+        self
+    }
     /// Builder style method to set the on_change callback.
     ///
     /// This calls [Self::add_listener] to create a new
@@ -314,7 +319,12 @@ impl<'a, T> DataNode<T> for KeyedSlabTreeBorrowRef<'a, T> {
         DataNodeDerefGuard { guard }
     }
     fn level(&self) -> usize {
-        self.tree.get(self.node_id).unwrap().level
+        let level = self.tree.get(self.node_id).unwrap().level;
+        if !self.tree.view_root {
+            level.saturating_sub(1)
+        } else  {
+            level
+        }
     }
     fn expanded(&self) -> bool {
         self.tree.get(self.node_id).unwrap().expanded
