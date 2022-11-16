@@ -332,6 +332,9 @@ impl<'a, T> DataNode<T> for KeyedSlabTreeBorrowRef<'a, T> {
     fn is_leaf(&self) -> bool {
         self.tree.get(self.node_id).unwrap().children.is_none()
     }
+    fn is_root(&self) -> bool {
+        self.tree.tree.root_id == Some(self.node_id)
+    }
     fn parent(&self) -> Option<Box<dyn DataNode<T> + '_>> {
        let entry = match self.tree.get(self.node_id) {
             Some(entry) => entry,

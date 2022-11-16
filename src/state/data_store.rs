@@ -16,6 +16,8 @@ pub trait DataNode<T> {
     fn expanded(&self) -> bool;
     /// Is this a leaf node?
     fn is_leaf(&self) -> bool;
+    /// Is this the root node?
+    fn is_root(&self) -> bool;
     /// Returns the parent node.
     fn parent(&self) -> Option<Box<dyn DataNode<T> + '_>>;
 }

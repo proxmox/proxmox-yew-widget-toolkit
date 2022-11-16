@@ -207,6 +207,7 @@ impl<'a, T> DataNode<T> for StoreNodeRef<'a, T> {
     }
     fn level(&self) -> usize { 0 }
     fn is_leaf(&self) -> bool { true }
+    fn is_root(&self) -> bool { false }
     fn expanded(&self) -> bool { false }
     fn parent(&self) -> Option<Box<dyn DataNode<T> + '_>> { None }
 }
@@ -484,6 +485,7 @@ impl<'a, T> DataNode<T> for Wrapper<'a, T> {
     }
     fn level(&self) -> usize { 0 }
     fn is_leaf(&self) -> bool { true }
+    fn is_root(&self) -> bool { false }
     fn expanded(&self) -> bool { false }
     fn parent(&self) -> Option<Box<dyn DataNode<T> + '_>> { None }
 }
