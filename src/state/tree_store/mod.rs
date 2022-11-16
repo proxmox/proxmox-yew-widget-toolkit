@@ -101,7 +101,7 @@ impl<T: 'static> TreeStore<T> {
     }
 
     /// Builder style method to set the 'view_root' flag.
-    pub fn view_root(mut self, view_root: bool) -> Self {
+    pub fn view_root(self, view_root: bool) -> Self {
         self.write().set_view_root(view_root);
         self
     }
@@ -328,6 +328,9 @@ impl<'a, T> DataNode<T> for KeyedSlabTreeBorrowRef<'a, T> {
     }
     fn expanded(&self) -> bool {
         self.tree.get(self.node_id).unwrap().expanded
+    }
+    fn is_leaf(&self) -> bool {
+        self.tree.get(self.node_id).unwrap().children.is_none()
     }
     fn parent(&self) -> Option<Box<dyn DataNode<T> + '_>> {
        let entry = match self.tree.get(self.node_id) {

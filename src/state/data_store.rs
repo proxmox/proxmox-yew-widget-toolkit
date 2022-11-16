@@ -7,11 +7,16 @@ use crate::props::{IntoFilterFn, IntoSorterFn};
 
 #[doc(hidden)]
 pub trait DataNode<T> {
+    /// Access the record data.
     fn record(&self) -> DataNodeDerefGuard<T>;
     /// View level. Can be different than TreeNode::level if view_root
     /// is not set (TreeNode::level - 1).
     fn level(&self) -> usize;
+    /// Is the node expanded?
     fn expanded(&self) -> bool;
+    /// Is this a leaf node?
+    fn is_leaf(&self) -> bool;
+    /// Returns the parent node.
     fn parent(&self) -> Option<Box<dyn DataNode<T> + '_>>;
 }
 

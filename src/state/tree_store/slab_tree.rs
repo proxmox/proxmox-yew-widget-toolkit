@@ -65,6 +65,11 @@ macro_rules! impl_slab_node_ref {
             self.tree.get(self.node_id).unwrap().expanded
         }
 
+        /// Is this a leaf node?
+        fn is_leaf(&self) -> bool {
+            self.tree.get(self.node_id).unwrap().children.is_none()
+        }
+
         /// Get the parent node.
         pub fn parent(&self) -> Option<$R> {
             let entry = match self.tree.get(self.node_id) {
@@ -237,6 +242,25 @@ macro_rules! impl_slab_node_mut {
             };
 
             self.tree.remove_tree_node_id(child_id)
+        }
+
+        /// Make a node a leaf node or intermediate node.
+        ///
+        /// - `leaf_node = true`: removes all children.
+        /// - `leaf_node = false`: mark node as intermediate node.
+        pub fn set_leaf_node(mut self, leaf_node: bool) {
+            let mut entry = self.tree.get_mut(self.node_id).unwrap();
+            if leaf_node {
+                if let Some(children) = &mut entry.children.take() {
+                    for child_id in children {
+                        self.tree.remove_node_id(*child_id);
+                    }
+                }
+            } else {
+                if entry.children.is_none() {
+                    entry.children = Some(Vec::new());
+                }
+            }
         }
 
         /// Remove all children.
