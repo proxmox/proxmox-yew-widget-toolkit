@@ -21,3 +21,53 @@ pub(crate) use header_widget::HeaderWidget;
 
 mod data_table;
 pub use data_table::{DataTable, PwtDataTable};
+
+use yew::prelude::*;
+use yew::virtual_dom::VList;
+
+use crate::state::DataNode;
+
+// Note: this could be use to generate more complex layouts with tree lines...
+fn get_indent<T>(item: &dyn DataNode<T>, indent: &mut VList) {
+    if item.level() == 0 { return; }
+    if let Some(parent) = item.parent() {
+        get_indent(&*parent, indent);
+        let space = html!{ <span aria-hidden="" class="pwt-ps-4"/> };
+        indent.push(space);
+    }
+}
+
+/// Helper function to render tree nodes.
+///
+/// This function generates a tree node with:
+///
+/// - correct indentation
+/// - a caret indicator to show if the node is expanded
+/// - an optional icon
+///
+/// The passed render function gets the record as parameter and should
+/// return a tuple containing the optional icon class and the node
+/// text.
+pub fn render_tree_node<T>(
+    item: &dyn DataNode<T>,
+    render: impl Fn(&T) -> (Option<String>, String),
+) -> Html {
+    let record = item.record();
+    let (class, content) = render(&*record);
+    let class = class.unwrap_or(String::new());
+
+    let mut list: VList = VList::new();
+    get_indent(item, &mut list);
+    let indent: Html = list.into();
+
+    let leaf = item.is_leaf();
+    if leaf {
+        html!{<span class="pwt-user-select-none">{indent.clone()}<i {class}/>{content}</span>}
+    } else {
+        let carret = match item.expanded() {
+            true => "fa fa-fw fa-caret-down pwt-pe-1",
+            false => "fa fa-fw fa-caret-right pwt-pe-1",
+        };
+        html!{<span class="pwt-user-select-none">{indent.clone()}<i class={carret}/><i {class}/>{content}</span>}
+    }
+}
