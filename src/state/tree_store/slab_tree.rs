@@ -66,7 +66,7 @@ macro_rules! impl_slab_node_ref {
         }
 
         /// Is this a leaf node?
-        fn is_leaf(&self) -> bool {
+        pub fn is_leaf(&self) -> bool {
             self.tree.get(self.node_id).unwrap().children.is_none()
         }
 
