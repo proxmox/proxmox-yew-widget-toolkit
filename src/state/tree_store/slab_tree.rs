@@ -226,14 +226,21 @@ macro_rules! impl_slab_node_mut {
 
         /// Remove the child at position `pos`.
         pub fn remove_child(&mut self, pos: usize) -> Option<T> {
-            let child_id = match self.child(pos) {
-                Some(child) => child.node_id,
+            let entry = match self.tree.get_mut(self.node_id) {
+                Some(entry) => entry,
                 None => return None,
             };
-
-            self.tree.remove_node_id(child_id)
+            if let Some(children) = &mut entry.children {
+                let child_id = match children.get(pos) {
+                    Some(child_id) => *child_id,
+                    None => return None,
+                };
+                children.retain(|id| *id != child_id);
+                self.tree.remove_node_id(child_id)
+            } else {
+                None
+            }
         }
-
         /// Remove the child subtree at position `pos`.
         pub fn remove_child_tree(&mut self, pos: usize) -> Option<$T> {
             let child_id = match self.child(pos) {
@@ -390,8 +397,8 @@ impl<T> SlabTree<T> {
     pub fn set_root_tree(&mut self, data: impl Into<SlabTree<T>>) {
         self.record_data_change();
         if let Some(last_root_id) = self.root_id {
-            self.remove_node_id(last_root_id);
             self.root_id = None;
+            self.remove_node_id(last_root_id);
         }
         let data = data.into();
         self.slab = data.slab;
@@ -425,15 +432,6 @@ impl<T> SlabTree<T> {
     pub(crate) fn remove_node_id(&mut self, node_id: usize) -> Option<T> {
         if let Some(entry) = self.slab.try_remove(node_id) {
             self.record_data_change();
-
-            // remove from parents's child list
-            if let Some(parent_id) = entry.parent_id {
-                let parent = self.get_mut(parent_id).unwrap();
-                if let Some(parent_children) = &mut parent.children {
-                    parent_children.retain(|id| *id != node_id);
-                }
-            }
-
             if let Some(children) = entry.children {
                 for child_id in children {
                     self.remove_node_id(child_id);
