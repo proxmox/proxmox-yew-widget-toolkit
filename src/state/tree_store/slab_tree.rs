@@ -248,7 +248,7 @@ macro_rules! impl_slab_node_mut {
         ///
         /// - `leaf_node = true`: removes all children.
         /// - `leaf_node = false`: mark node as intermediate node.
-        pub fn set_leaf_node(mut self, leaf_node: bool) {
+        pub fn set_leaf_node(&mut self, leaf_node: bool) {
             let mut entry = self.tree.get_mut(self.node_id).unwrap();
             if leaf_node {
                 if let Some(children) = &mut entry.children.take() {
