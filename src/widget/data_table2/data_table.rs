@@ -912,7 +912,6 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
             .onkeydown({
                 let link = ctx.link().clone();
                 move |event: KeyboardEvent| {
-                    event.prevent_default();
                     link.send_message(Msg::KeyDown(event));
                 }
             })
