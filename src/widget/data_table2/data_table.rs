@@ -740,21 +740,29 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
                 if let Some(cursor) = props.store.get_cursor() {
                     if let Some(record_key) = self.lookup_cursor_record_key(props, cursor) {
                         if let Some(callback) = &props.on_row_keydown {
-                            let event = DataTableKeyboardEvent::new(record_key, event);
+                            let event = DataTableKeyboardEvent::new(record_key, event.clone());
                             callback.emit(event);
                         }
                     }
                 }
 
                 let msg = match key_code {
-                    40 => Msg::CursorDown(shift, ctrl),
-                    38 => Msg::CursorUp(shift, ctrl),
+                    40 => {
+                        event.prevent_default();
+                        Msg::CursorDown(shift, ctrl)
+                    }
+                    38 => {
+                        event.prevent_default();
+                        Msg::CursorUp(shift, ctrl)
+                    }
                     32 => {
+                        event.prevent_default();
                         self.select_cursor(props, shift, ctrl);
                         return true;
                     }
                     35 => {
                         // end
+                        event.prevent_default();
                         props.store.set_cursor(None);
                         props.store.cursor_up();
                         self.scroll_cursor_into_view(props, web_sys::ScrollLogicalPosition::Nearest);
@@ -762,6 +770,7 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
                     }
                     36 => {
                         // pos1
+                        event.prevent_default();
                         props.store.set_cursor(None);
                         props.store.cursor_down();
                         self.scroll_cursor_into_view(props, web_sys::ScrollLogicalPosition::Nearest);
@@ -769,6 +778,9 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
                     }
                     13 => {
                         // Return - same behavior as rowdblclick
+
+                        event.prevent_default();
+
                         let cursor = match props.store.get_cursor() {
                             Some(cursor) => cursor,
                             None => return false,
