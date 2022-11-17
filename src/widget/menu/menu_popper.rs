@@ -37,7 +37,10 @@ impl MenuPopper {
                     {
                         "name": "flip",
                         "options": {
-                            "fallbackPlacements": [if self.prefer_bottom { "right-start" } else { "bottom-start" }],
+                            "fallbackPlacements": [
+                                if self.prefer_bottom { "right-start" } else { "bottom-start" },
+                                "left-start",
+                            ],
                         },
                     },
                 ],
