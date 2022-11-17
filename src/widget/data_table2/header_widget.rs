@@ -57,7 +57,7 @@ impl<T: 'static> HeaderWidget<T> {
         self
     }
      */
-    
+
     /// Builder style method to set the size change callback
     pub fn on_size_change(mut self, cb: impl IntoEventCallback<Vec<f64>>) -> Self {
         self.on_size_change = cb.into_event_callback();
@@ -347,12 +347,17 @@ impl <T: 'static> Component for PwtHeaderWidget<T> {
             on_sort_change.emit(sorter);
         }
 
+        let mut observed_widths = Vec::new();
+        for (col_idx, cell) in state.columns().iter().enumerate() {
+            observed_widths.push(if state.get_column_hidden(col_idx) { Some(0.) } else { None });
+        }
+
         Self {
             unique_id: get_unique_element_id(),
             node_ref: props.node_ref.clone().unwrap_or(NodeRef::default()),
             state,
             cursor: None,
-            observed_widths: Vec::new(),
+            observed_widths,
             timeout: None,
         }
     }
