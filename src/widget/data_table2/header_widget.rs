@@ -193,7 +193,12 @@ impl <T: 'static> PwtHeaderWidget<T> {
 
         let unique_id = self.unique_cell_id(cell_idx);
 
-        let sort_order = self.state.get_column_sorter(cell_idx);
+        let sort_order = if cell.column.sorter.is_some() {
+            self.state.get_column_sorter(cell_idx)
+        } else {
+            None
+        };
+
         let sort_icon = match sort_order {
             Some(ascending) => {
                 if ascending {
@@ -491,15 +496,22 @@ fn build_header_menu<T>(
     let mut columns_menu = Menu::new();
     headers_to_menu(&mut columns_menu, 0, headers, link, &mut 0, hidden_cells);
 
+    let sortable = match &headers[cell_idx] {
+        IndexedHeader::Single(cell) if cell.column.sorter.is_some() => true,
+        _ => false
+    };
+
     Menu::new()
         .with_item(
             MenuItem::new("Sort Ascending")
                 .icon_class("fa fa-long-arrow-up")
+                .disabled(!sortable)
                 .on_select(link.callback(move |_| Msg::ColumnSortChange(cell_idx, false, Some(true))))
-        )
+            )
         .with_item(
             MenuItem::new("Sort Descending")
                 .icon_class("fa fa-long-arrow-down")
+                .disabled(!sortable)
                 .on_select(link.callback(move |_| Msg::ColumnSortChange(cell_idx, false, Some(false))))
         )
         .with_separator()
@@ -553,41 +565,6 @@ fn headers_to_menu<T>(
         }
     }
 }
-
-/*
-fn headers_to_menu_old<T>(
-    headers: &[IndexedHeader<T>],
-    link: &Scope<PwtHeaderWidget<T>>,
-    cell_idx: &mut usize,
-    hidden_cells: &[bool],
-) -> Menu {
-
-    let mut menu = Menu::new();
-
-    for header in headers {
-        match header {
-            IndexedHeader::Single(cell) => {
-                menu.add_item(
-                    MenuCheckbox::new(cell.column.name.clone())
-                        .checked(!hidden_cells[*cell_idx])
-                        .on_change(link.callback({
-                            let cell_idx = *cell_idx;
-                            move |checked| Msg::HideClick(cell_idx, checked)
-                        }))
-                );
-                *cell_idx += 1;
-            }
-            IndexedHeader::Group(group) => {
-                let mut item = MenuItem::new(group.name.clone());
-                *cell_idx += 1;
-                item.set_menu(headers_to_menu_old(&group.children, link, cell_idx, hidden_cells));
-                menu.add_item(item);
-             }
-         }
-     }
-    menu
-}
- */
 
 impl<T: 'static> Into<VNode> for HeaderWidget<T> {
     fn into(self) -> VNode {

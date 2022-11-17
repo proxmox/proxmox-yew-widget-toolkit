@@ -128,8 +128,13 @@ impl Menu {
 
     /// Builder style method to add a simple line to separate menu items.
     pub fn with_separator(mut self) -> Self {
-        self.add_item(MenuEntry::Separator);
+        self.add_separator();
         self
+    }
+
+    /// Method to add a simple line to separate menu items.
+    pub fn add_separator(&mut self) {
+        self.add_item(MenuEntry::Separator);
     }
 
     /// Builder style method to add a menu item.
