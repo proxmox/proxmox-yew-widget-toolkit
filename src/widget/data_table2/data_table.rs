@@ -4,6 +4,7 @@ use std::marker::PhantomData;
 use derivative::Derivative;
 
 use gloo_timers::callback::Timeout;
+use wasm_bindgen::JsCast;
 
 use yew::prelude::*;
 use yew::virtual_dom::{Key, VComp, VNode};
@@ -32,6 +33,8 @@ pub enum Msg<T: 'static> {
     KeyDown(KeyboardEvent),
     CursorDown(bool, bool),
     CursorUp(bool, bool),
+    CursorLeft,
+    CursorRight,
     ItemClick(Key, Option<usize>, MouseEvent),
     ItemDblClick(Key, MouseEvent),
     FocusChange(bool),
@@ -301,6 +304,8 @@ impl VirtualScrollInfo {
 pub struct PwtDataTable<T: 'static, S: DataStore<T>> {
     unique_id: String,
     has_focus: bool,
+    take_focus: bool, // focus cursor after render
+    active_column: usize, // which colums has focus?
 
     _store_observer: S::Observer,
     _phantom_store: PhantomData<S>,
@@ -407,6 +412,54 @@ impl<T: 'static, S: DataStore<T>> PwtDataTable<T, S> {
         }
     }
 
+    fn focus_cursor(&mut self, props: &DataTable<T, S>) {
+        let cursor = match props.store.get_cursor() {
+            Some(c) => c,
+            None => return, // nothing to do
+        };
+
+        let key = match props.store.lookup_filtered_record_key(cursor) {
+            Some(key) => key,
+            None => return,
+        };
+
+        let id = self.get_unique_item_id(&key);
+
+        let window = web_sys::window().unwrap();
+        let document = window.document().unwrap();
+
+        let row_el = match document.get_element_by_id(&id) {
+            Some(el) => el,
+            None => {
+                // row not rendered, delay after render
+                self.take_focus = true;
+                return;
+            },
+        };
+
+        let children = row_el.children();
+        for i in 0..children.length() {
+            let child: web_sys::HtmlElement = children.item(i).unwrap().dyn_into().unwrap();
+            if let Some(column_num_str) = child.dataset().get("columnNum") {
+                if let Ok(column_num) = column_num_str.parse::<usize>() {
+                    if self.active_column == column_num {
+                        let _ = child.focus();
+                    }
+                }
+            }
+        }
+    }
+
+    fn find_focused_cell(&self,  props: &DataTable<T, S>) -> Option<(Key, Option<usize>)> {
+        let window = web_sys::window().unwrap();
+        let document = window.document().unwrap();
+        let active_el = match document.active_element() {
+            Some(el) => el,
+            None => return None,
+        };
+        dom_find_focus_pos(active_el, &self.unique_id)
+    }
+
     fn select_cursor(&mut self, props: &DataTable<T, S>, shift: bool, ctrl: bool) -> bool {
         let selection = match &props.selection {
             Some(selection) => selection,
@@ -511,11 +564,14 @@ impl<T: 'static, S: DataStore<T>> PwtDataTable<T, S> {
                             props.vertical_align.as_deref().unwrap_or("baseline"),
                             column.justify,
                         );
+                        let cell_active = active && self.active_column == column_num;
                         Container::new()
                             .tag("td")
                             .class(self.cell_class.clone())
                             .attribute("style", item_style)
                             .attribute("data-column-num", column_num.to_string())
+                            .attribute("tabindex", if cell_active { "0" } else { "-1" })
+                            .class((cell_active && self.has_focus).then(|| "cell-cursor"))
                             .with_child(html!{
                                 <div>{
                                     column.render_node.apply(item)
@@ -543,6 +599,14 @@ impl<T: 'static, S: DataStore<T>> PwtDataTable<T, S> {
             .attribute("style", format!("table-layout: fixed;width:1px; position:relative;top:{}px;", offset))
             .with_child(render_empty_row_with_sizes(&self.column_widths, &self.column_hidden, props.bordered));
 
+        let mut cursor = props.store.get_cursor();
+
+        if let Some(c) = cursor {
+            if c < start || c >= end {
+                // Cursor row is outside visible region.
+                cursor = None;
+            }
+        }
         if !self.column_widths.is_empty() {
             for (filtered_pos, item) in props.store.filtered_data_range(start..end) {
 
@@ -553,9 +617,10 @@ impl<T: 'static, S: DataStore<T>> PwtDataTable<T, S> {
                     selected = selection.contains(&record_key);
                 }
 
-                let active = props.store
-                    .get_cursor().map(|cursor| cursor == filtered_pos)
-                    .unwrap_or(false);
+                let active = cursor
+                    .map(|cursor| cursor == filtered_pos)
+                // if no cursor, mark first row active
+                    .unwrap_or(filtered_pos == start);
 
                 let row = self.render_row(props, item.as_ref(), record_key, filtered_pos, selected, active);
                 table.add_child(row);
@@ -635,18 +700,11 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
 
         let headers = create_indexed_header_list(&props.headers);
 
-        // fixme: set cursor to first selected item
-        //.cursor(props.selection)
-
-        props.store.set_cursor(Some(0));
-
         // fixme: remove
         let mut columns = Vec::new();
         for header in props.headers.iter() {
             header.extract_column_list(&mut columns);
         }
-
-        //store.set_sorter(create_combined_sorter_fn(sorters.sorters(), &columns));
 
         let cell_class = if props.cell_class.is_empty() {
             Classes::from("pwt-text-truncate pwt-p-2")
@@ -662,6 +720,8 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
             headers: Rc::new(headers),
             unique_id: get_unique_element_id(),
             has_focus: false,
+            take_focus: false,
+            active_column: 0,
             columns,
             column_widths: Vec::new(),
             column_hidden: Vec::new(),
@@ -751,9 +811,17 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
                         event.prevent_default();
                         Msg::CursorDown(shift, ctrl)
                     }
+                    39 => {
+                        event.prevent_default();
+                        Msg::CursorRight
+                    }
                     38 => {
                         event.prevent_default();
                         Msg::CursorUp(shift, ctrl)
+                    }
+                    37 => {
+                        event.prevent_default();
+                        Msg::CursorLeft
                     }
                     32 => {
                         event.prevent_default();
@@ -807,6 +875,7 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
             Msg::CursorDown(shift, ctrl) => {
                 if shift { self.select_cursor(props, shift, false); }
                 props.store.cursor_down();
+                self.focus_cursor(props);
                 if shift { self.select_cursor(props, shift, false); }
 
                 if !(shift || ctrl) && props.select_on_focus {
@@ -819,6 +888,7 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
             Msg::CursorUp(shift, ctrl) => {
                 if shift { self.select_cursor(props, shift, false); }
                 props.store.cursor_up();
+                self.focus_cursor(props);
                 if shift { self.select_cursor(props, shift, false); }
 
                 if !(shift ||ctrl) && props.select_on_focus {
@@ -826,6 +896,36 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
                 }
 
                 self.scroll_cursor_into_view(props, web_sys::ScrollLogicalPosition::Nearest);
+                true
+            }
+            Msg::CursorLeft => {
+                let mut cur = self.active_column;
+                if cur == 0 {
+                    cur = self.columns.len();
+                }
+                for i in (0..cur).rev() {
+                    let hidden = self.column_hidden.get(i).unwrap_or(&false);
+                    if !*hidden {
+                        self.active_column = i;
+                        self.focus_cursor(props);
+                        break;
+                    }
+                }
+                true
+            }
+            Msg::CursorRight => {
+                let mut next = self.active_column + 1;
+                if next >= self.columns.len() {
+                    next = 0;
+                }
+                for i in next..self.columns.len() {
+                    let hidden = self.column_hidden.get(i).unwrap_or(&false);
+                    if !*hidden {
+                        self.active_column = i;
+                        self.focus_cursor(props);
+                        break;
+                    }
+                }
                 true
             }
             Msg::ItemClick(record_key, opt_col_num, event) => {
@@ -876,10 +976,18 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
                 true
             }
             Msg::FocusChange(has_focus) => {
-                if self.has_focus == has_focus { return false; }
+                if has_focus {
+                    if let Some((row, column)) = self.find_focused_cell(props) {
+                        let cursor = props.store.filtered_record_pos(&row);
+                        props.store.set_cursor(cursor);
+                        self.select_cursor(props, false, false);
+                        if let Some(column) = column {
+                            self.active_column = column;
+                        }
+                    }
 
+                }
                 self.has_focus = has_focus;
-
                 true
             }
             Msg::ChangeSort(sorter_fn) => {
@@ -909,7 +1017,7 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
             .node_ref(self.scroll_ref.clone())
             .class("pwt-flex-fill")
             .attribute("style", "overflow: auto; outline: 0")
-            .attribute("tabindex", "0")
+            //.attribute("tabindex", "0")
             .attribute("role", "grid")
             .attribute("aria-label", "table body")
             .attribute("aria-activedescendant", active_descendant)
@@ -1007,6 +1115,15 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
                 self.table_size_observer = Some(size_observer);
             }
         }
+
+        let props = ctx.props();
+        if self.take_focus {
+            // required when we do big jumps (to end, to start),
+            // because previous cursor is not rendered (virtual
+            // scroll) and looses focus.
+            self.take_focus = false;
+            self.focus_cursor(props);
+        }
     }
 }
 
@@ -1019,9 +1136,44 @@ impl<T: 'static, S: DataStore<T> + 'static> Into<VNode> for DataTable<T, S> {
 }
 
 
-fn dom_find_record_num(event: &MouseEvent, unique_id: &str) -> Option<(Key, Option<usize>)> {
-    use wasm_bindgen::JsCast;
+fn dom_find_focus_pos(el: web_sys::Element, unique_id: &str) -> Option<(Key, Option<usize>)> {
+    let unique_row_prefix = format!("{}-item-", unique_id);
+    let mut column_num: Option<usize> = None;
 
+    let focused_el: web_sys::Node = el.clone().dyn_into().unwrap();
+    let mut cur_el: Option<web_sys::Element> = Some(el);
+
+    loop {
+        match cur_el {
+            Some(el) => {
+                if el.tag_name() == "TR" {
+                    if let Some(key_str) = el.id().strip_prefix(&unique_row_prefix) {
+                        if key_str.len() == 0 { break; } // stop on errors
+                        // try to find out the column_num
+                        let children = el.children();
+                        for i in 0..children.length() {
+                            let child: web_sys::HtmlElement = children.item(i).unwrap().dyn_into().unwrap();
+
+                            if child.contains(Some(&focused_el)) {
+                                if let Some(column_num_str) = child.dataset().get("columnNum") {
+                                    if let Ok(n) = column_num_str.parse() {
+                                        column_num = Some(n);
+                                    }
+                                }
+                            }
+                        }
+                        return Some((Key::from(key_str), column_num));
+                    }
+                }
+                cur_el = el.parent_element().map(|el| el.dyn_into().unwrap());
+            }
+            None => break,
+        }
+    }
+    None
+}
+
+fn dom_find_record_num(event: &MouseEvent, unique_id: &str) -> Option<(Key, Option<usize>)> {
     let unique_row_prefix = format!("{}-item-", unique_id);
     let mut column_num: Option<usize> = None;
 
