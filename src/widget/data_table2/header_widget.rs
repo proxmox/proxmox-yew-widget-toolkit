@@ -237,7 +237,6 @@ impl <T: 'static> PwtHeaderWidget<T> {
                         .on_size_change(link.callback(move |w| Msg::ColumnSizeChange(column_idx, w)))
                         .menu_builder({
                             let headers = Rc::clone(&props.headers);
-                            log::info!("HEADERSLEN {}", headers.len());
                             let link = link.clone();
                             let hidden_cells = Vec::from(self.state.hidden_cells());
                             move || build_header_menu(&headers, &link, cell_idx, &hidden_cells)
