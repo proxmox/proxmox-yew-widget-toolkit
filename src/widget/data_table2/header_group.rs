@@ -241,6 +241,23 @@ impl<T: 'static> IndexedHeader<T> {
         indexed_group
     }
 
+    pub fn lookup_cell(headers: &[IndexedHeader<T>], cell_idx: usize) -> Option<&IndexedHeader<T>> {
+        for header in headers {
+            match header {
+                IndexedHeader::Single(single) => {
+                    if single.cell_idx == cell_idx { return Some(header); }
+                }
+                IndexedHeader::Group(group) => {
+                    if group.cell_idx == cell_idx { return Some(header); }
+                    if let Some(cell) = Self::lookup_cell(&group.children, cell_idx) {
+                        return Some(cell);
+                    }
+                }
+            }
+        }
+        None
+    }
+
     pub fn parent(&self) -> Option<usize> {
         match self {
             Self::Single(single) => single.parent,

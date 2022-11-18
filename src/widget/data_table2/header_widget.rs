@@ -237,6 +237,7 @@ impl <T: 'static> PwtHeaderWidget<T> {
                         .on_size_change(link.callback(move |w| Msg::ColumnSizeChange(column_idx, w)))
                         .menu_builder({
                             let headers = Rc::clone(&props.headers);
+                            log::info!("HEADERSLEN {}", headers.len());
                             let link = link.clone();
                             let hidden_cells = Vec::from(self.state.hidden_cells());
                             move || build_header_menu(&headers, &link, cell_idx, &hidden_cells)
@@ -353,8 +354,8 @@ impl <T: 'static> Component for PwtHeaderWidget<T> {
         }
 
         let mut observed_widths = Vec::new();
-        for (col_idx, cell) in state.columns().iter().enumerate() {
-            observed_widths.push(if state.get_column_hidden(col_idx) { Some(0.) } else { None });
+        for (col_idx, _cell) in state.columns().iter().enumerate() {
+            observed_widths.push(if state.get_column_hidden(col_idx) { Some(0.0) } else { None });
         }
 
         Self {
@@ -486,6 +487,7 @@ impl <T: 'static> Component for PwtHeaderWidget<T> {
     }
 }
 
+
 fn build_header_menu<T>(
     headers: &[IndexedHeader<T>],
     link: &Scope<PwtHeaderWidget<T>>,
@@ -496,10 +498,12 @@ fn build_header_menu<T>(
     let mut columns_menu = Menu::new();
     headers_to_menu(&mut columns_menu, 0, headers, link, &mut 0, hidden_cells);
 
-    let sortable = match &headers[cell_idx] {
-        IndexedHeader::Single(cell) if cell.column.sorter.is_some() => true,
-        _ => false
+    let cell = IndexedHeader::lookup_cell(headers, cell_idx).unwrap();
+    let column = match cell {
+        IndexedHeader::Single(single) => &single.column,
+        _ => panic!("unable to build header menu for group"),
     };
+    let sortable = column.sorter.is_some();
 
     Menu::new()
         .with_item(
