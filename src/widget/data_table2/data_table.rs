@@ -450,7 +450,7 @@ impl<T: 'static, S: DataStore<T>> PwtDataTable<T, S> {
         }
     }
 
-    fn find_focused_cell(&self,  props: &DataTable<T, S>) -> Option<(Key, Option<usize>)> {
+    fn find_focused_cell(&self) -> Option<(Key, Option<usize>)> {
         let window = web_sys::window().unwrap();
         let document = window.document().unwrap();
         let active_el = match document.active_element() {
@@ -793,7 +793,7 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
             }
             // Cursor handling
             Msg::KeyDown(event) => {
-                let key_code = event.key_code();
+                let key: &str = &event.key();
                 let shift = event.shift_key();
                 let ctrl = event.ctrl_key();
 
@@ -806,45 +806,43 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
                     }
                 }
 
-                let msg = match key_code {
-                    40 => {
+                let msg = match key {
+                    "ArrowDown" => {
                         event.prevent_default();
                         Msg::CursorDown(shift, ctrl)
                     }
-                    39 => {
+                    "ArrowRight" => {
                         event.prevent_default();
                         Msg::CursorRight
                     }
-                    38 => {
+                    "ArrowUp" => {
                         event.prevent_default();
                         Msg::CursorUp(shift, ctrl)
                     }
-                    37 => {
+                    "ArrowLeft" => {
                         event.prevent_default();
                         Msg::CursorLeft
                     }
-                    32 => {
+                    " " => {
                         event.prevent_default();
                         self.select_cursor(props, shift, ctrl);
                         return true;
                     }
-                    35 => {
-                        // end
-                        event.prevent_default();
+                    "End" => {
+                         event.prevent_default();
                         props.store.set_cursor(None);
                         props.store.cursor_up();
                         self.scroll_cursor_into_view(props, web_sys::ScrollLogicalPosition::Nearest);
                         return true;
                     }
-                    36 => {
-                        // pos1
+                    "Home" => { // also known as "Pos 1"
                         event.prevent_default();
                         props.store.set_cursor(None);
                         props.store.cursor_down();
                         self.scroll_cursor_into_view(props, web_sys::ScrollLogicalPosition::Nearest);
                         return true;
                     }
-                    13 => {
+                    "Enter" => { // also known as "Return"
                         // Return - same behavior as rowdblclick
 
                         event.prevent_default();
@@ -977,7 +975,7 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
             }
             Msg::FocusChange(has_focus) => {
                 if has_focus {
-                    if let Some((row, column)) = self.find_focused_cell(props) {
+                    if let Some((row, column)) = self.find_focused_cell() {
                         let cursor = props.store.filtered_record_pos(&row);
                         props.store.set_cursor(cursor);
                         self.select_cursor(props, false, false);
