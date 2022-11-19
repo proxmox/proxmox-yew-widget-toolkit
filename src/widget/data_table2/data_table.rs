@@ -991,8 +991,9 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
                 true
             }
             Msg::ChangeSort(sorter_fn) => {
+                // Note: this triggers a Msg::DataChange
                 props.store.set_sorter(sorter_fn);
-                true
+                false
             }
             Msg::ColumnHiddenChange(column_hidden) => {
                 self.column_hidden = column_hidden;

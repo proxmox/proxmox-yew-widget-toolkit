@@ -275,6 +275,12 @@ impl<T> KeyedSlabTree<T> {
             return;
         }
 
+        let old_cursor_record_key = if let Some(cursor) = self.cursor {
+            self.lookup_filtered_record_key(cursor)
+        } else {
+            None
+        };
+
         let mut view = Vec::new();
 
         if let Some(root_id) = self.tree.root_id {
@@ -289,6 +295,11 @@ impl<T> KeyedSlabTree<T> {
 
         self.linear_view = view;
         self.last_view_version = self.tree.version();
+
+        self.cursor = match &old_cursor_record_key {
+            Some(record_key) => self.filtered_record_pos(record_key),
+            None => None,
+        };
     }
 
     pub(crate) fn lookup_filtered_record_key(&self, cursor: usize) -> Option<Key> {
