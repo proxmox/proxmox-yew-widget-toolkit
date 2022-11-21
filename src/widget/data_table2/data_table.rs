@@ -423,11 +423,13 @@ impl<T: 'static, S: DataStore<T>> PwtDataTable<T, S> {
             None => return,
         };
 
-        let id = self.get_unique_item_id(&key);
+        self.focus_cell(&key);
+    }
 
+    fn focus_cell(&mut self, key: &Key) {
+        let id = self.get_unique_item_id(key);
         let window = web_sys::window().unwrap();
         let document = window.document().unwrap();
-
         let row_el = match document.get_element_by_id(&id) {
             Some(el) => el,
             None => {
@@ -436,17 +438,36 @@ impl<T: 'static, S: DataStore<T>> PwtDataTable<T, S> {
                 return;
             },
         };
+        if let Some(cell) = dom_find_cell(row_el, self.active_column) {
+            let _ = cell.focus();
+        }
+    }
 
-        let children = row_el.children();
-        for i in 0..children.length() {
-            let child: web_sys::HtmlElement = children.item(i).unwrap().dyn_into().unwrap();
-            if let Some(column_num_str) = child.dataset().get("columnNum") {
-                if let Ok(column_num) = column_num_str.parse::<usize>() {
-                    if self.active_column == column_num {
-                        let _ = child.focus();
-                    }
-                }
-            }
+    fn focus_inside_cell(&mut self, key: &Key) -> bool {
+        let id = self.get_unique_item_id(key);
+        let window = web_sys::window().unwrap();
+        let document = window.document().unwrap();
+        let row_el = match document.get_element_by_id(&id) {
+            Some(el) => el,
+            None => return false,
+        };
+        if let Some(cell) = dom_find_cell(row_el, self.active_column) {
+            return crate::widget::focus::focus_inside_el(cell);
+        }
+        false
+    }
+
+    fn cell_focus_next(&mut self, key: &Key, backwards: bool) {
+        log::info!("CELL FOCUS NEXT {} {}", key, self.active_column);
+        let id = self.get_unique_item_id(key);
+        let window = web_sys::window().unwrap();
+        let document = window.document().unwrap();
+        let row_el = match document.get_element_by_id(&id) {
+            Some(el) => el,
+            None => return,
+        };
+        if let Some(cell) = dom_find_cell(row_el, self.active_column) {
+            crate::widget::focus::focus_next_tabable_el(cell, backwards, false);
         }
     }
 
@@ -721,6 +742,7 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
             unique_id: get_unique_element_id(),
             has_focus: false,
             take_focus: false,
+
             active_column: 0,
             columns,
             column_widths: Vec::new(),
@@ -797,8 +819,14 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
                 let shift = event.shift_key();
                 let ctrl = event.ctrl_key();
 
+                let mut focus_inside_cell = None;
+
                 if let Some(cursor) = props.store.get_cursor() {
                     if let Some(record_key) = self.lookup_cursor_record_key(props, cursor) {
+                        if self.focus_inside_cell(&record_key) {
+                            focus_inside_cell = Some(record_key.clone());
+                        }
+
                         if let Some(callback) = &props.on_row_keydown {
                             let event = DataTableKeyboardEvent::new(record_key, event.clone());
                             callback.emit(event);
@@ -813,6 +841,10 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
                     }
                     "ArrowRight" => {
                         event.prevent_default();
+                        if let Some(record_key) = focus_inside_cell {
+                            self.cell_focus_next(&record_key, false);
+                            return true;
+                        }
                         Msg::CursorRight
                     }
                     "ArrowUp" => {
@@ -821,6 +853,10 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
                     }
                     "ArrowLeft" => {
                         event.prevent_default();
+                        if let Some(record_key) = focus_inside_cell {
+                            self.cell_focus_next(&record_key, true);
+                            return true;
+                        }
                         Msg::CursorLeft
                     }
                     " " => {
@@ -844,6 +880,9 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
                     }
                     "Enter" => { // also known as "Return"
                         // Return - same behavior as rowdblclick
+                        if let Some(record_key) = focus_inside_cell {
+                            return false;
+                        }
 
                         event.prevent_default();
 
@@ -860,6 +899,29 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
                         self.select_cursor(props, false, false);
 
                         return false;
+                    }
+                    "F2" => {
+                        event.prevent_default();
+
+                        let cursor = match props.store.get_cursor() {
+                            Some(cursor) => cursor,
+                            None => return false,
+                        };
+
+                        let record_key = match self.lookup_cursor_record_key(props, cursor) {
+                            Some(record_key) => record_key,
+                            None => return false,
+                        };
+
+
+                        if self.focus_inside_cell(&record_key) {
+                            self.focus_cell(&record_key);
+                        } else {
+                            self.cell_focus_next(&record_key, false);
+                        }
+
+                        return false;
+
                     }
                     _ => return false,
                 };
@@ -1134,6 +1196,20 @@ impl<T: 'static, S: DataStore<T> + 'static> Into<VNode> for DataTable<T, S> {
     }
 }
 
+fn dom_find_cell(row_el: web_sys::Element, column_num: usize) -> Option<web_sys::HtmlElement> {
+    let children = row_el.children();
+    for i in 0..children.length() {
+        let child: web_sys::HtmlElement = children.item(i).unwrap().dyn_into().unwrap();
+        if let Some(column_num_str) = child.dataset().get("columnNum") {
+            if let Ok(n) = column_num_str.parse::<usize>() {
+                if n == column_num {
+                    return Some(child);
+                }
+            }
+        }
+    }
+    None
+}
 
 fn dom_find_focus_pos(el: web_sys::Element, unique_id: &str) -> Option<(Key, Option<usize>)> {
     let unique_row_prefix = format!("{}-item-", unique_id);
