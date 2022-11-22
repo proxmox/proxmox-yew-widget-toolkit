@@ -144,7 +144,7 @@ impl Component for PwtActionIcon {
         Container::new()
             .tag("i")
             .node_ref(props.node_ref.clone())
-            .attribute("tabindex", tabindex)
+            .attribute("tabindex", (!disabled).then(|| tabindex))
             .attribute("role", "button")
             .attribute("aria-label", props.aria_label.clone())
             .class("pwt-action-icon")
@@ -168,7 +168,6 @@ impl Component for PwtActionIcon {
                         "Enter" | " " => {
                             event.stop_propagation();
                             if disabled { return; }
-                            log::info!("TEST KEYDOWN {}", event.key());
                             if let Some(on_activate) = &on_activate {
                                 on_activate.emit(());
                             }
@@ -177,7 +176,7 @@ impl Component for PwtActionIcon {
                     }
                 }
             })
-        // suppress double click to avoid confusion when used inside tables/trees
+            // suppress double click to avoid confusion when used inside tables/trees
             .ondblclick(move |event: MouseEvent| { event.stop_propagation(); })
             .into()
     }
