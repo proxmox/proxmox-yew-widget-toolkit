@@ -1,5 +1,8 @@
 //! # Basic widgets
 
+mod action_icon;
+pub use action_icon::{ActionIcon, PwtActionIcon};
+
 mod button;
 pub use button::{Button, PwtButton};
 
