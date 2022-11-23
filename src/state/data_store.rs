@@ -46,36 +46,6 @@ pub trait DataStore<T>: Clone + PartialEq {
         Box<dyn Iterator<Item=(usize, Box<dyn DataNode<T> + 'a>)> + 'a>;
     fn filtered_data_range<'a>(&'a self, range: Range<usize>) ->
         Box<dyn Iterator<Item=(usize, Box<dyn DataNode<T> + 'a>)> + 'a>;
-
-    // Cursor
-    fn get_cursor(&self) -> Option<usize>;
-    fn set_cursor(&self, cursor: Option<usize>);
-
-    fn cursor_down(&self) {
-        let len = self.filtered_data_len();
-        if len == 0 {
-            self.set_cursor(None);
-            return;
-        }
-        self.set_cursor(match self.get_cursor() {
-            Some(n) => if (n + 1) < len { Some(n + 1) }  else { Some(0) },
-            None => Some(0),
-        });
-    }
-
-    fn cursor_up(&self) {
-        let len = self.filtered_data_len();
-        if len == 0 {
-            self.set_cursor(None);
-            return;
-        }
-
-        self.set_cursor(match self.get_cursor() {
-            Some(n) => if n > 0 { Some(n - 1) } else { Some(len - 1) },
-            None => Some(len - 1),
-        });
-    }
-
 }
 
 pub struct DataNodeDerefGuard<'a, T> {

@@ -277,17 +277,6 @@ impl<T> DataStore<T> for Store<T> {
             state: self.inner.borrow(),
         })
     }
-
-    fn get_cursor(&self) -> Option<usize> {
-        self.inner.borrow().get_cursor()
-    }
-
-    fn set_cursor(&self, cursor: Option<usize>) {
-        let mut state = self.inner.borrow_mut();
-        state.update_filtered_data();
-        state.set_cursor(cursor);
-        state.notify_listeners();
-    }
 }
 
 #[repr(transparent)]
@@ -310,7 +299,6 @@ pub struct StoreState<T> {
 
     sorter: Option<SorterFn<T>>,
     filter: Option<FilterFn<T>>,
-    cursor: Option<usize>,
 
     listeners: Slab<Callback<()>>,
 }
@@ -340,7 +328,6 @@ impl<T: 'static> StoreState<T> {
             last_view_version: 0,
             sorter: None,
             filter: None,
-            cursor: None,
             listeners: Slab::new(),
         }
     }
@@ -384,12 +371,6 @@ impl<T: 'static> StoreState<T> {
             return;
         }
 
-        let old_cursor_record_key = if let Some(cursor) = self.cursor {
-            self.lookup_filtered_record_key(cursor)
-        } else {
-            None
-        };
-
         self.filtered_data = self.data.iter().enumerate()
             .filter(|(_, record)| match &self.filter {
                 Some(filter) => filter.apply(0, record), // fixme: remove fiter record_num param
@@ -405,11 +386,6 @@ impl<T: 'static> StoreState<T> {
         }
 
         self.last_view_version = self.version;
-
-        self.cursor = match &old_cursor_record_key {
-            Some(record_key) => self.filtered_record_pos(record_key),
-            None => None,
-        };
     }
 
     fn lookup_filtered_record_key(&self, cursor: usize) -> Option<Key> {
@@ -427,31 +403,13 @@ impl<T: 'static> StoreState<T> {
     }
 
     fn filtered_record_pos(&self, key: &Key) -> Option<usize> {
+        log::info!("SLOW SEARCH");
         self.filtered_data.iter()
             .position(|n| key == &self.extract_key(&self.data[*n]))
     }
 
     fn filtered_data_len(&self) -> usize {
         self.filtered_data.len()
-    }
-
-    fn get_cursor(&self) -> Option<usize> {
-        self.cursor
-    }
-
-    fn set_cursor(&mut self, cursor: Option<usize>) {
-        self.version += 1;
-        self.cursor = match cursor {
-            Some(c) => {
-                let len = self.filtered_data_len();
-                if c < len {
-                    Some(c)
-                } else {
-                    None
-                }
-            }
-            None => None,
-        }
     }
 
     /// Find a record position by its key.

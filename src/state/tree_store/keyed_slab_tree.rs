@@ -14,7 +14,6 @@ use super::{SlabTree, SlabTreeEntry};
 ///
 /// - Filtering
 /// - Sorting
-/// - Cursor
 /// - Listener callbacks
 pub struct KeyedSlabTree<T> {
     pub(crate) tree: SlabTree<T>,
@@ -25,8 +24,7 @@ pub struct KeyedSlabTree<T> {
 
     sorter: Option<SorterFn<T>>,
     filter: Option<FilterFn<T>>,
-    cursor: Option<usize>,
-
+ 
     listeners: Slab<Callback<()>>,
 
     pub(crate) view_root: bool,
@@ -184,7 +182,6 @@ impl<T> KeyedSlabTree<T> {
             last_view_version: 0,
             sorter: None,
             filter: None,
-            cursor: None,
             listeners: Slab::new(),
             view_root: true,
          }
@@ -275,12 +272,6 @@ impl<T> KeyedSlabTree<T> {
             return;
         }
 
-        let old_cursor_record_key = if let Some(cursor) = self.cursor {
-            self.lookup_filtered_record_key(cursor)
-        } else {
-            None
-        };
-
         let mut view = Vec::new();
 
         if let Some(root_id) = self.tree.root_id {
@@ -295,11 +286,6 @@ impl<T> KeyedSlabTree<T> {
 
         self.linear_view = view;
         self.last_view_version = self.tree.version();
-
-        self.cursor = match &old_cursor_record_key {
-            Some(record_key) => self.filtered_record_pos(record_key),
-            None => None,
-        };
     }
 
     pub(crate) fn lookup_filtered_record_key(&self, cursor: usize) -> Option<Key> {
@@ -326,24 +312,6 @@ impl<T> KeyedSlabTree<T> {
 
     pub(crate) fn filtered_data_len(&self) -> usize {
         self.linear_view.len()
-    }
-
-    pub(crate) fn get_cursor(&self) -> Option<usize> {
-        self.cursor
-    }
-
-    pub(crate) fn set_cursor(&mut self, cursor: Option<usize>) {
-        self.cursor = match cursor {
-            Some(c) => {
-                let len = self.filtered_data_len();
-                if c < len {
-                    Some(c)
-                } else {
-                    None
-                }
-            }
-            None => None,
-        }
     }
 
     /// Set the root node.
@@ -406,7 +374,6 @@ impl<T> KeyedSlabTree<T> {
                     last_view_version: 0,
                     sorter: None,
                     filter: None,
-                    cursor: None,
                     listeners: Slab::new(),
                     view_root: true,
                 })

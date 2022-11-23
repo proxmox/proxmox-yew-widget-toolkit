@@ -188,17 +188,6 @@ impl<T: 'static> TreeStore<T> {
         tree.update_filtered_data();
         tree.filtered_data_len()
     }
-
-    fn get_cursor(&self) -> Option<usize> {
-        self.inner.borrow().get_cursor()
-    }
-
-    fn set_cursor(&self, cursor: Option<usize>) {
-        let mut tree = self.inner.borrow_mut();
-        tree.update_filtered_data();
-        tree.set_cursor(cursor);
-        tree.notify_listeners();
-    }
 }
 
 impl<T> DataStore<T> for TreeStore<T> {
@@ -251,14 +240,6 @@ impl<T> DataStore<T> for TreeStore<T> {
             range: Some(range),
             tree: self.inner.borrow(),
         })
-    }
-
-    fn get_cursor(&self) -> Option<usize> {
-        self.get_cursor()
-    }
-
-    fn set_cursor(&self, cursor: Option<usize>) {
-        self.set_cursor(cursor);
     }
 }
 

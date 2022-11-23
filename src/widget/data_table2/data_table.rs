@@ -300,12 +300,18 @@ impl VirtualScrollInfo {
     }
 }
 
+struct Cursor {
+    pos: usize,
+    record_key: Key,
+}
+
 #[doc(hidden)]
 pub struct PwtDataTable<T: 'static, S: DataStore<T>> {
     unique_id: String,
     has_focus: bool,
     take_focus: bool, // focus cursor after render
     active_column: usize, // which colums has focus?
+    cursor: Option<Cursor>,
 
     _store_observer: S::Observer,
     _phantom_store: PhantomData<S>,
@@ -365,6 +371,51 @@ fn render_empty_row_with_sizes(widths: &[f64], column_hidden: &[bool], bordered:
 
 impl<T: 'static, S: DataStore<T>> PwtDataTable<T, S> {
 
+    fn set_cursor(
+        &mut self,
+        props: &DataTable<T, S>,
+        pos: Option<usize>,
+    ) {
+        if let Some(pos) = pos {
+            self.cursor = match props.store.lookup_filtered_record_key(pos) {
+                Some(record_key) => Some(Cursor { pos, record_key }),
+                None => None,
+            }
+        } else {
+            self.cursor = None;
+        }
+    }
+
+    fn cursor_down(
+        &mut self,
+        props: &DataTable<T, S>,
+    ) {
+        let len = props.store.filtered_data_len();
+        if len == 0 {
+            self.set_cursor(props, None);
+            return;
+        }
+        self.set_cursor(props, match &self.cursor {
+            Some(Cursor { pos, ..}) => if (pos + 1) < len { Some(pos + 1) }  else { Some(0) },
+            None => Some(0),
+        });
+    }
+
+    fn cursor_up(
+        &mut self,
+        props: &DataTable<T, S>,
+    ) {
+        let len = props.store.filtered_data_len();
+        if len == 0 {
+            self.set_cursor(props, None);
+            return;
+        }
+        self.set_cursor(props, match &self.cursor {
+            Some(Cursor { pos, ..}) => if *pos > 0 { Some(pos - 1) } else { Some(len - 1) },
+            None => Some(len - 1),
+        });
+    }
+
     fn select_position(
         &mut self,
         props: &DataTable<T, S>,
@@ -412,18 +463,11 @@ impl<T: 'static, S: DataStore<T>> PwtDataTable<T, S> {
         }
     }
 
-    fn focus_cursor(&mut self, props: &DataTable<T, S>) {
-        let cursor = match props.store.get_cursor() {
-            Some(c) => c,
+    fn focus_cursor(&mut self) {
+        match &self.cursor {
+            Some(Cursor { record_key, .. }) => self.focus_cell(&record_key.clone()),
             None => return, // nothing to do
         };
-
-        let key = match props.store.lookup_filtered_record_key(cursor) {
-            Some(key) => key,
-            None => return,
-        };
-
-        self.focus_cell(&key);
     }
 
     fn focus_cell(&mut self, key: &Key) {
@@ -443,7 +487,7 @@ impl<T: 'static, S: DataStore<T>> PwtDataTable<T, S> {
         }
     }
 
-    fn focus_inside_cell(&mut self, key: &Key) -> bool {
+    fn focus_inside_cell(&self, key: &Key) -> bool {
         let id = self.get_unique_item_id(key);
         let window = web_sys::window().unwrap();
         let document = window.document().unwrap();
@@ -487,26 +531,19 @@ impl<T: 'static, S: DataStore<T>> PwtDataTable<T, S> {
             None => return false,
         };
 
-        let cursor = match props.store.get_cursor() {
-            Some(c) => c,
+        let (_cursor, record_key) = match &self.cursor {
+            Some(Cursor { pos, record_key}) => (*pos, record_key),
             None => return false, // nothing to do
         };
 
         if !(shift || ctrl) { selection.clear(); }
 
-        if let Some(key) = props.store.lookup_filtered_record_key(cursor) {
-            if ctrl {
-                selection.toggle(key);
-            } else {
-                selection.select(key);
-            }
-            return true;
+        if ctrl {
+            selection.toggle(record_key.clone());
+        } else {
+            selection.select(record_key.clone());
         }
-        false
-    }
-
-    fn lookup_cursor_record_key(&self, props: &DataTable<T, S>, cursor: usize) -> Option<Key> {
-        props.store.lookup_filtered_record_key(cursor)
+        true
     }
 
     fn get_unique_item_id(&self, key: &Key) -> String {
@@ -517,10 +554,11 @@ impl<T: 'static, S: DataStore<T>> PwtDataTable<T, S> {
         (self.scroll_info.start..self.scroll_info.end).contains(&cursor)
     }
 
-    fn scroll_cursor_into_view(&self, props: &DataTable<T, S>, pos: web_sys::ScrollLogicalPosition) {
-        let cursor = match props.store.get_cursor() {
-            Some(cursor) => cursor,
-            None => return,
+    // fixme: still required?? focus is automatically moved int view??
+    fn scroll_cursor_into_view(&self, pos: web_sys::ScrollLogicalPosition) {
+        let (cursor, record_key) = match &self.cursor {
+            Some(Cursor { pos, record_key}) => (*pos, record_key),
+            None => return, // nothing to do
         };
 
         if !self.cursor_row_is_rendered(cursor) {
@@ -528,9 +566,7 @@ impl<T: 'static, S: DataStore<T>> PwtDataTable<T, S> {
             return;
         }
 
-        if let Some(record_key) = self.lookup_cursor_record_key(props, cursor) {
-            self.scroll_item_into_view(&record_key, pos);
-        }
+        self.scroll_item_into_view(record_key, pos);
     }
 
     fn scroll_to_cursor(&self, cursor: usize) {
@@ -620,7 +656,7 @@ impl<T: 'static, S: DataStore<T>> PwtDataTable<T, S> {
             .attribute("style", format!("table-layout: fixed;width:1px; position:relative;top:{}px;", offset))
             .with_child(render_empty_row_with_sizes(&self.column_widths, &self.column_hidden, props.bordered));
 
-        let mut cursor = props.store.get_cursor();
+        let mut cursor = self.cursor.as_ref().map(|c| c.pos);
 
         if let Some(c) = cursor {
             if c < start || c >= end {
@@ -742,6 +778,7 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
             unique_id: get_unique_element_id(),
             has_focus: false,
             take_focus: false,
+            cursor: None,
 
             active_column: 0,
             columns,
@@ -821,16 +858,14 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
 
                 let mut focus_inside_cell = None;
 
-                if let Some(cursor) = props.store.get_cursor() {
-                    if let Some(record_key) = self.lookup_cursor_record_key(props, cursor) {
-                        if self.focus_inside_cell(&record_key) {
-                            focus_inside_cell = Some(record_key.clone());
-                        }
+                if let Some(Cursor { record_key, .. }) = &self.cursor {
+                    if self.focus_inside_cell(record_key) {
+                        focus_inside_cell = Some(record_key.clone());
+                    }
 
-                        if let Some(callback) = &props.on_row_keydown {
-                            let event = DataTableKeyboardEvent::new(record_key, event.clone());
-                            callback.emit(event);
-                        }
+                    if let Some(callback) = &props.on_row_keydown {
+                        let event = DataTableKeyboardEvent::new(record_key.clone(), event.clone());
+                        callback.emit(event);
                     }
                 }
 
@@ -866,35 +901,25 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
                     }
                     "End" => {
                          event.prevent_default();
-                        props.store.set_cursor(None);
-                        props.store.cursor_up();
-                        self.scroll_cursor_into_view(props, web_sys::ScrollLogicalPosition::Nearest);
+                        self.set_cursor(props, None);
+                        self.cursor_up(props);
+                        self.scroll_cursor_into_view(web_sys::ScrollLogicalPosition::Nearest);
                         return true;
                     }
                     "Home" => { // also known as "Pos 1"
                         event.prevent_default();
-                        props.store.set_cursor(None);
-                        props.store.cursor_down();
-                        self.scroll_cursor_into_view(props, web_sys::ScrollLogicalPosition::Nearest);
+                        self.set_cursor(props, None);
+                        self.cursor_down(props);
+                        self.scroll_cursor_into_view(web_sys::ScrollLogicalPosition::Nearest);
                         return true;
                     }
                     "Enter" => { // also known as "Return"
                         // Return - same behavior as rowdblclick
-                        if let Some(record_key) = focus_inside_cell {
+                        if let Some(_record_key) = focus_inside_cell {
                             return false;
                         }
 
                         event.prevent_default();
-
-                        let cursor = match props.store.get_cursor() {
-                            Some(cursor) => cursor,
-                            None => return false,
-                        };
-
-                        let _record_key = match self.lookup_cursor_record_key(props, cursor) {
-                            Some(record_key) => record_key,
-                            None => return false,
-                        };
 
                         self.select_cursor(props, false, false);
 
@@ -903,16 +928,10 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
                     "F2" => {
                         event.prevent_default();
 
-                        let cursor = match props.store.get_cursor() {
-                            Some(cursor) => cursor,
-                            None => return false,
+                        let record_key = match &self.cursor {
+                            Some(Cursor { record_key, .. }) => record_key.clone(),
+                            None => return false, // nothing to do
                         };
-
-                        let record_key = match self.lookup_cursor_record_key(props, cursor) {
-                            Some(record_key) => record_key,
-                            None => return false,
-                        };
-
 
                         if self.focus_inside_cell(&record_key) {
                             self.focus_cell(&record_key);
@@ -934,28 +953,28 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
             }
             Msg::CursorDown(shift, ctrl) => {
                 if shift { self.select_cursor(props, shift, false); }
-                props.store.cursor_down();
-                self.focus_cursor(props);
+                self.cursor_down(props);
+                self.focus_cursor();
                 if shift { self.select_cursor(props, shift, false); }
 
                 if !(shift || ctrl) && props.select_on_focus {
                     self.select_cursor(props, false, false);
                 }
 
-                self.scroll_cursor_into_view(props, web_sys::ScrollLogicalPosition::Nearest);
+                self.scroll_cursor_into_view(web_sys::ScrollLogicalPosition::Nearest);
                 true
             }
             Msg::CursorUp(shift, ctrl) => {
                 if shift { self.select_cursor(props, shift, false); }
-                props.store.cursor_up();
-                self.focus_cursor(props);
+                self.cursor_up(props);
+                self.focus_cursor();
                 if shift { self.select_cursor(props, shift, false); }
 
                 if !(shift ||ctrl) && props.select_on_focus {
                     self.select_cursor(props, false, false);
                 }
 
-                self.scroll_cursor_into_view(props, web_sys::ScrollLogicalPosition::Nearest);
+                self.scroll_cursor_into_view(web_sys::ScrollLogicalPosition::Nearest);
                 true
             }
             Msg::CursorLeft => {
@@ -967,7 +986,7 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
                     let hidden = self.column_hidden.get(i).unwrap_or(&false);
                     if !*hidden {
                         self.active_column = i;
-                        self.focus_cursor(props);
+                        self.focus_cursor();
                         break;
                     }
                 }
@@ -982,20 +1001,20 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
                     let hidden = self.column_hidden.get(i).unwrap_or(&false);
                     if !*hidden {
                         self.active_column = i;
-                        self.focus_cursor(props);
+                        self.focus_cursor();
                         break;
                     }
                 }
                 true
             }
             Msg::ItemClick(record_key, opt_col_num, event) => {
-                let last_cursor = props.store.get_cursor();
+                let last_cursor = self.cursor.as_ref().map(|c| c.pos);
                 let new_cursor = props.store.filtered_record_pos(&record_key);
 
                 let shift = event.shift_key();
                 let ctrl = event.ctrl_key();
 
-                props.store.set_cursor(new_cursor);
+                self.set_cursor(props, new_cursor);
 
                 if shift || ctrl {
                     if let Some(selection) = &props.selection {
@@ -1025,7 +1044,7 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
             }
             Msg::ItemDblClick(record_key, event) => {
                 let cursor = props.store.filtered_record_pos(&record_key);
-                props.store.set_cursor(cursor);
+                self.set_cursor(props, cursor);
                 self.select_cursor(props, false, false);
 
                 if let Some(callback) = &props.on_row_dblclick {
@@ -1039,7 +1058,7 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
                 if has_focus {
                     if let Some((row, column)) = self.find_focused_cell() {
                         let cursor = props.store.filtered_record_pos(&row);
-                        props.store.set_cursor(cursor);
+                        self.set_cursor(props, cursor);
                         self.select_cursor(props, false, false);
                         if let Some(column) = column {
                             self.active_column = column;
@@ -1068,10 +1087,8 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
         let row_count = props.store.filtered_data_len();
 
         let mut active_descendant = None;
-        if let Some(cursor) = props.store.get_cursor() {
-            if let Some(record_key) = self.lookup_cursor_record_key(props, cursor) {
-                active_descendant = Some(self.get_unique_item_id(&record_key));
-            }
+        if let Some(Cursor { record_key, .. }) = &self.cursor {
+            active_descendant = Some(self.get_unique_item_id(&record_key));
         }
 
         let viewport = Container::new()
@@ -1177,13 +1194,12 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
             }
         }
 
-        let props = ctx.props();
         if self.take_focus {
             // required when we do big jumps (to end, to start),
             // because previous cursor is not rendered (virtual
             // scroll) and looses focus.
             self.take_focus = false;
-            self.focus_cursor(props);
+            self.focus_cursor();
         }
     }
 }
