@@ -371,6 +371,37 @@ fn render_empty_row_with_sizes(widths: &[f64], column_hidden: &[bool], bordered:
 
 impl<T: 'static, S: DataStore<T>> PwtDataTable<T, S> {
 
+    // avoid slow search by lookup up keys nearby cursor first
+    fn filtered_record_pos(
+        &self,
+        props: &DataTable<T, S>,
+        key: &Key,
+    ) -> Option<usize> {
+        if let Some(Cursor { pos, record_key }) = &self.cursor {
+            if record_key == key {
+                return Some(*pos);
+            }
+
+            let test_pos = pos + 1;
+            if let Some(record_key) = props.store.lookup_filtered_record_key(test_pos) {
+                if &record_key == key {
+                    return Some(test_pos);
+                }
+            }
+            if *pos > 0 {
+                let test_pos = pos - 1;
+                if let Some(record_key) = props.store.lookup_filtered_record_key(test_pos) {
+                    if &record_key == key {
+                        return Some(test_pos);
+                    }
+                }
+            }
+
+        }
+
+        props.store.filtered_record_pos(&key)
+    }
+
     fn set_cursor(
         &mut self,
         props: &DataTable<T, S>,
@@ -1009,7 +1040,7 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
             }
             Msg::ItemClick(record_key, opt_col_num, event) => {
                 let last_cursor = self.cursor.as_ref().map(|c| c.pos);
-                let new_cursor = props.store.filtered_record_pos(&record_key);
+                let new_cursor = self.filtered_record_pos(props, &record_key);
 
                 let shift = event.shift_key();
                 let ctrl = event.ctrl_key();
@@ -1043,7 +1074,7 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
                 true
             }
             Msg::ItemDblClick(record_key, event) => {
-                let cursor = props.store.filtered_record_pos(&record_key);
+                let cursor = self.filtered_record_pos(props, &record_key);
                 self.set_cursor(props, cursor);
                 self.select_cursor(props, false, false);
 
@@ -1057,7 +1088,7 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
             Msg::FocusChange(has_focus) => {
                 if has_focus {
                     if let Some((row, column)) = self.find_focused_cell() {
-                        let cursor = props.store.filtered_record_pos(&row);
+                        let cursor = self.filtered_record_pos(props, &row);
                         self.set_cursor(props, cursor);
                         self.select_cursor(props, false, false);
                         if let Some(column) = column {

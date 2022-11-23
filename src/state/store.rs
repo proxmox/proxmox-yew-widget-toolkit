@@ -403,7 +403,6 @@ impl<T: 'static> StoreState<T> {
     }
 
     fn filtered_record_pos(&self, key: &Key) -> Option<usize> {
-        log::info!("SLOW SEARCH");
         self.filtered_data.iter()
             .position(|n| key == &self.extract_key(&self.data[*n]))
     }
