@@ -378,8 +378,11 @@ impl<T: 'static, S: DataStore<T>> PwtDataTable<T, S> {
         key: &Key,
     ) -> Option<usize> {
         if let Some(Cursor { pos, record_key }) = &self.cursor {
-            if record_key == key {
-                return Some(*pos);
+            let test_pos = *pos;
+            if let Some(record_key) = props.store.lookup_filtered_record_key(test_pos) {
+                if &record_key == key {
+                    return Some(test_pos);
+                }
             }
 
             let test_pos = pos + 1;
@@ -843,6 +846,11 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
         let props = ctx.props();
         match msg {
             Msg::DataChange => {
+                // try to keep cursor on the same record
+                if let Some(Cursor { record_key, pos }) = &self.cursor {
+                    self.cursor = self.filtered_record_pos(props, record_key)
+                        .map(|pos| Cursor { pos, record_key: record_key.clone() });
+                }
                 self.update_scroll_info(props);
                 true
             }
