@@ -377,7 +377,7 @@ impl<T: 'static, S: DataStore<T>> PwtDataTable<T, S> {
         props: &DataTable<T, S>,
         key: &Key,
     ) -> Option<usize> {
-        if let Some(Cursor { pos, record_key }) = &self.cursor {
+        if let Some(Cursor { pos, .. }) = &self.cursor {
             let test_pos = *pos;
             if let Some(record_key) = props.store.lookup_filtered_record_key(test_pos) {
                 if &record_key == key {
@@ -847,7 +847,7 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
         match msg {
             Msg::DataChange => {
                 // try to keep cursor on the same record
-                if let Some(Cursor { record_key, pos }) = &self.cursor {
+                if let Some(Cursor { record_key, .. }) = &self.cursor {
                     self.cursor = self.filtered_record_pos(props, record_key)
                         .map(|pos| Cursor { pos, record_key: record_key.clone() });
                 }
@@ -895,16 +895,31 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
                 let shift = event.shift_key();
                 let ctrl = event.ctrl_key();
 
-                let mut focus_inside_cell = None;
-
                 if let Some(Cursor { record_key, .. }) = &self.cursor {
-                    if self.focus_inside_cell(record_key) {
-                        focus_inside_cell = Some(record_key.clone());
-                    }
-
+                    let record_key = record_key.clone();
                     if let Some(callback) = &props.on_row_keydown {
                         let event = DataTableKeyboardEvent::new(record_key.clone(), event.clone());
                         callback.emit(event);
+                    }
+
+                    if self.focus_inside_cell(&record_key) {
+                        match key {
+                            "F2" | "Escape" => {
+                                event.prevent_default();
+                                self.focus_cell(&record_key);
+                            }
+                            "ArrowRight" | "ArrowDown" => {
+                                event.prevent_default();
+                                self.cell_focus_next(&record_key, false);
+                            }
+                            "ArrowLeft" | "ArrowUp" => {
+                                event.prevent_default();
+                                self.cell_focus_next(&record_key, true);
+                            }
+                            _ => {}
+                        }
+
+                        return false;
                     }
                 }
 
@@ -915,10 +930,6 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
                     }
                     "ArrowRight" => {
                         event.prevent_default();
-                        if let Some(record_key) = focus_inside_cell {
-                            self.cell_focus_next(&record_key, false);
-                            return true;
-                        }
                         Msg::CursorRight
                     }
                     "ArrowUp" => {
@@ -927,11 +938,7 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
                     }
                     "ArrowLeft" => {
                         event.prevent_default();
-                        if let Some(record_key) = focus_inside_cell {
-                            self.cell_focus_next(&record_key, true);
-                            return true;
-                        }
-                        Msg::CursorLeft
+                         Msg::CursorLeft
                     }
                     " " => {
                         event.prevent_default();
@@ -954,9 +961,6 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
                     }
                     "Enter" => { // also known as "Return"
                         // Return - same behavior as rowdblclick
-                        if let Some(_record_key) = focus_inside_cell {
-                            return false;
-                        }
 
                         event.prevent_default();
 
@@ -972,11 +976,7 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
                             None => return false, // nothing to do
                         };
 
-                        if self.focus_inside_cell(&record_key) {
-                            self.focus_cell(&record_key);
-                        } else {
-                            self.cell_focus_next(&record_key, false);
-                        }
+                        self.cell_focus_next(&record_key, false);
 
                         return false;
 
