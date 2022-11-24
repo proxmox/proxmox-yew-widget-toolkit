@@ -32,7 +32,7 @@ fn get_indent<T>(item: &dyn DataNode<T>, indent: &mut VList) {
     if item.level() == 0 { return; }
     if let Some(parent) = item.parent() {
         get_indent(&*parent, indent);
-        let space = html!{ <span aria-hidden="" class="pwt-ps-4"/> };
+        let space = html!{ <span class="pwt-ps-4"/> };
         indent.push(space);
     }
 }
@@ -62,12 +62,19 @@ pub fn render_tree_node<T>(
 
     let leaf = item.is_leaf();
     if leaf {
-        html!{<span class="pwt-user-select-none">{indent.clone()}<i {class}/>{content}</span>}
+        html!{<span class="pwt-user-select-none" role="none">{indent.clone()}<i {class}/>{content}</span>}
     } else {
         let carret = match item.expanded() {
             true => "fa fa-fw fa-caret-down pwt-pe-1",
             false => "fa fa-fw fa-caret-right pwt-pe-1",
         };
-        html!{<span class="pwt-user-select-none">{indent.clone()}<i class={carret}/><i {class}/>{content}</span>}
+        //html!{<span class="pwt-user-select-none" role="none">{indent.clone()}<i aria-hidden="" role="none" class={carret}/><i {class}/>{content}</span>}
+        html!{
+            <span class="pwt-user-select-none" role="none">
+                {indent.clone()}
+                <i aria-hidden="true" role="none" class={carret}/>
+                <i {class}>{content}</i>
+            </span>
+        }
     }
 }

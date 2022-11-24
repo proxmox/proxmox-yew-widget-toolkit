@@ -637,7 +637,7 @@ impl<T: 'static, S: DataStore<T>> PwtDataTable<T, S> {
             .tag("tr")
             .key(record_key)
             .attribute("role", "row")
-            .attribute("aria-rowindex", row_num.to_string())
+            .attribute("aria-rowindex", (row_num + 1).to_string()) // does not work, no firefox support?
             .attribute("id", item_id)
             .class((active && self.has_focus).then(|| "row-cursor"))
             .class(selected.then(|| "selected"))
@@ -664,14 +664,14 @@ impl<T: 'static, S: DataStore<T>> PwtDataTable<T, S> {
                             .attribute("tabindex", if cell_active { "0" } else { "-1" })
                             .class((cell_active && self.has_focus).then(|| "cell-cursor"))
                             .with_child(html!{
-                                <div>{
+                                <div role="none">{
                                     column.render_node.apply(item)
                                 }</div>
                             })
                             .into()
                     })
             )
-            .with_child(html!{<td style={minheight_cell_style.clone()}/>})
+            .with_child(html!{<td aria-hidden="true" style={minheight_cell_style.clone()}/>})
             .into()
     }
 
@@ -1134,11 +1134,8 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
             .node_ref(self.scroll_ref.clone())
             .class("pwt-flex-fill")
             .attribute("style", "overflow: auto; outline: 0")
-            //.attribute("tabindex", "0")
-            .attribute("role", "grid")
+            .attribute("role", "rowgroup")
             .attribute("aria-label", "table body")
-            .attribute("aria-activedescendant", active_descendant)
-            .attribute("aria-rowcount", row_count.to_string())
             .with_child(self.render_scroll_content(props))
             .onfocusin(ctx.link().callback(|_| Msg::FocusChange(true)))
             .onfocusout(ctx.link().callback(|_| Msg::FocusChange(false)))
@@ -1178,10 +1175,15 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
         Column::new()
             .class(props.class.clone())
             .node_ref(self.container_ref.clone())
+            .attribute("role", "table")
+            .attribute("aria-activedescendant", active_descendant)
+            .attribute("aria-rowcount", row_count.to_string())
             .with_child(
                 Container::new() // scollable for header
                     .node_ref(self.header_scroll_ref.clone())
-                    .attribute("style", "flex: 0 0 auto")
+                    .attribute("role", "rowgroup")
+                    .attribute("aria-label", "table header")
+                      .attribute("style", "flex: 0 0 auto")
                     .class("pwt-overflow-hidden")
                     .class("pwt-datatable2-header")
                     .with_child(
