@@ -221,6 +221,7 @@ impl <T: 'static> PwtHeaderWidget<T> {
                 .key(Key::from(cell_idx))
                 .tag("th")
                 .attribute("role", "columnheader")
+                .attribute("aria-colindex", (column_idx + 1).to_string())
                 .attribute(
                     "style",
                     format!("grid-row: {} / 10;grid-column-start: {}", start_row + 1, start_col + 1)

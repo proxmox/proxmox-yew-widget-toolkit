@@ -254,6 +254,7 @@ impl Component for PwtResizableHeader {
         let props = ctx.props();
 
         Row::new()
+            .attribute("role", "none")
             .class("pwt-datatable2-header-item")
             //.class(self.show_picker.then(|| "focused"))
             .class(self.has_focus.then(|| "focused"))
@@ -277,6 +278,7 @@ impl Component for PwtResizableHeader {
             })
             .with_child(
                 Container::new()
+                    .attribute("role", "none")
                     .class("pwt-align-self-center")
                     .class("pwt-text-truncate")
                     .with_optional_child(props.content.clone())
@@ -296,17 +298,18 @@ impl Component for PwtResizableHeader {
             )
             .with_child(
                 Container::new()
-                     .class("pwt-datatable2-header-resize-trigger")
-                     .onmousedown(ctx.link().callback(|_| Msg::StartResize))
-                     .ondblclick({
-                         let on_size_reset = props.on_size_reset.clone();
-                         move |event: MouseEvent| {
-                             event.stop_propagation();
-                             if let Some(on_size_reset) = &on_size_reset {
-                                 on_size_reset.emit(());
-                             }
-                         }
-                     })
+                    .attribute("role", "none")
+                    .class("pwt-datatable2-header-resize-trigger")
+                    .onmousedown(ctx.link().callback(|_| Msg::StartResize))
+                    .ondblclick({
+                        let on_size_reset = props.on_size_reset.clone();
+                        move |event: MouseEvent| {
+                            event.stop_propagation();
+                            if let Some(on_size_reset) = &on_size_reset {
+                                on_size_reset.emit(());
+                            }
+                        }
+                    })
             )
             .into()
     }

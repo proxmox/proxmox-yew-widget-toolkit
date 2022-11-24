@@ -660,6 +660,8 @@ impl<T: 'static, S: DataStore<T>> PwtDataTable<T, S> {
                             .tag("td")
                             .class(self.cell_class.clone())
                             .attribute("style", item_style)
+                            .attribute("role", "gridcell")
+                            .attribute("aria-colindex", (column_num + 1).to_string())
                             .attribute("data-column-num", column_num.to_string())
                             .attribute("tabindex", if cell_active { "0" } else { "-1" })
                             .class((cell_active && self.has_focus).then(|| "cell-cursor"))
@@ -1175,15 +1177,16 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
         Column::new()
             .class(props.class.clone())
             .node_ref(self.container_ref.clone())
-            .attribute("role", "table")
+            .attribute("role", "grid")
             .attribute("aria-activedescendant", active_descendant)
             .attribute("aria-rowcount", row_count.to_string())
+            .attribute("aria-colcount", (self.columns.len()).to_string())
             .with_child(
                 Container::new() // scollable for header
                     .node_ref(self.header_scroll_ref.clone())
                     .attribute("role", "rowgroup")
                     .attribute("aria-label", "table header")
-                      .attribute("style", "flex: 0 0 auto")
+                    .attribute("style", "flex: 0 0 auto")
                     .class("pwt-overflow-hidden")
                     .class("pwt-datatable2-header")
                     .with_child(
