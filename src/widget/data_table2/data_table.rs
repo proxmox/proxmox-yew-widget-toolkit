@@ -661,7 +661,6 @@ impl<T: 'static, S: DataStore<T>> PwtDataTable<T, S> {
                             .class(self.cell_class.clone())
                             .attribute("style", item_style)
                             .attribute("role", "gridcell")
-                            .attribute("aria-colindex", (column_num + 1).to_string())
                             .attribute("data-column-num", column_num.to_string())
                             .attribute("tabindex", if cell_active { "0" } else { "-1" })
                             .class((cell_active && self.has_focus).then(|| "cell-cursor"))

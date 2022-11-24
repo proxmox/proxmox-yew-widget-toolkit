@@ -139,14 +139,14 @@ impl <T: 'static> PwtHeaderWidget<T> {
     }
 
 
-    fn header_list_to_rows(
+    fn header_list_to_row(
         &self,
         list: &[IndexedHeader<T>],
         props: &HeaderWidget<T>,
         link: &Scope<PwtHeaderWidget<T>>,
         start_row: usize,
         start_col: usize,
-        rows: &mut Vec<Vec<Html>>,
+        header_row: &mut Vec<Html>,
     ) -> usize {
         let mut span = 0;
 
@@ -158,11 +158,11 @@ impl <T: 'static> PwtHeaderWidget<T> {
 
             match child {
                 IndexedHeader::Single(column) => {
-                    self.column_to_rows(column, props, link, start_row, start_col + span, rows);
+                    self.column_to_header_row(column, props, link, start_row, start_col + span, header_row);
                     span += 1;
                 }
                 IndexedHeader::Group(group) => {
-                    let cols = self.group_to_rows(group, props, link, start_row, start_col + span, rows);
+                    let cols = self.group_to_header_row(group, props, link, start_row, start_col + span, header_row);
                     span += cols;
                 }
             }
@@ -175,17 +175,15 @@ impl <T: 'static> PwtHeaderWidget<T> {
         format!("{}-cell-{}", self.unique_id, cell_idx)
     }
 
-    fn column_to_rows(
+    fn column_to_header_row(
         &self,
         cell: &IndexedHeaderSingle<T>,
         props: &HeaderWidget<T>,
         link: &Scope<PwtHeaderWidget<T>>,
         start_row: usize,
         start_col: usize,
-        rows: &mut Vec<Vec<Html>>,
+        header_row: &mut Vec<Html>,
     ) {
-        rows.resize((start_row + 1).max(rows.len()), Vec::new());
-
         let column_idx = cell.start_col;
         let cell_idx = cell.cell_idx;
         let active = self.cursor.map(|cursor| cursor == cell_idx).unwrap_or(false);
@@ -216,12 +214,11 @@ impl <T: 'static> PwtHeaderWidget<T> {
             Some(_) => html!{},
         };
 
-        rows[start_row].push(
+        header_row.push(
             Container::new()
                 .key(Key::from(cell_idx))
                 .tag("th")
                 .attribute("role", "columnheader")
-                .attribute("aria-colindex", (column_idx + 1).to_string())
                 .attribute(
                     "style",
                     format!("grid-row: {} / 10;grid-column-start: {}", start_row + 1, start_col + 1)
@@ -263,26 +260,26 @@ impl <T: 'static> PwtHeaderWidget<T> {
         );
     }
 
-    fn group_to_rows(
+    fn group_to_header_row(
         &self,
         group: &IndexedHeaderGroup<T>,
         props: &HeaderWidget<T>,
         link: &Scope<PwtHeaderWidget<T>>,
         start_row: usize,
         start_col: usize,
-        rows: &mut Vec<Vec<Html>>,
+        header_row: &mut Vec<Html>,
     ) -> usize {
-        rows.resize((start_row + 1).max(rows.len()), Vec::new());
-
         let cell_idx = group.cell_idx;
         let active = self.cursor.map(|cursor| cursor == cell_idx).unwrap_or(false);
         let tabindex = if active || (self.cursor.is_none() && (cell_idx == 0)) { "0" } else { "-1" };
         let unique_id = self.unique_cell_id(cell_idx);
 
-        let span = self.header_list_to_rows(&group.children, props, link, start_row + 1, start_col, rows);
+        let mut child_rows = Vec::new();
+
+        let span = self.header_list_to_row(&group.children, props, link, start_row + 1, start_col, &mut child_rows);
         let span = span.max(1); // at least one column for the group header
 
-        rows[start_row].push(
+        header_row.push(
             Container::new()
                 .tag("th")
                 .key(Key::from(cell_idx))
@@ -300,6 +297,9 @@ impl <T: 'static> PwtHeaderWidget<T> {
                 .with_child(group.name.clone())
                 .into()
         );
+
+        header_row.extend(child_rows);
+
         span
     }
 
@@ -444,18 +444,16 @@ impl <T: 'static> Component for PwtHeaderWidget<T> {
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
 
-        let mut rows = Vec::new();
+        let mut header_row = Vec::new();
 
-        self.header_list_to_rows(
+        self.header_list_to_row(
             props.headers.as_ref(),
             props,
             ctx.link(),
             0,
             0,
-            &mut rows,
+            &mut header_row,
         );
-
-        let rows: Vec<Html> = rows.into_iter().map(|row| row.into_iter()).flatten().collect();
 
         let column_count = self.state.column_count();
 
@@ -470,7 +468,7 @@ impl <T: 'static> Component for PwtHeaderWidget<T> {
             .node_ref(self.node_ref.clone())
             .class("pwt-d-grid")
             .attribute("style", self.compute_grid_style())
-            .children(rows)
+            .children(header_row)
             .with_child(last)
             .onkeydown({
                 let link = ctx.link().clone();
