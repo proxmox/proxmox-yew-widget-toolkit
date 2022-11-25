@@ -606,11 +606,18 @@ impl<T: 'static, S: DataStore<T>> PwtDataTable<T, S> {
         // Note: setting min-height on <tr> or <td> does not work
         let minheight_cell_style = AttrValue::Rc(format!("height: {}px;", props.min_row_height).into());
 
+        let aria_expanded = if item.is_leaf() {
+            None
+        } else {
+            if item.expanded() { Some("true") } else { Some("false") }
+        };
+
         Container::new()
             .tag("tr")
             .key(record_key)
             .attribute("role", "row")
             .attribute("aria-rowindex", (row_num + 1).to_string()) // does not work, no firefox support?
+            .attribute("aria-expanded", aria_expanded)
             .attribute("id", item_id)
             .class((active && self.has_focus).then(|| "row-cursor"))
             .class(selected.then(|| "selected"))
