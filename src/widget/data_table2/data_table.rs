@@ -300,6 +300,7 @@ impl VirtualScrollInfo {
     }
 }
 
+#[derive(Debug)]
 struct Cursor {
     pos: usize,
     record_key: Key,
@@ -536,7 +537,6 @@ impl<T: 'static, S: DataStore<T>> PwtDataTable<T, S> {
     }
 
     fn cell_focus_next(&mut self, key: &Key, backwards: bool) {
-        log::info!("CELL FOCUS NEXT {} {}", key, self.active_column);
         let id = self.get_unique_item_id(key);
         let window = web_sys::window().unwrap();
         let document = window.document().unwrap();
@@ -584,45 +584,18 @@ impl<T: 'static, S: DataStore<T>> PwtDataTable<T, S> {
         format!("{}-item-{}", self.unique_id, key)
     }
 
-    fn cursor_row_is_rendered(&self, cursor: usize) -> bool {
-        (self.scroll_info.start..self.scroll_info.end).contains(&cursor)
-    }
-
-    // fixme: still required?? focus is automatically moved int view??
-    fn scroll_cursor_into_view(&self, pos: web_sys::ScrollLogicalPosition) {
-        let (cursor, record_key) = match &self.cursor {
+    fn scroll_cursor_into_view(&self) {
+        let (cursor, _record_key) = match &self.cursor {
             Some(Cursor { pos, record_key}) => (*pos, record_key),
             None => return, // nothing to do
         };
 
-        if !self.cursor_row_is_rendered(cursor) {
-            self.scroll_to_cursor(cursor);
-            return;
+         if !(self.scroll_info.start..self.scroll_info.end).contains(&cursor) {
+            let height =  (self.row_height * cursor).saturating_sub(self.viewport_height/2);
+            if let Some(el) = self.scroll_ref.cast::<web_sys::Element>() {
+                el.set_scroll_top(height as i32);
+            }
         }
-
-        self.scroll_item_into_view(record_key, pos);
-    }
-
-    fn scroll_to_cursor(&self, cursor: usize) {
-        let height =  (self.row_height * cursor).saturating_sub(self.viewport_height/2);
-        if let Some(el) = self.scroll_ref.cast::<web_sys::Element>() {
-            el.set_scroll_top(height as i32);
-        }
-    }
-
-    fn scroll_item_into_view(&self, key: &Key, pos: web_sys::ScrollLogicalPosition) {
-        let window = web_sys::window().unwrap();
-        let document = window.document().unwrap();
-        let id = self.get_unique_item_id(key);
-
-        let el = match document.get_element_by_id(&id) {
-            Some(el) => el,
-            None => return,
-        };
-
-        let mut options = web_sys::ScrollIntoViewOptions::new();
-        options.block(pos);
-        el.scroll_into_view_with_scroll_into_view_options(&options);
     }
 
     fn render_row(&self, props: &DataTable<T, S>, item: &dyn DataNode<T>, record_key: Key, row_num: usize, selected: bool, active: bool) -> Html {
@@ -851,8 +824,12 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
                 if let Some(Cursor { record_key, .. }) = &self.cursor {
                     self.cursor = self.filtered_record_pos(props, record_key)
                         .map(|pos| Cursor { pos, record_key: record_key.clone() });
+
                 }
                 self.update_scroll_info(props);
+
+                self.scroll_cursor_into_view();
+
                 true
             }
             Msg::ColumnWidthChange(column_widths) => {
@@ -950,14 +927,16 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
                          event.prevent_default();
                         self.set_cursor(props, None);
                         self.cursor_up(props);
-                        self.scroll_cursor_into_view(web_sys::ScrollLogicalPosition::Nearest);
+                        self.scroll_cursor_into_view();
+                        self.focus_cursor();
                         return true;
                     }
                     "Home" => { // also known as "Pos 1"
                         event.prevent_default();
                         self.set_cursor(props, None);
                         self.cursor_down(props);
-                        self.scroll_cursor_into_view(web_sys::ScrollLogicalPosition::Nearest);
+                        self.scroll_cursor_into_view();
+                        self.focus_cursor();
                         return true;
                     }
                     "Enter" => { // also known as "Return"
@@ -994,6 +973,7 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
             Msg::CursorDown(shift, ctrl) => {
                 if shift { self.select_cursor(props, shift, false); }
                 self.cursor_down(props);
+                self.scroll_cursor_into_view();
                 self.focus_cursor();
                 if shift { self.select_cursor(props, shift, false); }
 
@@ -1001,12 +981,12 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
                     self.select_cursor(props, false, false);
                 }
 
-                self.scroll_cursor_into_view(web_sys::ScrollLogicalPosition::Nearest);
-                true
+                 true
             }
             Msg::CursorUp(shift, ctrl) => {
                 if shift { self.select_cursor(props, shift, false); }
                 self.cursor_up(props);
+                self.scroll_cursor_into_view();
                 self.focus_cursor();
                 if shift { self.select_cursor(props, shift, false); }
 
@@ -1014,7 +994,6 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
                     self.select_cursor(props, false, false);
                 }
 
-                self.scroll_cursor_into_view(web_sys::ScrollLogicalPosition::Nearest);
                 true
             }
             Msg::CursorLeft => {
