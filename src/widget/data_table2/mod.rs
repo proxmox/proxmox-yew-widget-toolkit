@@ -68,12 +68,12 @@ pub fn render_tree_node<T>(
             true => "fa fa-fw fa-caret-down pwt-pe-1",
             false => "fa fa-fw fa-caret-right pwt-pe-1",
         };
-        //html!{<span class="pwt-user-select-none" role="none">{indent.clone()}<i aria-hidden="" role="none" class={carret}/><i {class}/>{content}</span>}
         html!{
             <span class="pwt-user-select-none" role="none">
                 {indent.clone()}
                 <i aria-hidden="true" role="none" class={carret}/>
-                <i {class}>{content}</i>
+                <i {class}/>
+                {content}
             </span>
         }
     }
