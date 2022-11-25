@@ -283,6 +283,8 @@ impl <T: 'static> PwtHeaderWidget<T> {
             Container::new()
                 .tag("th")
                 .key(Key::from(cell_idx))
+            // Note: ARIA has no notation for group headers. We need
+            // to hide them to get correct column order.
                 .attribute("role", "none")
                 .attribute("aria-hidden", "true")
                 .attribute("tabindex", tabindex)
