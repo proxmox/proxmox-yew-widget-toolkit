@@ -208,6 +208,12 @@ impl <T: 'static> PwtHeaderWidget<T> {
             None =>  html!{},
         };
 
+        let aria_sort =  match sort_order {
+            Some(true) => "ascending",
+            Some(false) => "descending",
+            None => "none",
+        };
+
         // reserve some space for the sort icon
         let sort_space = match sort_order {
             None => html!{"\u{00a0}\u{00a0}"},
@@ -219,6 +225,7 @@ impl <T: 'static> PwtHeaderWidget<T> {
                 .key(Key::from(cell_idx))
                 .tag("th")
                 .attribute("role", "columnheader")
+                .attribute("aria-sort", aria_sort)
                 .attribute(
                     "style",
                     format!("grid-row: {} / 10;grid-column-start: {}", start_row + 1, start_col + 1)
