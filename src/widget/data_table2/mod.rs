@@ -93,7 +93,11 @@ pub fn render_selection_indicator<T>(args: &mut DataTableColumnRenderArgs<T>) ->
         "fa-fw",
         if args.is_selected() { "fa-check-circle-o" } else { "fa-circle-o" }
     );
+
+    let aria_checked = if args.is_selected() { "true" } else { "false" };
+    let aria_label = if args.is_selected() { "checked" } else { "not checked" };
+
     html!{
-        <i {class} aria-hidden="true"/>
+        <i {class} role="checkbox" aria-checked={aria_checked} aria-label={aria_label}/>
     }
 }

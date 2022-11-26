@@ -236,6 +236,7 @@ impl <T: 'static> PwtHeaderWidget<T> {
                         .tabindex(tabindex)
                         .class(props.header_class.clone())
                         .class("pwt-w-100 pwt-h-100")
+                        .aria_label(&cell.column.aria_label)
                         .content(html!{<>{sort_icon}{&cell.column.name}{sort_space}</>})
                         .on_resize(link.callback(move |width: f64| Msg::ResizeColumn(column_idx, width.max(0.0))))
                         .on_size_reset(link.callback(move |_| Msg::ColumnSizeReset(column_idx)))

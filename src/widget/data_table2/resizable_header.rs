@@ -27,7 +27,10 @@ pub struct ResizableHeader {
 
     /// Unique element ID
     pub id: Option<String>,
+    /// Html tabindex attribute.
     pub tabindex: Option<i32>,
+    /// Optional ARIA label.
+    pub aria_label: Option<AttrValue>,
 
     pub content: Option<VNode>,
     pub on_resize: Option<Callback<f64>>,
@@ -57,7 +60,18 @@ impl ResizableHeader {
         self
     }
      */
-    
+
+    /// Builder style method to set the html aria-label attribute
+    pub fn aria_label(mut self, label: impl IntoPropValue<Option<AttrValue>>) -> Self {
+        self.set_aria_label(label);
+        self
+    }
+
+    /// Method to set the html aria-label attribute
+    pub fn set_aria_label(&mut self, label: impl IntoPropValue<Option<AttrValue>>) {
+        self.aria_label = label.into_prop_value();
+    }
+
     /// Builder style method to set the element id
     pub fn id(mut self, id: impl IntoPropValue<Option<String>>) -> Self {
         self.id = id.into_prop_value();
@@ -261,6 +275,7 @@ impl Component for PwtResizableHeader {
             .class(props.class.clone())
             .attribute("tabindex", props.tabindex.map(|t| t.to_string()))
             .attribute("id", props.id.clone())
+            .attribute("aria-label", &props.aria_label)
             .node_ref(self.node_ref.clone())
             .onfocusin(ctx.link().callback(|_| Msg::FocusChange(true)))
             .onfocusout(ctx.link().callback(|_| Msg::FocusChange(false)))

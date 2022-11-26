@@ -107,6 +107,8 @@ pub struct DataTableColumn<T> {
     pub width: AttrValue,
     /// The name dispayed in the header.
     pub name: AttrValue,
+    /// Optional ARIA label.
+    pub aria_label: Option<AttrValue>,
     /// Unique Column Key
     pub key: Option<Key>,
     /// Horizontal table cell justification.
@@ -147,6 +149,17 @@ impl<T: 'static> DataTableColumn<T> {
     pub fn key(mut self, key: impl Into<Key>) -> Self {
         self.key = Some(key.into());
         self
+    }
+
+    /// Builder style method to set the html aria-label attribute
+    pub fn aria_label(mut self, label: impl IntoPropValue<Option<AttrValue>>) -> Self {
+        self.set_aria_label(label);
+        self
+    }
+
+    /// Method to set the html aria-label attribute
+    pub fn set_aria_label(&mut self, label: impl IntoPropValue<Option<AttrValue>>) {
+        self.aria_label = label.into_prop_value();
     }
 
     /// Builder style method to set the column width.
