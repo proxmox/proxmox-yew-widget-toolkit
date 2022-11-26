@@ -2,6 +2,7 @@ use std::rc::Rc;
 use std::marker::PhantomData;
 
 use derivative::Derivative;
+use indexmap::IndexMap;
 
 use gloo_timers::callback::Timeout;
 use wasm_bindgen::JsCast;
@@ -18,7 +19,7 @@ use crate::widget::{get_unique_element_id, Container, Column, SizeObserver};
 use super::{
     create_indexed_header_list,
     DataTableColumn, HeaderWidget, DataTableMouseEvent, DataTableKeyboardEvent,
-    DataTableHeader, IndexedHeader,
+    DataTableHeader, DataTableColumnRenderArgs, IndexedHeader,
 };
 
 pub enum Msg<T: 'static> {
@@ -612,7 +613,7 @@ impl<T: 'static, S: DataStore<T>> PwtDataTable<T, S> {
             if item.expanded() { Some("true") } else { Some("false") }
         };
 
-        Container::new()
+        let mut row = Container::new()
             .tag("tr")
             .key(record_key)
             .attribute("role", "row")
@@ -620,40 +621,55 @@ impl<T: 'static, S: DataStore<T>> PwtDataTable<T, S> {
             .attribute("aria-expanded", aria_expanded)
             .attribute("id", item_id)
             .class((active && self.has_focus).then(|| "row-cursor"))
-            .class(selected.then(|| "selected"))
-            .children(
-                self.columns.iter().enumerate()
-                    .filter(|(column_num, _)| {
-                        match self.column_hidden.get(*column_num) {
-                            Some(true) => false,
-                            _ => true,
-                        }
-                    })
-                    .map(|(column_num, column)| {
-                        let item_style = format!(
-                            "vertical-align: {}; text-align: {};",
-                            props.vertical_align.as_deref().unwrap_or("baseline"),
-                            column.justify,
-                        );
-                        let cell_active = active && self.active_column == column_num;
-                        Container::new()
-                            .tag("td")
-                            .class(self.cell_class.clone())
-                            .attribute("style", item_style)
-                            .attribute("role", "gridcell")
-                            .attribute("data-column-num", column_num.to_string())
-                            .attribute("tabindex", if cell_active { "0" } else { "-1" })
-                            .class((cell_active && self.has_focus).then(|| "cell-cursor"))
-                            .with_child(html!{
-                                <div role="none">{
-                                    column.render_node.apply(item)
-                                }</div>
-                            })
-                            .into()
-                    })
-            )
-            .with_child(html!{<td aria-hidden="true" style={minheight_cell_style.clone()}/>})
-            .into()
+            .class(selected.then(|| "selected"));
+
+
+        let mut col_index = 0;
+        for (column_num, column) in self.columns.iter().enumerate() {
+            if let Some(true) = self.column_hidden.get(column_num) { continue; }
+
+            let mut item_style = format!(
+                "vertical-align: {}; text-align: {};",
+                props.vertical_align.as_deref().unwrap_or("baseline"),
+                column.justify,
+            );
+            let cell_active = active && self.active_column == column_num;
+
+            let mut args = DataTableColumnRenderArgs {
+                node: item,
+                row_index: row_num,
+                column_index: col_index,
+                selected,
+                class: self.cell_class.clone(),
+                attributes: IndexMap::new(),
+            };
+
+            let cell = column.render_cell.apply(&mut args);
+
+            if let Some(style) = args.attributes.remove("style") {
+                item_style.push_str(&style);
+            }
+
+            let mut td = Container::new()
+                .tag("td")
+                .class(args.class)
+                .class((cell_active && self.has_focus).then(|| "cell-cursor"))
+                .attribute("style", item_style)
+                .attribute("role", "gridcell")
+                .attribute("data-column-num", column_num.to_string())
+                .attribute("tabindex", if cell_active { "0" } else { "-1" })
+                .with_child(html!{<div role="none">{cell}</div>});
+
+            for (attr_name, attr_value) in args.attributes.into_iter() {
+                td.set_attribute(attr_name, attr_value);
+            }
+
+            col_index += 1;
+            row.add_child(td);
+        }
+
+        row.add_child(html!{<td aria-hidden="true" style={minheight_cell_style.clone()}/>});
+        row.into()
     }
 
     fn render_table(&self, props: &DataTable<T, S>, offset: usize, start: usize, end: usize) -> Html {

@@ -14,7 +14,7 @@ pub(crate) use header_group::{
 };
 
 mod column;
-pub use column::DataTableColumn;
+pub use column::{DataTableColumn, DataTableColumnRenderArgs};
 
 mod header_widget;
 pub(crate) use header_widget::HeaderWidget;
@@ -49,22 +49,24 @@ fn get_indent<T>(item: &dyn DataNode<T>, indent: &mut VList) {
 /// return a tuple containing the optional icon class and the node
 /// text.
 pub fn render_tree_node<T>(
-    item: &dyn DataNode<T>,
+    args: &mut DataTableColumnRenderArgs<T>,
     render: impl Fn(&T) -> (Option<String>, String),
 ) -> Html {
-    let record = item.record();
+    let node = args.node();
+
+    let record = node.record();
     let (class, content) = render(&*record);
     let class = class.unwrap_or(String::new());
 
     let mut list: VList = VList::new();
-    get_indent(item, &mut list);
+    get_indent(node, &mut list);
     let indent: Html = list.into();
 
-    let leaf = item.is_leaf();
+    let leaf = node.is_leaf();
     if leaf {
         html!{<span class="pwt-user-select-none" role="none">{indent.clone()}<i {class}/>{content}</span>}
     } else {
-        let carret = match item.expanded() {
+        let carret = match node.expanded() {
             true => "fa fa-fw fa-caret-down pwt-pe-1",
             false => "fa fa-fw fa-caret-right pwt-pe-1",
         };
