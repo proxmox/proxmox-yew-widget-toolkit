@@ -80,3 +80,8 @@ pub fn render_tree_node<T>(
         }
     }
 }
+
+/// Column render function generating the row number.
+pub fn render_row_number<T>(args: &mut DataTableColumnRenderArgs<T>) -> Html {
+    html!{format!("{}", args.row_index())}
+}
