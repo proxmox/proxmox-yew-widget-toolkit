@@ -85,3 +85,15 @@ pub fn render_tree_node<T>(
 pub fn render_row_number<T>(args: &mut DataTableColumnRenderArgs<T>) -> Html {
     html!{format!("{}", args.row_index())}
 }
+
+/// Column render function generating an selection indicator (checkbox).
+pub fn render_selection_indicator<T>(args: &mut DataTableColumnRenderArgs<T>) -> Html {
+    let class = classes!(
+        "fa",
+        "fa-fw",
+        if args.is_selected() { "fa-check-circle-o" } else { "fa-circle-o" }
+    );
+    html!{
+        <i {class} aria-hidden="true"/>
+    }
+}
