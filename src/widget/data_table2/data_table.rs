@@ -779,7 +779,7 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
         }
 
         let cell_class = if props.cell_class.is_empty() {
-            Classes::from("pwt-text-truncate pwt-p-2")
+            Classes::from("pwt-p-2")
         } else {
             props.cell_class.clone()
         };
