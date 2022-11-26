@@ -498,6 +498,27 @@ impl<T: 'static, S: DataStore<T>> PwtDataTable<T, S> {
         }
     }
 
+    fn select_cursor(&mut self, props: &DataTable<T, S>, shift: bool, ctrl: bool) -> bool {
+        let selection = match &props.selection {
+            Some(selection) => selection,
+            None => return false,
+        };
+
+        let (_cursor, record_key) = match &self.cursor {
+            Some(Cursor { pos, record_key}) => (*pos, record_key),
+            None => return false, // nothing to do
+        };
+
+        if !(shift || ctrl) { selection.clear(); }
+
+        if ctrl {
+            selection.toggle(record_key.clone());
+        } else {
+            selection.select(record_key.clone());
+        }
+        true
+    }
+
     fn focus_cursor(&mut self) {
         match &self.cursor {
             Some(Cursor { record_key, .. }) => self.focus_cell(&record_key.clone()),
@@ -557,27 +578,6 @@ impl<T: 'static, S: DataStore<T>> PwtDataTable<T, S> {
             None => return None,
         };
         dom_find_focus_pos(active_el, &self.unique_id)
-    }
-
-    fn select_cursor(&mut self, props: &DataTable<T, S>, shift: bool, ctrl: bool) -> bool {
-        let selection = match &props.selection {
-            Some(selection) => selection,
-            None => return false,
-        };
-
-        let (_cursor, record_key) = match &self.cursor {
-            Some(Cursor { pos, record_key}) => (*pos, record_key),
-            None => return false, // nothing to do
-        };
-
-        if !(shift || ctrl) { selection.clear(); }
-
-        if ctrl {
-            selection.toggle(record_key.clone());
-        } else {
-            selection.select(record_key.clone());
-        }
-        true
     }
 
     fn get_unique_item_id(&self, key: &Key) -> String {
