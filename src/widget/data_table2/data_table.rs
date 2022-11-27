@@ -1103,7 +1103,11 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
                     if let Some((row, column)) = self.find_focused_cell() {
                         let cursor = self.filtered_record_pos(props, &row);
                         self.set_cursor(props, cursor);
-                        self.select_cursor(props, false, false);
+                        if let Some(selection) = &props.selection {
+                            if selection.is_empty() {
+                                self.select_cursor(props, false, false);
+                            }
+                        }
                         if let Some(column) = column {
                             self.active_column = column;
                         }
