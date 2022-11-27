@@ -605,7 +605,9 @@ impl<T: 'static, S: DataStore<T>> PwtDataTable<T, S> {
 
         // Make sure our rows have a minimum height
         // Note: setting min-height on <tr> or <td> does not work
-        let minheight_cell_style = AttrValue::Rc(format!("height: {}px;", props.min_row_height).into());
+        let minheight_cell_style = AttrValue::Rc(
+            format!("vertical-align:top;height: {}px;", props.min_row_height).into()
+        );
 
         let aria_expanded = if item.is_leaf() {
             None
