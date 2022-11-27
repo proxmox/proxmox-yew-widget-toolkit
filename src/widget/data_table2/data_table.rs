@@ -1139,6 +1139,8 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
             .node_ref(self.scroll_ref.clone())
             .class("pwt-flex-fill")
             .attribute("style", "overflow: auto; outline: 0")
+            // avoid https://bugzilla.mozilla.org/show_bug.cgi?id=1069739
+            .attribute("tabindex", "-1")
             .attribute("role", "rowgroup")
             .attribute("aria-label", "table body")
             .with_child(self.render_scroll_content(props))
