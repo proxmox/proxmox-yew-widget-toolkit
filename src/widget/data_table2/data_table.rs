@@ -432,7 +432,7 @@ impl<T: 'static, S: DataStore<T>> PwtDataTable<T, S> {
             return;
         }
         self.set_cursor(props, match &self.cursor {
-            Some(Cursor { pos, ..}) => if (pos + 1) < len { Some(pos + 1) }  else { Some(0) },
+            Some(Cursor { pos, ..}) => if (pos + 1) < len { Some(pos + 1) }  else { Some(len - 1) },
             None => Some(0),
         });
     }
@@ -447,7 +447,7 @@ impl<T: 'static, S: DataStore<T>> PwtDataTable<T, S> {
             return;
         }
         self.set_cursor(props, match &self.cursor {
-            Some(Cursor { pos, ..}) => if *pos > 0 { Some(pos - 1) } else { Some(len - 1) },
+            Some(Cursor { pos, ..}) => if *pos > 0 { Some(pos - 1) } else { Some(0) },
             None => Some(len - 1),
         });
     }
