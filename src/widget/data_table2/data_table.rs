@@ -1297,7 +1297,7 @@ fn dom_find_cell(row_el: &web_sys::Element, column_num: usize) -> Option<web_sys
     let children = row_el.children();
     for i in 0..children.length() {
         let child: web_sys::HtmlElement = children.item(i).unwrap().dyn_into().unwrap();
-        if let Some(column_num_str) = child.dataset().get("columnNum") {
+        if let Some(column_num_str) = child.get_attribute("data-column-num") {
             if let Ok(n) = column_num_str.parse::<usize>() {
                 if n == column_num {
                     return Some(child);
@@ -1327,7 +1327,7 @@ fn dom_find_focus_pos(el: web_sys::Element, unique_id: &str) -> Option<(Key, Opt
                             let child: web_sys::HtmlElement = children.item(i).unwrap().dyn_into().unwrap();
 
                             if child.contains(Some(&focused_el)) {
-                                if let Some(column_num_str) = child.dataset().get("columnNum") {
+                                if let Some(column_num_str) = child.get_attribute("data-column-num") {
                                     if let Ok(n) = column_num_str.parse() {
                                         column_num = Some(n);
                                     }
@@ -1365,7 +1365,7 @@ fn dom_find_record_num(event: &MouseEvent, unique_id: &str) -> Option<(Key, Opti
                             let rect = child.get_bounding_client_rect();
 
                             if rect.x() < click_x && click_x < (rect.x() + rect.width()) {
-                                if let Some(column_num_str) = child.dataset().get("columnNum") {
+                                if let Some(column_num_str) = child.get_attribute("data-column-num") {
                                     if let Ok(n) = column_num_str.parse() {
                                         column_num = Some(n);
                                     }
