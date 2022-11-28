@@ -394,6 +394,8 @@ impl Component for PwtNavigationMenu {
         let mut menu = Column::new()
             .node_ref(self.menu_ref.clone())
             .onkeydown(onkeydown)
+            // avoid https://bugzilla.mozilla.org/show_bug.cgi?id=1069739
+            .attribute("tabindex", "-1")
             .class("pwt-nav-menu pwt-overflow-auto pwt-border-right")
             .attribute("style", "min-width:200px;");
 
