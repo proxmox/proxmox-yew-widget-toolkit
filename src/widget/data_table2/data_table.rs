@@ -527,11 +527,15 @@ impl<T: 'static, S: DataStore<T>> PwtDataTable<T, S> {
         };
     }
 
-    fn focus_cell(&mut self, key: &Key) {
+    fn get_row_el(&self, key: &Key) -> Option<web_sys::Element> {
         let id = self.get_unique_item_id(key);
         let window = web_sys::window().unwrap();
         let document = window.document().unwrap();
-        let row_el = match document.get_element_by_id(&id) {
+        document.get_element_by_id(&id)
+    }
+
+    fn focus_cell(&mut self, key: &Key) {
+        let row_el = match self.get_row_el(key) {
             Some(el) => el,
             None => {
                 // row not rendered, delay after render
@@ -539,34 +543,28 @@ impl<T: 'static, S: DataStore<T>> PwtDataTable<T, S> {
                 return;
             },
         };
-        if let Some(cell) = dom_find_cell(row_el, self.active_column) {
+        if let Some(cell) = dom_find_cell(&row_el, self.active_column) {
             let _ = cell.focus();
         }
     }
 
     fn focus_inside_cell(&self, key: &Key) -> bool {
-        let id = self.get_unique_item_id(key);
-        let window = web_sys::window().unwrap();
-        let document = window.document().unwrap();
-        let row_el = match document.get_element_by_id(&id) {
+        let row_el = match self.get_row_el(key) {
             Some(el) => el,
             None => return false,
         };
-        if let Some(cell) = dom_find_cell(row_el, self.active_column) {
+        if let Some(cell) = dom_find_cell(&row_el, self.active_column) {
             return crate::widget::focus::focus_inside_el(cell);
         }
         false
     }
 
     fn cell_focus_next(&mut self, key: &Key, backwards: bool) {
-        let id = self.get_unique_item_id(key);
-        let window = web_sys::window().unwrap();
-        let document = window.document().unwrap();
-        let row_el = match document.get_element_by_id(&id) {
+        let row_el = match self.get_row_el(key) {
             Some(el) => el,
             None => return,
         };
-        if let Some(cell) = dom_find_cell(row_el, self.active_column) {
+        if let Some(cell) = dom_find_cell(&row_el, self.active_column) {
             crate::widget::focus::focus_next_tabable_el(cell, backwards, false);
         }
     }
@@ -627,8 +625,18 @@ impl<T: 'static, S: DataStore<T>> PwtDataTable<T, S> {
 
 
         let mut col_index = 0;
-        for (column_num, column) in self.columns.iter().enumerate() {
-            if let Some(true) = self.column_hidden.get(column_num) { continue; }
+        let mut column_num = 0;
+
+        loop {
+            let column = match self.columns.get(column_num) {
+                Some(column) => column,
+                None => break,
+            };
+
+            if let Some(true) = self.column_hidden.get(column_num) {
+                column_num += 1;
+                continue;
+            }
 
             let mut item_style = format!(
                 "vertical-align: {}; text-align: {};",
@@ -662,11 +670,22 @@ impl<T: 'static, S: DataStore<T>> PwtDataTable<T, S> {
                 .attribute("tabindex", if cell_active { "0" } else { "-1" })
                 .with_child(html!{<div role="none">{cell}</div>});
 
+            let mut colspan = 1;
+
+            if let Some(colspan_str) = args.attributes.get("colspan") {
+                if let Ok(n) = (*colspan_str).parse::<usize>() {
+                    if n > 0 { colspan = n }
+                }
+            }
+
             for (attr_name, attr_value) in args.attributes.into_iter() {
                 td.set_attribute(attr_name, attr_value);
             }
 
-            col_index += 1;
+
+            col_index += colspan;
+            column_num += colspan;
+
             row.add_child(td);
         }
 
@@ -1022,13 +1041,17 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
                 true
             }
             Msg::CursorLeft => {
-                let mut cur = self.active_column;
-                if cur == 0 {
-                    cur = self.columns.len();
-                }
-                for i in (0..cur).rev() {
-                    let hidden = self.column_hidden.get(i).unwrap_or(&false);
-                    if !*hidden {
+                let record_key = match &self.cursor {
+                    Some(Cursor { record_key, .. }) => record_key.clone(),
+                    None => return false,
+                };
+                let row_el = match self.get_row_el(&record_key) {
+                    Some(el) => el,
+                    None => return false,
+                };
+
+                for i in (0..self.active_column).rev() {
+                    if dom_find_cell(&row_el, i).is_some() {
                         self.active_column = i;
                         self.focus_cursor();
                         break;
@@ -1037,13 +1060,18 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
                 true
             }
             Msg::CursorRight => {
-                let mut next = self.active_column + 1;
-                if next >= self.columns.len() {
-                    next = 0;
-                }
+                let record_key = match &self.cursor {
+                    Some(Cursor { record_key, .. }) => record_key.clone(),
+                    None => return false,
+                };
+                let row_el = match self.get_row_el(&record_key) {
+                    Some(el) => el,
+                    None => return false,
+                };
+
+                let next = self.active_column + 1;
                 for i in next..self.columns.len() {
-                    let hidden = self.column_hidden.get(i).unwrap_or(&false);
-                    if !*hidden {
+                    if dom_find_cell(&row_el, i).is_some() {
                         self.active_column = i;
                         self.focus_cursor();
                         break;
@@ -1265,7 +1293,7 @@ impl<T: 'static, S: DataStore<T> + 'static> Into<VNode> for DataTable<T, S> {
     }
 }
 
-fn dom_find_cell(row_el: web_sys::Element, column_num: usize) -> Option<web_sys::HtmlElement> {
+fn dom_find_cell(row_el: &web_sys::Element, column_num: usize) -> Option<web_sys::HtmlElement> {
     let children = row_el.children();
     for i in 0..children.length() {
         let child: web_sys::HtmlElement = children.item(i).unwrap().dyn_into().unwrap();

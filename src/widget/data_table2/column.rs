@@ -26,7 +26,7 @@ pub struct DataTableColumnRenderArgs<'a, T> {
     /// Cell class. This attribute may be modified to change the
     /// appearance of the cell.
     pub class: Classes,
-    /// Additional cell attributes (style, ...)
+    /// Additional cell attributes (style, colspan, ...)
     pub attributes: IndexMap<AttrValue, AttrValue>,
 }
 
