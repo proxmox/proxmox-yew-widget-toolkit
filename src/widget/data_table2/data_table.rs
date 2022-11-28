@@ -20,6 +20,7 @@ use super::{
     create_indexed_header_list,
     DataTableColumn, HeaderWidget, DataTableMouseEvent, DataTableKeyboardEvent,
     DataTableHeader, DataTableColumnRenderArgs, IndexedHeader,
+    DataTableRowRenderArgs, DataTableRowRenderCallback, IntoOptionalDataTableRowRenderCallback,
 };
 
 pub enum Msg<T: 'static> {
@@ -126,6 +127,8 @@ pub struct DataTable<T: 'static, S: DataStore<T> = Store<T>> {
 
     /// Row keydown callback
     pub on_row_keydown: Option<Callback<DataTableKeyboardEvent>>,
+
+    pub row_render_callback: Option<DataTableRowRenderCallback<T>>,
 }
 
 static VIRTUAL_SCROLL_TRIGGER: usize = 30;
@@ -282,6 +285,12 @@ impl <T: 'static, S: DataStore<T> + 'static> DataTable<T, S> {
     /// Builder style method to set the row keydown callback.
     pub fn on_row_keydown(mut self, cb: impl IntoEventCallback<DataTableKeyboardEvent>) -> Self {
         self.on_row_keydown = cb.into_event_callback();
+        self
+    }
+
+    /// Builder style method to set the row render callback.
+    pub fn row_render_callback(mut self, cb: impl IntoOptionalDataTableRowRenderCallback<T>) -> Self {
+        self.row_render_callback = cb.into_optional_row_render_cb();
         self
     }
 
@@ -623,6 +632,25 @@ impl<T: 'static, S: DataStore<T>> PwtDataTable<T, S> {
             .class((active && self.has_focus).then(|| "row-cursor"))
             .class(selected.then(|| "selected"));
 
+        if let Some(row_render_callback) = &props.row_render_callback {
+            let mut args = DataTableRowRenderArgs {
+                node: item,
+                row_index: row_num,
+                selected,
+                class: Classes::new(),
+                attributes: IndexMap::new(),
+            };
+
+            row_render_callback.apply(&mut args);
+
+            if !args.class.is_empty() {
+                row.add_class(args.class);
+            }
+
+            for (attr_name, attr_value) in args.attributes.into_iter() {
+                row.set_attribute(attr_name, attr_value);
+            }
+        }
 
         let mut col_index = 0;
         let mut column_num = 0;

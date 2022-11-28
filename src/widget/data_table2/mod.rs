@@ -10,7 +10,14 @@ pub(crate) use resizable_header::ResizableHeader;
 mod header_group;
 pub use header_group::{DataTableHeader, DataTableHeaderGroup};
 pub(crate) use header_group::{
-    create_indexed_header_list, IndexedHeader, IndexedHeaderSingle, IndexedHeaderGroup,
+    create_indexed_header_list, IndexedHeader, IndexedHeaderSingle,
+    IndexedHeaderGroup,
+};
+
+mod row_render_callback;
+pub use row_render_callback::{
+    DataTableRowRenderCallback, DataTableRowRenderArgs,
+    IntoOptionalDataTableRowRenderCallback,
 };
 
 mod column;
