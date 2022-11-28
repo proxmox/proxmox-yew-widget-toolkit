@@ -19,7 +19,7 @@ use crate::widget::{get_unique_element_id, Container, Column, SizeObserver};
 use super::{
     create_indexed_header_list,
     DataTableColumn, HeaderWidget, DataTableMouseEvent, DataTableKeyboardEvent,
-    DataTableHeader, DataTableColumnRenderArgs, IndexedHeader,
+    DataTableHeader, DataTableCellRenderArgs, IndexedHeader,
     DataTableRowRenderArgs, DataTableRowRenderCallback, IntoOptionalDataTableRowRenderCallback,
 };
 
@@ -673,7 +673,7 @@ impl<T: 'static, S: DataStore<T>> PwtDataTable<T, S> {
             );
             let cell_active = active && self.active_column == column_num;
 
-            let mut args = DataTableColumnRenderArgs {
+            let mut args = DataTableCellRenderArgs {
                 node: item,
                 row_index: row_num,
                 column_index: col_index,

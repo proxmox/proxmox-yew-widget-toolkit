@@ -20,8 +20,11 @@ pub use row_render_callback::{
     IntoOptionalDataTableRowRenderCallback,
 };
 
+mod cell_render_callback;
+pub use cell_render_callback::{DataTableCellRenderer, DataTableCellRenderArgs};
+
 mod column;
-pub use column::{DataTableColumn, DataTableColumnRenderArgs};
+pub use column::DataTableColumn;
 
 mod header_widget;
 pub(crate) use header_widget::HeaderWidget;
@@ -56,7 +59,7 @@ fn get_indent<T>(item: &dyn DataNode<T>, indent: &mut VList) {
 /// return a tuple containing the optional icon class and the node
 /// text.
 pub fn render_tree_node<T>(
-    args: &mut DataTableColumnRenderArgs<T>,
+    args: &mut DataTableCellRenderArgs<T>,
     render: impl Fn(&T) -> (Option<String>, String),
 ) -> Html {
     let node = args.node();
@@ -89,12 +92,12 @@ pub fn render_tree_node<T>(
 }
 
 /// Column render function generating the row number.
-pub fn render_row_number<T>(args: &mut DataTableColumnRenderArgs<T>) -> Html {
+pub fn render_row_number<T>(args: &mut DataTableCellRenderArgs<T>) -> Html {
     html!{format!("{}", args.row_index())}
 }
 
 /// Column render function generating an selection indicator (checkbox).
-pub fn render_selection_indicator<T>(args: &mut DataTableColumnRenderArgs<T>) -> Html {
+pub fn render_selection_indicator<T>(args: &mut DataTableCellRenderArgs<T>) -> Html {
     let class = classes!(
         "fa",
         "fa-fw",

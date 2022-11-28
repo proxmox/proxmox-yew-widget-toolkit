@@ -1,101 +1,13 @@
-use std::rc::Rc;
-
 use derivative::Derivative;
-use indexmap::IndexMap;
+
 use yew::prelude::*;
 use yew::html::{IntoPropValue, IntoEventCallback};
 
 use yew::virtual_dom::Key;
 
 use crate::props::{SorterFn, IntoSorterFn, RenderFn};
-use crate::state::DataNode;
 
-use super::DataTableMouseEvent;
-
-/// Column render function arguments.
-pub struct DataTableColumnRenderArgs<'a, T> {
-    // The data node.
-    pub(crate) node: &'a dyn DataNode<T>,
-    // Row index.
-    pub(crate) row_index: usize,
-    // Column index.
-    pub(crate) column_index: usize,
-    // Select flag is set when the cell is selected.
-    pub(crate) selected: bool,
-
-    /// Cell class. This attribute may be modified to change the
-    /// appearance of the cell.
-    pub class: Classes,
-    /// Additional cell attributes (style, colspan, ...)
-    pub attributes: IndexMap<AttrValue, AttrValue>,
-}
-
-impl<'a, T> DataTableColumnRenderArgs<'a, T> {
-
-    /// Return the data node.
-    pub fn node(&self) -> &dyn DataNode<T> {
-        self.node
-    }
-
-    /// Returns the row index.
-    pub fn row_index(&self) -> usize {
-        self.row_index
-    }
-
-    /// Returns the column index.
-    pub fn columns_index(&self) -> usize {
-        self.column_index
-    }
-
-    /// Returns if the cell is selected.
-    pub fn is_selected(&self) -> bool {
-        self.selected
-    }
-
-    /// Method to set additional html attributes on the table cell
-    ///
-    /// Value 'None' removes the attribute.
-    pub fn set_attribute(
-        &mut self,
-        key: impl Into<AttrValue>,
-        value: impl IntoPropValue<Option<AttrValue>>,
-    ) {
-        if let Some(value) = value.into_prop_value() {
-            self.attributes.insert(key.into(), value);
-        } else {
-            self.attributes.remove(&key.into());
-        }
-    }
-
-    /// Method to add a CSS class to the table cell
-    pub fn add_class(&mut self, class: impl Into<Classes>) {
-        self.class.push(class);
-    }
-}
-
-#[derive(Derivative)]
-#[derivative(Clone(bound=""), PartialEq(bound=""))]
-pub struct DataTableRenderCell<T>(
-    #[derivative(PartialEq(compare_with="Rc::ptr_eq"))]
-    Rc<dyn Fn(&mut DataTableColumnRenderArgs<T>) -> Html>
-);
-
-impl<T> DataTableRenderCell<T> {
-    /// Creates a new instance.
-    pub fn new(renderer: impl 'static + Fn(&mut DataTableColumnRenderArgs<T>) -> Html) -> Self {
-        Self(Rc::new(renderer))
-    }
-    /// Apply the render function
-    pub fn apply(&self, args: &mut DataTableColumnRenderArgs<T>) -> Html {
-        (self.0)(args)
-    }
-}
-
-impl<T, F: 'static + Fn(&mut DataTableColumnRenderArgs<T>) -> Html> From<F> for DataTableRenderCell<T> {
-    fn from(f: F) -> Self {
-        DataTableRenderCell::new(f)
-    }
-}
+use super::{DataTableMouseEvent, DataTableCellRenderer, DataTableCellRenderArgs};
 
 /// DataTable column properties.
 #[derive(Properties)]
@@ -115,7 +27,7 @@ pub struct DataTableColumn<T> {
     #[prop_or(AttrValue::Static("left"))]
     pub justify: AttrValue, // left, center, right, justify
     /// Render function (returns cell content)
-    pub render_cell: DataTableRenderCell<T>,
+    pub render_cell: DataTableCellRenderer<T>,
     /// Sorter function.
     ///
     /// Need to be set to enable column sorting.
@@ -141,7 +53,7 @@ impl<T: 'static> DataTableColumn<T> {
     pub fn new(name: impl Into<AttrValue>) -> Self {
         yew::props!(Self {
             name: name.into(),
-            render_cell: DataTableRenderCell::new(|_| html!{ "-" }),
+            render_cell: DataTableCellRenderer::new(|_| html!{ "-" }),
         })
     }
 
@@ -220,13 +132,13 @@ impl<T: 'static> DataTableColumn<T> {
     /// Builder style method to set the render function.
     pub fn render(self, render: impl Into<RenderFn<T>>) -> Self {
         let render = render.into();
-        self.render_cell(move |args: &mut DataTableColumnRenderArgs<T>| {
+        self.render_cell(move |args: &mut DataTableCellRenderArgs<T>| {
             render.apply(&*args.node.record())
         })
     }
 
     /// Builder style method to set the cell render function.
-    pub fn render_cell(mut self, render: impl Into<DataTableRenderCell<T>>) -> Self {
+    pub fn render_cell(mut self, render: impl Into<DataTableCellRenderer<T>>) -> Self {
         self.render_cell = render.into();
         self
     }
