@@ -33,15 +33,14 @@ pub enum Msg<T: 'static> {
     ContainerResize(f64, f64),
     TableResize(f64, f64),
     KeyDown(KeyboardEvent),
-    CursorDown(bool, bool),
-    CursorUp(bool, bool),
+    CursorDown(usize, bool, bool),
+    CursorUp(usize, bool, bool),
     CursorLeft,
     CursorRight,
     ItemClick(Key, Option<usize>, MouseEvent),
     ItemDblClick(Key, MouseEvent),
     FocusChange(bool),
-    RecoverCursor,
- }
+}
 
 /// DataTable properties
 ///
@@ -436,6 +435,7 @@ impl<T: 'static, S: DataStore<T>> PwtDataTable<T, S> {
 
     fn cursor_down(
         &mut self,
+        lines: usize,
         props: &DataTable<T, S>,
     ) {
         let len = props.store.filtered_data_len();
@@ -444,13 +444,14 @@ impl<T: 'static, S: DataStore<T>> PwtDataTable<T, S> {
             return;
         }
         self.set_cursor(props, match &self.cursor {
-            Some(Cursor { pos, ..}) => if (pos + 1) < len { Some(pos + 1) }  else { Some(len - 1) },
+            Some(Cursor { pos, ..}) => if (pos + lines) < len { Some(pos + lines) }  else { Some(len - 1) },
             None => Some(0),
         });
     }
 
     fn cursor_up(
         &mut self,
+        lines: usize,
         props: &DataTable<T, S>,
     ) {
         let len = props.store.filtered_data_len();
@@ -459,7 +460,7 @@ impl<T: 'static, S: DataStore<T>> PwtDataTable<T, S> {
             return;
         }
         self.set_cursor(props, match &self.cursor {
-            Some(Cursor { pos, ..}) => if *pos > 0 { Some(pos - 1) } else { Some(0) },
+            Some(Cursor { pos, ..}) => if *pos > lines { Some(pos - lines) } else { Some(0) },
             None => Some(len - 1),
         });
     }
@@ -923,25 +924,7 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
                     el.set_scroll_left(x as i32);
                 }
                 self.update_scroll_info(props);
-
-                let link = ctx.link().clone();
-                self.recover_timeout = Some(Timeout::new(100, move || {
-                    link.send_message(Msg::RecoverCursor);
-                }));
-
                 true
-            }
-            Msg::RecoverCursor => {
-                let (cursor, _record_key) = match &self.cursor {
-                    Some(Cursor { pos, record_key}) => (*pos, record_key),
-                    None => return false, // nothing to do
-                };
-                if !(self.scroll_info.start..self.scroll_info.end).contains(&cursor) {
-                    self.set_cursor(props, Some(self.scroll_info.start));
-                    self.focus_cursor();
-                    return true;
-                } 
-                false
             }
             Msg::ViewportResize(_width, height) => {
                 self.viewport_height = height.max(0.0) as usize;
@@ -1001,21 +984,31 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
                 }
 
                 let msg = match key {
+                    "PageDown" => {
+                        event.prevent_default();
+                        let visible_rows = self.scroll_info.visible_rows();
+                        Msg::CursorDown(visible_rows, shift, ctrl)
+                    }
+                    "PageUp" => {
+                        event.prevent_default();
+                        let visible_rows = self.scroll_info.visible_rows();
+                        Msg::CursorUp(visible_rows, shift, ctrl)
+                    }
                     "ArrowDown" => {
                         event.prevent_default();
-                        Msg::CursorDown(shift, ctrl)
+                        Msg::CursorDown(1, shift, ctrl)
+                    }
+                    "ArrowUp" => {
+                        event.prevent_default();
+                        Msg::CursorUp(1, shift, ctrl)
+                    }
+                    "ArrowLeft" => {
+                        event.prevent_default();
+                        Msg::CursorLeft
                     }
                     "ArrowRight" => {
                         event.prevent_default();
                         Msg::CursorRight
-                    }
-                    "ArrowUp" => {
-                        event.prevent_default();
-                        Msg::CursorUp(shift, ctrl)
-                    }
-                    "ArrowLeft" => {
-                        event.prevent_default();
-                         Msg::CursorLeft
                     }
                     " " => {
                         event.prevent_default();
@@ -1034,9 +1027,9 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
                         return true;
                     }
                     "End" => {
-                         event.prevent_default();
+                        event.prevent_default();
                         self.set_cursor(props, None);
-                        self.cursor_up(props);
+                        self.cursor_up(1, props);
                         self.scroll_cursor_into_view();
                         self.focus_cursor();
                         return true;
@@ -1044,7 +1037,7 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
                     "Home" => { // also known as "Pos 1"
                         event.prevent_default();
                         self.set_cursor(props, None);
-                        self.cursor_down(props);
+                        self.cursor_down(1, props);
                         self.scroll_cursor_into_view();
                         self.focus_cursor();
                         return true;
@@ -1080,9 +1073,9 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
                 }));
                 false
             }
-            Msg::CursorDown(shift, ctrl) => {
+            Msg::CursorDown(lines, shift, ctrl) => {
                 if shift { self.select_cursor(props, shift, false); }
-                self.cursor_down(props);
+                self.cursor_down(lines, props);
                 self.scroll_cursor_into_view();
                 self.focus_cursor();
                 if shift { self.select_cursor(props, shift, false); }
@@ -1093,9 +1086,9 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
 
                 true
             }
-            Msg::CursorUp(shift, ctrl) => {
+            Msg::CursorUp(lines, shift, ctrl) => {
                 if shift { self.select_cursor(props, shift, false); }
-                self.cursor_up(props);
+                self.cursor_up(lines, props);
                 self.scroll_cursor_into_view();
                 self.focus_cursor();
                 if shift { self.select_cursor(props, shift, false); }
