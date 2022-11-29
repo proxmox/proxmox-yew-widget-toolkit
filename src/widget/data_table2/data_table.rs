@@ -40,6 +40,7 @@ pub enum Msg<T: 'static> {
     ItemClick(Key, Option<usize>, MouseEvent),
     ItemDblClick(Key, MouseEvent),
     FocusChange(bool),
+    RecoverCursor,
  }
 
 /// DataTable properties
@@ -355,6 +356,7 @@ pub struct PwtDataTable<T: 'static, S: DataStore<T>> {
     container_width: usize,
 
     keypress_timeout: Option<Timeout>,
+    recover_timeout: Option<Timeout>, // recover cursor after scrollTo
 }
 
 fn render_empty_row_with_sizes(widths: &[f64], column_hidden: &[bool], bordered: bool) -> Html {
@@ -888,6 +890,7 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
 
             row_height: props.min_row_height,
             keypress_timeout: None,
+            recover_timeout: None,
         };
 
         me.update_scroll_info(props);
@@ -920,7 +923,25 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
                     el.set_scroll_left(x as i32);
                 }
                 self.update_scroll_info(props);
+
+                let link = ctx.link().clone();
+                self.recover_timeout = Some(Timeout::new(100, move || {
+                    link.send_message(Msg::RecoverCursor);
+                }));
+
                 true
+            }
+            Msg::RecoverCursor => {
+                let (cursor, _record_key) = match &self.cursor {
+                    Some(Cursor { pos, record_key}) => (*pos, record_key),
+                    None => return false, // nothing to do
+                };
+                if !(self.scroll_info.start..self.scroll_info.end).contains(&cursor) {
+                    self.set_cursor(props, Some(self.scroll_info.start));
+                    self.focus_cursor();
+                    return true;
+                } 
+                false
             }
             Msg::ViewportResize(_width, height) => {
                 self.viewport_height = height.max(0.0) as usize;
@@ -1070,7 +1091,7 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
                     self.select_cursor(props, false, false);
                 }
 
-                 true
+                true
             }
             Msg::CursorUp(shift, ctrl) => {
                 if shift { self.select_cursor(props, shift, false); }
