@@ -1072,11 +1072,16 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
                 false
             }
             Msg::CursorDown(lines, shift, ctrl) => {
-                if shift { self.select_cursor(props, shift, false); }
+                //if shift { self.select_cursor(props, shift, false); }
                 self.cursor_down(lines, props);
                 self.scroll_cursor_into_view();
                 self.focus_cursor();
-                if shift { self.select_cursor(props, shift, false); }
+                if shift {
+                    if let Some(selection) = &props.selection {
+                        let cursor = self.cursor.as_ref().map(|c| c.pos);
+                        self.select_range(props, selection, self.last_select_position, cursor, shift, false);
+                    }
+                }
 
                 if !(shift || ctrl) && props.select_on_focus {
                     self.select_cursor(props, false, false);
@@ -1085,11 +1090,15 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
                 true
             }
             Msg::CursorUp(lines, shift, ctrl) => {
-                if shift { self.select_cursor(props, shift, false); }
                 self.cursor_up(lines, props);
                 self.scroll_cursor_into_view();
                 self.focus_cursor();
-                if shift { self.select_cursor(props, shift, false); }
+                if shift {
+                    if let Some(selection) = &props.selection {
+                        let cursor = self.cursor.as_ref().map(|c| c.pos);
+                        self.select_range(props, selection, self.last_select_position, cursor, shift, false);
+                    }
+                }
 
                 if !(shift ||ctrl) && props.select_on_focus {
                     self.select_cursor(props, false, false);
