@@ -42,15 +42,47 @@ pub enum Msg<T: 'static> {
     FocusChange(bool),
 }
 
-/// DataTable properties
+/// Data Table/Tree with virual scroll.
 ///
-/// Features:
+/// # Features
 ///
 /// - Virtual scrolling.
 /// - Trees and Lists.
 /// - Selection/Cursor management
-/// - Nested Header definitions.
-/// - Header menus (hide, sort, ...)
+/// - Nested header definitions.
+/// - Header menus (hide, sort, ...).
+/// - Resizable headers.
+/// - ARIA support: <https://www.w3.org/WAI/ARIA/apg/patterns/grid/>.
+///
+/// # Keyboar binding
+///
+/// * `Right Arrow`: Moves focus one cell to the right. If focus is on
+/// the right-most cell in the row, focus does not move.
+///
+/// * `Left Arrow`: Moves focus one cell to the left. If focus is on
+/// the left-most cell in the row, focus does not move.
+///
+/// * `Down Arrow`: Moves focus one cell down. If focus is on the
+/// bottom cell in the column, focus does not move.
+///
+/// * `Up Arrow`: Moves focus one cell Up. If focus is on the top cell
+/// in the column, focus does not move.
+///
+/// * `Page Down`: Moves focus down one page. If focus is in the last
+/// row of the grid, focus does not move.
+///
+/// * `Page Up`: Moves focus up one page. If focus is in the first row
+/// of the grid, focus does not move.
+///
+/// * `Home`: moves focus to the first cell in the row that contains
+/// focus.
+///
+/// * `End`: moves focus to the last cell in the row that contains
+/// focus.
+
+//
+// * Control + Home: moves focus to the first cell in the first row.
+// * Control + End: moves focus to the last cell in the last row.
 
 #[derive(Properties)]
 #[derive(Derivative)]
@@ -59,8 +91,10 @@ pub struct DataTable<T: 'static, S: DataStore<T> = Store<T>> {
 
     #[prop_or_default]
     node_ref: NodeRef,
+    /// Yew key property.
     pub key: Option<Key>,
 
+    /// CSS class of the container.
     #[prop_or_default]
     pub class: Classes,
 
@@ -73,7 +107,7 @@ pub struct DataTable<T: 'static, S: DataStore<T> = Store<T>> {
     #[prop_or_default]
     pub cell_class: Classes,
 
-    /// Set class for header cells (default is "pwt-p-2").
+    /// CSS class for header cells (default is "pwt-p-2").
     #[prop_or_default]
     pub header_class: Classes,
 
