@@ -323,6 +323,7 @@ pub struct PwtDataTable<T: 'static, S: DataStore<T>> {
     take_focus: bool, // focus cursor after render
     active_column: usize, // which colums has focus?
     cursor: Option<Cursor>,
+    last_select_position: Option<usize>,
 
     _store_observer: S::Observer,
     _phantom_store: PhantomData<S>,
@@ -469,6 +470,8 @@ impl<T: 'static, S: DataStore<T>> PwtDataTable<T, S> {
         _shift: bool,
         ctrl: bool,
     ) {
+        self.last_select_position = Some(cursor);
+
         if let Some(key) = props.store.lookup_filtered_record_key(cursor) {
             if ctrl {
                 selection.toggle(key);
@@ -514,10 +517,12 @@ impl<T: 'static, S: DataStore<T>> PwtDataTable<T, S> {
             None => return false,
         };
 
-        let (_cursor, record_key) = match &self.cursor {
+        let (cursor, record_key) = match &self.cursor {
             Some(Cursor { pos, record_key}) => (*pos, record_key),
             None => return false, // nothing to do
         };
+
+        self.last_select_position = Some(cursor);
 
         if !(shift || ctrl) { selection.clear(); }
 
@@ -859,6 +864,7 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
             has_focus: false,
             take_focus: false,
             cursor: None,
+            last_select_position: None,
 
             active_column: 0,
             columns,
@@ -992,7 +998,18 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
                     }
                     " " => {
                         event.prevent_default();
-                        self.select_cursor(props, shift, ctrl);
+
+                        if shift {
+                            let cursor = self.cursor.as_ref().map(|c| c.pos);
+                            if let Some(selection) = &props.selection {
+                                self.select_range(props, selection, self.last_select_position, cursor, shift, false);
+                            }
+                        } else {
+                            if props.select_on_focus {
+                                self.select_cursor(props, false, ctrl);
+                            }
+                        }
+
                         return true;
                     }
                     "End" => {
@@ -1108,7 +1125,6 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
                 true
             }
             Msg::ItemClick(record_key, opt_col_num, event) => {
-                let last_cursor = self.cursor.as_ref().map(|c| c.pos);
                 let new_cursor = self.filtered_record_pos(props, &record_key);
 
                 let shift = event.shift_key();
@@ -1116,13 +1132,13 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
 
                 self.set_cursor(props, new_cursor);
 
-                if shift || ctrl {
+                if shift {
                     if let Some(selection) = &props.selection {
-                        self.select_range(props, selection, last_cursor, new_cursor, shift, ctrl);
+                        self.select_range(props, selection, self.last_select_position, new_cursor, shift, false);
                     }
                 } else {
                     if props.select_on_focus {
-                        self.select_cursor(props, false, false);
+                        self.select_cursor(props, false, ctrl);
                     }
                 }
 
