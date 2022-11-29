@@ -355,7 +355,6 @@ pub struct PwtDataTable<T: 'static, S: DataStore<T>> {
     container_width: usize,
 
     keypress_timeout: Option<Timeout>,
-    recover_timeout: Option<Timeout>, // recover cursor after scrollTo
 }
 
 fn render_empty_row_with_sizes(widths: &[f64], column_hidden: &[bool], bordered: bool) -> Html {
@@ -891,7 +890,6 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
 
             row_height: props.min_row_height,
             keypress_timeout: None,
-            recover_timeout: None,
         };
 
         me.update_scroll_info(props);
