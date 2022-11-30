@@ -10,12 +10,11 @@ use yew::virtual_dom::{Key, VComp, VNode};
 use yew::html::{IntoEventCallback, Scope};
 
 use crate::prelude::*;
-use crate::props::SorterFn;
 use crate::widget::{get_unique_element_id, Container, Fa, Menu, MenuEvent, MenuItem, MenuCheckbox};
 
 use super::{
     IndexedHeader, IndexedHeaderSingle, IndexedHeaderGroup,
-    HeaderState, ResizableHeader,
+    HeaderState, ResizableHeader, HeaderMsg,
 };
 
 #[derive(Properties)]
@@ -28,9 +27,7 @@ pub struct HeaderWidget<T: 'static> {
 
     headers: Rc<Vec<IndexedHeader<T>>>,
 
-    pub on_size_change: Option<Callback<Vec<f64>>>,
-    pub on_hidden_change: Option<Callback<Vec<bool>>>,
-    pub on_sort_change: Option<Callback<SorterFn<T>>>,
+    pub on_message: Option<Callback<HeaderMsg<T>>>,
 
     /// set class for header cells
     #[prop_or_default]
@@ -58,23 +55,9 @@ impl<T: 'static> HeaderWidget<T> {
     }
      */
 
-    /// Builder style method to set the size change callback
-    pub fn on_size_change(mut self, cb: impl IntoEventCallback<Vec<f64>>) -> Self {
-        self.on_size_change = cb.into_event_callback();
-        self
-    }
-
-    /// Builder style method to set the hidden change callback
-    pub fn on_hidden_change(mut self, cb: impl IntoEventCallback<Vec<bool>>) -> Self {
-        self.on_hidden_change = cb.into_event_callback();
-        self
-    }
-
-    /// Builder style method to set the sort change callback
-    ///
-    /// Callback partameters: (column_num, ctrl, order)
-    pub fn on_sort_change(mut self, cb: impl IntoEventCallback<SorterFn<T>>) -> Self {
-        self.on_sort_change = cb.into_event_callback();
+    /// Builder style method to set the message handler
+    pub fn on_message(mut self, cb: impl IntoEventCallback<HeaderMsg<T>>) -> Self {
+        self.on_message = cb.into_event_callback();
         self
     }
 
@@ -366,9 +349,9 @@ impl <T: 'static> Component for PwtHeaderWidget<T> {
 
         let state = HeaderState::new(Rc::clone(&props.headers));
 
-        if let Some(on_sort_change) = &props.on_sort_change {
+        if let Some(on_message) = &props.on_message {
             let sorter = state.create_combined_sorter_fn();
-            on_sort_change.emit(sorter);
+            on_message.emit(HeaderMsg::ChangeSort(sorter));
         }
 
         let mut observed_widths = Vec::new();
@@ -410,10 +393,10 @@ impl <T: 'static> Component for PwtHeaderWidget<T> {
                     .collect();
 
                 if self.state.columns().len() == observed_widths.len() {
-                    if let Some(on_size_change) = props.on_size_change.clone() {
+                    if let Some(on_message) = props.on_message.clone() {
                         // use timeout to reduce the number of on_size_change callbacks
                         self.timeout = Some(Timeout::new(1, move || {
-                            on_size_change.emit(observed_widths);
+                            on_message.emit(HeaderMsg::ColumnWidthChange(observed_widths));
                         }));
                     }
                 }
@@ -425,16 +408,16 @@ impl <T: 'static> Component for PwtHeaderWidget<T> {
                 } else {
                     self.state.set_column_sorter(cell_idx, opt_order);
                 }
-                if let Some(on_sort_change) = &props.on_sort_change {
+                if let Some(on_message) = &props.on_message {
                     let sorter = self.state.create_combined_sorter_fn();
-                    on_sort_change.emit(sorter);
+                    on_message.emit(HeaderMsg::ChangeSort(sorter));
                 }
                 true
             }
             Msg::HideClick(cell_idx, visible) => {
                 self.state.set_hidden(cell_idx, !visible);
-                if let Some(on_hidden_change) = &props.on_hidden_change {
-                    on_hidden_change.emit(self.state.hidden_columns());
+                if let Some(on_message) = &props.on_message {
+                    on_message.emit(HeaderMsg::ColumnHiddenChange(self.state.hidden_columns()));
                 }
                 true
             }

@@ -31,6 +31,7 @@ pub(crate) use header_widget::HeaderWidget;
 
 mod data_table;
 pub use data_table::{DataTable, PwtDataTable};
+pub(crate) use data_table::HeaderMsg;
 
 use yew::prelude::*;
 use yew::virtual_dom::VList;

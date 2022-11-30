@@ -23,11 +23,15 @@ use super::{
     DataTableRowRenderArgs, DataTableRowRenderCallback, IntoOptionalDataTableRowRenderCallback,
 };
 
-pub enum Msg<T: 'static> {
-    DataChange,
-    ChangeSort(SorterFn<T>),
+pub enum HeaderMsg<T: 'static> {
+    SelectAll(bool),
     ColumnWidthChange(Vec<f64>),
     ColumnHiddenChange(Vec<bool>),
+    ChangeSort(SorterFn<T>),
+}
+
+pub enum Msg<T: 'static> {
+    DataChange,
     ScrollTo(i32, i32),
     ViewportResize(f64, f64),
     ContainerResize(f64, f64),
@@ -40,7 +44,9 @@ pub enum Msg<T: 'static> {
     ItemClick(Key, Option<usize>, MouseEvent),
     ItemDblClick(Key, MouseEvent),
     FocusChange(bool),
+    Header(HeaderMsg<T>),
 }
+
 
 /// Data Table/Tree with virual scroll.
 ///
@@ -946,10 +952,6 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
 
                 true
             }
-            Msg::ColumnWidthChange(column_widths) => {
-                self.column_widths = column_widths;
-                true
-            }
             Msg::ScrollTo(x, y) => {
                 self.scroll_top = y.max(0) as usize;
                 if let Some(el) = self.header_scroll_ref.cast::<web_sys::Element>() {
@@ -1244,13 +1246,21 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
                 self.has_focus = has_focus;
                 true
             }
-            Msg::ChangeSort(sorter_fn) => {
+            Msg::Header(HeaderMsg::ColumnWidthChange(column_widths)) => {
+                self.column_widths = column_widths;
+                true
+            }
+            Msg::Header(HeaderMsg::ChangeSort(sorter_fn)) => {
                 // Note: this triggers a Msg::DataChange
                 props.store.set_sorter(sorter_fn);
                 false
             }
-            Msg::ColumnHiddenChange(column_hidden) => {
+            Msg::Header(HeaderMsg::ColumnHiddenChange(column_hidden)) => {
                 self.column_hidden = column_hidden;
+                true
+            }
+            Msg::Header(HeaderMsg::SelectAll(_)) => {
+                // fixme
                 true
             }
         }
@@ -1328,9 +1338,7 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
                     .with_child(
                         HeaderWidget::new(self.headers.clone())
                             .header_class(props.header_class.clone())
-                            .on_size_change(ctx.link().callback(Msg::ColumnWidthChange))
-                            .on_hidden_change(ctx.link().callback(Msg::ColumnHiddenChange))
-                            .on_sort_change(ctx.link().callback(Msg::ChangeSort))
+                            .on_message(ctx.link().callback(Msg::Header))
                     )
             )
             .with_child(viewport)
