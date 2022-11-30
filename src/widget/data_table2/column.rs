@@ -41,8 +41,13 @@ pub struct DataTableColumn<T> {
     /// Hide column
     #[prop_or_default]
     pub hidden: bool,
+    /// Resizable flag.
     #[prop_or(true)]
     pub resizable: bool,
+
+    /// Show menu flag.
+    #[prop_or(true)]
+    pub show_menu: bool,
 
     /// Cell click callback (parameter is the record key.)
     pub on_cell_click: Option<Callback<DataTableMouseEvent>>,
@@ -172,6 +177,17 @@ impl<T: 'static> DataTableColumn<T> {
     /// Method to set the resizable flag.
     pub fn set_resizable(&mut self, resizable: bool) {
         self.resizable = resizable;
+    }
+
+    /// Builder style method to set the show_menu flag.
+    pub fn show_menu(mut self, hidden: bool) -> Self {
+        self.set_show_menu(hidden);
+        self
+    }
+
+    /// Method to set the show_menu flag.
+    pub fn set_show_menu(&mut self, show_menu: bool) {
+        self.show_menu = show_menu;
     }
 
     /// Builder style method to set the cell click callback.

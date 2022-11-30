@@ -38,6 +38,10 @@ pub struct ResizableHeader {
     #[prop_or(true)]
     pub resizable: bool,
 
+    /// Show menu flag.
+    #[prop_or(true)]
+    pub show_menu: bool,
+
     pub on_resize: Option<Callback<f64>>,
     pub on_size_reset: Option<Callback<()>>,
     pub on_size_change: Option<Callback<f64>>,
@@ -126,6 +130,17 @@ impl ResizableHeader {
     /// Method to set the resizable flag.
     pub fn set_resizable(&mut self, resizable: bool) {
         self.resizable = resizable;
+    }
+
+    /// Builder style method to set the show_menu flag.
+    pub fn show_menu(mut self, hidden: bool) -> Self {
+        self.set_show_menu(hidden);
+        self
+    }
+
+    /// Method to set the show_menu flag.
+    pub fn set_show_menu(&mut self, show_menu: bool) {
+        self.show_menu = show_menu;
     }
 
     /// Builder style method to set the resize callback
@@ -313,8 +328,10 @@ impl Component for PwtResizableHeader {
                     .class("pwt-align-self-center")
                     .class("pwt-text-truncate")
                     .with_optional_child(props.content.clone())
-            )
-            .with_child(
+            );
+
+        if props.show_menu {
+            row.add_child(
                 MenuButton::new("")
                     .node_ref(self.picker_ref.clone())
                     .tabindex(-1)
@@ -327,6 +344,7 @@ impl Component for PwtResizableHeader {
                     .on_close(ctx.link().callback(|_| Msg::HidePicker))
 
             );
+        }
 
         if props.resizable {
             row.add_child(

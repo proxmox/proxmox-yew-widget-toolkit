@@ -244,6 +244,7 @@ impl <T: 'static> PwtHeaderWidget<T> {
                         .aria_label(&cell.column.name)
                         .content(header_content)
                         .resizable(cell.column.resizable)
+                        .show_menu(cell.column.show_menu)
                         .on_resize(link.callback(move |width: f64| Msg::ResizeColumn(column_idx, width.max(0.0))))
                         .on_size_reset(link.callback(move |_| Msg::ColumnSizeReset(column_idx)))
                         .on_size_change(link.callback(move |w| Msg::ColumnSizeChange(column_idx, w)))
