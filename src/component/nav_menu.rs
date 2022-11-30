@@ -100,6 +100,8 @@ pub struct NavigationMenu {
     #[prop_or_default]
     node_ref: NodeRef,
     pub key: Option<Key>,
+    /// ARIA label.
+    pub aria_label: Option<AttrValue>,
     #[prop_or_default]
     menu: Vec<Menu>,
     default_active: Option<Key>,
@@ -123,6 +125,17 @@ impl NavigationMenu {
     pub fn key(mut self, key: impl Into<Key>) -> Self {
         self.key = Some(key.into());
         self
+    }
+
+    /// Builder style method to set the html aria-label attribute
+    pub fn aria_label(mut self, label: impl IntoPropValue<Option<AttrValue>>) -> Self {
+        self.set_aria_label(label);
+        self
+    }
+
+    /// Method to set the html aria-label attribute
+    pub fn set_aria_label(&mut self, label: impl IntoPropValue<Option<AttrValue>>) {
+        self.aria_label = label.into_prop_value();
     }
 
     pub fn navigation_container(mut self) -> NavigationContainer {
@@ -253,19 +266,19 @@ impl PwtNavigationMenu {
         active: &str,
         level: usize,
         visible: bool,
-    ) -> Option<Html> {
+    ) -> Option<(AttrValue, Html)> {
         let mut content = None;
         match item {
             Menu::Item(child) => {
                 menu.add_child(self.render_child(ctx, child, active, level, false, visible));
                 if child.id.deref() == active {
-                    content = Some(child.content.apply(&child.id));
+                    content = Some((child.text.clone(), child.content.apply(&child.id)));
                 }
             }
             Menu::SubMenu(SubMenu { item, children }) => {
                 menu.add_child(self.render_child(ctx, item, active, level, true, visible));
                 if item.id.deref() == active {
-                    content = Some(item.content.apply(&item.id));
+                    content = Some((item.text.clone(), item.content.apply(&item.id)));
                 }
                 let visible = visible
                     .then(|| *self.menu_states.get(&item.id).unwrap_or(&true))
@@ -396,6 +409,8 @@ impl Component for PwtNavigationMenu {
             .onkeydown(onkeydown)
             // avoid https://bugzilla.mozilla.org/show_bug.cgi?id=1069739
             .attribute("tabindex", "-1")
+            .attribute("role", "navigation")
+            .attribute("aria-label", props.aria_label.clone())
             .class("pwt-nav-menu pwt-overflow-auto pwt-border-right")
             .attribute("style", "min-width:200px;");
 
@@ -404,8 +419,10 @@ impl Component for PwtNavigationMenu {
         let active = active.as_deref().unwrap_or("");
 
         for item in props.menu.iter() {
-            if let Some(new_content) = self.render_item(ctx, item, &mut menu, active, 0, true) {
-                content = Some(new_content);
+            if let Some((title, new_content)) = self.render_item(ctx, item, &mut menu, active, 0, true) {
+                content = Some(html!{
+                    <div role="main" aria-label={title} class="pwt-fit">{new_content}</div>
+                })
             }
         }
 
