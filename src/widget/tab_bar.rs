@@ -232,7 +232,7 @@ impl Component for PwtTabBar {
             html!{
                 <a {onclick} {onkeyup} class={nav_class} {tabindex}>
                     if let Some(class) = &panel.icon_class {
-                        <span class={classes!(class.to_string(), "pwt-pe-2")}/>
+                        <span class={classes!(class.to_string(), "pwt-pe-2")} aria-hidden="true"/>
                     }
                     {&panel.label}
                 </a>
