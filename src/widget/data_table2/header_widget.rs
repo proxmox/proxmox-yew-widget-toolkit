@@ -220,6 +220,11 @@ impl <T: 'static> PwtHeaderWidget<T> {
             Some(_) => html!{},
         };
 
+        let header_content = match &cell.column.header_content {
+            Some(content) => content.clone(),
+            None => html!{<>{sort_icon}{&cell.column.name}{sort_space}</>},
+        };
+
         header_row.push(
             Container::new()
                 .key(Key::from(cell_idx))
@@ -236,8 +241,8 @@ impl <T: 'static> PwtHeaderWidget<T> {
                         .tabindex(tabindex)
                         .class(props.header_class.clone())
                         .class("pwt-w-100 pwt-h-100")
-                        .aria_label(&cell.column.aria_label)
-                        .content(html!{<>{sort_icon}{&cell.column.name}{sort_space}</>})
+                        .aria_label(&cell.column.name)
+                        .content(header_content)
                         .on_resize(link.callback(move |width: f64| Msg::ResizeColumn(column_idx, width.max(0.0))))
                         .on_size_reset(link.callback(move |_| Msg::ColumnSizeReset(column_idx)))
                         .on_size_change(link.callback(move |w| Msg::ColumnSizeChange(column_idx, w)))

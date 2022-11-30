@@ -17,10 +17,8 @@ pub struct DataTableColumn<T> {
     /// Width passed to CSS grid-template-columns.
     #[prop_or(AttrValue::Static("auto"))]
     pub width: AttrValue,
-    /// The name dispayed in the header.
+    /// The name dispayed in the header (Also used as aria-label).
     pub name: AttrValue,
-    /// Optional ARIA label.
-    pub aria_label: Option<AttrValue>,
     /// Unique Column Key
     pub key: Option<Key>,
     /// Horizontal table cell justification.
@@ -28,6 +26,8 @@ pub struct DataTableColumn<T> {
     pub justify: AttrValue, // left, center, right, justify
     /// Render function (returns cell content)
     pub render_cell: DataTableCellRenderer<T>,
+    /// Header content. If set, this is used instead of `name`.
+    pub header_content: Option<Html>,
     /// Sorter function.
     ///
     /// Need to be set to enable column sorting.
@@ -61,17 +61,6 @@ impl<T: 'static> DataTableColumn<T> {
     pub fn key(mut self, key: impl Into<Key>) -> Self {
         self.key = Some(key.into());
         self
-    }
-
-    /// Builder style method to set the html aria-label attribute
-    pub fn aria_label(mut self, label: impl IntoPropValue<Option<AttrValue>>) -> Self {
-        self.set_aria_label(label);
-        self
-    }
-
-    /// Method to set the html aria-label attribute
-    pub fn set_aria_label(&mut self, label: impl IntoPropValue<Option<AttrValue>>) {
-        self.aria_label = label.into_prop_value();
     }
 
     /// Builder style method to set the column width.
@@ -140,6 +129,12 @@ impl<T: 'static> DataTableColumn<T> {
     /// Builder style method to set the cell render function.
     pub fn render_cell(mut self, render: impl Into<DataTableCellRenderer<T>>) -> Self {
         self.render_cell = render.into();
+        self
+    }
+
+    /// Builder style method to set the header content.
+    pub fn header_content(mut self, render: impl Into<Html>) -> Self {
+        self.header_content = Some(render.into());
         self
     }
 
