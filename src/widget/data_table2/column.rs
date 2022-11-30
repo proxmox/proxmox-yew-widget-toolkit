@@ -41,6 +41,8 @@ pub struct DataTableColumn<T> {
     /// Hide column
     #[prop_or_default]
     pub hidden: bool,
+    #[prop_or(true)]
+    pub resizable: bool,
 
     /// Cell click callback (parameter is the record key.)
     pub on_cell_click: Option<Callback<DataTableMouseEvent>>,
@@ -159,6 +161,17 @@ impl<T: 'static> DataTableColumn<T> {
     /// Method to set the hidden flag.
     pub fn set_hidden(&mut self, hidden: bool) {
         self.hidden = hidden;
+    }
+
+    /// Builder style method to set the resizable flag.
+    pub fn resizable(mut self, hidden: bool) -> Self {
+        self.set_resizable(hidden);
+        self
+    }
+
+    /// Method to set the resizable flag.
+    pub fn set_resizable(&mut self, resizable: bool) {
+        self.resizable = resizable;
     }
 
     /// Builder style method to set the cell click callback.

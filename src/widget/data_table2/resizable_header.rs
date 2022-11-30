@@ -33,6 +33,11 @@ pub struct ResizableHeader {
     pub aria_label: Option<AttrValue>,
 
     pub content: Option<VNode>,
+
+    /// Resizable flag.
+    #[prop_or(true)]
+    pub resizable: bool,
+
     pub on_resize: Option<Callback<f64>>,
     pub on_size_reset: Option<Callback<()>>,
     pub on_size_change: Option<Callback<f64>>,
@@ -110,6 +115,17 @@ impl ResizableHeader {
     /// Method to set the header text
     pub fn set_content(&mut self, content: impl IntoPropValue<Option<VNode>>) {
         self.content = content.into_prop_value();
+    }
+
+    /// Builder style method to set the resizable flag.
+    pub fn resizable(mut self, hidden: bool) -> Self {
+        self.set_resizable(hidden);
+        self
+    }
+
+    /// Method to set the resizable flag.
+    pub fn set_resizable(&mut self, resizable: bool) {
+        self.resizable = resizable;
     }
 
     /// Builder style method to set the resize callback
@@ -267,7 +283,7 @@ impl Component for PwtResizableHeader {
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
 
-        Row::new()
+        let mut row = Row::new()
             .attribute("role", "none")
             .class("pwt-datatable2-header-item")
             //.class(self.show_picker.then(|| "focused"))
@@ -310,8 +326,10 @@ impl Component for PwtResizableHeader {
                     .menu_builder(props.menu_builder.clone())
                     .on_close(ctx.link().callback(|_| Msg::HidePicker))
 
-            )
-            .with_child(
+            );
+
+        if props.resizable {
+            row.add_child(
                 Container::new()
                     .attribute("role", "none")
                     .class("pwt-datatable2-header-resize-trigger")
@@ -325,8 +343,10 @@ impl Component for PwtResizableHeader {
                             }
                         }
                     })
-            )
-            .into()
+            );
+        }
+
+        row.into()
     }
 
     fn rendered(&mut self, ctx: &Context<Self>, first_render: bool) {
