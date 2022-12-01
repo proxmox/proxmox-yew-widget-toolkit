@@ -577,6 +577,28 @@ impl<T: 'static, S: DataStore<T>> PwtDataTable<T, S> {
         }
     }
 
+    fn update_selection_status(&mut self, props: &DataTable<T, S>,) {
+        let selection = match &props.selection {
+            Some(selection) => selection,
+            None => {
+                self.selection_status = RowSelectionStatus::Nothing;
+                return;
+            }
+        };
+
+        let record_count = props.store.filtered_data_len();
+        let selection_len = selection.len();
+        if record_count == selection_len {
+            self.selection_status = RowSelectionStatus::All;
+        }
+
+        if selection_len > 0 {
+            self.selection_status = RowSelectionStatus::Some;
+        } else {
+            self.selection_status = RowSelectionStatus::Nothing;
+        }
+    }
+
     fn select_cursor(&mut self, props: &DataTable<T, S>, shift: bool, ctrl: bool) -> bool {
         let selection = match &props.selection {
             Some(selection) => selection,
@@ -964,15 +986,18 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
         };
 
         me.update_scroll_info(props);
-        // fixme: update selection status
-
+        // fixme: remove umknown keys from  selection
+        me.update_selection_status(props);
         me
     }
 
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
         let props = ctx.props();
         match msg {
-            Msg::SelectionChange => { true }
+            Msg::SelectionChange => {
+                self.update_selection_status(props);
+                true
+            }
             Msg::DataChange => {
                 // try to keep cursor on the same record
                 if let Some(Cursor { record_key, .. }) = &self.cursor {
@@ -983,6 +1008,9 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
                 self.update_scroll_info(props);
 
                 self.scroll_cursor_into_view();
+
+                // fixme: remove umknown keys from  selection
+                self.update_selection_status(props);
 
                 true
             }

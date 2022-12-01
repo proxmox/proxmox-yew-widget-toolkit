@@ -145,6 +145,11 @@ impl Selection2 {
             .contains(key)
     }
 
+    /// Returns the number of selected keys.
+    pub fn len(&self) -> usize {
+        self.inner.borrow().len()
+    }
+
     /// Returns all selected keys
     ///
     /// Note: This works for single and multiselect mode
@@ -344,6 +349,13 @@ impl SelectionState {
             }
         }
         false
+    }
+
+    pub fn len(&self) -> usize {
+        match self.multiselect {
+            false => if self.selection.is_some() { 1 } else { 0 },
+            true => self.selection_map.len(),
+        }
     }
 
     pub fn selected_key(&self) -> Option<Key> {
