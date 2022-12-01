@@ -24,7 +24,7 @@ mod cell_render_callback;
 pub use cell_render_callback::{DataTableCellRenderer, DataTableCellRenderArgs};
 
 mod header_render_callback;
-pub use header_render_callback::{DataTableHeaderRenderer, DataTableHeaderRenderArgs};
+pub use header_render_callback::{DataTableHeaderRenderer, DataTableHeaderRenderArgs, DataTableHeaderTableLink};
 
 mod column;
 pub use column::DataTableColumn;
@@ -33,7 +33,7 @@ mod header_widget;
 pub(crate) use header_widget::HeaderWidget;
 
 mod data_table;
-pub use data_table::{DataTable, PwtDataTable};
+pub use data_table::{DataTable, PwtDataTable, RowSelectionStatus};
 pub(crate) use data_table::HeaderMsg;
 
 use yew::prelude::*;

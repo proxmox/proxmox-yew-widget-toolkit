@@ -16,6 +16,7 @@ use crate::widget::{get_unique_element_id, Container, Fa, Menu, MenuEvent, MenuI
 use super::{
     IndexedHeader, IndexedHeaderSingle, IndexedHeaderGroup,
     HeaderState, ResizableHeader, HeaderMsg, DataTableHeaderRenderArgs,
+    RowSelectionStatus, DataTableHeaderTableLink,
 };
 
 #[derive(Properties)]
@@ -33,6 +34,9 @@ pub struct HeaderWidget<T: 'static> {
     /// set class for header cells
     #[prop_or_default]
     pub header_class: Classes,
+
+    #[prop_or(RowSelectionStatus::Nothing)]
+    pub selection_status: RowSelectionStatus,
 }
 
 
@@ -55,6 +59,12 @@ impl<T: 'static> HeaderWidget<T> {
         self
     }
      */
+
+    /// Builder style method to set the row selection status.
+    pub fn selection_status(mut self, status: RowSelectionStatus) -> Self {
+        self.selection_status = status;
+        self
+    }
 
     /// Builder style method to add a html class for header cells.
     pub fn header_class(mut self, class: impl Into<Classes>) -> Self {
@@ -209,8 +219,8 @@ impl <T: 'static> PwtHeaderWidget<T> {
             Some(render_header) => {
                 let mut args = DataTableHeaderRenderArgs {
                     column_index: 0,
-                    all_selected: false,
-                    on_message: props.on_message.clone(),
+                    selection_status: props.selection_status,
+                    link: DataTableHeaderTableLink { on_message: props.on_message.clone() },
                     attributes,
                     class: header_class.clone(),
                 };

@@ -13,7 +13,7 @@ use yew::html::{IntoEventCallback, IntoPropValue};
 
 use crate::prelude::*;
 use crate::props::SorterFn;
-use crate::state::{DataStore, DataNode, Selection2, Store};
+use crate::state::{DataStore, DataNode, Selection2, Store, SelectionObserver};
 use crate::widget::{get_unique_element_id, Container, Column, SizeObserver};
 
 use super::{
@@ -24,13 +24,14 @@ use super::{
 };
 
 pub enum HeaderMsg<T: 'static> {
-    SelectAll(bool),
+    ToggleSelectAll,
     ColumnWidthChange(Vec<f64>),
     ColumnHiddenChange(Vec<bool>),
     ChangeSort(SorterFn<T>),
 }
 
 pub enum Msg<T: 'static> {
+    SelectionChange,
     DataChange,
     ScrollTo(i32, i32),
     ViewportResize(f64, f64),
@@ -47,6 +48,16 @@ pub enum Msg<T: 'static> {
     Header(HeaderMsg<T>),
 }
 
+/// Row selction status
+#[derive(Copy, Clone, PartialEq)]
+pub enum RowSelectionStatus {
+    /// Nothing is selected.
+    Nothing,
+    /// Some rows are selected.
+    Some,
+    /// All (filtered) rows are selected.
+    All,
+}
 
 /// Data Table/Tree with virual scroll.
 ///
@@ -364,6 +375,9 @@ pub struct PwtDataTable<T: 'static, S: DataStore<T>> {
     active_column: usize, // which colums has focus?
     cursor: Option<Cursor>,
     last_select_position: Option<usize>,
+    selection_status: RowSelectionStatus,
+
+    _selection_observer: Option<SelectionObserver>,
 
     _store_observer: S::Observer,
     _phantom_store: PhantomData<S>,
@@ -898,6 +912,11 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
 
         let _store_observer = props.store.add_listener(ctx.link().callback(|_| Msg::DataChange));
 
+        let _selection_observer = match &props.selection {
+            Some(selection) => Some(selection.add_listener(ctx.link().callback(|_| Msg::SelectionChange))),
+            None => None,
+        };
+
         let mut me = Self {
             _phantom_store: PhantomData::<S>,
             _store_observer,
@@ -907,6 +926,8 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
             take_focus: false,
             cursor: None,
             last_select_position: None,
+            selection_status: RowSelectionStatus::Nothing,
+            _selection_observer,
 
             active_column: 0,
             columns,
@@ -933,12 +954,15 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
         };
 
         me.update_scroll_info(props);
+        // fixme: update selection status
+
         me
     }
 
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
         let props = ctx.props();
         match msg {
+            Msg::SelectionChange => { true }
             Msg::DataChange => {
                 // try to keep cursor on the same record
                 if let Some(Cursor { record_key, .. }) = &self.cursor {
@@ -1259,8 +1283,13 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
                 self.column_hidden = column_hidden;
                 true
             }
-            Msg::Header(HeaderMsg::SelectAll(_)) => {
-                // fixme
+            Msg::Header(HeaderMsg::ToggleSelectAll) => {
+                // fixme: below is just for testing
+                if self.selection_status == RowSelectionStatus::Nothing {
+                    self.selection_status = RowSelectionStatus::All;
+                } else {
+                    self.selection_status = RowSelectionStatus::Nothing;
+                }
                 true
             }
         }
@@ -1337,6 +1366,7 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
                     .class("pwt-datatable2-header")
                     .with_child(
                         HeaderWidget::new(self.headers.clone(), ctx.link().callback(Msg::Header))
+                            .selection_status(self.selection_status)
                             .header_class(props.header_class.clone())
                     )
             )

@@ -6,16 +6,29 @@ use indexmap::IndexMap;
 use yew::prelude::*;
 use yew::html::IntoPropValue;
 
-use super::HeaderMsg;
+use super::{HeaderMsg, RowSelectionStatus};
+
+/// A context which allows sending messages to the data table..
+#[derive(Derivative)]
+#[derivative(Clone(bound=""))]
+pub struct DataTableHeaderTableLink<T: 'static> {
+     pub on_message: Callback<HeaderMsg<T>>,
+}
+
+impl<T: 'static> DataTableHeaderTableLink<T> {
+    pub fn send_toggle_select_all(&self) {
+        self.on_message.emit(HeaderMsg::ToggleSelectAll);
+    }
+}
 
 /// Header render function arguments.
 pub struct DataTableHeaderRenderArgs<T: 'static> {
     // Column index.
     pub(crate) column_index: usize,
-    // Select flag is set when the cell is selected.
-    pub(crate) all_selected: bool,
+    // Selection status from the table.
+    pub(crate) selection_status: RowSelectionStatus,
 
-    pub on_message: Callback<HeaderMsg<T>>,
+    pub(crate) link: DataTableHeaderTableLink<T>,
 
     /// Cell class. This attribute may be modified to change the
     /// appearance of the header cell.
@@ -31,9 +44,9 @@ impl<T: 'static> DataTableHeaderRenderArgs<T> {
         self.column_index
     }
 
-    /// Returns true if the all cell are selected.
-    pub fn all_selected(&self) -> bool {
-        self.all_selected
+    /// Row selection status from the table.
+    pub fn selection_status(&self) -> RowSelectionStatus {
+        self.selection_status
     }
 
     /// Method to set additional html attributes on the header cell
@@ -54,6 +67,11 @@ impl<T: 'static> DataTableHeaderRenderArgs<T> {
     /// Method to add a CSS class to the header cell
     pub fn add_class(&mut self, class: impl Into<Classes>) {
         self.class.push(class);
+    }
+
+    /// Returns a context to send commands to the data table.
+    pub fn link(&self) -> DataTableHeaderTableLink<T> {
+        self.link.clone()
     }
 }
 
