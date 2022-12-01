@@ -23,6 +23,9 @@ pub use row_render_callback::{
 mod cell_render_callback;
 pub use cell_render_callback::{DataTableCellRenderer, DataTableCellRenderArgs};
 
+mod header_render_callback;
+pub use header_render_callback::{DataTableHeaderRenderer, DataTableHeaderRenderArgs};
+
 mod column;
 pub use column::DataTableColumn;
 

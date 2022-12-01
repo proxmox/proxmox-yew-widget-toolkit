@@ -1336,9 +1336,8 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
                     .class("pwt-overflow-hidden")
                     .class("pwt-datatable2-header")
                     .with_child(
-                        HeaderWidget::new(self.headers.clone())
+                        HeaderWidget::new(self.headers.clone(), ctx.link().callback(Msg::Header))
                             .header_class(props.header_class.clone())
-                            .on_message(ctx.link().callback(Msg::Header))
                     )
             )
             .with_child(viewport)

@@ -7,13 +7,13 @@ use yew::virtual_dom::Key;
 
 use crate::props::{SorterFn, IntoSorterFn, RenderFn};
 
-use super::{DataTableMouseEvent, DataTableCellRenderer, DataTableCellRenderArgs};
+use super::{DataTableMouseEvent, DataTableCellRenderer, DataTableCellRenderArgs, DataTableHeaderRenderer};
 
 /// DataTable column properties.
 #[derive(Properties)]
 #[derive(Derivative)]
 #[derivative(Clone(bound=""), PartialEq(bound=""))]
-pub struct DataTableColumn<T> {
+pub struct DataTableColumn<T: 'static> {
     /// Width passed to CSS grid-template-columns.
     #[prop_or(AttrValue::Static("auto"))]
     pub width: AttrValue,
@@ -26,8 +26,8 @@ pub struct DataTableColumn<T> {
     pub justify: AttrValue, // left, center, right, justify
     /// Render function (returns cell content)
     pub render_cell: DataTableCellRenderer<T>,
-    /// Header content. If set, this is used instead of `name`.
-    pub header_content: Option<Html>,
+    /// Rendert function for Header content. If set, this is used instead of `name`.
+    pub render_header: Option<DataTableHeaderRenderer<T>>,
     /// Sorter function.
     ///
     /// Need to be set to enable column sorting.
@@ -139,9 +139,9 @@ impl<T: 'static> DataTableColumn<T> {
         self
     }
 
-    /// Builder style method to set the header content.
-    pub fn header_content(mut self, render: impl Into<Html>) -> Self {
-        self.header_content = Some(render.into());
+    /// Builder style method to set the header render function
+    pub fn render_header(mut self, render: impl Into<DataTableHeaderRenderer<T>>) -> Self {
+        self.render_header = Some(render.into());
         self
     }
 

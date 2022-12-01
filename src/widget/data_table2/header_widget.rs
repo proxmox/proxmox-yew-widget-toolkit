@@ -1,20 +1,21 @@
 use std::rc::Rc;
 
 use derivative::Derivative;
+use indexmap::IndexMap;
 
 use gloo_timers::callback::Timeout;
 use wasm_bindgen::JsCast;
 
 use yew::prelude::*;
 use yew::virtual_dom::{Key, VComp, VNode};
-use yew::html::{IntoEventCallback, Scope};
+use yew::html::Scope;
 
 use crate::prelude::*;
 use crate::widget::{get_unique_element_id, Container, Fa, Menu, MenuEvent, MenuItem, MenuCheckbox};
 
 use super::{
     IndexedHeader, IndexedHeaderSingle, IndexedHeaderGroup,
-    HeaderState, ResizableHeader, HeaderMsg,
+    HeaderState, ResizableHeader, HeaderMsg, DataTableHeaderRenderArgs,
 };
 
 #[derive(Properties)]
@@ -27,7 +28,7 @@ pub struct HeaderWidget<T: 'static> {
 
     headers: Rc<Vec<IndexedHeader<T>>>,
 
-    pub on_message: Option<Callback<HeaderMsg<T>>>,
+    on_message: Callback<HeaderMsg<T>>,
 
     /// set class for header cells
     #[prop_or_default]
@@ -38,8 +39,8 @@ pub struct HeaderWidget<T: 'static> {
 impl<T: 'static> HeaderWidget<T> {
 
     /// Create a new instance.
-    pub fn new(headers: Rc<Vec<IndexedHeader<T>>>) -> Self {
-        yew::props!(Self { headers })
+    pub fn new(headers: Rc<Vec<IndexedHeader<T>>>, on_message: Callback<HeaderMsg<T>>) -> Self {
+        yew::props!(Self { headers, on_message })
     }
 
     /*
@@ -54,12 +55,6 @@ impl<T: 'static> HeaderWidget<T> {
         self
     }
      */
-
-    /// Builder style method to set the message handler
-    pub fn on_message(mut self, cb: impl IntoEventCallback<HeaderMsg<T>>) -> Self {
-        self.on_message = cb.into_event_callback();
-        self
-    }
 
     /// Builder style method to add a html class for header cells.
     pub fn header_class(mut self, class: impl Into<Classes>) -> Self {
@@ -170,7 +165,11 @@ impl <T: 'static> PwtHeaderWidget<T> {
         let column_idx = cell.start_col;
         let cell_idx = cell.cell_idx;
         let active = self.cursor.map(|cursor| cursor == cell_idx).unwrap_or(false);
-        let tabindex = if active || (self.cursor.is_none() && (cell_idx == 0)) { 0 } else { -1 };
+        let tabindex = if active || (self.cursor.is_none() && (cell_idx == 0)) {
+            AttrValue::Static("0")
+        } else {
+            AttrValue::Static("-1")
+        };
 
         let unique_id = self.unique_cell_id(cell_idx);
 
@@ -203,10 +202,28 @@ impl <T: 'static> PwtHeaderWidget<T> {
             Some(_) => html!{},
         };
 
-        let header_content = match &cell.column.header_content {
-            Some(content) => content.clone(),
+
+        let mut attributes = IndexMap::new();
+        let mut header_class = props.header_class.clone();
+        let header_content = match &cell.column.render_header {
+            Some(render_header) => {
+                let mut args = DataTableHeaderRenderArgs {
+                    column_index: 0,
+                    all_selected: false,
+                    on_message: props.on_message.clone(),
+                    attributes,
+                    class: header_class.clone(),
+                };
+                let content = render_header.apply(&mut args);
+                header_class = args.class;
+                attributes = args.attributes;
+                content
+            }
             None => html!{<>{sort_icon}{&cell.column.name}{sort_space}</>},
         };
+
+        attributes.insert(AttrValue::Static("tabindex"), tabindex);
+        attributes.insert(AttrValue::Static("aria-label"), cell.column.name.clone());
 
         header_row.push(
             Container::new()
@@ -221,10 +238,9 @@ impl <T: 'static> PwtHeaderWidget<T> {
                 .with_child(
                     ResizableHeader::new()
                         .id(unique_id)
-                        .tabindex(tabindex)
-                        .class(props.header_class.clone())
+                        .class(header_class.clone())
                         .class("pwt-w-100 pwt-h-100")
-                        .aria_label(&cell.column.name)
+                        .attributes(attributes)
                         .content(header_content)
                         .resizable(cell.column.resizable)
                         .show_menu(cell.column.show_menu)
@@ -349,10 +365,8 @@ impl <T: 'static> Component for PwtHeaderWidget<T> {
 
         let state = HeaderState::new(Rc::clone(&props.headers));
 
-        if let Some(on_message) = &props.on_message {
-            let sorter = state.create_combined_sorter_fn();
-            on_message.emit(HeaderMsg::ChangeSort(sorter));
-        }
+        let sorter = state.create_combined_sorter_fn();
+        props.on_message.emit(HeaderMsg::ChangeSort(sorter));
 
         let mut observed_widths = Vec::new();
         for (col_idx, _cell) in state.columns().iter().enumerate() {
@@ -393,12 +407,11 @@ impl <T: 'static> Component for PwtHeaderWidget<T> {
                     .collect();
 
                 if self.state.columns().len() == observed_widths.len() {
-                    if let Some(on_message) = props.on_message.clone() {
-                        // use timeout to reduce the number of on_size_change callbacks
-                        self.timeout = Some(Timeout::new(1, move || {
-                            on_message.emit(HeaderMsg::ColumnWidthChange(observed_widths));
-                        }));
-                    }
+                    let on_message = props.on_message.clone();
+                    // use timeout to reduce the number of on_size_change callbacks
+                    self.timeout = Some(Timeout::new(1, move || {
+                        on_message.emit(HeaderMsg::ColumnWidthChange(observed_widths));
+                    }));
                 }
                 true
             }
@@ -408,17 +421,13 @@ impl <T: 'static> Component for PwtHeaderWidget<T> {
                 } else {
                     self.state.set_column_sorter(cell_idx, opt_order);
                 }
-                if let Some(on_message) = &props.on_message {
-                    let sorter = self.state.create_combined_sorter_fn();
-                    on_message.emit(HeaderMsg::ChangeSort(sorter));
-                }
+                let sorter = self.state.create_combined_sorter_fn();
+                props.on_message.emit(HeaderMsg::ChangeSort(sorter));
                 true
             }
             Msg::HideClick(cell_idx, visible) => {
                 self.state.set_hidden(cell_idx, !visible);
-                if let Some(on_message) = &props.on_message {
-                    on_message.emit(HeaderMsg::ColumnHiddenChange(self.state.hidden_columns()));
-                }
+                props.on_message.emit(HeaderMsg::ColumnHiddenChange(self.state.hidden_columns()));
                 true
             }
             Msg::FocusCell(cell_idx) => {

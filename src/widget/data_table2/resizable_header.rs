@@ -3,6 +3,7 @@ use std::rc::Rc;
 use gloo_events::EventListener;
 use gloo_timers::callback::Timeout;
 use wasm_bindgen::{JsCast, UnwrapThrowExt};
+use indexmap::IndexMap;
 
 use yew::prelude::*;
 use yew::virtual_dom::{Key, VComp, VNode};
@@ -27,10 +28,9 @@ pub struct ResizableHeader {
 
     /// Unique element ID
     pub id: Option<String>,
-    /// Html tabindex attribute.
-    pub tabindex: Option<i32>,
-    /// Optional ARIA label.
-    pub aria_label: Option<AttrValue>,
+
+    #[prop_or_default]
+    pub attributes: IndexMap<AttrValue, AttrValue>,
 
     pub content: Option<VNode>,
 
@@ -57,30 +57,6 @@ impl ResizableHeader {
         yew::props!(Self {})
     }
 
-    /*
-    /// Builder style method to set the yew `key` property
-    pub fn key(mut self, key: impl Into<Key>) -> Self {
-        self.key = Some(key.into());
-        self
-    }
-    /// Builder style method to set the yew `node_ref`
-    pub fn node_ref(mut self, node_ref: impl IntoPropValue<Option<NodeRef>>) -> Self {
-        self.node_ref = node_ref.into_prop_value();
-        self
-    }
-     */
-
-    /// Builder style method to set the html aria-label attribute
-    pub fn aria_label(mut self, label: impl IntoPropValue<Option<AttrValue>>) -> Self {
-        self.set_aria_label(label);
-        self
-    }
-
-    /// Method to set the html aria-label attribute
-    pub fn set_aria_label(&mut self, label: impl IntoPropValue<Option<AttrValue>>) {
-        self.aria_label = label.into_prop_value();
-    }
-
     /// Builder style method to set the element id
     pub fn id(mut self, id: impl IntoPropValue<Option<String>>) -> Self {
         self.id = id.into_prop_value();
@@ -99,15 +75,10 @@ impl ResizableHeader {
         self.class.push(class);
     }
 
-    /// Builder style method to set the html tabindex attribute
-    pub fn tabindex(mut self, index: impl IntoPropValue<Option<i32>>) -> Self {
-        self.set_tabindex(index);
+    /// Builder stzyle method to set additional html attributes.
+    pub fn attributes(mut self, attributes: IndexMap<AttrValue, AttrValue>) -> Self {
+        self.attributes = attributes;
         self
-    }
-
-    /// Method to set the html tabindex attribute
-    pub fn set_tabindex(&mut self, index: impl IntoPropValue<Option<i32>>) {
-        self.tabindex = index.into_prop_value();
     }
 
     /// Builder style method to set the header text
@@ -299,15 +270,13 @@ impl Component for PwtResizableHeader {
         let props = ctx.props();
 
         let mut row = Row::new()
+            .node_ref(self.node_ref.clone())
             .attribute("role", "none")
             .class("pwt-datatable2-header-item")
             //.class(self.show_picker.then(|| "focused"))
             .class(self.has_focus.then(|| "focused"))
             .class(props.class.clone())
-            .attribute("tabindex", props.tabindex.map(|t| t.to_string()))
             .attribute("id", props.id.clone())
-            .attribute("aria-label", &props.aria_label)
-            .node_ref(self.node_ref.clone())
             .onfocusin(ctx.link().callback(|_| Msg::FocusChange(true)))
             .onfocusout(ctx.link().callback(|_| Msg::FocusChange(false)))
             .onkeydown({
@@ -329,6 +298,10 @@ impl Component for PwtResizableHeader {
                     .class("pwt-text-truncate")
                     .with_optional_child(props.content.clone())
             );
+
+        for (name, value) in &props.attributes {
+            row.set_attribute(name.clone(), value);
+        }
 
         if props.show_menu {
             row.add_child(
