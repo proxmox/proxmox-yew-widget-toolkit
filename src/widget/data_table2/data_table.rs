@@ -558,9 +558,19 @@ impl<T: 'static, S: DataStore<T>> PwtDataTable<T, S> {
                 } else {
                     (new_cursor, last_cursor)
                 };
+
+                let mut guard = selection.write();
                 for pos in start..=end {
-                    self.select_position(props, selection, pos, shift, ctrl);
+                    // use write lock to avoid multiple notification
+                    if let Some(key) = props.store.lookup_filtered_record_key(pos) {
+                        if ctrl {
+                            guard.toggle(key);
+                        } else {
+                            guard.select(key);
+                        }
+                    }
                 }
+                self.last_select_position = Some(end);
             } else {
                 self.select_position(props, selection, new_cursor, shift, ctrl);
             }

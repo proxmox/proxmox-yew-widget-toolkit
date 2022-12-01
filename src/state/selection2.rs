@@ -1,6 +1,8 @@
 use std::rc::Rc;
-use std::cell::RefCell;
+use std::cell::{Ref, RefCell, RefMut};
 use std::collections::HashSet;
+use std::ops::{Deref, DerefMut};
+use std::mem::ManuallyDrop;
 
 use slab::Slab;
 use derivative::Derivative;
@@ -156,8 +158,78 @@ impl Selection2 {
         self.inner.borrow()
             .selected_key()
     }
+
+    /// Lock this store for write access.
+    ///
+    /// Please use a write lock if you do bulk operations. This
+    /// notifies the listeners when you drop the lock only once.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the store is already locked.
+    pub fn write(&self) -> SelectionWriteGuard {
+        let cloned_self = Self { on_select: None, inner: self.inner.clone() };
+        let state = ManuallyDrop::new(self.inner.borrow_mut());
+        SelectionWriteGuard {
+            selection: cloned_self,
+            initial_version: state.version,
+            state,
+        }
+    }
+
+    /// Lock this selection for read access.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the value is currently mutably locked.
+    pub fn read(&self) -> SelectionReadGuard {
+        SelectionReadGuard {
+            state: self.inner.borrow(),
+        }
+    }
 }
 
+/// A wrapper type for a mutably borrowed [Selection2]
+pub struct SelectionWriteGuard<'a> {
+    selection: Selection2,
+    state: ManuallyDrop<RefMut<'a, SelectionState>>,
+    initial_version: usize,
+}
+
+impl<'a> Deref for SelectionWriteGuard<'a> {
+    type Target = SelectionState;
+
+    fn deref(&self) -> &Self::Target {
+        &self.state
+    }
+}
+
+impl<'a> DerefMut for SelectionWriteGuard<'a> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.state
+    }
+}
+
+impl<'a> Drop for SelectionWriteGuard<'a> {
+    fn drop(&mut self) {
+        let changed = self.state.version != self.initial_version;
+        unsafe { ManuallyDrop::drop(&mut self.state); } // drop ref before calling notify listeners
+        if changed { self.selection.notify_listeners(); }
+    }
+}
+
+/// Wraps a borrowed reference to a [Selection2]
+pub struct SelectionReadGuard<'a> {
+    state: Ref<'a, SelectionState>,
+}
+
+impl<'a> Deref for SelectionReadGuard<'a> {
+    type Target = SelectionState;
+
+    fn deref(&self) -> &Self::Target {
+        &self.state
+    }
+}
 
 impl Selection2 {
 
@@ -173,7 +245,7 @@ impl Selection2 {
 }
 
 
-struct SelectionState {
+pub struct SelectionState {
     version: usize, // change tracking
     multiselect: bool,
     selection: Option<Key>, // used for single row
@@ -205,20 +277,20 @@ impl SelectionState {
         self.listeners.remove(key);
     }
 
-    fn clear(&mut self) {
+    pub fn clear(&mut self) {
         self.version += 1;
         self.selection = None;
         self.selection_map = HashSet::new();
     }
 
-    fn is_empty(&self) -> bool {
+    pub fn is_empty(&self) -> bool {
         match self.multiselect {
             false => self.selection.is_none(),
             true => self.selection_map.is_empty(),
         }
     }
 
-    fn select(&mut self, key: impl Into<Key>) -> bool {
+    pub fn select(&mut self, key: impl Into<Key>) -> bool {
         let key = key.into();
         if self.contains(&key) { return false; }
         self.version += 1;
@@ -231,7 +303,7 @@ impl SelectionState {
         true
     }
 
-    fn toggle(&mut self, key: impl Into<Key>) {
+    pub fn toggle(&mut self, key: impl Into<Key>) {
         self.version += 1;
         let key = key.into();
         match self.multiselect {
@@ -256,7 +328,7 @@ impl SelectionState {
         }
     }
 
-    fn contains(&self, key: &Key) -> bool {
+    pub fn contains(&self, key: &Key) -> bool {
         match self.multiselect {
             false => {
                 if let Some(current) = &self.selection {
@@ -274,14 +346,14 @@ impl SelectionState {
         false
     }
 
-    fn selected_key(&self) -> Option<Key> {
+    pub fn selected_key(&self) -> Option<Key> {
         match self.multiselect {
             false => self.selection.clone(),
             true => None,
         }
     }
 
-    fn selected_keys(&self) -> Vec<Key> {
+    pub fn selected_keys(&self) -> Vec<Key> {
         let mut keys = Vec::new();
 
         match self.multiselect {
