@@ -1,5 +1,6 @@
 use std::rc::Rc;
 use std::marker::PhantomData;
+use std::collections::HashSet;
 
 use derivative::Derivative;
 use indexmap::IndexMap;
@@ -49,7 +50,7 @@ pub enum Msg<T: 'static> {
 }
 
 /// Row selction status
-#[derive(Copy, Clone, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum RowSelectionStatus {
     /// Nothing is selected.
     Nothing,
@@ -577,7 +578,7 @@ impl<T: 'static, S: DataStore<T>> PwtDataTable<T, S> {
         }
     }
 
-    fn update_selection_status(&mut self, props: &DataTable<T, S>,) {
+    fn update_selection_status(&mut self, props: &DataTable<T, S>) {
         let selection = match &props.selection {
             Some(selection) => selection,
             None => {
@@ -590,12 +591,34 @@ impl<T: 'static, S: DataStore<T>> PwtDataTable<T, S> {
         let selection_len = selection.len();
         if record_count == selection_len {
             self.selection_status = RowSelectionStatus::All;
-        }
-
-        if selection_len > 0 {
+        } else if selection_len > 0 {
             self.selection_status = RowSelectionStatus::Some;
         } else {
             self.selection_status = RowSelectionStatus::Nothing;
+        }
+    }
+
+    // remove stale keys from selection
+    fn cleanup_selection(&mut self, props: &DataTable<T, S>) {
+
+        if let Some(selection) = &props.selection {
+            let mut selection = selection.write();
+            if selection.is_multiselect() {
+                let mut keys: HashSet<Key> = HashSet::new();
+                for (_pos, node) in props.store.filtered_data() {
+                    let key = props.store.extract_key(&node.record());
+                    if selection.contains(&key) {
+                        keys.insert(key);
+                    }
+                }
+                selection.bulk_select(keys);
+            } else {
+                if let Some(key) = selection.selected_key() {
+                    if props.store.filtered_record_pos(&key).is_none() {
+                        selection.clear();
+                    }
+                }
+            }
         }
     }
 
@@ -1009,7 +1032,7 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
 
                 self.scroll_cursor_into_view();
 
-                // fixme: remove umknown keys from  selection
+                self.cleanup_selection(props);
                 self.update_selection_status(props);
 
                 true

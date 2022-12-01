@@ -132,6 +132,17 @@ impl Selection2 {
         if changed { self.notify_listeners() };
     }
 
+    /// Bulk select all keys from the hash set.
+    ///
+    /// # Panics
+    ///
+    /// If multiselect is false.
+    pub fn bulk_select(&mut self, map: HashSet<Key>) {
+        self.inner.borrow_mut()
+            .bulk_select(map);
+        self.notify_listeners();
+    }
+
     /// Toggle the selection state for key.
     pub fn toggle(&self, key: impl Into<Key>) {
         self.inner.borrow_mut()
@@ -270,6 +281,10 @@ impl SelectionState {
         }
     }
 
+    pub fn is_multiselect(&self) -> bool {
+        self.multiselect
+    }
+
     fn set_multiselect(&mut self, multiselect: bool) {
         self.multiselect = multiselect;
     }
@@ -306,6 +321,16 @@ impl SelectionState {
             }
         }
         true
+    }
+
+    pub fn bulk_select(&mut self, map: HashSet<Key>) {
+        match self.multiselect {
+            false => panic!("bulk_select not allowed"),
+            true => {
+                self.version += 1;
+                self.selection_map = map;
+            }
+        }
     }
 
     pub fn toggle(&mut self, key: impl Into<Key>) {
