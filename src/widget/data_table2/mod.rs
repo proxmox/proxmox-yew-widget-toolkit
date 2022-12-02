@@ -103,6 +103,7 @@ pub fn render_row_number<T>(args: &mut DataTableCellRenderArgs<T>) -> Html {
 /// Column render function generating an selection indicator (checkbox).
 pub fn render_selection_indicator<T>(args: &mut DataTableCellRenderArgs<T>) -> Html {
     let class = classes!(
+        "pwt-no-outline",
         "fa",
         "fa-fw",
         if args.is_selected() { "fa-check-square-o" } else { "fa-square-o" }
@@ -130,6 +131,7 @@ pub fn render_selection_indicator<T>(args: &mut DataTableCellRenderArgs<T>) -> H
 pub fn render_selection_header<T>(args: &mut DataTableHeaderRenderArgs<T>) -> Html {
     let status = args.selection_status();
     let class = classes!(
+        "pwt-no-outline",
         "fa",
         "fa-fw",
         match status {
