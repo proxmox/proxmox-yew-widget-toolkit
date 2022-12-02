@@ -560,10 +560,10 @@ impl<T: 'static, S: DataStore<T>> PwtDataTable<T, S> {
                     (new_cursor, last_cursor)
                 };
 
+                // use write lock to avoid multiple notification
                 let mut guard = selection.write();
                 for pos in start..=end {
-                    // use write lock to avoid multiple notification
-                    if let Some(key) = props.store.lookup_filtered_record_key(pos) {
+                     if let Some(key) = props.store.lookup_filtered_record_key(pos) {
                         if ctrl {
                             guard.toggle(key);
                         } else {
@@ -575,6 +575,35 @@ impl<T: 'static, S: DataStore<T>> PwtDataTable<T, S> {
             } else {
                 self.select_position(props, selection, new_cursor, shift, ctrl);
             }
+        }
+    }
+
+    fn select_all(&mut self, props: &DataTable<T, S>) {
+        let selection = match &props.selection {
+            Some(selection) => selection,
+            None => {
+                self.selection_status = RowSelectionStatus::Nothing;
+                return;
+            }
+        };
+        let record_count = props.store.filtered_data_len();
+        // use write lock to avoid multiple notification
+        let mut selection = selection.write();
+        if !selection.is_multiselect() { return; }
+
+        let mut keys: HashSet<Key> = HashSet::new();
+        for pos in 0..record_count {
+            if let Some(key) = props.store.lookup_filtered_record_key(pos) {
+                keys.insert(key);
+            }
+        }
+        selection.bulk_select(keys);
+        self.selection_status = RowSelectionStatus::All;
+    }
+
+    fn clear_selection(&mut self, props: &DataTable<T, S>) {
+        if let Some(selection) = &props.selection {
+            selection.clear();
         }
     }
 
@@ -1032,7 +1061,11 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
 
                 self.scroll_cursor_into_view();
 
-                self.cleanup_selection(props);
+                if self.selection_status == RowSelectionStatus::All {
+                    self.select_all(props);
+                } else {
+                    self.cleanup_selection(props);
+                }
                 self.update_selection_status(props);
 
                 true
@@ -1345,13 +1378,13 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
                 true
             }
             Msg::Header(HeaderMsg::ToggleSelectAll) => {
-                // fixme: below is just for testing
-                if self.selection_status == RowSelectionStatus::Nothing {
-                    self.selection_status = RowSelectionStatus::All;
+
+                if self.selection_status == RowSelectionStatus::All {
+                    self.clear_selection(props);
                 } else {
-                    self.selection_status = RowSelectionStatus::Nothing;
+                    self.select_all(props);
                 }
-                true
+                false
             }
         }
     }
