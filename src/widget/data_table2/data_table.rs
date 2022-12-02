@@ -10,7 +10,7 @@ use wasm_bindgen::JsCast;
 
 use yew::prelude::*;
 use yew::virtual_dom::{Key, VComp, VNode};
-use yew::html::{IntoEventCallback, IntoPropValue};
+use yew::html::IntoPropValue;
 
 use crate::prelude::*;
 use crate::props::SorterFn;
@@ -21,7 +21,10 @@ use super::{
     create_indexed_header_list,
     DataTableColumn, HeaderWidget, DataTableMouseEvent, DataTableKeyboardEvent,
     DataTableHeader, DataTableCellRenderArgs, IndexedHeader,
-    DataTableRowRenderArgs, DataTableRowRenderCallback, IntoOptionalDataTableRowRenderCallback,
+    DataTableRowRenderArgs, DataTableRowRenderCallback,
+    IntoOptionalDataTableRowRenderCallback,
+    DataTableKeyboardEventCallback, IntoOptionalDataTableKeyboardEventCallback,
+    DataTableMouseEventCallback, IntoOptionalDataTableMouseEventCallback,
 };
 
 pub enum HeaderMsg<T: 'static> {
@@ -172,13 +175,13 @@ pub struct DataTable<T: 'static, S: DataStore<T> = Store<T>> {
     pub autoselect: bool,
 
     /// Row click callback
-    pub on_row_click: Option<Callback<DataTableMouseEvent>>,
+    pub on_row_click: Option<DataTableMouseEventCallback>,
 
     /// Row double click callback
-    pub on_row_dblclick: Option<Callback<DataTableMouseEvent>>,
+    pub on_row_dblclick: Option<DataTableMouseEventCallback>,
 
     /// Row keydown callback
-    pub on_row_keydown: Option<Callback<DataTableKeyboardEvent>>,
+    pub on_row_keydown: Option<DataTableKeyboardEventCallback>,
 
     pub row_render_callback: Option<DataTableRowRenderCallback<T>>,
 }
@@ -334,21 +337,22 @@ impl <T: 'static, S: DataStore<T> + 'static> DataTable<T, S> {
     }
 
     /// Builder style method to set the row click callback.
-    pub fn on_row_click(mut self, cb: impl IntoEventCallback<DataTableMouseEvent>) -> Self {
-        self.on_row_click = cb.into_event_callback();
+    pub fn on_row_click(mut self, cb: impl IntoOptionalDataTableMouseEventCallback) -> Self {
+        self.on_row_click = cb.into_optional_mouse_event_cb();
         self
     }
 
     /// Builder style method to set the row double click callback.
-    pub fn on_row_dblclick(mut self, cb: impl IntoEventCallback<DataTableMouseEvent>) -> Self {
-        self.on_row_dblclick = cb.into_event_callback();
+    pub fn on_row_dblclick(mut self, cb: impl IntoOptionalDataTableMouseEventCallback) -> Self {
+        self.on_row_dblclick = cb.into_optional_mouse_event_cb();
         self
     }
 
     /// Builder style method to set the row keydown callback.
-    pub fn on_row_keydown(mut self, cb: impl IntoEventCallback<DataTableKeyboardEvent>) -> Self {
-        self.on_row_keydown = cb.into_event_callback();
+    pub fn on_row_keydown(mut self, cb: impl IntoOptionalDataTableKeyboardEventCallback) -> Self {
+        self.on_row_keydown = cb.into_optional_keyboard_event_cb();
         self
+
     }
 
     /// Builder style method to set the row render callback.
@@ -1128,8 +1132,16 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
                 if let Some(Cursor { record_key, .. }) = &self.cursor {
                     let record_key = record_key.clone();
                     if let Some(callback) = &props.on_row_keydown {
-                        let event = DataTableKeyboardEvent::new(record_key.clone(), event.clone());
-                        callback.emit(event);
+                        let mut event = DataTableKeyboardEvent {
+                            record_key: record_key.clone(),
+                            inner: event.clone(),
+                            selection: props.selection.clone(),
+                            stop_propagation: false,
+                        };
+                        callback.emit(&mut event);
+                        if event.stop_propagation {
+                            return false;
+                        }
                     }
 
                     if self.focus_inside_cell(&record_key) {
@@ -1146,13 +1158,28 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
                                 event.prevent_default();
                                 self.cell_focus_next(&record_key, true);
                             }
-                            " " | "Enter" => {
+                            " " => {
+                                // avoid scrollbar default action
                                 event.prevent_default();
                             }
                            _ => {}
                         }
-
                         return false;
+                    }
+
+                    if let Some(column) = self.columns.get(self.active_column)  {
+                        if let Some(on_cell_keydown) = &column.on_cell_keydown {
+                            let mut event = DataTableKeyboardEvent {
+                                record_key: record_key.clone(),
+                                inner: event.clone(),
+                                selection: props.selection.clone(),
+                                stop_propagation: false,
+                            };
+                            on_cell_keydown.emit(&mut event);
+                            if event.stop_propagation {
+                                return false;
+                            }
+                        }
                     }
                 }
 
@@ -1326,6 +1353,36 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
 
                 self.set_cursor(props, new_cursor);
 
+                if let Some(col_num) = opt_col_num {
+                    if let Some(column) = self.columns.get(col_num)  {
+                        if let Some(on_cell_click) = &column.on_cell_click {
+                            let mut event = DataTableMouseEvent {
+                                record_key: record_key.clone(),
+                                inner: event.clone(),
+                                selection: props.selection.clone(),
+                                stop_propagation: false,
+                            };
+                            on_cell_click.emit(&mut event);
+                            if event.stop_propagation {
+                                return true;
+                            }
+                        }
+                    }
+                }
+
+                if let Some(callback) = &props.on_row_click {
+                    let mut event = DataTableMouseEvent {
+                        record_key: record_key.clone(),
+                        inner: event,
+                        selection: props.selection.clone(),
+                        stop_propagation: false,
+                    };
+                    callback.emit(&mut event);
+                    if event.stop_propagation {
+                        return false;
+                    }
+                }
+
                 if shift {
                     if let Some(selection) = &props.selection {
                         self.select_range(props, selection, self.last_select_position, new_cursor, shift, false);
@@ -1336,31 +1393,26 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
                     }
                 }
 
-                if let Some(col_num) = opt_col_num {
-                    if let Some(column) = self.columns.get(col_num)  {
-                        if let Some(on_cell_click) = &column.on_cell_click {
-                            let event = DataTableMouseEvent::new(record_key.clone(), event.clone());
-                            on_cell_click.emit(event);
-                        }
-                    }
-                }
-
-                if let Some(callback) = &props.on_row_click {
-                    let event = DataTableMouseEvent::new(record_key.clone(), event);
-                    callback.emit(event);
-                }
-
                 true
             }
             Msg::ItemDblClick(record_key, event) => {
+
+                if let Some(callback) = &props.on_row_dblclick {
+                    let mut event = DataTableMouseEvent {
+                        record_key: record_key.clone(),
+                        inner: event,
+                        selection: props.selection.clone(),
+                        stop_propagation: false,
+                    };
+                    callback.emit(&mut event);
+                    if event.stop_propagation {
+                        return false;
+                    }
+                }
+
                 let cursor = self.filtered_record_pos(props, &record_key);
                 self.set_cursor(props, cursor);
                 self.select_cursor(props, false, false);
-
-                if let Some(callback) = &props.on_row_dblclick {
-                    let event = DataTableMouseEvent::new(record_key.clone(), event);
-                    callback.emit(event);
-                }
 
                 true
             }

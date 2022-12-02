@@ -1,5 +1,12 @@
 mod events;
-pub use events::{DataTableKeyboardEvent, DataTableMouseEvent};
+pub use events::{
+    DataTableKeyboardEvent, DataTableMouseEvent,
+    DataTableKeyboardEventCallback, DataTableMouseEventCallback,
+};
+pub(crate) use events::{
+    IntoOptionalDataTableKeyboardEventCallback,
+    IntoOptionalDataTableMouseEventCallback,
+};
 
 mod header_state;
 pub(crate) use header_state::HeaderState;
@@ -121,21 +128,8 @@ pub fn render_selection_indicator<T>(args: &mut DataTableCellRenderArgs<T>) -> H
         }
     });
 
-    let onkeydown = Callback::from({
-        let selection = args.selection();
-        let record_key = args.node().key();
-
-        move |event: KeyboardEvent| {
-            if event.key() == " " {
-                if let Some(selection) = &selection {
-                    selection.toggle(record_key.clone());
-                }
-            }
-        }
-    });
-
     html!{
-        <i {class} {onclick} {onkeydown} tabindex="-1" role="checkbox" aria-checked={aria_checked} aria-label="select"/>
+        <i {class} {onclick} role="checkbox" aria-checked={aria_checked} aria-label="select"/>
     }
 }
 

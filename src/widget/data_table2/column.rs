@@ -1,15 +1,17 @@
 use derivative::Derivative;
 
 use yew::prelude::*;
-use yew::html::{IntoPropValue, IntoEventCallback};
+use yew::html::IntoPropValue;
 
 use yew::virtual_dom::Key;
 
 use crate::props::{SorterFn, IntoSorterFn, RenderFn};
 
 use super::{
-    DataTableMouseEvent,
+    DataTableKeyboardEvent,
     DataTableCellRenderer, DataTableCellRenderArgs, DataTableHeaderRenderer,
+    DataTableKeyboardEventCallback, IntoOptionalDataTableKeyboardEventCallback,
+    DataTableMouseEventCallback, IntoOptionalDataTableMouseEventCallback,
 };
 
 /// DataTable column properties.
@@ -53,7 +55,9 @@ pub struct DataTableColumn<T: 'static> {
     pub show_menu: bool,
 
     /// Cell click callback
-    pub on_cell_click: Option<Callback<DataTableMouseEvent>>,
+    pub on_cell_click: Option<DataTableMouseEventCallback>,
+    /// Cell keydown callback
+    pub on_cell_keydown: Option<DataTableKeyboardEventCallback>,
 }
 
 impl<T: 'static> DataTableColumn<T> {
@@ -75,6 +79,15 @@ impl<T: 'static> DataTableColumn<T> {
             .show_menu(false)
             .render_header(super::render_selection_header)
             .render_cell(super::render_selection_indicator)
+            .on_cell_keydown(|event: &mut DataTableKeyboardEvent| {
+                if event.key() == " " {
+                    event.stop_propagation();
+                    event.prevent_default();
+                    if let Some(selection) = &event.selection {
+                        selection.toggle(event.record_key.clone());
+                    }
+                }
+            })
     }
 
     /// Genertates a column which shows the now number.
@@ -211,8 +224,15 @@ impl<T: 'static> DataTableColumn<T> {
     }
 
     /// Builder style method to set the cell click callback.
-    pub fn on_cell_click(mut self, cb: impl IntoEventCallback<DataTableMouseEvent>) -> Self {
-        self.on_cell_click = cb.into_event_callback();
+    pub fn on_cell_click(mut self, cb: impl IntoOptionalDataTableMouseEventCallback) -> Self {
+        self.on_cell_click = cb.into_optional_mouse_event_cb();
         self
+    }
+
+    /// Builder style method to set the cell keydown callback.
+    pub fn on_cell_keydown(mut self, cb: impl IntoOptionalDataTableKeyboardEventCallback) -> Self {
+        self.on_cell_keydown = cb.into_optional_keyboard_event_cb();
+        self
+
     }
 }
