@@ -64,6 +64,24 @@ impl<T: 'static> DataTableColumn<T> {
         })
     }
 
+    /// Genertates a column which shows a checkbox indication the
+    /// selection status.
+    pub fn selection_indicator() -> Self {
+        Self::new ("selection indicator")
+            .width("2.5em")
+            .resizable(false)
+            .show_menu(false)
+            .render_header(super::render_selection_header)
+            .render_cell(super::render_selection_indicator)
+    }
+
+    /// Genertates a column which shows the now number.
+    pub fn row_number() -> Self {
+        Self::new("Row")
+            .fixed(60)
+            .render_cell(super::render_row_number)
+    }
+
     /// Builder style method to set the yew `key` property
     pub fn key(mut self, key: impl Into<Key>) -> Self {
         self.key = Some(key.into());

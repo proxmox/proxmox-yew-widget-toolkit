@@ -115,3 +115,33 @@ pub fn render_selection_indicator<T>(args: &mut DataTableCellRenderArgs<T>) -> H
         <i {class} role="checkbox" aria-checked={aria_checked} aria-label={aria_label}/>
     }
 }
+
+/// Header rendering function generating a selection checkbox (select
+/// all or none).
+pub fn render_selection_header<T>(args: &mut DataTableHeaderRenderArgs<T>) -> Html {
+    let status = args.selection_status();
+    let class = classes!(
+        "fa",
+        "fa-fw",
+        match status {
+            RowSelectionStatus::Nothing => "fa-circle-o",
+            RowSelectionStatus::Some => "fa-times-circle-o",
+            RowSelectionStatus::All => "fa-check-circle-o",
+        },
+    );
+
+    let aria_checked = match status {
+        RowSelectionStatus::Nothing => "false",
+        RowSelectionStatus::Some => "mixed",
+        RowSelectionStatus::All => "true",
+    };
+
+    let link = args.link();
+    let onclick = Callback::from(move |_| {
+        link.send_toggle_select_all();
+    });
+
+    html!{
+        <i {class} {onclick} role="checkbox" aria-checked={aria_checked} aria-label="select all"/>
+    }
+}
