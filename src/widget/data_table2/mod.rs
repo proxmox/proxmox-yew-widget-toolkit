@@ -1,12 +1,5 @@
 mod events;
-pub use events::{
-    DataTableKeyboardEvent, DataTableMouseEvent,
-    DataTableKeyboardEventCallback, DataTableMouseEventCallback,
-};
-pub(crate) use events::{
-    IntoOptionalDataTableKeyboardEventCallback,
-    IntoOptionalDataTableMouseEventCallback,
-};
+pub use events::{DataTableKeyboardEvent, DataTableMouseEvent};
 
 mod header_state;
 pub(crate) use header_state::HeaderState;

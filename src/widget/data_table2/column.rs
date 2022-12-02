@@ -5,13 +5,14 @@ use yew::html::IntoPropValue;
 
 use yew::virtual_dom::Key;
 
-use crate::props::{SorterFn, IntoSorterFn, RenderFn};
+use crate::props::{
+    SorterFn, IntoSorterFn, RenderFn,
+    CallbackMut, IntoEventCallbackMut,
+};
 
 use super::{
-    DataTableKeyboardEvent,
+    DataTableKeyboardEvent, DataTableMouseEvent,
     DataTableCellRenderer, DataTableCellRenderArgs, DataTableHeaderRenderer,
-    DataTableKeyboardEventCallback, IntoOptionalDataTableKeyboardEventCallback,
-    DataTableMouseEventCallback, IntoOptionalDataTableMouseEventCallback,
 };
 
 /// DataTable column properties.
@@ -55,9 +56,9 @@ pub struct DataTableColumn<T: 'static> {
     pub show_menu: bool,
 
     /// Cell click callback
-    pub on_cell_click: Option<DataTableMouseEventCallback>,
+    pub on_cell_click: Option<CallbackMut<DataTableMouseEvent>>,
     /// Cell keydown callback
-    pub on_cell_keydown: Option<DataTableKeyboardEventCallback>,
+    pub on_cell_keydown: Option<CallbackMut<DataTableKeyboardEvent>>,
 }
 
 impl<T: 'static> DataTableColumn<T> {
@@ -224,14 +225,14 @@ impl<T: 'static> DataTableColumn<T> {
     }
 
     /// Builder style method to set the cell click callback.
-    pub fn on_cell_click(mut self, cb: impl IntoOptionalDataTableMouseEventCallback) -> Self {
-        self.on_cell_click = cb.into_optional_mouse_event_cb();
+    pub fn on_cell_click(mut self, cb: impl IntoEventCallbackMut<DataTableMouseEvent>) -> Self {
+        self.on_cell_click = cb.into_event_cb_mut();
         self
     }
 
     /// Builder style method to set the cell keydown callback.
-    pub fn on_cell_keydown(mut self, cb: impl IntoOptionalDataTableKeyboardEventCallback) -> Self {
-        self.on_cell_keydown = cb.into_optional_keyboard_event_cb();
+    pub fn on_cell_keydown(mut self, cb: impl IntoEventCallbackMut<DataTableKeyboardEvent>) -> Self {
+        self.on_cell_keydown = cb.into_event_cb_mut();
         self
 
     }

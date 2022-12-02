@@ -13,7 +13,7 @@ use yew::virtual_dom::{Key, VComp, VNode};
 use yew::html::IntoPropValue;
 
 use crate::prelude::*;
-use crate::props::SorterFn;
+use crate::props::{SorterFn, CallbackMut, IntoEventCallbackMut};
 use crate::state::{DataStore, DataNode, Selection2, Store, SelectionObserver};
 use crate::widget::{get_unique_element_id, Container, Column, SizeObserver};
 
@@ -23,8 +23,6 @@ use super::{
     DataTableHeader, DataTableCellRenderArgs, IndexedHeader,
     DataTableRowRenderArgs, DataTableRowRenderCallback,
     IntoOptionalDataTableRowRenderCallback,
-    DataTableKeyboardEventCallback, IntoOptionalDataTableKeyboardEventCallback,
-    DataTableMouseEventCallback, IntoOptionalDataTableMouseEventCallback,
 };
 
 pub enum HeaderMsg<T: 'static> {
@@ -175,13 +173,13 @@ pub struct DataTable<T: 'static, S: DataStore<T> = Store<T>> {
     pub autoselect: bool,
 
     /// Row click callback
-    pub on_row_click: Option<DataTableMouseEventCallback>,
+    pub on_row_click: Option<CallbackMut<DataTableMouseEvent>>,
 
     /// Row double click callback
-    pub on_row_dblclick: Option<DataTableMouseEventCallback>,
+    pub on_row_dblclick: Option<CallbackMut<DataTableMouseEvent>>,
 
     /// Row keydown callback
-    pub on_row_keydown: Option<DataTableKeyboardEventCallback>,
+    pub on_row_keydown: Option<CallbackMut<DataTableKeyboardEvent>>,
 
     pub row_render_callback: Option<DataTableRowRenderCallback<T>>,
 }
@@ -337,20 +335,20 @@ impl <T: 'static, S: DataStore<T> + 'static> DataTable<T, S> {
     }
 
     /// Builder style method to set the row click callback.
-    pub fn on_row_click(mut self, cb: impl IntoOptionalDataTableMouseEventCallback) -> Self {
-        self.on_row_click = cb.into_optional_mouse_event_cb();
+    pub fn on_row_click(mut self, cb: impl IntoEventCallbackMut<DataTableMouseEvent>) -> Self {
+        self.on_row_click = cb.into_event_cb_mut();
         self
     }
 
     /// Builder style method to set the row double click callback.
-    pub fn on_row_dblclick(mut self, cb: impl IntoOptionalDataTableMouseEventCallback) -> Self {
-        self.on_row_dblclick = cb.into_optional_mouse_event_cb();
+    pub fn on_row_dblclick(mut self, cb: impl IntoEventCallbackMut<DataTableMouseEvent>) -> Self {
+        self.on_row_dblclick = cb.into_event_cb_mut();
         self
     }
 
     /// Builder style method to set the row keydown callback.
-    pub fn on_row_keydown(mut self, cb: impl IntoOptionalDataTableKeyboardEventCallback) -> Self {
-        self.on_row_keydown = cb.into_optional_keyboard_event_cb();
+    pub fn on_row_keydown(mut self, cb: impl IntoEventCallbackMut<DataTableKeyboardEvent>) -> Self {
+        self.on_row_keydown = cb.into_event_cb_mut();
         self
 
     }
