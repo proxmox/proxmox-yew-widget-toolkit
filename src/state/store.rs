@@ -198,11 +198,15 @@ impl<T> Deref for StoreReadGuard<'_, T> {
 }
 
 #[doc(hidden)]
-pub struct StoreNodeRef<'a, T>(Ref<'a, T>);
+pub struct StoreNodeRef<'a, T>{
+    state: Ref<'a, StoreState<T>>,
+    node_id: usize,
+}
 
-impl<'a, T> DataNode<T> for StoreNodeRef<'a, T> {
+impl<'a, T: 'static> DataNode<T> for StoreNodeRef<'a, T> {
     fn record(&self) -> DataNodeDerefGuard<T> {
-        let guard: Box<dyn Deref<Target = T>> = Box::new(&*self.0);
+        let data = &self.state.data[self.node_id];
+        let guard: Box<dyn Deref<Target = T>> = Box::new(data);
         DataNodeDerefGuard { guard: guard }
     }
     fn level(&self) -> usize { 0 }
@@ -210,6 +214,10 @@ impl<'a, T> DataNode<T> for StoreNodeRef<'a, T> {
     fn is_root(&self) -> bool { false }
     fn expanded(&self) -> bool { false }
     fn parent(&self) -> Option<Box<dyn DataNode<T> + '_>> { None }
+    fn key(&self) -> Key {
+        let record = &self.state.data[self.node_id];
+        self.state.extract_key(record)
+    }
 }
 
 impl<T> DataStore<T> for Store<T> {
@@ -278,9 +286,6 @@ impl<T> DataStore<T> for Store<T> {
         })
     }
 }
-
-#[repr(transparent)]
-struct Wrapper<'a, T>(&'a T);
 
 /// Implements the [Store] for lists of records (Vec<T>).
 ///
@@ -427,26 +432,6 @@ impl<T: 'static> StoreState<T> {
     }
 }
 
-impl<'a, T> Deref for Wrapper<'a, T> {
-    type Target = T;
-
-    fn deref(&self) -> &T {
-        self.0
-    }
-}
-
-impl<'a, T> DataNode<T> for Wrapper<'a, T> {
-    fn record(&self) -> DataNodeDerefGuard<T> {
-        let guard: Box<dyn Deref<Target = T>> = Box::new(self.0);
-        DataNodeDerefGuard { guard: guard }
-    }
-    fn level(&self) -> usize { 0 }
-    fn is_leaf(&self) -> bool { true }
-    fn is_root(&self) -> bool { false }
-    fn expanded(&self) -> bool { false }
-    fn parent(&self) -> Option<Box<dyn DataNode<T> + '_>> { None }
-}
-
 #[doc(hidden)]
 pub struct StoreIterator<'a, T> {
     state: Ref<'a, StoreState<T>>,
@@ -472,10 +457,7 @@ impl <'a, T: 'static> Iterator for StoreIterator<'a, T> where Self: 'a {
         self.pos += 1;
 
         let node_id = self.state.filtered_data[pos];
-
-        let myref: Ref<'a, T> = Ref::map(Ref::clone(&self.state), |state| &state.data[node_id]);
-
-        let node = Box::new(StoreNodeRef(myref));
+        let node = Box::new(StoreNodeRef { state: Ref::clone(&self.state), node_id });
 
         Some((pos, node))
     }

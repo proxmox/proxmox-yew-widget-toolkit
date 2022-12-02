@@ -334,6 +334,10 @@ impl<'a, T> DataNode<T> for KeyedSlabTreeBorrowRef<'a, T> {
 
         Some(parent)
     }
+    fn key(&self) -> Key {
+        let record = &self.tree.get(self.node_id).unwrap().record;
+        self.tree.extract_key(record)
+    }
 }
 
 pub struct RecordGuard<'a, T> {
@@ -404,3 +408,4 @@ impl <'a, T: 'static> Iterator for TreeStoreIterator<'a, T> where Self: 'a {
         Some((pos, node))
     }
 }
+

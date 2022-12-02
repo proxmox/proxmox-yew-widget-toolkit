@@ -20,6 +20,7 @@ pub trait DataNode<T> {
     fn is_root(&self) -> bool;
     /// Returns the parent node.
     fn parent(&self) -> Option<Box<dyn DataNode<T> + '_>>;
+    fn key(&self) -> Key;
 }
 
 // Hide docs, because this interface is only used by DataTable,
