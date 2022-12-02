@@ -169,7 +169,7 @@ pub struct DataTable<T: 'static, S: DataStore<T> = Store<T>> {
 
     /// Automatically select the focused row.
     #[prop_or(true)]
-    pub select_on_focus: bool,
+    pub autoselect: bool,
 
     /// Row click callback
     pub on_row_click: Option<Callback<DataTableMouseEvent>>,
@@ -316,6 +316,17 @@ impl <T: 'static, S: DataStore<T> + 'static> DataTable<T, S> {
         self.min_row_height = min_row_height;
     }
 
+    /// Builder style method to set the virtual scroll flag.
+    pub fn autoselect(mut self, autoselect: impl IntoPropValue<bool>) -> Self {
+        self.set_autoselect(autoselect);
+        self
+    }
+
+    /// Method to set the virtual scroll flag.
+    pub fn set_autoselect(&mut self, autoselect: impl IntoPropValue<bool>) {
+        self.autoselect = autoselect.into_prop_value();
+    }
+
     /// Builder style method to set the selection model.
     pub fn selection(mut self, selection: impl IntoPropValue<Option<Selection2>>) -> Self {
         self.selection = selection.into_prop_value();
@@ -370,7 +381,7 @@ struct Cursor {
 
 #[doc(hidden)]
 pub struct PwtDataTable<T: 'static, S: DataStore<T>> {
-    unique_id: String,
+    unique_id: AttrValue,
     has_focus: bool,
     take_focus: bool, // focus cursor after render
     active_column: usize, // which colums has focus?
@@ -617,6 +628,11 @@ impl<T: 'static, S: DataStore<T>> PwtDataTable<T, S> {
         };
 
         let record_count = props.store.filtered_data_len();
+        if record_count == 0 {
+            self.selection_status = RowSelectionStatus::Nothing;
+            return;
+        }
+
         let selection_len = selection.len();
         if record_count == selection_len {
             self.selection_status = RowSelectionStatus::All;
@@ -819,6 +835,8 @@ impl<T: 'static, S: DataStore<T>> PwtDataTable<T, S> {
             let cell_active = active && self.active_column == column_num;
 
             let mut args = DataTableCellRenderArgs {
+                unique_id: self.unique_id.clone(),
+                selection: props.selection.clone(),
                 node: item,
                 row_index: row_num,
                 column_index: col_index,
@@ -1005,7 +1023,7 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
             _phantom_store: PhantomData::<S>,
             _store_observer,
             headers: Rc::new(headers),
-            unique_id: get_unique_element_id(),
+            unique_id: AttrValue::from(get_unique_element_id()),
             has_focus: false,
             take_focus: false,
             cursor: None,
@@ -1171,9 +1189,7 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
                                 self.select_range(props, selection, self.last_select_position, cursor, shift, false);
                             }
                         } else {
-                            if props.select_on_focus {
-                                self.select_cursor(props, false, ctrl);
-                            }
+                            self.select_cursor(props, false, ctrl);
                         }
 
                         return true;
@@ -1237,7 +1253,7 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
                     }
                 }
 
-                if !(shift || ctrl) && props.select_on_focus {
+                if !(shift || ctrl) && props.autoselect {
                     self.select_cursor(props, false, false);
                 }
 
@@ -1254,7 +1270,7 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
                     }
                 }
 
-                if !(shift ||ctrl) && props.select_on_focus {
+                if !(shift ||ctrl) && props.autoselect {
                     self.select_cursor(props, false, false);
                 }
 
@@ -1312,7 +1328,7 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
                         self.select_range(props, selection, self.last_select_position, new_cursor, shift, false);
                     }
                 } else {
-                    if props.select_on_focus {
+                    if props.autoselect {
                         self.select_cursor(props, false, ctrl);
                     }
                 }
@@ -1351,7 +1367,7 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
                         let cursor = self.filtered_record_pos(props, &row);
                         self.set_cursor(props, cursor);
                         if let Some(selection) = &props.selection {
-                            if selection.is_empty() {
+                            if selection.is_empty() && props.autoselect {
                                 self.select_cursor(props, false, false);
                             }
                         }
@@ -1575,7 +1591,8 @@ fn dom_find_focus_pos(el: web_sys::Element, unique_id: &str) -> Option<(Key, Opt
     None
 }
 
-fn dom_find_record_num(event: &MouseEvent, unique_id: &str) -> Option<(Key, Option<usize>)> {
+/// Find the [DataTable] record associated with a [MouseEvent].
+pub fn dom_find_record_num(event: &MouseEvent, unique_id: &str) -> Option<(Key, Option<usize>)> {
     let unique_row_prefix = format!("{}-item-", unique_id);
     let mut column_num: Option<usize> = None;
 

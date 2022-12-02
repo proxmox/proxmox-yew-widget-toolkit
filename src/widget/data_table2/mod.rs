@@ -33,7 +33,7 @@ mod header_widget;
 pub(crate) use header_widget::HeaderWidget;
 
 mod data_table;
-pub use data_table::{DataTable, PwtDataTable, RowSelectionStatus};
+pub use data_table::{dom_find_record_num, DataTable, PwtDataTable, RowSelectionStatus};
 pub(crate) use data_table::HeaderMsg;
 
 use yew::prelude::*;
@@ -105,14 +105,24 @@ pub fn render_selection_indicator<T>(args: &mut DataTableCellRenderArgs<T>) -> H
     let class = classes!(
         "fa",
         "fa-fw",
-        if args.is_selected() { "fa-check-circle-o" } else { "fa-circle-o" }
+        if args.is_selected() { "fa-check-square-o" } else { "fa-square-o" }
     );
 
     let aria_checked = if args.is_selected() { "true" } else { "false" };
     let aria_label = if args.is_selected() { "checked" } else { "not checked" };
 
+    let unique_id = args.unique_id.clone();
+    let selection = args.selection();
+    let onclick = Callback::from(move |event| {
+        if let Some(selection) = &selection {
+            if let Some((key, _)) = dom_find_record_num(&event, &unique_id) {
+                selection.toggle(key);
+            }
+        }
+    });
+
     html!{
-        <i {class} role="checkbox" aria-checked={aria_checked} aria-label={aria_label}/>
+        <i {class} {onclick} role="checkbox" aria-live="polite" aria-checked={aria_checked} aria-label={aria_label}/>
     }
 }
 
@@ -124,9 +134,9 @@ pub fn render_selection_header<T>(args: &mut DataTableHeaderRenderArgs<T>) -> Ht
         "fa",
         "fa-fw",
         match status {
-            RowSelectionStatus::Nothing => "fa-circle-o",
-            RowSelectionStatus::Some => "fa-times-circle-o",
-            RowSelectionStatus::All => "fa-check-circle-o",
+            RowSelectionStatus::Nothing => "fa-square-o",
+            RowSelectionStatus::Some => "fa-plus-square-o",
+            RowSelectionStatus::All => "fa-check-square-o",
         },
     );
 

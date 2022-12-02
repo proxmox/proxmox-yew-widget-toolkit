@@ -6,7 +6,7 @@ use indexmap::IndexMap;
 use yew::prelude::*;
 use yew::html::IntoPropValue;
 
-use crate::state::DataNode;
+use crate::state::{DataNode, Selection2};
 
 /// Cell render function arguments.
 ///
@@ -21,6 +21,10 @@ pub struct DataTableCellRenderArgs<'a, T> {
     pub(crate) column_index: usize,
     // Select flag is set when the cell is selected.
     pub(crate) selected: bool,
+
+    pub(crate) unique_id: AttrValue,
+    pub(crate) selection: Option<Selection2>,
+
 
     /// Cell class. This attribute may be modified to change the
     /// appearance of the cell.
@@ -46,9 +50,23 @@ impl<'a, T> DataTableCellRenderArgs<'a, T> {
         self.column_index
     }
 
+    /// Returns the unique table Id.
+    ///
+    /// This is useful to lookup information in the DOM, i.e. if you
+    /// want to find the record associated with a mouse event with
+    /// [super::dom_find_record_num]
+    pub fn unique_id(&self) -> &str {
+        &self.unique_id
+    }
+
     /// Returns if the cell is selected.
     pub fn is_selected(&self) -> bool {
         self.selected
+    }
+
+    /// Returns the selction model used by the table.
+    pub fn selection(&self) -> Option<Selection2> {
+        self.selection.clone()
     }
 
     /// Method to set additional html attributes on the table cell
