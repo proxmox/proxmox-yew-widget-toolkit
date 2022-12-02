@@ -1,5 +1,8 @@
 //! Common Properties types and builder traits
 
+mod callback_mut;
+pub use callback_mut::{CallbackMut, IntoEventCallbackMut};
+
 mod extract_key_function;
 pub use extract_key_function::{ExtractKeyFn, ExtractPrimaryKey, IntoExtractKeyFn};
 
