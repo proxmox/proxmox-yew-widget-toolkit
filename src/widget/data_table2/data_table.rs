@@ -789,6 +789,7 @@ impl<T: 'static, S: DataStore<T>> PwtDataTable<T, S> {
             .attribute("role", "row")
             .attribute("aria-rowindex", (row_num + 1).to_string()) // does not work, no firefox support?
             .attribute("aria-expanded", aria_expanded)
+            .attribute("aria-selected", if selected { "true" } else { "false" } )
             .attribute("id", item_id)
             .class((active && self.has_focus).then(|| "row-cursor"))
             .class(selected.then(|| "selected"));
@@ -1459,6 +1460,8 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
                 }
             });
 
+        let multiselect = props.selection.as_ref().map(|s| s.is_multiselect()).unwrap_or(false);
+
         Column::new()
             .class(props.class.clone())
             .node_ref(self.container_ref.clone())
@@ -1466,6 +1469,7 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
             .attribute("aria-activedescendant", active_descendant)
             .attribute("aria-rowcount", row_count.to_string())
             .attribute("aria-colcount", (self.columns.len()).to_string())
+            .attribute("aria-multiselectable", if multiselect { "true" } else { "false" })
             .with_child(
                 Container::new() // scollable for header
                     .node_ref(self.header_scroll_ref.clone())

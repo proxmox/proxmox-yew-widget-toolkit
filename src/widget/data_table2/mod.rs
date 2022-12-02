@@ -109,7 +109,6 @@ pub fn render_selection_indicator<T>(args: &mut DataTableCellRenderArgs<T>) -> H
     );
 
     let aria_checked = if args.is_selected() { "true" } else { "false" };
-    let aria_label = if args.is_selected() { "checked" } else { "not checked" };
 
     let unique_id = args.unique_id.clone();
     let selection = args.selection();
@@ -122,7 +121,7 @@ pub fn render_selection_indicator<T>(args: &mut DataTableCellRenderArgs<T>) -> H
     });
 
     html!{
-        <i {class} {onclick} role="checkbox" aria-live="polite" aria-checked={aria_checked} aria-label={aria_label}/>
+        <i {class} {onclick} tabindex="-1" role="checkbox" aria-checked={aria_checked} aria-label="select"/>
     }
 }
 
@@ -152,6 +151,6 @@ pub fn render_selection_header<T>(args: &mut DataTableHeaderRenderArgs<T>) -> Ht
     });
 
     html!{
-        <i {class} {onclick} role="checkbox" aria-checked={aria_checked} aria-label="select all"/>
+        <i {class} {onclick}  tabindex="-1" role="checkbox" aria-checked={aria_checked} aria-label="select all"/>
     }
 }

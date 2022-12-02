@@ -51,7 +51,6 @@ pub struct DataTableColumn<T: 'static> {
 
     /// Cell click callback (parameter is the record key.)
     pub on_cell_click: Option<Callback<DataTableMouseEvent>>,
-
 }
 
 impl<T: 'static> DataTableColumn<T> {

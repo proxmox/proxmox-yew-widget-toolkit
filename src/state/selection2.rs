@@ -83,6 +83,11 @@ impl Selection2 {
         self
     }
 
+    /// Returns the multiselect flag.
+    pub fn is_multiselect(&self) -> bool {
+        self.inner.borrow().is_multiselect()
+    }
+
     /// Builder style method to set the on_select callback.
     ///
     /// This calls [Self::add_listener] to create a new
