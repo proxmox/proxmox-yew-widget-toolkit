@@ -33,7 +33,7 @@ mod header_widget;
 pub(crate) use header_widget::HeaderWidget;
 
 mod data_table;
-pub use data_table::{dom_find_record_num, DataTable, PwtDataTable, RowSelectionStatus};
+pub use data_table::{DataTable, PwtDataTable, RowSelectionStatus};
 pub(crate) use data_table::HeaderMsg;
 
 use yew::prelude::*;
@@ -111,18 +111,31 @@ pub fn render_selection_indicator<T>(args: &mut DataTableCellRenderArgs<T>) -> H
 
     let aria_checked = if args.is_selected() { "true" } else { "false" };
 
-    let unique_id = args.unique_id.clone();
-    let selection = args.selection();
-    let onclick = Callback::from(move |event| {
-        if let Some(selection) = &selection {
-            if let Some((key, _)) = dom_find_record_num(&event, &unique_id) {
-                selection.toggle(key);
+    let onclick = Callback::from({
+        let selection = args.selection();
+        let record_key = args.node().key();
+        move |_| {
+            if let Some(selection) = &selection {
+                selection.toggle(record_key.clone());
+            }
+        }
+    });
+
+    let onkeydown = Callback::from({
+        let selection = args.selection();
+        let record_key = args.node().key();
+
+        move |event: KeyboardEvent| {
+            if event.key() == " " {
+                if let Some(selection) = &selection {
+                    selection.toggle(record_key.clone());
+                }
             }
         }
     });
 
     html!{
-        <i {class} {onclick} tabindex="-1" role="checkbox" aria-checked={aria_checked} aria-label="select"/>
+        <i {class} {onclick} {onkeydown} tabindex="-1" role="checkbox" aria-checked={aria_checked} aria-label="select"/>
     }
 }
 
@@ -153,6 +166,6 @@ pub fn render_selection_header<T>(args: &mut DataTableHeaderRenderArgs<T>) -> Ht
     });
 
     html!{
-        <i {class} {onclick}  tabindex="-1" role="checkbox" aria-checked={aria_checked} aria-label="select all"/>
+        <i {class} {onclick} tabindex="-1" role="checkbox" aria-checked={aria_checked} aria-label="select all"/>
     }
 }

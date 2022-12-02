@@ -7,7 +7,10 @@ use yew::virtual_dom::Key;
 
 use crate::props::{SorterFn, IntoSorterFn, RenderFn};
 
-use super::{DataTableMouseEvent, DataTableCellRenderer, DataTableCellRenderArgs, DataTableHeaderRenderer};
+use super::{
+    DataTableMouseEvent,
+    DataTableCellRenderer, DataTableCellRenderArgs, DataTableHeaderRenderer,
+};
 
 /// DataTable column properties.
 #[derive(Properties)]
@@ -49,7 +52,7 @@ pub struct DataTableColumn<T: 'static> {
     #[prop_or(true)]
     pub show_menu: bool,
 
-    /// Cell click callback (parameter is the record key.)
+    /// Cell click callback
     pub on_cell_click: Option<Callback<DataTableMouseEvent>>,
 }
 

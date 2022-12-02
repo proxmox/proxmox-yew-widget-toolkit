@@ -22,7 +22,6 @@ pub struct DataTableCellRenderArgs<'a, T> {
     // Select flag is set when the cell is selected.
     pub(crate) selected: bool,
 
-    pub(crate) unique_id: AttrValue,
     pub(crate) selection: Option<Selection2>,
 
 
@@ -48,15 +47,6 @@ impl<'a, T> DataTableCellRenderArgs<'a, T> {
     /// Returns the column index.
     pub fn columns_index(&self) -> usize {
         self.column_index
-    }
-
-    /// Returns the unique table Id.
-    ///
-    /// This is useful to lookup information in the DOM, i.e. if you
-    /// want to find the record associated with a mouse event with
-    /// [super::dom_find_record_num]
-    pub fn unique_id(&self) -> &str {
-        &self.unique_id
     }
 
     /// Returns if the cell is selected.

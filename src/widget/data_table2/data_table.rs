@@ -836,7 +836,6 @@ impl<T: 'static, S: DataStore<T>> PwtDataTable<T, S> {
             let cell_active = active && self.active_column == column_num;
 
             let mut args = DataTableCellRenderArgs {
-                unique_id: self.unique_id.clone(),
                 selection: props.selection.clone(),
                 node: item,
                 row_index: row_num,
@@ -1147,7 +1146,10 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
                                 event.prevent_default();
                                 self.cell_focus_next(&record_key, true);
                             }
-                            _ => {}
+                            " " | "Enter" => {
+                                event.prevent_default();
+                            }
+                           _ => {}
                         }
 
                         return false;
@@ -1595,8 +1597,8 @@ fn dom_find_focus_pos(el: web_sys::Element, unique_id: &str) -> Option<(Key, Opt
     None
 }
 
-/// Find the [DataTable] record associated with a [MouseEvent].
-pub fn dom_find_record_num(event: &MouseEvent, unique_id: &str) -> Option<(Key, Option<usize>)> {
+// Find the [DataTable] record associated with a [MouseEvent].
+fn dom_find_record_num(event: &MouseEvent, unique_id: &str) -> Option<(Key, Option<usize>)> {
     let unique_row_prefix = format!("{}-item-", unique_id);
     let mut column_num: Option<usize> = None;
 
