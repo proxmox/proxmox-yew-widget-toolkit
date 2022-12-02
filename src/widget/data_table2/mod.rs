@@ -160,6 +160,6 @@ pub fn render_selection_header<T>(args: &mut DataTableHeaderRenderArgs<T>) -> Ht
     });
 
     html!{
-        <i {class} {onclick} tabindex="-1" role="checkbox" aria-checked={aria_checked} aria-label="select all"/>
+        <i {class} {onclick} role="checkbox" aria-checked={aria_checked} aria-label="select all"/>
     }
 }
