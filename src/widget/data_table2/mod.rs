@@ -1,5 +1,5 @@
 mod events;
-pub use events::{DataTableKeyboardEvent, DataTableMouseEvent};
+pub use events::{DataTableKeyboardEvent, DataTableHeaderKeyboardEvent, DataTableMouseEvent};
 
 mod header_state;
 pub(crate) use header_state::HeaderState;

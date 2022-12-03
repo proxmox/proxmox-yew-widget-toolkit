@@ -11,7 +11,7 @@ use crate::props::{
 };
 
 use super::{
-    DataTableKeyboardEvent, DataTableMouseEvent,
+    DataTableKeyboardEvent, DataTableHeaderKeyboardEvent, DataTableMouseEvent,
     DataTableCellRenderer, DataTableCellRenderArgs, DataTableHeaderRenderer,
 };
 
@@ -59,6 +59,8 @@ pub struct DataTableColumn<T: 'static> {
     pub on_cell_click: Option<CallbackMut<DataTableMouseEvent>>,
     /// Cell keydown callback
     pub on_cell_keydown: Option<CallbackMut<DataTableKeyboardEvent>>,
+
+    pub on_header_keydown: Option<CallbackMut<DataTableHeaderKeyboardEvent<T>>>,
 }
 
 impl<T: 'static> DataTableColumn<T> {
@@ -80,6 +82,13 @@ impl<T: 'static> DataTableColumn<T> {
             .show_menu(false)
             .render_header(super::render_selection_header)
             .render_cell(super::render_selection_indicator)
+            .on_header_keydown(|event: &mut DataTableHeaderKeyboardEvent<T>| {
+                if event.key() == " " {
+                    event.stop_propagation();
+                    event.prevent_default();
+                    event.send_toggle_select_all();
+                }
+            })
             .on_cell_keydown(|event: &mut DataTableKeyboardEvent| {
                 if event.key() == " " {
                     event.stop_propagation();
@@ -235,5 +244,11 @@ impl<T: 'static> DataTableColumn<T> {
         self.on_cell_keydown = cb.into_event_cb_mut();
         self
 
+    }
+
+    /// Builder style method to set the header keydown callback.
+    pub fn on_header_keydown(mut self, cb: impl IntoEventCallbackMut<DataTableHeaderKeyboardEvent<T>>) -> Self {
+        self.on_header_keydown = cb.into_event_cb_mut();
+        self
     }
 }

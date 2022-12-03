@@ -12,7 +12,7 @@ use super::{HeaderMsg, RowSelectionStatus};
 #[derive(Derivative)]
 #[derivative(Clone(bound=""))]
 pub struct DataTableHeaderTableLink<T: 'static> {
-     pub on_message: Callback<HeaderMsg<T>>,
+     pub(crate) on_message: Callback<HeaderMsg<T>>,
 }
 
 impl<T: 'static> DataTableHeaderTableLink<T> {

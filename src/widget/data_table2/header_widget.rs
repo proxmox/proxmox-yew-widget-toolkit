@@ -16,7 +16,7 @@ use crate::widget::{get_unique_element_id, Container, Fa, Menu, MenuEvent, MenuI
 use super::{
     IndexedHeader, IndexedHeaderSingle, IndexedHeaderGroup,
     HeaderState, ResizableHeader, HeaderMsg, DataTableHeaderRenderArgs,
-    RowSelectionStatus, DataTableHeaderTableLink,
+    RowSelectionStatus, DataTableHeaderTableLink, DataTableHeaderKeyboardEvent,
 };
 
 #[derive(Properties)]
@@ -218,7 +218,7 @@ impl <T: 'static> PwtHeaderWidget<T> {
         let header_content = match &cell.column.render_header {
             Some(render_header) => {
                 let mut args = DataTableHeaderRenderArgs {
-                    column_index: 0,
+                    column_index: column_idx,
                     selection_status: props.selection_status,
                     link: DataTableHeaderTableLink { on_message: props.on_message.clone() },
                     attributes,
@@ -270,7 +270,21 @@ impl <T: 'static> PwtHeaderWidget<T> {
                 }))
                 .onkeydown({
                     let link = link.clone();
+                    let on_header_keydown = cell.column.on_header_keydown.clone();
+                    let on_message = props.on_message.clone();
                     move |event: KeyboardEvent| {
+                        if let Some(on_header_keydown) = &on_header_keydown {
+                            let mut arg =  DataTableHeaderKeyboardEvent {
+                                inner: event.clone(),
+                                stop_propagation: false,
+                                on_message: on_message.clone(),
+                            };
+                            on_header_keydown.emit(&mut arg);
+                            if arg.stop_propagation {
+                                return;
+                            }
+                        }
+
                         match event.key_code() {
                             13 => {
                                 link.send_message(Msg::ColumnSortChange(cell_idx, event.ctrl_key(), None));
