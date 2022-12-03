@@ -183,7 +183,9 @@ impl <T: 'static> PwtHeaderWidget<T> {
 
         let unique_id = self.unique_cell_id(cell_idx);
 
-        let sort_order = if cell.column.sorter.is_some() {
+        let sortable = cell.column.sorter.is_some();
+
+        let sort_order = if sortable {
             self.state.get_column_sorter(cell_idx)
         } else {
             None
@@ -265,9 +267,14 @@ impl <T: 'static> PwtHeaderWidget<T> {
                         })
                 )
                 .onfocusin(link.callback(move |_| Msg::FocusCell(cell_idx)))
-                .ondblclick(link.callback(move |event: MouseEvent| {
-                    Msg::ColumnSortChange(cell_idx, event.ctrl_key(), None)
-                }))
+                .ondblclick({
+                    let link = link.clone();
+                    move |event: MouseEvent| {
+                        if sortable {
+                            link.send_message(Msg::ColumnSortChange(cell_idx, event.ctrl_key(), None));
+                        }
+                    }
+                })
                 .onkeydown({
                     let link = link.clone();
                     let on_header_keydown = cell.column.on_header_keydown.clone();
@@ -284,14 +291,15 @@ impl <T: 'static> PwtHeaderWidget<T> {
                                 return;
                             }
                         }
-
-                        match event.key_code() {
-                            13 => {
-                                link.send_message(Msg::ColumnSortChange(cell_idx, event.ctrl_key(), None));
-                                event.prevent_default();
-                            }
-                            _ => {},
-                        };
+                        if sortable {
+                            match event.key_code() {
+                                13 => {
+                                    link.send_message(Msg::ColumnSortChange(cell_idx, event.ctrl_key(), None));
+                                    event.prevent_default();
+                                }
+                                _ => {},
+                            };
+                        }
                     }
                 })
                 .into()
