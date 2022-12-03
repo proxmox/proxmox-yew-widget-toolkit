@@ -16,6 +16,7 @@ pub struct DataTableHeaderTableLink<T: 'static> {
 }
 
 impl<T: 'static> DataTableHeaderTableLink<T> {
+    /// Send command to toggle the selection state.
     pub fn send_toggle_select_all(&self) {
         self.on_message.emit(HeaderMsg::ToggleSelectAll);
     }
