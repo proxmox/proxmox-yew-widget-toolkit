@@ -14,7 +14,7 @@ use yew::html::IntoPropValue;
 
 use crate::prelude::*;
 use crate::props::{SorterFn, CallbackMut, IntoEventCallbackMut};
-use crate::state::{DataStore, DataNode, Selection2, Store, SelectionObserver};
+use crate::state::{DataStore, DataNode, Selection2, SelectionObserver};
 use crate::widget::{get_unique_element_id, Container, Column, SizeObserver};
 
 use super::{
@@ -106,7 +106,7 @@ pub enum RowSelectionStatus {
 #[derive(Properties)]
 #[derive(Derivative)]
 #[derivative(Clone(bound=""), PartialEq(bound=""))]
-pub struct DataTable<T: 'static, S: DataStore<Record=T> = Store<T>> {
+pub struct DataTable<S: DataStore> {
 
     #[prop_or_default]
     node_ref: NodeRef,
@@ -117,7 +117,7 @@ pub struct DataTable<T: 'static, S: DataStore<Record=T> = Store<T>> {
     #[prop_or_default]
     pub class: Classes,
 
-    headers: Rc<Vec<DataTableHeader<T>>>,
+    headers: Rc<Vec<DataTableHeader<S::Record>>>,
 
     // The data collection ([Store] or [TreeStore](crate::state::TreeStore)).
     store: S,
@@ -181,18 +181,18 @@ pub struct DataTable<T: 'static, S: DataStore<Record=T> = Store<T>> {
     /// Row keydown callback
     pub on_row_keydown: Option<CallbackMut<DataTableKeyboardEvent>>,
 
-    pub row_render_callback: Option<DataTableRowRenderCallback<T>>,
+    pub row_render_callback: Option<DataTableRowRenderCallback<S::Record>>,
 }
 
 static VIRTUAL_SCROLL_TRIGGER: usize = 30;
 
-impl <T: 'static, S: DataStore<Record=T> + 'static> DataTable<T, S> {
+impl <S: DataStore> DataTable<S> {
 
     /// Create a new instance.
     ///
     /// The store is either a [Store] or [TreeStore](crate::state::TreeStore).
-    pub fn new(headers: Rc<Vec<DataTableHeader<T>>>, store: S) -> Self {
-        yew::props!(DataTable<T, S> { headers, store })
+    pub fn new(headers: Rc<Vec<DataTableHeader<S::Record>>>, store: S) -> Self {
+        yew::props!(DataTable<S> { headers, store })
     }
 
     /// Builder style method to set the yew `node_ref`.
@@ -354,11 +354,10 @@ impl <T: 'static, S: DataStore<Record=T> + 'static> DataTable<T, S> {
     }
 
     /// Builder style method to set the row render callback.
-    pub fn row_render_callback(mut self, cb: impl IntoOptionalDataTableRowRenderCallback<T>) -> Self {
+    pub fn row_render_callback(mut self, cb: impl IntoOptionalDataTableRowRenderCallback<S::Record>) -> Self {
         self.row_render_callback = cb.into_optional_row_render_cb();
         self
     }
-
 }
 
 #[derive(Default)]
@@ -382,7 +381,7 @@ struct Cursor {
 }
 
 #[doc(hidden)]
-pub struct PwtDataTable<T: 'static, S: DataStore<Record=T>> {
+pub struct PwtDataTable<S: DataStore> {
     unique_id: AttrValue,
     has_focus: bool,
     take_focus: bool, // focus cursor after render
@@ -396,9 +395,9 @@ pub struct PwtDataTable<T: 'static, S: DataStore<Record=T>> {
     _store_observer: S::Observer,
     _phantom_store: PhantomData<S>,
 
-    headers: Rc<Vec<IndexedHeader<T>>>,
+    headers: Rc<Vec<IndexedHeader<S::Record>>>,
 
-    columns: Vec<DataTableColumn<T>>,
+    columns: Vec<DataTableColumn<S::Record>>,
     column_widths: Vec<f64>,
     column_hidden: Vec<bool>,
     scroll_info: VirtualScrollInfo,
@@ -449,12 +448,12 @@ fn render_empty_row_with_sizes(widths: &[f64], column_hidden: &[bool], bordered:
         .into()
 }
 
-impl<T: 'static, S: DataStore<Record=T>> PwtDataTable<T, S> {
+impl<S: DataStore> PwtDataTable<S> {
 
     // avoid slow search by lookup up keys nearby cursor first
     fn filtered_record_pos(
         &self,
-        props: &DataTable<T, S>,
+        props: &DataTable<S>,
         key: &Key,
     ) -> Option<usize> {
         if let Some(Cursor { pos, .. }) = &self.cursor {
@@ -487,7 +486,7 @@ impl<T: 'static, S: DataStore<Record=T>> PwtDataTable<T, S> {
 
     fn set_cursor(
         &mut self,
-        props: &DataTable<T, S>,
+        props: &DataTable<S>,
         pos: Option<usize>,
     ) {
         if let Some(pos) = pos {
@@ -503,7 +502,7 @@ impl<T: 'static, S: DataStore<Record=T>> PwtDataTable<T, S> {
     fn cursor_down(
         &mut self,
         lines: usize,
-        props: &DataTable<T, S>,
+        props: &DataTable<S>,
     ) {
         let len = props.store.filtered_data_len();
         if len == 0 {
@@ -519,7 +518,7 @@ impl<T: 'static, S: DataStore<Record=T>> PwtDataTable<T, S> {
     fn cursor_up(
         &mut self,
         lines: usize,
-        props: &DataTable<T, S>,
+        props: &DataTable<S>,
     ) {
         let len = props.store.filtered_data_len();
         if len == 0 {
@@ -534,7 +533,7 @@ impl<T: 'static, S: DataStore<Record=T>> PwtDataTable<T, S> {
 
     fn select_position(
         &mut self,
-        props: &DataTable<T, S>,
+        props: &DataTable<S>,
         selection: &Selection2,
         cursor: usize,
         _shift: bool,
@@ -553,7 +552,7 @@ impl<T: 'static, S: DataStore<Record=T>> PwtDataTable<T, S> {
 
     fn select_range(
         &mut self,
-        props: &DataTable<T, S>,
+        props: &DataTable<S>,
         selection: &Selection2,
         last_cursor: Option<usize>,
         new_cursor: Option<usize>,
@@ -591,7 +590,7 @@ impl<T: 'static, S: DataStore<Record=T>> PwtDataTable<T, S> {
         }
     }
 
-    fn select_all(&mut self, props: &DataTable<T, S>) {
+    fn select_all(&mut self, props: &DataTable<S>) {
         let selection = match &props.selection {
             Some(selection) => selection,
             None => {
@@ -614,13 +613,13 @@ impl<T: 'static, S: DataStore<Record=T>> PwtDataTable<T, S> {
         self.selection_status = RowSelectionStatus::All;
     }
 
-    fn clear_selection(&mut self, props: &DataTable<T, S>) {
+    fn clear_selection(&mut self, props: &DataTable<S>) {
         if let Some(selection) = &props.selection {
             selection.clear();
         }
     }
 
-    fn update_selection_status(&mut self, props: &DataTable<T, S>) {
+    fn update_selection_status(&mut self, props: &DataTable<S>) {
         let selection = match &props.selection {
             Some(selection) => selection,
             None => {
@@ -646,7 +645,7 @@ impl<T: 'static, S: DataStore<Record=T>> PwtDataTable<T, S> {
     }
 
     // remove stale keys from selection
-    fn cleanup_selection(&mut self, props: &DataTable<T, S>) {
+    fn cleanup_selection(&mut self, props: &DataTable<S>) {
 
         if let Some(selection) = &props.selection {
             let mut selection = selection.write();
@@ -669,7 +668,7 @@ impl<T: 'static, S: DataStore<Record=T>> PwtDataTable<T, S> {
         }
     }
 
-    fn select_cursor(&mut self, props: &DataTable<T, S>, shift: bool, ctrl: bool) -> bool {
+    fn select_cursor(&mut self, props: &DataTable<S>, shift: bool, ctrl: bool) -> bool {
         let selection = match &props.selection {
             Some(selection) => selection,
             None => return false,
@@ -769,7 +768,15 @@ impl<T: 'static, S: DataStore<Record=T>> PwtDataTable<T, S> {
         }
     }
 
-    fn render_row(&self, props: &DataTable<T, S>, item: &dyn DataNode<T>, record_key: Key, row_num: usize, selected: bool, active: bool) -> Html {
+    fn render_row(
+        &self,
+        props: &DataTable<S>,
+        item: &dyn DataNode<S::Record>,
+        record_key: Key,
+        row_num: usize,
+        selected: bool,
+        active: bool,
+    ) -> Html {
 
         let item_id = self.get_unique_item_id(&record_key);
 
@@ -886,7 +893,7 @@ impl<T: 'static, S: DataStore<Record=T>> PwtDataTable<T, S> {
         row.into()
     }
 
-    fn render_table(&self, props: &DataTable<T, S>, offset: usize, start: usize, end: usize) -> Html {
+    fn render_table(&self, props: &DataTable<S>, offset: usize, start: usize, end: usize) -> Html {
 
         let mut table = Container::new()
         // do not use table tag here to avoid role="table", instead set "pwt-d-table"
@@ -934,7 +941,7 @@ impl<T: 'static, S: DataStore<Record=T>> PwtDataTable<T, S> {
 
     fn render_scroll_content(
         &self,
-        props: &DataTable<T, S>,
+        props: &DataTable<S>,
     ) -> Html {
 
         let table = self.render_table(props, self.scroll_info.offset, self.scroll_info.start, self.scroll_info.end);
@@ -962,7 +969,7 @@ impl<T: 'static, S: DataStore<Record=T>> PwtDataTable<T, S> {
 
     fn update_scroll_info(
         &mut self,
-        props: &DataTable<T, S>,
+        props: &DataTable<S>,
     ) {
         let row_count = props.store.filtered_data_len();
 
@@ -992,10 +999,10 @@ impl<T: 'static, S: DataStore<Record=T>> PwtDataTable<T, S> {
     }
 }
 
-impl <T: 'static, S: DataStore<Record=T> + 'static> Component for PwtDataTable<T, S> {
+impl <S: DataStore + 'static> Component for PwtDataTable<S> {
 
-    type Message = Msg<T>;
-    type Properties = DataTable<T, S>;
+    type Message = Msg<S::Record>;
+    type Properties = DataTable<S>;
 
     fn create(ctx: &Context<Self>) -> Self {
         let props = ctx.props();
@@ -1587,10 +1594,10 @@ impl <T: 'static, S: DataStore<Record=T> + 'static> Component for PwtDataTable<T
     }
 }
 
-impl<T: 'static, S: DataStore<Record=T> + 'static> Into<VNode> for DataTable<T, S> {
+impl<S: DataStore + 'static> Into<VNode> for DataTable<S> {
     fn into(self) -> VNode {
         let key = self.key.clone();
-        let comp = VComp::new::<PwtDataTable<T, S>>(Rc::new(self), key);
+        let comp = VComp::new::<PwtDataTable<S>>(Rc::new(self), key);
         VNode::from(comp)
     }
 }
