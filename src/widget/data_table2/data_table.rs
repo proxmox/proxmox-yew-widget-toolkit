@@ -106,7 +106,7 @@ pub enum RowSelectionStatus {
 #[derive(Properties)]
 #[derive(Derivative)]
 #[derivative(Clone(bound=""), PartialEq(bound=""))]
-pub struct DataTable<T: 'static, S: DataStore<T> = Store<T>> {
+pub struct DataTable<T: 'static, S: DataStore<Record=T> = Store<T>> {
 
     #[prop_or_default]
     node_ref: NodeRef,
@@ -186,7 +186,7 @@ pub struct DataTable<T: 'static, S: DataStore<T> = Store<T>> {
 
 static VIRTUAL_SCROLL_TRIGGER: usize = 30;
 
-impl <T: 'static, S: DataStore<T> + 'static> DataTable<T, S> {
+impl <T: 'static, S: DataStore<Record=T> + 'static> DataTable<T, S> {
 
     /// Create a new instance.
     ///
@@ -382,7 +382,7 @@ struct Cursor {
 }
 
 #[doc(hidden)]
-pub struct PwtDataTable<T: 'static, S: DataStore<T>> {
+pub struct PwtDataTable<T: 'static, S: DataStore<Record=T>> {
     unique_id: AttrValue,
     has_focus: bool,
     take_focus: bool, // focus cursor after render
@@ -449,7 +449,7 @@ fn render_empty_row_with_sizes(widths: &[f64], column_hidden: &[bool], bordered:
         .into()
 }
 
-impl<T: 'static, S: DataStore<T>> PwtDataTable<T, S> {
+impl<T: 'static, S: DataStore<Record=T>> PwtDataTable<T, S> {
 
     // avoid slow search by lookup up keys nearby cursor first
     fn filtered_record_pos(
@@ -992,7 +992,7 @@ impl<T: 'static, S: DataStore<T>> PwtDataTable<T, S> {
     }
 }
 
-impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
+impl <T: 'static, S: DataStore<Record=T> + 'static> Component for PwtDataTable<T, S> {
 
     type Message = Msg<T>;
     type Properties = DataTable<T, S>;
@@ -1587,7 +1587,7 @@ impl <T: 'static, S: DataStore<T> + 'static> Component for PwtDataTable<T, S> {
     }
 }
 
-impl<T: 'static, S: DataStore<T> + 'static> Into<VNode> for DataTable<T, S> {
+impl<T: 'static, S: DataStore<Record=T> + 'static> Into<VNode> for DataTable<T, S> {
     fn into(self) -> VNode {
         let key = self.key.clone();
         let comp = VComp::new::<PwtDataTable<T, S>>(Rc::new(self), key);

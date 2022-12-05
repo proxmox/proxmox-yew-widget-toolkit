@@ -220,8 +220,9 @@ impl<'a, T: 'static> DataNode<T> for StoreNodeRef<'a, T> {
     }
 }
 
-impl<T> DataStore<T> for Store<T> {
+impl<T: 'static> DataStore for Store<T> {
     type Observer = StoreObserver<T>;
+    type Record = T;
 
     fn extract_key(&self, data: &T) -> Key {
         self.inner.borrow().extract_key(data)

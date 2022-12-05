@@ -190,8 +190,9 @@ impl<T: 'static> TreeStore<T> {
     }
 }
 
-impl<T> DataStore<T> for TreeStore<T> {
+impl<T: 'static> DataStore for TreeStore<T> {
     type Observer = TreeStoreObserver<T>;
+    type Record = T;
 
     fn extract_key(&self, data: &T) -> Key {
         self.extract_key(data)
@@ -408,4 +409,3 @@ impl <'a, T: 'static> Iterator for TreeStoreIterator<'a, T> where Self: 'a {
         Some((pos, node))
     }
 }
-

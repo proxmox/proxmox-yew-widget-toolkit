@@ -26,27 +26,28 @@ pub trait DataNode<T> {
 // Hide docs, because this interface is only used by DataTable,
 // usually not relevant for the user.
 #[doc(hidden)]
-pub trait DataStore<T>: Clone + PartialEq {
+pub trait DataStore: Clone + PartialEq {
+    type Record: 'static;
     type Observer;
 
-    fn extract_key(&self, data: &T) -> Key;
+    fn extract_key(&self, data: &Self::Record) -> Key;
 
     /// Method to add a change observer.
     ///
-    /// The returned observer owns the  listener callback. When dropped, the
+    /// The returned observer owns the listener callback. When dropped, the
     /// listener callback will be removed from the [DataStore].
     fn add_listener(&self, cb: impl Into<Callback<()>>) -> Self::Observer;
 
-    fn set_sorter(&self, sorter: impl IntoSorterFn<T>);
-    fn set_filter(&self, filter: impl IntoFilterFn<T>);
+    fn set_sorter(&self, sorter: impl IntoSorterFn<Self::Record>);
+    fn set_filter(&self, filter: impl IntoFilterFn<Self::Record>);
     fn lookup_filtered_record_key(&self, cursor: usize) -> Option<Key>;
     fn filtered_record_pos(&self, key: &Key) -> Option<usize>;
     fn filtered_data_len(&self) -> usize;
 
     fn filtered_data<'a>(&'a self) ->
-        Box<dyn Iterator<Item=(usize, Box<dyn DataNode<T> + 'a>)> + 'a>;
+        Box<dyn Iterator<Item=(usize, Box<dyn DataNode<Self::Record> + 'a>)> + 'a>;
     fn filtered_data_range<'a>(&'a self, range: Range<usize>) ->
-        Box<dyn Iterator<Item=(usize, Box<dyn DataNode<T> + 'a>)> + 'a>;
+        Box<dyn Iterator<Item=(usize, Box<dyn DataNode<Self::Record> + 'a>)> + 'a>;
 }
 
 pub struct DataNodeDerefGuard<'a, T> {
