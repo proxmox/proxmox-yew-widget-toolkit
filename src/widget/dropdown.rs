@@ -12,7 +12,6 @@ use yew::html::{IntoPropValue, IntoEventCallback};
 use yew::virtual_dom::{Key, VNode};
 
 use crate::prelude::*;
-use crate::props::{WidgetStdProps, FieldStdProps};
 use crate::widget::{Container, Tooltip};
 use crate::widget::form::Input;
 
@@ -72,18 +71,6 @@ impl Dropdown {
     // Create a new instance
     pub fn new(picker: impl Into<RenderDropdownPickerFn>) -> Self {
         yew::props!{ Self { picker: picker.into() } }
-    }
-
-    /// Use common properties from [WidgetStdProps]
-    pub fn with_std_props(mut self, props: &WidgetStdProps) -> Self {
-        self.std_props = props.clone();
-        self
-    }
-
-    /// Use common properties from [FieldStdProps]
-    pub fn with_input_props(mut self, props: &FieldStdProps) -> Self {
-        self.input_props = props.clone();
-        self
     }
 
     /// Builder style method to set the editable flag
