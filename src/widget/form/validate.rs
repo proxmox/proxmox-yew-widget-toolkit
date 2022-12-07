@@ -34,3 +34,9 @@ impl<T> std::fmt::Debug for ValidateFn<T> {
         write!(f, "ValidateFn({:p})", self.0)
     }
 }
+
+impl<T, F: 'static + Fn(&T) -> Result<(), Error>> From<F> for ValidateFn<T> {
+    fn from(f: F) -> Self {
+        ValidateFn::new(f)
+    }
+}
