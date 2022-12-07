@@ -219,6 +219,9 @@ impl<S: DataStore + 'static> PwtSelector2<S> {
                 let res = loader.apply().await;
                 link.send_message(Msg::LoadResult(res));
             });
+        } else {
+            // just trigger a data change to set the default value.
+            link.send_message(Msg::DataChange);
         }
     }
 }
