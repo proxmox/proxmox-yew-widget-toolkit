@@ -56,7 +56,7 @@ fn my_data_cmp_fn<T>(a: &Option<Rc<Vec<T>>>, b: &Option<Rc<Vec<T>>>) -> bool {
 ///
 /// Note: Please use a trackable [LoadCallback] to avoid unnecessary
 /// reloads.
-#[widget(PwtSelector<T>, @input, @element)]
+#[widget(pwt=crate, comp=PwtSelector<T>, @input, @element)]
 #[derive(Derivative, Properties)]
 // Note: use derivative to avoid Clone/PartialEq requirement on T
 #[derivative(Clone(bound=""), PartialEq(bound=""))]

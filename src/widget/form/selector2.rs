@@ -31,7 +31,7 @@ pub struct Selector2RenderArgs<S: DataStore> {
 ///
 /// Note: Please use a trackable [LoadCallback] to avoid unnecessary
 /// reloads.
-#[widget(PwtSelector2<S>, @input, @element)]
+#[widget(pwt=crate, comp=PwtSelector2<S>, @input, @element)]
 #[derive(Derivative, Properties)]
 #[derivative(Clone(bound=""), PartialEq(bound=""))]
 pub struct Selector2<S: DataStore + 'static> {

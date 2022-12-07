@@ -8,7 +8,7 @@ use pwt_macros::widget;
 use crate::prelude::*;
 use crate::widget::Row;
 
-#[widget(@element, @container)]
+#[widget(pwt=crate, @element, @container)]
 #[derive(Default, Debug, Clone)]
 pub struct Panel {
     pub title: Option<AttrValue>,

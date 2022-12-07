@@ -8,7 +8,7 @@ use yew::html::IntoPropValue;
 
 use pwt_macros::widget;
 
-#[widget(crate::widget::PwtButton, @element)]
+#[widget(pwt=crate, comp=crate::widget::PwtButton, @element)]
 #[derive(Properties, PartialEq, Clone)]
 pub struct Button {
     pub text: Option<AttrValue>,

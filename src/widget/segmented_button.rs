@@ -6,7 +6,7 @@ use yew::virtual_dom::{Listeners, VList, VTag};
 use crate::widget::Button;
 use pwt_macros::widget;
 
-#[widget(crate::widget::PwtSegmentedButton, @element)]
+#[widget(pwt=crate, comp=PwtSegmentedButton, @element)]
 #[derive(Properties, PartialEq, Clone)]
 pub struct SegmentedButton {
     buttons: Vec<Button>,

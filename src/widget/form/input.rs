@@ -5,7 +5,7 @@ use pwt_macros::widget;
 
 use crate::props::{WidgetStdProps, FieldStdProps};
 
-#[widget(@input, @element)]
+#[widget(pwt=crate, @input, @element)]
 #[derive(Clone, PartialEq, Properties)]
 pub struct Input {}
 

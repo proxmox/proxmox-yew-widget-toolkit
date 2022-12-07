@@ -14,7 +14,7 @@ use super::{FormContext, FieldOptions, Input, TextFieldStateHandle, ValidateFn};
 
 use pwt_macros::widget;
 
-#[widget(PwtField, @input, @element)]
+#[widget(pwt=crate, comp=PwtField, @input, @element)]
 #[derive(Clone, PartialEq, Properties)]
 pub struct Field {
     /// Name of the form field.

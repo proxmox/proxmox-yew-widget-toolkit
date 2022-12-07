@@ -5,7 +5,7 @@ use yew::virtual_dom::{Listeners, VList, VTag};
 
 use pwt_macros::widget;
 
-#[widget(@element, @container)]
+#[widget(pwt=crate, @element, @container)]
 #[derive(Default, Debug, Clone, PartialEq, Properties)]
 pub struct Container {
     #[prop_or(Cow::Borrowed("div"))]

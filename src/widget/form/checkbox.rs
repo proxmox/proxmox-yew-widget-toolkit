@@ -9,7 +9,7 @@ use pwt_macros::widget;
 
 use super::{FormContext, FieldOptions, CheckboxStateHandle};
 
-#[widget(PwtCheckbox, @input, @element)]
+#[widget(pwt=crate, comp=PwtCheckbox, @input, @element)]
 #[derive(Clone, PartialEq, Properties)]
 pub struct Checkbox {
     /// Name of the form field (or radio-group value).

@@ -8,7 +8,7 @@ use pwt_macros::widget;
 use crate::prelude::*;
 use super::focus::{focus_next_tabable, init_roving_tabindex};
 
-#[widget(PwtToolbar, @element, @container)]
+#[widget(pwt=crate, comp=PwtToolbar, @element, @container)]
 #[derive(Properties, PartialEq, Clone)]
 pub struct Toolbar {}
 

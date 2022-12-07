@@ -43,7 +43,7 @@ impl<F: 'static + Fn(&Callback<Key>) -> Html> From<F> for RenderDropdownPickerFn
 }
 
 /// Base widget to implement [crate::widget::form::Combobox] like widgets.
-#[widget(PwtDropdown, @input, @element)]
+#[widget(pwt=crate, comp=PwtDropdown, @input, @element)]
 #[derive(Clone, PartialEq, Properties)]
 pub struct Dropdown {
     /// Make the input editable.

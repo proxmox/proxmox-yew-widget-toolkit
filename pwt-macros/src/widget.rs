@@ -2,11 +2,13 @@ use proc_macro::TokenStream;
 use syn::{Attribute, Error, Fields, Result, Path, Ident, Token};
 use syn::spanned::Spanned;
 use syn::parse::{Parse, ParseStream};
-use quote::quote;
 use syn::{parse_macro_input, DeriveInput, Data};
+use syn::ext::IdentExt;
+use quote::{format_ident, quote};
 
 #[derive(Debug)]
 pub(crate)struct WidgetSetup {
+    pwt_crate_name: Option<Ident>,
     component_name: Option<Path>,
     is_input: bool,
     is_container: bool,
@@ -15,7 +17,7 @@ pub(crate)struct WidgetSetup {
 
 impl Parse for WidgetSetup {
     fn parse(input: ParseStream) -> Result<Self> {
-
+        let mut pwt_crate_name = None;
         let mut component_name = None;
         let mut is_input = false;
         let mut is_container = false;
@@ -38,12 +40,31 @@ impl Parse for WidgetSetup {
                 }
 
                 if input.is_empty() { break; }
+            } else if lookahead.peek(Token![!]) {
+                pwt_crate_name = Some(input.parse()?);
+
             } else {
-                let path: Path = input.parse()?;
-                if component_name.is_some() {
-                    return Err(Error::new(path.span(), "multiple component definitions"));
+                let opt: Ident = input.parse()?;
+                let _: Token![=] = input.parse()?;
+                match opt.to_string().as_ref() {
+                    "pwt" => {
+                        let name: Ident = input.call(Ident::parse_any)?;
+                        if pwt_crate_name.is_some() {
+                            return Err(Error::new(name.span(), "multiple pwt name definitions"));
+                        }
+                        pwt_crate_name = Some(name);
+                    }
+                    "comp" => {
+                        let path: Path = input.parse()?;
+                        if component_name.is_some() {
+                            return Err(Error::new(path.span(), "multiple component definitions"));
+                        }
+                        component_name = Some(path);
+                    }
+                    _ => {
+                        return Err(Error::new(opt.span(), "unknown widget option"));
+                    }
                 }
-                component_name = Some(path);
             }
             if input.is_empty() { break; }
             let _: Token![,] = input.parse()?;
@@ -51,6 +72,7 @@ impl Parse for WidgetSetup {
         }
 
         Ok(WidgetSetup {
+            pwt_crate_name,
             component_name,
             is_input,
             is_container,
@@ -102,6 +124,8 @@ fn derive_widget(setup: &WidgetSetup, widget: DeriveInput) -> Result<proc_macro2
 
     let has_property_derive = has_property_derive(&attrs);
 
+    let pwt: Ident = setup.pwt_crate_name.clone().unwrap_or(format_ident!("pwt"));
+
     let fields = match data {
         Data::Struct(data) => {
             match data.fields {
@@ -133,7 +157,7 @@ fn derive_widget(setup: &WidgetSetup, widget: DeriveInput) -> Result<proc_macro2
         opt_fields.push(quote!{
             #[doc(hidden)]
             #prop_or_default
-            pub input_props: crate::props::FieldStdProps,
+            pub input_props: #pwt::props::FieldStdProps,
         });
     }
 
@@ -149,7 +173,7 @@ fn derive_widget(setup: &WidgetSetup, widget: DeriveInput) -> Result<proc_macro2
         opt_fields.push(quote!{
             #[doc(hidden)]
             #prop_or_default
-            pub listeners: crate::props::ListenersWrapper,
+            pub listeners: #pwt::props::ListenersWrapper,
         });
     }
 
@@ -159,7 +183,7 @@ fn derive_widget(setup: &WidgetSetup, widget: DeriveInput) -> Result<proc_macro2
 
             #[doc(hidden)]
             #prop_or_default
-            pub std_props: crate::props::WidgetStdProps,
+            pub std_props: #pwt::props::WidgetStdProps,
 
             #(#opt_fields)*
 
@@ -168,8 +192,8 @@ fn derive_widget(setup: &WidgetSetup, widget: DeriveInput) -> Result<proc_macro2
     };
 
     output.extend(quote!{
-        impl #impl_generics crate::props::WidgetBuilder for #ident #ty_generics #where_clause {
-            fn as_std_props_mut(&mut self) -> &mut crate::props::WidgetStdProps {
+        impl #impl_generics #pwt::props::WidgetBuilder for #ident #ty_generics #where_clause {
+            fn as_std_props_mut(&mut self) -> &mut #pwt::props::WidgetStdProps {
                 &mut self.std_props
             }
         }
@@ -177,8 +201,8 @@ fn derive_widget(setup: &WidgetSetup, widget: DeriveInput) -> Result<proc_macro2
 
     if setup.is_element {
         output.extend(quote!{
-            impl #impl_generics crate::props::EventSubscriber for #ident #ty_generics #where_clause {
-                fn as_listeners_mut(&mut self) -> &mut crate::props::ListenersWrapper {
+            impl #impl_generics #pwt::props::EventSubscriber for #ident #ty_generics #where_clause {
+                fn as_listeners_mut(&mut self) -> &mut #pwt::props::ListenersWrapper {
                     &mut self.listeners
                 }
             }
@@ -187,7 +211,7 @@ fn derive_widget(setup: &WidgetSetup, widget: DeriveInput) -> Result<proc_macro2
 
     if setup.is_container {
         output.extend(quote!{
-            impl #impl_generics crate::props::ContainerBuilder for #ident #ty_generics #where_clause {
+            impl #impl_generics #pwt::props::ContainerBuilder for #ident #ty_generics #where_clause {
                 fn as_children_mut(&mut self) -> &mut Vec<::yew::virtual_dom::VNode> {
                     &mut self.children
                 }
@@ -197,11 +221,11 @@ fn derive_widget(setup: &WidgetSetup, widget: DeriveInput) -> Result<proc_macro2
 
     if setup.is_input {
         output.extend(quote!{
-            impl #impl_generics crate::props::FieldBuilder for #ident #ty_generics #where_clause {
-                fn as_input_props_mut(&mut self) -> &mut crate::props::FieldStdProps {
+            impl #impl_generics #pwt::props::FieldBuilder for #ident #ty_generics #where_clause {
+                fn as_input_props_mut(&mut self) -> &mut #pwt::props::FieldStdProps {
                     &mut self.input_props
                 }
-                fn as_input_props(&self) -> & crate::props::FieldStdProps {
+                fn as_input_props(&self) -> & #pwt::props::FieldStdProps {
                     &self.input_props
                 }
             }

@@ -20,7 +20,7 @@ use pwt_macros::widget;
 ///
 /// Allows to select text options.
 
-#[widget(PwtCombobox, @input, @element)]
+#[widget(pwt=crate, comp=PwtCombobox, @input, @element)]
 #[derive(Clone, PartialEq, Properties)]
 pub struct Combobox {
     /// Name of the form field.

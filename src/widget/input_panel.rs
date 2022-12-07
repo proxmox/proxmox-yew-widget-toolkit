@@ -8,7 +8,7 @@ use pwt_macros::widget;
 
 use crate::prelude::*;
 
-#[widget(@element, @container)]
+#[widget(pwt=crate, @element, @container)]
 #[derive(Properties, PartialEq, Clone)]
 pub struct InputPanel {
     #[prop_or_default]
