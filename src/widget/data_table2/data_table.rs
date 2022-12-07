@@ -317,13 +317,13 @@ impl <S: DataStore> DataTable<S> {
         self.min_row_height = min_row_height;
     }
 
-    /// Builder style method to set the virtual scroll flag.
+    /// Builder style method to set the autoselect flag.
     pub fn autoselect(mut self, autoselect: impl IntoPropValue<bool>) -> Self {
         self.set_autoselect(autoselect);
         self
     }
 
-    /// Method to set the virtual scroll flag.
+    /// Method to set the autoselect flag.
     pub fn set_autoselect(&mut self, autoselect: impl IntoPropValue<bool>) {
         self.autoselect = autoselect.into_prop_value();
     }
