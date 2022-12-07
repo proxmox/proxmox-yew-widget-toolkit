@@ -7,6 +7,12 @@ use super::{WidgetStdProps, Border, Margin, Padding};
 pub trait WidgetBuilder: Into<VNode> {
     fn as_std_props_mut(&mut self) -> &mut WidgetStdProps;
 
+    /// Copy properties from another [WidgetStdProps]
+    fn with_std_props(mut self, props: &WidgetStdProps) -> Self {
+        *self.as_std_props_mut() = props.clone();
+        self
+    }
+
     /// Builder style method to set the yew `node_ref`
     fn node_ref(mut self, node_ref: NodeRef) -> Self {
         self.set_node_ref(node_ref);
