@@ -9,6 +9,15 @@ pub trait FieldBuilder: Into<VNode> {
     fn as_input_props_mut(&mut self) -> &mut FieldStdProps;
     fn as_input_props(&self) -> &FieldStdProps;
 
+
+    /// Copy properties from another [FieldStdProps]
+    ///
+    /// This overwrites all previously set properties.
+    fn with_input_props(mut self, props: &FieldStdProps) -> Self {
+        *self.as_input_props_mut() = props.clone();
+        self
+    }
+
     /// Builder style method to set the html aria-label attribute
     fn aria_label(mut self, label: impl IntoPropValue<Option<AttrValue>>) -> Self {
         self.set_aria_label(label);
