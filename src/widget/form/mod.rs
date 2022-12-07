@@ -30,6 +30,8 @@ pub use combobox::{Combobox, PwtCombobox};
 
 mod selector;
 pub use selector::{Selector, PwtSelector, RenderSelectorPickerFn};
+mod selector2;
+pub use selector2::{Selector2, PwtSelector2, Selector2RenderArgs};
 
 use std::rc::Rc;
 
