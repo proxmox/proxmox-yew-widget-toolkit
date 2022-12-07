@@ -23,14 +23,28 @@ pub trait DataNode<T> {
     fn key(&self) -> Key;
 }
 
-// Hide docs, because this interface is only used by DataTable,
-// usually not relevant for the user.
+// Hide docs, because this interface is only used by DataTable and
+// Selector, usually not relevant for the user.
+//
+// This is a minimal interface, only containing thing we really use.
+// We may provide a more verbose interface in the future, i.e. allow access
+// to unfiltered data.
 #[doc(hidden)]
 pub trait DataStore: Clone + PartialEq {
+    /// The record type
     type Record: 'static;
+    /// The collection type used by [Self::set_data].
+    type Collection;
+    /// Observer type return by [Self::add_listener].
     type Observer;
 
-    fn extract_key(&self, data: &Self::Record) -> Key;
+    fn extract_key(&self, record: &Self::Record) -> Key;
+
+    fn set_data(&self, data: Self::Collection);
+
+    fn data_len(&self) -> usize;
+
+    fn is_empty(&self) -> bool { self.data_len() == 0}
 
     /// Method to add a change observer.
     ///

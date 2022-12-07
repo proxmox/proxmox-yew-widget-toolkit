@@ -223,6 +223,7 @@ impl<'a, T: 'static> DataNode<T> for StoreNodeRef<'a, T> {
 impl<T: 'static> DataStore for Store<T> {
     type Observer = StoreObserver<T>;
     type Record = T;
+    type Collection = Vec<T>;
 
     fn extract_key(&self, data: &T) -> Key {
         self.inner.borrow().extract_key(data)
@@ -232,6 +233,16 @@ impl<T: 'static> DataStore for Store<T> {
         let key = self.inner.borrow_mut()
             .add_listener(cb.into());
         StoreObserver { key, inner: self.inner.clone() }
+    }
+
+    fn set_data(&self, data: Self::Collection) {
+        let mut state = self.inner.borrow_mut();
+        state.set_data(data);
+        state.notify_listeners();
+    }
+
+    fn data_len(&self) -> usize {
+        self.inner.borrow().data.len()
     }
 
     fn set_sorter(&self, sorter: impl IntoSorterFn<T>) {
@@ -365,6 +376,10 @@ impl<T: 'static> StoreState<T> {
     fn set_filter(&mut self, filter: impl IntoFilterFn<T>) {
         self.version += 1;
         self.filter = filter.into_filter_fn();
+    }
+
+    pub fn data(&self) -> &[T] {
+        &self.data
     }
 
     pub fn set_data(&mut self, data: Vec<T>) {

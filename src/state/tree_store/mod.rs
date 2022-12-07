@@ -188,11 +188,20 @@ impl<T: 'static> TreeStore<T> {
         tree.update_filtered_data();
         tree.filtered_data_len()
     }
+
+    fn set_data(&self, data: SlabTree<T>) {
+        self.write().set_root_tree(data);
+    }
+
+    fn data_len(&self) -> usize {
+        self.inner.borrow().tree.slab.len()
+    }
 }
 
 impl<T: 'static> DataStore for TreeStore<T> {
     type Observer = TreeStoreObserver<T>;
     type Record = T;
+    type Collection = SlabTree<T>;
 
     fn extract_key(&self, data: &T) -> Key {
         self.extract_key(data)
@@ -200,6 +209,14 @@ impl<T: 'static> DataStore for TreeStore<T> {
 
     fn add_listener(&self, cb: impl Into<Callback<()>>) -> TreeStoreObserver<T> {
         self.add_listener(cb)
+    }
+
+    fn set_data(&self, data: Self::Collection) {
+        self.set_data(data);
+    }
+
+    fn data_len(&self) -> usize {
+        self.data_len()
     }
 
     fn set_sorter(&self, sorter: impl IntoSorterFn<T>) {
