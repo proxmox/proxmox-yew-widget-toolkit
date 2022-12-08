@@ -14,7 +14,7 @@ use crate::state::{DataStore, Selection2};
 use crate::widget::Dropdown;
 use crate::component::error_message;
 
-use super::{FieldOptions, FormContext, TextFieldStateHandle, ValidateFn};
+use super::{FieldOptions, FormContext, TextFieldStateHandle, IntoValidateFn, ValidateFn};
 
 use pwt_macros::widget;
 
@@ -55,7 +55,7 @@ pub struct Selector2<S: DataStore + 'static> {
     pub editable: bool,
     #[prop_or_default]
     pub autoselect: bool,
-    pub on_select: Option<Callback<Key>>,
+    pub on_change: Option<Callback<Key>>,
     pub picker: RenderFn<Selector2RenderArgs<S>>,
     pub validate: Option<ValidateFn<(String, S)>>,
     pub loader: Option<LoadCallback<S::Collection>>,
@@ -121,7 +121,7 @@ impl<S: DataStore> Selector2<S> {
     /// Builder style method to set the validate callback
     pub fn validate(
         mut self,
-        validate: impl Into<ValidateFn<(String, S)>>,
+        validate: impl IntoValidateFn<(String, S)>,
     ) -> Self {
         self.set_validate(validate);
         self
@@ -130,9 +130,9 @@ impl<S: DataStore> Selector2<S> {
     /// Method to set the validate callback
     pub fn set_validate(
         &mut self,
-        validate: impl Into<ValidateFn<(String, S)>>,
+        validate: impl IntoValidateFn<(String, S)>,
     ) {
-        self.validate = Some(validate.into());
+        self.validate = validate.into_validate_fn();
     }
 
     /// Builder style method to set the validation schema
@@ -149,9 +149,9 @@ impl<S: DataStore> Selector2<S> {
         }));
     }
 
-    /// Builder style method to set the on_select callback
-    pub fn on_select(mut self, cb: impl IntoEventCallback<Key>) -> Self {
-        self.on_select = cb.into_event_callback();
+    /// Builder style method to set the on_change callback
+    pub fn on_change(mut self, cb: impl IntoEventCallback<Key>) -> Self {
+        self.on_change = cb.into_event_callback();
         self
     }
 
@@ -251,12 +251,11 @@ impl<S: DataStore + 'static> Component for PwtSelector2<S> {
 
         let real_validate = create_selector_validation_cb(props);
 
-        // TODO: do we need this? - TEST AGAIN?
         let on_change = Callback::from({
-            let on_select = props.on_select.clone();
+            let on_change = props.on_change.clone();
             move |value: String| {
-                if let Some(on_select) = &on_select {
-                    on_select.emit(Key::from(value));
+                if let Some(on_change) = &on_change {
+                    on_change.emit(Key::from(value));
                 }
             }
         });
