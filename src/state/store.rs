@@ -154,6 +154,14 @@ impl<T: 'static> Store<T> {
     pub fn set_filter(&self, filter: impl IntoFilterFn<T>) {
         self.write().set_filter(filter);
     }
+
+    pub fn set_data(&self, data: Vec<T>) {
+        self.write().state.set_data(data);
+    }
+
+    pub fn data_len(&self) -> usize {
+        self.inner.borrow().data.len()
+    }
 }
 
 /// A wrapper type for a mutably borrowed [Store]
@@ -236,13 +244,11 @@ impl<T: 'static> DataStore for Store<T> {
     }
 
     fn set_data(&self, data: Self::Collection) {
-        let mut state = self.inner.borrow_mut();
-        state.set_data(data);
-        state.notify_listeners();
+        self.set_data(data);
     }
 
     fn data_len(&self) -> usize {
-        self.inner.borrow().data.len()
+        self.data_len()
     }
 
     fn set_sorter(&self, sorter: impl IntoSorterFn<T>) {
