@@ -24,10 +24,19 @@ pub struct Selector2RenderArgs<S: DataStore> {
     pub on_select: Callback<Key>,
 }
 
-/// Combobox like selector
+/// Helper widget to implement `Combobox` like selectors.
 ///
-/// Supports async data loading and generic picker widget
-/// implementations.
+/// This helper simplifies the implementation of `Combobox` like
+/// selectors with complex layouts (table, trees).
+///
+/// - Extends the [Dropdown] widget.
+///
+/// - Use a [DataStore] as data storage.
+///
+/// - Ability to load data using a [LoadCallback] (with reasonable
+/// error handling).
+///
+/// - Handles [FormContext] interaction.
 ///
 /// Note: Please use a trackable [LoadCallback] to avoid unnecessary
 /// reloads.
