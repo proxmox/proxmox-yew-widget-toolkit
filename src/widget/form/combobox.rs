@@ -1,8 +1,5 @@
 use std::rc::Rc;
 
-use anyhow::{bail, Error};
-use serde_json::Value;
-
 use yew::prelude::*;
 use yew::virtual_dom::Key;
 use yew::html::{IntoEventCallback, IntoPropValue};
@@ -10,9 +7,11 @@ use yew::html::{IntoEventCallback, IntoPropValue};
 use proxmox_schema::Schema;
 
 use crate::prelude::*;
-use crate::widget::{DataTableColumn, Dropdown, GridPicker};
+use crate::state::Store;
+use crate::widget::GridPicker2;
+use crate::widget::data_table2::{DataTable, DataTableColumn, DataTableHeader};
 
-use super::{FieldOptions, FormContext, TextFieldStateHandle, ValidateFn};
+use super::{Selector2, Selector2RenderArgs, IntoValidateFn, ValidateFn};
 
 use pwt_macros::widget;
 
@@ -42,11 +41,12 @@ pub struct Combobox {
     pub on_change: Option<Callback<String>>,
 
     /// Validation function.
-    pub validate: Option<ValidateFn<String>>,
+    pub validate: Option<ValidateFn<(String, Store<AttrValue>)>>,
 }
 
 impl Combobox {
 
+    /// Create a new instance.
     pub fn new() -> Self {
         yew::props!(Self {})
     }
@@ -115,7 +115,7 @@ impl Combobox {
     /// Builder style method to set the validate callback
     pub fn validate(
         mut self,
-        validate: impl 'static + Fn(&String) -> Result<(), Error>,
+        validate: impl IntoValidateFn<(String, Store<AttrValue>)>,
     ) -> Self {
         self.set_validate(validate);
         self
@@ -124,9 +124,9 @@ impl Combobox {
     /// Method to set the validate callback
     pub fn set_validate(
         &mut self,
-        validate: impl 'static + Fn(&String) -> Result<(), Error>,
+        validate: impl IntoValidateFn<(String, Store<AttrValue>)>,
     ) {
-        self.validate = Some(ValidateFn::new(validate));
+        self.validate = validate.into_validate_fn();
     }
 
     /// Builder style method to set the validation schema
@@ -137,7 +137,7 @@ impl Combobox {
 
     /// Method to set the validation schema
     pub fn set_schema(&mut self, schema: &'static Schema) {
-        self.set_validate(move |value: &String| {
+        self.set_validate(move |(value, _store): &(String, _)| {
             schema.parse_simple_value(value)?;
             Ok(())
         });
@@ -145,39 +145,21 @@ impl Combobox {
 }
 
 pub enum Msg {
-    Select(String),
-    FormCtxUpdate(FormContext),
     Reposition,
 }
 
 #[doc(hidden)]
 pub struct PwtCombobox {
-    state: TextFieldStateHandle,
+    store: Store<AttrValue>,
 }
 
-fn create_combobox_validation_cb(props: Combobox) -> ValidateFn<Value> {
-    ValidateFn::new(move |value: &Value| {
-        let value = match value {
-            Value::Null => String::new(),
-            Value::String(v) => v.clone(),
-            _ => { // should not happen
-                log::error!("PwtField: got wrong data type in validate!");
-                String::new()
-            }
-        };
-
-        if value.is_empty() {
-            if props.input_props.required {
-                bail!("Field may not be empty.");
-            } else {
-                return Ok(());
-            }
-        }
-        match &props.validate {
-            Some(cb) => cb.validate(&value),
-            None => Ok(()),
-        }
-    })
+thread_local!{
+    static COLUMNS: Rc<Vec<DataTableHeader<AttrValue>>> = Rc::new(vec![
+        DataTableColumn::new("Value")
+            .show_menu(false)
+            .render(|value: &AttrValue| html!{value})
+            .into(),
+    ]);
 }
 
 impl Component for PwtCombobox {
@@ -186,81 +168,55 @@ impl Component for PwtCombobox {
 
     fn create(ctx: &Context<Self>) -> Self {
         let props = ctx.props();
-        let value = props.default.as_ref().map(|s| s.as_str()).unwrap_or("").to_string();
 
-        let on_form_ctx_change = Callback::from({
-            let link = ctx.link().clone();
-            move |form_ctx: FormContext| link.send_message(Msg::FormCtxUpdate(form_ctx))
-        });
+        let store = Store::with_extract_key(|item: &AttrValue| Key::from(item.as_str()));
+        if !props.items.is_empty() {
+            store.set_data(props.items.as_ref().clone());
+        }
 
-
-        let real_validate = create_combobox_validation_cb(props.clone());
-
-        let state = TextFieldStateHandle::new(
-            ctx.link(),
-            on_form_ctx_change,
-            props.name.clone(),
-            value,
-            Some(real_validate.clone()),
-            FieldOptions::from_field_props(&props.input_props),
-            props.on_change.clone(),
-        );
-
-        Self { state }
+        Self { store }
     }
 
-    fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
-        let props = ctx.props();
+    fn update(&mut self, _ctx: &Context<Self>, msg: Self::Message) -> bool {
         match msg {
-            Msg::FormCtxUpdate(form_ctx) => self.state.update(form_ctx),
-            Msg::Select(key) => {
-                if props.input_props.disabled { return true; }
-                self.state.set_value(key, false);
-                true
-            }
-            Msg::Reposition => {
-                true // just trigger a redraw
-            }
+            Msg::Reposition => true, // just trigger a redraw
         }
     }
 
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
+        let link = ctx.link().clone();
 
-        let (value, valid) = self.state.get_field_data();
+        let picker = move |args: &Selector2RenderArgs<Store<AttrValue>>| {
+            let table = DataTable::new(COLUMNS.with(Rc::clone), args.store.clone())
+                .class("pwt-fit");
 
-        let picker = {
-            let items = Rc::clone(&props.items);
-            let selected = value.clone();
-            let link = ctx.link().clone();
-
-            move |onselect: &Callback<Key>| {
-                let columns = vec![
-                    DataTableColumn::new("Value")
-                        .render(|value: &AttrValue| html!{value}),
-                ];
-                GridPicker::new(columns)
-                    .show_header(false)
-                    .onselect(onselect)
-                    .on_filter_change({
-                        let link = link.clone();
-                        move |()| link.send_message(Msg::Reposition)
-                    })
-                    .extract_key(|value: &AttrValue| Key::from(value.to_string()))
-                    .selection(items.iter().enumerate().find_map(|(n, value)| (value == &selected).then(|| n)))
-                    .data(Rc::clone(&items))
-                    .into()
-            }
+            GridPicker2::new(table)
+                .selection(args.selection.clone())
+                .on_select(args.on_select.clone())
+                .on_filter_change({
+                    let link = link.clone();
+                    move |()| link.send_message(Msg::Reposition)
+                })
+            //fixme: .show_header(false)
+                .into()
         };
 
-        Dropdown::new(picker)
-            .popup_type("dialog")
+        Selector2::new(self.store.clone(), picker)
             .with_std_props(&props.std_props)
             .with_input_props(&props.input_props)
             .editable(props.editable)
-            .class(if valid.is_ok() { "is-valid" } else { "is-invalid" })
-            .on_change(ctx.link().callback(|key: String| Msg::Select(key)))
-            .value(value)
+            .default(&props.default)
+            .name(&props.name)
+            .validate(props.validate.clone())
+            .on_change({
+                let on_change = props.on_change.clone();
+                move |key: Key| {
+                    if let Some(on_change) = &on_change {
+                        on_change.emit(key.to_string());
+                    }
+                }
+            })
             .into()
     }
 }
