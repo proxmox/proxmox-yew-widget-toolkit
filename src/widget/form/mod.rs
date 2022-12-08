@@ -14,7 +14,7 @@ mod input;
 pub use input::Input;
 
 mod validate;
-pub use validate::ValidateFn;
+pub use validate::{IntoValidateFn, ValidateFn};
 
 mod reset_button;
 pub use reset_button::{ResetButton, PwtResetButton};

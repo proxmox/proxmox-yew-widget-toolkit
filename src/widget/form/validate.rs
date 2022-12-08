@@ -40,3 +40,24 @@ impl<T, F: 'static + Fn(&T) -> Result<(), Error>> From<F> for ValidateFn<T> {
         ValidateFn::new(f)
     }
 }
+
+pub trait IntoValidateFn<T> {
+    fn into_validate_fn(self) -> Option<ValidateFn<T>>;
+}
+
+impl<T> IntoValidateFn<T> for ValidateFn<T> {
+    fn into_validate_fn(self) -> Option<ValidateFn<T>> {
+        Some(self)
+    }
+}
+impl<T> IntoValidateFn<T> for Option<ValidateFn<T>> {
+    fn into_validate_fn(self) -> Option<ValidateFn<T>> {
+        self
+    }
+}
+
+impl<T, F: 'static + Fn(&T)-> Result<(), Error>> IntoValidateFn<T> for F {
+    fn into_validate_fn(self) -> Option<ValidateFn<T>> {
+        Some(ValidateFn::new(self))
+    }
+}
