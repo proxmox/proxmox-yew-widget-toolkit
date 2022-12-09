@@ -143,6 +143,7 @@ impl<S: DataStore + 'static> Component for PwtGridPicker2<S> {
         let table: Html = props.table.clone()
             .autoselect(false)
             .hover(true)
+            .header_focusable(false)
             .selection(props.selection.clone())
             .on_row_click(|event: &mut DataTableMouseEvent| {
                 let key = event.record_key.clone();

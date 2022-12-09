@@ -173,9 +173,12 @@ pub struct DataTable<S: DataStore> {
     pub autoselect: bool,
 
     /// Show the header.
-    ///
     #[prop_or(true)]
     pub show_header: bool,
+
+    /// Allow the header to take focus.
+    #[prop_or(true)]
+    pub header_focusable: bool,
 
     /// Row click callback
     pub on_row_click: Option<CallbackMut<DataTableMouseEvent>>,
@@ -342,6 +345,17 @@ impl <S: DataStore> DataTable<S> {
     /// Method to set the show_header flag.
     pub fn set_show_header(&mut self, show_header: impl IntoPropValue<bool>) {
         self.show_header = show_header.into_prop_value();
+    }
+
+    /// Builder style method to set the header_focusable flag.
+    pub fn header_focusable(mut self, header_focusable: impl IntoPropValue<bool>) -> Self {
+        self.set_header_focusable(header_focusable);
+        self
+    }
+
+    /// Method to set the header_focusable flag.
+    pub fn set_header_focusable(&mut self, header_focusable: impl IntoPropValue<bool>) {
+        self.header_focusable = header_focusable.into_prop_value();
     }
 
     /// Builder style method to set the selection model.
@@ -1509,7 +1523,7 @@ impl <S: DataStore + 'static> Component for PwtDataTable<S> {
 
         let viewport = Container::new()
             .node_ref(self.scroll_ref.clone())
-            .key("table-viewport")
+            .key(Key::from("table-viewport"))
             .class("pwt-flex-fill")
             .attribute("style", "overflow: auto; outline: 0")
             // avoid https://bugzilla.mozilla.org/show_bug.cgi?id=1069739
@@ -1570,7 +1584,7 @@ impl <S: DataStore + 'static> Component for PwtDataTable<S> {
             .attribute("aria-multiselectable", if multiselect { "true" } else { "false" })
             .with_child(
                 Container::new() // scollable for header
-                    .key("table-header")
+                    .key(Key::from("table-header"))
                     .node_ref(self.header_scroll_ref.clone())
                     .attribute("role", "rowgroup")
                     .attribute("aria-label", "table header")
@@ -1579,7 +1593,7 @@ impl <S: DataStore + 'static> Component for PwtDataTable<S> {
                     .class("pwt-datatable2-header")
                     .with_child(
                         HeaderWidget::new(self.headers.clone(), ctx.link().callback(Msg::Header))
-                            .focusable(props.show_header)
+                            .focusable(props.header_focusable && props.show_header)
                             .selection_status(self.selection_status)
                             .header_class(props.header_class.clone())
                     )
