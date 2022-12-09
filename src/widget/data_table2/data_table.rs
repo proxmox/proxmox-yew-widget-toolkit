@@ -1509,6 +1509,7 @@ impl <S: DataStore + 'static> Component for PwtDataTable<S> {
 
         let viewport = Container::new()
             .node_ref(self.scroll_ref.clone())
+            .key("table-viewport")
             .class("pwt-flex-fill")
             .attribute("style", "overflow: auto; outline: 0")
             // avoid https://bugzilla.mozilla.org/show_bug.cgi?id=1069739
@@ -1569,6 +1570,7 @@ impl <S: DataStore + 'static> Component for PwtDataTable<S> {
             .attribute("aria-multiselectable", if multiselect { "true" } else { "false" })
             .with_child(
                 Container::new() // scollable for header
+                    .key("table-header")
                     .node_ref(self.header_scroll_ref.clone())
                     .attribute("role", "rowgroup")
                     .attribute("aria-label", "table header")
