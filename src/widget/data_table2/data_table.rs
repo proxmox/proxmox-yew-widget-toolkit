@@ -172,6 +172,11 @@ pub struct DataTable<S: DataStore> {
     #[prop_or(true)]
     pub autoselect: bool,
 
+    /// Show the header.
+    ///
+    #[prop_or(true)]
+    pub show_header: bool,
+
     /// Row click callback
     pub on_row_click: Option<CallbackMut<DataTableMouseEvent>>,
 
@@ -326,6 +331,17 @@ impl <S: DataStore> DataTable<S> {
     /// Method to set the autoselect flag.
     pub fn set_autoselect(&mut self, autoselect: impl IntoPropValue<bool>) {
         self.autoselect = autoselect.into_prop_value();
+    }
+
+    /// Builder style method to set the show_header flag.
+    pub fn show_header(mut self, show_header: impl IntoPropValue<bool>) -> Self {
+        self.set_show_header(show_header);
+        self
+    }
+
+    /// Method to set the show_header flag.
+    pub fn set_show_header(&mut self, show_header: impl IntoPropValue<bool>) {
+        self.show_header = show_header.into_prop_value();
     }
 
     /// Builder style method to set the selection model.
@@ -1521,6 +1537,12 @@ impl <S: DataStore + 'static> Component for PwtDataTable<S> {
 
         let multiselect = props.selection.as_ref().map(|s| s.is_multiselect()).unwrap_or(false);
 
+        let header_style = if props.show_header {
+            "flex: 0 0 auto;"
+        } else {
+            "flex: 0 0 auto;height:0px;"
+        };
+
         Column::new()
             .class(props.class.clone())
             .node_ref(self.container_ref.clone())
@@ -1534,11 +1556,12 @@ impl <S: DataStore + 'static> Component for PwtDataTable<S> {
                     .node_ref(self.header_scroll_ref.clone())
                     .attribute("role", "rowgroup")
                     .attribute("aria-label", "table header")
-                    .attribute("style", "flex: 0 0 auto")
+                    .attribute("style", header_style)
                     .class("pwt-overflow-hidden")
                     .class("pwt-datatable2-header")
                     .with_child(
                         HeaderWidget::new(self.headers.clone(), ctx.link().callback(Msg::Header))
+                            .focusable(props.show_header)
                             .selection_status(self.selection_status)
                             .header_class(props.header_class.clone())
                     )

@@ -37,6 +37,10 @@ pub struct HeaderWidget<T: 'static> {
 
     #[prop_or(RowSelectionStatus::Nothing)]
     pub selection_status: RowSelectionStatus,
+
+    /// Allow the header to take focus.
+    #[prop_or(true)]
+    pub focusable: bool,
 }
 
 
@@ -59,6 +63,17 @@ impl<T: 'static> HeaderWidget<T> {
         self
     }
      */
+
+    /// Builder style method to set the focusable flag.
+    pub fn focusable(mut self, focusable: bool) -> Self {
+        self.set_focusable(focusable);
+        self
+    }
+
+    /// Method  to set the focusable flag.
+    pub fn set_focusable(&mut self, focusable: bool) {
+        self.focusable = focusable;
+    }
 
     /// Builder style method to set the row selection status.
     pub fn selection_status(mut self, status: RowSelectionStatus) -> Self {
@@ -234,7 +249,9 @@ impl <T: 'static> PwtHeaderWidget<T> {
             None => html!{<>{sort_icon}{&cell.column.name}{sort_space}</>},
         };
 
-        attributes.insert(AttrValue::Static("tabindex"), tabindex);
+        if props.focusable {
+            attributes.insert(AttrValue::Static("tabindex"), tabindex);
+        }
         attributes.insert(AttrValue::Static("aria-label"), cell.column.name.clone());
 
         header_row.push(
@@ -333,7 +350,7 @@ impl <T: 'static> PwtHeaderWidget<T> {
             // to hide them to get correct column order.
                 .attribute("role", "none")
                 .attribute("aria-hidden", "true")
-                .attribute("tabindex", tabindex)
+                .attribute("tabindex", props.focusable.then(|| tabindex))
                 .attribute("id", unique_id)
                 .class("pwt-datatable2-group-header-item")
                 .class(props.header_class.clone())

@@ -188,7 +188,9 @@ impl Component for PwtCombobox {
         let link = ctx.link().clone();
 
         let picker = move |args: &Selector2RenderArgs<Store<AttrValue>>| {
+            // TODO use a simpler list widget without virtual scroll support?
             let table = DataTable::new(COLUMNS.with(Rc::clone), args.store.clone())
+                .show_header(false)
                 .class("pwt-fit");
 
             GridPicker2::new(table)
@@ -198,7 +200,6 @@ impl Component for PwtCombobox {
                     let link = link.clone();
                     move |()| link.send_message(Msg::Reposition)
                 })
-            //fixme: .show_header(false)
                 .into()
         };
 
