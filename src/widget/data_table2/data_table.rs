@@ -423,6 +423,7 @@ pub struct PwtDataTable<S: DataStore> {
     header_scroll_ref: NodeRef,
     scroll_ref: NodeRef,
     scroll_top: usize,
+    set_scroll_top: Option<usize>,
     viewport_height: usize,
     table_height: usize,
 
@@ -770,16 +771,16 @@ impl<S: DataStore> PwtDataTable<S> {
         format!("{}-item-{}", self.unique_id, key)
     }
 
-    fn scroll_cursor_into_view(&self) {
+    fn scroll_cursor_into_view(&mut self) {
         let (cursor, _record_key) = match &self.cursor {
             Some(Cursor { pos, record_key}) => (*pos, record_key),
             None => return, // nothing to do
         };
 
-         if !(self.scroll_info.start..self.scroll_info.end).contains(&cursor) {
+        if !(self.scroll_info.start..self.scroll_info.end).contains(&cursor) {
             let height =  (self.row_height * cursor).saturating_sub(self.viewport_height/2);
             if let Some(el) = self.scroll_ref.cast::<web_sys::Element>() {
-                el.set_scroll_top(height as i32);
+                self.set_scroll_top = Some(height);
             }
         }
     }
@@ -975,6 +976,7 @@ impl<S: DataStore> PwtDataTable<S> {
             ));
 
         let height = height + 15; // add some space at the end
+
         Container::new()
             .attribute("style", format!("height:{}px", height))
             .attribute("role", "none")
@@ -1063,6 +1065,7 @@ impl <S: DataStore + 'static> Component for PwtDataTable<S> {
             scroll_info: VirtualScrollInfo::default(),
             cell_class,
             scroll_top: 0,
+            set_scroll_top: None,
             viewport_height: 0,
             viewport_size_observer: None,
             header_scroll_ref: NodeRef::default(),
@@ -1124,6 +1127,8 @@ impl <S: DataStore + 'static> Component for PwtDataTable<S> {
             Msg::ViewportResize(_width, height) => {
                 self.viewport_height = height.max(0.0) as usize;
                 self.update_scroll_info(props);
+
+
                 true
             }
             Msg::ContainerResize(width, _height) => {
@@ -1142,6 +1147,17 @@ impl <S: DataStore + 'static> Component for PwtDataTable<S> {
                     }
                 }
                 self.update_scroll_info(props);
+
+                if self.cursor.is_none() {
+                    if let Some(selection) = &props.selection {
+                        if let Some(record_key) = selection.selected_key()  {
+                            self.cursor = self.filtered_record_pos(props, &record_key)
+                                .map(|pos| Cursor { pos, record_key: record_key.clone() });
+                        }
+                    }
+                    self.scroll_cursor_into_view();
+                }
+
                 true
             }
             // Cursor handling
@@ -1604,6 +1620,14 @@ impl <S: DataStore + 'static> Component for PwtDataTable<S> {
                     link.send_message(Msg::TableResize(width, height));
                 });
                 self.table_size_observer = Some(size_observer);
+            }
+        }
+        if let Some(top) = self.set_scroll_top.take() {
+            // Note: we delay setting ScrollTop until we rendered the
+            // viewport with correct height. Else, set_scroll_top can
+            // fail because the viewport is smaller.
+            if let Some(el) = self.scroll_ref.cast::<web_sys::Element>() {
+                el.set_scroll_top(top as i32);
             }
         }
 
