@@ -87,7 +87,7 @@ pub enum Msg {
 
 #[derive(Properties, PartialEq, Clone)]
 pub struct KVGrid {
-    rows: IndexMap<String, KVGridRow>,
+    rows: Rc<Vec<KVGridRow>>,
     data: Rc<Value>,
     onselect: Option<Callback<Option<Key>>>,
     // Mouse single click or Space key
@@ -108,7 +108,7 @@ impl KVGrid {
 
     pub fn new() -> Self {
         Self {
-            rows: IndexMap::new(),
+            rows: Rc::new(Vec::new()),
             data: Rc::new(Value::Null),
             onselect: None,
             onrowclick: None,
@@ -147,34 +147,34 @@ impl KVGrid {
 
     pub fn add_row(&mut self, row: KVGridRow) {
         let name = row.name.clone();
-        self.rows.insert(name, row);
+        Rc::make_mut(&mut self.rows).push(row);
     }
 
-    pub fn rows(mut self, rows: Vec<KVGridRow>) -> Self {
+    pub fn rows(mut self, rows: Rc<Vec<KVGridRow>>) -> Self {
         self.set_rows(rows);
         self
     }
 
-    pub fn set_rows(&mut self, rows: Vec<KVGridRow>) {
-        for row in rows {
-            self.rows.insert(row.name.clone(), row);
-        }
+    pub fn set_rows(&mut self, rows: Rc<Vec<KVGridRow>>) {
+        self.rows = rows;
     }
 
+
     pub fn get_header(&self, name: &str) -> Option<&str> {
-        self.rows
-            .get(name)
+        self.get_row(name)
             .map(|row| row.header.as_str())
     }
 
     pub fn get_row(&self, name: &str) -> Option<&KVGridRow> {
-        self.rows.get(name)
+        // fixme: replace with somthing faster
+        self.rows.iter().find(|row| row.name == name)
     }
 }
 
 #[doc(hidden)]
 pub struct PwtKVGrid {
     inner_ref: NodeRef,
+    rows: Rc<IndexMap<String, KVGridRow>>,
     selection: Option<Key>,
 }
 
@@ -182,9 +182,18 @@ impl Component for PwtKVGrid {
     type Message = Msg;
     type Properties = KVGrid;
 
-    fn create(_ctx: &Context<Self>) -> Self {
+    fn create(ctx: &Context<Self>) -> Self {
+        let props = ctx.props();
+
+        let rows: IndexMap<String, KVGridRow> = props.rows
+            .iter()
+            .map(|row| (row.name.clone(), row.clone()))
+            .collect();
+
+
         Self {
             inner_ref: NodeRef::default(),
+            rows: Rc::new(rows),
             selection: None,
         }
     }
@@ -242,7 +251,7 @@ impl Component for PwtKVGrid {
         let mut visible_rows: Vec<&KVGridRow> = Vec::new();
         let mut has_selected_item = false;
 
-        for row in props.rows.values() {
+        for row in self.rows.values() {
             let name = row.name.as_str();
             if props.data.get(name).is_some() || row.placeholder.is_some() || row.required {
                 visible_rows.push(row);
