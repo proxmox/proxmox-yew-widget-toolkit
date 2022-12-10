@@ -924,19 +924,36 @@ impl<S: DataStore> PwtDataTable<S> {
         row.into()
     }
 
+    fn table_layout(&self, props: &DataTable<S>) -> String {
+        let virtual_scroll = props.virtual_scroll.unwrap_or(true);
+        if props.show_header || virtual_scroll {
+            return String::from("display:table;table-layout:fixed;width:1px;");
+        }
+
+        let mut grid_style = String::from("display:grid;grid-template-columns:");
+        for (col_idx, column) in self.columns.iter().enumerate() {
+            if column.hidden { continue; }
+            grid_style.push_str(&column.width);
+            grid_style.push(' ');
+        }
+
+        static RESERVED_SPACE: usize = 20;
+        grid_style.push_str(&format!("{}px;", RESERVED_SPACE));
+        grid_style
+    }
+
     fn render_table(&self, props: &DataTable<S>, offset: usize, start: usize, end: usize) -> Html {
 
         let mut table = Container::new()
-        // do not use table tag here to avoid role="table", instead set "pwt-d-table"
+        // do not use table tag here to avoid role="table", instead set display type in style"
             .attribute("role", "none")
-            .class("pwt-d-table")
             .class("pwt-datatable2-content")
             .class(props.hover.then(|| "table-hover"))
             .class(props.striped.then(|| "table-striped"))
             .class(props.bordered.then(|| "table-bordered"))
             .class(props.borderless.then(|| "table-borderless"))
             .node_ref(self.table_ref.clone())
-            .attribute("style", format!("table-layout: fixed;width:1px; position:relative;top:{}px;", offset))
+            .attribute("style", format!("{} position:relative;top:{}px;", self.table_layout(props), offset))
             .with_child(render_empty_row_with_sizes(&self.column_widths, &self.column_hidden, props.bordered));
 
         let mut cursor = self.cursor.as_ref().map(|c| c.pos);
