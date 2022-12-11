@@ -455,6 +455,32 @@ pub struct PwtDataTable<S: DataStore> {
     keypress_timeout: Option<Timeout>,
 }
 
+// Generate first table row using the width from the column definitions.
+fn render_empty_row_with_widths<R>(columns: &[DataTableColumn<R>]) -> Html {
+    Container::new()
+        .tag("tr")
+        .attribute("role", "none")
+        .key(Key::from("sizes"))
+        // Note: This row should not be visible, so avoid borders
+        .attribute("style", "border-top-width: 0px; border-bottom-width: 0px;")
+        .children(
+            columns
+                .iter()
+                .filter_map(|column| {
+                    if column.hidden {
+                        None
+                    } else {
+                        Some(html!{
+                            <td role="none" style={format!("width:{};height:0px;", column.width)}></td>
+                        })
+                    }
+                })
+        )
+        .into()
+
+}
+
+// Generate first table row using the observed header sizes.
 fn render_empty_row_with_sizes(widths: &[f64], column_hidden: &[bool], bordered: bool) -> Html {
     let border_width = if bordered { 1.0 } else { 0.0 };
     Container::new()
@@ -924,25 +950,21 @@ impl<S: DataStore> PwtDataTable<S> {
         row.into()
     }
 
-    fn table_layout(&self, props: &DataTable<S>) -> String {
-        let virtual_scroll = props.virtual_scroll.unwrap_or(true);
-        if props.show_header || virtual_scroll {
-            return String::from("display:table;table-layout:fixed;width:1px;");
-        }
-
-        let mut grid_style = String::from("display:grid;grid-template-columns:");
-        for (col_idx, column) in self.columns.iter().enumerate() {
-            if column.hidden { continue; }
-            grid_style.push_str(&column.width);
-            grid_style.push(' ');
-        }
-
-        static RESERVED_SPACE: usize = 20;
-        grid_style.push_str(&format!("{}px;", RESERVED_SPACE));
-        grid_style
-    }
-
     fn render_table(&self, props: &DataTable<S>, offset: usize, start: usize, end: usize) -> Html {
+
+        let virtual_scroll = props.virtual_scroll.unwrap_or(true);
+        let fixed_mode =  props.show_header || virtual_scroll;
+        let layout = if fixed_mode {
+            "display:table;table-layout:fixed;width:1px;"
+        } else {
+            "display:table;"
+        };
+
+        let first_row = if fixed_mode {
+            render_empty_row_with_sizes(&self.column_widths, &self.column_hidden, props.bordered)
+        } else {
+            render_empty_row_with_widths(&self.columns)
+        };
 
         let mut table = Container::new()
         // do not use table tag here to avoid role="table", instead set display type in style"
@@ -953,8 +975,8 @@ impl<S: DataStore> PwtDataTable<S> {
             .class(props.bordered.then(|| "table-bordered"))
             .class(props.borderless.then(|| "table-borderless"))
             .node_ref(self.table_ref.clone())
-            .attribute("style", format!("{} position:relative;top:{}px;", self.table_layout(props), offset))
-            .with_child(render_empty_row_with_sizes(&self.column_widths, &self.column_hidden, props.bordered));
+            .attribute("style", format!("{} position:relative;top:{}px;", layout, offset))
+            .with_child(first_row);
 
         let mut cursor = self.cursor.as_ref().map(|c| c.pos);
 
