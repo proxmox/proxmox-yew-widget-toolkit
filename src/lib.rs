@@ -181,4 +181,5 @@ pub mod prelude {
     pub use crate::props::ContainerBuilder;
     pub use crate::props::FieldBuilder;
     pub use crate::props::EventSubscriber;
+    pub use crate::props::CallbackMutScopeExt;
 }
