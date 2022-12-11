@@ -14,6 +14,8 @@ use crate::widget::{Button, Toolbar};
 use crate::widget::form::FormContext;
 use crate::component::{EditWindow, KVGrid, KVGridRow};
 
+use crate::widget::data_table2::{DataTableKeyboardEvent, DataTableMouseEvent};
+
 #[derive(Derivative)]
 #[derivative(Clone, PartialEq)]
 pub struct RenderObjectGridItemFn(
@@ -131,7 +133,7 @@ impl ObjectGrid {
         self.onsubmit = callback.into_submit_callback();
         self
     }
- 
+
     pub fn editable(mut self, editable: bool) -> Self {
         self.editable = editable;
         self
@@ -282,13 +284,23 @@ impl PwtObjectGrid {
     fn main_view(&self, ctx: &Context<Self>, data: Rc<Value>) -> Html {
         ctx.props().grid.clone()
             .data(data)
-            .onselect(ctx.link().callback(|key| Msg::Select(key)))
-            .onrowdblclick(ctx.link().batch_callback(|key| {
-                vec![
-                    Msg::Select(Some(key)),
-                    Msg::Edit,
-                ]
-            }))
+            .on_select(ctx.link().callback(|key| Msg::Select(key)))
+            .on_row_dblclick({
+                let link = ctx.link().clone();
+                move |event: &mut DataTableMouseEvent| {
+                    link.send_message(Msg::Select(Some(event.record_key.clone())));
+                    link.send_message(Msg::Edit);
+                }
+            })
+            .on_row_keydown({
+                let link = ctx.link().clone();
+                move |event: &mut DataTableKeyboardEvent| {
+                    if event.key() == " " {
+                        link.send_message(Msg::Select(Some(event.record_key.clone())));
+                        link.send_message(Msg::Edit);
+                    }
+                }
+            })
             .into()
     }
 }

@@ -104,11 +104,6 @@ pub struct PwtGridPicker2<S> {
     _phantom: PhantomData<S>,
 }
 
-impl<S: DataStore> PwtGridPicker2<S> {
-
-
-}
-
 impl<S: DataStore + 'static> Component for PwtGridPicker2<S> {
     type Message = ();
     type Properties = GridPicker2<S>;

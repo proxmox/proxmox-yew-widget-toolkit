@@ -8,9 +8,16 @@ use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode, Key};
 use yew::html::IntoEventCallback;
 
-use crate::widget::focus::focus_next_tabable;
-/// For use with KVGrid
+use crate::props::{IntoEventCallbackMut, CallbackMut};
+use crate::state::{Selection2, Store};
+use crate::widget::data_table2::{
+    DataTable, DataTableColumn, DataTableHeader, DataTableMouseEvent,
+    DataTableKeyboardEvent,
+};
 
+use crate::widget::focus::focus_next_tabable;
+
+/// For use with KVGrid
 #[derive(Derivative)]
 #[derivative(Clone, PartialEq)]
 pub struct RenderKVGridRecordFn(
@@ -81,20 +88,19 @@ impl KVGridRow {
 
 }
 
-pub enum Msg {
-    SelectItem(Key),
-}
-
 #[derive(Properties, PartialEq, Clone)]
 pub struct KVGrid {
     rows: Rc<Vec<KVGridRow>>,
     data: Rc<Value>,
-    onselect: Option<Callback<Option<Key>>>,
-    // Mouse single click or Space key
-    onrowclick: Option<Callback<Key>>,
-    // Mouse double click or Return key
-    onrowdblclick: Option<Callback<Key>>,
- }
+    /// Select callback.
+    pub on_select: Option<Callback<Option<Key>>>,
+    /// Row click callback.
+    pub on_row_click: Option<CallbackMut<DataTableMouseEvent>>,
+    /// Row double click callback.
+    pub on_row_dblclick: Option<CallbackMut<DataTableMouseEvent>>,
+    /// Row keydown callback.
+    pub on_row_keydown: Option<CallbackMut<DataTableKeyboardEvent>>,
+}
 
 impl Into<VNode> for KVGrid {
     fn into(self) -> VNode {
@@ -107,13 +113,10 @@ impl Into<VNode> for KVGrid {
 impl KVGrid {
 
     pub fn new() -> Self {
-        Self {
+        yew::props!(Self {
             rows: Rc::new(Vec::new()),
             data: Rc::new(Value::Null),
-            onselect: None,
-            onrowclick: None,
-            onrowdblclick: None,
-       }
+        })
     }
 
     pub fn data(mut self, data: Rc<Value>) -> Self {
@@ -125,18 +128,26 @@ impl KVGrid {
         self.data = data;
     }
 
-    pub fn onselect(mut self, cb: impl IntoEventCallback<Option<Key>>) -> Self {
-        self.onselect = cb.into_event_callback();
+    pub fn on_select(mut self, cb: impl IntoEventCallback<Option<Key>>) -> Self {
+        self.on_select = cb.into_event_callback();
         self
     }
 
-    pub fn onrowclick(mut self, cb: impl IntoEventCallback<Key>) -> Self {
-        self.onrowclick = cb.into_event_callback();
+    /// Builder style method to set the row click callback.
+    pub fn on_row_click(mut self, cb: impl IntoEventCallbackMut<DataTableMouseEvent>) -> Self {
+        self.on_row_click = cb.into_event_cb_mut();
         self
     }
 
-    pub fn onrowdblclick(mut self, cb: impl IntoEventCallback<Key>) -> Self {
-        self.onrowdblclick = cb.into_event_callback();
+    /// Builder style method to set the row double click callback.
+    pub fn on_row_dblclick(mut self, cb: impl IntoEventCallbackMut<DataTableMouseEvent>) -> Self {
+        self.on_row_dblclick = cb.into_event_cb_mut();
+        self
+    }
+
+    /// Builder style method to set the row keydown callback.
+    pub fn on_row_keydown(mut self, cb: impl IntoEventCallbackMut<DataTableKeyboardEvent>) -> Self {
+        self.on_row_keydown = cb.into_event_cb_mut();
         self
     }
 
@@ -171,75 +182,110 @@ impl KVGrid {
     }
 }
 
+struct Record {
+    row: Rc<KVGridRow>,
+    value: Value,
+    store: Rc<Value>,
+}
+
 #[doc(hidden)]
 pub struct PwtKVGrid {
     inner_ref: NodeRef,
-    rows: Rc<IndexMap<String, KVGridRow>>,
-    selection: Option<Key>,
+    rows: Rc<IndexMap<String, Rc<KVGridRow>>>,
+    store: Store<Record>,
+    selection: Selection2,
+}
+
+thread_local!{
+    static COLUMNS: Rc<Vec<DataTableHeader<Record>>> = Rc::new(vec![
+        DataTableColumn::new("Key")
+            .show_menu(false)
+            .render(|record: &Record| html!{record.row.header.clone()})
+            .into(),
+        DataTableColumn::new("Value")
+            .width("100%")
+            .show_menu(false)
+            .render(|record: &Record|  {
+                match &record.row.renderer {
+                    Some(renderer) => (renderer.0)(&record.row.name, &record.value, &record.store),
+                    None => render_value(&record.value),
+                }
+            })
+            .into(),
+    ]);
+}
+
+impl PwtKVGrid {
+
+    fn data_update(&mut self, props: &KVGrid) {
+        let mut visible_rows: Vec<Record> = Vec::new();
+
+        for row in self.rows.values() {
+            let name = row.name.as_str();
+            let value = props.data.get(name);
+
+            if value.is_some() || row.placeholder.is_some() || row.required {
+                let value = match value {
+                    None => {
+                        if let Some(placeholder) = &row.placeholder {
+                            placeholder.to_string().into()
+                        } else {
+                            Value::Null
+                        }
+                    }
+                    Some(value) => value.clone(),
+                };
+
+                visible_rows.push(Record {
+                    row: Rc::clone(row),
+                    value,
+                    store: Rc::clone(&props.data),
+                });
+            }
+        }
+        self.store.set_data(visible_rows);
+    }
 }
 
 impl Component for PwtKVGrid {
-    type Message = Msg;
+    type Message = ();
     type Properties = KVGrid;
 
     fn create(ctx: &Context<Self>) -> Self {
         let props = ctx.props();
 
-        let rows: IndexMap<String, KVGridRow> = props.rows
+        let rows: IndexMap<String, Rc<KVGridRow>> = props.rows
             .iter()
-            .map(|row| (row.name.clone(), row.clone()))
+            .map(|row| (row.name.clone(), Rc::new(row.clone())))
             .collect();
 
+        let store = Store::with_extract_key(|record: &Record| Key::from(record.row.name.as_str()));
 
-        Self {
+        let selection = Selection2::new()
+            .on_select({
+                let on_select = props.on_select.clone();
+                move |selection: Selection2| {
+                    if let Some(on_select) = &on_select {
+                        on_select.emit(selection.selected_key());
+                    }
+                }
+            });
+
+        let mut me = Self {
             inner_ref: NodeRef::default(),
             rows: Rc::new(rows),
-            selection: None,
-        }
+            store,
+            selection,
+        };
+        me.data_update(props);
+        me
     }
 
-    fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
-        let props = ctx.props();
-        match msg {
-            Msg::SelectItem(key) => {
-                self.selection = Some(key.clone());
-
-                if let Some(onselect) = &props.onselect {
-                    onselect.emit(Some(key.clone()));
-                }
-                true
-            }
-        }
-    }
-
-    fn changed(&mut self, ctx: &Context<Self>, _old_props: &Self::Properties) -> bool {
+    fn changed(&mut self, ctx: &Context<Self>, old_props: &Self::Properties) -> bool {
         let props = ctx.props();
 
-        let old_selection = self.selection.clone();
-
-        if let Some(key) = &self.selection {
-            let always_showed = props.get_row(key).map(|row| {
-                row.required || row.placeholder.is_some()
-            }).unwrap_or(false);
-            if !always_showed {
-                match props.data.as_ref() {
-                    Value::Object(map) => {
-                        let key_str: &str = &key;
-                        if !map.contains_key(key_str) {
-                            self.selection = None;
-                        }
-                    }
-                    _ => {
-                        self.selection = None;
-                    }
-                }
-            }
-        }
-
-        if old_selection != self.selection {
-            if let Some(onselect) = &props.onselect {
-                onselect.emit(self.selection.clone());
-            }
+        if props.data != old_props.data || props.rows != old_props.rows {
+            self.data_update(props);
         }
 
         true
@@ -247,136 +293,19 @@ impl Component for PwtKVGrid {
 
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
-
-        let mut visible_rows: Vec<&KVGridRow> = Vec::new();
-        let mut has_selected_item = false;
-
-        for row in self.rows.values() {
-            let name = row.name.as_str();
-            if props.data.get(name).is_some() || row.placeholder.is_some() || row.required {
-                visible_rows.push(row);
-            }
-            if let Some(selection) = &self.selection {
-                if &**selection == name {
-                    has_selected_item = true;
-                }
-            }
-        }
-
-        let items: Html = visible_rows.iter().enumerate().map(|(i, row)| {
-            let name = row.name.as_str();
-            let key = Key::from(name);
-            let item = match props.data.get(name) {
-                None => {
-                    if let Some(placeholder) = &row.placeholder {
-                        placeholder.to_string().into()
-                    } else {
-                        Value::Null
-                    }
-                }
-                Some(value) => value.clone(),
-            };
-
-            let selected = if let Some(selection) = &self.selection {
-                selection == &key
-            } else {
-                false
-            };
-
-            let class = selected.then(|| "selected");
-
-            let tabindex = if has_selected_item  {
-                if selected { "0" } else { "-1" }
-            } else {
-                if i == 0 { "0" } else { "-1" }
-            };
-
-            let onclick = ctx.link().callback({
-                let key = key.clone();
-                let callback = props.onrowclick.clone();
-                move |_| {
-                    if let Some(callback) = &callback {
-                        callback.emit(key.clone());
-                    }
-                    Msg::SelectItem(key.clone())
-                }
-            });
-
-            let onkeydown = ctx.link().batch_callback({
-                let key = key.clone();
-                let onrowclick = props.onrowclick.clone();
-                let onrowdblclick = props.onrowdblclick.clone();
-                move |event: KeyboardEvent| {
-                    match event.key_code() {
-                        32 => { // Space
-                            if let Some(onrowclick) = &onrowclick {
-                                onrowclick.emit(key.clone());
-                            }
-                            Some(Msg::SelectItem(key.clone()))
-                        }
-                        13 => { // Return
-                            event.stop_propagation();
-                            event.prevent_default();
-                            if let Some(onrowdblclick) = &onrowdblclick {
-                                onrowdblclick.emit(key.clone());
-                            }
-                            Some(Msg::SelectItem(key.clone()))
-                        }
-                        _ => None,
-                    }
-                }
-            });
-
-            let text = match &row.renderer {
-                Some(renderer) => (renderer.0)(&key, &item, &props.data),
-                None => render_value(&item),
-            };
-
-            let ondblclick = Callback::from({
-                let key = key.clone();
-                let callback = props.onrowdblclick.clone();
-                move |_| {
-                    if let Some(callback) = &callback {
-                        callback.emit(key.clone());
-                    }
-                }
-            });
-
-            html!{
-                <tr {tabindex} {onclick} {ondblclick} {onkeydown} {key} {class}>
-                    <td>{&row.header}</td>
-                    <td width="100%" style="max-width:0px;">{text}</td>
-                    </tr>
-            }
-
-        }).collect();
-
-
-        let inner_ref =  self.inner_ref.clone();
-        let onkeydown = Callback::from( move |event: KeyboardEvent| {
-            match event.key_code() {
-                40 => { // down
-                    focus_next_tabable(&inner_ref, false, true);
-                }
-                38 => { // up
-                    focus_next_tabable(&inner_ref, true, true);
-                }
-                _ => return,
-            }
-            event.prevent_default();
-        });
-
-        html!{
-            <table class="pwt-table table-hover table-striped pwt-p-2">
-                <tbody ref={self.inner_ref.clone()} {onkeydown}>{items}</tbody>
-            </table>
-        }
+        DataTable::new(COLUMNS.with(Rc::clone), self.store.clone())
+            .virtual_scroll(false)
+            .show_header(false)
+            .selection(self.selection.clone())
+            .on_row_click(props.on_row_click.clone())
+            .on_row_dblclick(props.on_row_dblclick.clone())
+            .on_row_keydown(props.on_row_keydown.clone())
+            .into()
     }
 }
 
 
 fn render_value(value: &Value) -> Html {
-
     match value {
         Value::Null => html!{ {"NULL"} },
         Value::Bool(v) => html!{ {v.to_string()} },
