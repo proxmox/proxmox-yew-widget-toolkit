@@ -819,9 +819,7 @@ impl<S: DataStore> PwtDataTable<S> {
 
         if !(self.scroll_info.start..self.scroll_info.end).contains(&cursor) {
             let height =  (self.row_height * cursor).saturating_sub(self.viewport_height/2);
-            if let Some(el) = self.scroll_ref.cast::<web_sys::Element>() {
-                self.set_scroll_top = Some(height);
-            }
+            self.set_scroll_top = Some(height);
         }
     }
 

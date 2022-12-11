@@ -15,8 +15,6 @@ use crate::widget::data_table2::{
     DataTableKeyboardEvent,
 };
 
-use crate::widget::focus::focus_next_tabable;
-
 /// For use with KVGrid
 #[derive(Derivative)]
 #[derivative(Clone, PartialEq)]
@@ -157,7 +155,6 @@ impl KVGrid {
     }
 
     pub fn add_row(&mut self, row: KVGridRow) {
-        let name = row.name.clone();
         Rc::make_mut(&mut self.rows).push(row);
     }
 
@@ -169,7 +166,6 @@ impl KVGrid {
     pub fn set_rows(&mut self, rows: Rc<Vec<KVGridRow>>) {
         self.rows = rows;
     }
-
 
     pub fn get_header(&self, name: &str) -> Option<&str> {
         self.get_row(name)
@@ -190,7 +186,6 @@ struct Record {
 
 #[doc(hidden)]
 pub struct PwtKVGrid {
-    inner_ref: NodeRef,
     rows: Rc<IndexMap<String, Rc<KVGridRow>>>,
     store: Store<Record>,
     selection: Selection2,
@@ -272,7 +267,6 @@ impl Component for PwtKVGrid {
             });
 
         let mut me = Self {
-            inner_ref: NodeRef::default(),
             rows: Rc::new(rows),
             store,
             selection,
