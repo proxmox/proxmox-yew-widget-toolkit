@@ -984,9 +984,9 @@ impl<S: DataStore> PwtDataTable<S> {
                 cursor = None;
             }
         }
+
         if !self.column_widths.is_empty() {
             for (filtered_pos, item) in props.store.filtered_data_range(start..end) {
-
                 let record_key = props.store.extract_key(&*item.record());
 
                 let mut selected = false;

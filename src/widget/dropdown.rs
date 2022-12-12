@@ -287,7 +287,7 @@ impl Component for PwtDropdown {
             disabled.then(|| "disabled"),
         };
 
-        let data_show = self.show.then(|| "");
+        let data_show = self.show.then(|| "true");
 
         let value = props.value.clone().unwrap_or_else(|| self.value.clone());
 

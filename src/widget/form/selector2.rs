@@ -301,7 +301,14 @@ impl<S: DataStore + 'static> Component for PwtSelector2<S> {
                 }
                 true
             }
-            Msg::FormCtxUpdate(form_ctx) => self.state.update(form_ctx),
+            Msg::FormCtxUpdate(form_ctx) => {
+                let changes = self.state.update(form_ctx);
+                if changes {
+                    let (value, _valid) = self.state.get_field_data();
+                    self.selection.select(value);
+                }
+                changes
+            }
             Msg::DataChange => {
                 let (value, _valid) = self.state.get_field_data();
 
@@ -353,7 +360,6 @@ impl<S: DataStore + 'static> Component for PwtSelector2<S> {
             let picker = props.picker.clone();
             let store = props.store.clone();
             let selection = self.selection.clone();
-            selection.select(Key::from(value.as_str()));
 
             let load_error = self.load_error.clone();
 

@@ -42,6 +42,11 @@ pub struct Combobox {
 
     /// Validation function.
     pub validate: Option<ValidateFn<(String, Store<AttrValue>)>>,
+
+    /// Show filter
+    ///
+    /// Defaul behavior is to show the filter for pickers with more than 10 items.
+    pub show_filter: Option<bool>,
 }
 
 impl Combobox {
@@ -142,6 +147,17 @@ impl Combobox {
             Ok(())
         });
     }
+
+    /// Builder style method to set the show_filter flag.
+    pub fn show_filter(mut self, show_filter: impl IntoPropValue<Option<bool>>) -> Self {
+        self.set_show_filter(show_filter);
+        self
+    }
+
+    /// Method to set the show_filter flag.
+    pub fn set_show_filter(&mut self, show_filter: impl IntoPropValue<Option<bool>>) {
+        self.show_filter = show_filter.into_prop_value();
+    }
 }
 
 pub enum Msg {
@@ -187,20 +203,38 @@ impl Component for PwtCombobox {
         let props = ctx.props();
         let link = ctx.link().clone();
 
+        let show_filter = props.show_filter.unwrap_or_else(|| {
+            if self.store.data_len() > 10 { true } else { false }
+        });
+
         let picker = move |args: &Selector2RenderArgs<Store<AttrValue>>| {
             // TODO use a simpler list widget without virtual scroll support?
             let table = DataTable::new(COLUMNS.with(Rc::clone), args.store.clone())
                 .show_header(false)
                 .class("pwt-fit");
 
-            GridPicker2::new(table)
+            let mut picker = GridPicker2::new(table)
                 .selection(args.selection.clone())
-                .on_select(args.on_select.clone())
-                .on_filter_change({
+                .on_select(args.on_select.clone());
+
+            if show_filter {
+                picker.set_on_filter_change({
                     let link = link.clone();
-                    move |()| link.send_message(Msg::Reposition)
-                })
-                .into()
+                    let store = args.store.clone();
+                    move |filter: String| {
+                        if filter.is_empty() {
+                            store.set_filter(None);
+                        } else {
+                            store.set_filter(move |_n: usize, item: &AttrValue| {
+                                item.to_lowercase().contains(&filter)
+                            })
+                        }
+                        link.send_message(Msg::Reposition);
+                    }
+                });
+            }
+
+            picker.into()
         };
 
         Selector2::new(self.store.clone(), picker)

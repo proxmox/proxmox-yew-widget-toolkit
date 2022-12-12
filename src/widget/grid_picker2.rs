@@ -2,16 +2,17 @@ use std::rc::Rc;
 use std::marker::PhantomData;
 
 use derivative::Derivative;
+use web_sys::HtmlInputElement;
 
 use yew::prelude::*;
 use yew::html::{IntoEventCallback, IntoPropValue};
 use yew::virtual_dom::{Key, VComp, VNode};
 
 use crate::prelude::*;
-use crate::widget::Column;
-use crate::widget::data_table2::{DataTable, DataTableMouseEvent};
-//use crate::widget::form::Input;
 use crate::state::{Selection2, SelectionObserver, DataStore};
+use crate::widget::{Column, Row};
+use crate::widget::data_table2::{DataTable, DataTableMouseEvent};
+use crate::widget::form::Input;
 
 #[derive(Derivative, Properties)]
 #[derivative(Clone(bound=""), PartialEq(bound=""))]
@@ -34,12 +35,7 @@ pub struct GridPicker2<S: DataStore> {
     /// Filter change often change the number of displayed items, so
     /// the size of the widget is likely to change. This callback is
     /// useful to reposition the dropdown.
-    pub on_filter_change: Option<Callback<()>>,
-
-    /// Show filter
-    ///
-    /// Defaul behavior is to show the filter for pickers with more than 10 items.
-    pub show_filter: Option<bool>,
+    pub on_filter_change: Option<Callback<String>>,
 }
 
 impl<S: DataStore> GridPicker2<S> {
@@ -82,19 +78,18 @@ impl<S: DataStore> GridPicker2<S> {
         self
     }
 
-    pub fn on_filter_change(mut self, cb: impl IntoEventCallback<()>) -> Self {
+    pub fn on_filter_change(mut self, cb: impl IntoEventCallback<String>) -> Self {
+        self.set_on_filter_change(cb);
+        self
+    }
+
+    pub fn set_on_filter_change(&mut self, cb: impl IntoEventCallback<String>) {
         self.on_filter_change = cb.into_event_callback();
-        self
     }
+}
 
-    pub fn show_filter(mut self, show_filter: impl IntoPropValue<Option<bool>>) -> Self {
-        self.set_show_filter(show_filter);
-        self
-    }
-
-    pub fn set_show_filter(&mut self, show_filter: impl IntoPropValue<Option<bool>>) {
-        self.show_filter = show_filter.into_prop_value();
-    }
+pub enum Msg {
+    FilterUpdate(String),
 }
 
 #[doc(hidden)]
@@ -105,7 +100,7 @@ pub struct PwtGridPicker2<S> {
 }
 
 impl<S: DataStore + 'static> Component for PwtGridPicker2<S> {
-    type Message = ();
+    type Message = Msg;
     type Properties = GridPicker2<S>;
 
     fn create(ctx: &Context<Self>) -> Self {
@@ -125,6 +120,11 @@ impl<S: DataStore + 'static> Component for PwtGridPicker2<S> {
             None => None,
         };
 
+        if let Some(ref on_filter_change) = props.on_filter_change {
+            // clear filter
+            on_filter_change.emit(String::new());
+        }
+
         Self {
             _selection_observer,
             _phantom: PhantomData::<S>,
@@ -132,10 +132,24 @@ impl<S: DataStore + 'static> Component for PwtGridPicker2<S> {
         }
     }
 
+    fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
+        let props = ctx.props();
+        match msg {
+            Msg::FilterUpdate(filter) => {
+                self.filter = filter;
+                if let Some(ref on_filter_change) = props.on_filter_change {
+                    on_filter_change.emit(self.filter.clone());
+                }
+                true
+            }
+        }
+    }
+
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
 
         let table: Html = props.table.clone()
+            .key(Key::from("picker-table"))
             .autoselect(false)
             .hover(true)
             .header_focusable(false)
@@ -151,6 +165,32 @@ impl<S: DataStore + 'static> Component for PwtGridPicker2<S> {
         let mut view = Column::new()
             .node_ref(props.node_ref.clone())
             .class("pwt-flex-fill pwt-overflow-auto");
+
+        let show_filter = props.on_filter_change.is_some();
+
+        if show_filter {
+            let filter_invalid = false;
+            let filter = Row::new()
+                .key(Key::from("picker-filter"))
+                .gap(2)
+                .class("pwt-p-2 pwt-border-bottom pwt-w-100 pwt-align-items-center")
+                .with_child(html!{<label for="testinput">{"Filter"}</label>})
+                .with_child(
+                   Input::new()
+                        .attribute("autocomplete", "off")
+                        .class("pwt-input")
+                        .class("pwt-w-100")
+                        .class(if filter_invalid { "is-invalid" } else { "is-valid" })
+                        .attribute("value", self.filter.clone())
+                        .attribute("aria-invalid", filter_invalid.then(|| "true"))
+                        .oninput(ctx.link().callback(move |event: InputEvent| {
+                            let input: HtmlInputElement = event.target_unchecked_into();
+                            Msg::FilterUpdate(input.value())
+                        }))
+                );
+
+            view.add_child(filter);
+        }
 
         view.add_child(table);
 
