@@ -252,15 +252,11 @@ impl<T: 'static> DataStore for Store<T> {
     }
 
     fn set_sorter(&self, sorter: impl IntoSorterFn<T>) {
-        let mut state = self.inner.borrow_mut();
-        state.set_sorter(sorter);
-        state.notify_listeners();
+        self.set_sorter(sorter);
     }
 
     fn set_filter(&self, filter: impl IntoFilterFn<T>) {
-        let mut state = self.inner.borrow_mut();
-        state.set_filter(filter);
-        state.notify_listeners();
+        self.set_filter(filter);
     }
 
     fn lookup_filtered_record_key(&self, cursor: usize) -> Option<Key> {
