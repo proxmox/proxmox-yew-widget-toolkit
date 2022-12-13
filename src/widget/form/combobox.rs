@@ -18,16 +18,9 @@ use pwt_macros::widget;
 /// Combobox widget
 ///
 /// Allows to select text options.
-
 #[widget(pwt=crate, comp=PwtCombobox, @input, @element)]
 #[derive(Clone, PartialEq, Properties)]
 pub struct Combobox {
-    /// Name of the form field.
-    ///
-    /// The field register itself with this `name` in the FormContext
-    /// (if any).
-    pub name: Option<AttrValue>,
-
     /// Default value.
     pub default: Option<AttrValue>,
 
@@ -54,17 +47,6 @@ impl Combobox {
     /// Create a new instance.
     pub fn new() -> Self {
         yew::props!(Self {})
-    }
-
-    /// Builder style method to set the field name.
-    pub fn name(mut self, name: impl IntoPropValue<Option<AttrValue>>) -> Self {
-        self.set_name(name);
-        self
-    }
-
-    /// Method to set the field name.
-    pub fn set_name(&mut self, name: impl IntoPropValue<Option<AttrValue>>) {
-        self.name = name.into_prop_value();
     }
 
     /// Builder style method to set the default item.
@@ -234,7 +216,6 @@ impl Component for PwtCombobox {
             .with_input_props(&props.input_props)
             .editable(props.editable)
             .default(&props.default)
-            .name(&props.name)
             .validate(props.validate.clone())
             .on_change({
                 let on_change = props.on_change.clone();

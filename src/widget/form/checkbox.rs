@@ -9,14 +9,13 @@ use pwt_macros::widget;
 
 use super::{FormContext, FieldOptions, CheckboxStateHandle};
 
+/// Checkbox or Radio group element.
+///
+/// If used a radio group element, the field name is used as radio
+/// group value.
 #[widget(pwt=crate, comp=PwtCheckbox, @input, @element)]
 #[derive(Clone, PartialEq, Properties)]
 pub struct Checkbox {
-    /// Name of the form field (or radio-group value).
-    ///
-    /// The field register itself with this `name` in the FormContext
-    /// (if any).
-    pub name: Option<AttrValue>,
     /// Radio group name.
     ///
     /// The field is part of this radio-group.
@@ -37,16 +36,6 @@ impl Checkbox {
     /// Creates a new instance.
     pub fn new() -> Self {
         yew::props!(Self {})
-    }
-    /// Builder style method to set the field name.
-    pub fn name(mut self, name: impl IntoPropValue<Option<AttrValue>>) -> Self {
-        self.set_name(name);
-        self
-    }
-
-    /// Method to set the field name.
-    pub fn set_name(&mut self, name: impl IntoPropValue<Option<AttrValue>>) {
-        self.name = name.into_prop_value();
     }
 
     /// Builder style method to set the radio group name.
@@ -106,7 +95,7 @@ impl Component for PwtCheckbox {
         let state = CheckboxStateHandle::new(
             ctx.link(),
             on_form_ctx_change,
-            props.name.clone(),
+            props.input_props.name.clone(),
             props.group.clone(),
             checked,
             FieldOptions::from_field_props(&props.input_props),

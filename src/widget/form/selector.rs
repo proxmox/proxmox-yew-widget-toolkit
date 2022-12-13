@@ -61,12 +61,6 @@ fn my_data_cmp_fn<T>(a: &Option<Rc<Vec<T>>>, b: &Option<Rc<Vec<T>>>) -> bool {
 // Note: use derivative to avoid Clone/PartialEq requirement on T
 #[derivative(Clone(bound=""), PartialEq(bound=""))]
 pub struct Selector<T: 'static> {
-    /// Name of the form field.
-    ///
-    /// The field register itself with this `name` in the FormContext
-    /// (if any).
-    pub name: Option<AttrValue>,
-
     pub loader: Option<LoadCallback<Vec<T>>>,
     #[derivative(PartialEq(compare_with="my_data_cmp_fn"))]
     pub data: Option<Rc<Vec<T>>>,
@@ -93,18 +87,6 @@ impl<T: 'static> Selector<T> {
             picker: picker.into(),
         })
     }
-
-    /// Builder style method to set the field name.
-    pub fn name(mut self, name: impl IntoPropValue<Option<AttrValue>>) -> Self {
-        self.set_name(name);
-        self
-    }
-
-    /// Method to set the field name.
-    pub fn set_name(&mut self, name: impl IntoPropValue<Option<AttrValue>>) {
-        self.name = name.into_prop_value();
-    }
-
     /// Builder style method to set the default item.
     pub fn default(mut self, default: impl IntoPropValue<Option<AttrValue>>) -> Self {
         self.set_default(default);
@@ -262,7 +244,7 @@ impl<T: 'static> PwtSelector<T> {
         });
 
         // also update the FormContext validator
-        if let Some(name) = &props.name {
+        if let Some(name) = &props.input_props.name {
             if let Some(form_ctx) = self.state.form_ctx() {
                 form_ctx.set_validate(name, Some(real_validate));
             }
@@ -304,7 +286,7 @@ impl<T: 'static> Component for PwtSelector<T> {
         let state = TextFieldStateHandle::new(
             ctx.link(),
             on_form_ctx_change,
-            props.name.clone(),
+            props.input_props.name.clone(),
             value,
             Some(real_validate),
             FieldOptions::from_field_props(&props.input_props),

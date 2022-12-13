@@ -17,12 +17,6 @@ use pwt_macros::widget;
 #[widget(pwt=crate, comp=PwtField, @input, @element)]
 #[derive(Clone, PartialEq, Properties)]
 pub struct Field {
-    /// Name of the form field.
-    ///
-    /// The field register itself with this `name` in the FormContext
-    /// (if any).
-    pub name: Option<AttrValue>,
-
     /// Input type (html input element attribute).
     #[prop_or(AttrValue::Static("text"))]
     pub input_type: AttrValue,
@@ -52,17 +46,6 @@ impl Field {
 
     pub fn new() -> Self {
         yew::props!(Self {})
-    }
-
-    /// Builder style method to set the field name.
-    pub fn name(mut self, name: impl IntoPropValue<Option<AttrValue>>) -> Self {
-        self.set_name(name);
-        self
-    }
-
-    /// Method to set the field name.
-    pub fn set_name(&mut self, name: impl IntoPropValue<Option<AttrValue>>) {
-        self.name = name.into_prop_value();
     }
 
     pub fn number(
@@ -225,7 +208,7 @@ impl Component for PwtField {
         let state = TextFieldStateHandle::new(
             ctx.link(),
             on_form_ctx_change,
-            props.name.clone(),
+            props.input_props.name.clone(),
             value,
             Some(real_validate.clone()),
             FieldOptions::from_field_props(&props.input_props),

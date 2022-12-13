@@ -45,11 +45,6 @@ pub struct Selector2RenderArgs<S: DataStore> {
 #[derivative(Clone(bound=""), PartialEq(bound=""))]
 pub struct Selector2<S: DataStore + 'static> {
     store: S,
-    /// Name of the form field.
-    ///
-    /// The field register itself with this `name` in the FormContext
-    /// (if any).
-    pub name: Option<AttrValue>,
     pub default: Option<AttrValue>,
     #[prop_or_default]
     pub editable: bool,
@@ -72,17 +67,6 @@ impl<S: DataStore> Selector2<S> {
             store,
             picker: picker.into(),
         })
-    }
-
-    /// Builder style method to set the field name.
-    pub fn name(mut self, name: impl IntoPropValue<Option<AttrValue>>) -> Self {
-        self.set_name(name);
-        self
-    }
-
-    /// Method to set the field name.
-    pub fn set_name(&mut self, name: impl IntoPropValue<Option<AttrValue>>) {
-        self.name = name.into_prop_value();
     }
 
     /// Builder style method to set the default item.
@@ -263,7 +247,7 @@ impl<S: DataStore + 'static> Component for PwtSelector2<S> {
         let state = TextFieldStateHandle::new(
             ctx.link(),
             on_form_ctx_change,
-            props.name.clone(),
+            props.input_props.name.clone(),
             value,
             Some(real_validate),
             FieldOptions::from_field_props(&props.input_props),

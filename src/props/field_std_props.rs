@@ -5,6 +5,10 @@ use yew::virtual_dom::ApplyAttributeAs;
 
 #[derive(PartialEq, Clone, Properties)]
 pub struct FieldStdProps {
+    /// The field register itself with this `name` in the FormContext
+    /// (if any).
+    pub name: Option<AttrValue>,
+
     pub label_id: Option<AttrValue>,
 
     pub tabindex: Option<i32>,
