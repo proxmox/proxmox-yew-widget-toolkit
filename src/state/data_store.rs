@@ -3,7 +3,7 @@ use std::ops::{Deref, Range};
 use yew::virtual_dom::Key;
 use yew::Callback;
 
-use crate::props::{IntoFilterFn, IntoSorterFn};
+use crate::props::{ExtractKeyFn, IntoFilterFn, IntoSorterFn};
 
 #[doc(hidden)]
 pub trait DataNode<T> {
@@ -39,6 +39,7 @@ pub trait DataStore: Clone + PartialEq {
     type Observer;
 
     fn extract_key(&self, record: &Self::Record) -> Key;
+    fn get_extract_key_fn(&self) -> ExtractKeyFn<Self::Record>;
 
     fn set_data(&self, data: Self::Collection);
 

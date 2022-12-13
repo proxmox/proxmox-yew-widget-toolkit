@@ -36,6 +36,11 @@ pub struct GridPicker2<S: DataStore> {
     /// the size of the widget is likely to change. This callback is
     /// useful to reposition the dropdown.
     pub on_filter_change: Option<Callback<String>>,
+
+    /// Show filter
+    ///
+    /// Defaul behavior is to show the filter for pickers with more than 10 items.
+    pub show_filter: Option<bool>,
 }
 
 impl<S: DataStore> GridPicker2<S> {
@@ -86,6 +91,17 @@ impl<S: DataStore> GridPicker2<S> {
     pub fn set_on_filter_change(&mut self, cb: impl IntoEventCallback<String>) {
         self.on_filter_change = cb.into_event_callback();
     }
+
+    /// Builder style method to set the show_filter flag.
+    pub fn show_filter(mut self, show_filter: impl IntoPropValue<Option<bool>>) -> Self {
+        self.set_show_filter(show_filter);
+        self
+    }
+
+    /// Method to set the show_filter flag.
+    pub fn set_show_filter(&mut self, show_filter: impl IntoPropValue<Option<bool>>) {
+        self.show_filter = show_filter.into_prop_value();
+    }
 }
 
 pub enum Msg {
@@ -95,8 +111,35 @@ pub enum Msg {
 #[doc(hidden)]
 pub struct PwtGridPicker2<S> {
     filter: String,
+    store: S,
     _selection_observer: Option<SelectionObserver>,
     _phantom: PhantomData<S>,
+}
+
+impl<S: DataStore> PwtGridPicker2<S> {
+
+    fn update_filter(&mut self, props: &GridPicker2<S>, filter: String) {
+        self.filter = filter;
+
+        if let Some(ref on_filter_change) = props.on_filter_change {
+            on_filter_change.emit(self.filter.clone());
+        }
+
+        if self.filter.is_empty() {
+            self.store.set_filter(None);
+        } else {
+            self.store.set_filter({
+                let extract_key_fn = self.store.get_extract_key_fn();
+                let filter = self.filter.clone();
+                crate::props::FilterFn::new(
+                    move |_n, item| {
+                        let key = extract_key_fn.apply(item);
+                        key.to_lowercase().contains(&filter)
+                    }
+                )
+            });
+        }
+    }
 }
 
 impl<S: DataStore + 'static> Component for PwtGridPicker2<S> {
@@ -120,26 +163,23 @@ impl<S: DataStore + 'static> Component for PwtGridPicker2<S> {
             None => None,
         };
 
-        if let Some(ref on_filter_change) = props.on_filter_change {
-            // clear filter
-            on_filter_change.emit(String::new());
-        }
-
-        Self {
+        let mut me = Self {
             _selection_observer,
             _phantom: PhantomData::<S>,
             filter: String::new(),
-        }
+            store: props.table.get_store(),
+        };
+
+        me.update_filter(props, String::new()); // clear store filter
+
+        me
     }
 
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
         let props = ctx.props();
         match msg {
             Msg::FilterUpdate(filter) => {
-                self.filter = filter;
-                if let Some(ref on_filter_change) = props.on_filter_change {
-                    on_filter_change.emit(self.filter.clone());
-                }
+                self.update_filter(props, filter);
                 true
             }
         }
@@ -166,7 +206,9 @@ impl<S: DataStore + 'static> Component for PwtGridPicker2<S> {
             .node_ref(props.node_ref.clone())
             .class("pwt-flex-fill pwt-overflow-auto");
 
-        let show_filter = props.on_filter_change.is_some();
+        let show_filter = props.show_filter.unwrap_or_else(|| {
+            if self.store.data_len() > 10 { true } else { false }
+        });
 
         if show_filter {
             let filter_invalid = false;

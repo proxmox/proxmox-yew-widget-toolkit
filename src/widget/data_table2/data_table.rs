@@ -388,6 +388,11 @@ impl <S: DataStore> DataTable<S> {
         self.row_render_callback = cb.into_optional_row_render_cb();
         self
     }
+
+    /// Returns the [DataStore].
+    pub fn get_store(&self) -> S {
+        self.store.clone()
+    }
 }
 
 #[derive(Default)]

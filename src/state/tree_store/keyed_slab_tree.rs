@@ -207,6 +207,11 @@ impl<T> KeyedSlabTree<T> {
         self.extract_key.apply(data)
     }
 
+    /// Returns the primary key extraction function.
+    pub fn get_extract_key_fn(&self) -> ExtractKeyFn<T> {
+        self.extract_key.clone()
+    }
+
     pub(crate) fn add_listener(&mut self, cb: Callback<()>) -> usize {
         self.listeners.insert(cb)
     }

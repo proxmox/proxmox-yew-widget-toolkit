@@ -220,15 +220,7 @@ impl Component for PwtCombobox {
             if show_filter {
                 picker.set_on_filter_change({
                     let link = link.clone();
-                    let store = args.store.clone();
-                    move |filter: String| {
-                        if filter.is_empty() {
-                            store.set_filter(None);
-                        } else {
-                            store.set_filter(move |_n: usize, item: &AttrValue| {
-                                item.to_lowercase().contains(&filter)
-                            })
-                        }
+                    move |_| {
                         link.send_message(Msg::Reposition);
                     }
                 });

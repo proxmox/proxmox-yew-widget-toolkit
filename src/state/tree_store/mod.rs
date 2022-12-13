@@ -207,6 +207,10 @@ impl<T: 'static> DataStore for TreeStore<T> {
         self.extract_key(data)
     }
 
+    fn get_extract_key_fn(&self) -> ExtractKeyFn<T> {
+        self.inner.borrow().get_extract_key_fn()
+    }
+
     fn add_listener(&self, cb: impl Into<Callback<()>>) -> TreeStoreObserver<T> {
         self.add_listener(cb)
     }

@@ -237,6 +237,10 @@ impl<T: 'static> DataStore for Store<T> {
         self.inner.borrow().extract_key(data)
     }
 
+    fn get_extract_key_fn(&self) -> ExtractKeyFn<T> {
+        self.inner.borrow().get_extract_key_fn()
+    }
+
     fn add_listener(&self, cb: impl Into<Callback<()>>) -> Self::Observer {
         let key = self.inner.borrow_mut()
             .add_listener(cb.into());
@@ -354,6 +358,11 @@ impl<T: 'static> StoreState<T> {
     /// Returns the unique record key.
     pub fn extract_key(&self, data: &T) -> Key {
         self.extract_key.apply(data)
+    }
+
+    /// Returns the primary key extraction function.
+    pub fn get_extract_key_fn(&self) -> ExtractKeyFn<T> {
+        self.extract_key.clone()
     }
 
     pub(crate) fn add_listener(&mut self, cb: Callback<()>) -> usize {
