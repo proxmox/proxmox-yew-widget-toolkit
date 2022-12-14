@@ -7,17 +7,17 @@ use derivative::Derivative;
 #[derivative(Clone(bound=""), PartialEq(bound=""))]
 pub struct FilterFn<T>(
     #[derivative(PartialEq(compare_with="Rc::ptr_eq"))]
-    Rc<dyn Fn(usize, &T) -> bool>
+    Rc<dyn Fn(&T) -> bool>
 );
 
 impl<T> FilterFn<T> {
     /// Creates a new [`FilterFn`]
-    pub fn new(sorter: impl 'static + Fn(usize, &T) -> bool) -> Self {
+    pub fn new(sorter: impl 'static + Fn(&T) -> bool) -> Self {
         Self(Rc::new(sorter))
     }
     /// Apply the filter function
-    pub fn apply(&self, record_num: usize, item: &T) -> bool {
-        (self.0)(record_num, item)
+    pub fn apply(&self, item: &T) -> bool {
+        (self.0)(item)
     }
 }
 
@@ -37,7 +37,7 @@ impl<T> IntoFilterFn<T> for Option<FilterFn<T>> {
     }
 }
 
-impl<T, F: 'static + Fn(usize, &T) -> bool> IntoFilterFn<T>  for F {
+impl<T, F: 'static + Fn(&T) -> bool> IntoFilterFn<T>  for F {
     fn into_filter_fn(self) -> Option<FilterFn<T>> {
         Some(FilterFn::new(self))
     }

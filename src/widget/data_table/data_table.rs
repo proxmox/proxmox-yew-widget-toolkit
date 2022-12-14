@@ -923,7 +923,7 @@ impl<S: DataStore> PwtDataTable<S> {
             let mut td = Container::new()
                 .tag("td")
                 .class(args.class)
-                .class((cell_active && self.has_focus).then(|| "cell-cursor"))
+                .class((cell_active && self.has_focus).then(|| "cell-cursor aaaselected"))
                 .attribute("style", item_style)
                 .attribute("role", "gridcell")
                 .attribute("data-column-num", column_num.to_string())

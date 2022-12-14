@@ -1,10 +1,13 @@
 //! State management helpers
 
+use std::rc::Rc;
+
+
 mod data_store;
 pub use data_store::{DataStore, DataNode, DataNodeDerefGuard};
 
-mod data_filter;
-pub use data_filter::{optional_rc_ptr_eq, DataFilter};
+//mod data_filter;
+//pub use data_filter::{optional_rc_ptr_eq, DataFilter};
 
 mod loader;
 pub use loader::{Loader, LoaderState};
@@ -74,4 +77,12 @@ pub fn local_storage() -> Option<web_sys::Storage> {
     };
 
     Some(store)
+}
+
+pub fn optional_rc_ptr_eq<T>(a: &Option<Rc<T>>, b: &Option<Rc<T>>) -> bool {
+    match (a, b) {
+        (Some(a), Some(b)) => Rc::ptr_eq(a, b),
+        (None, None) => true,
+        _ => false,
+    }
 }

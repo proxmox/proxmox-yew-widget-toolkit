@@ -246,7 +246,7 @@ impl<T> KeyedSlabTree<T> {
                 let child_id = **child_id;
                 let entry = self.get(child_id).unwrap();
                 match &self.filter {
-                    Some(filter) => filter.apply(0, &entry.record),
+                    Some(filter) => filter.apply(&entry.record),
                     None => true,
                 }
             })

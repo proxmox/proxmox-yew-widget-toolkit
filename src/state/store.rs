@@ -405,7 +405,7 @@ impl<T: 'static> StoreState<T> {
 
         self.filtered_data = self.data.iter().enumerate()
             .filter(|(_, record)| match &self.filter {
-                Some(filter) => filter.apply(0, record), // fixme: remove fiter record_num param
+                Some(filter) => filter.apply(record), // fixme: remove fiter record_num param
                 None => true,
             })
             .map(|(n, _record)| n)
