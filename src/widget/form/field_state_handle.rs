@@ -89,6 +89,20 @@ impl TextFieldStateHandle {
         }
     }
 
+    /// Trigger re-validation
+    pub fn validate(&mut self) {
+        if self.name.is_some() && self.form_ctx.is_some() {
+            let name = self.name.as_ref().unwrap();
+            let form_ctx = self.form_ctx.as_ref().unwrap();
+            form_ctx.validate_field(name);
+        } else {
+            self.valid = self.validate.as_ref().map(|v| {
+                v.validate(&self.value.clone().into()).map_err(|e| e.to_string())
+            }).unwrap_or(Ok(()));
+        }
+
+    }
+
     pub fn set_value(&mut self, value: String, set_default: bool) {
 
         if self.name.is_some() && self.form_ctx.is_some() {

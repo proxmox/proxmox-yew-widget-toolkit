@@ -279,6 +279,7 @@ impl<S: DataStore + 'static> Component for PwtSelector2<S> {
                     Ok(data) => {
                         self.load_error = None;
                         props.store.set_data(data);
+                        self.state.validate();
                     }
                     Err(err) => {
                         self.load_error = Some(err.to_string());
