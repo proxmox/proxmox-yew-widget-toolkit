@@ -41,14 +41,18 @@ pub struct HeaderWidget<T: 'static> {
     /// Allow the header to take focus.
     #[prop_or(true)]
     pub focusable: bool,
+
+    reserve_scroll_space: usize,
 }
 
-
 impl<T: 'static> HeaderWidget<T> {
-
     /// Create a new instance.
     pub fn new(headers: Rc<Vec<IndexedHeader<T>>>, on_message: Callback<HeaderMsg<T>>) -> Self {
-        yew::props!(Self { headers, on_message })
+        yew::props!(Self {
+            headers,
+            on_message,
+            reserve_scroll_space: 0,
+        })
     }
 
     /*
@@ -91,6 +95,17 @@ impl<T: 'static> HeaderWidget<T> {
     pub fn add_header_class(&mut self, class: impl Into<Classes>) {
         self.header_class.push(class);
     }
+
+    /// Builder style method to reserve scroll space.
+    pub fn reserve_scroll_space(mut self, reserve_scroll_space: usize) -> Self {
+        self.set_reserve_scroll_space(reserve_scroll_space);
+        self
+    }
+
+    /// Method to set if space should be reserved for the scroller.
+    pub fn set_reserve_scroll_space(&mut self, reserve_scroll_space: usize) {
+        self.reserve_scroll_space = reserve_scroll_space;
+    }
 }
 
 pub enum Msg {
@@ -119,11 +134,9 @@ pub struct PwtHeaderWidget<T: 'static> {
     timeout: Option<Timeout>,
 }
 
-static RESERVED_SPACE: usize = 20;
-
 impl <T: 'static> PwtHeaderWidget<T> {
 
-    fn compute_grid_style(&self) -> String {
+    fn compute_grid_style(&self, ctx: &Context<Self>) -> String {
 
         let mut grid_style = String::from("user-select: none; display:grid; grid-template-columns:");
         for (col_idx, cell) in self.state.columns().iter().enumerate() {
@@ -136,11 +149,13 @@ impl <T: 'static> PwtHeaderWidget<T> {
             grid_style.push(' ');
         }
 
-        grid_style.push_str(&format!(" {}px;", RESERVED_SPACE));
+        let scrollbar_size = ctx.props().reserve_scroll_space;
+        if scrollbar_size > 0 {
+            grid_style.push_str(&format!(" {scrollbar_size}px;"));
+        }
 
         grid_style
     }
-
 
     fn header_list_to_row(
         &self,
@@ -516,18 +531,26 @@ impl <T: 'static> Component for PwtHeaderWidget<T> {
         let column_count = self.state.column_count();
 
         // add some space at the end to make room for the tables vertical scrollbar
-        let last = Container::new()
-            .key(Key::from("last")) // important: all children need a key
-            .attribute("style", format!("grid-row: 1 / 10; grid-column-start: {};", column_count + 1));
+        let scrollbar_size = ctx.props().reserve_scroll_space;
+        if scrollbar_size > 0 {
+            header_row.push(
+                Container::new()
+                    .key(Key::from("last")) // important: all children need a key
+                    .attribute(
+                        "style",
+                        format!("grid-row: 1 / 10; grid-column-start: {};", column_count + 1),
+                    )
+                    .into(),
+            );
+        }
 
         Container::new()
             .tag("table")
             .attribute("role", "row")
             .node_ref(self.node_ref.clone())
             .class("pwt-d-grid")
-            .attribute("style", self.compute_grid_style())
+            .attribute("style", self.compute_grid_style(ctx))
             .children(header_row)
-            .with_child(last)
             .onkeydown({
                 let link = ctx.link().clone();
                 move |event: KeyboardEvent| {

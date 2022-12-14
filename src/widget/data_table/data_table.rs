@@ -36,7 +36,7 @@ pub enum Msg<T: 'static> {
     SelectionChange,
     DataChange,
     ScrollTo(i32, i32),
-    ViewportResize(f64, f64),
+    ViewportResize(f64, f64, f64),
     ContainerResize(f64, f64),
     TableResize(f64, f64),
     KeyDown(KeyboardEvent),
@@ -444,6 +444,7 @@ pub struct PwtDataTable<S: DataStore> {
     scroll_top: usize,
     set_scroll_top: Option<usize>,
     viewport_height: usize,
+    viewport_width: usize,
     table_height: usize,
 
     viewport_size_observer: Option<SizeObserver>,
@@ -452,6 +453,7 @@ pub struct PwtDataTable<S: DataStore> {
     table_size_observer: Option<SizeObserver>,
 
     row_height: usize,
+    scrollbar_size: Option<usize>,
 
     container_ref: NodeRef,
     container_size_observer: Option<SizeObserver>,
@@ -1021,30 +1023,14 @@ impl<S: DataStore> PwtDataTable<S> {
 
         let height = self.scroll_info.height;
 
-        // firefox scrollbar ignores height, so we need ad some
-        // content at the end.
-        let end_marker = Container::new()
-            .tag("img")
-            .attribute("role", "none")
-            .attribute("style", format!(
-                "height: 0px; width: 0px; overflow: hidden; position:relative;top:{}px;",
-                height
-            ));
-
-        let height = height + 15; // add some space at the end
-
         Container::new()
             .attribute("style", format!("height:{}px", height))
             .attribute("role", "none")
             .with_child(table)
-            .with_child(end_marker)
             .into()
     }
 
-    fn update_scroll_info(
-        &mut self,
-        props: &DataTable<S>,
-    ) {
+    fn update_scroll_info(&mut self, props: &DataTable<S>) {
         let row_count = props.store.filtered_data_len();
 
         let virtual_scroll = props.virtual_scroll.unwrap_or(row_count >= VIRTUAL_SCROLL_TRIGGER);
@@ -1068,6 +1054,10 @@ impl<S: DataStore> PwtDataTable<S> {
         let offset = start * self.row_height;
 
         let height = offset + self.table_height + row_count.saturating_sub(end) * self.row_height;
+
+        if height < self.viewport_height {
+            self.scrollbar_size = None;
+        }
 
         self.scroll_info = VirtualScrollInfo { start, end, offset, height };
     }
@@ -1123,6 +1113,7 @@ impl <S: DataStore + 'static> Component for PwtDataTable<S> {
             scroll_top: 0,
             set_scroll_top: None,
             viewport_height: 0,
+            viewport_width: 0,
             viewport_size_observer: None,
             header_scroll_ref: NodeRef::default(),
             scroll_ref: NodeRef::default(),
@@ -1136,6 +1127,7 @@ impl <S: DataStore + 'static> Component for PwtDataTable<S> {
             container_width: 0,
 
             row_height: props.min_row_height,
+            scrollbar_size: None,
             keypress_timeout: None,
         };
 
@@ -1180,10 +1172,16 @@ impl <S: DataStore + 'static> Component for PwtDataTable<S> {
                 self.update_scroll_info(props);
                 true
             }
-            Msg::ViewportResize(_width, height) => {
+            Msg::ViewportResize(width, height, scrollbar_size) => {
                 self.viewport_height = height.max(0.0) as usize;
-                self.update_scroll_info(props);
+                self.viewport_width = width.max(0.0) as usize;
 
+                if self.scrollbar_size.is_none() && scrollbar_size.round() > 0.0 {
+                    self.scrollbar_size = Some(scrollbar_size.round() as usize);
+                    log::info!("{scrollbar_size}");
+                }
+
+                self.update_scroll_info(props);
 
                 true
             }
@@ -1567,7 +1565,17 @@ impl <S: DataStore + 'static> Component for PwtDataTable<S> {
             .node_ref(self.scroll_ref.clone())
             .key(Key::from("table-viewport"))
             .class("pwt-flex-fill")
-            .attribute("style", "overflow: auto; outline: 0")
+            .attribute(
+                "style",
+                format!(
+                    "overflow: {}; outline: 0",
+                    if self.column_widths.iter().sum::<f64>() as usize > self.viewport_width {
+                        "auto"
+                    } else {
+                        "hidden auto"
+                    }
+                ),
+            )
             // avoid https://bugzilla.mozilla.org/show_bug.cgi?id=1069739
             .attribute("tabindex", "-1")
             .attribute("role", "rowgroup")
@@ -1638,7 +1646,8 @@ impl <S: DataStore + 'static> Component for PwtDataTable<S> {
                             .focusable(props.header_focusable && props.show_header)
                             .selection_status(self.selection_status)
                             .header_class(props.header_class.clone())
-                    )
+                            .reserve_scroll_space(self.scrollbar_size.unwrap_or_default()),
+                    ),
             )
             .with_child(viewport)
             .into()
@@ -1658,8 +1667,8 @@ impl <S: DataStore + 'static> Component for PwtDataTable<S> {
         if first_render {
             if let Some(el) = self.scroll_ref.cast::<web_sys::Element>() {
                 let link = ctx.link().clone();
-                let size_observer = SizeObserver::new(&el, move |(width, height)| {
-                    link.send_message(Msg::ViewportResize(width, height));
+                let size_observer = SizeObserver::with_client_rect(&el, move |(width, height, client_width, _)| {
+                    link.send_message(Msg::ViewportResize(width, height, width - client_width));
                 });
                 self.viewport_size_observer = Some(size_observer);
             }
