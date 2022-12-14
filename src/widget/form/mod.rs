@@ -28,8 +28,8 @@ pub use checkbox::{Checkbox, PwtCheckbox};
 mod combobox;
 pub use combobox::{Combobox, PwtCombobox};
 
-mod selector2;
-pub use selector2::{Selector2, PwtSelector2, Selector2RenderArgs};
+mod selector;
+pub use selector::{Selector, PwtSelector, SelectorRenderArgs};
 
 use std::rc::Rc;
 

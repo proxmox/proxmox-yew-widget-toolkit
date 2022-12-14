@@ -1,9 +1,6 @@
-use std::rc::Rc;
-
 use anyhow::{bail, Error};
 use serde_json::Value;
 use derivative::Derivative;
-
 
 use yew::prelude::*;
 use yew::virtual_dom::Key;
@@ -12,81 +9,66 @@ use yew::html::{IntoEventCallback, IntoPropValue};
 use proxmox_schema::Schema;
 
 use crate::prelude::*;
-use crate::props::{ExtractKeyFn, IntoLoadCallback, LoadCallback};
-use crate::state::Loader;
+use crate::props::{RenderFn, IntoLoadCallback, LoadCallback};
+use crate::state::{DataStore, Selection};
 use crate::widget::Dropdown;
+use crate::component::error_message;
 
-use super::{FieldOptions, FormContext, TextFieldStateHandle, ValidateFn};
+use super::{FieldOptions, FormContext, TextFieldStateHandle, IntoValidateFn, ValidateFn};
 
 use pwt_macros::widget;
 
-/// Render function to create the [Selector] picker.
-#[derive(Derivative)]
-#[derivative(Clone(bound=""), PartialEq(bound=""))]
-pub struct RenderSelectorPickerFn<T>(
-    #[derivative(PartialEq(compare_with="Rc::ptr_eq"))]
-    Rc<dyn Fn(&Rc<Vec<T>>, Key, &Callback<Key>) -> Html>
-);
-
-impl <T> RenderSelectorPickerFn<T> {
-    /// Creates a new [`RenderSelectorPickerFn`]
-    pub fn new(renderer: impl 'static + Fn(&Rc<Vec<T>>, Key, &Callback<Key>) -> Html) -> Self {
-        Self(Rc::new(renderer))
-    }
+pub struct SelectorRenderArgs<S: DataStore> {
+    pub store: S,
+    pub selection: Selection,
+    pub on_select: Callback<Key>,
 }
 
-impl<T, F: 'static + Fn(&Rc<Vec<T>>, Key, &Callback<Key>) -> Html> From<F> for RenderSelectorPickerFn<T> {
-    fn from(f: F) -> Self {
-        RenderSelectorPickerFn::new(f)
-    }
-}
-
-fn my_data_cmp_fn<T>(a: &Option<Rc<Vec<T>>>, b: &Option<Rc<Vec<T>>>) -> bool {
-    match (a, b) {
-        (Some(a), Some(b)) => Rc::ptr_eq(a, b),
-        (None, None) => true,
-        _ => false,
-    }
-}
-
-/// Combobox like selector
+/// Helper widget to implement `Combobox` like selectors.
 ///
-/// Supports async data loading and generic picker widget
-/// implementations.
+/// This helper simplifies the implementation of `Combobox` like
+/// selectors with complex layouts (table, trees).
+///
+/// - Extends the [Dropdown] widget.
+///
+/// - Use a [DataStore] as data storage.
+///
+/// - Ability to load data using a [LoadCallback] (with reasonable
+/// error handling).
+///
+/// - Handles [FormContext] interaction.
 ///
 /// Note: Please use a trackable [LoadCallback] to avoid unnecessary
 /// reloads.
-#[widget(pwt=crate, comp=PwtSelector<T>, @input, @element)]
+#[widget(pwt=crate, comp=PwtSelector<S>, @input, @element)]
 #[derive(Derivative, Properties)]
-// Note: use derivative to avoid Clone/PartialEq requirement on T
 #[derivative(Clone(bound=""), PartialEq(bound=""))]
-pub struct Selector<T: 'static> {
-    pub loader: Option<LoadCallback<Vec<T>>>,
-    #[derivative(PartialEq(compare_with="my_data_cmp_fn"))]
-    pub data: Option<Rc<Vec<T>>>,
+pub struct Selector<S: DataStore + 'static> {
+    store: S,
     pub default: Option<AttrValue>,
     #[prop_or_default]
     pub editable: bool,
     #[prop_or_default]
     pub autoselect: bool,
-    /// Extract Key from item
-    ///
-    /// Onyl used to auto-select the first entry (if default is not set)
-    pub extract_key: Option<ExtractKeyFn<T>>,
-    pub on_select: Option<Callback<Key>>,
-    pub picker: RenderSelectorPickerFn<T>,
-    pub validate: Option<ValidateFn<(String, Rc<Vec<T>>)>>,
+    pub on_change: Option<Callback<Key>>,
+    pub picker: RenderFn<SelectorRenderArgs<S>>,
+    pub validate: Option<ValidateFn<(String, S)>>,
+    pub loader: Option<LoadCallback<S::Collection>>,
 }
 
-impl<T: 'static> Selector<T> {
+impl<S: DataStore> Selector<S> {
 
+    /// Creates a new instance
     pub fn new(
-        picker: impl Into<RenderSelectorPickerFn<T>>,
+        store: S,
+        picker: impl Into<RenderFn<SelectorRenderArgs<S>>>,
     ) -> Self {
         yew::props!(Self {
+            store,
             picker: picker.into(),
         })
     }
+
     /// Builder style method to set the default item.
     pub fn default(mut self, default: impl IntoPropValue<Option<AttrValue>>) -> Self {
         self.set_default(default);
@@ -120,37 +102,10 @@ impl<T: 'static> Selector<T> {
         self.autoselect = autoselect;
     }
 
-    /// Builder style method to set the load callback.
-    pub fn loader(mut self, callback: impl IntoLoadCallback<Vec<T>>) -> Self {
-        self.set_loader(callback);
-        self
-    }
-
-    /// Method to set the load callback.
-    pub fn set_loader(&mut self, callback: impl IntoLoadCallback<Vec<T>>) {
-        self.loader = callback.into_load_callback();
-    }
-
-    /// Builder style method to set the data
-    pub fn data(mut self, data: impl IntoPropValue<Option<Rc<Vec<T>>>>) -> Self {
-        self.set_data(data);
-        self
-    }
-
-    /// Method to set the data
-    pub fn set_data(&mut self, data: impl IntoPropValue<Option<Rc<Vec<T>>>>) {
-        self.data = data.into_prop_value();
-    }
-
-    pub fn extract_key(mut self, extract_fn: impl Into<ExtractKeyFn<T>>) -> Self {
-        self.extract_key = Some(extract_fn.into());
-        self
-    }
-
     /// Builder style method to set the validate callback
     pub fn validate(
         mut self,
-        validate: impl 'static + Fn(&(String, Rc<Vec<T>>)) -> Result<(), Error>,
+        validate: impl IntoValidateFn<(String, S)>,
     ) -> Self {
         self.set_validate(validate);
         self
@@ -159,9 +114,9 @@ impl<T: 'static> Selector<T> {
     /// Method to set the validate callback
     pub fn set_validate(
         &mut self,
-        validate: impl 'static + Fn(&(String, Rc<Vec<T>>)) -> Result<(), Error>,
+        validate: impl IntoValidateFn<(String, S)>,
     ) {
-        self.validate = Some(ValidateFn::new(validate));
+        self.validate = validate.into_validate_fn();
     }
 
     /// Builder style method to set the validation schema
@@ -178,26 +133,46 @@ impl<T: 'static> Selector<T> {
         }));
     }
 
-    /// Builder style method to set the on_select callback
-    pub fn on_select(mut self, cb: impl IntoEventCallback<Key>) -> Self {
-        self.on_select = cb.into_event_callback();
+    /// Builder style method to set the on_change callback
+    pub fn on_change(mut self, cb: impl IntoEventCallback<Key>) -> Self {
+        self.on_change = cb.into_event_callback();
         self
+    }
+
+    /// Builder style method to set the load callback.
+    pub fn loader(mut self, callback: impl IntoLoadCallback<S::Collection>) -> Self {
+        self.set_loader(callback);
+        self
+    }
+
+    /// Method to set the load callback.
+    pub fn set_loader(&mut self, callback: impl IntoLoadCallback<S::Collection>) {
+        self.loader = callback.into_load_callback();
     }
 }
 
-pub enum Msg {
+
+pub enum Msg<S: DataStore> {
     Select(String),
     FormCtxUpdate(FormContext),
-    UpdateList,
+    DataChange,
+    LoadResult(Result<S::Collection, Error>),
 }
 
 #[doc(hidden)]
-pub struct PwtSelector<T> {
-    loader: Loader<Vec<T>>,
+pub struct PwtSelector<S: DataStore> {
     state: TextFieldStateHandle,
+    selection: Selection,
+    load_error: Option<String>,
+    _store_observer: S::Observer,
 }
 
-fn create_selector_validation_cb<T: 'static>(props: Selector<T>, data: Option<Rc<Vec<T>>>) -> ValidateFn<Value> {
+fn create_selector_validation_cb<S: DataStore + 'static>(
+    props: &Selector<S>,
+) -> ValidateFn<Value> {
+    let store = props.store.clone();
+    let required = props.input_props.required;
+    let validate = props.validate.clone();
     ValidateFn::new(move |value: &Value| {
         let value = match value {
             Value::Null => String::new(),
@@ -209,61 +184,47 @@ fn create_selector_validation_cb<T: 'static>(props: Selector<T>, data: Option<Rc
         };
 
         if value.is_empty() {
-            if props.input_props.required {
+            if required {
                 bail!("Field may not be empty.");
             } else {
                 return Ok(());
             }
         }
 
-        match &data {
-            Some(list) => {
-                match &props.validate {
-                    Some(cb) => {
-                        cb.validate(&(value.into(), Rc::clone(&list)))
-                    }
-                    None => Ok(()),
-                }
+        if !store.is_empty() {
+            match &validate {
+                Some(cb) => cb.validate(&(value.into(), store.clone())),
+                None => Ok(()),
             }
-            _ => {
-                bail!("no data loaded");
-            }
+        } else  {
+            bail!("no data loaded");
         }
     })
 }
 
-impl<T: 'static> PwtSelector<T> {
+impl<S: DataStore + 'static> PwtSelector<S> {
 
-    fn update_validator(&mut self, props: &Selector<T>) {
-        let real_validate = self.loader.with_state(|state| {
-            let data = match &state.data {
-                Some(Ok(list)) => Some(Rc::clone(list)),
-                _ => None,
-            };
-            create_selector_validation_cb(props.clone(), data)
-        });
-
-        // also update the FormContext validator
-        if let Some(name) = &props.input_props.name {
-            if let Some(form_ctx) = self.state.form_ctx() {
-                form_ctx.set_validate(name, Some(real_validate));
-            }
+    fn load(&self, ctx: &Context<Self>) {
+        let props = ctx.props();
+        let link = ctx.link().clone();
+        if let Some(loader) = props.loader.clone() {
+            wasm_bindgen_futures::spawn_local(async move {
+                let res = loader.apply().await;
+                link.send_message(Msg::LoadResult(res));
+            });
+        } else {
+            // just trigger a data change to set the default value.
+            link.send_message(Msg::DataChange);
         }
     }
 }
 
-impl<T: 'static> Component for PwtSelector<T> {
-    type Message = Msg;
-    type Properties = Selector<T>;
+impl<S: DataStore + 'static> Component for PwtSelector<S> {
+    type Message = Msg<S>;
+    type Properties = Selector<S>;
 
     fn create(ctx: &Context<Self>) -> Self {
         let props = ctx.props();
-
-        let loader = Loader::new(ctx.link().callback(|_| Msg::UpdateList))
-            .data(props.data.clone())
-            .loader(props.loader.clone());
-
-        loader.load();
 
         let value = String::new();
 
@@ -272,13 +233,13 @@ impl<T: 'static> Component for PwtSelector<T> {
             move |form_ctx: FormContext| link.send_message(Msg::FormCtxUpdate(form_ctx))
         });
 
-        let real_validate = create_selector_validation_cb(props.clone(), props.data.clone());
+        let real_validate = create_selector_validation_cb(props);
 
         let on_change = Callback::from({
-            let on_select = props.on_select.clone();
+            let on_change = props.on_change.clone();
             move |value: String| {
-                if let Some(on_select) = &on_select {
-                    on_select.emit(Key::from(value));
+                if let Some(on_change) = &on_change {
+                    on_change.emit(Key::from(value));
                 }
             }
         });
@@ -293,34 +254,59 @@ impl<T: 'static> Component for PwtSelector<T> {
             on_change,
         );
 
-        Self { state, loader }
+        let selection = Selection::new();
+        let _store_observer = props.store.add_listener(ctx.link().callback(|_| {
+            Msg::DataChange
+        }));
+
+        let me = Self {
+            state,
+            selection,
+            load_error: None,
+            _store_observer,
+        };
+
+        me.load(ctx);
+
+        me
     }
 
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
         let props = ctx.props();
         match msg {
-            Msg::FormCtxUpdate(form_ctx) => self.state.update(form_ctx),
-            Msg::UpdateList => {
-                // update validation function, because the closure include the loaded data
-                self.update_validator(props);
-
+            Msg::LoadResult(res) => {
+                match res {
+                    Ok(data) => {
+                        self.load_error = None;
+                        props.store.set_data(data);
+                        self.state.validate();
+                    }
+                    Err(err) => {
+                        self.load_error = Some(err.to_string());
+                    }
+                }
+                true
+            }
+            Msg::FormCtxUpdate(form_ctx) => {
+                let changes = self.state.update(form_ctx);
+                if changes {
+                    let (value, _valid) = self.state.get_field_data();
+                    self.selection.select(value);
+                }
+                changes
+            }
+            Msg::DataChange => {
                 let (value, _valid) = self.state.get_field_data();
 
-                if self.loader.has_valid_data() {
+                if self.load_error.is_none() {
                     if value.is_empty() {
 
                         let mut default = props.default.clone();
 
                         if default.is_none() && props.autoselect {
-                            if let Some(extract_key) = &props.extract_key {
-                                default = self.loader.with_state(|state| {
-                                    match &state.data {
-                                        Some(Ok(list)) => {
-                                            list.get(0).map(|item| AttrValue::from(extract_key.apply(item).to_string()))
-                                        }
-                                        _ => None,
-                                    }
-                                });
+
+                            if let Some((_pos, node)) = props.store.filtered_data().next() {
+                                default = Some(AttrValue::from(node.key().to_string()));
                             }
                         }
 
@@ -343,16 +329,20 @@ impl<T: 'static> Component for PwtSelector<T> {
     fn changed(&mut self, ctx: &Context<Self>, old_props: &Self::Properties) -> bool {
         let props = ctx.props();
 
-        let data_changed = !my_data_cmp_fn(&props.data, &old_props.data);
+        let mut reload = false;
 
-        if data_changed {
-            self.loader.set_data(props.data.clone());
+        if props.store != old_props.store {
+            self._store_observer = props.store.add_listener(ctx.link().callback(|_| {
+                Msg::DataChange
+            }));
+            reload = true;
         }
 
         if props.loader != old_props.loader {
-            self.loader.set_loader(props.loader.clone());
-            self.loader.load();
+            reload = true;
         }
+
+        if reload { self.load(ctx); }
 
         true
     }
@@ -363,19 +353,30 @@ impl<T: 'static> Component for PwtSelector<T> {
         let (value, valid) = self.state.get_field_data();
 
         let picker = {
-            let value = value.clone();
-            let loader = self.loader.clone();
-            let props = props.clone();
             let picker = props.picker.clone();
+            let store = props.store.clone();
+            let selection = self.selection.clone();
+
+            let load_error = self.load_error.clone();
 
             move |on_select: &Callback<Key>| {
-                loader.render(|list: Rc<Vec<T>>| {
-                    if list.is_empty() {
-                        html!{<div class="pwt-p-2">{"List does not contain any items."}</div>}
-                    } else {
-                        (picker.0)(&list, Key::from(value.clone()), on_select)
-                    }
-                })
+
+                if let Some(load_error) = &load_error {
+                    return error_message(&format!("Error: {}", load_error), "pwt-p-2");
+                }
+
+                if store.is_empty() {
+                    return html!{
+                        <div class="pwt-p-2">{"List does not contain any items."}</div>
+                    };
+                }
+
+                let render_picker_args = SelectorRenderArgs {
+                    store: store.clone(),
+                    selection: selection.clone(),
+                    on_select: on_select.clone(), // fixme
+                };
+                picker.apply(&render_picker_args)
             }
         };
 

@@ -11,7 +11,7 @@ use crate::state::Store;
 use crate::widget::GridPicker;
 use crate::widget::data_table2::{DataTable, DataTableColumn, DataTableHeader};
 
-use super::{Selector2, Selector2RenderArgs, IntoValidateFn, ValidateFn};
+use super::{Selector, SelectorRenderArgs, IntoValidateFn, ValidateFn};
 
 use pwt_macros::widget;
 
@@ -189,7 +189,7 @@ impl Component for PwtCombobox {
             if self.store.data_len() > 10 { true } else { false }
         });
 
-        let picker = move |args: &Selector2RenderArgs<Store<AttrValue>>| {
+        let picker = move |args: &SelectorRenderArgs<Store<AttrValue>>| {
             // TODO use a simpler list widget without virtual scroll support?
             let table = DataTable::new(COLUMNS.with(Rc::clone), args.store.clone())
                 .show_header(false)
@@ -211,7 +211,7 @@ impl Component for PwtCombobox {
             picker.into()
         };
 
-        Selector2::new(self.store.clone(), picker)
+        Selector::new(self.store.clone(), picker)
             .with_std_props(&props.std_props)
             .with_input_props(&props.input_props)
             .editable(props.editable)
