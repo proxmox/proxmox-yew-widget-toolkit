@@ -56,6 +56,7 @@ pub enum Msg {
 #[doc(hidden)]
 pub struct PwtSubmitButton {
     form_valid: bool,
+    form_dirty: bool,
     form_ctx: Option<FormContext>,
     _form_ctx_handle: Option<ContextHandle<FormContext>>,
 }
@@ -66,6 +67,7 @@ impl Component for PwtSubmitButton {
 
     fn create(ctx: &Context<Self>) -> Self {
         let mut form_valid = true;
+        let mut form_dirty = false;
 
         let on_form_ctx_change = Callback::from({
             let link = ctx.link().clone();
@@ -76,6 +78,7 @@ impl Component for PwtSubmitButton {
         let mut form_ctx = None;
         if let Some((form, handle)) = ctx.link().context::<FormContext>(on_form_ctx_change) {
             form_valid = form.valid();
+            form_dirty = form.dirty();
             form_ctx = Some(form);
             _form_ctx_handle = Some(handle);
         }
@@ -84,16 +87,19 @@ impl Component for PwtSubmitButton {
             _form_ctx_handle,
             form_ctx,
             form_valid,
+            form_dirty,
         }
-
     }
 
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
         let props = ctx.props();
         match msg {
             Msg::FormCtxUpdate(form_ctx) => {
+                self.form_dirty = form_ctx.dirty();
                 let form_valid = form_ctx.valid();
-                if self.form_valid == form_valid { return false; }
+                if self.form_valid == form_valid {
+                    return false;
+                }
                 self.form_valid = form_valid;
                 self.form_ctx = Some(form_ctx);
                 true
@@ -124,7 +130,7 @@ impl Component for PwtSubmitButton {
                 type="submit"
                 onclick={submit}
                 class="pwt-button primary"
-                disabled={!self.form_valid || props.disabled}>{&props.text}
+                disabled={!self.form_valid || props.disabled || !self.form_dirty}>{&props.text}
             </button>
         }
     }
