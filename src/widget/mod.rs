@@ -34,9 +34,6 @@ pub use menu::{dispatch_menu_close_event, Menu, MenuBar, MenuEntry, MenuItem, Me
 mod resizable;
 pub use resizable::Resizable;
 
-mod data_table;
-pub use data_table::{DataTable, DataTableColumn, PwtDataTable};
-
 pub mod data_table2;
 
 mod dialog;
@@ -45,8 +42,6 @@ pub use dialog::{Dialog, PwtDialog};
 mod panel;
 pub use panel::Panel;
 
-mod grid_picker;
-pub use grid_picker::GridPicker;
 mod grid_picker2;
 pub use grid_picker2::GridPicker2;
 
