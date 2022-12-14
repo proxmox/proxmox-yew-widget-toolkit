@@ -323,14 +323,9 @@ impl <T: 'static> PwtHeaderWidget<T> {
                                 return;
                             }
                         }
-                        if sortable {
-                            match event.key_code() {
-                                13 => {
-                                    link.send_message(Msg::ColumnSortChange(cell_idx, event.ctrl_key(), None));
-                                    event.prevent_default();
-                                }
-                                _ => {},
-                            };
+                        if sortable && event.key().as_str() == "Enter" {
+                            link.send_message(Msg::ColumnSortChange(cell_idx, event.ctrl_key(), None));
+                            event.prevent_default();
                         }
                     }
                 })
