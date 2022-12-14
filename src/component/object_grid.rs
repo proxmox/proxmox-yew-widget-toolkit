@@ -14,7 +14,7 @@ use crate::widget::{Button, Toolbar};
 use crate::widget::form::FormContext;
 use crate::component::{EditWindow, KVGrid, KVGridRow};
 
-use crate::widget::data_table2::{DataTableKeyboardEvent, DataTableMouseEvent};
+use crate::widget::data_table::{DataTableKeyboardEvent, DataTableMouseEvent};
 
 #[derive(Derivative)]
 #[derivative(Clone, PartialEq)]

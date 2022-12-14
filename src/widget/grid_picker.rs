@@ -11,7 +11,7 @@ use yew::virtual_dom::{Key, VComp, VNode};
 use crate::prelude::*;
 use crate::state::{Selection, SelectionObserver, DataStore};
 use crate::widget::{Column, Row};
-use crate::widget::data_table2::{DataTable, DataTableMouseEvent};
+use crate::widget::data_table::{DataTable, DataTableMouseEvent};
 use crate::widget::form::Input;
 
 #[derive(Derivative, Properties)]

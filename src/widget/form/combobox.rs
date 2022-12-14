@@ -9,7 +9,7 @@ use proxmox_schema::Schema;
 use crate::prelude::*;
 use crate::state::Store;
 use crate::widget::GridPicker;
-use crate::widget::data_table2::{DataTable, DataTableColumn, DataTableHeader};
+use crate::widget::data_table::{DataTable, DataTableColumn, DataTableHeader};
 
 use super::{Selector, SelectorRenderArgs, IntoValidateFn, ValidateFn};
 

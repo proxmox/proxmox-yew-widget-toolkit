@@ -10,7 +10,7 @@ use yew::html::IntoEventCallback;
 
 use crate::props::{IntoEventCallbackMut, CallbackMut};
 use crate::state::{Selection, Store};
-use crate::widget::data_table2::{
+use crate::widget::data_table::{
     DataTable, DataTableColumn, DataTableHeader, DataTableMouseEvent,
     DataTableKeyboardEvent,
 };

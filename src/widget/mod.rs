@@ -34,7 +34,7 @@ pub use menu::{dispatch_menu_close_event, Menu, MenuBar, MenuEntry, MenuItem, Me
 mod resizable;
 pub use resizable::Resizable;
 
-pub mod data_table2;
+pub mod data_table;
 
 mod dialog;
 pub use dialog::{Dialog, PwtDialog};
