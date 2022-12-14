@@ -14,8 +14,8 @@ pub use navigation_container::{
     NavigationContainer, NavigationContext, NavigationContextExt, PwtNavigationContainer
 };
 
-mod selection2;
-pub use selection2::{use_selection, Selection2, SelectionObserver};
+mod selection;
+pub use selection::{use_selection, Selection, SelectionObserver};
 
 mod store;
 pub use store::*;

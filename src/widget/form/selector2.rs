@@ -10,7 +10,7 @@ use proxmox_schema::Schema;
 
 use crate::prelude::*;
 use crate::props::{RenderFn, IntoLoadCallback, LoadCallback};
-use crate::state::{DataStore, Selection2};
+use crate::state::{DataStore, Selection};
 use crate::widget::Dropdown;
 use crate::component::error_message;
 
@@ -20,7 +20,7 @@ use pwt_macros::widget;
 
 pub struct Selector2RenderArgs<S: DataStore> {
     pub store: S,
-    pub selection: Selection2,
+    pub selection: Selection,
     pub on_select: Callback<Key>,
 }
 
@@ -162,7 +162,7 @@ pub enum Msg<S: DataStore> {
 #[doc(hidden)]
 pub struct PwtSelector2<S: DataStore> {
     state: TextFieldStateHandle,
-    selection: Selection2,
+    selection: Selection,
     load_error: Option<String>,
     _store_observer: S::Observer,
 }
@@ -254,7 +254,7 @@ impl<S: DataStore + 'static> Component for PwtSelector2<S> {
             on_change,
         );
 
-        let selection = Selection2::new();
+        let selection = Selection::new();
         let _store_observer = props.store.add_listener(ctx.link().callback(|_| {
             Msg::DataChange
         }));

@@ -9,7 +9,7 @@ use yew::virtual_dom::{VComp, VNode, Key};
 use yew::html::IntoEventCallback;
 
 use crate::props::{IntoEventCallbackMut, CallbackMut};
-use crate::state::{Selection2, Store};
+use crate::state::{Selection, Store};
 use crate::widget::data_table2::{
     DataTable, DataTableColumn, DataTableHeader, DataTableMouseEvent,
     DataTableKeyboardEvent,
@@ -188,7 +188,7 @@ struct Record {
 pub struct PwtKVGrid {
     rows: Rc<IndexMap<String, Rc<KVGridRow>>>,
     store: Store<Record>,
-    selection: Selection2,
+    selection: Selection,
 }
 
 thread_local!{
@@ -256,10 +256,10 @@ impl Component for PwtKVGrid {
 
         let store = Store::with_extract_key(|record: &Record| Key::from(record.row.name.as_str()));
 
-        let selection = Selection2::new()
+        let selection = Selection::new()
             .on_select({
                 let on_select = props.on_select.clone();
-                move |selection: Selection2| {
+                move |selection: Selection| {
                     if let Some(on_select) = &on_select {
                         on_select.emit(selection.selected_key());
                     }

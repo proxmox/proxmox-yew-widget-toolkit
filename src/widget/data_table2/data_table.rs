@@ -14,7 +14,7 @@ use yew::html::IntoPropValue;
 
 use crate::prelude::*;
 use crate::props::{SorterFn, CallbackMut, IntoEventCallbackMut};
-use crate::state::{DataStore, DataNode, Selection2, SelectionObserver};
+use crate::state::{DataStore, DataNode, Selection, SelectionObserver};
 use crate::widget::{get_unique_element_id, Container, Column, SizeObserver};
 
 use super::{
@@ -166,7 +166,7 @@ pub struct DataTable<S: DataStore> {
     pub min_row_height: usize,
 
     /// Selection object.
-    pub selection: Option<Selection2>,
+    pub selection: Option<Selection>,
 
     /// Automatically select the focused row.
     #[prop_or(true)]
@@ -359,7 +359,7 @@ impl <S: DataStore> DataTable<S> {
     }
 
     /// Builder style method to set the selection model.
-    pub fn selection(mut self, selection: impl IntoPropValue<Option<Selection2>>) -> Self {
+    pub fn selection(mut self, selection: impl IntoPropValue<Option<Selection>>) -> Self {
         self.selection = selection.into_prop_value();
         self
     }
@@ -596,7 +596,7 @@ impl<S: DataStore> PwtDataTable<S> {
     fn select_position(
         &mut self,
         props: &DataTable<S>,
-        selection: &Selection2,
+        selection: &Selection,
         cursor: usize,
         _shift: bool,
         ctrl: bool,
@@ -615,7 +615,7 @@ impl<S: DataStore> PwtDataTable<S> {
     fn select_range(
         &mut self,
         props: &DataTable<S>,
-        selection: &Selection2,
+        selection: &Selection,
         last_cursor: Option<usize>,
         new_cursor: Option<usize>,
         shift: bool,

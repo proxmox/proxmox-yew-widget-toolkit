@@ -9,7 +9,7 @@ use yew::html::{IntoEventCallback, IntoPropValue};
 use yew::virtual_dom::{Key, VComp, VNode};
 
 use crate::prelude::*;
-use crate::state::{Selection2, SelectionObserver, DataStore};
+use crate::state::{Selection, SelectionObserver, DataStore};
 use crate::widget::{Column, Row};
 use crate::widget::data_table2::{DataTable, DataTableMouseEvent};
 use crate::widget::form::Input;
@@ -25,7 +25,7 @@ pub struct GridPicker2<S: DataStore> {
     table: DataTable<S>,
 
     /// Selection object.
-    pub selection: Option<Selection2>,
+    pub selection: Option<Selection>,
 
     /// Select callback.
     pub on_select: Option<Callback<Key>>,
@@ -73,7 +73,7 @@ impl<S: DataStore> GridPicker2<S> {
     }
 
     /// Builder style method to set the selection model.
-    pub fn selection(mut self, selection: impl IntoPropValue<Option<Selection2>>) -> Self {
+    pub fn selection(mut self, selection: impl IntoPropValue<Option<Selection>>) -> Self {
         self.selection = selection.into_prop_value();
         self
     }
@@ -152,7 +152,7 @@ impl<S: DataStore + 'static> Component for PwtGridPicker2<S> {
         let _selection_observer = match &props.selection {
             Some(selection) => Some(selection.add_listener({
                 let on_select = props.on_select.clone();
-                move |selection: Selection2| {
+                move |selection: Selection| {
                     if let Some(on_select) = &on_select {
                         if let Some(key) = selection.selected_key() {
                             on_select.emit(key);

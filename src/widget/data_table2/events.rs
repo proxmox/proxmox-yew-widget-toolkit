@@ -3,13 +3,13 @@ use std::ops::Deref;
 use yew::prelude::*;
 use yew::virtual_dom::Key;
 
-use crate::state::Selection2;
+use crate::state::Selection;
 
 use super::HeaderMsg;
 
 /// Like [web_sys::KeyboardEvent], but includes a record key.
 pub struct DataTableKeyboardEvent {
-    pub(crate) selection: Option<Selection2>,
+    pub(crate) selection: Option<Selection>,
     pub(crate) inner: KeyboardEvent,
     pub record_key: Key,
     pub(crate) stop_propagation: bool,
@@ -17,7 +17,7 @@ pub struct DataTableKeyboardEvent {
 
 impl DataTableKeyboardEvent {
     /// Returns the selction model used by the table.
-    pub fn selection(&self) -> Option<Selection2> {
+    pub fn selection(&self) -> Option<Selection> {
         self.selection.clone()
     }
 
@@ -38,7 +38,7 @@ impl Deref for DataTableKeyboardEvent {
 
 /// Like [web_sys::MouseEvent], but includes a record key.
 pub struct DataTableMouseEvent {
-    pub(crate) selection: Option<Selection2>,
+    pub(crate) selection: Option<Selection>,
     pub(crate) inner: MouseEvent,
     pub(crate) stop_propagation: bool,
     pub record_key: Key,
@@ -46,7 +46,7 @@ pub struct DataTableMouseEvent {
 
 impl DataTableMouseEvent {
     /// Returns the selction model used by the table.
-    pub fn selection(&self) -> Option<Selection2> {
+    pub fn selection(&self) -> Option<Selection> {
         self.selection.clone()
     }
 

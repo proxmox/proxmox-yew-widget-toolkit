@@ -6,7 +6,7 @@ use indexmap::IndexMap;
 use yew::prelude::*;
 use yew::html::IntoPropValue;
 
-use crate::state::{DataNode, Selection2};
+use crate::state::{DataNode, Selection};
 
 /// Cell render function arguments.
 ///
@@ -22,7 +22,7 @@ pub struct DataTableCellRenderArgs<'a, T> {
     // Select flag is set when the cell is selected.
     pub(crate) selected: bool,
 
-    pub(crate) selection: Option<Selection2>,
+    pub(crate) selection: Option<Selection>,
 
 
     /// Cell class. This attribute may be modified to change the
@@ -55,7 +55,7 @@ impl<'a, T> DataTableCellRenderArgs<'a, T> {
     }
 
     /// Returns the selction model used by the table.
-    pub fn selection(&self) -> Option<Selection2> {
+    pub fn selection(&self) -> Option<Selection> {
         self.selection.clone()
     }
 
