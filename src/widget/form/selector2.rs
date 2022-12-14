@@ -277,6 +277,7 @@ impl<S: DataStore + 'static> Component for PwtSelector2<S> {
             Msg::LoadResult(res) => {
                 match res {
                     Ok(data) => {
+                        self.load_error = None;
                         props.store.set_data(data);
                     }
                     Err(err) => {
@@ -326,12 +327,22 @@ impl<S: DataStore + 'static> Component for PwtSelector2<S> {
 
     fn changed(&mut self, ctx: &Context<Self>, old_props: &Self::Properties) -> bool {
         let props = ctx.props();
+
+        let mut reload = false;
+
         if props.store != old_props.store {
             self._store_observer = props.store.add_listener(ctx.link().callback(|_| {
                 Msg::DataChange
             }));
-            self.load(ctx);
+            reload = true;
         }
+
+        if props.loader != old_props.loader {
+            reload = true;
+        }
+
+        if reload { self.load(ctx); }
+
         true
     }
 
