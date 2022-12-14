@@ -294,12 +294,12 @@ impl <T: 'static> PwtHeaderWidget<T> {
                         .menu_builder({
                             let headers = Rc::clone(&props.headers);
                             let link = link.clone();
-                            let hidden_cells = Vec::from(self.state.hidden_cells());
+                            let hidden_cells = self.state.hidden_cells();
                             move || build_header_menu(&headers, &link, cell_idx, &hidden_cells)
                         })
                 )
                 .onfocusin(link.callback(move |_| Msg::FocusCell(cell_idx)))
-                .ondblclick({
+                .onclick({
                     let link = link.clone();
                     move |event: MouseEvent| {
                         if sortable {
