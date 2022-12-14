@@ -42,8 +42,8 @@ pub use dialog::{Dialog, PwtDialog};
 mod panel;
 pub use panel::Panel;
 
-mod grid_picker2;
-pub use grid_picker2::GridPicker2;
+mod grid_picker;
+pub use grid_picker::GridPicker;
 
 mod row;
 pub use row::Row;

@@ -8,7 +8,7 @@ use proxmox_schema::Schema;
 
 use crate::prelude::*;
 use crate::state::Store;
-use crate::widget::GridPicker2;
+use crate::widget::GridPicker;
 use crate::widget::data_table2::{DataTable, DataTableColumn, DataTableHeader};
 
 use super::{Selector2, Selector2RenderArgs, IntoValidateFn, ValidateFn};
@@ -195,7 +195,7 @@ impl Component for PwtCombobox {
                 .show_header(false)
                 .class("pwt-fit");
 
-            let mut picker = GridPicker2::new(table)
+            let mut picker = GridPicker::new(table)
                 .selection(args.selection.clone())
                 .on_select(args.on_select.clone());
 
