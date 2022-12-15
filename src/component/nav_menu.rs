@@ -40,6 +40,7 @@ impl MenuItem {
         SubMenu {
             item: self,
             children: Vec::new(),
+            selectable: true,
         }
     }
 }
@@ -48,6 +49,7 @@ impl MenuItem {
 pub struct SubMenu {
     item: MenuItem,
     children: Vec<Menu>,
+    selectable: bool,
 }
 
 impl From<MenuItem> for SubMenu {
@@ -73,6 +75,15 @@ impl SubMenu {
 
     pub fn add_component(&mut self, component: impl Into<VNode>) {
         self.children.push(Menu::Component(component.into()))
+    }
+
+    pub fn unselectable(mut self) -> Self {
+        self.set_selectable(false);
+        self
+    }
+
+    pub fn set_selectable(&mut self, selectable: bool) {
+        self.selectable = selectable;
     }
 }
 
@@ -277,7 +288,11 @@ impl PwtNavigationMenu {
                     content = Some((child.text.clone(), child.content.apply(&child.id)));
                 }
             }
-            Menu::SubMenu(SubMenu { item, children }) => {
+            Menu::SubMenu(SubMenu {
+                item,
+                children,
+                selectable: _selectable,
+            }) => {
                 menu.add_child(self.render_child(ctx, item, active, level, true, visible));
                 if item.id.deref() == active {
                     content = Some((item.text.clone(), item.content.apply(&item.id)));
@@ -318,6 +333,67 @@ impl PwtNavigationMenu {
             }
         }
         None
+    }
+
+    fn find_selectable_key(&mut self, ctx: &Context<Self>, desired: Key) -> Option<Key> {
+        let props = ctx.props();
+
+        fn find_first_key_recursive(menu: &[Menu]) -> Option<Key> {
+            for menu in menu.iter() {
+                let res = match menu {
+                    Menu::Item(item) => Some(item.id.clone()),
+                    Menu::SubMenu(sub) => {
+                        if sub.selectable {
+                            Some(sub.item.id.clone())
+                        } else {
+                            find_first_key_recursive(&sub.children[..])
+                        }
+                    }
+                    _ => None,
+                };
+                if res.is_some() {
+                    return res;
+                }
+            }
+            None
+        }
+
+        fn find_item_recursive<'a, 'b>(menu: &'a [Menu], desired: &'b Key) -> Option<&'a Menu> {
+            for menu in menu.iter() {
+                match menu {
+                    Menu::Item(item) => {
+                        if &item.id == desired {
+                            return Some(menu);
+                        }
+                    }
+                    Menu::SubMenu(sub) => {
+                        if &sub.item.id == desired {
+                            return Some(menu);
+                        } else {
+                            let res = find_item_recursive(&sub.children[..], desired);
+                            if res.is_some() {
+                                return res;
+                            }
+                        }
+                    }
+                    _ => {}
+                };
+            }
+            None
+        }
+
+        match find_item_recursive(&props.menu, &desired) {
+            Some(Menu::Item(_)) => Some(desired),
+            Some(Menu::SubMenu(sub)) => {
+                if sub.selectable {
+                    Some(desired)
+                } else {
+                    self.menu_states.insert(desired, true);
+                    find_first_key_recursive(&sub.children)
+                }
+            }
+            _ => None,
+        }
     }
 }
 
@@ -362,7 +438,15 @@ impl Component for PwtNavigationMenu {
         let props = ctx.props();
         match msg {
             Msg::Select(key, update_route) => {
-                if key == self.active { return false; }
+                if key == self.active {
+                    return false;
+                }
+
+                let key = if let Some(key) = key {
+                    self.find_selectable_key(ctx, key)
+                } else {
+                    None
+                };
 
                 self.active = key.clone();
 
