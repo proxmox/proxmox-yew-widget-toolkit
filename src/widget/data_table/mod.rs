@@ -20,6 +20,9 @@ pub use row_render_callback::{
     IntoOptionalDataTableRowRenderCallback,
 };
 
+mod row;
+pub(crate) use row::DataTableRow;
+
 mod cell_render_callback;
 pub use cell_render_callback::{DataTableCellRenderer, DataTableCellRenderArgs};
 
@@ -39,18 +42,6 @@ pub(crate) use data_table::HeaderMsg;
 use yew::prelude::*;
 use yew::virtual_dom::VList;
 
-use crate::state::DataNode;
-
-// Note: this could be use to generate more complex layouts with tree lines...
-fn get_indent<T>(item: &dyn DataNode<T>, indent: &mut VList) {
-    if item.level() == 0 { return; }
-    if let Some(parent) = item.parent() {
-        get_indent(&*parent, indent);
-        let space = html!{ <span class="pwt-ps-4"/> };
-        indent.push(space);
-    }
-}
-
 /// Helper function to render tree nodes.
 ///
 /// This function generates a tree node with:
@@ -66,21 +57,22 @@ pub fn render_tree_node<T>(
     args: &mut DataTableCellRenderArgs<T>,
     render: impl Fn(&T) -> (Option<String>, String),
 ) -> Html {
-    let node = args.node();
-
-    let record = node.record();
-    let (class, content) = render(&*record);
+    let record = args.record;
+    let (class, content) = render(record);
     let class = class.unwrap_or(String::new());
 
     let mut list: VList = VList::new();
-    get_indent(node, &mut list);
+    for _ in 0..args.level() {
+        list.push(html!{ <span class="pwt-ps-4"/> });
+    }
+
     let indent: Html = list.into();
 
-    let leaf = node.is_leaf();
+    let leaf = args.is_leaf();
     if leaf {
         html!{<span role="none">{indent.clone()}<i {class}/>{content}</span>}
     } else {
-        let carret = match node.expanded() {
+        let carret = match args.is_expanded() {
             true => "fa fa-fw fa-caret-down pwt-pe-1",
             false => "fa fa-fw fa-caret-right pwt-pe-1",
         };
@@ -113,7 +105,7 @@ pub fn render_selection_indicator<T>(args: &mut DataTableCellRenderArgs<T>) -> H
 
     let onclick = Callback::from({
         let selection = args.selection();
-        let record_key = args.node().key();
+        let record_key = args.record_key.clone();
         move |_| {
             if let Some(selection) = &selection {
                 selection.toggle(record_key.clone());

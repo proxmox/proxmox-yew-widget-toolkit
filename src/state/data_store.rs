@@ -32,7 +32,7 @@ pub trait DataNode<T> {
 #[doc(hidden)]
 pub trait DataStore: Clone + PartialEq {
     /// The record type
-    type Record: 'static;
+    type Record: Clone + PartialEq + 'static;
     /// The collection type used by [Self::set_data].
     type Collection;
     /// Observer type return by [Self::add_listener].

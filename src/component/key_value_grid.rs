@@ -178,6 +178,7 @@ impl KVGrid {
     }
 }
 
+#[derive(Clone, PartialEq)]
 struct Record {
     row: Rc<KVGridRow>,
     value: Value,

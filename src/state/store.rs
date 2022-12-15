@@ -228,7 +228,7 @@ impl<'a, T: 'static> DataNode<T> for StoreNodeRef<'a, T> {
     }
 }
 
-impl<T: 'static> DataStore for Store<T> {
+impl<T: Clone + PartialEq + 'static> DataStore for Store<T> {
     type Observer = StoreObserver<T>;
     type Record = T;
     type Collection = Vec<T>;

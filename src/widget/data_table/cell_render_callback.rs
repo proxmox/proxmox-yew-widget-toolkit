@@ -5,8 +5,9 @@ use indexmap::IndexMap;
 
 use yew::prelude::*;
 use yew::html::IntoPropValue;
+use yew::virtual_dom::Key;
 
-use crate::state::{DataNode, Selection};
+use crate::state::Selection;
 
 /// Cell render function arguments.
 ///
@@ -14,7 +15,8 @@ use crate::state::{DataNode, Selection};
 /// the table cell.
 pub struct DataTableCellRenderArgs<'a, T> {
     // The data node.
-    pub(crate) node: &'a dyn DataNode<T>,
+    pub(crate) record: &'a T,
+    pub(crate) record_key: &'a Key,
     // Row index.
     pub(crate) row_index: usize,
     // Column index.
@@ -24,6 +26,9 @@ pub struct DataTableCellRenderArgs<'a, T> {
 
     pub(crate) selection: Option<Selection>,
 
+    pub(crate) is_expanded: bool,
+    pub(crate) is_leaf: bool,
+    pub(crate) level: usize,
 
     /// Cell class. This attribute may be modified to change the
     /// appearance of the cell.
@@ -35,8 +40,12 @@ pub struct DataTableCellRenderArgs<'a, T> {
 impl<'a, T> DataTableCellRenderArgs<'a, T> {
 
     /// Return the data node.
-    pub fn node(&self) -> &dyn DataNode<T> {
-        self.node
+    pub fn record(&self) -> &T {
+        self.record
+    }
+
+    pub fn key(&self) -> &Key {
+        self.record_key
     }
 
     /// Returns the row index.
@@ -47,6 +56,18 @@ impl<'a, T> DataTableCellRenderArgs<'a, T> {
     /// Returns the column index.
     pub fn columns_index(&self) -> usize {
         self.column_index
+    }
+
+    pub fn is_expanded(&self) -> bool {
+        self.is_expanded
+    }
+
+    pub fn is_leaf(&self) -> bool {
+        self.is_leaf
+    }
+
+    pub fn level(&self) -> usize {
+        self.level
     }
 
     /// Returns if the cell is selected.

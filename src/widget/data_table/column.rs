@@ -172,7 +172,7 @@ impl<T: 'static> DataTableColumn<T> {
     pub fn render(self, render: impl Into<RenderFn<T>>) -> Self {
         let render = render.into();
         self.render_cell(move |args: &mut DataTableCellRenderArgs<T>| {
-            render.apply(&*args.node.record())
+            render.apply(args.record)
         })
     }
 

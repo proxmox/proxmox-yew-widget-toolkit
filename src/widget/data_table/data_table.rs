@@ -3,7 +3,6 @@ use std::marker::PhantomData;
 use std::collections::HashSet;
 
 use derivative::Derivative;
-use indexmap::IndexMap;
 
 use gloo_timers::callback::Timeout;
 use wasm_bindgen::JsCast;
@@ -14,15 +13,15 @@ use yew::html::IntoPropValue;
 
 use crate::prelude::*;
 use crate::props::{SorterFn, CallbackMut, IntoEventCallbackMut};
-use crate::state::{DataStore, DataNode, Selection, SelectionObserver};
+use crate::state::{DataStore, Selection, SelectionObserver};
 use crate::widget::{get_unique_element_id, Container, Column, SizeObserver};
 
 use super::{
     create_indexed_header_list,
     DataTableColumn, HeaderWidget, DataTableMouseEvent, DataTableKeyboardEvent,
-    DataTableHeader, DataTableCellRenderArgs, IndexedHeader,
-    DataTableRowRenderArgs, DataTableRowRenderCallback,
+    DataTableHeader, IndexedHeader, DataTableRowRenderCallback,
     IntoOptionalDataTableRowRenderCallback,
+    DataTableRow,
 };
 
 pub enum HeaderMsg<T: 'static> {
@@ -117,6 +116,7 @@ pub struct DataTable<S: DataStore> {
     #[prop_or_default]
     pub class: Classes,
 
+    #[derivative(PartialEq(compare_with="Rc::ptr_eq"))]
     headers: Rc<Vec<DataTableHeader<S::Record>>>,
 
     // The data collection ([Store] or [TreeStore](crate::state::TreeStore)).
@@ -432,12 +432,12 @@ pub struct PwtDataTable<S: DataStore> {
 
     headers: Rc<Vec<IndexedHeader<S::Record>>>,
 
-    columns: Vec<DataTableColumn<S::Record>>,
+    columns: Rc<Vec<DataTableColumn<S::Record>>>,
     column_widths: Vec<f64>,
-    column_hidden: Vec<bool>,
+    column_hidden: Rc<Vec<bool>>,
     scroll_info: VirtualScrollInfo,
 
-    cell_class: Classes,
+    cell_class: Rc<Classes>,
 
     header_scroll_ref: NodeRef,
     scroll_ref: NodeRef,
@@ -830,131 +830,6 @@ impl<S: DataStore> PwtDataTable<S> {
         }
     }
 
-    fn render_row(
-        &self,
-        props: &DataTable<S>,
-        item: &dyn DataNode<S::Record>,
-        record_key: Key,
-        row_num: usize,
-        selected: bool,
-        active: bool,
-    ) -> Html {
-
-        let item_id = self.get_unique_item_id(&record_key);
-
-        // Make sure our rows have a minimum height
-        // Note: setting min-height on <tr> or <td> does not work
-        let minheight_cell_style = AttrValue::Rc(
-            format!("vertical-align:top;height: {}px;", props.min_row_height).into()
-        );
-
-        let aria_expanded = if item.is_leaf() {
-            None
-        } else {
-            if item.expanded() { Some("true") } else { Some("false") }
-        };
-
-        let mut row = Container::new()
-            .tag("tr")
-            .key(record_key)
-            .attribute("role", "row")
-            .attribute("aria-rowindex", (row_num + 1).to_string()) // does not work, no firefox support?
-            .attribute("aria-expanded", aria_expanded)
-            .attribute("aria-selected", if selected { "true" } else { "false" } )
-            .attribute("id", item_id)
-            .class((active && self.has_focus).then(|| "row-cursor"))
-            .class(selected.then(|| "selected"));
-
-        if let Some(row_render_callback) = &props.row_render_callback {
-            let mut args = DataTableRowRenderArgs {
-                node: item,
-                row_index: row_num,
-                selected,
-                class: Classes::new(),
-                attributes: IndexMap::new(),
-            };
-
-            row_render_callback.apply(&mut args);
-
-            if !args.class.is_empty() {
-                row.add_class(args.class);
-            }
-
-            for (attr_name, attr_value) in args.attributes.into_iter() {
-                row.set_attribute(attr_name, attr_value);
-            }
-        }
-
-        let mut col_index = 0;
-        let mut column_num = 0;
-
-        loop {
-            let column = match self.columns.get(column_num) {
-                Some(column) => column,
-                None => break,
-            };
-
-            if let Some(true) = self.column_hidden.get(column_num) {
-                column_num += 1;
-                continue;
-            }
-
-            let mut item_style = format!(
-                "vertical-align: {}; text-align: {};",
-                props.vertical_align.as_deref().unwrap_or("baseline"),
-                column.justify,
-            );
-            let cell_active = active && self.active_column == column_num;
-
-            let mut args = DataTableCellRenderArgs {
-                selection: props.selection.clone(),
-                node: item,
-                row_index: row_num,
-                column_index: col_index,
-                selected,
-                class: self.cell_class.clone(),
-                attributes: IndexMap::new(),
-            };
-
-            let cell = column.render_cell.apply(&mut args);
-
-            if let Some(style) = args.attributes.remove("style") {
-                item_style.push_str(&style);
-            }
-
-            let mut td = Container::new()
-                .tag("td")
-                .class(args.class)
-                .class((cell_active && self.has_focus).then(|| "cell-cursor aaaselected"))
-                .attribute("style", item_style)
-                .attribute("role", "gridcell")
-                .attribute("data-column-num", column_num.to_string())
-                .attribute("tabindex", if cell_active { "0" } else { "-1" })
-                .with_child(html!{<div role="none">{cell}</div>});
-
-            let mut colspan = 1;
-
-            if let Some(colspan_str) = args.attributes.get("colspan") {
-                if let Ok(n) = (*colspan_str).parse::<usize>() {
-                    if n > 0 { colspan = n }
-                }
-            }
-
-            for (attr_name, attr_value) in args.attributes.into_iter() {
-                td.set_attribute(attr_name, attr_value);
-            }
-
-
-            col_index += colspan;
-            column_num += colspan;
-
-            row.add_child(td);
-        }
-
-        row.add_child(html!{<td aria-hidden="true" style={minheight_cell_style.clone()}/>});
-        row.into()
-    }
-
     fn render_table(&self, props: &DataTable<S>, offset: usize, start: usize, end: usize) -> Html {
 
         let virtual_scroll = props.virtual_scroll.unwrap_or(true);
@@ -1006,7 +881,26 @@ impl<S: DataStore> PwtDataTable<S> {
                 // if no cursor, mark first row active
                     .unwrap_or(filtered_pos == start);
 
-                let row = self.render_row(props, item.as_ref(), record_key, filtered_pos, selected, active);
+                let row = DataTableRow {
+                    selection: props.selection.clone(),
+                    unique_table_id: self.unique_id.clone(),
+                    record: item.record().clone(),
+                    record_key,
+                    row_num: filtered_pos,
+                    columns: self.columns.clone(),
+                    column_hidden: self.column_hidden.clone(),
+                    min_row_height: props.min_row_height,
+                    vertical_align: props.vertical_align.clone(),
+                    cell_class: self.cell_class.clone(),
+                    row_render_callback: props.row_render_callback.clone(),
+                    selected,
+                    active_cell: active.then(|| self.active_column),
+                    has_focus: active && self.has_focus,
+                    is_expanded: item.expanded(),
+                    is_leaf: item.is_leaf(),
+                    level: item.level(),
+                };
+
                 table.add_child(row);
             }
         }
@@ -1105,11 +999,11 @@ impl <S: DataStore + 'static> Component for PwtDataTable<S> {
             _selection_observer,
 
             active_column: 0,
-            columns,
+            columns: Rc::new(columns),
             column_widths: Vec::new(),
-            column_hidden: Vec::new(),
+            column_hidden: Rc::new(Vec::new()),
             scroll_info: VirtualScrollInfo::default(),
-            cell_class,
+            cell_class: Rc::new(cell_class),
             scroll_top: 0,
             set_scroll_top: None,
             viewport_height: 0,
@@ -1170,7 +1064,7 @@ impl <S: DataStore + 'static> Component for PwtDataTable<S> {
                     el.set_scroll_left(x as i32);
                 }
                 self.update_scroll_info(props);
-                true
+                props.virtual_scroll.unwrap_or(true)
             }
             Msg::ViewportResize(width, height, scrollbar_size) => {
                 self.viewport_height = height.max(0.0) as usize;
@@ -1535,7 +1429,7 @@ impl <S: DataStore + 'static> Component for PwtDataTable<S> {
                 false
             }
             Msg::Header(HeaderMsg::ColumnHiddenChange(column_hidden)) => {
-                self.column_hidden = column_hidden;
+                self.column_hidden = Rc::new(column_hidden);
                 true
             }
             Msg::Header(HeaderMsg::ToggleSelectAll) => {

@@ -198,7 +198,7 @@ impl<T: 'static> TreeStore<T> {
     }
 }
 
-impl<T: 'static> DataStore for TreeStore<T> {
+impl<T: Clone + PartialEq + 'static> DataStore for TreeStore<T> {
     type Observer = TreeStoreObserver<T>;
     type Record = T;
     type Collection = SlabTree<T>;

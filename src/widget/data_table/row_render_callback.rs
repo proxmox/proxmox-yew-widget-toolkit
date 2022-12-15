@@ -5,16 +5,15 @@ use indexmap::IndexMap;
 
 use yew::prelude::*;
 use yew::html::IntoPropValue;
-
-use crate::state::DataNode;
+use yew::virtual_dom::Key;
 
 /// Row render callback arguments.
 ///
 /// This can be used to set additional CSS classes and attributes on
 /// the table row.
 pub struct DataTableRowRenderArgs<'a, T> {
-    // The data node.
-    pub(crate) node: &'a dyn DataNode<T>,
+    pub(crate) record: &'a T,
+    pub(crate) record_key: &'a Key,
     // Row index.
     pub(crate) row_index: usize,
 
@@ -31,8 +30,12 @@ pub struct DataTableRowRenderArgs<'a, T> {
 impl<'a, T> DataTableRowRenderArgs<'a, T> {
 
     /// Return the data node.
-    pub fn node(&self) -> &dyn DataNode<T> {
-        self.node
+    pub fn record(&self) -> &T {
+        self.record
+    }
+
+    pub fn key(&self) -> &Key {
+        self.record_key
     }
 
     /// Returns the row index.
