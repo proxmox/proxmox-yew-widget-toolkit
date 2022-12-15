@@ -1,11 +1,11 @@
-use std::rc::Rc;
 use std::collections::HashMap;
 use std::ops::Deref;
+use std::rc::Rc;
 
+use yew::html::{IntoEventCallback, IntoPropValue};
 use yew::prelude::*;
 use yew::virtual_dom::{Key, VComp, VNode};
 use yew::{html, Component, Html, Properties};
-use yew::html::{IntoPropValue, IntoEventCallback};
 
 use crate::props::{ContainerBuilder, EventSubscriber, RenderFn, WidgetBuilder};
 use crate::state::{NavigationContainer, NavigationContext, NavigationContextExt};
@@ -140,11 +140,10 @@ impl NavigationMenu {
 
     pub fn navigation_container(mut self) -> NavigationContainer {
         self.router = true;
-        NavigationContainer::new()
-            .with_child(self)
+        NavigationContainer::new().with_child(self)
     }
 
-    pub fn default_active(mut self, active:  impl IntoPropValue<Option<String>>) -> Self {
+    pub fn default_active(mut self, active: impl IntoPropValue<Option<String>>) -> Self {
         let active: Option<String> = active.into_prop_value();
         self.default_active = active.map(|active| Key::from(active));
         self
@@ -202,9 +201,10 @@ impl PwtNavigationMenu {
         let is_active = active == item.id.deref();
 
         let class = classes!(
-            is_active.then(|| "active"),
-            (!visible).then(|| "pwt-d-none"),
+            is_active.then_some("active"),
+            (!visible).then_some("pwt-d-none"),
             "pwt-nav-link",
+            is_menu.then_some("pwt-nav-menu"),
         );
 
         let onclick = ctx.link().callback({
@@ -239,17 +239,19 @@ impl PwtNavigationMenu {
         };
 
         html! {
-            <a disabled={!visible} {onclick} {onkeydown} {class} {tabindex}>
+            <a disabled={!visible} {onclick} {onkeydown} {class} {tabindex} style={"display: flex;"}>
             { (0..indent_level).map(|_| html!{ <span class="pwt-ps-4" /> }).collect::<Html>() }
                 if let Some(icon) = &item.icon_class {
                     <i class={classes!(icon.to_string(), "pwt-me-2")}/>
                 }
             {&item.text}
             if is_menu {
+                <i style={"flex-grow:1"}></i>
                 <i class={classes!{
                         "fa",
                         "fa-fw",
-                        if open { "fa-caret-up" } else { "fa-caret-down" },
+                        "fa-caret-right",
+                        open.then_some("expanded"),
                         "pwt-nav-menu-expander"
                     }}
                     onclick={on_expander_click}>{"\u{00a0}"}</i>
@@ -306,7 +308,7 @@ impl PwtNavigationMenu {
             }
         }
         if props.default_active.is_some() {
-            return props.default_active.clone()
+            return props.default_active.clone();
         }
         for menu in props.menu.iter() {
             match menu {
@@ -338,7 +340,9 @@ impl Component for PwtNavigationMenu {
                     link.send_message(Msg::Select(key, false));
                 }
             });
-            if let Some((nav_ctx, handle)) = ctx.link().context::<NavigationContext>(on_nav_ctx_change) {
+            if let Some((nav_ctx, handle)) =
+                ctx.link().context::<NavigationContext>(on_nav_ctx_change)
+            {
                 //log::info!("INIT CTX {:?}", nav_ctx);
                 _nav_ctx_handle = Some(handle);
                 let path = nav_ctx.path();
@@ -411,16 +415,16 @@ impl Component for PwtNavigationMenu {
             .attribute("tabindex", "-1")
             .attribute("role", "navigation")
             .attribute("aria-label", props.aria_label.clone())
-            .class("pwt-nav-menu pwt-overflow-auto pwt-border-right")
-            .attribute("style", "min-width:200px;");
-
+            .class("pwt-nav-menu pwt-overflow-none pwt-border-right");
 
         let active = self.get_active_or_default(ctx);
         let active = active.as_deref().unwrap_or("");
 
         for item in props.menu.iter() {
-            if let Some((title, new_content)) = self.render_item(ctx, item, &mut menu, active, 0, true) {
-                content = Some(html!{
+            if let Some((title, new_content)) =
+                self.render_item(ctx, item, &mut menu, active, 0, true)
+            {
+                content = Some(html! {
                     <div role="main" aria-label={title} class="pwt-fit">{new_content}</div>
                 })
             }
