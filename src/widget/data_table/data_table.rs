@@ -1463,6 +1463,9 @@ impl <S: DataStore + 'static> Component for PwtDataTable<S> {
             active_descendant = Some(self.get_unique_item_id(&record_key));
         }
 
+        let column_widths = self.column_widths.iter().sum::<f64>() as usize +
+            self.scrollbar_size.unwrap_or_default();
+
         let viewport = Container::new()
             .node_ref(self.scroll_ref.clone())
             .key(Key::from("table-viewport"))
@@ -1471,7 +1474,7 @@ impl <S: DataStore + 'static> Component for PwtDataTable<S> {
                 "style",
                 format!(
                     "overflow: {}; outline: 0",
-                    if self.column_widths.iter().sum::<f64>() as usize > self.viewport_width {
+                    if  column_widths > self.viewport_width {
                         "auto"
                     } else {
                         "hidden auto"
