@@ -1178,7 +1178,6 @@ impl <S: DataStore + 'static> Component for PwtDataTable<S> {
 
                 if self.scrollbar_size.is_none() && scrollbar_size.round() > 0.0 {
                     self.scrollbar_size = Some(scrollbar_size.round() as usize);
-                    log::info!("{scrollbar_size}");
                 }
 
                 self.update_scroll_info(props);
