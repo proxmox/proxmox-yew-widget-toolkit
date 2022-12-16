@@ -249,8 +249,14 @@ impl PwtNavigationMenu {
             true
         };
 
+        let aria_expanded = if is_menu {
+            Some(if open { "true" } else { "false" })
+        } else {
+            None
+        };
+
         html! {
-            <a disabled={!visible} {onclick} {onkeydown} {class} {tabindex} style={"display: flex;"}>
+            <a role="link" aria-expanded={aria_expanded} disabled={!visible} {onclick} {onkeydown} {class} {tabindex} style={"display: flex;"}>
             { (0..indent_level).map(|_| html!{ <span class="pwt-ps-4" /> }).collect::<Html>() }
                 if let Some(icon) = &item.icon_class {
                     <i class={classes!(icon.to_string(), "pwt-me-2")}/>
