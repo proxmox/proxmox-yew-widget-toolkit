@@ -265,6 +265,7 @@ impl PwtNavigationMenu {
                         open.then_some("expanded"),
                         "pwt-nav-menu-expander"
                     }}
+                    aria-hidden="true"
                     onclick={on_expander_click}>{"\u{00a0}"}</i>
             }
             </a>
