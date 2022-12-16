@@ -72,7 +72,7 @@ pub enum RowSelectionStatus {
 /// - Resizable headers.
 /// - ARIA support: <https://www.w3.org/WAI/ARIA/apg/patterns/grid/>.
 ///
-/// # Keyboar binding
+/// # Keyboard bindings
 ///
 /// * `Right Arrow`: Moves focus one cell to the right. If focus is on
 /// the right-most cell in the row, focus does not move.
