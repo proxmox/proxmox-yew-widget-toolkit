@@ -7,6 +7,7 @@ use pwt_macros::widget;
 
 use crate::prelude::*;
 
+/// Vertical container with flex layout.
 #[widget(pwt=crate, @element, @container)]
 #[derive(Default, Debug, Clone)]
 pub struct Column {

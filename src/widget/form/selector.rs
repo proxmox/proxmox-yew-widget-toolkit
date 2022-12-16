@@ -31,7 +31,9 @@ pub struct SelectorRenderArgs<S: DataStore> {
 ///
 /// - Extends the [Dropdown] widget.
 ///
-/// - Use a [DataStore] as data storage.
+/// - Use a shared `DataStore` as data storage (either a
+/// [Store](crate::state::Store) or
+/// [TreeStore](crate::state::TreeStore)).
 ///
 /// - Ability to load data using a [LoadCallback] (with reasonable
 /// error handling).

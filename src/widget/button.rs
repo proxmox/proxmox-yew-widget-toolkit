@@ -8,22 +8,33 @@ use yew::html::IntoPropValue;
 
 use pwt_macros::widget;
 
+/// Button.
+///
+/// Buttons can be text only, icons with text, or icons only.
 #[widget(pwt=crate, comp=crate::widget::PwtButton, @element)]
 #[derive(Properties, PartialEq, Clone)]
 pub struct Button {
+    /// Button text.
     pub text: Option<AttrValue>,
+    /// Icon (CSS class).
     pub icon_class: Option<Classes>,
 
+    /// Html tabindex attribute.
     pub tabindex: Option<i32>,
+    /// ARIA label.
     pub aria_label: Option<AttrValue>,
+    /// Html placeholder attribute.
     pub placeholder: Option<AttrValue>,
 
+    /// Html autofocus attribute.
     #[prop_or_default]
     pub autofocus: bool,
 
+    /// Disable flag.
     #[prop_or_default]
     pub disabled: bool,
 
+    /// Draw button in pressed state (for use in Demo)
     #[prop_or_default]
     pub pressed: bool,
 }
@@ -36,66 +47,67 @@ impl Button {
         })
     }
 
-    /// Builder style method to set the html aria-label attribute
+    /// Builder style method to set the html aria-label attribute.
     pub fn aria_label(mut self, label: impl IntoPropValue<Option<AttrValue>>) -> Self {
         self.set_aria_label(label);
         self
     }
 
-    /// Method to set the html aria-label attribute
+    /// Method to set the html aria-label attribute.
     pub fn set_aria_label(&mut self, label: impl IntoPropValue<Option<AttrValue>>) {
         self.aria_label = label.into_prop_value();
     }
 
-    /// Builder style method to set the html tabindex attribute
+    /// Builder style method to set the html tabindex attribute.
     pub fn tabindex(mut self, index: impl IntoPropValue<Option<i32>>) -> Self {
         self.set_tabindex(index);
         self
     }
 
-    /// Method to set the html tabindex attribute
+    /// Method to set the html tabindex attribute.
     pub fn set_tabindex(&mut self, index: impl IntoPropValue<Option<i32>>) {
         self.tabindex = index.into_prop_value();
     }
 
-    /// Builder style method to set the autofocus flag
+    /// Builder style method to set the autofocus flag.
     pub fn autofocus(mut self, autofocus: bool) -> Self {
         self.set_autofocus(autofocus);
         self
     }
 
-    /// Method to set the autofocus flag
+    /// Method to set the autofocus flag.
     pub fn set_autofocus(&mut self, autofocus: bool) {
         self.autofocus = autofocus;
     }
 
-    /// Builder style method to set the disabled flag
+    /// Builder style method to set the disabled flag.
     pub fn disabled(mut self, disabled: bool) -> Self {
         self.set_disabled(disabled);
         self
     }
 
-    /// Method to set the disabled flag
+    /// Method to set the disabled flag.
     pub fn set_disabled(&mut self, disabled: bool) {
         self.disabled = disabled;
     }
 
-    /// Builder style method to set the pressed flag
+    /// Builder style method to set the pressed flag.
     pub fn pressed(mut self, pressed: bool) -> Self {
         self.set_pressed(pressed);
         self
     }
 
-    /// Method to set the pressed flag
+    /// Method to set the pressed flag.
     pub fn set_pressed(&mut self, pressed: bool) {
         self.pressed = pressed;
     }
 
+    /// Create a new icon button (without text).
     pub fn new_icon(icon_class: impl Into<Classes>) -> Self {
         yew::props!(Self {}).icon_class(icon_class)
     }
 
-    /// Create a Refresh/Reload button
+    /// Create a Refresh/Reload button.
     pub fn refresh(loading: bool) -> Self {
         let icon_class = if loading {
             "fa fa-fw fa-spinner fa-pulse"
@@ -107,11 +119,13 @@ impl Button {
             .disabled(loading)
     }
 
+    /// Builder style method to set the icon CSS class.
     pub fn icon_class(mut self, icon_class: impl Into<Classes>) -> Self {
         self.set_icon_class(icon_class);
         self
     }
 
+    /// Method to set the icon CSS class.
     pub fn set_icon_class(&mut self, icon_class: impl Into<Classes>) {
         self.icon_class = Some(icon_class.into());
     }

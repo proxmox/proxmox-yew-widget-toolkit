@@ -49,8 +49,8 @@
 //! ### Layout widgets
 //!
 //! - [widget::Container]: Basically a wrapper for `<div>`.
-//! - [widget::Row]: Horizontal container with flex layout
-//! - [widget::Column]: Vertical container with flex layout
+//! - [widget::Row]: Horizontal container with flex layout.
+//! - [widget::Column]: Vertical container with flex layout.
 //! - [widget::Panel]: Container with title.
 //! - [widget::InputPanel]: Container to create simple forms.
 //! - [widget::TabPanel]: A set of layered items where only one item is displayed at a time.
