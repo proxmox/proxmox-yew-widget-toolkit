@@ -1,7 +1,7 @@
 use std::rc::Rc;
 use std::future::Future;
 use std::pin::Pin;
-use std::sync::{Arc, Mutex};
+use std::cell::RefCell;
 
 use anyhow::{bail, format_err, Error};
 use serde::de::DeserializeOwned;
@@ -121,7 +121,7 @@ impl<T: 'static + DeserializeOwned> IntoLoadCallback<T> for String {
                 let url = url.clone();
                 move || {
                     let url = url.clone();
-                    let http_get = HTTP_GET.lock().unwrap().clone();
+                    let http_get = HTTP_GET.with(|cell| Rc::clone(&cell.borrow()));
                     async move {
                         let value = http_get(url.to_string()).await?;
                         let data = serde_json::from_value(value)?;
@@ -160,9 +160,9 @@ where
     }
 }
 
-lazy_static::lazy_static!{
-    static ref HTTP_GET: Mutex<Arc<dyn Send + Sync + Fn(String) -> Pin<Box<dyn Future<Output = Result<Value, Error>>>> >> = {
-        Mutex::new(Arc::new(|url| Box::pin(http_get(url))))
+thread_local!{
+    static HTTP_GET: RefCell<Rc<dyn Send + Sync + Fn(String) -> Pin<Box<dyn Future<Output = Result<Value, Error>>>> >> = {
+        RefCell::new(Rc::new(|url| Box::pin(http_get(url))))
     };
 }
 
@@ -171,7 +171,7 @@ lazy_static::lazy_static!{
 /// The default method expects a valid json response and simply
 /// deserializes the data using serde.
 pub fn set_http_get_method<F: 'static +  Future<Output = Result<Value, Error>>>(cb: fn(String) -> F) {
-    *HTTP_GET.lock().unwrap() = Arc::new(move |url| Box::pin(cb(url)));
+    HTTP_GET.with(|cell| *cell.borrow_mut() = Rc::new(move |url| Box::pin(cb(url))));
 }
 
 async fn http_get(url: String) -> Result<Value, Error> {
