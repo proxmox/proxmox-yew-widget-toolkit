@@ -14,6 +14,9 @@ use crate::widget::Container;
 use super::{DataTableColumn, DataTableCellRenderArgs, DataTableRowRenderCallback, DataTableRowRenderArgs};
 
 /// DataTable row properties.
+///
+/// We implement a table row a separate Component to minimize VDOM
+/// diff size.
 #[derive(Derivative, Properties)]
 #[derivative(Clone, PartialEq)]
 pub(crate) struct DataTableRow<T: Clone + PartialEq + 'static> {
@@ -46,6 +49,7 @@ pub(crate) struct DataTableRow<T: Clone + PartialEq + 'static> {
 }
 
 
+#[doc(hidden)]
 pub(crate) struct PwtDataTableRow<T: Clone + PartialEq + 'static> {
     _phantom: PhantomData<T>,
 }

@@ -198,7 +198,7 @@ impl <S: DataStore> DataTable<S> {
 
     /// Create a new instance.
     ///
-    /// The store is either a [Store] or [TreeStore](crate::state::TreeStore).
+    /// The store is either a [Store](crate::state::Store) or [TreeStore](crate::state::TreeStore).
     pub fn new(headers: Rc<Vec<DataTableHeader<S::Record>>>, store: S) -> Self {
         yew::props!(DataTable<S> { headers, store })
     }
