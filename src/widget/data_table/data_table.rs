@@ -924,6 +924,15 @@ impl<S: DataStore> PwtDataTable<S> {
             .into()
     }
 
+    fn rows_per_page(&self, props: &DataTable<S>) -> usize {
+        let row_count = props.store.filtered_data_len();
+        let virtual_scroll = props.virtual_scroll.unwrap_or(row_count >= VIRTUAL_SCROLL_TRIGGER);
+        if virtual_scroll {
+            return self.scroll_info.visible_rows();
+        }
+        self.viewport_height/self.row_height
+    }
+
     fn update_scroll_info(&mut self, props: &DataTable<S>) {
         let row_count = props.store.filtered_data_len();
 
@@ -1170,13 +1179,13 @@ impl <S: DataStore + 'static> Component for PwtDataTable<S> {
                 let msg = match key {
                     "PageDown" => {
                         event.prevent_default();
-                        let visible_rows = self.scroll_info.visible_rows();
-                        Msg::CursorDown(visible_rows, shift, ctrl)
+                        let rows = self.rows_per_page(props);
+                        Msg::CursorDown(rows, shift, ctrl)
                     }
                     "PageUp" => {
                         event.prevent_default();
-                        let visible_rows = self.scroll_info.visible_rows();
-                        Msg::CursorUp(visible_rows, shift, ctrl)
+                        let rows = self.rows_per_page(props);
+                        Msg::CursorUp(rows, shift, ctrl)
                     }
                     "ArrowDown" => {
                         event.prevent_default();
