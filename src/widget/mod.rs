@@ -72,8 +72,8 @@ pub use toolbar::{PwtToolbar, Toolbar};
 mod tooltip;
 pub use tooltip::{PwtTooltip, Tooltip};
 
-mod virtual_scroll;
-pub use virtual_scroll::VirtualScroll;
+//mod virtual_scroll;
+//pub use virtual_scroll::VirtualScroll;
 
 mod visibility_observer;
 pub use visibility_observer::VisibilityObserver;

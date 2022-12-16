@@ -55,7 +55,6 @@
 //! - [widget::InputPanel]: Container to create simple forms.
 //! - [widget::TabPanel]: A set of layered items where only one item is displayed at a time.
 //! - [widget::Toolbar]: Horizontal container for buttons.
-//! - [widget::VirtualScroll]: Container with virtual scrolling support.
 //!
 
 //! ### Modal Dialogs
