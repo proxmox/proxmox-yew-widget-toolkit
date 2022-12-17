@@ -70,6 +70,15 @@ impl Field {
         self.input_type = input_type.into_prop_value();
     }
 
+    pub fn value(mut self, value: impl IntoPropValue<Option<AttrValue>>) -> Self {
+        self.set_value(value);
+        self
+    }
+
+    pub fn set_value(&mut self, value: impl IntoPropValue<Option<AttrValue>>) {
+        self.value = value.into_prop_value();
+    }
+
     pub fn default(mut self, default: impl IntoPropValue<Option<AttrValue>>) -> Self {
         self.set_default(default);
         self
