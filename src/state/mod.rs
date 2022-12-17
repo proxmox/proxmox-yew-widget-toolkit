@@ -5,6 +5,8 @@ use std::rc::Rc;
 mod data_store;
 pub use data_store::{DataStore, DataNode, DataNodeDerefGuard};
 
+pub mod form;
+
 mod loader;
 pub use loader::{Loader, LoaderState};
 
