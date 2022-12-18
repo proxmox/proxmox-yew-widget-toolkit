@@ -67,14 +67,29 @@ impl FieldHandle {
         }
     }
 
-    fn get_value(&mut self) -> Option<Value> {
+    pub fn get_value(&mut self) -> Option<Value> {
         let key = self.key;
         let state = self.inner.borrow();
         let name = &state.fields.get(key).unwrap().name;
         state.get_value(name).map(Value::clone)
     }
-    
-    fn set_value(&mut self, value: Value) {
+
+    /// Get the field value as string.
+    ///
+    /// Return the empty string when the field value is not a string
+    /// or number.
+    pub fn get_text(&self) -> Option<String> {
+        let key = self.key;
+        let state = self.inner.borrow();
+        let name = &state.fields.get(key).unwrap().name;
+        state.get_value(name).map(|value| match value {
+            Value::Number(n) => n.to_string(),
+            Value::String(v) => v.clone(),
+            _ => String::new(),
+        })
+    }
+
+    pub fn set_value(&mut self, value: Value) {
         let key = self.key;
         let name = self.inner.borrow()
             .fields.get(key).unwrap()
