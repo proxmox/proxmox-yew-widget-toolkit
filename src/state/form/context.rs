@@ -1,8 +1,8 @@
 use std::rc::Rc;
 use std::cell::{Ref, RefMut, RefCell};
-use std::ops::Range;
 use std::ops::{Deref, DerefMut};
 use std::collections::HashMap;
+use std::mem::ManuallyDrop;
 
 use derivative::Derivative;
 use slab::Slab;
@@ -14,7 +14,7 @@ use yew::html::{IntoEventCallback, IntoPropValue};
 use crate::state::optional_rc_ptr_eq;
 use crate::widget::form::ValidateFn; // fixme: move to props
 
-use super::{FieldState, FieldRegistration};
+use super::FieldRegistration;
 
 /// Shared form data.
 #[derive(Derivative)]
@@ -44,34 +44,28 @@ impl Drop for FormObserver {
 /// field will be removed from the [FormContext].
 pub struct FieldHandle {
     key: usize,
-    inner: Rc<RefCell<FormState>>,
+    form_ctx: FormContext,
 }
 
 impl FieldHandle {
 
     // Lock the form context for read access.
     fn read(&self) -> FormContextReadGuard {
-        FormContextReadGuard {
-            state: self.inner.borrow(),
-        }
+        self.form_ctx.read()
     }
 
     // Lock the form context for write access.
     //
     // Automatically notifies listeners when the guard is dropped.
     fn write(&self) -> FormContextWriteGuard {
-        let state = self.inner.borrow_mut();
-        FormContextWriteGuard {
-            initial_version: state.version,
-            state,
-        }
+        self.form_ctx.write()
     }
 
     pub fn get_value(&mut self) -> Option<Value> {
         let key = self.key;
-        let state = self.inner.borrow();
+        let state = self.form_ctx.inner.borrow();
         let name = &state.fields.get(key).unwrap().name;
-        state.get_value(name).map(Value::clone)
+        state.get_field_value(name).map(Value::clone)
     }
 
     /// Get the field value as string.
@@ -80,9 +74,9 @@ impl FieldHandle {
     /// or number.
     pub fn get_text(&self) -> Option<String> {
         let key = self.key;
-        let state = self.inner.borrow();
+        let state = self.form_ctx.inner.borrow();
         let name = &state.fields.get(key).unwrap().name;
-        state.get_value(name).map(|value| match value {
+        state.get_field_value(name).map(|value| match value {
             Value::Number(n) => n.to_string(),
             Value::String(v) => v.clone(),
             _ => String::new(),
@@ -91,16 +85,16 @@ impl FieldHandle {
 
     pub fn set_value(&mut self, value: Value) {
         let key = self.key;
-        let name = self.inner.borrow()
+        let name = self.form_ctx.inner.borrow()
             .fields.get(key).unwrap()
             .name.clone();
-        self.write().set_value(name, value);
+        self.write().set_field_value(name, value);
     }
 }
 
 impl Drop for FieldHandle {
     fn drop(&mut self) {
-        self.inner.borrow_mut().unregister_field(self.key);
+        self.form_ctx.inner.borrow_mut().unregister_field(self.key);
     }
 }
 
@@ -119,7 +113,7 @@ impl FormContext {
     /// [FormObserver]. The observer is stored inside the
     /// [FormContext] object, so each clone can hold a single on_change
     /// callback.
-    pub fn on_change(mut self, cb: impl IntoEventCallback<()>) -> Self {
+    pub fn on_change(mut self, cb: impl IntoEventCallback<FormContext>) -> Self {
         self.on_change = match cb.into_event_callback() {
             Some(cb) => Some(Rc::new(self.add_listener(cb))),
             None => None,
@@ -131,25 +125,34 @@ impl FormContext {
     ///
     /// This is usually called by [Self::on_change], which stores the
     /// observer inside the [FormContext] object.
-    pub fn add_listener(&self, cb: impl Into<Callback<()>>) -> FormObserver {
+    pub fn add_listener(&self, cb: impl Into<Callback<FormContext>>) -> FormObserver {
         let key = self.inner.borrow_mut()
             .add_listener(cb.into());
         FormObserver { key, inner: self.inner.clone() }
     }
 
-    // Lock the form context for read access.
-    fn read(&self) -> FormContextReadGuard {
+    fn notify_listeners(&self) {
+        let listeners = self.inner.borrow().listeners.clone(); // clone to avoid borrow()
+        for (_key, listener) in listeners.iter() {
+            listener.emit(self.clone());
+        }
+    }
+
+    /// Lock the form context for read access.
+    pub fn read(&self) -> FormContextReadGuard {
         FormContextReadGuard {
             state: self.inner.borrow(),
         }
     }
 
-    // Lock the form context for write access.
-    //
-    // Automatically notifies listeners when the guard is dropped.
-    fn write(&self) -> FormContextWriteGuard {
-        let state = self.inner.borrow_mut();
+    /// Lock the form context for write access.
+    ///
+    /// Automatically notifies listeners when the guard is dropped.
+    pub fn write(&self) -> FormContextWriteGuard {
+        let cloned_self = Self { on_change: None, inner: self.inner.clone() };
+        let state = ManuallyDrop::new(self.inner.borrow_mut());
         FormContextWriteGuard {
+            form_ctx: cloned_self,
             initial_version: state.version,
             state,
         }
@@ -178,7 +181,7 @@ impl FormContext {
         let key = self.inner.borrow_mut()
             .register_field(registration);
 
-        FieldHandle { key, inner: self.inner.clone() }
+        FieldHandle { key, form_ctx: self.clone() }
     }
 
     /// Returns the show_advanced flag
@@ -192,9 +195,10 @@ impl FormContext {
     }
 }
 
-// A wrapper type for a mutably borrowed [FormContext]
-struct FormContextWriteGuard<'a> {
-    state: RefMut<'a, FormState>,
+/// A wrapper type for a mutably borrowed [FormContext]
+pub struct FormContextWriteGuard<'a> {
+    form_ctx: FormContext,
+    state: ManuallyDrop<RefMut<'a, FormState>>,
     initial_version: usize,
 }
 
@@ -214,14 +218,14 @@ impl<'a> DerefMut for FormContextWriteGuard<'a> {
 
 impl<'a> Drop for FormContextWriteGuard<'a> {
     fn drop(&mut self) {
-        if self.state.version != self.initial_version {
-            self.state.notify_listeners();
-        }
+        let changed = self.state.version != self.initial_version;
+        unsafe { ManuallyDrop::drop(&mut self.state); } // drop ref before calling notify listeners
+        if changed { self.form_ctx.notify_listeners(); }
     }
 }
 
-// Wraps a borrowed reference to a [FormContext]
-struct FormContextReadGuard<'a> {
+/// Wraps a borrowed reference to a [FormContext]
+pub struct FormContextReadGuard<'a> {
     state: Ref<'a, FormState>,
 }
 
@@ -233,9 +237,10 @@ impl Deref for FormContextReadGuard<'_> {
     }
 }
 
-struct FormState {
+/// Form state.
+pub struct FormState {
     version: usize,
-    listeners: Slab<Callback<()>>,
+    listeners: Slab<Callback<FormContext>>,
     fields: Slab<FieldRegistration>,
     show_advanced: bool,
     data: HashMap<AttrValue, Value>
@@ -253,18 +258,12 @@ impl FormState {
         }
     }
 
-    fn add_listener(&mut self, cb: Callback<()>) -> usize {
+    fn add_listener(&mut self, cb: Callback<FormContext>) -> usize {
         self.listeners.insert(cb)
     }
 
     fn remove_listener(&mut self, key: usize) {
         self.listeners.remove(key);
-    }
-
-    fn notify_listeners(&self) {
-        for (_key, listener) in self.listeners.iter() {
-            listener.emit(());
-        }
     }
 
     fn register_field(&mut self, field: FieldRegistration) -> usize {
@@ -275,18 +274,24 @@ impl FormState {
         self.fields.remove(key);
     }
 
-    fn set_show_advanced(&mut self, show_advanced: bool) {
+    pub fn set_show_advanced(&mut self, show_advanced: bool) {
         if self.show_advanced != show_advanced {
             self.show_advanced = show_advanced;
             self.version += 1;
         }
     }
 
-    fn get_value(&self, name: &AttrValue) -> Option<&Value> {
-        self.data.get(name)
+    pub fn get_field_value(&self, name: impl IntoPropValue<AttrValue>) -> Option<&Value> {
+        let name = name.into_prop_value();
+        self.data.get(&name)
     }
 
-    fn set_value(&mut self, name: AttrValue, value: Value) {
+    pub fn set_field_value(
+        &mut self,
+        name: impl IntoPropValue<AttrValue>,
+        value: Value,
+    ) {
+        let name = name.into_prop_value();
         let current_value = self.data.get(&name);
         if current_value != Some(&value) {
             self.data.insert(name, value);

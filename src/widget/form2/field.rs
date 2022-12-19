@@ -229,7 +229,6 @@ impl PwtField {
         if let Some(field_handle) = &self.field_handle {
             let value = field_handle.get_text().unwrap_or(String::new());
             let valid = Ok(()); // fixme
-            log::info!("HANDLE GET VALUE {value}");
             (value, valid)
         } else {
             (self.value.clone(), self.valid.clone())
@@ -242,30 +241,26 @@ impl PwtField {
         value: String,
         valid: Option<Result<(), String>>,
     ) {
-
         self.value = value.clone();
         self.valid = valid.unwrap_or_else(|| {
             self.real_validate.validate(&value.clone().into())
                 .map_err(|e| e.to_string())
         });
-        log::info!("FORCE VALUE {} {:?}", value, self.valid);
      }
 
     pub fn set_value(&mut self, props: &Field, value: String) {
         if let Some(field_handle) = &mut self.field_handle {
-            log::info!("HANDLE SET VALUE {}", value);
-            field_handle.set_value(value.into());
-        } else {
+            field_handle.set_value(value.clone().into());
+         } else {
             if value == self.value { return; }
 
             self.value = value.clone();
             self.valid = self.real_validate.validate(&value.clone().into())
                 .map_err(|e| e.to_string());
+        }
 
-            log::info!("SET VALUE {} {:?}", value, self.valid);
-            if let Some(on_change) = &props.on_change {
-                on_change.emit(self.value.clone());
-            }
+        if let Some(on_change) = &props.on_change {
+            on_change.emit(value.clone());
         }
     }
 
@@ -274,7 +269,6 @@ impl PwtField {
             None => return,
             Some(form_ctx) => form_ctx.clone(),
         };
-        log::info!("REGISTER FIELD {name}");
         let mut field_handle = form_ctx.register_field(
             name.to_string(),
             Some(self.real_validate.clone()),
@@ -283,11 +277,9 @@ impl PwtField {
         );
 
         if let Some(value) = field_handle.get_text() {
-            log::info!("REGISTER FIELD2 {name} {value}");
             self.set_value(props, value);
         } else {
             let value = self.value.clone();
-            log::info!("REGISTER FIELD3 {name} {value}");
             field_handle.set_value(value.into());
         }
         self.field_handle = Some(field_handle);
@@ -304,11 +296,10 @@ impl Component for PwtField {
         let mut _form_ctx_handle = None;
         let mut _form_ctx_observer = None;
         let mut form_ctx = None;
-        
+
         if let Some(name) = &props.input_props.name {
             let on_form_ctx_change = ctx.link().callback(Msg::FormCtxUpdate);
             if let Some((form, handle)) = ctx.link().context::<FormContext>(on_form_ctx_change) {
-                log::info!("FOUND FormContext");
                 _form_ctx_handle = Some(handle);
                 _form_ctx_observer = Some(form.add_listener(
                     ctx.link().callback(|_| Msg::FormCtxChange)
@@ -351,7 +342,6 @@ impl Component for PwtField {
         let props = ctx.props();
         match msg {
             Msg::FormCtxUpdate(form_ctx) => {
-                log::info!("Update FormContext");
                 if let Some(name) = &props.input_props.name {
                     self.form_ctx = Some(form_ctx);
                     self.register_field(props, name);
@@ -359,15 +349,20 @@ impl Component for PwtField {
                 true
             }
             Msg::FormCtxChange => {
-                log::info!("FormContext data change");
-
-
-                true
+                if let Some(name) = &props.input_props.name {
+                    if let Some(field_handle) = &self.field_handle {
+                        let value = field_handle.get_text().unwrap_or(String::new());
+                         if value != self.value {
+                            self.value = value;
+                            return true;
+                        }
+                    }
+                }
+                false
             }
             Msg::Update(value) => {
                 if props.input_props.disabled { return true; }
                 self.set_value(props, value);
-                //self.state.set_value(value, false);
                 true
             }
         }
@@ -414,14 +409,14 @@ impl Component for PwtField {
             .attribute("step", props.step.map(|v| v.to_string()))
             .oninput(oninput)
             .into();
-    
+
         let mut tooltip = Tooltip::new()
             .with_child(input);
 
         if let Err(msg) = &valid {
             tooltip.set_tip(Some(html!{msg}))
         }
-    
+
         tooltip.into()
     }
 }
