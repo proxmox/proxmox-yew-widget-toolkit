@@ -252,13 +252,12 @@ impl PwtField {
      }
 
     pub fn set_value(&mut self, props: &Field, value: String) {
-        if value == self.value { return; }
-
         if let Some(field_handle) = &mut self.field_handle {
             log::info!("HANDLE SET VALUE {}", value);
             field_handle.set_value(value.into());
         } else {
-        
+            if value == self.value { return; }
+
             self.value = value.clone();
             self.valid = self.real_validate.validate(&value.clone().into())
                 .map_err(|e| e.to_string());
