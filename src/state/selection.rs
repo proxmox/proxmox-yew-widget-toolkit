@@ -113,7 +113,8 @@ impl Selection {
     }
 
     fn notify_listeners(&self) {
-        for (_key, listener) in self.inner.borrow().listeners.iter() {
+        let listeners = self.inner.borrow().listeners.clone(); // clone to avoid borrow()
+        for (_key, listener) in listeners.iter() {
             listener.emit(self.clone());
         }
     }
