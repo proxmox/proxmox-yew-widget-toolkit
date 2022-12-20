@@ -1,7 +1,6 @@
 use std::rc::Rc;
 use std::cell::{Ref, RefMut, RefCell};
 use std::ops::{Deref, DerefMut};
-use std::collections::HashMap;
 use std::mem::ManuallyDrop;
 
 use derivative::Derivative;
@@ -14,7 +13,16 @@ use yew::html::{IntoEventCallback, IntoPropValue};
 use crate::state::optional_rc_ptr_eq;
 use crate::widget::form::ValidateFn; // fixme: move to props
 
-use super::FieldRegistration;
+#[derive(Clone, Debug, PartialEq)]
+struct FieldRegistration {
+    pub name: AttrValue,
+    pub validate: Option<ValidateFn<Value>>,
+    pub submit: bool,
+    pub submit_empty: bool,
+
+    pub value: Value,
+    pub valid: Result<(), String>,
+}
 
 /// Shared form data.
 #[derive(Derivative)]
