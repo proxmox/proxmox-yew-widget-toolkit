@@ -164,7 +164,7 @@ impl Field {
 pub enum Msg {
     Update(String),
     FormCtxUpdate(FormContext), // FormContext object changed
-    FormCtxChange, // Data inside FormContext changed
+    FormCtxDataChange, // Data inside FormContext changed
 }
 
 fn create_field_validation_cb(props: Field) -> ValidateFn<Value> {
@@ -297,7 +297,7 @@ impl Component for PwtField {
             if let Some((form, handle)) = ctx.link().context::<FormContext>(on_form_ctx_change) {
                 _form_ctx_handle = Some(handle);
                 _form_ctx_observer = Some(form.add_listener(
-                    ctx.link().callback(|_| Msg::FormCtxChange)
+                    ctx.link().callback(|_| Msg::FormCtxDataChange)
                 ));
                 form_ctx = Some(form);
             }
@@ -339,14 +339,14 @@ impl Component for PwtField {
             Msg::FormCtxUpdate(form_ctx) => {
                 if let Some(name) = &props.input_props.name {
                     self._form_ctx_observer = Some(form_ctx.add_listener(
-                        ctx.link().callback(|_| Msg::FormCtxChange)
+                        ctx.link().callback(|_| Msg::FormCtxDataChange)
                     ));
                     self.form_ctx = Some(form_ctx);
                     self.register_field(props, name, self.value.clone());
                 }
                 true
             }
-            Msg::FormCtxChange => {
+            Msg::FormCtxDataChange => {
                 if let Some(field_handle) = &self.field_handle {
                     let value = field_handle.get_text();
                     if value != self.value {
