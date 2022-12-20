@@ -49,46 +49,58 @@ pub struct FieldHandle {
 
 impl FieldHandle {
 
-    // Lock the form context for read access.
-    fn read(&self) -> FormContextReadGuard {
+    /// Lock the form context for read access.
+    pub fn read(&self) -> FormContextReadGuard {
         self.form_ctx.read()
     }
 
-    // Lock the form context for write access.
-    //
-    // Automatically notifies listeners when the guard is dropped.
-    fn write(&self) -> FormContextWriteGuard {
+    /// Lock the form context for write access.
+    ///
+    /// Automatically notifies listeners when the guard is dropped.
+    pub fn write(&self) -> FormContextWriteGuard {
         self.form_ctx.write()
     }
 
-    pub fn get_value(&mut self) -> Option<Value> {
+    /// Returns the field value.
+    pub fn get_value(&mut self) -> Value {
         let key = self.key;
         let state = self.form_ctx.inner.borrow();
-        let name = &state.fields.get(key).unwrap().name;
-        state.get_field_value(name).map(Value::clone)
+        state.fields[key].value.clone()
+    }
+
+    /// Returns the field validation status.
+    pub fn get_valid(&self) ->  Result<(), String> {
+        let key = self.key;
+        let state = self.form_ctx.inner.borrow();
+        state.fields[key].valid.clone()
+    }
+
+    /// Returns the field value with the validation result.
+    pub fn get_field_data(&self) -> (Value, Result<(), String>) {
+        let key = self.key;
+        let state = self.form_ctx.inner.borrow();
+        let field = &state.fields[key];
+        (field.value.clone(), field.valid.clone())
     }
 
     /// Get the field value as string.
     ///
     /// Return the empty string when the field value is not a string
     /// or number.
-    pub fn get_text(&self) -> Option<String> {
+    pub fn get_text(&self) -> String {
         let key = self.key;
         let state = self.form_ctx.inner.borrow();
-        let name = &state.fields.get(key).unwrap().name;
-        state.get_field_value(name).map(|value| match value {
+        let field = &state.fields[key];
+        match &field.value {
             Value::Number(n) => n.to_string(),
             Value::String(v) => v.clone(),
             _ => String::new(),
-        })
+        }
     }
 
     pub fn set_value(&mut self, value: Value) {
         let key = self.key;
-        let name = self.form_ctx.inner.borrow()
-            .fields.get(key).unwrap()
-            .name.clone();
-        self.write().set_field_value(name, value);
+        self.write().set_field_value_by_slab_key(key, value);
     }
 }
 
@@ -165,21 +177,13 @@ impl FormContext {
     pub fn register_field(
         &self,
         name: impl IntoPropValue<AttrValue>,
+        value: Value,
         validate: Option<ValidateFn<Value>>,
         submit: bool,
         submit_empty: bool,
-
     ) -> FieldHandle {
-        let name = name.into_prop_value();
-        let registration = FieldRegistration {
-            name,
-            validate,
-            submit,
-            submit_empty,
-        };
-
         let key = self.inner.borrow_mut()
-            .register_field(registration);
+            .register_field(name, value, validate, submit, submit_empty);
 
         FieldHandle { key, form_ctx: self.clone() }
     }
@@ -243,7 +247,6 @@ pub struct FormState {
     listeners: Slab<Callback<FormContext>>,
     fields: Slab<FieldRegistration>,
     show_advanced: bool,
-    data: HashMap<AttrValue, Value>
 }
 
 impl FormState {
@@ -254,8 +257,7 @@ impl FormState {
             listeners: Slab::new(),
             fields: Slab::new(),
             show_advanced: false,
-            data: HashMap::new(),
-        }
+         }
     }
 
     fn add_listener(&mut self, cb: Callback<FormContext>) -> usize {
@@ -266,11 +268,37 @@ impl FormState {
         self.listeners.remove(key);
     }
 
-    fn register_field(&mut self, field: FieldRegistration) -> usize {
+    fn register_field(
+        &mut self,
+        name: impl IntoPropValue<AttrValue>,
+        value: Value,
+        validate: Option<ValidateFn<Value>>,
+        submit: bool,
+        submit_empty: bool,
+    ) -> usize {
+        let name = name.into_prop_value();
+
+        let mut valid = Ok(());
+        if let Some(validate) = &validate {
+            valid = validate.validate(&value)
+                .map_err(|e| e.to_string());
+        }
+
+        let field = FieldRegistration {
+            name,
+            validate,
+            submit,
+            submit_empty,
+            value,
+            valid,
+        };
+
+        self.version += 1;
         self.fields.insert(field)
     }
 
     fn unregister_field(&mut self, key: usize) {
+        self.version += 1;
         self.fields.remove(key);
     }
 
@@ -281,9 +309,37 @@ impl FormState {
         }
     }
 
+    fn find_field_slab_id(&self, name: &AttrValue) -> Option<usize> {
+        self.fields.iter().find(|(_key, f)| &f.name == name).map(|(key, _)| key)
+    }
+
     pub fn get_field_value(&self, name: impl IntoPropValue<AttrValue>) -> Option<&Value> {
         let name = name.into_prop_value();
-        self.data.get(&name)
+        match self.find_field_slab_id(&name) {
+            Some(key) => Some(&self.fields[key].value),
+            None => None,
+        }
+    }
+
+    fn set_field_value_by_slab_key(
+        &mut self,
+        slab_key: usize,
+        value: Value,
+    ) {
+        let field = &mut self.fields[slab_key];
+        let current_value = &field.value;
+        if current_value != &value {
+
+            let mut valid = Ok(());
+            if let Some(validate) = &field.validate {
+                valid = validate.validate(&value)
+                    .map_err(|e| e.to_string());
+            }
+
+            field.value = value;
+            field.valid = valid;
+            self.version += 1;
+        }
     }
 
     pub fn set_field_value(
@@ -292,10 +348,8 @@ impl FormState {
         value: Value,
     ) {
         let name = name.into_prop_value();
-        let current_value = self.data.get(&name);
-        if current_value != Some(&value) {
-            self.data.insert(name, value);
-            self.version += 1;
+        if let Some(slab_key) = self.find_field_slab_id(&name) {
+            self.set_field_value_by_slab_key(slab_key, value);
         }
     }
 }

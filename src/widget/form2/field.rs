@@ -227,8 +227,8 @@ impl PwtField {
 
     pub fn get_field_data(&self) -> (String, Result<(), String>) {
         if let Some(field_handle) = &self.field_handle {
-            let value = field_handle.get_text().unwrap_or(String::new());
-            let valid = Ok(()); // fixme
+            let value = field_handle.get_text();
+            let valid = field_handle.get_valid();
             (value, valid)
         } else {
             (self.value.clone(), self.valid.clone())
@@ -237,7 +237,6 @@ impl PwtField {
 
     pub fn force_value(
         &mut self,
-        props: &Field,
         value: String,
         valid: Option<Result<(), String>>,
     ) {
@@ -264,24 +263,19 @@ impl PwtField {
         }
     }
 
-    fn register_field(&mut self, props: &Field, name: &str) {
+    fn register_field(&mut self, props: &Field, name: &str, value: String) {
         let form_ctx = match &self.form_ctx {
             None => return,
             Some(form_ctx) => form_ctx.clone(),
         };
-        let mut field_handle = form_ctx.register_field(
+        let field_handle = form_ctx.register_field(
             name.to_string(),
+            value.into(),
             Some(self.real_validate.clone()),
             props.input_props.submit,
             props.input_props.submit_empty,
         );
 
-        if let Some(value) = field_handle.get_text() {
-            self.set_value(props, value);
-        } else {
-            let value = self.value.clone();
-            field_handle.set_value(value.into());
-        }
         self.field_handle = Some(field_handle);
     }
 }
@@ -297,7 +291,7 @@ impl Component for PwtField {
         let mut _form_ctx_observer = None;
         let mut form_ctx = None;
 
-        if let Some(name) = &props.input_props.name {
+        if props.input_props.name.is_some() {
             let on_form_ctx_change = ctx.link().callback(Msg::FormCtxUpdate);
             if let Some((form, handle)) = ctx.link().context::<FormContext>(on_form_ctx_change) {
                 _form_ctx_handle = Some(handle);
@@ -315,7 +309,7 @@ impl Component for PwtField {
             .map_err(|e| e.to_string());
 
         let mut me = Self {
-            value,
+            value: value.clone(),
             valid,
             real_validate,
             form_ctx,
@@ -325,13 +319,13 @@ impl Component for PwtField {
         };
 
         if let Some(name) = &props.input_props.name {
-            me.register_field(props, name);
+            me.register_field(props, name, value);
             if props.value.is_some() || props.valid.is_some() {
                 log::error!("Field '{name}' is named - unable to force value/valid");
             }
         } else {
             if let Some(value) = &props.value { // force value
-                me.force_value(props, value.to_string(), props.valid.clone());
+                me.force_value(value.to_string(), props.valid.clone());
             }
         }
 
@@ -344,18 +338,16 @@ impl Component for PwtField {
             Msg::FormCtxUpdate(form_ctx) => {
                 if let Some(name) = &props.input_props.name {
                     self.form_ctx = Some(form_ctx);
-                    self.register_field(props, name);
+                    self.register_field(props, name, self.value.clone());
                 }
                 true
             }
             Msg::FormCtxChange => {
-                if let Some(name) = &props.input_props.name {
-                    if let Some(field_handle) = &self.field_handle {
-                        let value = field_handle.get_text().unwrap_or(String::new());
-                         if value != self.value {
-                            self.value = value;
-                            return true;
-                        }
+                if let Some(field_handle) = &self.field_handle {
+                    let value = field_handle.get_text();
+                    if value != self.value {
+                        self.value = value;
+                        return true;
                     }
                 }
                 false
@@ -378,7 +370,7 @@ impl Component for PwtField {
         } else {
             if props.value != old_props.value || props.valid != old_props.valid {
                 if let Some(value) = &props.value { // force value
-                    self.force_value(props, value.to_string(), props.valid.clone());
+                    self.force_value(value.to_string(), props.valid.clone());
                 }
             }
         }

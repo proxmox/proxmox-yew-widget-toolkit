@@ -4,6 +4,7 @@ use crate::widget::form::ValidateFn; // fixme: move to props
 
 use yew::AttrValue;
 
+/*
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) struct FieldOptions {
     pub submit: bool,
@@ -19,6 +20,7 @@ pub(crate) struct FieldState {
     pub valid: Result<(), String>,
     options: FieldOptions,
 }
+ */
 
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) struct FieldRegistration {
@@ -26,4 +28,7 @@ pub(crate) struct FieldRegistration {
     pub validate: Option<ValidateFn<Value>>,
     pub submit: bool,
     pub submit_empty: bool,
+
+    pub value: Value,
+    pub valid: Result<(), String>,
 }
