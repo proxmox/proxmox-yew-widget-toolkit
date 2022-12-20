@@ -235,6 +235,7 @@ impl PwtField {
         }
     }
 
+    // force value - for fields without name (no FormContext)
     pub fn force_value(
         &mut self,
         value: String,
@@ -337,6 +338,9 @@ impl Component for PwtField {
         match msg {
             Msg::FormCtxUpdate(form_ctx) => {
                 if let Some(name) = &props.input_props.name {
+                    self._form_ctx_observer = Some(form_ctx.add_listener(
+                        ctx.link().callback(|_| Msg::FormCtxChange)
+                    ));
                     self.form_ctx = Some(form_ctx);
                     self.register_field(props, name, self.value.clone());
                 }
