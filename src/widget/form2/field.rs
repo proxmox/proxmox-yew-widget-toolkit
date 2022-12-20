@@ -8,10 +8,11 @@ use yew::html::{IntoEventCallback, IntoPropValue};
 use proxmox_schema::Schema;
 
 use crate::prelude::*;
-use crate::state::form::{FieldHandle, FormContext, FormObserver};
 use crate::widget::Tooltip;
 use crate::widget::form::Input;
 use crate::widget::form::ValidateFn;
+
+use super::{FieldHandle, FormContext, FormObserver};
 
 use pwt_macros::widget;
 
