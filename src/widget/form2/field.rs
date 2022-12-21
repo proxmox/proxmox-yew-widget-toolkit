@@ -12,7 +12,7 @@ use crate::widget::Tooltip;
 use crate::widget::form::Input;
 use crate::widget::form::ValidateFn;
 
-use super::{FieldHandle, FormContext, FormObserver, TextFieldState};
+use super::{TextFieldState, TextFieldStateMsg};
 
 use pwt_macros::widget;
 
@@ -164,8 +164,7 @@ impl Field {
 
 pub enum Msg {
     Update(String),
-    FormCtxUpdate(FormContext), // FormContext object changed
-    FormCtxDataChange, // Data inside FormContext changed
+    StateUpdate(TextFieldStateMsg),
 }
 
 fn create_field_validation_cb(props: Field) -> ValidateFn<Value> {
@@ -229,9 +228,8 @@ impl Component for PwtField {
         let state = TextFieldState::create(
             ctx,
             &props.input_props,
-            ctx.link().callback(Msg::FormCtxUpdate),
-            ctx.link().callback(|_| Msg::FormCtxDataChange),
-            real_validate.clone(),
+            ctx.link().callback(Msg::StateUpdate),
+             real_validate.clone(),
         );
 
         let value = props.default.as_deref().unwrap_or("").to_string();
@@ -255,12 +253,7 @@ impl Component for PwtField {
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
         let props = ctx.props();
         match msg {
-            Msg::FormCtxUpdate(form_ctx) => {
-                self.state.update_form_context_hook(&props.input_props, form_ctx)
-            }
-            Msg::FormCtxDataChange => {
-                self.state.update_form_data_hook()
-            }
+            Msg::StateUpdate(state_msg) => self.state.update_hook(&props.input_props, state_msg),
             Msg::Update(value) => {
                 if props.input_props.disabled { return true; }
                 self.state.set_value(value.clone());

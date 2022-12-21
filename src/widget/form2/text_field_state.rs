@@ -18,15 +18,33 @@ pub(crate) struct TextFieldState {
     on_form_data_change: Callback<FormContext>,
 }
 
+pub enum TextFieldStateMsg {
+    FormCtxUpdate(FormContext), // FormContext object changed
+    FormCtxDataChange, // Data inside FormContext changed
+}
+
 impl TextFieldState {
 
     pub fn create<COMP: Component>(
         ctx: &Context<COMP>,
         props: &FieldStdProps,
-        on_form_ctx_change: Callback<FormContext>,
-        on_form_data_change: Callback<FormContext>,
+        on_state_change: Callback<TextFieldStateMsg>,
         real_validate: ValidateFn<Value>,
     ) -> TextFieldState {
+
+        let on_form_ctx_change = Callback::from({
+            let on_state_change = on_state_change.clone();
+            move |form_ctx: FormContext| {
+                on_state_change.emit(TextFieldStateMsg::FormCtxUpdate(form_ctx));
+            }
+        });
+
+        let on_form_data_change = Callback::from({
+            let on_state_change = on_state_change.clone();
+            move |_form_ctx: FormContext| {
+                on_state_change.emit(TextFieldStateMsg::FormCtxDataChange);
+            }
+        });
 
         let mut state = Self {
             value: String::new(),
@@ -38,6 +56,7 @@ impl TextFieldState {
             _form_ctx_observer: None,
             on_form_data_change: on_form_data_change.clone(),
         };
+
 
         if props.name.is_some() {
             if let Some((form, handle)) = ctx.link().context::<FormContext>(on_form_ctx_change) {
@@ -114,21 +133,24 @@ impl TextFieldState {
         self.field_handle = Some(field_handle);
     }
 
-    pub fn update_form_context_hook(&mut self, props: &FieldStdProps, form_ctx: FormContext) -> bool {
-        self._form_ctx_observer = Some(form_ctx.add_listener(self.on_form_data_change.clone()));
-        self.form_ctx = Some(form_ctx);
-        self.register_field(props, self.value.clone());
-        true
-    }
-
-    pub fn update_form_data_hook(&mut self) -> bool {
-        if let Some(field_handle) = &self.field_handle {
-            let value = field_handle.get_text();
-            if value != self.value {
-                self.value = value;
-                return true;
+    pub fn update_hook(&mut self, props: &FieldStdProps, msg: TextFieldStateMsg) -> bool {
+        match msg {
+            TextFieldStateMsg::FormCtxUpdate(form_ctx) => {
+                self._form_ctx_observer = Some(form_ctx.add_listener(self.on_form_data_change.clone()));
+                self.form_ctx = Some(form_ctx);
+                self.register_field(props, self.value.clone());
+                true
+            }
+            TextFieldStateMsg::FormCtxDataChange => {
+                if let Some(field_handle) = &self.field_handle {
+                    let value = field_handle.get_text();
+                    if value != self.value {
+                        self.value = value;
+                        return true;
+                    }
+                }
+                false
             }
         }
-        false
     }
 }
