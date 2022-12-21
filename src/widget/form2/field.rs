@@ -12,7 +12,7 @@ use crate::widget::Tooltip;
 use crate::widget::form::Input;
 use crate::widget::form::ValidateFn;
 
-use super::{FieldHandle, FormContext, FormObserver};
+use super::{FieldHandle, FormContext, FormObserver, TextFieldState};
 
 use pwt_macros::widget;
 
@@ -214,72 +214,7 @@ fn create_field_validation_cb(props: Field) -> ValidateFn<Value> {
 
 #[doc(hidden)]
 pub struct PwtField {
-    value: String,
-    valid: Result<(), String>,
-    real_validate: ValidateFn<Value>,
-
-    form_ctx: Option<FormContext>,
-    field_handle: Option<FieldHandle>,
-    _form_ctx_handle: Option<ContextHandle<FormContext>>,
-    _form_ctx_observer: Option<FormObserver>,
-}
-
-impl PwtField {
-
-    pub fn get_field_data(&self) -> (String, Result<(), String>) {
-        if let Some(field_handle) = &self.field_handle {
-            let value = field_handle.get_text();
-            let valid = field_handle.get_valid();
-            (value, valid)
-        } else {
-            (self.value.clone(), self.valid.clone())
-        }
-    }
-
-    // force value - for fields without name (no FormContext)
-    pub fn force_value(
-        &mut self,
-        value: String,
-        valid: Option<Result<(), String>>,
-    ) {
-        self.value = value.clone();
-        self.valid = valid.unwrap_or_else(|| {
-            self.real_validate.validate(&value.clone().into())
-                .map_err(|e| e.to_string())
-        });
-     }
-
-    pub fn set_value(&mut self, props: &Field, value: String) {
-        if let Some(field_handle) = &mut self.field_handle {
-            field_handle.set_value(value.clone().into());
-         } else {
-            if value == self.value { return; }
-
-            self.value = value.clone();
-            self.valid = self.real_validate.validate(&value.clone().into())
-                .map_err(|e| e.to_string());
-        }
-
-        if let Some(on_change) = &props.on_change {
-            on_change.emit(value.clone());
-        }
-    }
-
-    fn register_field(&mut self, props: &Field, name: &str, value: String) {
-        let form_ctx = match &self.form_ctx {
-            None => return,
-            Some(form_ctx) => form_ctx.clone(),
-        };
-        let field_handle = form_ctx.register_field(
-            name.to_string(),
-            value.into(),
-            Some(self.real_validate.clone()),
-            props.input_props.submit,
-            props.input_props.submit_empty,
-        );
-
-        self.field_handle = Some(field_handle);
-    }
+    state: TextFieldState,
 }
 
 impl Component for PwtField {
@@ -289,45 +224,28 @@ impl Component for PwtField {
     fn create(ctx: &Context<Self>) -> Self {
         let props = ctx.props();
 
-        let mut _form_ctx_handle = None;
-        let mut _form_ctx_observer = None;
-        let mut form_ctx = None;
-
-        if props.input_props.name.is_some() {
-            let on_form_ctx_change = ctx.link().callback(Msg::FormCtxUpdate);
-            if let Some((form, handle)) = ctx.link().context::<FormContext>(on_form_ctx_change) {
-                _form_ctx_handle = Some(handle);
-                _form_ctx_observer = Some(form.add_listener(
-                    ctx.link().callback(|_| Msg::FormCtxDataChange)
-                ));
-                form_ctx = Some(form);
-            }
-        }
-
         let real_validate = create_field_validation_cb(props.clone());
 
-        let value = props.default.as_deref().unwrap_or("").to_string();
-        let valid = real_validate.validate(&value.clone().into())
-            .map_err(|e| e.to_string());
+        let state = TextFieldState::create(
+            ctx,
+            &props.input_props,
+            ctx.link().callback(Msg::FormCtxUpdate),
+            ctx.link().callback(|_| Msg::FormCtxDataChange),
+            real_validate.clone(),
+        );
 
-        let mut me = Self {
-            value: value.clone(),
-            valid,
-            real_validate,
-            form_ctx,
-            field_handle: None,
-            _form_ctx_handle,
-            _form_ctx_observer,
-        };
+        let value = props.default.as_deref().unwrap_or("").to_string();
+
+        let mut me = Self { state };
 
         if let Some(name) = &props.input_props.name {
-            me.register_field(props, name, value);
+            me.state.register_field(&props.input_props, value);
             if props.value.is_some() || props.valid.is_some() {
                 log::error!("Field '{name}' is named - unable to force value/valid");
             }
         } else {
             if let Some(value) = &props.value { // force value
-                me.force_value(value.to_string(), props.valid.clone());
+                me.state.force_value(value.to_string(), props.valid.clone());
             }
         }
 
@@ -338,28 +256,17 @@ impl Component for PwtField {
         let props = ctx.props();
         match msg {
             Msg::FormCtxUpdate(form_ctx) => {
-                if let Some(name) = &props.input_props.name {
-                    self._form_ctx_observer = Some(form_ctx.add_listener(
-                        ctx.link().callback(|_| Msg::FormCtxDataChange)
-                    ));
-                    self.form_ctx = Some(form_ctx);
-                    self.register_field(props, name, self.value.clone());
-                }
-                true
+                self.state.update_form_context_hook(&props.input_props, form_ctx)
             }
             Msg::FormCtxDataChange => {
-                if let Some(field_handle) = &self.field_handle {
-                    let value = field_handle.get_text();
-                    if value != self.value {
-                        self.value = value;
-                        return true;
-                    }
-                }
-                false
+                self.state.update_form_data_hook()
             }
             Msg::Update(value) => {
                 if props.input_props.disabled { return true; }
-                self.set_value(props, value);
+                self.state.set_value(value.clone());
+                if let Some(on_change) = &props.on_change {
+                    on_change.emit(value);
+                }
                 true
             }
         }
@@ -375,7 +282,7 @@ impl Component for PwtField {
         } else {
             if props.value != old_props.value || props.valid != old_props.valid {
                 if let Some(value) = &props.value { // force value
-                    self.force_value(value.to_string(), props.valid.clone());
+                    self.state.force_value(value.to_string(), props.valid.clone());
                 }
             }
         }
@@ -386,7 +293,7 @@ impl Component for PwtField {
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
 
-        let (value, valid) = self.get_field_data();
+        let (value, valid) = self.state.get_field_data();
 
         let oninput = ctx.link().callback(move |event: InputEvent| {
             let input: HtmlInputElement = event.target_unchecked_into();
