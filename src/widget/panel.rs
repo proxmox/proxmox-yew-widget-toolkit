@@ -20,7 +20,7 @@ impl Panel {
 
     pub fn new() -> Self {
         Self::default()
-            .border(true)
+            .border(false)
     }
 
     pub fn title(mut self, title: impl IntoPropValue<Option<AttrValue>>) -> Self {

@@ -192,7 +192,7 @@ impl Component for PwtEditWindow {
         let mut toolbar = Row::new()
             .padding(2)
             .gap(2)
-            .class("pwt-border-top pwt-bg-color-neutral-emphased")
+            .class("pwt-bg-color-neutral-emphased")
             .with_flex_spacer();
 
         if props.advanced_checkbox {
