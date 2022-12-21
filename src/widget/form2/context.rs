@@ -21,6 +21,7 @@ struct FieldRegistration {
     pub submit_empty: bool,
 
     pub value: Value,
+    pub default: Value,
     pub valid: Result<(), String>,
 }
 
@@ -186,12 +187,13 @@ impl FormContext {
         &self,
         name: impl IntoPropValue<AttrValue>,
         value: Value,
+        default: Value,
         validate: Option<ValidateFn<Value>>,
         submit: bool,
         submit_empty: bool,
     ) -> FieldHandle {
         let key = self.inner.borrow_mut()
-            .register_field(name, value, validate, submit, submit_empty);
+            .register_field(name, value, default, validate, submit, submit_empty);
 
         FieldHandle { key, form_ctx: self.clone() }
     }
@@ -280,6 +282,7 @@ impl FormState {
         &mut self,
         name: impl IntoPropValue<AttrValue>,
         value: Value,
+        default: Value,
         validate: Option<ValidateFn<Value>>,
         submit: bool,
         submit_empty: bool,
@@ -298,6 +301,7 @@ impl FormState {
             submit,
             submit_empty,
             value,
+            default,
             valid,
         };
 

@@ -114,7 +114,7 @@ impl TextFieldState {
     }
 
     /// Register the field inm the FormContext
-    pub fn register_field(&mut self, props: &FieldStdProps, value: String) {
+    pub fn register_field(&mut self, props: &FieldStdProps, value: String, default: String) {
         let name = match &props.name {
             Some(name) => name,
             None => {
@@ -134,6 +134,7 @@ impl TextFieldState {
         let field_handle = form_ctx.register_field(
             name,
             value.into(),
+            default.into(),
             Some(self.real_validate.clone()),
             props.submit,
             props.submit_empty,
@@ -142,12 +143,12 @@ impl TextFieldState {
         self.field_handle = Some(field_handle);
     }
 
-    pub fn update_hook(&mut self, props: &FieldStdProps, msg: TextFieldStateMsg) -> bool {
+    pub fn update_hook(&mut self, props: &FieldStdProps, msg: TextFieldStateMsg, default: String) -> bool {
         match msg {
             TextFieldStateMsg::FormCtxUpdate(form_ctx) => {
                 self._form_ctx_observer = Some(form_ctx.add_listener(self.on_form_data_change.clone()));
                 self.form_ctx = Some(form_ctx);
-                self.register_field(props, self.value.clone());
+                self.register_field(props, self.value.clone(), default);
                 true
             }
             TextFieldStateMsg::FormCtxDataChange => {
