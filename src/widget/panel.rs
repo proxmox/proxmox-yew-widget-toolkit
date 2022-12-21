@@ -13,6 +13,7 @@ use crate::widget::Row;
 pub struct Panel {
     pub title: Option<AttrValue>,
     pub tools: Vec<VNode>,
+    pub header_classes: Classes,
 }
 
 impl Panel {
@@ -39,6 +40,15 @@ impl Panel {
     pub fn add_tool(&mut self, tool: impl Into<VNode>) {
         self.tools.push(tool.into());
     }
+
+    pub fn set_header_classes(&mut self, classes: impl Into<Classes>) {
+        self.header_classes = classes.into();
+    }
+
+    pub fn header_classes(mut self, classes: impl Into<Classes>) -> Self {
+        self.set_header_classes(classes);
+        self
+    }
 }
 
 impl Into<VTag> for Panel {
@@ -49,7 +59,8 @@ impl Into<VTag> for Panel {
 
         if self.title.is_some() || !self.tools.is_empty() {
             let header = create_panel_title(self.title, self.tools)
-                .class("pwt-panel-header");
+                .class("pwt-panel-header")
+                .class(self.header_classes);
             self.children.insert(0, header.into());
         }
 
