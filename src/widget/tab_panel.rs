@@ -198,7 +198,6 @@ impl Component for PwtTabPanel {
         let props = ctx.props();
 
         let bar = props.bar.clone()
-            .class("pwt-scheme-neutral-container")
             .on_select(ctx.link().callback(|key| Msg::Select(key))) ;
 
         let content: Html = props.tabs.iter().map(|(key, render_fn)| {
