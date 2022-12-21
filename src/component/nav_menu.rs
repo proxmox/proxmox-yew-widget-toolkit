@@ -1,14 +1,15 @@
 use std::collections::HashMap;
 use std::ops::Deref;
-use std::rc::Rc;
 
 use yew::html::{IntoEventCallback, IntoPropValue};
 use yew::prelude::*;
-use yew::virtual_dom::{Key, VComp, VNode};
+use yew::virtual_dom::{Key, VNode};
 use yew::{html, Component, Html, Properties};
 
 use crate::props::{ContainerBuilder, EventSubscriber, RenderFn, WidgetBuilder};
 use crate::state::{NavigationContainer, NavigationContext, NavigationContextExt};
+
+use pwt_macros::widget;
 
 use crate::widget::focus::focus_next_tabable;
 use crate::widget::{Column, Row};
@@ -106,6 +107,7 @@ impl From<MenuItem> for Menu {
     }
 }
 
+#[widget(pwt=crate, comp=PwtNavigationMenu, @element)]
 #[derive(PartialEq, Clone, Properties)]
 pub struct NavigationMenu {
     #[prop_or_default]
@@ -506,7 +508,10 @@ impl Component for PwtNavigationMenu {
             .attribute("tabindex", "-1")
             .attribute("role", "navigation")
             .attribute("aria-label", props.aria_label.clone())
-            .class("pwt-nav-menu pwt-overflow-none pwt-border-right");
+            .margin(props.std_props.margin.clone())
+            .padding(props.std_props.padding.clone())
+            .class("pwt-nav-menu pwt-overflow-none")
+            .class(props.std_props.class.clone());
 
         let active = self.get_active_or_default(ctx);
         let active = active.as_deref().unwrap_or("");
@@ -527,13 +532,5 @@ impl Component for PwtNavigationMenu {
             .with_child(menu)
             .with_optional_child(content)
             .into()
-    }
-}
-
-impl Into<VNode> for NavigationMenu {
-    fn into(self) -> VNode {
-        let key = self.key.clone();
-        let comp = VComp::new::<PwtNavigationMenu>(Rc::new(self), key);
-        VNode::from(comp)
     }
 }
