@@ -521,7 +521,7 @@ impl Component for PwtNavigationMenu {
                 self.render_item(ctx, item, &mut menu, active, 0, true)
             {
                 content = Some(html! {
-                    <div role="main" aria-label={title} class="pwt-fit">{new_content}</div>
+                    <div role="main" aria-label={title} class="pwt-fit pwt-d-flex">{new_content}</div>
                 })
             }
         }
