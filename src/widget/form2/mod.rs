@@ -11,4 +11,7 @@ mod form;
 pub use form::{Form, PwtForm};
 
 mod reset_button;
-pub use reset_button::{ResetButton, PwtResetButton}; 
+pub use reset_button::{ResetButton, PwtResetButton};
+
+mod submit_button;
+pub use submit_button::{SubmitButton, PwtSubmitButton};

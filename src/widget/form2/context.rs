@@ -393,4 +393,14 @@ impl FormState {
             self.version += 1;
         }
     }
+
+    pub fn is_valid(&self) -> bool {
+        for (_key, field) in self.fields.iter() {
+            if field.valid.is_err() {
+                return false;
+            }
+        }
+        true
+    }
+
 }
