@@ -229,6 +229,7 @@ impl Component for PwtField {
             ctx,
             &props.input_props,
             ctx.link().callback(Msg::StateUpdate),
+            props.on_change.clone(),
              real_validate.clone(),
         );
 
