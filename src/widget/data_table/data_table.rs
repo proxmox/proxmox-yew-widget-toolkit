@@ -958,7 +958,7 @@ impl<S: DataStore> PwtDataTable<S> {
 
         let height = offset + self.table_height + row_count.saturating_sub(end) * self.row_height;
 
-        if height < self.viewport_height {
+        if height <= self.viewport_height {
             self.scrollbar_size = None;
         }
 
