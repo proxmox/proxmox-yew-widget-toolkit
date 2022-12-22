@@ -12,7 +12,7 @@ use crate::widget::Tooltip;
 use crate::widget::form::Input;
 use crate::widget::form::ValidateFn;
 
-use super::{TextFieldState, TextFieldStateMsg};
+use super::{FieldState, FieldStateMsg};
 
 use pwt_macros::widget;
 
@@ -164,7 +164,7 @@ impl Field {
 
 pub enum Msg {
     Update(String),
-    StateUpdate(TextFieldStateMsg),
+    StateUpdate(FieldStateMsg),
 }
 
 fn create_field_validation_cb(props: Field) -> ValidateFn<Value> {
@@ -213,7 +213,7 @@ fn create_field_validation_cb(props: Field) -> ValidateFn<Value> {
 
 #[doc(hidden)]
 pub struct PwtField {
-    state: TextFieldState,
+    state: FieldState,
 }
 
 impl Component for PwtField {
@@ -225,12 +225,22 @@ impl Component for PwtField {
 
         let real_validate = create_field_validation_cb(props.clone());
 
-        let state = TextFieldState::create(
+        let on_change = match &props.on_change {
+            Some(on_change) => Some(Callback::from({
+                let on_change = on_change.clone();
+                move |value: Value| {
+                    on_change.emit(value.as_str().unwrap_or("").to_string());
+                }
+            })),
+            None => None,
+        };
+
+        let state = FieldState::create(
             ctx,
             &props.input_props,
             ctx.link().callback(Msg::StateUpdate),
-            props.on_change.clone(),
-             real_validate.clone(),
+            on_change,
+            real_validate.clone(),
         );
 
         let value = props.default.as_deref().unwrap_or("").to_string();
@@ -262,7 +272,7 @@ impl Component for PwtField {
             Msg::Update(value) => {
                 if props.input_props.disabled { return true; }
                 self.state.set_value(value.clone());
-                if let Some(on_change) = &props.on_change {
+                if let Some(on_change) = &props.on_change { // fixme: remove??
                     on_change.emit(value);
                 }
                 true
@@ -292,6 +302,7 @@ impl Component for PwtField {
         let props = ctx.props();
 
         let (value, valid) = self.state.get_field_data();
+        let value = value.as_str().unwrap_or("").to_owned();
 
         let oninput = ctx.link().callback(move |event: InputEvent| {
             let input: HtmlInputElement = event.target_unchecked_into();

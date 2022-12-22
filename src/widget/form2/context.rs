@@ -71,14 +71,14 @@ impl FieldHandle {
     }
 
     /// Returns the field value.
-    pub fn get_value(&mut self) -> Value {
+    pub fn get_value(&self) -> Value {
         let key = self.key;
         let state = self.form_ctx.inner.borrow();
         state.fields[key].value.clone()
     }
 
     /// Returns the field validation status.
-    pub fn get_valid(&self) ->  Result<(), String> {
+    pub fn get_valid(&self) -> Result<(), String> {
         let key = self.key;
         let state = self.form_ctx.inner.borrow();
         state.fields[key].valid.clone()
