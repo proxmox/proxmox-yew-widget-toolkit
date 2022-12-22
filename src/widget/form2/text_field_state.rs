@@ -155,8 +155,7 @@ impl TextFieldState {
                 true
             }
             TextFieldStateMsg::FormCtxDataChange => {
-                if let Some(field_handle) = &self.field_handle {
-
+                if self.field_handle.is_some() {
                     let (value, valid) = self.get_field_data();
                     let value_changed = value != self.value;
                     let valid_changed = valid != self.valid;

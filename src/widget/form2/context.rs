@@ -364,4 +364,33 @@ impl FormState {
             self.set_field_value_by_slab_key(slab_key, value);
         }
     }
+
+    pub fn is_dirty(&self) -> bool {
+        for (_key, field) in self.fields.iter() {
+            if field.value != field.default {
+                return true;
+            }
+        }
+        false
+    }
+
+    /// Reset all form fields to their default value.
+    pub fn reset_form(&mut self) {
+        let mut changes = false;
+        for (_key, field) in self.fields.iter_mut() {
+            if field.value != field.default {
+                changes = true;
+                field.value = field.default.clone();
+                let mut valid = Ok(());
+                if let Some(validate) = &field.validate {
+                    valid = validate.validate(&field.value)
+                        .map_err(|e| e.to_string());
+                }
+                field.valid = valid;
+            }
+        }
+        if changes {
+            self.version += 1;
+        }
+    }
 }
