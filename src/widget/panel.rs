@@ -41,20 +41,18 @@ impl Panel {
         self.tools.push(tool.into());
     }
 
-    pub fn set_header_classes(&mut self, classes: impl Into<Classes>) {
-        self.header_classes = classes.into();
+    pub fn add_header_class(&mut self, class: impl Into<Classes>) {
+        self.header_classes.push(class);
     }
 
-    pub fn header_classes(mut self, classes: impl Into<Classes>) -> Self {
-        self.set_header_classes(classes);
+    pub fn header_class(mut self, class: impl Into<Classes>) -> Self {
+        self.add_header_class(class);
         self
     }
 }
 
 impl Into<VTag> for Panel {
-
     fn into(mut self) -> VTag {
-
         self.add_class("pwt-panel");
 
         if self.title.is_some() || !self.tools.is_empty() {
