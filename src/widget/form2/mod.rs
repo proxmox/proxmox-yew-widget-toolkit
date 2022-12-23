@@ -1,6 +1,9 @@
 mod context;
 pub use context::*;
 
+mod checkbox;
+pub use checkbox::{Checkbox, PwtCheckbox};
+
 mod field_state;
 pub(crate) use field_state::{FieldState, FieldStateMsg};
 
