@@ -72,39 +72,18 @@ impl FieldHandle {
 
     /// Returns the field value.
     pub fn get_value(&self) -> Value {
-        let key = self.key;
-        let state = self.form_ctx.inner.borrow();
-        state.fields[key].value.clone()
+        self.get_data().0
     }
 
     /// Returns the field validation status.
     pub fn get_valid(&self) -> Result<(), String> {
-        let key = self.key;
-        let state = self.form_ctx.inner.borrow();
-        state.fields[key].valid.clone()
+        self.get_data().1
     }
 
     /// Returns the field value with the validation result.
-    pub fn get_field_data(&self) -> (Value, Result<(), String>) {
+    pub fn get_data(&self) -> (Value, Result<(), String>) {
         let key = self.key;
-        let state = self.form_ctx.inner.borrow();
-        let field = &state.fields[key];
-        (field.value.clone(), field.valid.clone())
-    }
-
-    /// Get the field value as string.
-    ///
-    /// Return the empty string when the field value is not a string
-    /// or number.
-    pub fn get_text(&self) -> String {
-        let key = self.key;
-        let state = self.form_ctx.inner.borrow();
-        let field = &state.fields[key];
-        match &field.value {
-            Value::Number(n) => n.to_string(),
-            Value::String(v) => v.clone(),
-            _ => String::new(),
-        }
+        self.read().get_field_data_by_slab_key(key)
     }
 
     pub fn set_value(&mut self, value: Value) {
@@ -325,12 +304,31 @@ impl FormState {
         self.fields.iter().find(|(_key, f)| &f.name == name).map(|(key, _)| key)
     }
 
-    pub fn get_field_value(&self, name: impl IntoPropValue<AttrValue>) -> Option<&Value> {
+    fn get_field_data_by_slab_key(
+        &self,
+        slab_key: usize,
+    ) ->  (Value, Result<(), String>) {
+        let field = &self.fields[slab_key];
+        (field.value.clone(), field.valid.clone())
+    }
+
+    pub fn get_field_data(
+        &self,
+        name: impl IntoPropValue<AttrValue>,
+    ) -> Option<(Value, Result<(), String>)> {
         let name = name.into_prop_value();
         match self.find_field_slab_id(&name) {
-            Some(key) => Some(&self.fields[key].value),
+            Some(key) => Some(self.get_field_data_by_slab_key(key)),
             None => None,
         }
+    }
+
+    pub fn get_field_value(&self, name: impl IntoPropValue<AttrValue>) -> Option<Value> {
+        self.get_field_data(name).map(|data| data.0)
+    }
+
+    pub fn get_field_valid(&self, name: impl IntoPropValue<AttrValue>) -> Option<Result<(), String>> {
+        self.get_field_data(name).map(|data| data.1)
     }
 
     fn set_field_value_by_slab_key(

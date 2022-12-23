@@ -88,9 +88,7 @@ impl FieldState {
     /// Get current field value and validation result.
     pub fn get_field_data(&self) -> (Value, Result<(), String>) {
         if let Some(field_handle) = &self.field_handle {
-            let value = field_handle.get_value();
-            let valid = field_handle.get_valid();
-            (value, valid)
+            field_handle.get_data()
         } else {
             (self.value.clone(), self.valid.clone())
         }
