@@ -51,7 +51,15 @@ pub struct Field {
     pub validate: Option<ValidateFn<String>>,
 
     /// Change callback
+    ///
+    /// This callback is emited on any data change, i.e. if data
+    /// inside the [FormContext] changed.
     pub on_change: Option<Callback<String>>,
+
+    /// Input callback
+    ///
+    /// This callback is emited when the user types in new data.
+    pub on_input: Option<Callback<String>>,
 }
 
 impl Field {
@@ -158,6 +166,12 @@ impl Field {
     /// Builder style method to set the on_change callback
     pub fn on_change(mut self, cb: impl IntoEventCallback<String>) -> Self {
         self.on_change = cb.into_event_callback();
+        self
+    }
+
+    /// Builder style method to set the on_change callback
+    pub fn on_input(mut self, cb: impl IntoEventCallback<String>) -> Self {
+        self.on_input = cb.into_event_callback();
         self
     }
 }
@@ -272,8 +286,8 @@ impl Component for PwtField {
             Msg::Update(value) => {
                 if props.input_props.disabled { return true; }
                 self.state.set_value(value.clone());
-                if let Some(on_change) = &props.on_change { // fixme: remove??
-                    on_change.emit(value);
+                if let Some(on_input) = &props.on_input {
+                    on_input.emit(value);
                 }
                 true
             }

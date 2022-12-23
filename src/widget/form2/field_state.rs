@@ -112,13 +112,17 @@ impl FieldState {
 
     /// Set the field value
     pub fn set_value(&mut self, value: impl Into<Value>) {
-        let value = value.into();
+
+        self.value = value.into();
+        self.valid = self.real_validate.validate(&self.value)
+            .map_err(|e| e.to_string());
+
         if let Some(field_handle) = &mut self.field_handle {
-            field_handle.set_value(value);
-        } else {
-            self.value = value.clone();
-            self.valid = self.real_validate.validate(&self.value)
-                .map_err(|e| e.to_string());
+            field_handle.set_value(self.value.clone());
+        }
+
+        if let Some(on_change) = &self.on_change {
+            on_change.emit(self.value.clone());
         }
     }
 
@@ -180,8 +184,7 @@ impl FieldState {
 
                     if value_changed {
                         if let Some(on_change) = &self.on_change {
-                            // fixme: this cause strange update loops
-                            // on_change.emit(self.value.clone());
+                            on_change.emit(self.value.clone());
                         }
                     }
 
