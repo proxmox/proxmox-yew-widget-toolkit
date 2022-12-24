@@ -2,6 +2,7 @@ use std::rc::Rc;
 use std::cell::{Ref, RefMut, RefCell};
 use std::ops::{Deref, DerefMut};
 use std::mem::ManuallyDrop;
+use std::collections::HashMap;
 
 use derivative::Derivative;
 use slab::Slab;
@@ -230,11 +231,20 @@ impl Deref for FormContextReadGuard<'_> {
     }
 }
 
+struct GroupState {
+    value: Option<Value>,
+    members: Vec<usize>,
+}
+
 /// Form state.
+///
+/// A Form contains named fields. Field names are not required to be
+/// unique. Fields using the same name are called a "field group".
 pub struct FormState {
     version: usize,
     listeners: Slab<Callback<FormContext>>,
     fields: Slab<FieldRegistration>,
+    groups: HashMap<AttrValue, GroupState>,
     show_advanced: bool,
 }
 
@@ -245,6 +255,7 @@ impl FormState {
             version: 0,
             listeners: Slab::new(),
             fields: Slab::new(),
+            groups: HashMap::new(),
             show_advanced: false,
          }
     }
@@ -275,7 +286,7 @@ impl FormState {
         }
 
         let field = FieldRegistration {
-            name,
+            name: name.clone(),
             validate,
             submit,
             submit_empty,
@@ -285,12 +296,23 @@ impl FormState {
         };
 
         self.version += 1;
-        self.fields.insert(field)
+        let slab_key = self.fields.insert(field);
+
+        let group = self.groups.entry(name).or_insert(GroupState {
+            value: None,
+            members: Vec::new(),
+        });
+
+        group.members.push(slab_key);
+
+        slab_key
     }
 
     fn unregister_field(&mut self, key: usize) {
         self.version += 1;
-        self.fields.remove(key);
+        let field = self.fields.remove(key);
+        let group = self.groups.get_mut(&field.name).unwrap();
+        group.members.retain(|k| k != &key);
     }
 
     pub fn set_show_advanced(&mut self, show_advanced: bool) {
