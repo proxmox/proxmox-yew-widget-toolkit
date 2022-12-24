@@ -128,7 +128,7 @@ impl Component for PwtCheckbox {
         };
 
         if let Some(name) = &props.input_props.name {
-            me.state.register_field(&props.input_props, default.clone(), default);
+            me.state.register_field(&props.input_props, default.clone(), default, false);
             if props.checked.is_some() {
                 log::error!("Checkbox '{name}' is named - unable to force checked.");
             }
@@ -152,7 +152,7 @@ impl Component for PwtCheckbox {
                     Some(true) => on_value.clone(),
                     _ => String::new(),
                 };
-                self.state.update_hook(&props.input_props, state_msg, default)
+                self.state.update_hook(&props.input_props, state_msg, default, false)
             }
             Msg::Toggle => {
                 if props.input_props.disabled { return true; }

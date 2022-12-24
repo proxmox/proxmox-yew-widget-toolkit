@@ -130,6 +130,7 @@ impl FieldState {
         props: &FieldStdProps,
         value: impl Into<Value>,
         default: impl Into<Value>,
+        radio_group: bool,
     ) {
         let name = match &props.name {
             Some(name) => name,
@@ -151,6 +152,7 @@ impl FieldState {
             name,
             value.into(),
             default.into(),
+            radio_group,
             Some(self.real_validate.clone()),
             props.submit,
             props.submit_empty,
@@ -164,12 +166,13 @@ impl FieldState {
         props: &FieldStdProps,
         msg: FieldStateMsg,
         default: impl Into<Value>,
+        radio_group: bool,
     ) -> bool {
         match msg {
             FieldStateMsg::FormCtxUpdate(form_ctx) => {
                 self._form_ctx_observer = Some(form_ctx.add_listener(self.on_form_data_change.clone()));
                 self.form_ctx = Some(form_ctx);
-                self.register_field(props, self.value.clone(), default);
+                self.register_field(props, self.value.clone(), default, radio_group);
                 true
             }
             FieldStateMsg::FormCtxDataChange => {

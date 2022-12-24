@@ -18,6 +18,7 @@ use crate::widget::form::ValidateFn; // fixme: move to props
 struct FieldRegistration {
     pub name: AttrValue,
     pub validate: Option<ValidateFn<Value>>,
+    pub radio_group: bool,
     pub submit: bool,
     pub submit_empty: bool,
 
@@ -168,12 +169,13 @@ impl FormContext {
         name: impl IntoPropValue<AttrValue>,
         value: Value,
         default: Value,
+        radio_group: bool,
         validate: Option<ValidateFn<Value>>,
         submit: bool,
         submit_empty: bool,
     ) -> FieldHandle {
         let key = self.inner.borrow_mut()
-            .register_field(name, value, default, validate, submit, submit_empty);
+            .register_field(name, value, default, radio_group, validate, submit, submit_empty);
 
         FieldHandle { key, form_ctx: self.clone() }
     }
@@ -234,6 +236,7 @@ impl Deref for FormContextReadGuard<'_> {
 struct GroupState {
     value: Option<Value>,
     members: Vec<usize>,
+    radio_count: usize,
 }
 
 /// Form state.
@@ -273,6 +276,7 @@ impl FormState {
         name: impl IntoPropValue<AttrValue>,
         value: Value,
         default: Value,
+        radio_group: bool,
         validate: Option<ValidateFn<Value>>,
         submit: bool,
         submit_empty: bool,
@@ -288,6 +292,7 @@ impl FormState {
         let field = FieldRegistration {
             name: name.clone(),
             validate,
+            radio_group,
             submit,
             submit_empty,
             value,
@@ -301,9 +306,13 @@ impl FormState {
         let group = self.groups.entry(name).or_insert(GroupState {
             value: None,
             members: Vec::new(),
+            radio_count: 0,
         });
 
         group.members.push(slab_key);
+        if radio_group {
+            group.radio_count += 1;
+        }
 
         slab_key
     }
@@ -313,6 +322,11 @@ impl FormState {
         let field = self.fields.remove(key);
         let group = self.groups.get_mut(&field.name).unwrap();
         group.members.retain(|k| k != &key);
+        if field.radio_group {
+            group.radio_count = group.radio_count.saturating_sub(1);
+        }
+
+
     }
 
     pub fn set_show_advanced(&mut self, show_advanced: bool) {
@@ -331,7 +345,15 @@ impl FormState {
         slab_key: usize,
     ) ->  (Value, Result<(), String>) {
         let field = &self.fields[slab_key];
-        (field.value.clone(), field.valid.clone())
+
+        if field.radio_group {
+            let group = &self.groups[&field.name];
+            let value = group.value.clone().unwrap_or("".into());
+            let valid = Ok(()); // fixme
+            (value, valid)
+        } else {
+            (field.value.clone(), field.valid.clone())
+        }
     }
 
     pub fn get_field_data(
@@ -359,18 +381,31 @@ impl FormState {
         value: Value,
     ) {
         let field = &mut self.fields[slab_key];
-        let current_value = &field.value;
-        if current_value != &value {
 
-            let mut valid = Ok(());
-            if let Some(validate) = &field.validate {
-                valid = validate.validate(&value)
-                    .map_err(|e| e.to_string());
+        if field.radio_group {
+            let group = self.groups.get_mut(&field.name).unwrap();
+            let changed = match &group.value {
+                Some(current_value) => current_value != &value,
+                None => true,
+            };
+            if changed {
+                group.value = Some(value);
+                self.version += 1;
             }
+        } else {
+            let current_value = &field.value;
+            if current_value != &value {
 
-            field.value = value;
-            field.valid = valid;
-            self.version += 1;
+                let mut valid = Ok(());
+                if let Some(validate) = &field.validate {
+                    valid = validate.validate(&value)
+                        .map_err(|e| e.to_string());
+                }
+
+                field.value = value;
+                field.valid = valid;
+                self.version += 1;
+            }
         }
     }
 
