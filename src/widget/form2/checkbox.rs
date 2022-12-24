@@ -22,6 +22,9 @@ pub struct Checkbox {
     pub checked: Option<bool>,
     /// Default value.
     pub default: Option<bool>,
+    /// Radio group flag
+    #[prop_or_default]
+    pub radio_group: bool,
     /// Change callback
     pub on_change: Option<Callback<String>>,
     //fixme: on_input()
@@ -32,6 +35,11 @@ impl Checkbox {
     /// Creates a new instance.
     pub fn new() -> Self {
         yew::props!(Self {})
+    }
+
+    /// Creates a radio group member.
+    pub fn radio() -> Self {
+        yew::props!(Self { radio_group: true })
     }
 
     /// Builder style method to set the value.
@@ -128,7 +136,7 @@ impl Component for PwtCheckbox {
         };
 
         if let Some(name) = &props.input_props.name {
-            me.state.register_field(&props.input_props, default.clone(), default, false);
+            me.state.register_field(&props.input_props, default.clone(), default, props.radio_group);
             if props.checked.is_some() {
                 log::error!("Checkbox '{name}' is named - unable to force checked.");
             }
@@ -152,7 +160,7 @@ impl Component for PwtCheckbox {
                     Some(true) => on_value.clone(),
                     _ => String::new(),
                 };
-                self.state.update_hook(&props.input_props, state_msg, default, false)
+                self.state.update_hook(&props.input_props, state_msg, default, props.radio_group)
             }
             Msg::Toggle => {
                 if props.input_props.disabled { return true; }
@@ -206,6 +214,7 @@ impl Component for PwtCheckbox {
 
         let class = classes!(
             "pwt-checkbox",
+            props.radio_group.then(|| "rounded"),
             "fa",
             "fa-check",
             checked.then(|| "checked"),
