@@ -7,6 +7,11 @@ use yew::html::{IntoEventCallback, IntoPropValue};
 
 use super::{FormContext, FormObserver};
 
+/// Reset button.
+///
+/// The button automatically listens for [FormContext] changes, and
+/// enables the button only if the form is dirty (contains
+/// modified data).
 #[derive(Clone, PartialEq, Properties)]
 pub struct ResetButton {
     #[prop_or(AttrValue::Static("Reset"))]

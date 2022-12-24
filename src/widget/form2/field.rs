@@ -16,6 +16,7 @@ use super::{FieldState, FieldStateMsg};
 
 use pwt_macros::widget;
 
+/// Html input field.
 #[widget(pwt=crate, comp=PwtField, @input, @element)]
 #[derive(Clone, PartialEq, Properties)]
 pub struct Field {
@@ -53,7 +54,7 @@ pub struct Field {
     /// Change callback
     ///
     /// This callback is emited on any data change, i.e. if data
-    /// inside the [FormContext] changed.
+    /// inside the [FormContext](super::FormContext) changed.
     pub on_change: Option<Callback<String>>,
 
     /// Input callback

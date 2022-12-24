@@ -7,6 +7,11 @@ use yew::html::{IntoEventCallback, IntoPropValue};
 
 use super::{FormContext, FormObserver};
 
+/// Submit button.
+///
+/// The button automatically listens for [FormContext] changes, and
+/// enables the button only if the form is valid and dirty (contains
+/// modified data).
 #[derive(Clone, PartialEq, Properties)]
 pub struct SubmitButton {
     #[prop_or_default]

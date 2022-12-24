@@ -8,6 +8,12 @@ use super::FormContext;
 
 use pwt_macros::widget;
 
+/// Html form with [ContextProvider](yew::context::ContextProvider)<[FormContext]>
+///
+/// We automatically add the `novalidate` attribute, because our form
+/// fields do validation themselves.
+///
+/// The form creates an empty [FormContext] if you do not provide one.
 #[widget(pwt=crate, comp=PwtForm, @element, @container)]
 #[derive(Clone, PartialEq, Properties)]
 pub struct Form {

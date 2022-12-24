@@ -28,6 +28,18 @@ struct FieldRegistration {
 }
 
 /// Shared form data.
+///
+/// This shared object can be used to control input fields. The
+/// [Form](super::Form) widget uses a
+/// [ContextProvider](yew::context::ContextProvider), so that fields
+/// inside a form can automatically access the [FormContext] to store
+/// data.
+///
+/// Field listens to context changes, and are automatically updated
+/// and validated if you modify the context.
+///
+/// The context is also the best place to gather data for a form
+/// submit.
 #[derive(Derivative)]
 #[derivative(Clone, PartialEq)]
 pub struct FormContext {
