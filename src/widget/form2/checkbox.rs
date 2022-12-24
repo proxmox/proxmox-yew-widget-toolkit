@@ -143,7 +143,7 @@ impl Component for PwtCheckbox {
          } else {
             let value = match props.checked {
                 Some(true) => on_value.clone(),
-                _ => String::new(),
+                _ => default,
             };
             me.state.force_value(value, None);
         }

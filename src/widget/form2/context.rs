@@ -296,7 +296,7 @@ impl FormState {
             submit,
             submit_empty,
             value,
-            default,
+            default: default.clone(),
             valid,
         };
 
@@ -311,6 +311,11 @@ impl FormState {
 
         group.members.push(slab_key);
         if radio_group {
+            if let Some(default) = default.as_str() {
+                if !default.is_empty() && group.value.is_none() {
+                    group.value = Some(default.clone().into());
+                }
+            }
             group.radio_count += 1;
         }
 
