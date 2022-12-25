@@ -5,10 +5,10 @@ use yew::prelude::*;
 use crate::props::FieldStdProps;
 use crate::widget::form::ValidateFn;
 
-use super::{FieldHandle, FormContext, FormObserver, FieldOptions};
+use super::context::{FormContext, FormObserver, FieldHandle, FieldOptions};
 
 /// Text field state handling.
-pub(crate) struct FieldState {
+pub struct FieldState {
     real_validate: ValidateFn<Value>,
     form_ctx: Option<FormContext>,
     field_handle: Option<FieldHandle>,

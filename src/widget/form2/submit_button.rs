@@ -5,7 +5,7 @@ use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 use yew::html::{IntoEventCallback, IntoPropValue};
 
-use super::{FormContext, FormObserver};
+use super::context::{FormContext, FormObserver};
 
 /// Submit button.
 ///

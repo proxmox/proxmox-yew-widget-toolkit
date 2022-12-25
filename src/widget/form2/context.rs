@@ -1,3 +1,5 @@
+//! FormContext - shared form data.
+
 use std::rc::Rc;
 use std::cell::{Ref, RefMut, RefCell};
 use std::ops::{Deref, DerefMut};
@@ -14,15 +16,24 @@ use yew::html::{IntoEventCallback, IntoPropValue};
 use crate::state::optional_rc_ptr_eq;
 use crate::widget::form::ValidateFn; // fixme: move to props
 
-#[derive(Clone, Debug, PartialEq)]
+/// Basic field options used inside [FormContext].
+///
+/// This basically mirrors the (non-display) options from
+/// [FieldStdProps](crate::props::FieldStdProps).
+#[derive(Debug, PartialEq)]
 pub struct FieldOptions {
+    /// Include the field data in the submit request.
     pub submit: bool,
+    /// Include the field data in the submit request even if its
+    /// empty.
     pub submit_empty: bool,
+    /// Field required flag.
     pub required: bool,
+    /// Field disabled flag.
     pub disabled: bool,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Debug, PartialEq)]
 struct FieldRegistration {
     pub name: AttrValue,
     pub validate: Option<ValidateFn<Value>>,

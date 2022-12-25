@@ -54,7 +54,7 @@ pub struct Field {
     /// Change callback
     ///
     /// This callback is emited on any data change, i.e. if data
-    /// inside the [FormContext](super::FormContext) changed.
+    /// inside the [FormContext](super::context::FormContext) changed.
     pub on_change: Option<Callback<String>>,
 
     /// Input callback

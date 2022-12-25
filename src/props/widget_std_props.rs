@@ -4,21 +4,29 @@ use yew::virtual_dom::{ApplyAttributeAs, Attributes, Key};
 
 use super::{Border, Margin, Padding};
 
+/// Standard widget properties.
 #[derive(PartialEq, Debug, Default, Clone)]
 pub struct WidgetStdProps {
 
+    /// The yew node ref.
     pub node_ref: NodeRef,
 
+    /// The yew component key.
     pub key: Option<Key>,
 
+    /// CSS class.
     pub class: Classes,
 
+    /// Widget padding.
     pub padding: Padding,
 
+    /// Widget margin.
     pub margin: Margin,
 
+    /// Widget border.
     pub border: Border,
 
+    /// Additional Html attributes.
     pub attributes: Attributes,
 }
 
