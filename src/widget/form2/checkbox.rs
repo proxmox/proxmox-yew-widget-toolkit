@@ -87,16 +87,9 @@ pub enum Msg {
     StateUpdate(FieldStateMsg),
 }
 
-fn create_checkbox_validation_cb() -> ValidateFn<Value> {
-    ValidateFn::new(move |_value: &Value| {
-        Ok(())
-    })
-}
-
 #[doc(hidden)]
 pub struct PwtCheckbox {
     state: FieldState,
-
 }
 
 impl Component for PwtCheckbox {
@@ -106,7 +99,9 @@ impl Component for PwtCheckbox {
     fn create(ctx: &Context<Self>) -> Self {
         let props = ctx.props();
 
-        let real_validate = create_checkbox_validation_cb();
+        let real_validate = ValidateFn::new(move |_value: &Value| {
+            Ok(())
+        });
 
         let on_change = match &props.on_change {
             Some(on_change) => Some(Callback::from({
