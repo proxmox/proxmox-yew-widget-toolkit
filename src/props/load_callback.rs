@@ -85,7 +85,7 @@ impl<T> PartialEq for LoadCallback<T> {
     }
 }
 
-/// Helper trait to create optional [LoadCallback] properties.
+/// Helper trait to create an optional [LoadCallback] property.
 pub trait IntoLoadCallback<T> {
     fn into_load_callback(self) -> Option<LoadCallback<T>>;
 }

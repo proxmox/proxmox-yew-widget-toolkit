@@ -4,6 +4,8 @@ use derivative::Derivative;
 
 use yew::Html;
 
+/// A [RenderFn] function is a callback that transforms data into [Html].
+///
 /// Wraps `Rc` around `Fn` so it can be passed as a prop.
 #[derive(Derivative)]
 #[derivative(Clone(bound=""), PartialEq(bound=""))]
@@ -29,6 +31,8 @@ impl<T, F: 'static + Fn(&T) -> Html> From<F> for RenderFn<T> {
     }
 }
 
+/// A [BuilderFn] function is a callback that returns [Html].
+///
 /// Wraps `Rc` around `Fn` so it can be passed as a prop.
 #[derive(Derivative)]
 #[derivative(Clone(bound=""), PartialEq(bound=""))]
@@ -54,6 +58,7 @@ impl<T, F: 'static + Fn() -> T> From<F> for BuilderFn<T> {
     }
 }
 
+/// Helper trait to create an optional [BuilderFn] property.
 pub trait IntoOptionalBuilderFn<T> {
     fn into_optional_builder_fn(self) -> Option<BuilderFn<T>>;
 }

@@ -2,6 +2,12 @@ use std::rc::Rc;
 
 use derivative::Derivative;
 
+/// A [FilterFn] function is a callback that determine if an element
+/// should be yielded.
+///
+/// Given an element the callback must return true or false. Only the
+/// elements for which the callback returns true are yielded.
+///
 /// Wraps `Rc` around `Fn` so it can be passed as a prop.
 #[derive(Derivative)]
 #[derivative(Clone(bound=""), PartialEq(bound=""))]
@@ -21,6 +27,7 @@ impl<T> FilterFn<T> {
     }
 }
 
+/// Helper trait to create an optional [FilterFn] property.
 pub trait IntoFilterFn<T> {
     fn into_filter_fn(self) -> Option<FilterFn<T>>;
 }

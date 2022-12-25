@@ -11,7 +11,12 @@ pub trait ExtractPrimaryKey {
     fn extract_key(&self) -> Key;
 }
 
-/// Wraps `Rc` around `Fn` so it can be passed as a prop.
+/// A [ExtractKeyFn] function is a callback that returns the primary
+/// key for some data.
+///
+/// It is sometime not possible to imlement [ExtractPrimaryKey] on the
+/// data type itself (rust orphan rules). Providing a separate
+/// [ExtractKeyFn] is a workaround for that.
 #[derive(Derivative)]
 #[derivative(Clone(bound=""), PartialEq(bound=""))]
 pub struct ExtractKeyFn<T>(
@@ -36,6 +41,7 @@ impl<T, F: 'static + Fn(&T) -> Key> From<F> for ExtractKeyFn<T> {
     }
 }
 
+/// Helper trait to create an optional [ExtractKeyFn] property.
 pub trait IntoExtractKeyFn<T> {
     fn into_extract_key_fn(self) -> Option<ExtractKeyFn<T>>;
 }
