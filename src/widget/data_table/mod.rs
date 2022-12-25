@@ -1,3 +1,5 @@
+//! Flexible data table/tree widget.
+
 mod events;
 pub use events::{DataTableKeyboardEvent, DataTableHeaderKeyboardEvent, DataTableMouseEvent};
 

@@ -1,3 +1,5 @@
+//! DOM focus management helpers.
+
 use wasm_bindgen::JsCast;
 
 use yew::prelude::*;

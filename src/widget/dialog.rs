@@ -10,7 +10,9 @@ use yew::html::IntoEventCallback;
 use crate::prelude::*;
 use crate::widget::{Button, Panel};
 
-// Dialog properties
+/// Modal Dialog.
+///
+/// This widget uses the Html `<dialog>` element.
 #[derive(Properties, Clone, PartialEq)]
 pub struct Dialog {
     #[prop_or_default]

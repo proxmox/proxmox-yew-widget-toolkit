@@ -5,6 +5,7 @@ use yew::virtual_dom::{Listeners, VList, VTag};
 
 use pwt_macros::widget;
 
+/// Wrapper for Html container elements like `<div>`.
 #[widget(pwt=crate, @element, @container)]
 #[derive(Default, Debug, Clone, PartialEq, Properties)]
 pub struct Container {
