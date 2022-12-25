@@ -7,7 +7,11 @@ use yew::{
     SubmitEvent, TouchEvent, TransitionEvent, WheelEvent,
 };
 
-// Wrapper to implement missing PartialEq
+/// A list of Html event listeners
+///
+/// Like [yew::virtual_dom::Listeners], but uses a `Vec` to store the
+/// list. This way we can dynamically add items (see [EventSubscriber]
+/// trait).
 #[derive(Default, Debug, Clone)]
 pub struct ListenersWrapper {
     pub(crate) listeners: Vec<Option<Rc<dyn Listener>>>,
@@ -46,8 +50,12 @@ macro_rules! handler {
 
 }
 
+/// Defines builder methods on [ListenersWrapper].
+///
+/// This trait defines builder method for all Html events.
 pub trait EventSubscriber: Into<VNode> {
 
+    /// Mutable access to the [ListenersWrapper].
     fn as_listeners_mut(&mut self) -> &mut ListenersWrapper;
 
     handler!(onauxclick, MouseEvent);

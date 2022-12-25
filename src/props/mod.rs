@@ -1,4 +1,4 @@
-//! Common Properties types and builder traits
+//! Common Property types and builder traits
 
 mod callback_mut;
 pub use callback_mut::{CallbackMut, CallbackMutScopeExt, IntoEventCallbackMut};

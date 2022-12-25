@@ -4,7 +4,9 @@ use yew::virtual_dom::{ApplyAttributeAs, Key, VNode};
 
 use super::{WidgetStdProps, Border, Margin, Padding}; 
 
+/// Defines common builder methods for widgets.
 pub trait WidgetBuilder: Into<VNode> {
+    /// Mutable acces to the widget [properties](WidgetStdProps).
     fn as_std_props_mut(&mut self) -> &mut WidgetStdProps;
 
     /// Copy properties from another [WidgetStdProps]

@@ -1,6 +1,8 @@
 use yew::virtual_dom::{VList, VNode};
 
+/// Defines common builder methods for container widgets.
 pub trait ContainerBuilder: Into<VNode> {
+    /// Mutable access to the child list.
     fn as_children_mut(&mut self) -> &mut Vec<VNode>;
 
     /// Builder style method to add a child node

@@ -4,9 +4,11 @@ use yew::virtual_dom::VNode;
 
 use super::FieldStdProps;
 
-/// Minimal common form field interface
+/// Defines common builder methods for form field.
 pub trait FieldBuilder: Into<VNode> {
+    /// Mutable access to the field [properties](FieldStdProps).
     fn as_input_props_mut(&mut self) -> &mut FieldStdProps;
+    /// Access to the field [properties](FieldStdProps).
     fn as_input_props(&self) -> &FieldStdProps;
 
     /// Copy properties from another [FieldStdProps]
