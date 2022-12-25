@@ -150,6 +150,7 @@ pub mod state;
 pub mod widget;
 pub mod component;
 
+#[doc(hidden)]
 pub mod web_sys_ext;
 
 // Bindgen java code from js-helper-module.js

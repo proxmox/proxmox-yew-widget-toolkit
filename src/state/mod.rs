@@ -75,6 +75,7 @@ pub fn local_storage() -> Option<web_sys::Storage> {
     Some(store)
 }
 
+/// Helper to compare optional [Rc]s using [Rc::ptr_eq].
 pub fn optional_rc_ptr_eq<T>(a: &Option<Rc<T>>, b: &Option<Rc<T>>) -> bool {
     match (a, b) {
         (Some(a), Some(b)) => Rc::ptr_eq(a, b),
