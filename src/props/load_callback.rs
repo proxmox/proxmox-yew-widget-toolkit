@@ -12,14 +12,19 @@ use yew::html::IntoPropValue;
 
 /// Load Callback
 ///
-/// Note: There is basically no way to implement PartialEq for
-/// closures, so we simply use Rc::ptr_eq(). So do not rely on
-/// PartialEq to trigger reloads, because that would reload
-/// frequently.
+/// There is basically no way to implement [PartialEq] for
+/// closures, so we simply use an [Rc] to store the callback and
+/// [Rc::ptr_eq] to implement [PartialEq].
 ///
-/// As workaround, set the "url" property. If set, that url is used to
-/// for PartialEq. That way you get a "trackable" [LoadCallback]. You
-/// can use that to trigger atomatic reloads on change.
+/// Always store created callbacks inside the component state to avoid
+/// unnecessary property change triggers (especially if a compoment
+/// automatically triggers reload, because that would reload
+/// frequently).
+///
+/// As workaround, set the "url" property. If set, only that url is
+/// compared for [PartialEq]. That way you get a "trackable"
+/// [LoadCallback]. You can use that to trigger atomatic reloads on
+/// change.
 
 pub struct LoadCallback<T> {
     callback: Rc<dyn Fn() -> Pin<Box<dyn Future<Output=Result<T, Error>>>>>,
@@ -80,6 +85,7 @@ impl<T> PartialEq for LoadCallback<T> {
     }
 }
 
+/// Helper trait to create optional [LoadCallback] properties.
 pub trait IntoLoadCallback<T> {
     fn into_load_callback(self) -> Option<LoadCallback<T>>;
 }

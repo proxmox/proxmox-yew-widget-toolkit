@@ -32,6 +32,7 @@ impl<T: 'static, F: 'static + Fn(&mut T)> From<F> for CallbackMut<T> {
     }
 }
 
+/// Helper trait to create optional [CallbackMut] properties.
 pub trait IntoEventCallbackMut<T: 'static> {
     fn into_event_cb_mut(self) -> Option<CallbackMut<T>>;
 }
