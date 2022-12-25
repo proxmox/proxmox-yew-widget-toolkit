@@ -14,7 +14,8 @@
 //! ```
 //! use pwt::prelude::*;
 //! use pwt::widget::{Button, Column};
-//! Column::new()
+//!
+//! let html = Column::new()
 //!    .padding(2)
 //!    .gap(2)
 //!    .with_child("This is the first line (simple Text).")
@@ -22,25 +23,28 @@
 //!    //.with_child(html!{
 //!    //    <h2>{"heading created using the Yew html macro"}</h2>
 //!    //})
-//!    ;
+//!    .into();
 //! ```
-//! All builder implements `Into<Html>`.
+//!
+//! The builders creates yew component properties, which can then be
+//! transformed into Html. All component properties implements
+//! `Into<Html>`.
 //!
 
 //! ## Callbacks
 //!
-//! Widgets with corresponding HTML element implements
-//! [props::EventSubscriber], which provides builder functions most
-//! HTML event. By convention, JavaScript objects that fire events
-//! have a corresponding "onevent" properties (named by prefixing "on"
-//! to the name of the event). We use the same naming convention for
-//! this kind of callbacks. It is possible to bind multiple different
-//! callbacks to the same event - all callback will be called when the
-//! event occur.
+//! Simple Widgets which corresponds to Html elements implements
+//! [EventSubscriber](props::EventSubscriber). This trait provides builder
+//! functions most Html event. By convention, JavaScript objects that
+//! fire events have a corresponding "onevent" properties (named by
+//! prefixing "on" to the name of the event). We use the same naming
+//! convention for this kind of callbacks. It is possible to bind
+//! multiple different callbacks to the same event - all callback will
+//! be called when the event occur.
 //!
 //! Some components compute there own custom events. The naming
 //! convention for those callbacks is "on_event" (please note the
-//! underscore after "on") to distinguish custom events from HTML
+//! underscore after "on") to distinguish custom events from Html
 //! element events. It is **not** possible to bind multiple different
 //! callbacks to the same event (only the last callback is called).
 
@@ -61,12 +65,13 @@
 //!
 //! The [Dialog](widget::Dialog) widget implements a modal dialog
 //! with a title. The widget is implemented using the relatively new
-//! HTML `<dialog>` tag in order to get correct focus handling.
+//! Html `<dialog>` tag in order to get correct focus handling.
 //!
-//! The [component::AlertDialog] is a convenient way to display error messages.
+//! The [AlertDialog](component::AlertDialog) is a convenient way to
+//! display error messages.
 //!
-//! Dialog are also handy for displaying input forms. The specialized
-//! [component::EditWindow] makes it easy to implement such dialogs.
+//! Dialogs are also handy for displaying input forms. The specialized
+//! [EditWindow](component::EditWindow) makes it easy to implement such dialogs.
 
 
 //! ### Forms and Fields
@@ -79,15 +84,15 @@
 //! implementation of complex field interactions.
 //!
 //! The form context is automatically provided when putting the fields
-//! inside a [widget::form::Form] or [component::EditWindow]. Custom
-//! components can provide a form context using
-//! [widget::form::form_context_provider].
+//! inside a [Form](widget::form::Form) or
+//! [EditWindow](component::EditWindow). Custom components can provide
+//! a form context using [widget::form::form_context_provider].
 //!
 //! The following field types are available.
 //!
-//! - [widget::form::Checkbox]: Checkbox field
+//! - [widget::form::Checkbox]: Checkbox or Radiobox field
 //! - [widget::form::Combobox]: Select value from a list of options.
-//! - [widget::form::Field]: Wrapper around standard HTML fields.
+//! - [widget::form::Field]: Wrapper around standard Html fields.
 //! - [widget::form::Selector]: Select value from a picker widget.
 //!
 //! There are also special buttons for [reset](widget::form::ResetButton)
@@ -96,6 +101,23 @@
 
 //! ### Buttons
 //!
+//! - [widget::Button]: Standard Html Button (Text, Icon + Text, Icon only).
+//! - [widget::ActionIcon]: A clickable icon.
+//! - [widget::SegmentedButton]: List of Buttons.
+//!
+
+//! ### Menus
+//!
+//! - [widget::Menu]:  A container for [MenuEntry](widget::MenuEntry)s.
+//! - [widget::MenuBar]: Operating system like menu bar.
+//! - [widget::MenuButton]: A button that opens a [Menu](widget::Menu).
+//! - [widget::MenuCheckbox]: Checkbox/RadioGroup widget for [Menu](widget::Menu)s.
+
+//! ### DataTable and Trees 
+//!
+//! The [DataTable](widget::data_table) widget is currently
+//! the most complex widget. It is able to display tables and trees, and
+//! has virtual scroll support.
 
 //! ## Components Overview
 //!
@@ -108,10 +130,9 @@
 //! - [component::KVGrid]: Grid with two columns (key and value).
 //! - [component::NavigationMenu]: Navigation menu with routing support.
 //! - [component::ObjectGrid]: Extends [KVGrid](component::KVGrid) with load/edit functionality.
-//! - [widget::MenuBar]: Operating system like menu bar.
-//! - [widget::MenuButton]: A button that opens a [Menu](widget::Menu).
 
-//!
+
+
 
 //! ## Router
 //!

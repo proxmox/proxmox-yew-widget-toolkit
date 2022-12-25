@@ -12,7 +12,8 @@ use crate::widget::{Button, Panel};
 
 /// Modal Dialog.
 ///
-/// This widget uses the Html `<dialog>` element.
+/// This widget is implemented using the relatively new Html `<dialog>`
+/// tag in order to get correct focus handling.
 #[derive(Properties, Clone, PartialEq)]
 pub struct Dialog {
     #[prop_or_default]
