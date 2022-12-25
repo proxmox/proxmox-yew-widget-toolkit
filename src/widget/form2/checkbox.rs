@@ -53,13 +53,13 @@ impl Checkbox {
         self.value = value.into_prop_value();
     }
 
-    /// Builder style method to set the checked value.
+    /// Builder style method to set the checked flag.
     pub fn checked(mut self, checked: impl IntoPropValue<Option<bool>>) -> Self {
         self.set_checked(checked);
         self
     }
 
-    /// Method to set the checked value.
+    /// Method to set the checked flag.
     pub fn set_checked(&mut self, checked: impl IntoPropValue<Option<bool>>) {
         self.checked = checked.into_prop_value();
     }
@@ -184,6 +184,7 @@ impl Component for PwtCheckbox {
             if props.checked.is_some() {
                 log::error!("Checkbox '{name}' is named - unable to force checked.");
             }
+            self.state.update_field_options(&props.input_props);
         } else {
             if props.checked != old_props.checked {
                 let on_value = props.value.as_deref().unwrap_or("on").to_string();

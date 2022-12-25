@@ -15,13 +15,19 @@ use crate::state::optional_rc_ptr_eq;
 use crate::widget::form::ValidateFn; // fixme: move to props
 
 #[derive(Clone, Debug, PartialEq)]
+pub struct FieldOptions {
+    pub submit: bool,
+    pub submit_empty: bool,
+    pub required: bool,
+    pub disabled: bool,
+}
+
+#[derive(Clone, Debug, PartialEq)]
 struct FieldRegistration {
     pub name: AttrValue,
     pub validate: Option<ValidateFn<Value>>,
     pub radio_group: bool,
-    pub submit: bool,
-    pub submit_empty: bool,
-
+    pub options: FieldOptions,
     pub value: Value,
     pub default: Value,
     pub valid: Result<(), String>,
@@ -104,6 +110,11 @@ impl FieldHandle {
         let key = self.key;
         self.write().set_field_value_by_slab_key(key, value);
     }
+
+    pub fn update_field_options(&mut self, options: FieldOptions) {
+        let key = self.key;
+        self.write().update_field_options_by_slab_key(key, options);
+    }
 }
 
 impl Drop for FieldHandle {
@@ -183,11 +194,10 @@ impl FormContext {
         default: Value,
         radio_group: bool,
         validate: Option<ValidateFn<Value>>,
-        submit: bool,
-        submit_empty: bool,
+        options: FieldOptions,
     ) -> FieldHandle {
         let key = self.inner.borrow_mut()
-            .register_field(name, value, default, radio_group, validate, submit, submit_empty);
+            .register_field(name, value, default, radio_group, validate, options);
 
         FieldHandle { key, form_ctx: self.clone() }
     }
@@ -290,8 +300,7 @@ impl FormState {
         default: Value,
         radio_group: bool,
         validate: Option<ValidateFn<Value>>,
-        submit: bool,
-        submit_empty: bool,
+        options: FieldOptions,
     ) -> usize {
         let name = name.into_prop_value();
 
@@ -305,8 +314,7 @@ impl FormState {
             name: name.clone(),
             validate,
             radio_group,
-            submit,
-            submit_empty,
+            options,
             value,
             default: default.clone(),
             valid,
@@ -342,8 +350,6 @@ impl FormState {
         if field.radio_group {
             group.radio_count = group.radio_count.saturating_sub(1);
         }
-
-
     }
 
     pub fn set_show_advanced(&mut self, show_advanced: bool) {
@@ -435,6 +441,15 @@ impl FormState {
         if let Some(slab_key) = self.find_field_slab_id(&name) {
             self.set_field_value_by_slab_key(slab_key, value);
         }
+    }
+
+    fn update_field_options_by_slab_key(
+        &mut self,
+        slab_key: usize,
+        options: FieldOptions,
+    ) {
+        let field = &mut self.fields[slab_key];
+        field.options = options;
     }
 
     pub fn is_dirty(&self) -> bool {

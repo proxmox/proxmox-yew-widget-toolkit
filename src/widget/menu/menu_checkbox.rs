@@ -152,7 +152,7 @@ impl Component for PwtMenuCheckbox {
         if let Some(name) = &props.input_props.name {
             me.state.register_field(&props.input_props, default.clone(), default, props.radio_group);
             if props.checked.is_some() {
-                log::error!("Checkbox '{name}' is named - unable to force checked.");
+                log::error!("MenuCheckbox '{name}' is named - unable to force checked.");
             }
          } else {
             let value = match props.checked {
@@ -203,6 +203,28 @@ impl Component for PwtMenuCheckbox {
                 true
             }
         }
+    }
+
+    fn changed(&mut self, ctx: &Context<Self>, old_props: &Self::Properties) -> bool {
+        let props = ctx.props();
+
+        if let Some(name) = &props.input_props.name {
+            if props.checked.is_some() {
+                log::error!("MenuCheckbox '{name}' is named - unable to force checked.");
+            }
+            self.state.update_field_options(&props.input_props);
+        } else {
+            if props.checked != old_props.checked {
+                let on_value = props.value.as_deref().unwrap_or("on").to_string();
+                let value = match props.checked {
+                    Some(true) => on_value.clone(),
+                    _ => String::new(),
+                };
+                self.state.force_value(value.to_string(), None);
+            }
+        }
+
+        true
     }
 
     fn view(&self, ctx: &Context<Self>) -> Html {

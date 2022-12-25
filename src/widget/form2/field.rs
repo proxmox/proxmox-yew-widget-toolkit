@@ -302,6 +302,7 @@ impl Component for PwtField {
             if props.value.is_some() || props.valid.is_some() {
                 log::error!("Field '{name}' is named - unable to force value/valid");
             }
+            self.state.update_field_options(&props.input_props);
         } else {
             if props.value != old_props.value || props.valid != old_props.valid {
                 if let Some(value) = &props.value { // force value

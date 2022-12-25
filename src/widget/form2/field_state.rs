@@ -5,7 +5,7 @@ use yew::prelude::*;
 use crate::props::FieldStdProps;
 use crate::widget::form::ValidateFn;
 
-use super::{FieldHandle, FormContext, FormObserver};
+use super::{FieldHandle, FormContext, FormObserver, FieldOptions};
 
 /// Text field state handling.
 pub(crate) struct FieldState {
@@ -148,17 +148,38 @@ impl FieldState {
             }
         };
 
+        let options = FieldOptions {
+            submit: props.submit,
+            submit_empty: props.submit_empty,
+            disabled: props.disabled,
+            required: props.required,
+        };
+
         let field_handle = form_ctx.register_field(
             name,
             value.into(),
             default.into(),
             radio_group,
             Some(self.real_validate.clone()),
-            props.submit,
-            props.submit_empty,
+            options,
         );
 
         self.field_handle = Some(field_handle);
+    }
+
+    pub fn update_field_options(
+        &mut self,
+        props: &FieldStdProps,
+    ) {
+        if let Some(field_handle) = &mut self.field_handle {
+            let options = FieldOptions {
+                submit: props.submit,
+                submit_empty: props.submit_empty,
+                disabled: props.disabled,
+                required: props.required,
+            };
+            field_handle.update_field_options(options);
+        }
     }
 
     pub fn update_hook(
