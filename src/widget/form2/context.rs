@@ -119,7 +119,7 @@ impl FieldHandle {
 
     pub fn set_value(&mut self, value: Value) {
         let key = self.key;
-        self.write().set_field_value_by_slab_key(key, value);
+        self.write().set_field_value_by_slab_key(key, value, false);
     }
 
     pub fn update_field_options(&mut self, options: FieldOptions) {
@@ -222,6 +222,11 @@ impl FormContext {
     pub fn set_show_advanced(&self, show_advanced: bool) {
         self.write().set_show_advanced(show_advanced);
     }
+
+    /// Load form data
+    pub fn load_form(&self, data: Value) {
+        self.write().load_form(data);
+    }
 }
 
 /// A wrapper type for a mutably borrowed [FormContext]
@@ -266,6 +271,7 @@ impl Deref for FormContextReadGuard<'_> {
     }
 }
 
+#[derive(Clone)]
 struct GroupState {
     value: Option<Value>,
     members: Vec<usize>,
@@ -413,6 +419,7 @@ impl FormState {
         &mut self,
         slab_key: usize,
         value: Value,
+        set_default: bool,
     ) {
         let field = &mut self.fields[slab_key];
 
@@ -423,12 +430,25 @@ impl FormState {
                 None => true,
             };
             if changed {
-                group.value = Some(value);
+                group.value = Some(value.clone());
                 self.version += 1;
             }
+            if set_default {
+                for member in group.members.iter() {
+                    let group_field = &mut self.fields[*member];
+                    if group_field.value == value {
+                        group_field.default = value.clone();
+                    } else {
+                        group_field.default = String::new().into();
+                    }
+                }
+            }
         } else {
-            let current_value = &field.value;
-            if current_value != &value {
+            if set_default && field.default != value {
+                field.default = value.clone();
+                self.version += 1;
+            }
+            if value != field.value {
 
                 let mut valid = Ok(());
                 if let Some(validate) = &field.validate {
@@ -438,6 +458,7 @@ impl FormState {
 
                 field.value = value;
                 field.valid = valid;
+
                 self.version += 1;
             }
         }
@@ -450,7 +471,7 @@ impl FormState {
     ) {
         let name = name.into_prop_value();
         if let Some(slab_key) = self.find_field_slab_id(&name) {
-            self.set_field_value_by_slab_key(slab_key, value);
+            self.set_field_value_by_slab_key(slab_key, value, false);
         }
     }
 
@@ -501,4 +522,53 @@ impl FormState {
         true
     }
 
+    /// Load form data
+    ///
+    /// This sets the form data from the provided JSON object. Also
+    /// clears the changed flag for all fields by setting the default
+    /// to the provided data.
+    pub fn load_form(&mut self, data: Value) {
+        self.version += 1;
+
+        // Note: We clone self.groups here, so that we can still modify fields
+        for (name, group) in self.groups.clone().iter() {
+            if group.members.is_empty() { continue; }
+
+            let value = match data.get(name.deref()) {
+                None => continue,
+                Some(value) => value.clone(),
+            };
+
+            // Are there radio group fields?
+            let radio_group_key = group.members.iter()
+                .find(|k| self.fields[**k].radio_group == true);
+
+            if let Some(radio_group_key) = radio_group_key {
+                // Note: we only call set_value for one radio_group member
+                self.set_field_value_by_slab_key(*radio_group_key, value, true);
+                continue;
+            }
+
+            if group.members.len() == 1 {
+                let key = group.members[0];
+                self.set_field_value_by_slab_key(key, value, true);
+                continue;
+            }
+
+            // there are several group members, restore data as array
+            let list = match value.as_array() {
+                Some(list) => list.clone(),
+                None => vec![value],
+            };
+
+            for (i, key) in group.members.iter().enumerate() {
+                let value = match list.get(i) {
+                    Some(v) => v.clone(),
+                    None => break,
+                };
+                self.set_field_value_by_slab_key(*key, value, true);
+            }
+        }
+
+    }
 }
