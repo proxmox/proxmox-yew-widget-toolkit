@@ -52,11 +52,11 @@ struct FieldRegistration {
 /// inside a form can automatically access the [FormContext] to store
 /// data.
 ///
-/// Field listens to context changes, and are automatically updated
-/// and validated if you modify the context.
+/// Fields listens to context changes, and are automatically updated
+/// and validated when you modify the context.
 ///
 /// The context is also the best place to gather data for a form
-/// submit.
+/// submit (see: [FormContext::get_submit_data]).
 #[derive(Derivative)]
 #[derivative(Clone, PartialEq)]
 pub struct FormContext {
@@ -223,12 +223,20 @@ impl FormContext {
         self.write().set_show_advanced(show_advanced);
     }
 
-    /// Load form data
+    /// Load form data.
+    ///
+    /// This sets the form data from the provided JSON object. Also
+    /// clears the changed flag for all fields by setting the default
+    /// to the provided data.
     pub fn load_form(&self, data: Value) {
         self.write().load_form(data);
     }
 
     /// Get form submit data.
+    ///
+    /// Returns a JSON object with the values of all registered fields
+    /// that have [FieldOptions::submit] set. Empty strings are
+    /// included when [FieldOptions::submit_empty] is set.
     pub fn get_submit_data(&self) -> Value {
         self.read().get_submit_data()
     }
@@ -528,11 +536,7 @@ impl FormState {
         true
     }
 
-    /// Load form data
-    ///
-    /// This sets the form data from the provided JSON object. Also
-    /// clears the changed flag for all fields by setting the default
-    /// to the provided data.
+    /// Load form data.
     pub fn load_form(&mut self, data: Value) {
         self.version += 1;
 
@@ -579,10 +583,6 @@ impl FormState {
     }
 
     /// Get form submit data.
-    ///
-    /// Returns a JSON object with the values of all registered fields
-    /// that have [FieldOptions::submit] set. Empty strings are
-    /// included when [FieldOptions::submit_empty] is set.
     pub fn get_submit_data(&self) -> Value {
         let mut data = json!({});
 
