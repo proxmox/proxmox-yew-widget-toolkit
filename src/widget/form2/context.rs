@@ -8,7 +8,7 @@ use std::collections::HashMap;
 
 use derivative::Derivative;
 use slab::Slab;
-use serde_json::Value;
+use serde_json::{json, Value};
 
 use yew::prelude::*;
 use yew::html::{IntoEventCallback, IntoPropValue};
@@ -227,6 +227,12 @@ impl FormContext {
     pub fn load_form(&self, data: Value) {
         self.write().load_form(data);
     }
+
+    /// Get form submit data.
+    pub fn get_submit_data(&self) -> Value {
+        self.read().get_submit_data()
+    }
+
 }
 
 /// A wrapper type for a mutably borrowed [FormContext]
@@ -570,5 +576,90 @@ impl FormState {
             }
         }
 
+    }
+
+    /// Get form submit data.
+    ///
+    /// Returns a JSON object with the values of all registered fields
+    /// that have [FieldOptions::submit] set. Empty strings are
+    /// included when [FieldOptions::submit_empty] is set.
+    pub fn get_submit_data(&self) -> Value {
+        let mut data = json!({});
+
+        for (name, group) in self.groups.iter() {
+            if group.members.is_empty() { continue; }
+
+            let field_keys: Vec<usize> = group.members.iter()
+                .filter(|k| !self.fields[**k].radio_group)
+                .map(|k| *k)
+                .collect();
+
+            let radio_keys: Vec<usize> = group.members.iter()
+                .filter(|k| self.fields[**k].radio_group)
+                .map(|k| *k)
+                .collect();
+
+            if !radio_keys.is_empty() {
+                let mut submit = false;
+                let mut submit_empty = false;
+                for key in radio_keys {
+                    if self.fields[key].options.submit { submit = true; }
+                    if self.fields[key].options.submit_empty { submit_empty = true; }
+                }
+                if submit {
+                    let value = match &group.value {
+                        Some(value) => value.as_str().unwrap_or("").to_string(),
+                        None => String::new(),
+                    };
+                    if !value.is_empty() || submit_empty {
+                        data[name.deref()] = value.into();
+                    }
+                }
+            }
+
+            if field_keys.is_empty() { continue; }
+
+            if field_keys.len() == 1 {
+                let key = field_keys[0];
+                let field = &self.fields[key];
+                if field.options.submit {
+                    let value = field.value.clone();
+                    match value {
+                        Value::String(v) => {
+                            if !v.is_empty() || field.options.submit_empty {
+                                data[name.deref()] = Value::String(v);
+                            }
+                        }
+                        // Bool/Number/Array/Object/Null
+                        v => data[name.deref()] = v,
+                    }
+                }
+                continue;
+            }
+
+            if field_keys.len() > 1 { // include as array
+                let mut list = Vec::new();
+                for key in field_keys {
+                    let field = &self.fields[key];
+                    if field.options.submit {
+                        let value = field.value.clone();
+                        match value {
+                            Value::String(v) => {
+                                if !v.is_empty() || field.options.submit_empty {
+                                    list.push(Value::String(v));
+                                }
+                            }
+                            // Bool/Number/Array/Object/Null
+                            v => list.push(v),
+                        }
+                    }
+                }
+                if !list.is_empty() {
+                    data[name.deref()] = list.into();
+                }
+            }
+        }
+
+        data
     }
 }
