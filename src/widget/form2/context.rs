@@ -254,7 +254,6 @@ impl FormContext {
     pub fn get_submit_data(&self) -> Value {
         self.read().get_submit_data()
     }
-
 }
 
 /// A wrapper type for a mutably borrowed [FormContext]
@@ -435,8 +434,23 @@ impl FormState {
         }
     }
 
+    /// Get the field value.
+    ///
+    /// Returns `None` for non-existent fields.
     pub fn get_field_value(&self, name: impl IntoPropValue<AttrValue>) -> Option<Value> {
         self.get_field_data(name).map(|data| data.0)
+    }
+
+    /// Get the field value as string.
+    ///
+    /// Return the empty string for non-existent fields, or
+    /// when the field value is not a string or number.
+    pub fn get_field_text(&self, name: impl IntoPropValue<AttrValue>) -> String {
+        match self.get_field_data(name).map(|data| data.0)  {
+            Some(Value::Number(n)) => n.to_string(),
+            Some(Value::String(v)) => v.clone(),
+            _ => String::new(),
+        }
     }
 
     pub fn get_field_valid(&self, name: impl IntoPropValue<AttrValue>) -> Option<Result<(), String>> {
@@ -559,7 +573,7 @@ impl FormState {
         let field = &mut self.fields[slab_key];
 
         if field.radio_group {
-            // fixme: ?
+            // fixme: do something ?
         } else {
             let mut valid = Ok(());
             if let Some(validate) = &field.validate {
@@ -573,6 +587,29 @@ impl FormState {
             }
         }
     }
+
+    pub fn validate_field(&mut self, name: impl IntoPropValue<AttrValue>) {
+        let name = name.into_prop_value();
+        if let Some(slab_key) = self.find_field_slab_id(&name) {
+            self.validate_field_by_slab_key(slab_key);
+        }
+    }
+
+    fn set_field_valid_by_slab_key(&mut self, slab_key: usize, valid: Result<(), String>) {
+        let field = &mut self.fields[slab_key];
+        if valid != field.valid {
+            self.version += 1;
+            field.valid = valid;
+        }
+    }
+
+    pub fn set_field_valid(&mut self, name: impl IntoPropValue<AttrValue>, valid: Result<(), String>) {
+        let name = name.into_prop_value();
+        if let Some(slab_key) = self.find_field_slab_id(&name) {
+            self.set_field_valid_by_slab_key(slab_key, valid);
+        }
+    }
+
 
     /// Load form data.
     pub fn load_form(&mut self, data: Value) {
