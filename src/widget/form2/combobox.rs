@@ -11,8 +11,7 @@ use crate::state::Store;
 use crate::widget::GridPicker;
 use crate::widget::data_table::{DataTable, DataTableColumn, DataTableHeader};
 
-use crate::widget::form::{IntoValidateFn, ValidateFn};
-use super::{Selector, SelectorRenderArgs};
+use super::{Selector, SelectorRenderArgs, IntoValidateFn, ValidateFn};
 
 use pwt_macros::widget;
 

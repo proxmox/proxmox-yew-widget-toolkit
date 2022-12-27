@@ -25,3 +25,6 @@ pub use selector::{Selector, SelectorRenderArgs, PwtSelector};
 
 mod submit_button;
 pub use submit_button::{SubmitButton, PwtSubmitButton};
+
+mod validate;
+pub use validate::{IntoValidateFn, ValidateFn};

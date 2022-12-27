@@ -3,8 +3,8 @@ use serde_json::Value;
 use yew::prelude::*;
 
 use crate::props::FieldStdProps;
-use crate::widget::form::ValidateFn;
 
+use super::ValidateFn;
 use super::context::{FormContext, FormObserver, FieldHandle, FieldOptions};
 
 /// Text field state handling.

@@ -9,8 +9,7 @@ use yew::html::{IntoEventCallback, IntoPropValue};
 
 use pwt_macros::widget;
 
-use crate::widget::form::ValidateFn;
-use super::{FieldState, FieldStateMsg};
+use super::{FieldState, FieldStateMsg, ValidateFn};
 
 /// Checkbox input element.
 #[widget(pwt=crate, comp=PwtCheckbox, @input, @element)]

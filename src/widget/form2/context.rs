@@ -14,7 +14,8 @@ use yew::prelude::*;
 use yew::html::{IntoEventCallback, IntoPropValue};
 
 use crate::state::optional_rc_ptr_eq;
-use crate::widget::form::ValidateFn; // fixme: move to props
+
+use super::ValidateFn;
 
 /// Basic field options used inside [FormContext].
 ///
