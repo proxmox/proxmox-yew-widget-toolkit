@@ -128,7 +128,6 @@ impl Component for PwtResetButton {
 
         let reset = ctx.link().callback({
             move |e: MouseEvent| {
-                log::info!("reset click");
                 let event = e.unchecked_into::<Event>();
                 event.prevent_default(); // prevent reload
                 Msg::Reset
