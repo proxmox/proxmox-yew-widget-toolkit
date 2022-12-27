@@ -3,7 +3,7 @@ use std::rc::Rc;
 use anyhow::Error;
 
 /// A [ValidateFn] function is a callback that detrermines if the
-/// passed record in valid.
+/// passed record is valid.
 ///
 /// Wraps `Rc` around `Fn` so it can be passed as a prop.
 pub struct ValidateFn<T>(Rc<dyn Fn(&T) -> Result<(), Error>>);

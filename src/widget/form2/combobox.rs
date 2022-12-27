@@ -24,9 +24,11 @@ pub struct Combobox {
     /// Default value.
     pub default: Option<AttrValue>,
 
+    /// Make the input editable.
     #[prop_or_default]
     pub editable: bool,
 
+    /// Item list.
     #[prop_or_default]
     pub items: Rc<Vec<AttrValue>>,
 

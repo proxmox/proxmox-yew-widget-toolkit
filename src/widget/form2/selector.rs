@@ -17,15 +17,20 @@ use super::{FieldState, FieldStateMsg, IntoValidateFn, ValidateFn};
 
 use pwt_macros::widget;
 
+/// Parameters passed to the [Selector::picker] callback.
 pub struct SelectorRenderArgs<S: DataStore> {
+    /// The [DataStore] used by the [Selector].
     pub store: S,
+    /// The selection.
     pub selection: Selection,
+    /// This callback must be called by the picker to select
+    /// something.
     pub on_select: Callback<Key>,
 }
 
-/// Helper widget to implement `Combobox` like selectors.
+/// Helper widget to implement [Combobox](super::Combobox) like selectors.
 ///
-/// This helper simplifies the implementation of `Combobox` like
+/// This helper simplifies the implementation of  [Combobox](super::Combobox) like
 /// selectors with complex layouts (table, trees).
 ///
 /// - Extends the [Dropdown] widget.
@@ -37,7 +42,7 @@ pub struct SelectorRenderArgs<S: DataStore> {
 /// - Ability to load data using a [LoadCallback] (with reasonable
 /// error handling).
 ///
-/// - Handles [FormContext] interaction.
+/// - Handles [FormContext](super::context::FormContext) interaction.
 ///
 /// # Note
 ///
@@ -48,14 +53,25 @@ pub struct SelectorRenderArgs<S: DataStore> {
 #[derivative(Clone(bound=""), PartialEq(bound=""))]
 pub struct Selector<S: DataStore + 'static> {
     store: S,
+    /// The default value.
     pub default: Option<AttrValue>,
+
+    /// Make the input editable.
     #[prop_or_default]
     pub editable: bool,
+    /// Autoselect flag.
+    ///
+    /// If there is no default, automatically select the first loaded
+    /// data item.
     #[prop_or_default]
     pub autoselect: bool,
+    /// Change callback
     pub on_change: Option<Callback<Key>>,
+    /// Picker render function
     pub picker: RenderFn<SelectorRenderArgs<S>>,
+    /// Validate callback.
     pub validate: Option<ValidateFn<(String, S)>>,
+    /// Data loader callback.
     pub loader: Option<LoadCallback<S::Collection>>,
 }
 
