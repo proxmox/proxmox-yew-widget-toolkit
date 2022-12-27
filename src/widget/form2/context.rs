@@ -117,9 +117,22 @@ impl FieldHandle {
         self.read().get_field_data_by_slab_key(key)
     }
 
+    /// Set the field value
     pub fn set_value(&mut self, value: Value) {
         let key = self.key;
         self.write().set_field_value_by_slab_key(key, value, false);
+    }
+
+    /// Set the field default value
+    pub fn set_default(&mut self, default: Value) {
+        let key = self.key;
+        self.write().set_field_default_by_slab_key(key, default);
+    }
+
+    /// Trigger re-validation
+    pub fn validate(&mut self) {
+        let key = self.key;
+        self.write().validate_field_by_slab_key(key);
     }
 
     pub fn update_field_options(&mut self, options: FieldOptions) {
@@ -534,6 +547,30 @@ impl FormState {
             }
         }
         true
+    }
+
+    fn set_field_default_by_slab_key(&mut self, slab_key: usize, default: Value) {
+        let field = &mut self.fields[slab_key];
+        field.default = default;
+    }
+
+    fn validate_field_by_slab_key(&mut self, slab_key: usize) {
+        let field = &mut self.fields[slab_key];
+
+        if field.radio_group {
+            // fixme: ?
+        } else {
+            let mut valid = Ok(());
+            if let Some(validate) = &field.validate {
+                valid = validate.validate(&field.value)
+                    .map_err(|e| e.to_string());
+            }
+            if valid != field.valid {
+                self.version += 1;
+                field.valid = valid;
+
+            }
+        }
     }
 
     /// Load form data.

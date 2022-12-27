@@ -124,6 +124,23 @@ impl FieldState {
         }
     }
 
+    /// Set the field default value
+    pub fn set_default(&mut self, default: impl Into<Value>) {
+        if let Some(field_handle) = &mut self.field_handle {
+            field_handle.set_default(default.into());
+        }
+    }
+
+    /// Trigger re-validation
+    pub fn validate(&mut self) {
+        self.valid = self.real_validate.validate(&self.value)
+            .map_err(|e| e.to_string());
+
+        if let Some(field_handle) = &mut self.field_handle {
+            field_handle.validate();
+        }
+    }
+
     /// Register the field inm the FormContext
     pub fn register_field(
         &mut self,
