@@ -1,4 +1,4 @@
-use anyhow::{bail, format_err,  Error};
+use anyhow::{bail, format_err};
 use web_sys::HtmlInputElement;
 use serde_json::Value;
 
@@ -10,7 +10,7 @@ use proxmox_schema::Schema;
 use crate::prelude::*;
 use crate::widget::Tooltip;
 use crate::widget::form::Input;
-use crate::widget::form::ValidateFn;
+use crate::widget::form::{IntoValidateFn, ValidateFn};
 
 use super::{FieldState, FieldStateMsg};
 
@@ -65,10 +65,12 @@ pub struct Field {
 
 impl Field {
 
+    /// Create a new instance.
     pub fn new() -> Self {
         yew::props!(Self {})
     }
 
+    /// Create a new number field.
     pub fn number(
         mut self,
         min: impl IntoPropValue<Option<f64>>,
@@ -82,38 +84,46 @@ impl Field {
         self
     }
 
+    /// Builder style method to set the `input-type` attribute.
     pub fn input_type(mut self, input_type: impl IntoPropValue<AttrValue>) -> Self {
         self.set_input_type(input_type);
         self
     }
 
+    /// Method to set the `input-type` attribute.
     pub fn set_input_type(&mut self, input_type: impl IntoPropValue<AttrValue>) {
         self.input_type = input_type.into_prop_value();
     }
 
+    /// Builder style method to set the `value` attribute.
     pub fn value(mut self, value: impl IntoPropValue<Option<AttrValue>>) -> Self {
         self.set_value(value);
         self
     }
 
+    /// Method to set the `value` attribute.
     pub fn set_value(&mut self, value: impl IntoPropValue<Option<AttrValue>>) {
         self.value = value.into_prop_value();
     }
 
+    /// Builder style method to set the validation result.
     pub fn valid(mut self, valid: impl IntoPropValue<Option<Result<(), String>>>) -> Self {
         self.set_valid(valid);
         self
     }
 
+    /// Method to set the validation result.
     pub fn set_valid(&mut self, valid: impl IntoPropValue<Option<Result<(), String>>>) {
         self.valid = valid.into_prop_value();
     }
 
+    /// Builder style method to set the default value.
     pub fn default(mut self, default: impl IntoPropValue<Option<AttrValue>>) -> Self {
         self.set_default(default);
         self
     }
 
+    /// Method to set the default value.
     pub fn set_default(&mut self, default: impl IntoPropValue<Option<AttrValue>>) {
         self.default = default.into_prop_value();
     }
@@ -121,7 +131,7 @@ impl Field {
     /// Builder style method to set the validate callback
     pub fn validate(
         mut self,
-        validate: impl 'static + Fn(&String) -> Result<(), Error>,
+        validate: impl IntoValidateFn<String>,
     ) -> Self {
         self.set_validate(validate);
         self
@@ -130,9 +140,9 @@ impl Field {
     /// Method to set the validate callback
     pub fn set_validate(
         &mut self,
-        validate: impl 'static + Fn(&String) -> Result<(), Error>,
+        validate: impl IntoValidateFn<String>,
     ) {
-        self.validate = Some(ValidateFn::new(validate));
+        self.validate = validate.into_validate_fn();
     }
 
     /// Builder style method to set the validation schema
@@ -170,7 +180,7 @@ impl Field {
         self
     }
 
-    /// Builder style method to set the on_change callback
+    /// Builder style method to set the on_input callback
     pub fn on_input(mut self, cb: impl IntoEventCallback<String>) -> Self {
         self.on_input = cb.into_event_callback();
         self
