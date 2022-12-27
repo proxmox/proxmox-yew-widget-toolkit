@@ -7,7 +7,7 @@ use yew::virtual_dom::ApplyAttributeAs;
 #[derive(PartialEq, Clone, Properties)]
 pub struct FieldStdProps {
     /// The field register itself with this `name` in the
-    /// [FormContext](crate::widget::form2::context::FormContext) (if
+    /// [FormContext](crate::widget::form2::FormContext) (if
     /// any).
     pub name: Option<AttrValue>,
 

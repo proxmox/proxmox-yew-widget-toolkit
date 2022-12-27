@@ -53,9 +53,9 @@ pub struct Field {
     /// # Note
     ///
     /// It is currently not allowed to access the
-    /// [FormContext](super::context::FormContext) inside a validation
+    /// [FormContext](super::FormContext) inside a validation
     /// callback! If you need such functionality, do validation inside
-    /// [FormContext::on_change](super::context::FormContext::on_change),
+    /// [FormContext::on_change](super::FormContext::on_change),
     /// then set the result with
     /// `form_ctx.write().set_field_valid(...)`.
     pub validate: Option<ValidateFn<String>>,
@@ -63,7 +63,7 @@ pub struct Field {
     /// Change callback
     ///
     /// This callback is emited on any data change, i.e. if data
-    /// inside the [FormContext](super::context::FormContext) changed.
+    /// inside the [FormContext](super::FormContext) changed.
     pub on_change: Option<Callback<String>>,
 
     /// Input callback

@@ -5,7 +5,7 @@ use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 use yew::html::{IntoEventCallback, IntoPropValue};
 
-use super::context::{FormContext, FormObserver};
+use super::{FormContext, FormContextObserver};
 
 /// Reset button.
 ///
@@ -51,7 +51,7 @@ pub struct PwtResetButton {
     form_dirty: bool,
     form_ctx: Option<FormContext>,
     _form_ctx_handle: Option<ContextHandle<FormContext>>,
-    _form_ctx_observer: Option<FormObserver>,
+    _form_ctx_observer: Option<FormContextObserver>,
     on_form_data_change: Callback<FormContext>,
 }
 

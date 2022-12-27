@@ -4,8 +4,10 @@ use yew::prelude::*;
 
 use crate::props::FieldStdProps;
 
-use super::ValidateFn;
-use super::context::{FormContext, FormObserver, FieldHandle, FieldOptions};
+use super::{
+    FormContext, FormContextObserver, FieldHandle, FieldOptions,
+    ValidateFn,
+};
 
 /// Text field state handling.
 pub struct FieldState {
@@ -13,7 +15,7 @@ pub struct FieldState {
     form_ctx: Option<FormContext>,
     field_handle: Option<FieldHandle>,
     _form_ctx_handle: Option<ContextHandle<FormContext>>,
-    _form_ctx_observer: Option<FormObserver>,
+    _form_ctx_observer: Option<FormContextObserver>,
     on_form_data_change: Callback<FormContext>,
     on_change: Option<Callback<Value>>,
 

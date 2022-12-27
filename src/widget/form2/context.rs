@@ -45,7 +45,7 @@ struct FieldRegistration {
     pub valid: Result<(), String>,
 }
 
-/// Shared form data.
+/// Shared form data ([Rc]<[RefCell]<[FormContextState]>>)
 ///
 /// This shared object can be used to control input fields. The
 /// [Form](super::Form) widget uses a
@@ -63,19 +63,19 @@ struct FieldRegistration {
 pub struct FormContext {
     // Allow to store one StoreObserver here (for convenience)
     #[derivative(PartialEq(compare_with="optional_rc_ptr_eq"))]
-    on_change: Option<Rc<FormObserver>>,
+    on_change: Option<Rc<FormContextObserver>>,
     #[derivative(PartialEq(compare_with="Rc::ptr_eq"))]
-    inner: Rc<RefCell<FormState>>,
+    inner: Rc<RefCell<FormContextState>>,
 }
 
 /// Owns the listener callback. When dropped, the
 /// listener callback will be removed from the [FormContext].
-pub struct FormObserver {
+pub struct FormContextObserver {
     key: usize,
-    inner: Rc<RefCell<FormState>>,
+    inner: Rc<RefCell<FormContextState>>,
 }
 
-impl Drop for FormObserver {
+impl Drop for FormContextObserver {
     fn drop(&mut self) {
         self.inner.borrow_mut().remove_listener(self.key);
     }
@@ -153,14 +153,14 @@ impl FormContext {
     pub fn new() -> Self {
         Self {
             on_change: None,
-            inner: Rc::new(RefCell::new(FormState::new())),
+            inner: Rc::new(RefCell::new(FormContextState::new())),
         }
     }
 
     /// Builder style method to set the on_change callback.
     ///
     /// This calls [Self::add_listener] to create a new
-    /// [FormObserver]. The observer is stored inside the
+    /// [FormContextObserver]. The observer is stored inside the
     /// [FormContext] object, so each clone can hold a single on_change
     /// callback.
     pub fn on_change(mut self, cb: impl IntoEventCallback<FormContext>) -> Self {
@@ -175,10 +175,10 @@ impl FormContext {
     ///
     /// This is usually called by [Self::on_change], which stores the
     /// observer inside the [FormContext] object.
-    pub fn add_listener(&self, cb: impl Into<Callback<FormContext>>) -> FormObserver {
+    pub fn add_listener(&self, cb: impl Into<Callback<FormContext>>) -> FormContextObserver {
         let key = self.inner.borrow_mut()
             .add_listener(cb.into());
-        FormObserver { key, inner: self.inner.clone() }
+        FormContextObserver { key, inner: self.inner.clone() }
     }
 
     fn notify_listeners(&self) {
@@ -259,12 +259,12 @@ impl FormContext {
 /// A wrapper type for a mutably borrowed [FormContext]
 pub struct FormContextWriteGuard<'a> {
     form_ctx: FormContext,
-    state: ManuallyDrop<RefMut<'a, FormState>>,
+    state: ManuallyDrop<RefMut<'a, FormContextState>>,
     initial_version: usize,
 }
 
 impl Deref for FormContextWriteGuard<'_> {
-    type Target = FormState;
+    type Target = FormContextState;
 
     fn deref(&self) -> &Self::Target {
         &self.state
@@ -287,11 +287,11 @@ impl<'a> Drop for FormContextWriteGuard<'a> {
 
 /// Wraps a borrowed reference to a [FormContext]
 pub struct FormContextReadGuard<'a> {
-    state: Ref<'a, FormState>,
+    state: Ref<'a, FormContextState>,
 }
 
 impl Deref for FormContextReadGuard<'_> {
-    type Target = FormState;
+    type Target = FormContextState;
 
     fn deref(&self) -> &Self::Target {
         &self.state
@@ -305,11 +305,11 @@ struct GroupState {
     radio_count: usize,
 }
 
-/// Form state.
+/// The inner state of a [FormContext].
 ///
 /// A Form contains named fields. Field names are not required to be
 /// unique. Fields using the same name are called a "field group".
-pub struct FormState {
+pub struct FormContextState {
     version: usize,
     listeners: Slab<Callback<FormContext>>,
     fields: Slab<FieldRegistration>,
@@ -317,7 +317,7 @@ pub struct FormState {
     show_advanced: bool,
 }
 
-impl FormState {
+impl FormContextState {
 
     fn new() -> Self {
         Self {

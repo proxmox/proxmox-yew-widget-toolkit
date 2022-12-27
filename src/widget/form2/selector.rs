@@ -42,7 +42,7 @@ pub struct SelectorRenderArgs<S: DataStore> {
 /// - Ability to load data using a [LoadCallback] (with reasonable
 /// error handling).
 ///
-/// - Handles [FormContext](super::context::FormContext) interaction.
+/// - Handles [FormContext](super::FormContext) interaction.
 ///
 /// # Note
 ///
