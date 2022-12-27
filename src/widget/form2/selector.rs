@@ -250,7 +250,12 @@ impl<S: DataStore + 'static> Component for PwtSelector<S> {
             real_validate.clone(),
         );
 
+        let default = props.default.as_deref().unwrap_or("").to_string();
         let selection = Selection::new();
+        if !default.is_empty() {
+            selection.select(default.clone());
+        }
+
         let _store_observer = props.store.add_listener(ctx.link().callback(|_| {
             Msg::DataChange
         }));
@@ -261,8 +266,6 @@ impl<S: DataStore + 'static> Component for PwtSelector<S> {
             load_error: None,
             _store_observer,
         };
-
-        let default = props.default.as_deref().unwrap_or("").to_string();
 
         if props.input_props.name.is_some() {
             me.state.register_field(&props.input_props, default.clone(), default, false);
