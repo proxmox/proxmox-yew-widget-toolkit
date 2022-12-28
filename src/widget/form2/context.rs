@@ -58,6 +58,17 @@ struct FieldRegistration {
 ///
 /// The context is also the best place to gather data for a form
 /// submit (see: [FormContext::get_submit_data]).
+///
+/// Note: Accessing fields by name (like `get_field_data(name)`) only
+/// works if field names are unique. Else it just uses the first field
+/// found with that name
+
+// TODO: implement an interface to access field groups (fieldy without
+// unique name), something like
+//
+// - get_group_data(name: AttrValue) -> Option<Vec<Value>>,
+// - set_group_data(name: AttrValue, Vec<Value>),
+
 #[derive(Derivative)]
 #[derivative(Clone, PartialEq)]
 pub struct FormContext {
@@ -423,6 +434,9 @@ impl FormContextState {
         }
     }
 
+    /// Get the field value together with the validation result.
+    ///
+    /// Returns `None` for non-existent fields.
     pub fn get_field_data(
         &self,
         name: impl IntoPropValue<AttrValue>,
@@ -448,8 +462,22 @@ impl FormContextState {
     pub fn get_field_text(&self, name: impl IntoPropValue<AttrValue>) -> String {
         match self.get_field_data(name).map(|data| data.0)  {
             Some(Value::Number(n)) => n.to_string(),
-            Some(Value::String(v)) => v.clone(),
+            Some(Value::String(s)) => s.clone(),
             _ => String::new(),
+        }
+    }
+
+    /// Get the field value as string, together with the validation result.
+    ///
+    /// Return the empty string for non-existent fields, or
+    /// when the field value is not a string or number.
+    pub fn text_field_data(&self, name: impl IntoPropValue<AttrValue>) -> (String, Result<(), String>) {
+        let name = name.into_prop_value();
+        match self.get_field_data(&name) {
+            Some((Value::Number(n), valid)) => (n.to_string(), valid),
+            Some((Value::String(s), valid)) => (s.to_string(), valid),
+            Some((_, _valid)) => (String::new(), Err(format!("got unexpected type for field '{}'", name))),
+            _ => (String::new(), Err(format!("no such field '{}'", name))),
         }
     }
 
