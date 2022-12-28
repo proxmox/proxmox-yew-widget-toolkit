@@ -99,7 +99,7 @@ pub struct ObjectGrid {
 
     data: Option<Value>,
 
-    onsubmit: Option<SubmitCallback>,
+    on_submit: Option<SubmitCallback>,
 }
 
 impl Into<VNode> for ObjectGrid {
@@ -120,7 +120,7 @@ impl ObjectGrid {
             editable: false,
 
             data: None,
-            onsubmit: None,
+            on_submit: None,
        }
     }
 
@@ -129,8 +129,8 @@ impl ObjectGrid {
         self
     }
 
-    pub fn onsubmit(mut self, callback: impl IntoSubmitCallback) -> Self {
-        self.onsubmit = callback.into_submit_callback();
+    pub fn on_submit(mut self, callback: impl IntoSubmitCallback) -> Self {
+        self.on_submit = callback.into_submit_callback();
         self
     }
 
@@ -196,9 +196,9 @@ impl PwtObjectGrid  {
 
         EditWindow::new(format!("Edit: {}", title))
             .loader(props.loader.clone())
-            .ondone(Some(ctx.link().callback(|_| Msg::Close)))
+            .on_done(Some(ctx.link().callback(|_| Msg::Close)))
             .renderer(move |form_state| (editor.0)(&form_state, &name, &value, &data))
-            .onsubmit(props.onsubmit.clone())
+            .on_submit(props.on_submit.clone())
             .into()
     }
 }

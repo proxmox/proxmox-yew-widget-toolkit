@@ -34,8 +34,10 @@ pub struct EditWindow {
 
     pub renderer: Option<RenderFn<FormContext>>,
     pub loader: Option<LoadCallback<Value>>,
-    pub ondone: Option<Callback<()>>,
-    pub onsubmit: Option<SubmitCallback>,
+    pub on_done: Option<Callback<()>>,
+    pub on_submit: Option<SubmitCallback>,
+
+    /// Data change callback.
     pub on_change: Option<Callback<FormContext>>,
 }
 
@@ -78,13 +80,13 @@ impl EditWindow {
         self
     }
 
-    pub fn onsubmit(mut self, callback: impl IntoSubmitCallback) -> Self {
-        self.onsubmit = callback.into_submit_callback();
+    pub fn on_submit(mut self, callback: impl IntoSubmitCallback) -> Self {
+        self.on_submit = callback.into_submit_callback();
         self
     }
 
-    pub fn ondone(mut self, cb: impl IntoEventCallback<()>) -> Self {
-        self.ondone = cb.into_event_callback();
+    pub fn on_done(mut self, cb: impl IntoEventCallback<()>) -> Self {
+        self.on_done = cb.into_event_callback();
         self
     }
 
@@ -171,12 +173,12 @@ impl Component for PwtEditWindow {
                 true
             }
             Msg::Submit => {
-                if let Some(onsubmit) = props.onsubmit.clone() {
+                if let Some(on_submit) = props.on_submit.clone() {
                     let link = ctx.link().clone();
                     let form_ctx = self.form_ctx.clone();
                     self.loading = true;
                     wasm_bindgen_futures::spawn_local(async move {
-                        let result = onsubmit.apply(form_ctx).await;
+                        let result = on_submit.apply(form_ctx).await;
                         link.send_message(Msg::SubmitResult(result));
                     });
                 }
@@ -187,8 +189,8 @@ impl Component for PwtEditWindow {
                  match result {
                     Ok(_) => {
                         self.submit_error = None;
-                        if let Some(ondone) = &props.ondone {
-                            ondone.emit(());
+                        if let Some(on_done) = &props.on_done {
+                            on_done.emit(());
                         }
                     }
                     Err(err) => {
@@ -267,7 +269,7 @@ impl Component for PwtEditWindow {
 
         Dialog::new(props.title.clone())
             .node_ref(props.node_ref.clone())
-            .on_close(props.ondone.clone())
+            .on_close(props.on_done.clone())
             .with_child(
                 Form::new()
                     .form_context(self.form_ctx.clone())
