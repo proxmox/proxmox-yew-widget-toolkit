@@ -36,6 +36,7 @@ pub struct EditWindow {
     pub loader: Option<LoadCallback<Value>>,
     pub ondone: Option<Callback<()>>,
     pub onsubmit: Option<SubmitCallback>,
+    pub on_change: Option<Callback<FormContext>>,
 }
 
 impl EditWindow {
@@ -84,6 +85,12 @@ impl EditWindow {
 
     pub fn ondone(mut self, cb: impl IntoEventCallback<()>) -> Self {
         self.ondone = cb.into_event_callback();
+        self
+    }
+
+    /// Builder style method to set the on_change callback.
+    pub fn on_change(mut self, cb: impl IntoEventCallback<FormContext>) -> Self {
+        self.on_change = cb.into_event_callback();
         self
     }
 
@@ -156,6 +163,9 @@ impl Component for PwtEditWindow {
             Msg::FormDataChange => {
                 if self.submit_error != None {
                     self.submit_error = None;
+                }
+                if let Some(on_change) = &props.on_change {
+                    on_change.emit(self.form_ctx.clone());
                 }
                 // Note: we redraw on any data change
                 true
