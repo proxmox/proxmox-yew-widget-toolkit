@@ -249,6 +249,15 @@ pub struct PwtField {
     state: FieldState,
 }
 
+// Field are type Value::String(), but we also allow Value::Number ..
+fn value_to_text(value: Value) -> String {
+    match value {
+        Value::Number(n) => n.to_string(),
+        Value::String(s) => s.to_string(),
+        _ => String::new(),
+    }
+}
+
 impl Component for PwtField {
     type Message = Msg;
     type Properties = Field;
@@ -262,7 +271,7 @@ impl Component for PwtField {
             Some(on_change) => Some(Callback::from({
                 let on_change = on_change.clone();
                 move |value: Value| {
-                    on_change.emit(value.as_str().unwrap_or("").to_string());
+                    on_change.emit(value_to_text(value));
                 }
             })),
             None => None,
@@ -336,7 +345,7 @@ impl Component for PwtField {
         let props = ctx.props();
 
         let (value, valid) = self.state.get_field_data();
-        let value = value.as_str().unwrap_or("").to_owned();
+        let value = value_to_text(value);
 
         let oninput = ctx.link().callback(move |event: InputEvent| {
             let input: HtmlInputElement = event.target_unchecked_into();
