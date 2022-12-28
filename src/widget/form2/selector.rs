@@ -313,6 +313,9 @@ impl<S: DataStore + 'static> Component for PwtSelector<S> {
                         self.state.validate();
                     }
                     Err(err) => {
+                        props.store.clear();
+                        let default = props.default.as_deref().unwrap_or("").to_string();
+                        self.state.set_value(default);
                         self.load_error = Some(err.to_string());
                     }
                 }
