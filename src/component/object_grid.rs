@@ -8,10 +8,10 @@ use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode, Key};
 
 use crate::prelude::*;
-use crate::props::{LoadCallback, IntoLoadCallback, SubmitCallback, IntoSubmitCallback};
+use crate::props::{LoadCallback, IntoLoadCallback};
 use crate::state::Loader;
 use crate::widget::{Button, Toolbar};
-use crate::widget::form::FormContext;
+use crate::widget::form2::{FormContext, SubmitCallback, IntoSubmitCallback};
 use crate::component::{EditWindow, KVGrid, KVGridRow};
 
 use crate::widget::data_table::{DataTableKeyboardEvent, DataTableMouseEvent};

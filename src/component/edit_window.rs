@@ -8,20 +8,23 @@ use yew::virtual_dom::{Key, VComp, VNode};
 use yew::html::IntoEventCallback;
 
 use crate::prelude::*;
-use crate::props::{
-    LoadCallback, IntoLoadCallback, SubmitCallback, IntoSubmitCallback,
-    RenderFn,
-};
+use crate::props::{LoadCallback, IntoLoadCallback, RenderFn};
 use crate::widget::{Column, Dialog, Mask, Row};
-use crate::widget::form::{form_context_provider, Checkbox, FormContext, SubmitButton, ResetButton};
+use crate::widget::form2::{
+    Checkbox, Form, FormContext, SubmitButton, ResetButton,
+    SubmitCallback, IntoSubmitCallback,
+};
 use crate::component::AlertDialog;
 
 #[derive(Clone, PartialEq, Properties)]
 pub struct EditWindow {
+    /// Yew node ref
     #[prop_or_default]
     node_ref: NodeRef,
+    /// Yew component key
     pub key: Option<Key>,
 
+    /// Window title
     pub title: AttrValue,
 
     /// Show advanced checkbox
@@ -90,7 +93,7 @@ impl EditWindow {
 }
 
 pub enum Msg {
-    FormChange,
+    FormDataChange,
     Submit,
     SubmitResult(Result<Value,Error>),
     Load,
@@ -111,8 +114,12 @@ impl Component for PwtEditWindow {
 
     fn create(ctx: &Context<Self>) -> Self {
         ctx.link().send_message(Msg::Load);
+
+        let form_ctx = FormContext::new()
+            .on_change(ctx.link().callback(|_| Msg::FormDataChange));
+
         Self {
-            form_ctx: FormContext::new(ctx.link().callback(|()| Msg::FormChange)),
+            form_ctx,
             loading: false,
             submit_error: None,
         }
@@ -146,9 +153,11 @@ impl Component for PwtEditWindow {
                 }
                 true
             }
-            Msg::FormChange => {
-                self.form_ctx.context_change_trigger();
-                self.submit_error = None;
+            Msg::FormDataChange => {
+                if self.submit_error != None {
+                    self.submit_error = None;
+                }
+                // Note: we redraw on any data change
                 true
             }
             Msg::Submit => {
@@ -203,7 +212,7 @@ impl Component for PwtEditWindow {
                 .on_change({
                     let form_ctx = self.form_ctx.clone();
                     move |show| {
-                        form_ctx.set_show_advanced(show);
+                        form_ctx.set_show_advanced(show == "on");
                     }
                 });
 
@@ -249,7 +258,11 @@ impl Component for PwtEditWindow {
         Dialog::new(props.title.clone())
             .node_ref(props.node_ref.clone())
             .on_close(props.ondone.clone())
-            .with_child(form_context_provider(self.form_ctx.clone(), input_panel))
+            .with_child(
+                Form::new()
+                    .form_context(self.form_ctx.clone())
+                    .with_child(input_panel)
+            )
             .with_optional_child(alert)
             .into()
     }
