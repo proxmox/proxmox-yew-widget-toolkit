@@ -361,6 +361,10 @@ impl<T> KeyedSlabTree<T> {
         })
     }
 
+    pub fn clear(&mut self) {
+        self.set_root_tree(SlabTree::new());
+    }
+
     fn append_subtree_node(&mut self, subtree: &mut SlabTree<T>, subtree_node: usize, level: usize, parent: usize) -> usize {
         self.tree.append_subtree_node(subtree, subtree_node, level, parent)
     }

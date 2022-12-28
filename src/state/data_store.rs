@@ -45,6 +45,9 @@ pub trait DataStore: Clone + PartialEq {
 
     fn data_len(&self) -> usize;
 
+    /// Clears the store, removing all values.
+    fn clear(&self);
+
     fn is_empty(&self) -> bool { self.data_len() == 0}
 
     /// Method to add a change observer.

@@ -156,7 +156,11 @@ impl<T: 'static> Store<T> {
     }
 
     pub fn set_data(&self, data: Vec<T>) {
-        self.write().state.set_data(data);
+        self.write().set_data(data);
+    }
+
+    pub fn clear(&self) {
+        self.write().clear();
     }
 
     pub fn data_len(&self) -> usize {
@@ -233,6 +237,9 @@ impl<T: Clone + PartialEq + 'static> DataStore for Store<T> {
     type Record = T;
     type Collection = Vec<T>;
 
+    // Note: we implement all method on Store, so that we can use
+    // them without DataStore trait in scope.
+
     fn extract_key(&self, data: &T) -> Key {
         self.inner.borrow().extract_key(data)
     }
@@ -249,6 +256,10 @@ impl<T: Clone + PartialEq + 'static> DataStore for Store<T> {
 
     fn set_data(&self, data: Self::Collection) {
         self.set_data(data);
+    }
+
+    fn clear(&self) {
+        self.clear();
     }
 
     fn data_len(&self) -> usize {
@@ -396,6 +407,11 @@ impl<T: 'static> StoreState<T> {
     pub fn set_data(&mut self, data: Vec<T>) {
         self.version += 1;
         self.data = data;
+    }
+
+    pub fn clear(&mut self) {
+        self.version += 1;
+        self.data = Vec::new();
     }
 
     fn update_filtered_data(&mut self) {

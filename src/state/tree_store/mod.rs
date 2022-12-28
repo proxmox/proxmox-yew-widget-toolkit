@@ -193,6 +193,10 @@ impl<T: 'static> TreeStore<T> {
         self.write().set_root_tree(data);
     }
 
+    fn clear(&self) {
+        self.write().clear();
+    }
+
     fn data_len(&self) -> usize {
         self.inner.borrow().tree.slab.len()
     }
@@ -202,6 +206,9 @@ impl<T: Clone + PartialEq + 'static> DataStore for TreeStore<T> {
     type Observer = TreeStoreObserver<T>;
     type Record = T;
     type Collection = SlabTree<T>;
+
+    // Note: we implement all methods on TreeStore, so that we can use
+    // them without DataStore trait in scope.
 
     fn extract_key(&self, data: &T) -> Key {
         self.extract_key(data)
@@ -217,6 +224,10 @@ impl<T: Clone + PartialEq + 'static> DataStore for TreeStore<T> {
 
     fn set_data(&self, data: Self::Collection) {
         self.set_data(data);
+    }
+
+    fn clear(&self) {
+        self.clear();
     }
 
     fn data_len(&self) -> usize {
