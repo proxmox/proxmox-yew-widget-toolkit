@@ -20,8 +20,10 @@ pub use fa::{Fa, PwtFa};
 
 pub mod focus;
 
-pub mod form;
 pub mod form2;
+
+mod input;
+pub use input::Input;
 
 mod input_panel;
 pub use input_panel::InputPanel;

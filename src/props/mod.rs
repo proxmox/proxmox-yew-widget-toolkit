@@ -44,6 +44,3 @@ pub use sorter_function::{SorterFn, IntoSorterFn};
 
 mod filter_function;
 pub use filter_function::{FilterFn, IntoFilterFn};
-
-mod submit_callback;
-pub use submit_callback::{IntoSubmitCallback, SubmitCallback};

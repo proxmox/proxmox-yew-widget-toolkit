@@ -12,8 +12,7 @@ use yew::html::{IntoPropValue, IntoEventCallback};
 use yew::virtual_dom::{Key, VNode};
 
 use crate::prelude::*;
-use crate::widget::{Container, Tooltip};
-use crate::widget::form::Input;
+use crate::widget::{Container, Input, Tooltip};
 
 use pwt_macros::widget;
 

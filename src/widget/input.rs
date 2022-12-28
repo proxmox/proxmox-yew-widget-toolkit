@@ -5,12 +5,14 @@ use pwt_macros::widget;
 
 use crate::props::{WidgetStdProps, FieldStdProps};
 
+/// Html Input element.
 #[widget(pwt=crate, @input, @element)]
 #[derive(Clone, PartialEq, Properties)]
 pub struct Input {}
 
 impl Input {
 
+    /// Creates a new instance.
     pub fn new() -> Self {
         yew::props!{Self {}}
     }

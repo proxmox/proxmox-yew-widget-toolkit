@@ -10,9 +10,8 @@ use yew::virtual_dom::{Key, VComp, VNode};
 
 use crate::prelude::*;
 use crate::state::{Selection, SelectionObserver, DataStore};
-use crate::widget::{Column, Row};
+use crate::widget::{Column, Input, Row};
 use crate::widget::data_table::{DataTable, DataTableMouseEvent};
-use crate::widget::form::Input;
 
 #[derive(Derivative, Properties)]
 #[derivative(Clone(bound=""), PartialEq(bound=""))]
