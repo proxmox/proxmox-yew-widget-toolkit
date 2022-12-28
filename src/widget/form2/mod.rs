@@ -28,8 +28,42 @@ pub use reset_button::{ResetButton, PwtResetButton};
 mod selector;
 pub use selector::{Selector, SelectorRenderArgs, PwtSelector};
 
+mod submit_callback;
+pub use submit_callback::{SubmitCallback, IntoSubmitCallback};
+
 mod submit_button;
 pub use submit_button::{SubmitButton, PwtSubmitButton};
 
 mod validate;
 pub use validate::{IntoValidateFn, ValidateFn};
+
+// Propxmox API related helpers
+
+use serde_json::{json, Value};
+
+pub fn delete_empty_values(record: &Value, param_list: &[&str]) -> Value {
+    let mut new = json!({});
+    let mut delete: Vec<String> = Vec::new();
+
+    for (param, v) in record.as_object().unwrap().iter() {
+        if !param_list.contains(&param.as_str()) {
+            new[param] = v.clone();
+            continue;
+        }
+        if v.is_null() || (v.is_string() && v.as_str().unwrap().is_empty()) {
+            delete.push(param.to_string());
+        } else {
+            new[param] = v.clone();
+        }
+    }
+
+    for param in param_list {
+        if record.get(param).is_none() {
+            delete.push(param.to_string());
+        }
+    }
+
+    new["delete"] = delete.into();
+
+    new
+}
