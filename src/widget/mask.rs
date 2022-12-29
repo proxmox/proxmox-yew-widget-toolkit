@@ -10,16 +10,23 @@ use yew::html::IntoPropValue;
 use crate::props::ContainerBuilder;
 use crate::widget::Fa;
 
+/// Container which optionaly masks its content.
 #[derive(Clone, PartialEq, Properties)]
 pub struct Mask {
     #[prop_or_default]
     node_ref: NodeRef,
+    /// Yew component key
     pub key: Option<Key>,
 
+    /// Flag to show/hide the mask
     #[prop_or_default]
     pub visible: bool,
+
+    /// Container content.
     #[prop_or_default]
     pub children: Vec<VNode>,
+
+    /// Mask text. Defaults to "Loading...".
     #[prop_or_default]
     pub text: AttrValue,
 }
@@ -32,6 +39,7 @@ impl ContainerBuilder for Mask {
 
 impl Mask {
 
+    /// Create a new instance.
     pub fn new() -> Self {
         yew::props!(Mask {})
     }
