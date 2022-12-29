@@ -8,15 +8,20 @@ use pwt_macros::widget;
 
 use crate::prelude::*;
 
+/// Layout widget for forms with one or two columns.
+///
+/// This container show input fields with labels at different regions
+/// (left, right, advanced).
 #[widget(pwt=crate, @element, @container)]
 #[derive(Properties, PartialEq, Clone)]
 pub struct InputPanel {
+    /// Spacing between fields
     #[prop_or_default]
     pub gap: usize,
-
+    /// Flag to show the advanced region.
     #[prop_or_default]
     pub show_advanced: bool,
-
+    /// Flag to show two columns (usually autodetected).
     #[prop_or_default]
     two_column: bool, // autodetected
 
@@ -28,20 +33,29 @@ pub struct InputPanel {
 
 impl InputPanel {
 
+    /// Creates a new instance.
     pub fn new() -> Self {
         yew::props!(Self {})
     }
 
+    /// Builder style method to set the field spacing.
     pub fn gap(mut self, gap: usize) -> Self {
-        self.gap = gap;
+        self.set_gap(gap);
         self
     }
 
+    /// Method to set the field spacing.
+    pub fn set_gap(&mut self, gap: usize) {
+        self.gap = gap;
+    }
+
+    /// Builder style method to set the show_advanced flag.
     pub fn show_advanced(mut self, show_advanced: bool) -> Self {
         self.set_show_advanced(show_advanced);
         self
     }
 
+    /// Method to set the show_advanced flag.
     pub fn set_show_advanced(&mut self, show_advanced: bool) {
         self.show_advanced = show_advanced;
     }
@@ -73,6 +87,7 @@ impl InputPanel {
         });
     }
 
+    /// Builder style method to add a field with label at the left column.
     pub fn with_field(
         mut self,
         label: impl IntoPropValue<AttrValue>,
@@ -91,6 +106,7 @@ impl InputPanel {
         self
     }
 
+    /// Method to add a field with label at the left column.
     pub fn add_field(
         &mut self,
         advanced: bool,
@@ -117,7 +133,7 @@ impl InputPanel {
                 {label.into_prop_value()}
             </label>
         });
-        
+
         let field = field.label_id(label_id);
 
         self.add_child(html!{
@@ -125,6 +141,7 @@ impl InputPanel {
         });
     }
 
+    /// Builder style method to add a field with label at the right column.
     pub fn with_right_field(
         mut self,
         label: impl IntoPropValue<AttrValue>,
@@ -134,6 +151,7 @@ impl InputPanel {
         self
     }
 
+    /// Method to add a field with label at the right column.
     pub fn add_right_field(
         &mut self,
         advanced: bool,
@@ -167,6 +185,7 @@ impl InputPanel {
         });
     }
 
+    /// Builder style method to add a large field spanning both columns.
     pub fn with_large_field(
         mut self,
         label: impl IntoPropValue<AttrValue>,
@@ -176,6 +195,7 @@ impl InputPanel {
         self
     }
 
+    /// Method to add a large field spanning both columns.
     pub fn add_large_field(
         &mut self,
         advanced: bool,
@@ -214,8 +234,6 @@ impl InputPanel {
             <div class="pwt-fill-grid-row" {style}>{field.into()}</div>
         });
     }
-
-
 }
 
 impl Into<VTag> for InputPanel {
