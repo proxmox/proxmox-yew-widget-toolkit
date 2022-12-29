@@ -16,7 +16,7 @@ use yew::virtual_dom::{VComp, VNode};
 ///
 /// If you are using the icon to convey meaning (rather than pure
 /// decoration), the Font Awesome web site suggests to provide a text
-/// alternative inside a <span> (or similar) element and include
+/// alternative inside a `<span>` (or similar) element and include
 /// appropriate CSS to visually hide that element while keeping it
 /// accessible to assistive technologies.
 #[derive(Properties, PartialEq, Clone)]

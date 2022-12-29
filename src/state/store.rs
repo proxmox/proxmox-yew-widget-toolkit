@@ -316,10 +316,10 @@ impl<T: Clone + PartialEq + 'static> DataStore for Store<T> {
     }
 }
 
-/// Implements the [Store] for lists of records (Vec<T>).
+/// Implements the [Store] for lists of records (`Vec<T>`).
 ///
 /// This class provides the actual [Store] implementation, and is
-/// accessed vial the [Store::read] and [Store::write] methods.
+/// accessed via the [Store::read] and [Store::write] methods.
 
 pub struct StoreState<T> {
     extract_key: ExtractKeyFn<T>,

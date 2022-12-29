@@ -8,6 +8,9 @@ use derivative::Derivative;
 
 use super::FormContext;
 
+/// A [SubmitCallback] is an async callback ([Future]) that gets the
+/// [FormContext] as parameter, returning the [Result] of the submit
+/// opertation.
 #[derive(Derivative)]
 #[derivative(Clone, PartialEq)]
 pub struct SubmitCallback(
@@ -33,6 +36,7 @@ impl SubmitCallback {
     }
 }
 
+/// Helper trait to create an optional [SubmitCallback] property.
 pub trait IntoSubmitCallback {
     fn into_submit_callback(self) -> Option<SubmitCallback>;
 }

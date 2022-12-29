@@ -104,7 +104,7 @@ impl EditWindow {
 pub enum Msg {
     FormDataChange,
     Submit,
-    SubmitResult(Result<Value,Error>),
+    SubmitResult(Result<Value, Error>),
     Load,
     LoadResult(Result<Value, Error>),
     ClearError,

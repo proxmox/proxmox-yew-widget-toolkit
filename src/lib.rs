@@ -80,23 +80,22 @@
 //! [properties](props::FieldStdProps), which can be set using the
 //! associated [builder](props::FieldBuilder) functions. All fields
 //! can store there state inside a shared
-//! [context](widget::form::FormContext), which allow the
+//! [context](widget::form2::FormContext), which allow the
 //! implementation of complex field interactions.
 //!
 //! The form context is automatically provided when putting the fields
-//! inside a [Form](widget::form::Form) or
-//! [EditWindow](component::EditWindow). Custom components can provide
-//! a form context using [widget::form::form_context_provider].
+//! inside a [Form](widget::form2::Form) or
+//! [EditWindow](component::EditWindow).
 //!
 //! The following field types are available.
 //!
-//! - [widget::form::Checkbox]: Checkbox or Radiobox field
-//! - [widget::form::Combobox]: Select value from a list of options.
-//! - [widget::form::Field]: Wrapper around standard Html fields.
-//! - [widget::form::Selector]: Select value from a picker widget.
+//! - [widget::form2::Checkbox]: Checkbox or Radiobox field
+//! - [widget::form2::Combobox]: Select value from a list of options.
+//! - [widget::form2::Field]: Wrapper around standard Html fields.
+//! - [widget::form2::Selector]: Select value from a picker widget.
 //!
-//! There are also special buttons for [reset](widget::form::ResetButton)
-//! and [submit](widget::form::SubmitButton).
+//! There are also special buttons for [reset](widget::form2::ResetButton)
+//! and [submit](widget::form2::SubmitButton).
 
 
 //! ### Buttons
