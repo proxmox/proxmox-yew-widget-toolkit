@@ -9,6 +9,21 @@ use yew::prelude::*;
 const FOCUSABLE_SELECTOR: &str = "a:not([disabled]), button:not([disabled]), input[type=text]:not([disabled]), [tabindex]:not([disabled])";
 const FOCUSABLE_SELECTOR_ALL: &str = "a, button, input, [tabindex]";
 
+/// Test is an element can take focus.
+///
+/// Returns true if the element has an `tabindex` attribute, or if the
+/// element is of type `<a>`, `<button>`, or `<input>`.
+pub fn element_is_focusable(el: &web_sys::HtmlElement) -> bool {
+    if el.has_attribute("tabindex") {
+        return true;
+    }
+
+    match el.tag_name().as_str() {
+        "A" | "BUTTON" | "INPUT" => true,
+        _ => false,
+    }
+}
+
 pub fn focus_next_tabable(node_ref: &NodeRef, backwards: bool, roving: bool) {
     if let Some(el) = node_ref.cast::<web_sys::HtmlElement>() {
         focus_next_tabable_el(el, backwards, roving);
@@ -88,6 +103,7 @@ pub fn update_roving_tabindex(node_ref: &NodeRef) {
     }
 }
 
+/// Update roving tabindex after focus change
 pub fn update_roving_tabindex_el(el: web_sys::HtmlElement) {
 
     if let Ok(child_list) = el.query_selector_all(":scope > *") {
@@ -113,7 +129,7 @@ pub fn update_roving_tabindex_el(el: web_sys::HtmlElement) {
         for i in 0..child_list.length() {
             let node = child_list.get(i).dyn_into::<web_sys::HtmlElement>().unwrap();
 
-            if node.has_attribute("tabindex") {
+            if element_is_focusable(&node) {
                 if i == index {
                     node.set_tab_index(0);
                 } else {
