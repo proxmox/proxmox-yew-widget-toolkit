@@ -101,6 +101,11 @@ pub fn focus_next_tabable_el(el: web_sys::HtmlElement, backwards: bool, roving: 
     }
 }
 
+/// Test if a child has focus.
+///
+/// # Note
+///
+/// This returns false if the element itself has focus.
 pub fn focus_inside_el(el: web_sys::HtmlElement) -> bool {
     if let Ok(list) = el.query_selector_all(FOCUSABLE_SELECTOR) {
         let list = js_sys::Array::from(&list);
