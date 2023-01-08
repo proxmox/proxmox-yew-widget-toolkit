@@ -1,7 +1,6 @@
 use std::rc::Rc;
 
 use gloo_timers::callback::Timeout;
-use wasm_bindgen::JsCast;
 
 use yew::html::IntoEventCallback;
 use yew::prelude::*;
@@ -9,6 +8,7 @@ use yew::virtual_dom::{VComp, VNode};
 
 use crate::prelude::*;
 use crate::widget::{get_unique_element_id, Container};
+use crate::widget::focus::get_first_focusable;
 
 mod menu_event;
 pub use menu_event::MenuEvent;
@@ -770,27 +770,7 @@ fn dom_focus_inside_submenu(event: &FocusEvent, item_id: &str) -> bool {
     false
 }
 
-fn get_first_focusable(item_el: web_sys::Element) -> Option<web_sys::HtmlElement> {
-    const FOCUSABLE_SELECTOR: &str = concat!(
-        "a:not([disabled]),",
-        "button:not([disabled]),",
-        "input:not([disabled]),",
-        "[tabindex]:not([disabled])",
-    );
-
-    let focus_el = match item_el.query_selector(FOCUSABLE_SELECTOR) {
-        Ok(Some(focus_el)) => focus_el,
-        _ => return None,
-    };
-
-    match focus_el.dyn_into::<web_sys::HtmlElement>() {
-        Ok(el) => Some(el),
-        _ => None,
-    }
-}
-
 fn dom_focus_submenu(item_id: &str) {
-    //log::info!("TRY FOCUS SUB {}", item_id);
     let window = web_sys::window().unwrap();
     let document = window.document().unwrap();
 
@@ -800,7 +780,6 @@ fn dom_focus_submenu(item_id: &str) {
     };
 
     if let Some(focus_el) = get_first_focusable(el) {
-        //log::info!("TRY FOCUS SUB TZEST {} FID {}", item_id, focus_el.id());
         let _ = focus_el.focus();
     }
 }

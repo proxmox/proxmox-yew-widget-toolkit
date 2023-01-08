@@ -24,6 +24,28 @@ pub fn element_is_focusable(el: &web_sys::HtmlElement) -> bool {
     }
 }
 
+/// Returns the first focusable child element.
+///
+/// This function skips disabled elements.
+pub fn get_first_focusable(item_el: web_sys::Element) -> Option<web_sys::HtmlElement> {
+    const FOCUSABLE_SELECTOR: &str = concat!(
+        "a:not([disabled]),",
+        "button:not([disabled]),",
+        "input:not([disabled]),",
+        "[tabindex]:not([disabled])",
+    );
+
+    let focus_el = match item_el.query_selector(FOCUSABLE_SELECTOR) {
+        Ok(Some(focus_el)) => focus_el,
+        _ => return None,
+    };
+
+    match focus_el.dyn_into::<web_sys::HtmlElement>() {
+        Ok(el) => Some(el),
+        _ => None,
+    }
+}
+
 pub fn focus_next_tabable(node_ref: &NodeRef, backwards: bool, roving: bool) {
     if let Some(el) = node_ref.cast::<web_sys::HtmlElement>() {
         focus_next_tabable_el(el, backwards, roving);
