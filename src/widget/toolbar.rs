@@ -8,30 +8,61 @@ use pwt_macros::widget;
 use crate::prelude::*;
 use super::focus::{focus_next_tabable, init_roving_tabindex};
 
+/// Horizontal container for buttons with roving tabindex.
+///
+/// This container uses a CSS flexbox layout, and implements a [roving
+/// tabindex](https://developer.mozilla.org/en-US/docs/Web/Accessibility/Keyboard-navigable_JavaScript_widgets)
+/// among children having a tabindex attribute.
+///
+/// # Note
+///
+/// Avoid including controls whose operation requires left/right arrow
+/// keys used for toolbar navigation.
+///
+/// See: <https://www.w3.org/WAI/ARIA/apg/patterns/toolbar/>.
+///
+/// # Keyboard bindings
+///
+/// * `Tab` and `Shift Tab`: Move focus into and out of the toolbar.
+///
+/// * `Right Arrow`: Moves focus one cell to the right. If focus is on
+/// the last element, focus the first element.
+///
+/// * `Left Arrow`: Moves focus one cell to the left. If focus is on
+/// the firs element, focus the last element.
 #[widget(pwt=crate, comp=PwtToolbar, @element, @container)]
 #[derive(Properties, PartialEq, Clone)]
 pub struct Toolbar {}
 
 impl Toolbar {
 
+    /// Create a new instance.
     pub fn new() -> Self {
         yew::props!(Toolbar {})
     }
 
+    /// Builder style method to add a spacer.
     pub fn with_spacer(mut self) -> Self {
         self.add_spacer();
         self
     }
 
+    /// Method to add a spacer.
+    ///
+    /// Spacers separate elements by a simple vertical rule.
     pub fn add_spacer(&mut self) {
         self.add_child(html!{<div aria-hidden="true" class="pwt-align-self-stretch pwt-vertical-rule"/>});
     }
 
+    /// Builder style method to add a flex spacer.
     pub fn with_flex_spacer(mut self) -> Self {
         self.add_flex_spacer();
         self
     }
 
+    /// Method to add a flex spacer.
+    ///
+    /// Flex spacers are empty cells filling the remainig space.
     pub fn add_flex_spacer(&mut self) {
         self.add_child(html!{<div aria-hidden="true" class="pwt-flex-fill"/>});
     }
