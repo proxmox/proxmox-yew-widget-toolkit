@@ -1,5 +1,7 @@
 //! DOM focus management helpers.
 
+use std::ops::Deref;
+
 use wasm_bindgen::JsCast;
 
 use yew::prelude::*;
@@ -80,6 +82,54 @@ pub fn focus_inside_el(el: web_sys::HtmlElement) -> bool {
     }
 }
 
+pub fn update_roving_tabindex(node_ref: &NodeRef) {
+    if let Some(el) = node_ref.cast::<web_sys::HtmlElement>() {
+        update_roving_tabindex_el(el);
+    }
+}
+
+pub fn update_roving_tabindex_el(el: web_sys::HtmlElement) {
+
+    if let Ok(child_list) = el.query_selector_all(":scope > *") {
+        let child_list = js_sys::Array::from(&child_list);
+        if child_list.length() == 0 { return; }
+
+        let window = web_sys::window().unwrap();
+        let document = window.document().unwrap();
+
+        let active_el = document.active_element();
+        let active_node: Option<&web_sys::Node> = active_el.as_ref().map(|el| el.deref());
+
+        let mut index = 0;
+        for i in 0..child_list.length() {
+            let node = child_list.get(i).dyn_into::<web_sys::HtmlElement>().unwrap();
+            if node.contains(active_node) {
+                index = i;
+            }
+        }
+
+        //log::info!("update_roving_tabindex: got {} focusable elements, index {}", child_list.length(), index);
+
+        for i in 0..child_list.length() {
+            let node = child_list.get(i).dyn_into::<web_sys::HtmlElement>().unwrap();
+
+            if node.has_attribute("tabindex") {
+                if i == index {
+                    node.set_tab_index(0);
+                } else {
+                    node.set_tab_index(-1);
+                }
+            } else if let Ok(Some(child)) = node.query_selector(FOCUSABLE_SELECTOR_ALL) {
+                let child = child.dyn_into::<web_sys::HtmlElement>().unwrap();
+                if i == index {
+                    child.set_tab_index(0);
+                } else {
+                    child.set_tab_index(-1);
+                }
+            }
+        }
+    }
+}
 
 pub fn init_roving_tabindex(node_ref: &NodeRef) {
     if let Some(el) = node_ref.cast::<web_sys::HtmlElement>() {

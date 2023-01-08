@@ -1,12 +1,14 @@
 use std::borrow::Cow;
 
+use gloo_timers::callback::Timeout;
+
 use yew::prelude::*;
 use yew::virtual_dom::{Listeners, VList, VTag};
 
 use pwt_macros::widget;
 
 use crate::prelude::*;
-use super::focus::{focus_next_tabable, init_roving_tabindex};
+use super::focus::{focus_next_tabable, init_roving_tabindex, update_roving_tabindex};
 
 /// Horizontal container for buttons with roving tabindex.
 ///
@@ -68,18 +70,44 @@ impl Toolbar {
     }
 }
 
+pub enum Msg {
+    FocusChange(bool),
+    DelayedFocusChange(bool),
+}
+
 #[doc(hidden)]
 pub struct PwtToolbar {
     inner_ref: NodeRef,
+    timeout: Option<Timeout>,
 }
 
 impl Component for PwtToolbar {
-    type Message = ();
+    type Message = Msg;
     type Properties = Toolbar;
 
     fn create(_ctx: &Context<Self>) -> Self {
         Self {
             inner_ref: NodeRef::default(),
+            timeout: None,
+        }
+    }
+
+    fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
+        //let props = ctx.props();
+        match msg {
+            Msg::FocusChange(has_focus) => {
+                let link = ctx.link().clone();
+                self.timeout = Some(Timeout::new(1, move || {
+                    link.send_message(Msg::DelayedFocusChange(has_focus));
+                }));
+                false
+            }
+            Msg::DelayedFocusChange(has_focus) => {
+                if has_focus {
+                    update_roving_tabindex(&self.inner_ref);
+                }
+                true
+            }
         }
     }
 
@@ -88,6 +116,8 @@ impl Component for PwtToolbar {
 
         let props = ctx.props()
             .clone()
+            .onfocusin(ctx.link().callback(|_| Msg::FocusChange(true)))
+            .onfocusout(ctx.link().callback(|_| Msg::FocusChange(false)))
             .onkeydown(move |event: KeyboardEvent| {
                 match event.key_code() {
                     39 => { // left
