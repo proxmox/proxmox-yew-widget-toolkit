@@ -179,12 +179,20 @@ impl Component for PwtButton {
 
         if let Some(icon_class) = &props.icon_class {
             if !icon_class.is_empty() {
+                /// Chromium fires onclick from nested elements, so we need to suppress that manually here
+                let onclick: Option<Callback<MouseEvent>> = match props.disabled {
+                    true => Some(Callback::from(|event: MouseEvent| {
+                        event.prevent_default();
+                        event.stop_propagation();
+                    })),
+                    false => None,
+                };
                 children.push(html!{
-                    <i role="none" aria-hidden="true" class={classes!(
+                    <i {onclick} role="none" aria-hidden="true" class={classes!(
                         icon_class.clone(),
                         has_text.then(|| "pwt-me-2"),
                     )}></i>
-                })
+                });
             }
         }
 
