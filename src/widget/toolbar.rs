@@ -8,7 +8,7 @@ use yew::virtual_dom::{Listeners, VList, VTag};
 use pwt_macros::widget;
 
 use crate::prelude::*;
-use super::focus::{focus_next_tabable, init_roving_tabindex, update_roving_tabindex};
+use super::focus::{roving_tabindex_next, init_roving_tabindex, update_roving_tabindex};
 
 /// Horizontal container for buttons with roving tabindex.
 ///
@@ -121,10 +121,10 @@ impl Component for PwtToolbar {
             .onkeydown(move |event: KeyboardEvent| {
                 match event.key_code() {
                     39 => { // left
-                        focus_next_tabable(&inner_ref, false, true);
+                        roving_tabindex_next(&inner_ref, false, true);
                     }
                     37 => { // right
-                        focus_next_tabable(&inner_ref, true, true);
+                        roving_tabindex_next(&inner_ref, true, true);
                     }
                     _ => return,
                 }

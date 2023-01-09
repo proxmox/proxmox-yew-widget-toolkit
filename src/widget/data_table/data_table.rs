@@ -800,7 +800,7 @@ impl<S: DataStore> PwtDataTable<S> {
             None => return,
         };
         if let Some(cell) = dom_find_cell(&row_el, self.active_column) {
-            crate::widget::focus::focus_next_tabable_el(cell, backwards, false);
+            crate::widget::focus::focus_next_el(cell, backwards);
         }
     }
 

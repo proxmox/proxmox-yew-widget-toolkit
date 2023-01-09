@@ -11,7 +11,7 @@ use crate::state::{NavigationContainer, NavigationContext, NavigationContextExt}
 
 use pwt_macros::widget;
 
-use crate::widget::focus::focus_next_tabable;
+use crate::widget::focus::roving_tabindex_next;
 use crate::widget::{Column, Row};
 
 #[derive(Clone, PartialEq)]
@@ -492,10 +492,10 @@ impl Component for PwtNavigationMenu {
         let onkeydown = Callback::from(move |event: KeyboardEvent| {
             match event.key().as_str() {
                 "ArrowDown" => {
-                    focus_next_tabable(&menu_ref, false, false);
+                    roving_tabindex_next(&menu_ref, false, false);
                 }
                 "ArrowUp" => {
-                    focus_next_tabable(&menu_ref, true, false);
+                    roving_tabindex_next(&menu_ref, true, false);
                 }
                 _ => return,
             }

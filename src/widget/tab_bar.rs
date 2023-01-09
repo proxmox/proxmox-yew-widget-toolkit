@@ -4,7 +4,7 @@ use yew::prelude::*;
 use yew::virtual_dom::{Key, VComp, VNode};
 use yew::html::{IntoEventCallback, IntoPropValue};
 
-use crate::widget::focus::focus_next_tabable;
+use crate::widget::focus::roving_tabindex_next;
 use crate::state::{NavigationContext, NavigationContextExt};
 
 #[derive(Clone, PartialEq)]
@@ -243,10 +243,10 @@ impl Component for PwtTabBar {
         let onkeydown = Callback::from( move |event: KeyboardEvent| {
             match event.key_code() {
                 39 => { // left
-                    focus_next_tabable(&tabbar_ref, false, false);
+                    roving_tabindex_next(&tabbar_ref, false, false);
                 }
                 37 => { // right
-                    focus_next_tabable(&tabbar_ref, true, false);
+                    roving_tabindex_next(&tabbar_ref, true, false);
                 }
                 _ => return,
             }

@@ -24,35 +24,17 @@ pub fn element_is_focusable(el: &web_sys::HtmlElement) -> bool {
     }
 }
 
-/// Returns the first focusable child element.
-///
-/// This function skips disabled elements.
-pub fn get_first_focusable(item_el: web_sys::Element) -> Option<web_sys::HtmlElement> {
-    const FOCUSABLE_SELECTOR: &str = concat!(
-        "a:not([disabled]),",
-        "button:not([disabled]),",
-        "input:not([disabled]),",
-        "[tabindex]:not([disabled])",
-    );
-
-    let focus_el = match item_el.query_selector(FOCUSABLE_SELECTOR) {
-        Ok(Some(focus_el)) => focus_el,
-        _ => return None,
-    };
-
-    match focus_el.dyn_into::<web_sys::HtmlElement>() {
-        Ok(el) => Some(el),
-        _ => None,
-    }
-}
-
-pub fn focus_next_tabable(node_ref: &NodeRef, backwards: bool, roving: bool) {
+/// Move focus to the next/previous focusable element (calls [focus_next_el]).
+pub fn focus_next(node_ref: &NodeRef, backwards: bool) {
     if let Some(el) = node_ref.cast::<web_sys::HtmlElement>() {
-        focus_next_tabable_el(el, backwards, roving);
+        focus_next_el(el, backwards);
     }
 }
 
-pub fn focus_next_tabable_el(el: web_sys::HtmlElement, backwards: bool, roving: bool) {
+/// Move focus to the next/previous focusable element.
+///
+/// This fuction use all focusable descendents of the element.
+pub fn focus_next_el(el: web_sys::HtmlElement, backwards: bool) {
     if let Ok(list) = el.query_selector_all(FOCUSABLE_SELECTOR) {
         let list = js_sys::Array::from(&list);
         if list.length() == 0 { return; }
@@ -64,13 +46,6 @@ pub fn focus_next_tabable_el(el: web_sys::HtmlElement, backwards: bool, roving: 
             Some(active_element) => list.index_of(&active_element, 0),
             None => -1,
         };
-
-        if roving && list.length() > 1 && index >= 0 {
-            let node = list.get(index as u32);
-            if let Ok(el) = node.dyn_into::<web_sys::HtmlElement>() {
-                el.set_tab_index(-1);
-            }
-        }
 
         //log::info!("focus_next: got {} focusable elements, index {}", list.length(), index);
 
@@ -94,10 +69,94 @@ pub fn focus_next_tabable_el(el: web_sys::HtmlElement, backwards: bool, roving: 
 
         if let Ok(next_element) = list.get(next as u32).dyn_into::<web_sys::HtmlElement>() {
             let _ = next_element.focus();
-            if roving && list.length() > 1 {
-                next_element.set_tab_index(0);
-            }
         }
+    }
+}
+
+/// Returns the first focusable child element.
+///
+/// This function skips disabled elements.
+pub fn get_first_focusable(item_el: web_sys::Element) -> Option<web_sys::HtmlElement> {
+    const FOCUSABLE_SELECTOR: &str = concat!(
+        "a:not([disabled]),",
+        "button:not([disabled]),",
+        "input:not([disabled]),",
+        "[tabindex]:not([disabled])",
+    );
+
+    let focus_el = match item_el.query_selector(FOCUSABLE_SELECTOR) {
+        Ok(Some(focus_el)) => focus_el,
+        _ => return None,
+    };
+
+    match focus_el.dyn_into::<web_sys::HtmlElement>() {
+        Ok(el) => Some(el),
+        _ => None,
+    }
+}
+
+/// Move focus to the next/previous focusable child (calls [roving_tabindex_next_el]).
+pub fn roving_tabindex_next(node_ref: &NodeRef, backwards: bool, roving: bool) {
+    if let Some(el) = node_ref.cast::<web_sys::HtmlElement>() {
+        roving_tabindex_next_el(el, backwards, roving);
+    }
+}
+
+/// Move focus to the next/previous focusable child.
+///
+/// If `roving` is enabled, this also sets the `tabindex` attribute
+/// for the active child to `"0"`, and to `"-1"` for all other
+/// children.
+pub fn roving_tabindex_next_el(el: web_sys::HtmlElement, backwards: bool, roving: bool) {
+    let list = roving_tabindex_members(&el);
+    let enabled_list: Vec<web_sys::HtmlElement> = list.iter()
+        .filter(|e| !e.matches(":disabled").unwrap_or(true))
+        .map(|e| e.clone())
+        .collect();
+
+    if enabled_list.len() == 0 { return; }
+
+    let window = web_sys::window().unwrap();
+    let document = window.document().unwrap();
+
+    let active_el = document.active_element();
+    let active_node: Option<&web_sys::Node> = active_el.as_ref().map(|el| el.deref());
+
+    let mut index = -1;
+    for (i, node) in enabled_list.iter().enumerate() {
+        if node.contains(active_node) {
+            index = i as i32;
+        }
+    }
+
+    let next = if index < 0 {
+        if backwards { enabled_list.len() as i32 - 1 } else { 0 }
+    } else {
+        if backwards {
+	    if index == 0 {
+		enabled_list.len() as i32 - 1
+	    } else {
+		index - 1
+	    }
+	} else {
+	    if (index + 1) >= enabled_list.len() as i32 {
+		0
+	    } else {
+                index as i32 + 1
+            }
+	}
+    };
+
+    if roving {
+        for node in list.iter() {
+            node.set_tab_index(-1);
+        }
+    }
+
+    let next_element = &enabled_list[next as usize];
+    let _ = next_element.focus();
+    if roving {
+        next_element.set_tab_index(0);
     }
 }
 
@@ -124,13 +183,14 @@ pub fn focus_inside_el(el: web_sys::HtmlElement) -> bool {
     }
 }
 
+/// Update roving tabindex after focus change (calls [update_roving_tabindex_el]).
 pub fn update_roving_tabindex(node_ref: &NodeRef) {
     if let Some(el) = node_ref.cast::<web_sys::HtmlElement>() {
         update_roving_tabindex_el(el);
     }
 }
 
-/// Update roving tabindex after focus change
+/// Update roving tabindex after focus change.
 pub fn update_roving_tabindex_el(el: web_sys::HtmlElement) {
 
     if let Ok(child_list) = el.query_selector_all(":scope > *") {
@@ -176,11 +236,17 @@ pub fn update_roving_tabindex_el(el: web_sys::HtmlElement) {
 
 /// Return all child elements participating in the roving tabindex algorithm.
 ///
-/// The list contains all children which are [focusable](element_is_focusable),
+/// The list contains all direct children which are [focusable](element_is_focusable),
 /// or the first focusable descendant for children not directly focusable.
 ///
 /// The list includes disabled element.
-pub fn roving_tabindex_members(el: web_sys::HtmlElement) -> Vec<web_sys::HtmlElement> {
+///
+/// # Note
+///
+/// This kind of member selection makes it possible to include more complex widget
+/// like [MenuButton](crate::widget::MenuButton)s inside a
+/// [Toolbar](crate::widget::Toolbar).
+pub fn roving_tabindex_members(el: &web_sys::HtmlElement) -> Vec<web_sys::HtmlElement> {
     let mut members: Vec<web_sys::HtmlElement> = Vec::new();
 
     if let Ok(child_list) = el.query_selector_all(":scope > *") {
@@ -199,14 +265,20 @@ pub fn roving_tabindex_members(el: web_sys::HtmlElement) -> Vec<web_sys::HtmlEle
     members
 }
 
+/// Initialize elements participating in the roving tabindex algorithm (calls [init_roving_tabindex_el]).
 pub fn init_roving_tabindex(node_ref: &NodeRef) {
     if let Some(el) = node_ref.cast::<web_sys::HtmlElement>() {
         init_roving_tabindex_el(el, false);
     }
 }
 
+/// Initialize elements participating in the roving tabindex algorithm.
+///
+/// This function makes sure that exactly one element has the
+/// `tabindex` attribute set to `"0"`. All others gets a `tabindex` of
+/// `"-1"`.
 pub fn init_roving_tabindex_el(el: web_sys::HtmlElement, take_focus: bool) {
-    let list = roving_tabindex_members(el);
+    let list = roving_tabindex_members(&el);
 
     if list.len() == 0 { return; }
 
