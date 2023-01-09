@@ -179,7 +179,7 @@ impl Component for PwtButton {
 
         if let Some(icon_class) = &props.icon_class {
             if !icon_class.is_empty() {
-                /// Chromium fires onclick from nested elements, so we need to suppress that manually here
+                // Chromium fires onclick from nested elements, so we need to suppress that manually here
                 let onclick: Option<Callback<MouseEvent>> = match props.disabled {
                     true => Some(Callback::from(|event: MouseEvent| {
                         event.prevent_default();
