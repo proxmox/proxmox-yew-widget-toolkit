@@ -11,7 +11,8 @@ use yew::html::{IntoEventCallback, IntoPropValue};
 
 use crate::prelude::*;
 use crate::props::{BuilderFn, IntoOptionalBuilderFn};
-use crate::widget::{Menu, MenuButton, Row, Container, SizeObserver};
+use crate::widget::{Row, Container, SizeObserver};
+use crate::widget::menu::{Menu, MenuButton};
 
 // Note about node_ref property: make it optional, and generate an
 // unique one in Component::create(). That way we can clone Properies without

@@ -31,11 +31,12 @@ pub use input::Input;
 mod input_panel;
 pub use input_panel::InputPanel;
 
+pub mod nav_menu;
+
 mod mask;
 pub use mask::{Mask, PwtMask};
 
-mod menu;
-pub use menu::{dispatch_menu_close_event, Menu, MenuBar, MenuEntry, MenuItem, MenuButton, MenuCheckbox, MenuEvent};
+pub mod menu;
 
 mod resizable;
 pub use resizable::Resizable;

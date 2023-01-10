@@ -11,7 +11,8 @@ use yew::virtual_dom::{Key, VComp, VNode};
 use yew::html::Scope;
 
 use crate::prelude::*;
-use crate::widget::{get_unique_element_id, Container, Fa, Menu, MenuEvent, MenuItem, MenuCheckbox};
+use crate::widget::{get_unique_element_id, Container, Fa};
+use crate::widget::menu::{Menu, MenuEvent, MenuItem, MenuCheckbox};
 
 use super::{
     IndexedHeader, IndexedHeaderSingle, IndexedHeaderGroup,

@@ -7,12 +7,12 @@ use yew::html::{IntoEventCallback, IntoPropValue};
 
 use crate::prelude::*;
 use crate::props::FieldStdProps;
-use crate::widget::{Container, MenuEvent};
+use crate::widget::Container;
 use crate::widget::form2::{FieldState, FieldStateMsg, ValidateFn};
 
-use super::MenuControllerMsg;
+use super::{MenuControllerMsg, MenuEvent};
 
-/// Checkbox/RadioGroup widget for [Menu](crate::widget::Menu)s.
+/// Checkbox/RadioGroup widget for [Menu](super::Menu)s.
 #[derive(Clone, PartialEq, Properties)]
 pub struct MenuCheckbox {
     /// Menu text (html inline text)

@@ -107,10 +107,10 @@
 
 //! ### Menus
 //!
-//! - [widget::Menu]:  A container for [MenuEntry](widget::MenuEntry)s.
-//! - [widget::MenuBar]: Operating system like menu bar.
-//! - [widget::MenuButton]: A button that opens a [Menu](widget::Menu).
-//! - [widget::MenuCheckbox]: Checkbox/RadioGroup widget for [Menu](widget::Menu)s.
+//! - [widget::menu::Menu]:  A container for [MenuEntry](widget::menu::MenuEntry)s.
+//! - [widget::menu::MenuBar]: Operating system like menu bar.
+//! - [widget::menu::MenuButton]: A button that opens a [Menu](widget::menu::Menu).
+//! - [widget::menu::MenuCheckbox]: Checkbox/RadioGroup widget for [Menu](widget::menu::Menu)s.
 
 //! ### DataTable and Trees 
 //!
@@ -127,7 +127,7 @@
 //! - [widget::AlertDialog]: Display error messages.
 //! - [component::EditWindow]: Input form inside a modal dialog.
 //! - [component::KVGrid]: Grid with two columns (key and value).
-//! - [component::NavigationMenu]: Navigation menu with routing support.
+//! - [widget::nav_menu::NavigationMenu]: Navigation menu with routing support.
 //! - [component::ObjectGrid]: Extends [KVGrid](component::KVGrid) with load/edit functionality.
 
 
@@ -142,7 +142,7 @@
 //! routing. Please note that navigation container can be nested.
 //!
 //! - [widget::TabPanel::navigation_container]
-//! - [component::NavigationMenu::navigation_container]
+//! - [widget::nav_menu::NavigationMenu::navigation_container]
 
 pub mod props;
 pub mod state;

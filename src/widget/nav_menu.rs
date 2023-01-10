@@ -1,3 +1,5 @@
+//! Navigation menus with router support.
+
 use std::collections::HashMap;
 use std::ops::Deref;
 

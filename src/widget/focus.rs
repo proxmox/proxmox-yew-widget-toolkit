@@ -244,7 +244,7 @@ pub fn update_roving_tabindex_el(el: web_sys::HtmlElement) {
 /// # Note
 ///
 /// This kind of member selection makes it possible to include more complex widget
-/// like [MenuButton](crate::widget::MenuButton)s inside a
+/// like [MenuButton](crate::widget::menu::MenuButton)s inside a
 /// [Toolbar](crate::widget::Toolbar).
 pub fn roving_tabindex_members(el: &web_sys::HtmlElement) -> Vec<web_sys::HtmlElement> {
     let mut members: Vec<web_sys::HtmlElement> = Vec::new();

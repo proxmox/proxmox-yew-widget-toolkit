@@ -1,8 +1,11 @@
+//! Operating system style menus.
+
 use std::rc::Rc;
 
 use gloo_timers::callback::Timeout;
 
 use yew::html::IntoEventCallback;
+
 use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 
