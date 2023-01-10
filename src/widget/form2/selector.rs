@@ -11,8 +11,7 @@ use proxmox_schema::Schema;
 use crate::prelude::*;
 use crate::props::{RenderFn, IntoLoadCallback, LoadCallback};
 use crate::state::{DataStore, Selection};
-use crate::widget::Dropdown;
-use crate::component::error_message;
+use crate::widget::{error_message, Dropdown};
 use super::{FieldState, FieldStateMsg, IntoValidateFn, ValidateFn};
 
 use pwt_macros::widget;

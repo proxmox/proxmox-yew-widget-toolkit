@@ -9,12 +9,11 @@ use yew::html::IntoEventCallback;
 
 use crate::prelude::*;
 use crate::props::{LoadCallback, IntoLoadCallback, RenderFn};
-use crate::widget::{Column, Dialog, Mask, Row};
+use crate::widget::{AlertDialog, Column, Dialog, Mask, Row};
 use crate::widget::form2::{
     Checkbox, Form, FormContext, SubmitButton, ResetButton,
     SubmitCallback, IntoSubmitCallback,
 };
-use crate::component::AlertDialog;
 
 #[derive(Clone, PartialEq, Properties)]
 pub struct EditWindow {

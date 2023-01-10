@@ -8,8 +8,7 @@ use yew::html::IntoPropValue;
 
 use crate::prelude::*;
 use crate::props::{LoadCallback, IntoLoadCallback};
-use crate::widget::{Button, Fa};
-use crate::component::error_message;
+use crate::widget::{error_message, Button, Fa};
 
 pub struct LoaderState<T> {
     pub loading: u64,

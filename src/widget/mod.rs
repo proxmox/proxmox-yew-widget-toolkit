@@ -3,6 +3,9 @@
 mod action_icon;
 pub use action_icon::{ActionIcon, PwtActionIcon};
 
+mod alert_dialog;
+pub use alert_dialog::{display_load_result, error_message, AlertDialog, PwtAlertDialog};
+
 mod button;
 pub use button::{Button, PwtButton};
 
