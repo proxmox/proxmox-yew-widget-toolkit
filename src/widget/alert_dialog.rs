@@ -45,6 +45,7 @@ impl AlertDialog {
     }
 }
 
+/// Creates a nicely formated error message.
 pub fn error_message(text: &str, class: &str) -> Html {
     let icon_class = "pwt-bg-color-error pwt-color-on-error pwt-p-2 pwt-shape-circle \
                       fa fa-lg fa-align-center fa-exclamation-triangle pwt-me-2";
@@ -59,7 +60,9 @@ pub fn error_message(text: &str, class: &str) -> Html {
         .into()
 }
 
-pub fn display_load_result<T>(result: &Option<Result<T, Error>>, render: impl Fn(&T) -> Html) -> Html {
+/* we currently doö not need this */
+/*
+pub fn display_load_result2<T>(result: &Option<Result<T, Error>>, render: impl Fn(&T) -> Html) -> Html {
     match result {
         None => html!{
             <div class="pwt-text-center pwt-p-4">
@@ -71,6 +74,7 @@ pub fn display_load_result<T>(result: &Option<Result<T, Error>>, render: impl Fn
         Some(Err(err)) => error_message(&format!("Error: {}", err), "pwt-p-2"),
     }
 }
+*/
 
 #[function_component(PwtAlertDialog)]
 #[doc(hidden)]
