@@ -67,7 +67,7 @@
 //! with a title. The widget is implemented using the relatively new
 //! Html `<dialog>` tag in order to get correct focus handling.
 //!
-//! The [AlertDialog](component::AlertDialog) is a convenient way to
+//! The [AlertDialog](widget::AlertDialog) is a convenient way to
 //! display error messages.
 //!
 //! Dialogs are also handy for displaying input forms. The specialized
@@ -124,7 +124,7 @@
 //! widgets, and usually include advanced state handling (i.e. loading
 //! data from an URL).
 //!
-//! - [component::AlertDialog]: Display error messages.
+//! - [widget::AlertDialog]: Display error messages.
 //! - [component::EditWindow]: Input form inside a modal dialog.
 //! - [component::KVGrid]: Grid with two columns (key and value).
 //! - [component::NavigationMenu]: Navigation menu with routing support.

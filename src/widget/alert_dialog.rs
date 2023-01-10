@@ -9,35 +9,39 @@ use yew::html::{IntoEventCallback, IntoPropValue};
 use crate::prelude::*;
 use crate::widget::{Button, Dialog, Fa, Row, Toolbar};
 
+/// Alert Dialog - Modal window to display error messages.
 #[derive(Clone, Properties, PartialEq)]
 pub struct AlertDialog {
+    /// Optional dialog title - defaults to "Alert".
     pub title: Option<AttrValue>,
+    /// The error message.
     pub message: String,
+    /// Close window callback.
     pub on_close: Option<Callback<()>>,
 }
 
 impl AlertDialog {
 
+    /// Create a new instance.
     pub fn new(message: impl Into<String>) -> Self {
         yew::props!(AlertDialog { message: message.into() })
     }
 
+    /// Builder style method to set the dialog title.
     pub fn title(mut self, title: impl IntoPropValue<Option<AttrValue>>) -> Self {
         self.set_title(title);
         self
     }
 
+    /// Method to set the dialog title.
     pub fn set_title(&mut self, title: impl IntoPropValue<Option<AttrValue>>) {
         self.title = title.into_prop_value();
     }
 
+    /// Builder style method to set the window close callback.
     pub fn on_close(mut self, cb: impl IntoEventCallback<()>) -> Self {
         self.on_close = cb.into_event_callback();
         self
-    }
-
-    pub fn html(self) -> VNode {
-        self.into()
     }
 }
 
