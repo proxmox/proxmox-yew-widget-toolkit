@@ -1,13 +1,11 @@
 use std::rc::Rc;
 
-use anyhow::Error;
-
 use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 use yew::html::{IntoEventCallback, IntoPropValue};
 
 use crate::prelude::*;
-use crate::widget::{Button, Dialog, Fa, Row, Toolbar};
+use crate::widget::{Button, Dialog, Row, Toolbar};
 
 /// Alert Dialog - Modal window to display error messages.
 #[derive(Clone, Properties, PartialEq)]
@@ -60,7 +58,7 @@ pub fn error_message(text: &str, class: &str) -> Html {
         .into()
 }
 
-/* we currently doö not need this */
+/* we currently do not need this */
 /*
 pub fn display_load_result2<T>(result: &Option<Result<T, Error>>, render: impl Fn(&T) -> Html) -> Html {
     match result {
