@@ -5,7 +5,7 @@ edition = "2021"
 authors = [
   "Dietmar Maurer <dietmar@proxmox.com>",
 ]
-license = "AGPLv3"
+license = "MIT"
 description = "Widgets for yew."
 keywords = ["web", "webasm", "javascript"]
 readme="README.md"
