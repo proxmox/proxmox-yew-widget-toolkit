@@ -23,8 +23,7 @@ pub struct Panel {
 impl Panel {
 
     pub fn new() -> Self {
-        Self::default()
-            .border(false)
+        Self::default().border(true)
     }
 
     pub fn title(mut self, title: impl IntoPropValue<Option<AttrValue>>) -> Self {
