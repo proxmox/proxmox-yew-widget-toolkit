@@ -41,6 +41,9 @@ pub use validate::{IntoValidateFn, ValidateFn};
 
 use serde_json::{json, Value};
 
+/// Proxmox API related helper: Delete empty values from the submit data.
+///
+/// And adds their names to the "delete" parameter.
 pub fn delete_empty_values(record: &Value, param_list: &[&str]) -> Value {
     let mut new = json!({});
     let mut delete: Vec<String> = Vec::new();

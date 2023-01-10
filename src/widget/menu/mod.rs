@@ -59,6 +59,8 @@ impl From<Html> for MenuEntry {
     }
 }
 
+/// Messages for the menu controller ([Menu], [MenuBar] or [MenuButton])
+#[doc(hidden)]
 pub enum MenuControllerMsg {
     Next,
     Previous,
@@ -196,6 +198,7 @@ impl Menu {
     }
 }
 
+#[doc(hidden)]
 pub enum Msg {
     Collapse,
     FocusChange(bool),
