@@ -70,9 +70,7 @@
 //! The [AlertDialog](widget::AlertDialog) is a convenient way to
 //! display error messages.
 //!
-//! Dialogs are also handy for displaying input forms. The specialized
-//! [EditWindow](component::EditWindow) makes it easy to implement such dialogs.
-
+//! Dialogs are also handy for displaying input forms.
 
 //! ### Forms and Fields
 //!
@@ -84,8 +82,7 @@
 //! implementation of complex field interactions.
 //!
 //! The form context is automatically provided when putting the fields
-//! inside a [Form](widget::form2::Form) or
-//! [EditWindow](component::EditWindow).
+//! inside a [Form](widget::form2::Form).
 //!
 //! The following field types are available.
 //!
@@ -111,27 +108,13 @@
 //! - [widget::menu::MenuBar]: Operating system like menu bar.
 //! - [widget::menu::MenuButton]: A button that opens a [Menu](widget::menu::Menu).
 //! - [widget::menu::MenuCheckbox]: Checkbox/RadioGroup widget for [Menu](widget::menu::Menu)s.
+//! - [widget::nav_menu::NavigationMenu]: Navigation menu with routing support.
 
 //! ### DataTable and Trees 
 //!
 //! The [DataTable](widget::data_table) widget is currently
 //! the most complex widget. It is able to display tables and trees, and
 //! has virtual scroll support.
-
-//! ## Components Overview
-//!
-//! Components are more complex objects composed from several basic
-//! widgets, and usually include advanced state handling (i.e. loading
-//! data from an URL).
-//!
-//! - [widget::AlertDialog]: Display error messages.
-//! - [component::EditWindow]: Input form inside a modal dialog.
-//! - [component::KVGrid]: Grid with two columns (key and value).
-//! - [widget::nav_menu::NavigationMenu]: Navigation menu with routing support.
-//! - [component::ObjectGrid]: Extends [KVGrid](component::KVGrid) with load/edit functionality.
-
-
-
 
 //! ## Router
 //!
@@ -147,7 +130,6 @@
 pub mod props;
 pub mod state;
 pub mod widget;
-pub mod component;
 
 #[doc(hidden)]
 pub mod web_sys_ext;
