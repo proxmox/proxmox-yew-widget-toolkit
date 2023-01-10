@@ -89,6 +89,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 
 static UNIQUE_ELEMENT_ID: AtomicUsize = AtomicUsize::new(0);
 
+/// Creates an unique element ID (`PwtElementId{unique_num}`)
 pub fn get_unique_element_id() -> String {
     let id = UNIQUE_ELEMENT_ID.fetch_add(1, Ordering::SeqCst);
     format!("PwtElementId{}", id)

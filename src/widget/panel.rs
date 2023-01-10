@@ -8,12 +8,16 @@ use pwt_macros::widget;
 use crate::prelude::*;
 use crate::widget::Row;
 
+/// Container with header and body.
 #[widget(pwt=crate, @element, @container)]
 #[derive(Default, Debug, Clone)]
 pub struct Panel {
+    /// Optional header text.
     pub title: Option<AttrValue>,
+    /// Tools, displayed right aligned in the header.
     pub tools: Vec<VNode>,
-    pub header_classes: Classes,
+    /// Optional header CSS class.
+    pub header_class: Classes,
 }
 
 impl Panel {
@@ -42,7 +46,7 @@ impl Panel {
     }
 
     pub fn add_header_class(&mut self, class: impl Into<Classes>) {
-        self.header_classes.push(class);
+        self.header_class.push(class);
     }
 
     pub fn header_class(mut self, class: impl Into<Classes>) -> Self {
@@ -58,7 +62,7 @@ impl Into<VTag> for Panel {
         if self.title.is_some() || !self.tools.is_empty() {
             let header = create_panel_title(self.title, self.tools)
                 .class("pwt-panel-header")
-                .class(self.header_classes);
+                .class(self.header_class);
             self.children.insert(0, header.into());
         }
 
