@@ -31,7 +31,7 @@ use super::focus::{roving_tabindex_next, init_roving_tabindex, update_roving_tab
 /// the last element, focus the first element.
 ///
 /// * `Left Arrow`: Moves focus one cell to the left. If focus is on
-/// the firs element, focus the last element.
+/// the first element, focus the last element.
 #[widget(pwt=crate, comp=PwtToolbar, @element, @container)]
 #[derive(Properties, PartialEq, Clone)]
 pub struct Toolbar {}
