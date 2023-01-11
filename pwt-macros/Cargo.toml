@@ -2,6 +2,8 @@
 name = "pwt-macros"
 version = "0.1.0"
 edition = "2021"
+license = "MIT OR Apache-2.0"
+exclude = [ "debian" ]
 
 [lib]
 proc-macro = true
@@ -9,5 +11,5 @@ proc-macro = true
 [dependencies]
 lazy_static = "1"
 proc-macro2 = "1"
-syn = "1"
+syn = { version = "1" , features = [ "extra-traits" ] }
 quote = "1"

@@ -1,0 +1,6 @@
+rust-pwt-macros (0.1.0-1) unstable; urgency=medium
+
+  * initial Debian package
+
+ -- Proxmox Support Team <support@proxmox.com>  Wed, 11 Jan 2023 12:29:31 +0100
+
