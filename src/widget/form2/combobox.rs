@@ -4,6 +4,7 @@ use yew::prelude::*;
 use yew::virtual_dom::Key;
 use yew::html::{IntoEventCallback, IntoPropValue};
 
+#[cfg(feature="proxmox-schema")]
 use proxmox_schema::Schema;
 
 use crate::prelude::*;
@@ -119,12 +120,14 @@ impl Combobox {
     }
 
     /// Builder style method to set the validation schema
+    #[cfg(feature="proxmox-schema")]
     pub fn schema(mut self, schema: &'static Schema) -> Self {
         self.set_schema(schema);
         self
     }
 
     /// Method to set the validation schema
+    #[cfg(feature="proxmox-schema")]
     pub fn set_schema(&mut self, schema: &'static Schema) {
         self.set_validate(move |(value, _store): &(String, _)| {
             schema.parse_simple_value(value)?;

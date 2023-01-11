@@ -5,6 +5,7 @@ use serde_json::Value;
 use yew::prelude::*;
 use yew::html::{IntoEventCallback, IntoPropValue};
 
+#[cfg(feature="proxmox-schema")]
 use proxmox_schema::Schema;
 
 use crate::prelude::*;
@@ -154,12 +155,14 @@ impl Field {
     }
 
     /// Builder style method to set the validation schema
+    #[cfg(feature="proxmox-schema")]
     pub fn schema(mut self, schema: &'static Schema) -> Self {
         self.set_schema(schema);
         self
     }
 
     /// Method to set the validation schema
+    #[cfg(feature="proxmox-schema")]
     pub fn set_schema(&mut self, schema: &'static Schema) {
         match schema {
             Schema::Integer(s) => {

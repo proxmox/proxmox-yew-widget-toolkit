@@ -49,7 +49,11 @@ percent-encoding = "2.1"
 
 pwt-macros = { path = "pwt-macros" }
 
-proxmox-schema = "1"
+proxmox-schema = { version = "1", optional = true }
+
+[features]
+default = []
+proxmox-schema = [ "dep:proxmox-schema" ]
 
 [patch.crates-io.proxmox-schema]
 path = "../proxmox/proxmox-schema"
