@@ -12,17 +12,18 @@
 //!
 //! Here's an example of creating a simple list:
 //! ```
+//! use yew::prelude::*;
 //! use pwt::prelude::*;
 //! use pwt::widget::{Button, Column};
 //!
-//! let html = Column::new()
+//! let html: Html = Column::new()
 //!    .padding(2)
 //!    .gap(2)
 //!    .with_child("This is the first line (simple Text).")
 //!    .with_child(Button::new("A Button"))
-//!    //.with_child(html!{
-//!    //    <h2>{"heading created using the Yew html macro"}</h2>
-//!    //})
+//!    .with_child(html!{
+//!        <h2>{"heading created using the Yew html macro"}</h2>
+//!    })
 //!    .into();
 //! ```
 //!
