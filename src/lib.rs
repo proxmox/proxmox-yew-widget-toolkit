@@ -134,7 +134,7 @@ pub mod widget;
 #[doc(hidden)]
 pub mod web_sys_ext;
 
-// Bindgen java code from js-helper-module.js
+// Bindgen javascript code from js-helper-module.js
 use wasm_bindgen::{self, prelude::*};
 #[wasm_bindgen(module = "/js-helper-module.js")]
 #[cfg(target_arch="wasm32")]
@@ -153,13 +153,15 @@ extern "C" {
 // Create wrapper which panics if called from target_arch!=wasm32
 // This allows us to run tests with "cargo test".
 #[cfg(not(target_arch="wasm32"))]
-pub(crate) fn create_popper(_content: web_sys::Node, _tip: web_sys::Node, _opts: &JsValue) -> JsValue { unreachable!() }
+pub(crate) use panic_wrapper::*;
 #[cfg(not(target_arch="wasm32"))]
-pub(crate) fn update_popper(_popper: &JsValue) { unreachable!() }
-#[cfg(not(target_arch="wasm32"))]
-pub(crate) fn show_modal_dialog(_dialog: web_sys::Node) { unreachable!() }
-#[cfg(not(target_arch="wasm32"))]
-pub(crate) fn close_dialog(_dialog: web_sys::Node) { unreachable!() }
+mod panic_wrapper {
+    use wasm_bindgen::JsValue;
+    pub fn create_popper(_content: web_sys::Node, _tip: web_sys::Node, _opts: &JsValue) -> JsValue { unreachable!() }
+    pub fn update_popper(_popper: &JsValue) { unreachable!() }
+    pub fn show_modal_dialog(_dialog: web_sys::Node) { unreachable!() }
+    pub fn close_dialog(_dialog: web_sys::Node) { unreachable!() }
+}
 
 // some helpers
 
