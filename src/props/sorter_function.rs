@@ -3,6 +3,8 @@ use std::cmp::Ordering;
 
 use derivative::Derivative;
 
+/// A [SorterFn] function is a callback that determines record ordering.
+///
 /// Wraps `Rc` around `Fn` so it can be passed as a prop.
 #[derive(Derivative)]
 #[derivative(Clone(bound=""), PartialEq(bound=""))]
@@ -22,6 +24,7 @@ impl<T> SorterFn<T> {
     }
 }
 
+/// Helper trait to create an optional [SorterFn] property.
 pub trait IntoSorterFn<T> {
     fn into_sorter_fn(self) -> Option<SorterFn<T>>;
 }
