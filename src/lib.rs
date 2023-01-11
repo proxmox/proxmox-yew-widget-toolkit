@@ -12,7 +12,6 @@
 //!
 //! Here's an example of creating a simple list:
 //! ```
-//! use yew::prelude::*;
 //! use pwt::prelude::*;
 //! use pwt::widget::{Button, Column};
 //!
@@ -111,7 +110,7 @@
 //! - [widget::menu::MenuCheckbox]: Checkbox/RadioGroup widget for [Menu](widget::menu::Menu)s.
 //! - [widget::nav_menu::NavigationMenu]: Navigation menu with routing support.
 
-//! ### DataTable and Trees 
+//! ### DataTable and Trees
 //!
 //! The [DataTable](widget::data_table) widget is currently
 //! the most complex widget. It is able to display tables and trees, and
@@ -180,8 +179,13 @@ pub fn to_js_value<T:  Serialize + ?Sized>(value: &T) -> Result<JsValue, serde_w
 /// ```
 /// use pwt::prelude::*;
 /// ```
+///
+/// This also re-exports the yew prelude: `use yew::prelude::*;`
 
 pub mod prelude {
+    #[doc(hidden)]
+    pub use yew::prelude::*;
+
     pub use crate::props::WidgetBuilder;
     pub use crate::props::ContainerBuilder;
     pub use crate::props::FieldBuilder;
