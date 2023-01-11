@@ -166,6 +166,7 @@ mod panic_wrapper {
 // some helpers
 
 use serde::Serialize;
+/// Serialize data into a [JsValue] using `serde_wasm_bindgen`.
 pub fn to_js_value<T:  Serialize + ?Sized>(value: &T) -> Result<JsValue, serde_wasm_bindgen::Error> {
     value.serialize(&serde_wasm_bindgen::Serializer::json_compatible())
 }
