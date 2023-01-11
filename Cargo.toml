@@ -22,7 +22,6 @@ members = [
     "examples/form",
     "examples/loader",
     "examples/router",
-    "examples/tauri-example",
     "examples/themes",
 ]
 
