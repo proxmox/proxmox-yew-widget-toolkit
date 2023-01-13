@@ -182,7 +182,6 @@ impl Component for PwtResizable {
             let link = ctx.link().clone();
             move |event: KeyboardEvent| {
                 let key: &str = &event.key();
-                log::info!("TEST {}", key);
                 match key {
                     "Enter" => {
                         event.stop_propagation();
