@@ -11,6 +11,7 @@ choice. Most code can be written in rust, but it is still possible to
 use JavaScript. This allows to use existing JavaScript libraries when
 necessary.
 
+The [Whitepaper](Whitepaper.md) contains more details on this.
 
 Install
 =======
