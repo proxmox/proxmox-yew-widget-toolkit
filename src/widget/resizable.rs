@@ -46,6 +46,10 @@ pub struct PwtResizable {
 
 
 pub enum Msg {
+    ArrowUp,
+    ArrowDown,
+    ArrowLeft,
+    ArrowRight,
     ResetSize,
     StartResize,
     StopResize,
@@ -83,6 +87,50 @@ impl Component for PwtResizable {
                         on_resize.emit(self.size);
                     }
                 }
+                true
+            }
+            Msg::ArrowUp => {
+                if !props.vertical { return false; }
+                if self.size == 0 {
+                    if let Some(el) = self.node_ref.cast::<web_sys::Element>() {
+                        let rect = el.get_bounding_client_rect();
+                        self.size = rect.y() as i32 - 11;
+                    }
+                }
+                self.size = (self.size - 1).max(10);
+                true
+            }
+            Msg::ArrowDown => {
+                if !props.vertical { return false; }
+                if self.size == 0 {
+                    if let Some(el) = self.node_ref.cast::<web_sys::Element>() {
+                        let rect = el.get_bounding_client_rect();
+                        self.size = rect.y() as i32 - 11;
+                    }
+                }
+                self.size = (self.size + 1).max(10);
+                true
+            }
+            Msg::ArrowLeft => {
+                if props.vertical { return false; }
+                if self.size == 0 {
+                    if let Some(el) = self.node_ref.cast::<web_sys::Element>() {
+                        let rect = el.get_bounding_client_rect();
+                        self.size = rect.x() as i32 - 15;
+                    }
+                }
+                self.size = (self.size - 1).max(10);
+                true
+            }
+            Msg::ArrowRight => {
+                if props.vertical { return false; }
+                if self.size == 0 {
+                    if let Some(el) = self.node_ref.cast::<web_sys::Element>() {
+                        let rect = el.get_bounding_client_rect();
+                        self.size = rect.x() as i32 - 15;
+                    }
+                }
+                self.size = (self.size + 1).max(10);
                 true
             }
             Msg::ResetSize => {
@@ -130,6 +178,37 @@ impl Component for PwtResizable {
         let onmousedown = ctx.link().callback(|_| Msg::StartResize);
         let ondblclick = ctx.link().callback(|_| Msg::ResetSize);
 
+        let onkeydown = Callback::from({
+            let link = ctx.link().clone();
+            move |event: KeyboardEvent| {
+                let key: &str = &event.key();
+                log::info!("TEST {}", key);
+                match key {
+                    "Enter" => {
+                        event.stop_propagation();
+                        link.send_message(Msg::ResetSize);
+                    }
+                    "ArrowUp" => {
+                        event.stop_propagation();
+                        link.send_message(Msg::ArrowUp);
+                    }
+                    "ArrowDown" => {
+                        event.stop_propagation();
+                        link.send_message(Msg::ArrowDown);
+                    }
+                    "ArrowLeft" => {
+                        event.stop_propagation();
+                        link.send_message(Msg::ArrowLeft);
+                    }
+                    "ArrowRight" => {
+                        event.stop_propagation();
+                        link.send_message(Msg::ArrowRight);
+                    }
+                    _ => {}
+                }
+            }
+        });
+
         let child_style = if self.size > 0 {
             if props.vertical {
                 Some(format!("height:{}px;", self.size))
@@ -150,7 +229,7 @@ impl Component for PwtResizable {
         html! {
             <div ref={self.node_ref.clone()} style={style}>
                 <div style={child_style} class="pwt-flex-fill pwt-overflow-auto">{props.child.clone()}</div>
-                <div style="flex: 0 0 auto;" {onmousedown} {ondblclick} class={splitter_class}/>
+                <div tabindex="0" style="flex: 0 0 auto;" {onkeydown} {onmousedown} {ondblclick} class={splitter_class}/>
             </div>
         }
     }
