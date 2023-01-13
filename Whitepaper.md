@@ -36,9 +36,9 @@ use [Yew](https://yew.rs) as base, because
 - Quite stable so far.
 
 - Possible to ship native apps using [Tauri](https://tauri.app). So it
-  is kink of cross-platform.
+  is kind of cross-platform.
 
-- Future prove: Sure, I'm no psychic, but I'm pretty confident that
+- Future prove: Sure, I'm no clairvoyant, but I'm pretty confident that
   this technology will last for the next 30 years.
 
 - Great debug environment (browser).
