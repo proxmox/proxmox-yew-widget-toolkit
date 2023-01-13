@@ -1,56 +1,94 @@
+use std::rc::Rc;
+
 use yew::prelude::*;
+use yew::virtual_dom::{VComp, VNode, Key};
 
 use gloo_events::EventListener;
 use wasm_bindgen::JsCast;
 use wasm_bindgen::UnwrapThrowExt;
 
-
+#[derive(Clone, PartialEq, Properties)]
 pub struct Resizable {
+    #[prop_or_default]
     node_ref: NodeRef,
-    width: i32,
+    pub key: Option<Key>,
+
+    pub on_resize: Option<Callback<i32>>,
+
+    #[prop_or_default]
+    pub vertical: bool,
+
+    pub child: VNode,
+}
+
+impl Resizable {
+    /// Creates a new instance
+    pub fn new(child: impl Into<Html>) -> Self {
+        yew::props!(Self { child: child.into() })
+    }
+
+    pub fn vertical(mut self, vertical: bool) -> Self {
+        self.set_vertical(vertical);
+        self
+    }
+
+    pub fn set_vertical(&mut self, vertical: bool) {
+        self.vertical = vertical;
+    }
+}
+
+pub struct PwtResizable {
+    node_ref: NodeRef,
+    size: i32,
     mousemove_listener: Option<EventListener>,
     mouseup_listener: Option<EventListener>,
 }
 
+
 pub enum Msg {
+    ResetSize,
     StartResize,
     StopResize,
-    MouseMove(i32)
+    MouseMove(i32, i32)
 }
 
-#[derive(Clone, PartialEq, Properties)]
-pub struct Props {
-    pub justify: String, // flex-start, flex-end, center
-    pub onresize: Callback<i32>,
-    #[prop_or_default]
-    pub children: Children,
-}
-
-impl Component for Resizable {
+impl Component for PwtResizable {
     type Message = Msg;
-    type Properties = Props;
+    type Properties = Resizable;
 
     fn create(_ctx: &Context<Self>) -> Self {
         Self {
             node_ref: NodeRef::default(),
-            width: 0,
+            size: 0,
             mousemove_listener: None,
             mouseup_listener: None,
         }
     }
 
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
+        let props = ctx.props();
         match msg {
-            Msg::MouseMove(x) => {
+            Msg::MouseMove(x, y) => {
                 if let Some(el) = self.node_ref.cast::<web_sys::Element>() {
 
                     let rect = el.get_bounding_client_rect();
-                    let new_width = x - (rect.x() as i32);
-                    //log::info!("MOVE {} {} {} {}", el.client_left(), rect.x(), x, new_width);
-                    self.width = new_width.max(40);
-                    ctx.props().onresize.emit(self.width);
-                } else {
-                    unreachable!();
+
+                    let new_size =  if props.vertical {
+                        y - (rect.y() as i32) + 4
+                    } else {
+                        x - (rect.x() as i32) + 4
+                    };
+                    self.size = new_size.max(10);
+                    if let Some(on_resize) = &props.on_resize {
+                        on_resize.emit(self.size);
+                    }
+                }
+                true
+            }
+            Msg::ResetSize => {
+                self.size = 0;
+                if let Some(on_resize) = &props.on_resize {
+                    on_resize.emit(self.size);
                 }
                 true
             }
@@ -64,7 +102,7 @@ impl Component for Resizable {
                 let link = ctx.link();
                 let onmousemove = link.callback(|e: Event| {
                     let event = e.dyn_ref::<web_sys::MouseEvent>().unwrap_throw();
-                    Msg::MouseMove(event.client_x())
+                    Msg::MouseMove(event.client_x(), event.client_y())
                 });
                 let mousemove_listener = EventListener::new(
                     &window,
@@ -87,27 +125,41 @@ impl Component for Resizable {
     }
 
     fn view(&self, ctx: &Context<Self>) -> Html {
+        let props = ctx.props();
 
         let onmousedown = ctx.link().callback(|_| Msg::StartResize);
+        let ondblclick = ctx.link().callback(|_| Msg::ResetSize);
 
-        let style = "height:100%;display:flex; align-items:stretch; justify-content:space-between;";
-        let style = if self.width > 0 {
-            format!("{} width: {}px;", style, self.width)
+        let child_style = if self.size > 0 {
+            if props.vertical {
+                Some(format!("height:{}px;", self.size))
+            } else {
+                Some(format!("width:{}px;", self.size))
+            }
         } else {
-            format!("{}", style)
+            None
         };
 
-        let title_style = format!(
-            "display: flex; flex: 1 1 auto; align-items:flex-end; justify-content: {};",
-            ctx.props().justify,
-        );
+        let style = if props.vertical {
+            "display:flex;flex-direction:column;align-items:stretch;"
+        } else {
+            "display:flex;flex-direction:row;align-items:stretch;"
+        };
+
+        let splitter_class =  if props.vertical { "column-split-handle" } else { "row-split-handle" };
         html! {
             <div ref={self.node_ref.clone()} style={style}>
-                <div style={title_style}>
-                   { for ctx.props().children.iter() }
-                </div>
-                <div {onmousedown} class="resize-handle"/>
-                </div>
+                <div style={child_style} class="pwt-flex-fill pwt-overflow-auto">{props.child.clone()}</div>
+                <div style="flex: 0 0 auto;" {onmousedown} {ondblclick} class={splitter_class}/>
+            </div>
         }
+    }
+}
+
+impl Into<VNode> for Resizable {
+    fn into(self) -> VNode {
+        let key = self.key.clone();
+        let comp = VComp::new::<PwtResizable>(Rc::new(self), key);
+        VNode::from(comp)
     }
 }
