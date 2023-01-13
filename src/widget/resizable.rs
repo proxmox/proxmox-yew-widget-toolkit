@@ -38,8 +38,9 @@ impl Resizable {
 }
 
 pub struct PwtResizable {
-    node_ref: NodeRef,
+    child_ref: NodeRef,
     size: i32,
+    drag_offset: i32,
     mousemove_listener: Option<EventListener>,
     mouseup_listener: Option<EventListener>,
 }
@@ -51,7 +52,7 @@ pub enum Msg {
     ArrowLeft,
     ArrowRight,
     ResetSize,
-    StartResize,
+    StartResize(i32, i32),
     StopResize,
     MouseMove(i32, i32)
 }
@@ -62,8 +63,9 @@ impl Component for PwtResizable {
 
     fn create(_ctx: &Context<Self>) -> Self {
         Self {
-            node_ref: NodeRef::default(),
+            child_ref: NodeRef::default(),
             size: 0,
+            drag_offset: 0,
             mousemove_listener: None,
             mouseup_listener: None,
         }
@@ -73,14 +75,13 @@ impl Component for PwtResizable {
         let props = ctx.props();
         match msg {
             Msg::MouseMove(x, y) => {
-                if let Some(el) = self.node_ref.cast::<web_sys::Element>() {
-
+                if let Some(el) = self.child_ref.cast::<web_sys::Element>() {
                     let rect = el.get_bounding_client_rect();
 
                     let new_size =  if props.vertical {
-                        y - (rect.y() as i32) + 4
+                        y - (rect.y() as i32) - self.drag_offset
                     } else {
-                        x - (rect.x() as i32) + 4
+                        x - (rect.x() as i32) - self.drag_offset
                     };
                     self.size = new_size.max(10);
                     if let Some(on_resize) = &props.on_resize {
@@ -92,9 +93,9 @@ impl Component for PwtResizable {
             Msg::ArrowUp => {
                 if !props.vertical { return false; }
                 if self.size == 0 {
-                    if let Some(el) = self.node_ref.cast::<web_sys::Element>() {
+                    if let Some(el) = self.child_ref.cast::<web_sys::Element>() {
                         let rect = el.get_bounding_client_rect();
-                        self.size = rect.y() as i32 - 11;
+                        self.size = rect.height() as i32;
                     }
                 }
                 self.size = (self.size - 1).max(10);
@@ -103,9 +104,9 @@ impl Component for PwtResizable {
             Msg::ArrowDown => {
                 if !props.vertical { return false; }
                 if self.size == 0 {
-                    if let Some(el) = self.node_ref.cast::<web_sys::Element>() {
+                    if let Some(el) = self.child_ref.cast::<web_sys::Element>() {
                         let rect = el.get_bounding_client_rect();
-                        self.size = rect.y() as i32 - 11;
+                        self.size = rect.height() as i32
                     }
                 }
                 self.size = (self.size + 1).max(10);
@@ -114,9 +115,9 @@ impl Component for PwtResizable {
             Msg::ArrowLeft => {
                 if props.vertical { return false; }
                 if self.size == 0 {
-                    if let Some(el) = self.node_ref.cast::<web_sys::Element>() {
+                    if let Some(el) = self.child_ref.cast::<web_sys::Element>() {
                         let rect = el.get_bounding_client_rect();
-                        self.size = rect.x() as i32 - 15;
+                        self.size = rect.width() as i32;
                     }
                 }
                 self.size = (self.size - 1).max(10);
@@ -125,9 +126,9 @@ impl Component for PwtResizable {
             Msg::ArrowRight => {
                 if props.vertical { return false; }
                 if self.size == 0 {
-                    if let Some(el) = self.node_ref.cast::<web_sys::Element>() {
+                    if let Some(el) = self.child_ref.cast::<web_sys::Element>() {
                         let rect = el.get_bounding_client_rect();
-                        self.size = rect.x() as i32 - 15;
+                        self.size = rect.width() as i32;
                     }
                 }
                 self.size = (self.size + 1).max(10);
@@ -143,9 +144,12 @@ impl Component for PwtResizable {
             Msg::StopResize => {
                 self.mouseup_listener = None;
                 self.mousemove_listener = None;
+                self.drag_offset = 0;
                 false
             }
-            Msg::StartResize => {
+            Msg::StartResize(x, y) => {
+                self.drag_offset = if props.vertical { y } else { x };
+
                 let window = web_sys::window().unwrap();
                 let link = ctx.link();
                 let onmousemove = link.callback(|e: Event| {
@@ -175,7 +179,7 @@ impl Component for PwtResizable {
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
 
-        let onmousedown = ctx.link().callback(|_| Msg::StartResize);
+        let onmousedown = ctx.link().callback(|event: MouseEvent| Msg::StartResize(event.offset_x(), event.offset_y()));
         let ondblclick = ctx.link().callback(|_| Msg::ResetSize);
 
         let onkeydown = Callback::from({
@@ -226,8 +230,8 @@ impl Component for PwtResizable {
 
         let splitter_class =  if props.vertical { "column-split-handle" } else { "row-split-handle" };
         html! {
-            <div ref={self.node_ref.clone()} style={style}>
-                <div style={child_style} class="pwt-flex-fill pwt-overflow-auto">{props.child.clone()}</div>
+            <div ref={props.node_ref.clone()} style={style}>
+                <div ref={self.child_ref.clone()} style={child_style} class="pwt-flex-fill pwt-overflow-auto">{props.child.clone()}</div>
                 <div tabindex="0" style="flex: 0 0 auto;" {onkeydown} {onmousedown} {ondblclick} class={splitter_class}/>
             </div>
         }
