@@ -7,6 +7,9 @@ use gloo_events::EventListener;
 use wasm_bindgen::JsCast;
 use wasm_bindgen::UnwrapThrowExt;
 
+use crate::widget::Container;
+use crate::props::{ContainerBuilder, EventSubscriber, WidgetBuilder};
+
 #[derive(Clone, PartialEq, Properties)]
 pub struct Resizable {
     #[prop_or_default]
@@ -212,6 +215,16 @@ impl Component for PwtResizable {
             }
         });
 
+        let splitter = Container::new()
+            .attribute("tabindex", "0")
+            .attribute("role", "separator")
+            .attribute("aria-orientation", if props.vertical { "vertical" } else { "horizontal" })
+            .attribute("style", "flex: 0 0 auto;")
+            .class(if props.vertical { "column-split-handle" } else { "row-split-handle" })
+            .onkeydown(onkeydown)
+            .onmousedown(onmousedown)
+            .ondblclick(ondblclick);
+
         let child_style = if self.size > 0 {
             if props.vertical {
                 Some(format!("height:{}px;", self.size))
@@ -222,19 +235,23 @@ impl Component for PwtResizable {
             None
         };
 
-        let style = if props.vertical {
-            "display:flex;flex-direction:column;align-items:stretch;"
-        } else {
-            "display:flex;flex-direction:row;align-items:stretch;"
-        };
+        let child = Container::new()
+            .node_ref(self.child_ref.clone())
+            .attribute("style", child_style)
+            .class("pwt-flex-fill")
+            .class("pwt-overflow-auto")
+            .with_child(props.child.clone());
 
-        let splitter_class =  if props.vertical { "column-split-handle" } else { "row-split-handle" };
-        html! {
-            <div ref={props.node_ref.clone()} style={style}>
-                <div ref={self.child_ref.clone()} style={child_style} class="pwt-flex-fill pwt-overflow-auto">{props.child.clone()}</div>
-                <div tabindex="0" style="flex: 0 0 auto;" {onkeydown} {onmousedown} {ondblclick} class={splitter_class}/>
-            </div>
-        }
+        Container::new()
+            .node_ref(props.node_ref.clone())
+            .attribute("style", if props.vertical {
+                "display:flex;flex-direction:column;align-items:stretch;"
+            } else {
+                "display:flex;flex-direction:row;align-items:stretch;"
+            })
+            .with_child(child)
+            .with_child(splitter)
+            .into()
     }
 }
 
