@@ -57,6 +57,7 @@
 //! - [widget::Column]: Vertical container with flex layout.
 //! - [widget::Panel]: Container with title.
 //! - [widget::InputPanel]: Container to create simple forms.
+//! - [widget::SplitPane]: Container where children are separated by a draggable sparator.
 //! - [widget::TabPanel]: A set of layered items where only one item is displayed at a time.
 //! - [widget::Toolbar]: Horizontal container for buttons.
 //!
