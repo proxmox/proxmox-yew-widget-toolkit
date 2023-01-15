@@ -196,6 +196,7 @@ pub struct PwtSplitPane {
 pub enum Msg {
     Shrink(usize, bool),
     Grow(usize, bool),
+    ResetSize,
     StartResize(usize, i32, i32),
     StopResize,
     MouseMove(usize, i32, i32)
@@ -211,30 +212,28 @@ impl PwtSplitPane {
             let link = ctx.link().clone();
             move |event: KeyboardEvent| {
                 let key: &str = &event.key();
-                if vertical {
-                    match key {
-                        "ArrowUp" => {
-                            event.stop_propagation();
-                            link.send_message(Msg::Shrink(index, event.shift_key()));
-                        }
-                        "ArrowDown" => {
-                            event.stop_propagation();
-                            link.send_message(Msg::Grow(index, event.shift_key()));
-                        }
-                        _ => {}
+                match key {
+                    "Enter" => {
+                        event.stop_propagation();
+                        link.send_message(Msg::ResetSize);
                     }
-                } else {
-                    match key {
-                        "ArrowLeft" => {
-                            event.stop_propagation();
-                            link.send_message(Msg::Shrink(index, event.shift_key()));
-                        }
-                        "ArrowRight" => {
-                            event.stop_propagation();
-                            link.send_message(Msg::Grow(index, event.shift_key()));
-                        }
-                        _ => {}
+                    "ArrowUp" if vertical => {
+                        event.stop_propagation();
+                        link.send_message(Msg::Shrink(index, event.shift_key()));
                     }
+                    "ArrowDown" if vertical  => {
+                        event.stop_propagation();
+                        link.send_message(Msg::Grow(index, event.shift_key()));
+                    }
+                    "ArrowLeft" if !vertical  => {
+                        event.stop_propagation();
+                        link.send_message(Msg::Shrink(index, event.shift_key()));
+                    }
+                    "ArrowRight" if !vertical => {
+                        event.stop_propagation();
+                        link.send_message(Msg::Grow(index, event.shift_key()));
+                    }
+                    _ => {}
                 }
             }
         });
@@ -247,6 +246,7 @@ impl PwtSplitPane {
             .attribute("style", "flex: 0 0 auto;")
             .class(if props.vertical { "column-split-handle" } else { "row-split-handle" })
             .onkeydown(onkeydown)
+            .ondblclick(ctx.link().callback(|_| Msg::ResetSize))
             .onmousedown(ctx.link().callback(move |event: MouseEvent| {
                 Msg::StartResize(index, event.offset_x(), event.offset_y())
             }));
@@ -422,6 +422,11 @@ impl Component for PwtSplitPane {
 
                 false
             }
+            Msg::ResetSize => {
+                self.sizes = Vec::new();
+                true
+            }
+
             Msg::Shrink(child_index, fast) => {
                 let amount = if fast { 10.0 } else { 1.0 };
                 self.resize_pane(props, child_index, self.sizes[child_index] - amount)
