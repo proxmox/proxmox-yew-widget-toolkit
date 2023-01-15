@@ -1,0 +1,470 @@
+use std::borrow::Cow;
+
+use yew::prelude::*;
+use yew::virtual_dom::{Listeners, VNode, VList, VTag, Key};
+use yew::html::IntoPropValue;
+
+use gloo_events::EventListener;
+use wasm_bindgen::{JsCast, UnwrapThrowExt};
+
+use crate::widget::Container;
+use crate::props::{ContainerBuilder, EventSubscriber, WidgetBuilder};
+
+use pwt_macros::widget;
+
+#[derive(Copy, Clone, PartialEq)]
+enum PaneSize {
+    Fraction(f64),
+    Pixel(usize),
+    Flex(usize),
+}
+
+impl PaneSize {
+
+    fn to_css_size(&self, reserve: f64) -> String {
+        match self {
+            Self::Fraction(ratio) => {
+                format!("calc((100% - {reserve}px)*{ratio})")
+            }
+            Self::Pixel(p) => format!("{p}px"),
+            Self::Flex(_f) => unreachable!(), /* we do not support this */
+        }
+    }
+
+     fn to_css_flex(&self, reserve: f64) -> String {
+        match self {
+            Self::Fraction(ratio) => {
+                format!("flex: 0 0 calc((100% - {reserve}px)*{ratio});")
+            }
+            Self::Pixel(p) => format!("flex: 0 0 {p}px;"),
+            Self::Flex(f) =>  format!("flex: {f} 1 0px;"),
+        }
+    }
+
+    fn real_size(&self, sizes: &[f64]) -> f64 {
+        let width: f64 = sizes.iter().sum();
+        match self {
+            Self::Fraction(ratio) => width * ratio,
+            Self::Pixel(p) => *p as f64,
+            Self::Flex(_f) => unreachable!(), /* we do not support this */
+        }
+    }
+}
+
+/// Pane Options
+#[derive(Clone, PartialEq)]
+pub struct Pane {
+    /// Initial pane size (CSS width, i.e "20px", "10%", "10em")
+    size: Option<PaneSize>,
+    /// Minimal pane size (CSS width)
+    min_size: Option<PaneSize>,
+    /// Maximal pane size (CSS width)
+    max_size: Option<PaneSize>,
+
+    node_ref: NodeRef,
+    /// Pane content
+    content: VNode,
+}
+
+impl Pane {
+
+    pub fn new(content: impl Into<VNode>) -> Self {
+        Self {
+            size: None,
+            min_size: None,
+            max_size: None,
+            node_ref: NodeRef::default(),
+            content: content.into(),
+        }
+    }
+
+    pub fn size(mut self, size: impl IntoPropValue<Option<usize>>) -> Self {
+        self.set_size(size);
+        self
+    }
+
+    pub fn set_size(&mut self, size: impl IntoPropValue<Option<usize>>) {
+        self.size = size.into_prop_value().map(|p| PaneSize::Pixel(p));
+    }
+
+    pub fn flex(mut self, flex: impl IntoPropValue<Option<usize>>) -> Self {
+        self.set_flex(flex);
+        self
+    }
+
+    pub fn set_flex(&mut self, flex: impl IntoPropValue<Option<usize>>) {
+        self.size = flex.into_prop_value().map(|f| PaneSize::Flex(f));
+    }
+
+    pub fn fraction(mut self, fraction: impl IntoPropValue<Option<f64>>) -> Self {
+        self.set_fraction(fraction);
+        self
+    }
+
+    pub fn set_fraction(&mut self, fraction: impl IntoPropValue<Option<f64>>) {
+       self.size = fraction.into_prop_value().map(|f| PaneSize::Fraction(f));
+    }
+
+    pub fn min_size(mut self, size: impl IntoPropValue<Option<usize>>) -> Self {
+        self.set_min_size(size);
+        self
+    }
+
+    pub fn set_min_size(&mut self, size: impl IntoPropValue<Option<usize>>) {
+        self.min_size = size.into_prop_value().map(|p| PaneSize::Pixel(p));
+    }
+
+    pub fn min_fraction(mut self, fraction: impl IntoPropValue<Option<f64>>) -> Self {
+        self.set_min_fraction(fraction);
+        self
+    }
+
+    pub fn set_min_fraction(&mut self, fraction: impl IntoPropValue<Option<f64>>) {
+       self.min_size = fraction.into_prop_value().map(|f| PaneSize::Fraction(f));
+    }
+
+    pub fn max_size(mut self, size: impl IntoPropValue<Option<usize>>) -> Self {
+        self.set_max_size(size);
+        self
+    }
+
+    pub fn set_max_size(&mut self, size: impl IntoPropValue<Option<usize>>) {
+        self.max_size =  size.into_prop_value().map(|p| PaneSize::Pixel(p));
+    }
+}
+
+impl<T: Into<VNode>> From<T> for Pane {
+    fn from(content: T) -> Self {
+        Self::new(content)
+    }
+}
+
+#[widget(pwt=crate, comp=PwtSplitPane, @element)]
+#[derive(Clone, PartialEq, Properties)]
+pub struct SplitPane {
+    /// The yew node ref.
+    #[prop_or_default]
+    node_ref: NodeRef,
+
+    /// The yew component key.
+    pub key: Option<Key>,
+
+    /// Container children.
+    #[prop_or_default]
+    pub children: Vec<Pane>,
+
+    /// Vertical flag.
+    #[prop_or_default]
+    pub vertical: bool,
+}
+
+
+impl SplitPane {
+    /// Creates a new instance
+    pub fn new() -> Self {
+        yew::props!(Self {})
+    }
+
+    /// Builder style method to set the vertical flag.
+    pub fn vertical(mut self, vertical: bool) -> Self {
+        self.set_vertical(vertical);
+        self
+    }
+
+    /// Method to set the vertical flag.
+    pub fn set_vertical(&mut self, vertical: bool) {
+        self.vertical = vertical;
+    }
+
+    pub fn with_child(mut self, child: impl Into<Pane>) -> Self {
+        self.add_child(child);
+        self
+    }
+
+    pub fn add_child(&mut self, child: impl Into<Pane>) {
+        self.children.push(child.into());
+    }
+}
+
+pub struct PwtSplitPane {
+    sizes: Vec<f64>, // observer pane sizes
+    drag_offset: i32,
+    mousemove_listener: Option<EventListener>,
+    mouseup_listener: Option<EventListener>,
+}
+
+pub enum Msg {
+    Shrink(usize, bool),
+    Grow(usize, bool),
+    StartResize(usize, i32, i32),
+    StopResize,
+    MouseMove(usize, i32, i32)
+}
+
+impl PwtSplitPane {
+
+    fn create_splitter(&self, ctx: &Context<Self>, index: usize) -> Html {
+        let props = ctx.props();
+        let vertical = props.vertical;
+
+        let onkeydown = Callback::from({
+            let link = ctx.link().clone();
+            move |event: KeyboardEvent| {
+                let key: &str = &event.key();
+                if vertical {
+                    match key {
+                        "ArrowUp" => {
+                            event.stop_propagation();
+                            link.send_message(Msg::Shrink(index, event.shift_key()));
+                        }
+                        "ArrowDown" => {
+                            event.stop_propagation();
+                            link.send_message(Msg::Grow(index, event.shift_key()));
+                        }
+                        _ => {}
+                    }
+                } else {
+                    match key {
+                        "ArrowLeft" => {
+                            event.stop_propagation();
+                            link.send_message(Msg::Shrink(index, event.shift_key()));
+                        }
+                        "ArrowRight" => {
+                            event.stop_propagation();
+                            link.send_message(Msg::Grow(index, event.shift_key()));
+                        }
+                        _ => {}
+                    }
+                }
+            }
+        });
+
+        let splitter = Container::new()
+            .attribute("tabindex", "0")
+            .attribute("role", "separator")
+            .attribute("aria-orientation", if props.vertical { "vertical" } else { "horizontal" })
+            .attribute("style", "flex: 0 0 auto;")
+            .class(if props.vertical { "column-split-handle" } else { "row-split-handle" })
+            .onkeydown(onkeydown)
+            .onmousedown(ctx.link().callback(move |event: MouseEvent| {
+                Msg::StartResize(index, event.offset_x(), event.offset_y())
+            }));
+
+        splitter.into()
+    }
+
+    fn create_pane(&self, ctx: &Context<Self>, index: usize, child: &Pane) -> Html {
+        let props = ctx.props();
+
+        let handle_size_sum = 7.0 * props.children.len().saturating_sub(1) as f64;
+
+        let size_attr = if props.vertical { "height" } else { "width" };
+
+        let mut style = child.size
+            .unwrap_or(PaneSize::Flex(1))
+            .to_css_flex(handle_size_sum);
+
+        style.push_str("overflow:auto;");
+
+        if let Some(size) = self.sizes.get(index) {
+            // use flex-grow to set size. If we resize the container,
+            // children resize proportional
+            style = format!("overflow:auto;flex: {size} 1 0px;");
+        }
+
+        if let Some(min_size) = &child.min_size {
+            let min_size = min_size.to_css_size(handle_size_sum);
+            style.push_str(&format!("min-{size_attr}: {min_size};"));
+        }
+
+        if let Some(max_size) = &child.max_size {
+            let max_size = max_size.to_css_size(handle_size_sum);
+            style.push_str(&format!("max-{size_attr}: {max_size};"));
+        }
+
+        let pane = Container::new()
+            .node_ref(child.node_ref.clone())
+            .attribute("style", style)
+            .with_child(child.content.clone());
+
+        pane.into()
+    }
+
+    fn query_sizes(&self, props: &SplitPane) -> Option<Vec<f64>> {
+
+        let mut sizes = Vec::new();
+
+        for child in props.children.iter() {
+            if let Some(el) = child.node_ref.cast::<web_sys::Element>() {
+                let rect = el.get_bounding_client_rect();
+                if props.vertical {
+                    sizes.push(rect.height());
+                } else {
+                    sizes.push(rect.width());
+                }
+            } else {
+                return None;
+            }
+        }
+
+        Some(sizes)
+    }
+
+    fn try_new_size(&self, pane: &Pane, current_size: f64, new_size: f64) -> f64 {
+        let min = pane.min_size.map(|s| s.real_size(&self.sizes)).unwrap_or(0.0);
+        let max = pane.max_size.map(|s| s.real_size(&self.sizes)).unwrap_or(f64::MAX);
+
+        let size = new_size.min(max).max(min);
+        let diff = size - current_size;
+
+        diff
+    }
+
+    fn resize_pane(&mut self, props: &SplitPane, child_index: usize, new_size1: f64) -> bool {
+        if self.sizes.len() <= child_index { // fixme
+            // should never happen - just to be sure
+            return false;
+        }
+
+        let pane1 = &props.children[child_index];
+        let pane2 = &props.children[child_index + 1];
+        let size1 = self.sizes[child_index];
+        let size2 = self.sizes[child_index + 1];
+
+        let diff1 = self.try_new_size(pane1, size1, new_size1);
+        let new_size2 = size2 - diff1;
+        let diff2 = self.try_new_size(pane2, size2, new_size2);
+
+        let diff = if diff1 > 0.0 && diff2 < 0.0 {
+            diff1.min(-diff2)
+        } else if diff1 < 0.0 && diff2 > 0.0 {
+            diff1.max(-diff2)
+        } else {
+            return false;
+        };
+        self.sizes[child_index] += diff;
+        self.sizes[child_index + 1] -= diff;
+
+        true
+    }
+}
+
+
+impl Component for PwtSplitPane {
+    type Message = Msg;
+    type Properties = SplitPane;
+
+    fn create(_ctx: &Context<Self>) -> Self {
+        Self {
+            sizes: Vec::new(),
+            drag_offset: 0,
+            mousemove_listener: None,
+            mouseup_listener: None,
+        }
+    }
+
+    fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
+        let props = ctx.props();
+
+        if let Some(sizes) = self.query_sizes(props) {
+            self.sizes = sizes;
+        }
+
+        match msg {
+            Msg::MouseMove(child_index, x, y) => {
+                if self.sizes.len() <= child_index { return false; }
+
+                let pane = &props.children[child_index];
+
+                if let Some(el) = pane.node_ref.cast::<web_sys::Element>() {
+                    let rect = el.get_bounding_client_rect();
+
+                    let new_size = if props.vertical {
+                        (y as f64) - rect.y() - (self.drag_offset as f64)
+                    } else {
+                        (x as f64) - rect.x() - (self.drag_offset as f64)
+                    };
+
+                    return self.resize_pane(props, child_index, new_size);
+                }
+                true
+            }
+            Msg::StopResize => {
+                self.mouseup_listener = None;
+                self.mousemove_listener = None;
+                self.drag_offset = 0;
+                false
+            }
+            Msg::StartResize(child_index, x, y) => {
+                self.drag_offset = if props.vertical { y } else { x };
+
+                let window = web_sys::window().unwrap();
+                let link = ctx.link();
+                let onmousemove = link.callback(move |e: Event| {
+                    let event = e.dyn_ref::<web_sys::MouseEvent>().unwrap_throw();
+                    Msg::MouseMove(child_index, event.client_x(), event.client_y())
+                });
+                let mousemove_listener = EventListener::new(
+                    &window,
+                    "mousemove",
+                    move |e| onmousemove.emit(e.clone()),
+                );
+                self.mousemove_listener = Some(mousemove_listener);
+
+                let onmouseup = link.callback(|_: Event| Msg::StopResize);
+                let mouseup_listener = EventListener::new(
+                    &window,
+                    "mouseup",
+                    move |e| onmouseup.emit(e.clone()),
+                );
+                self.mouseup_listener = Some(mouseup_listener);
+
+                false
+            }
+            Msg::Shrink(child_index, fast) => {
+                let amount = if fast { 10.0 } else { 1.0 };
+                self.resize_pane(props, child_index, self.sizes[child_index] - amount)
+            }
+            Msg::Grow(child_index, fast) => {
+                let amount = if fast { 10.0 } else { 1.0 };
+                self.resize_pane(props, child_index, self.sizes[child_index] + amount)
+            }
+        }
+    }
+
+    fn view(&self, ctx: &Context<Self>) -> Html {
+        let mut props = ctx.props().clone();
+
+        let mut children = Vec::new();
+
+        for (i, child) in props.children.iter().enumerate() {
+            if i > 0 {
+                children.push(self.create_splitter(ctx, i - 1));
+            }
+            children.push(self.create_pane(ctx, i, &child))
+        }
+
+        props.set_attribute("style", if props.vertical {
+            "display:flex;flex-direction:column;align-items:stretch;"
+        } else {
+            "display:flex;flex-direction:row;align-items:stretch;"
+        });
+
+        let attributes = props.std_props.cumulate_attributes(None::<&str>);
+
+        let children = VList::with_children(children, None);
+
+        let listeners = Listeners::Pending(
+            props.listeners.listeners.into_boxed_slice()
+        );
+
+        VTag::__new_other(
+            Cow::Borrowed("div"),
+            props.std_props.node_ref,
+            None,
+            attributes,
+            listeners,
+            children,
+        ).into()
+    }
+}
