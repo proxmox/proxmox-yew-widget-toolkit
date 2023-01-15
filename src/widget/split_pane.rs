@@ -203,7 +203,7 @@ pub enum Msg {
 
 impl PwtSplitPane {
 
-    fn create_splitter(&self, ctx: &Context<Self>, index: usize) -> Html {
+    fn create_splitter(&self, ctx: &Context<Self>, index: usize, fraction: Option<f64>) -> Html {
         let props = ctx.props();
         let vertical = props.vertical;
 
@@ -243,6 +243,7 @@ impl PwtSplitPane {
             .attribute("tabindex", "0")
             .attribute("role", "separator")
             .attribute("aria-orientation", if props.vertical { "vertical" } else { "horizontal" })
+            .attribute("aria-valuenow", fraction.map(|f| format!("{:.0}", f*100.0)))
             .attribute("style", "flex: 0 0 auto;")
             .class(if props.vertical { "column-split-handle" } else { "row-split-handle" })
             .onkeydown(onkeydown)
@@ -437,10 +438,15 @@ impl Component for PwtSplitPane {
 
         let mut children = Vec::new();
 
-        for (i, child) in props.children.iter().enumerate() {
+        let width: f64 = self.sizes.iter().sum();
+        let mut position = 0f64;
+        for i in 0..props.children.len() {
+            let child = &props.children[i];
             if i > 0 {
-                children.push(self.create_splitter(ctx, i - 1));
+                let fraction = (width > 0f64).then(|| position/width);
+                children.push(self.create_splitter(ctx, i - 1, fraction));
             }
+            position += self.sizes.get(i).map(|s| *s).unwrap_or(0.0);
             children.push(self.create_pane(ctx, i, &child))
         }
 
