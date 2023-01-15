@@ -1,5 +1,5 @@
 use yew::prelude::*;
-use yew::virtual_dom::{VNode, Key};
+use yew::virtual_dom::VNode;
 use yew::html::IntoPropValue;
 
 use gloo_events::EventListener;
@@ -12,8 +12,11 @@ use pwt_macros::widget;
 
 #[derive(Copy, Clone, PartialEq)]
 enum PaneSize {
+    // Fraction of the parent size (without space used by separators).
     Fraction(f64),
+    // Fixed size in pixel
     Pixel(usize),
+    // Flex (Note: cannot be used for min/max size)
     Flex(usize),
 }
 
@@ -22,6 +25,7 @@ impl PaneSize {
     fn to_css_size(&self, reserve: f64) -> String {
         match self {
             Self::Fraction(ratio) => {
+                // Note: compute percentage without space used by separators.
                 format!("calc((100% - {reserve}px)*{ratio})")
             }
             Self::Pixel(p) => format!("{p}px"),
@@ -29,9 +33,10 @@ impl PaneSize {
         }
     }
 
-     fn to_css_flex(&self, reserve: f64) -> String {
+    fn to_css_flex(&self, reserve: f64) -> String {
         match self {
             Self::Fraction(ratio) => {
+                // Note: compute percentage without space used by separators.
                 format!("flex: 0 0 calc((100% - {reserve}px)*{ratio});")
             }
             Self::Pixel(p) => format!("flex: 0 0 {p}px;"),
@@ -49,23 +54,34 @@ impl PaneSize {
     }
 }
 
-/// Pane Options
+/// Options for [SplitPane] children.
+///
+/// This struct is a wrapper for the pane content. It allow to set
+/// additional properties:
+///
+/// - `size`: the initial pane size (Pixels, Fraction or Flex)
+///
+/// - `min_size`: the minimal pane size (Pixels or Fraction)
+///
+/// - `max_size`: the maximal pane size (Pixels or Fraction)
 #[derive(Clone, PartialEq)]
 pub struct Pane {
-    /// Initial pane size (CSS width, i.e "20px", "10%", "10em")
+    // Initial pane size
     size: Option<PaneSize>,
-    /// Minimal pane size (CSS width)
+    // Minimal pane size
     min_size: Option<PaneSize>,
-    /// Maximal pane size (CSS width)
+    // Maximal pane size
     max_size: Option<PaneSize>,
 
+    // Yew node ref.
     node_ref: NodeRef,
-    /// Pane content
+    // Pane content
     content: VNode,
 }
 
 impl Pane {
 
+    /// Creates a new instance.
     pub fn new(content: impl Into<VNode>) -> Self {
         Self {
             size: None,
@@ -76,58 +92,81 @@ impl Pane {
         }
     }
 
+    /// Builder style method to set the initial pane size in pixels.
     pub fn size(mut self, size: impl IntoPropValue<Option<usize>>) -> Self {
         self.set_size(size);
         self
     }
 
+    /// Method to set the initial pane size in pixels.
     pub fn set_size(&mut self, size: impl IntoPropValue<Option<usize>>) {
         self.size = size.into_prop_value().map(|p| PaneSize::Pixel(p));
     }
 
+    /// Builder style method to set the initial pane size as flex.
     pub fn flex(mut self, flex: impl IntoPropValue<Option<usize>>) -> Self {
         self.set_flex(flex);
         self
     }
 
+    /// Method to set the initial pane size as flex.
     pub fn set_flex(&mut self, flex: impl IntoPropValue<Option<usize>>) {
         self.size = flex.into_prop_value().map(|f| PaneSize::Flex(f));
     }
 
+    /// Builder style method to set the initial pane size as fraction.
     pub fn fraction(mut self, fraction: impl IntoPropValue<Option<f64>>) -> Self {
         self.set_fraction(fraction);
         self
     }
 
+    /// Method to set the initial pane size as fraction.
     pub fn set_fraction(&mut self, fraction: impl IntoPropValue<Option<f64>>) {
        self.size = fraction.into_prop_value().map(|f| PaneSize::Fraction(f));
     }
 
+    /// Builder style method to set the minimal pane size in pixels.
     pub fn min_size(mut self, size: impl IntoPropValue<Option<usize>>) -> Self {
         self.set_min_size(size);
         self
     }
 
+    /// Method to set the minimal pane size in pixels.
     pub fn set_min_size(&mut self, size: impl IntoPropValue<Option<usize>>) {
         self.min_size = size.into_prop_value().map(|p| PaneSize::Pixel(p));
     }
 
+    /// Builder style method to set the minimal pane size as fraction.
     pub fn min_fraction(mut self, fraction: impl IntoPropValue<Option<f64>>) -> Self {
         self.set_min_fraction(fraction);
         self
     }
 
+    /// Method to set the minimal pane size as fraction.
     pub fn set_min_fraction(&mut self, fraction: impl IntoPropValue<Option<f64>>) {
        self.min_size = fraction.into_prop_value().map(|f| PaneSize::Fraction(f));
     }
 
+    /// Builder style method to set the maximal pane size in pixels.
     pub fn max_size(mut self, size: impl IntoPropValue<Option<usize>>) -> Self {
         self.set_max_size(size);
         self
     }
 
+    /// Method to set the maximal pane size in pixels.
     pub fn set_max_size(&mut self, size: impl IntoPropValue<Option<usize>>) {
         self.max_size =  size.into_prop_value().map(|p| PaneSize::Pixel(p));
+    }
+
+    /// Builder style method to set the maximal pane size as fraction.
+    pub fn max_fraction(mut self, fraction: impl IntoPropValue<Option<f64>>) -> Self {
+        self.set_max_fraction(fraction);
+        self
+    }
+
+    /// Method to set the maximal pane size as fraction.
+    pub fn set_max_fraction(&mut self, fraction: impl IntoPropValue<Option<f64>>) {
+       self.max_size = fraction.into_prop_value().map(|f| PaneSize::Fraction(f));
     }
 }
 
@@ -137,16 +176,10 @@ impl<T: Into<VNode>> From<T> for Pane {
     }
 }
 
+/// Container where children are separated by a draggable sparator.
 #[widget(pwt=crate, comp=PwtSplitPane, @element)]
 #[derive(Clone, PartialEq, Properties)]
 pub struct SplitPane {
-    /// The yew node ref.
-    #[prop_or_default]
-    node_ref: NodeRef,
-
-    /// The yew component key.
-    pub key: Option<Key>,
-
     /// Container children.
     #[prop_or_default]
     pub children: Vec<Pane>,
@@ -174,16 +207,19 @@ impl SplitPane {
         self.vertical = vertical;
     }
 
+    /// Builder style method to add a [Pane].
     pub fn with_child(mut self, child: impl Into<Pane>) -> Self {
         self.add_child(child);
         self
     }
 
+    /// Method to add a [Pane].
     pub fn add_child(&mut self, child: impl Into<Pane>) {
         self.children.push(child.into());
     }
 }
 
+#[doc(hidden)]
 pub struct PwtSplitPane {
     sizes: Vec<f64>, // observer pane sizes
     drag_offset: i32,
