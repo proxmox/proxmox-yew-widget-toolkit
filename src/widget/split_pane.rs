@@ -1,7 +1,5 @@
-use std::borrow::Cow;
-
 use yew::prelude::*;
-use yew::virtual_dom::{Listeners, VNode, VList, VTag, Key};
+use yew::virtual_dom::{VNode, Key};
 use yew::html::IntoPropValue;
 
 use gloo_events::EventListener;
@@ -439,7 +437,7 @@ impl Component for PwtSplitPane {
     }
 
     fn view(&self, ctx: &Context<Self>) -> Html {
-        let mut props = ctx.props().clone();
+        let props = ctx.props();
 
         let mut children = Vec::new();
 
@@ -455,27 +453,33 @@ impl Component for PwtSplitPane {
             children.push(self.create_pane(ctx, i, &child))
         }
 
-        props.set_attribute("style", if props.vertical {
+        let mut container = yew::props!(Container {
+            std_props: props.std_props.clone(),
+            listeners: props.listeners.clone(),
+            children,
+        });
+
+        // use existing style attribute
+        let attr_map = container.std_props.attributes.get_mut_index_map();
+        let mut style = attr_map.remove(&AttrValue::Static("style"))
+            .map(|(style, _)| {
+                let mut style = style.to_string();
+                if !style.ends_with(';') {
+                    style.push(';');
+                }
+                style
+            })
+            .unwrap_or(String::new());
+
+        // and append our style at the end
+        style.push_str(if props.vertical {
             "display:flex;flex-direction:column;align-items:stretch;"
         } else {
             "display:flex;flex-direction:row;align-items:stretch;"
         });
 
-        let attributes = props.std_props.cumulate_attributes(None::<&str>);
-
-        let children = VList::with_children(children, None);
-
-        let listeners = Listeners::Pending(
-            props.listeners.listeners.into_boxed_slice()
-        );
-
-        VTag::__new_other(
-            Cow::Borrowed("div"),
-            props.std_props.node_ref,
-            None,
-            attributes,
-            listeners,
-            children,
-        ).into()
+        container
+            .attribute("style", style)
+            .into()
     }
 }
