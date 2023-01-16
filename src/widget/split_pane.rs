@@ -66,7 +66,7 @@ impl PaneSize {
 /// - `max_size`: the maximal pane size (Pixels or Fraction)
 #[derive(Clone, PartialEq)]
 pub struct Pane {
-    // Initial pane size
+    // Initial pane size (defaults to Flex(1))
     size: Option<PaneSize>,
     // Minimal pane size
     min_size: Option<PaneSize>,
@@ -84,7 +84,7 @@ impl Pane {
     /// Creates a new instance.
     pub fn new(content: impl Into<VNode>) -> Self {
         Self {
-            size: None,
+            size: Some(PaneSize::Flex(1)),
             min_size: None,
             max_size: None,
             node_ref: NodeRef::default(),
@@ -310,16 +310,27 @@ impl PwtSplitPane {
 
         let size_attr = if props.vertical { "height" } else { "width" };
 
-        let mut style = child.size
-            .unwrap_or(PaneSize::Flex(1))
-            .to_css_flex(handle_size_sum);
+        let mut style = match child.size {
+            Some(size) => size.to_css_flex(handle_size_sum),
+            None => String::from("flex: 0 0 auto;")
+        };
 
         style.push_str("overflow:auto;");
 
         if let Some(size) = self.sizes.get(index) {
             // use flex-grow to set size. If we resize the container,
             // children resize proportional
-            style = format!("overflow:auto;flex: {size} 1 0px;");
+
+            let dynamic = match child.size {
+                Some(PaneSize::Fraction(_)) | Some(PaneSize::Flex(_)) => true,
+                _ => false,
+            };
+
+            style = if dynamic {
+                format!("overflow:auto;flex: {size} 1 0px;")
+            } else {
+                format!("overflow:auto;{size_attr}:{size}px;")
+            };
         }
 
         if let Some(min_size) = &child.min_size {
