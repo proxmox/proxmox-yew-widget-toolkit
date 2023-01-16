@@ -479,8 +479,7 @@ impl Component for PwtSplitPane {
 
         let width: f64 = self.sizes.iter().sum();
         let mut position = 0f64;
-        for i in 0..props.children.len() {
-            let child = &props.children[i];
+        for (i, child) in props.children.iter().enumerate() {
             if i > 0 {
                 let fraction = (width > 0f64).then(|| position/width);
                 children.push(self.create_splitter(ctx, i - 1, fraction));
