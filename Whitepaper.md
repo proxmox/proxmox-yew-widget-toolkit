@@ -127,3 +127,30 @@ anything implementing it.
 We think that this style is much easier to read/format and understand,
 especially when you configure many propertyies. We still use the html
 macro for short html fragments.
+
+
+### Basic Layout Containers
+
+I added some very simple layout containers called `Row` and `Column`,
+but they simply create a HTML flexbox (`<div style="display:
+flex;...`>). Everything else can be controlled by adding class
+attributes to either the container or its children. We ship a set of
+CSS classes which allows to control all flexbox properties.
+
+```
+Column::new()
+   // CSS: width: 100%; height: 100%; overflow: auto
+   .class("pwt-fit")
+   // CSS: justify-content: center
+   .class("pwt-justify-content-center")
+   // CSS: align-items: center
+   .class("pwt-align-items-center")
+   ...
+```
+
+Such CSS class utilities got famous with
+[bootstrap](https://getbootstrap.com), but today many frameworks use a
+similar approach.
+
+To summarize, we simply use HTML layout, either CSS flexbox or CSS
+grid. This is extremely flexible and well known.
