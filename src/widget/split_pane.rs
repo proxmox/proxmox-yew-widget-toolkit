@@ -187,6 +187,10 @@ pub struct SplitPane {
     /// Vertical flag.
     #[prop_or_default]
     pub vertical: bool,
+
+    /// Resize handle size (defaults to 7 pixels).
+    #[prop_or(7)]
+    pub handle_size: usize,
 }
 
 
@@ -216,6 +220,17 @@ impl SplitPane {
     /// Method to add a [Pane].
     pub fn add_child(&mut self, child: impl Into<Pane>) {
         self.children.push(child.into());
+    }
+
+    /// Builder style method to set the size (pixels) of the resize handle.
+    pub fn handle_size(mut self, size: usize) -> Self {
+        self.set_handle_size(size);
+        self
+    }
+
+    /// Method to set the size (pixels) of the resize handle.
+    pub fn set_handle_size(&mut self, size: usize) {
+        self.handle_size = size;
     }
 }
 
@@ -277,7 +292,7 @@ impl PwtSplitPane {
             .attribute("role", "separator")
             .attribute("aria-orientation", if props.vertical { "vertical" } else { "horizontal" })
             .attribute("aria-valuenow", fraction.map(|f| format!("{:.0}", f*100.0)))
-            .attribute("style", "flex: 0 0 auto;")
+            .attribute("style", format!("flex: 0 0 {}px;", props.handle_size))
             .class(if props.vertical { "column-split-handle" } else { "row-split-handle" })
             .onkeydown(onkeydown)
             .ondblclick(ctx.link().callback(|_| Msg::ResetSize))
@@ -291,7 +306,7 @@ impl PwtSplitPane {
     fn create_pane(&self, ctx: &Context<Self>, index: usize, child: &Pane) -> Html {
         let props = ctx.props();
 
-        let handle_size_sum = 7.0 * props.children.len().saturating_sub(1) as f64;
+        let handle_size_sum = (props.handle_size as f64) * props.children.len().saturating_sub(1) as f64;
 
         let size_attr = if props.vertical { "height" } else { "width" };
 
