@@ -14,7 +14,7 @@ use crate::state::{NavigationContainer, NavigationContext, NavigationContextExt}
 use pwt_macros::widget;
 
 use crate::widget::focus::roving_tabindex_next;
-use crate::widget::{Column, Row};
+use crate::widget::{Column, Pane, SplitPane};
 
 #[derive(Clone, PartialEq)]
 pub struct MenuItem {
@@ -504,6 +504,7 @@ impl Component for PwtNavigationMenu {
             event.prevent_default();
         });
         let mut menu = Column::new()
+            .class("pwt-fit")
             .node_ref(self.menu_ref.clone())
             .onkeydown(onkeydown)
             // avoid https://bugzilla.mozilla.org/show_bug.cgi?id=1069739
@@ -528,11 +529,11 @@ impl Component for PwtNavigationMenu {
             }
         }
 
-        Row::new()
+        SplitPane::new()
             .node_ref(props.node_ref.clone())
-            .class("pwt-flex-fill pwt-align-items-stretch pwt-overflow-auto")
-            .with_child(menu)
-            .with_optional_child(content)
+            .class("pwt-flex-fill pwt-overflow-auto")
+            .with_child(Pane::new(menu).size(None))
+            .with_child(Pane::new(content.unwrap_or(html!{})).flex(1))
             .into()
     }
 }
