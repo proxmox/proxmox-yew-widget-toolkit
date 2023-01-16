@@ -41,7 +41,7 @@ impl<F: 'static + Fn(&Callback<Key>) -> Html> From<F> for RenderDropdownPickerFn
     }
 }
 
-/// Base widget to implement [crate::widget::form2::Combobox] like widgets.
+/// Base widget to implement [crate::widget::form::Combobox] like widgets.
 ///
 /// # Note
 ///

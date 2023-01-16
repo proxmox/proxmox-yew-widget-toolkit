@@ -8,7 +8,7 @@ use yew::html::{IntoEventCallback, IntoPropValue};
 use crate::prelude::*;
 use crate::props::FieldStdProps;
 use crate::widget::Container;
-use crate::widget::form2::{FieldState, FieldStateMsg, ValidateFn};
+use crate::widget::form::{FieldState, FieldStateMsg, ValidateFn};
 
 use super::{MenuControllerMsg, MenuEvent};
 

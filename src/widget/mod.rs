@@ -23,7 +23,7 @@ pub use fa::{Fa, PwtFa};
 
 pub mod focus;
 
-pub mod form2;
+pub mod form;
 
 mod input;
 pub use input::Input;
