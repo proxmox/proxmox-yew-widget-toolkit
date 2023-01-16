@@ -38,9 +38,6 @@ pub use mask::{Mask, PwtMask};
 
 pub mod menu;
 
-mod resizable;
-pub use resizable::Resizable;
-
 mod split_pane;
 pub use split_pane::{Pane, SplitPane, PwtSplitPane};
 
