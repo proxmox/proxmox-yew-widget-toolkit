@@ -511,8 +511,9 @@ impl Component for PwtNavigationMenu {
             .attribute("tabindex", "-1")
             .attribute("role", "navigation")
             .attribute("aria-label", props.aria_label.clone())
-            .margin(props.std_props.margin.clone())
-            .padding(props.std_props.padding.clone())
+            // fixme: ???
+            //.margin(props.std_props.margin.clone())
+            //.padding(props.std_props.padding.clone())
             .class("pwt-nav-menu pwt-overflow-none")
             .class(props.std_props.class.clone());
 

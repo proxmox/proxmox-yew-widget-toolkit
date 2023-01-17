@@ -56,7 +56,8 @@ pub trait WidgetBuilder: Into<VNode> {
 
     /// Method to set the box border
     fn set_border(&mut self, border: impl Into<Border>) {
-        self.as_std_props_mut().border = border.into();
+        let border: Border = border.into();
+        self.add_class(border.to_class());
     }
 
     /// Builder style method to set the box padding
@@ -67,7 +68,8 @@ pub trait WidgetBuilder: Into<VNode> {
 
     /// Method to set the box padding
     fn set_padding(&mut self, padding: impl Into<Padding>) {
-        self.as_std_props_mut().padding = padding.into();
+        let padding: Padding = padding.into();
+        self.add_class(padding.to_class());
     }
 
     /// Builder style method to set the box margin
@@ -78,7 +80,8 @@ pub trait WidgetBuilder: Into<VNode> {
 
     /// Method to set the box margin
     fn set_margin(&mut self, margin: impl Into<Margin>) {
-        self.as_std_props_mut().margin = margin.into();
+        let margin: Margin = margin.into();
+        self.add_class(margin.to_class());
     }
 
     /// Builder style method to set additional html attributes
