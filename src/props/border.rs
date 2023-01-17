@@ -1,4 +1,26 @@
 
+/// Rust type to specify CSS borders.
+///
+/// Convienent way to describe CSS borders. This struct implement
+/// `From` for sevaral types, and maps that to CSS classes:
+///
+/// - `true`: CSS class `pwt-border`
+/// - `(true, false)`: CSS class `pwt-border-top pwt-border-bottom`
+/// - `(false, true)`: CSS class `pwt-border-left pwt-border-right`
+/// - `(true, true)`: CSS class `pwt-border`
+/// - `(bool, bool, bool, bool)`: sets CSS class (`pwt-border-top`, `pwt-border-right`, `pwt-border-bottom`, `pwt-border-left`) if the corresponding value is true.
+///
+/// The [WidgetBuilder](super::WidgetBuilder) trait provides methods
+/// to set borders for our standard widgets, .i.e:
+///
+///```
+/// # use pwt::widget::Column;
+/// # use crate::pwt::props::WidgetBuilder;
+/// Column::new()
+///     .border((true, false)) // border on top and bottom
+///
+/// # ;
+///```
 #[derive(PartialEq, Debug, Clone)]
 pub enum Border {
     Single(bool),
