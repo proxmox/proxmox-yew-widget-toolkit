@@ -142,3 +142,44 @@ impl From<TextAlign> for Classes {
         }
     }
 }
+
+/// Wrapper type to specify CSS property `display`.
+///
+/// ```
+/// # use pwt::prelude::*;
+/// # use pwt::widget::Container;
+/// use pwt::props::css::*;
+/// Container::new()
+///    .class(Display::InlineBlock)
+/// # ;
+/// ```
+#[derive(Copy, Clone, PartialEq, Eq)]
+pub enum Display {
+    None,
+    Inline,
+    InlineBlock,
+    Block,
+    Grid,
+    Table,
+    TableRow,
+    TableCell,
+    Flex,
+    InlineFlex,
+}
+
+impl From<Display> for Classes {
+    fn from(value: Display) -> Self {
+        match value {
+            Display::None => "pwt-d-none".into(),
+            Display::Inline => "pwt-d-inline".into(),
+            Display::InlineBlock => "pwt-d-inline-block".into(),
+            Display::Block => "pwt-d-block".into(),
+            Display::Grid => "pwt-d-grid".into(),
+            Display::Table => "pwt-d-table".into(),
+            Display::TableRow => "pwt-d-table-row".into(),
+            Display::TableCell => "pwt-d-table-cell".into(),
+            Display::Flex => "pwt-d-flex".into(),
+            Display::InlineFlex => "pwt-d-inline-flex".into(),
+        }
+    }
+}
