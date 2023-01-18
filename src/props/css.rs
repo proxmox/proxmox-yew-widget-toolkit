@@ -107,3 +107,38 @@ impl From<UserSelect> for Classes {
         }
     }
 }
+
+/// Wrapper type to specify CSS property `text-align`.
+///
+/// ```
+/// # use pwt::prelude::*;
+/// # use pwt::widget::Container;
+/// use pwt::props::css::*;
+/// Container::new()
+///    .class(TextAlign::Justify)
+/// # ;
+/// ```
+#[derive(Copy, Clone, PartialEq, Eq)]
+pub enum TextAlign {
+    Start,
+    End,
+    Left,
+    Right,
+    Center,
+    Justify,
+    JustifyAll,
+}
+
+impl From<TextAlign> for Classes {
+    fn from(value: TextAlign) -> Self {
+        match value {
+            TextAlign::Start => "pwt-text-align-start".into(),
+            TextAlign::End => "pwt-text-align-end".into(),
+            TextAlign::Left => "pwt-text-align-left".into(),
+            TextAlign::Right => "pwt-text-align-right".into(),
+            TextAlign::Center => "pwt-text-align-center".into(),
+            TextAlign::Justify => "pwt-text-align-justify".into(),
+            TextAlign::JustifyAll => "pwt-text-align-justify-all".into(),
+        }
+    }
+}
