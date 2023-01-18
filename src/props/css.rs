@@ -89,23 +89,107 @@ impl From<FlexWrap> for Classes {
 /// ```
 #[derive(Copy, Clone, PartialEq, Eq)]
 pub enum JustifyContent {
+    Start,
+    End,
     FlexStart,
     FlexEnd,
     Center,
+    Left,
+    Right,
+    Normal,
     SpaceBetween,
     SpaceAround,
     SpaceEvenly,
+    Stretch,
 }
 
 impl From<JustifyContent> for Classes {
     fn from(value: JustifyContent) -> Self {
         match value {
-            JustifyContent::FlexStart => "pwt-justify-content-start".into(),
-            JustifyContent::FlexEnd => "pwt-justify-content-end".into(),
+            JustifyContent::Start => "pwt-justify-content-start".into(),
+            JustifyContent::End => "pwt-justify-content-end".into(),
+            JustifyContent::FlexStart => "pwt-justify-content-flex-start".into(),
+            JustifyContent::FlexEnd => "pwt-justify-content-flex-end".into(),
             JustifyContent::Center => "pwt-justify-content-center".into(),
+            JustifyContent::Left => "pwt-justify-content-left".into(),
+            JustifyContent::Right => "pwt-justify-content-right".into(),
+            JustifyContent::Normal => "pwt-justify-content-normal".into(),
             JustifyContent::SpaceBetween => "pwt-justify-content-between".into(),
             JustifyContent::SpaceAround => "pwt-justify-content-around".into(),
             JustifyContent::SpaceEvenly => "pwt-justify-content-evenly".into(),
+            JustifyContent::Stretch => "pwt-justify-content-stretch".into(),
+        }
+    }
+}
+
+/// Wrapper type to specify CSS property `align-items`.
+///
+/// ```
+/// # use pwt::prelude::*;
+/// # use pwt::widget::Container;
+/// use pwt::props::css::*;
+/// Container::new()
+///    .class(AlignItems::Center)
+/// # ;
+/// ```
+#[derive(Copy, Clone, PartialEq, Eq)]
+pub enum AlignItems {
+    Normal,
+    Start,
+    End,
+    FlexStart,
+    FlexEnd,
+    Center,
+    Baseline,
+    Stretch,
+}
+
+impl From<AlignItems> for Classes {
+    fn from(value: AlignItems) -> Self {
+        match value {
+            AlignItems::Normal => "pwt-align-items-normal".into(),
+            AlignItems::Start => "pwt-align-items-start".into(),
+            AlignItems::End => "pwt-align-items-end".into(),
+            AlignItems::FlexStart => "pwt-align-items-flex-start".into(),
+            AlignItems::FlexEnd => "pwt-align-items-flex-end".into(),
+            AlignItems::Center => "pwt-align-items-center".into(),
+            AlignItems::Baseline => "pwt-align-items-baseline".into(),
+            AlignItems::Stretch => "pwt-align-items-stretch".into(),
+        }
+    }
+}
+
+/// Wrapper type to specify CSS property `align-self`.
+///
+/// ```
+/// # use pwt::prelude::*;
+/// # use pwt::widget::Container;
+/// use pwt::props::css::*;
+/// Container::new()
+///    .class(AlignSelf::Center)
+/// # ;
+/// ```
+#[derive(Copy, Clone, PartialEq, Eq)]
+pub enum AlignSelf {
+    Auto,
+    Normal,
+    FlexStart,
+    FlexEnd,
+    Center,
+    Baseline,
+    Stretch,
+}
+
+impl From<AlignSelf> for Classes {
+    fn from(value: AlignSelf) -> Self {
+        match value {
+            AlignSelf::Auto => "pwt-align-self-auto".into(),
+            AlignSelf::Normal => "pwt-align-self-normal".into(),
+            AlignSelf::FlexStart => "pwt-align-self-flex-start".into(),
+            AlignSelf::FlexEnd => "pwt-align-self-flex-end".into(),
+            AlignSelf::Center => "pwt-align-self-center".into(),
+            AlignSelf::Baseline => "pwt-align-self-baseline".into(),
+            AlignSelf::Stretch => "pwt-align-self-stretch".into(),
         }
     }
 }
