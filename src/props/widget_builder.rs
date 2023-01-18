@@ -2,7 +2,7 @@ use yew::prelude::*;
 use yew::html::IntoPropValue;
 use yew::virtual_dom::{ApplyAttributeAs, Key, VNode};
 
-use super::{WidgetStdProps, Border, Margin, Padding}; 
+use super::WidgetStdProps;
 
 /// Defines common builder methods for widgets.
 pub trait WidgetBuilder: Into<VNode> {
@@ -43,45 +43,9 @@ pub trait WidgetBuilder: Into<VNode> {
         self
     }
 
-    /// Method to add a html class
+    /// Method to add a html class.
     fn add_class(&mut self, class: impl Into<Classes>) {
         self.as_std_props_mut().class.push(class);
-    }
-
-    /// Builder style method to set the box border
-    fn border(mut self, border: impl Into<Border>) -> Self {
-        self.set_border(border);
-        self
-    }
-
-    /// Method to set the box border
-    fn set_border(&mut self, border: impl Into<Border>) {
-        let border: Border = border.into();
-        self.add_class(border.to_class());
-    }
-
-    /// Builder style method to set the box padding
-    fn padding(mut self, padding: impl Into<Padding>) -> Self {
-        self.set_padding(padding);
-        self
-    }
-
-    /// Method to set the box padding
-    fn set_padding(&mut self, padding: impl Into<Padding>) {
-        let padding: Padding = padding.into();
-        self.add_class(padding.to_class());
-    }
-
-    /// Builder style method to set the box margin
-    fn margin(mut self, margin: impl Into<Margin>) -> Self {
-        self.set_margin(margin);
-        self
-    }
-
-    /// Method to set the box margin
-    fn set_margin(&mut self, margin: impl Into<Margin>) {
-        let margin: Margin = margin.into();
-        self.add_class(margin.to_class());
     }
 
     /// Builder style method to set additional html attributes

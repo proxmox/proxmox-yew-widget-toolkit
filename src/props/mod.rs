@@ -1,5 +1,17 @@
 //! Common Property types and builder traits
 
+/// Trait which provides mutable access to the class property.
+pub trait AsClassesMut {
+    /// Mutable access to the class property.
+    fn as_classes_mut(&mut self) -> &mut yew::Classes;
+}
+
+impl AsClassesMut for yew::Classes {
+    fn as_classes_mut(&mut self) -> &mut yew::Classes {
+        self
+    }
+}
+
 mod callback_mut;
 pub use callback_mut::{CallbackMut, CallbackMutScopeExt, IntoEventCallbackMut};
 
@@ -28,13 +40,13 @@ mod event_subscriber;
 pub use event_subscriber::{ListenersWrapper, EventSubscriber};
 
 mod border;
-pub use border::Border;
+pub use border::CssBorderBuilder;
 
 mod margin;
-pub use margin::Margin;
+pub use margin::CssMarginBuilder;
 
 mod padding;
-pub use padding::Padding;
+pub use padding::CssPaddingBuilder;
 
 mod render_function;
 pub use render_function::{RenderFn, BuilderFn, IntoOptionalBuilderFn};

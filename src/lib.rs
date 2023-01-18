@@ -189,6 +189,9 @@ pub mod prelude {
     pub use yew::prelude::*;
 
     pub use crate::props::WidgetBuilder;
+    pub use crate::props::CssMarginBuilder;
+    pub use crate::props::CssPaddingBuilder;
+    pub use crate::props::CssBorderBuilder;
     pub use crate::props::ContainerBuilder;
     pub use crate::props::FieldBuilder;
     pub use crate::props::EventSubscriber;

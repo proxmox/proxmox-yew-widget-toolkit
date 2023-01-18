@@ -1,120 +1,127 @@
-/// Rust type to specify CSS margins.
-///
-/// Convienent way to describe CSS margins. This struct implement
-/// `From` for sevaral types, and maps that to CSS classes:
-///
-/// - `usize`: CSS class `pwt-m-{usize}`
-/// - `(usize, usize)`: sets CSS class `pwt-my-{usize}` and `pwt-my-{usize}`
-/// - `(usize, usize, usize, usize)`: sets CSS class `pwt-mt-{usize}`, `pwt-me-{usize}`, `pwt-mb-{usize}` and `pwt-ms-{usize}`
-///
-/// Please note that all values are optional, so can also specify `None` if
-/// you dont want to set a class.
-///
-/// Our currect CSS template sepcifies those classes for values 0, 1, 2
-/// and 3. The real size is specified inside the CSS and defaults to
-/// 0.5em, 1em, 1.5em and 2em.
+use yew::Classes;
+use yew::html::IntoPropValue;
+use super:: AsClassesMut;
 
-/// The [WidgetBuilder](super::WidgetBuilder) trait provides methods
-/// to set margins for our standard widgets, .i.e:
+/// Defines methods to use CSS margin classes.
 ///
-///```
-/// # use pwt::widget::Column;
-/// # use crate::pwt::props::WidgetBuilder;
-/// Column::new()
-///     .margin((2, None)) // sets class `pwt-my-2`
+/// The default CSS template defines utility classes for margins.
 ///
+/// - `pwt-m-{S}`: margin on all sides.
+/// - `pwt-mx-{S}`: margin on x-axis (start and end).
+/// - `pwt-my-{S}`: margin on y-axis (top and bottom).
+/// - `pwt-mt-{S}`: margin on top.
+/// - `pwt-mb-{S}`: margin on bottom.
+/// - `pwt-ms-{S}`: margin at start.
+/// - `pwt-me-{S}`: margin at end.
+///
+/// The template sepcifies those classes for values 0, 1, 2 and 3. The
+/// real size is specified inside the CSS and defaults to 0.5em, 1em,
+/// 1.5em and 2em.
+///
+/// This trait get automatically implemented for widgets using the
+/// widget macro, and is also implemented on [Classes].
+///
+/// ```
+/// # use pwt::prelude::*;
+/// # use pwt::widget::Container;
+/// Container::new()
+///    .margin_x(2)
+///    .margin_top(1)
 /// # ;
-///```
+/// ```
 
+pub trait CssMarginBuilder: AsClassesMut + Sized {
 
-#[derive(PartialEq, Debug, Clone)]
-pub enum Margin {
-    Single(Option<usize>),
-    Tuple(Option<usize>, Option<usize>),
-    Quad(Option<usize>, Option<usize>, Option<usize>, Option<usize>),
-}
+    /// Builder style method to add a box margin class.
+    fn margin(mut self, margin: impl IntoPropValue<Option<usize>>) -> Self {
+        self.add_margin(margin);
+        self
+    }
 
-impl Margin {
-    // Note: Using html style tag is maybe simpler ...
-    pub fn to_class(&self) -> Option<String> {
-        match self {
-            Margin::Single(None) => None,
-            Margin::Single(Some(m)) => Some(format!("pwt-m-{}", m)),
-            Margin::Tuple(None, None) => None,
-            Margin::Tuple(None, Some(mx)) => Some(format!("pwt-mx-{}", mx)),
-            Margin::Tuple(Some(my), None) => Some(format!("pwt-my-{}", my)),
-            Margin::Tuple(Some(my), Some(mx)) =>
-                Some(format!("pwt-mx-{} pwt-my-{}", mx, my)),
-            Margin::Quad(mt, mr, mb, ml) => {
-                let mut c = Vec::new();
-                if let Some(mt) = *mt { c.push(format!("pwt-mt-{}", mt)); }
-                if let Some(mr) = *mr { c.push(format!("pwt-me-{}", mr)); }
-                if let Some(mb) = *mb { c.push(format!("pwt-mb-{}", mb)); }
-                if let Some(ml) = *ml { c.push(format!("pwt-ms-{}", ml)); }
-                if c.is_empty() {
-                    None
-                } else {
-                    Some(c.join(" "))
-                }
-            }
+    /// Method to add a box margin class.
+    fn add_margin(&mut self, margin: impl IntoPropValue<Option<usize>>) {
+        if let Some(margin) = margin.into_prop_value() {
+            self.as_classes_mut().push(format!("pwt-m-{margin}"));
+        }
+    }
+
+    /// Builder style method to add a x-axis margin class.
+    fn margin_x(mut self, margin: impl IntoPropValue<Option<usize>>) -> Self {
+        self.add_margin_x(margin);
+        self
+    }
+
+    /// Method to add a x-axis margin class.
+    fn add_margin_x(&mut self, margin: impl IntoPropValue<Option<usize>>) {
+        if let Some(margin) = margin.into_prop_value() {
+            self.as_classes_mut().push(format!("pwt-mx-{margin}"));
+        }
+    }
+
+    /// Builder style method to add a y-axis margin class.
+    fn margin_y(mut self, margin: impl IntoPropValue<Option<usize>>) -> Self {
+        self.add_margin_y(margin);
+        self
+    }
+
+    /// Method to add a y-axis margin class.
+    fn add_margin_y(&mut self, margin: impl IntoPropValue<Option<usize>>) {
+        if let Some(margin) = margin.into_prop_value() {
+            self.as_classes_mut().push(format!("pwt-my-{margin}"));
+        }
+    }
+
+    /// Builder style method to add a top margin class.
+    fn margin_top(mut self, margin: impl IntoPropValue<Option<usize>>) -> Self {
+        self.add_margin_top(margin);
+        self
+    }
+
+    /// Method to add a top margin class.
+    fn add_margin_top(&mut self, margin: impl IntoPropValue<Option<usize>>) {
+        if let Some(margin) = margin.into_prop_value() {
+            self.as_classes_mut().push(format!("pwt-mt-{margin}"));
+        }
+    }
+
+    /// Builder style method to add a bottom margin class.
+    fn margin_bottom(mut self, margin: impl IntoPropValue<Option<usize>>) -> Self {
+        self.add_margin_bottom(margin);
+        self
+    }
+
+    /// Method to add a bottom margin class.
+    fn add_margin_bottom(&mut self, margin: impl IntoPropValue<Option<usize>>) {
+        if let Some(margin) = margin.into_prop_value() {
+            self.as_classes_mut().push(format!("pwt-mb-{margin}"));
+        }
+    }
+
+    /// Builder style method to add a start margin class.
+    fn margin_start(mut self, margin: impl IntoPropValue<Option<usize>>) -> Self {
+        self.add_margin_start(margin);
+        self
+    }
+
+    /// Method to add a start margin class.
+    fn add_margin_start(&mut self, margin: impl IntoPropValue<Option<usize>>) {
+        if let Some(margin) = margin.into_prop_value() {
+            self.as_classes_mut().push(format!("pwt-ms-{margin}"));
+        }
+    }
+
+    /// Builder style method to add an end margin class.
+    fn margin_end(mut self, margin: impl IntoPropValue<Option<usize>>) -> Self {
+        self.add_margin_end(margin);
+        self
+    }
+
+    /// Method to add an end margin class.
+    fn add_margin_end(&mut self, margin: impl IntoPropValue<Option<usize>>) {
+        if let Some(margin) = margin.into_prop_value() {
+            self.as_classes_mut().push(format!("pwt-me-{margin}"));
         }
     }
 }
 
-impl Default for Margin {
-    fn default() -> Self {
-        Margin::Single(None)
-    }
-}
-
-pub trait IntoOptionalMarginSize {
-    fn into_optional_margin_size(self) -> Option<usize>;
-}
-
-impl IntoOptionalMarginSize for usize {
-    fn into_optional_margin_size(self) -> Option<usize> {
-        Some(self)
-    }
-}
-
-impl IntoOptionalMarginSize for Option<usize> {
-    fn into_optional_margin_size(self) -> Option<usize> {
-        self
-    }
-}
-
-impl<I: IntoOptionalMarginSize> From<I> for Margin {
-    fn from(v: I) -> Self {
-        Margin::Single(v.into_optional_margin_size())
-    }
-}
-
-impl<I1, I2> From<(I1, I2)> for Margin
-where
-    I1: IntoOptionalMarginSize,
-    I2: IntoOptionalMarginSize,
-{
-    fn from(v: (I1, I2)) -> Self {
-        Margin::Tuple(
-            v.0.into_optional_margin_size(),
-            v.1.into_optional_margin_size(),
-        )
-    }
-}
-
-impl<I1, I2, I3, I4> From<(I1, I2, I3, I4)> for Margin
-where
-    I1: IntoOptionalMarginSize,
-    I2: IntoOptionalMarginSize,
-    I3: IntoOptionalMarginSize,
-    I4: IntoOptionalMarginSize,
-{
-    fn from(v: (I1, I2, I3, I4)) -> Self {
-        Margin::Quad(
-            v.0.into_optional_margin_size(),
-            v.1.into_optional_margin_size(),
-            v.2.into_optional_margin_size(),
-            v.3.into_optional_margin_size(),
-        )
-    }
-}
+impl CssMarginBuilder for Classes {}

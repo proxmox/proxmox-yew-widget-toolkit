@@ -197,6 +197,15 @@ fn derive_widget(setup: &WidgetSetup, widget: DeriveInput) -> Result<proc_macro2
                 &mut self.std_props
             }
         }
+
+        impl #impl_generics #pwt::props::AsClassesMut for #ident #ty_generics #where_clause {
+            fn as_classes_mut(&mut self) -> &mut ::yew::Classes {
+                &mut self.std_props.class
+            }
+        }
+        impl #impl_generics #pwt::props::CssMarginBuilder for #ident #ty_generics #where_clause {}
+        impl #impl_generics #pwt::props::CssPaddingBuilder for #ident #ty_generics #where_clause {}
+        impl #impl_generics #pwt::props::CssBorderBuilder for #ident #ty_generics #where_clause {}
     });
 
     if setup.is_element {

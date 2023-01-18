@@ -1,79 +1,107 @@
+use yew::Classes;
+use yew::html::IntoPropValue;
+use super:: AsClassesMut;
 
-/// Rust type to specify CSS borders.
+/// Defines methods to use CSS border classes.
 ///
-/// Convienent way to describe CSS borders. This struct implement
-/// `From` for sevaral types, and maps that to CSS classes:
+/// The default CSS template defines utility classes for borders.
 ///
-/// - `true`: CSS class `pwt-border`
-/// - `(true, false)`: CSS class `pwt-border-top pwt-border-bottom`
-/// - `(false, true)`: CSS class `pwt-border-left pwt-border-right`
-/// - `(true, true)`: CSS class `pwt-border`
-/// - `(bool, bool, bool, bool)`: sets CSS class (`pwt-border-top`, `pwt-border-right`, `pwt-border-bottom`, `pwt-border-left`) if the corresponding value is true.
+/// - `pwt-border`: border on all sides.
+/// - `pwt-no-border`: no border on all sides.
+/// - `pwt-border-top`: border on top.
+/// - `pwt-no-border-top`: no border on top.
+/// - `pwt-border-bottom`: border on bottom.
+/// - `pwt-no border-bottom`: no border on bottom.
+/// - `pwt-border-left`: border on the left side.
+/// - `pwt-no-border-left`: no border on the left side.
+/// - `pwt-border-right`: border on the right side.
+/// - `pwt-no-border-right`: border on the right side.
 ///
-/// The [WidgetBuilder](super::WidgetBuilder) trait provides methods
-/// to set borders for our standard widgets, .i.e:
 ///
-///```
-/// # use pwt::widget::Column;
-/// # use crate::pwt::props::WidgetBuilder;
-/// Column::new()
-///     .border((true, false)) // border on top and bottom
+/// This trait get automatically implemented for widgets using the
+/// widget macro, and is also implemented on [Classes].
 ///
+/// ```
+/// # use pwt::prelude::*;
+/// # use pwt::widget::Container;
+/// Container::new()
+///    .border(true)
+///    .border_top(false)
 /// # ;
-///```
-#[derive(PartialEq, Debug, Clone)]
-pub enum Border {
-    Single(bool),
-    Tuple(bool, bool),
-    Quad(bool, bool, bool, bool),
-}
+/// ```
 
-impl Border {
-    // Note: Using html style tag would be so much easier ...
-    pub fn to_class(&self) -> Option<String> {
-        match self {
-            Border::Single(false) => None,
-            Border::Single(true) => Some("pwt-border".into()),
-            Border::Tuple(false, false) => None,
-            Border::Tuple(false, true) => Some("pwt-border-left pwt-border-right".into()),
-            Border::Tuple(true, false) => Some("pwt-border-top pwt-border-bottom".into()),
-            Border::Tuple(true, true) => Some("pwt-border".into()),
-            Border::Quad(bt, br, bb, bl) => {
-                let mut c = Vec::new();
-                if *bt { c.push("pwt-border-top"); }
-                if *br { c.push("pwt-border-right"); }
-                if *bb { c.push("pwt-border-bottom"); }
-                if *bl { c.push("pwt-border-left"); }
-                if c.is_empty() {
-                    None
-                } else {
-                    Some(c.join(" "))
-                }
-            }
-        }
+pub trait CssBorderBuilder: AsClassesMut + Sized {
+
+    /// Builder style method to add a box border class.
+    fn border(mut self, border: impl IntoPropValue<Option<bool>>) -> Self {
+        self.add_border(border);
+        self
+    }
+
+    /// Method to add a box border class.
+    fn add_border(&mut self, border: impl IntoPropValue<Option<bool>>) {
+        let border = border.into_prop_value();
+        if let Some(border) = border {
+            self.as_classes_mut().push(if border { "pwt-border" } else { "pwt-no-border" });
+        };
+    }
+
+
+    /// Builder style method to add a top border class.
+    fn border_top(mut self, border: impl IntoPropValue<Option<bool>>) -> Self {
+        self.add_border_top(border);
+        self
+    }
+
+    /// Method to add a top border class.
+    fn add_border_top(&mut self, border: impl IntoPropValue<Option<bool>>) {
+        let border = border.into_prop_value();
+        if let Some(border) = border {
+            self.as_classes_mut().push(if border { "pwt-border-top" } else { "pwt-no-border-top" });
+        };
+    }
+
+    /// Builder style method to add a bottom border class.
+    fn border_bottom(mut self, border: impl IntoPropValue<Option<bool>>) -> Self {
+        self.add_border_bottom(border);
+        self
+    }
+
+    /// Method to add a bottom border class.
+    fn add_border_bottom(&mut self, border: impl IntoPropValue<Option<bool>>) {
+        let border = border.into_prop_value();
+        if let Some(border) = border {
+            self.as_classes_mut().push(if border { "pwt-border-bottom" } else { "pwt-no-border-bottom" });
+        };
+    }
+
+    /// Builder style method to add a left border class.
+    fn border_start(mut self, border: impl IntoPropValue<Option<bool>>) -> Self {
+        self.add_border_start(border);
+        self
+    }
+
+    /// Method to add a left border class.
+    fn add_border_start(&mut self, border: impl IntoPropValue<Option<bool>>) {
+         let border = border.into_prop_value();
+        if let Some(border) = border {
+            self.as_classes_mut().push(if border { "pwt-border-left" } else { "pwt-no-border-left" });
+        };
+    }
+
+    /// Builder style method to add a right border class.
+    fn border_end(mut self, border: impl IntoPropValue<Option<bool>>) -> Self {
+        self.add_border_end(border);
+        self
+    }
+
+    /// Method to add a right border class.
+    fn add_border_end(&mut self, border: impl IntoPropValue<Option<bool>>) {
+        let border = border.into_prop_value();
+        if let Some(border) = border {
+            self.as_classes_mut().push(if border { "pwt-border-right" } else { "pwt-no-border-right" });
+        };
     }
 }
 
-impl Default for Border {
-    fn default() -> Self {
-        Border::Single(false)
-    }
-}
-
-impl From<bool> for Border {
-    fn from(b: bool) -> Self {
-        Border::Single(b)
-    }
-}
-
-impl From<(bool, bool)> for Border {
-    fn from(b: (bool, bool)) -> Self {
-        Border::Tuple(b.0, b.1)
-    }
-}
-
-impl From<(bool, bool, bool, bool)> for Border {
-    fn from(b: (bool, bool, bool, bool)) -> Self {
-        Border::Quad(b.0, b.1, b.2, b.3)
-    }
-}
+impl CssBorderBuilder for Classes {}
