@@ -298,3 +298,72 @@ impl From<Display> for Classes {
         }
     }
 }
+
+/// Wrapper type to specify CSS property `overflow`.
+///
+/// ```
+/// # use pwt::prelude::*;
+/// # use pwt::widget::Container;
+/// use pwt::props::css::*;
+/// Container::new()
+///    .class(Overflow::Hidden)
+/// # ;
+/// ```
+#[derive(Copy, Clone, PartialEq, Eq)]
+pub enum Overflow {
+    Visible,
+    Hidden,
+    Scroll,
+    Auto,
+}
+
+impl From<Overflow> for Classes {
+    fn from(value: Overflow) -> Self {
+        match value {
+            Overflow::Visible => "pwt-overflow-visible".into(),
+            Overflow::Hidden => "pwt-overflow-hidden".into(),
+            Overflow::Scroll => "pwt-overflow-scroll".into(),
+            Overflow::Auto => "pwt-overflow-auto".into(),
+        }
+    }
+}
+
+/// Wrapper type to specify CSS property `overflow-x`.
+#[derive(Copy, Clone, PartialEq, Eq)]
+pub enum OverflowX {
+    Visible,
+    Hidden,
+    Scroll,
+    Auto,
+}
+
+impl From<OverflowX> for Classes {
+    fn from(value: OverflowX) -> Self {
+        match value {
+            OverflowX::Visible => "pwt-overflow-x-visible".into(),
+            OverflowX::Hidden => "pwt-overflow-x-hidden".into(),
+            OverflowX::Scroll => "pwt-overflow-x-scroll".into(),
+            OverflowX::Auto => "pwt-overflow-x-auto".into(),
+        }
+    }
+}
+
+/// Wrapper type to specify CSS property `overflow-y`.
+#[derive(Copy, Clone, PartialEq, Eq)]
+pub enum OverflowY {
+    Visible,
+    Hidden,
+    Scroll,
+    Auto,
+}
+
+impl From<OverflowY> for Classes {
+    fn from(value: OverflowY) -> Self {
+        match value {
+            OverflowY::Visible => "pwt-overflow-y-visible".into(),
+            OverflowY::Hidden => "pwt-overflow-y-hidden".into(),
+            OverflowY::Scroll => "pwt-overflow-y-scroll".into(),
+            OverflowY::Auto => "pwt-overflow-y-auto".into(),
+        }
+    }
+}
