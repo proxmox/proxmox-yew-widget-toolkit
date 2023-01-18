@@ -2,6 +2,7 @@ use std::borrow::Cow;
 
 use yew::prelude::*;
 use yew::virtual_dom::{Listeners, VList, VTag};
+use yew::html::IntoPropValue;
 
 use pwt_macros::widget;
 
@@ -10,41 +11,46 @@ use crate::prelude::*;
 /// Vertical container with flex layout.
 #[widget(pwt=crate, @element, @container)]
 #[derive(Default, Debug, Clone)]
-pub struct Column {
-    gap: usize,
-}
+pub struct Column {}
 
 impl Column {
 
+    /// Create a new instance.
     pub fn new() -> Self {
         Self::default()
+            .class("pwt-d-flex")
+            .class("pwt-flex-column")
     }
 
-    pub fn gap(mut self, gap: usize) -> Self {
-        self.gap = gap;
+    /// Builder style method to add a CSS class to set gap between children.
+    pub fn gap(mut self, gap: impl IntoPropValue<Option<usize>>) -> Self {
+        self.add_gap(gap);
         self
     }
 
+    /// Method to add a CSS class to set gap between children.
+    ///
+    /// The default CSS template defines utility classes for gaps (`pwt-ga-{gap}`).
+    pub fn add_gap(&mut self, gap: impl IntoPropValue<Option<usize>>) {
+        if let Some(gap) = gap.into_prop_value() {
+            self.add_class(format!("pwt-gap-{}", gap))
+        }
+    }
+
+    /// Builder style method toö add a flexible spacer.
     pub fn with_flex_spacer(mut self) -> Self {
         self.add_flex_spacer();
         self
     }
 
+    /// Method to add a flexible spacer.
     pub fn add_flex_spacer(&mut self) {
         self.add_child(html!{<div class="pwt-flex-fill"/>});
     }
 }
 
 impl Into<VTag> for Column {
-    fn into(mut self) -> VTag {
-
-        self.add_class("pwt-d-flex");
-        self.add_class("pwt-flex-column");
-
-        if self.gap > 0 {
-            self.add_class(format!("pwt-gap-{}", self.gap));
-        }
-
+    fn into(self) -> VTag {
         let attributes = self.std_props.cumulate_attributes(None::<&str>);
 
         let listeners = Listeners::Pending(
