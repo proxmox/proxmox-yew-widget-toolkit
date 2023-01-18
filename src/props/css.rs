@@ -78,3 +78,32 @@ impl From<JustifyContent> for Classes {
         }
     }
 }
+
+/// Wrapper type to specify CSS property `user-select`.
+///
+/// ```
+/// # use pwt::prelude::*;
+/// # use pwt::widget::Container;
+/// use pwt::props::css::*;
+/// Container::new()
+///    .class(UserSelect::None)
+/// # ;
+/// ```
+#[derive(Copy, Clone, PartialEq, Eq)]
+pub enum UserSelect {
+    Auto,
+    None,
+    Text,
+    All,
+}
+
+impl From<UserSelect> for Classes {
+    fn from(value: UserSelect) -> Self {
+        match value {
+            UserSelect::Auto => "pwt-use-select-auto".into(),
+            UserSelect::None => "pwt-use-select-none".into(),
+            UserSelect::Text => "pwt-use-select-text".into(),
+            UserSelect::All => "pwt-use-select-all".into(),
+        }
+    }
+}
