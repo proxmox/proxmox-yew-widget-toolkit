@@ -367,3 +367,100 @@ impl From<OverflowY> for Classes {
         }
     }
 }
+
+/// Wrapper type to specify CSS property `white-space`.
+///
+/// ```
+/// # use pwt::prelude::*;
+/// # use pwt::widget::Container;
+/// use pwt::props::css::*;
+/// Container::new()
+///    .class(WhiteSpace::Pre)
+/// # ;
+/// ```
+#[derive(Copy, Clone, PartialEq, Eq)]
+pub enum WhiteSpace {
+    Normal,
+    Nowrap,
+    Pre,
+    PreWrap,
+    PreLine,
+    BreakSpaces,
+}
+
+impl From<WhiteSpace> for Classes {
+    fn from(value: WhiteSpace) -> Self {
+        match value {
+            WhiteSpace::Normal => "pwt-white-space-normal".into(),
+            WhiteSpace::Nowrap => "pwt-white-space-nowrap".into(),
+            WhiteSpace::Pre => "pwt-white-space-pre".into(),
+            WhiteSpace::PreWrap => "pwt-white-space-pre-wrap".into(),
+            WhiteSpace::PreLine => "pwt-white-space-pre-line".into(),
+            WhiteSpace::BreakSpaces => "pwt-white-space-break-spaces".into(),
+        }
+    }
+}
+
+/// CSS utility type to truncate text with elipsis.
+///
+/// `overflow: hidden`, `text-overflow: elipsis`, `white-space: nowrap`
+///
+/// ```
+/// # use pwt::prelude::*;
+/// # use pwt::widget::Container;
+/// use pwt::props::css::*;
+/// Container::new()
+///    .class(TextTruncate)
+/// # ;
+/// ```
+pub struct TextTruncate;
+impl From<TextTruncate> for Classes {
+    fn from(_value: TextTruncate) -> Self { "pwt-text-truncate".into() }
+}
+
+/// CSS utility type to fit into parent box
+///
+/// `width: 100%`, `height: 100%`, `overflow: auto`, `box-sizing: border-box`.
+///
+/// ```
+/// # use pwt::prelude::*;
+/// # use pwt::widget::Container;
+/// use pwt::props::css::*;
+/// Container::new()
+///    .class(Fit)
+/// # ;
+/// ```
+pub struct Fit;
+impl From<Fit> for Classes {
+    fn from(_value: Fit) -> Self { "pwt-fit".into() }
+}
+
+/// CSS utility type to fit into viewport (use all visible space)
+///
+/// ```
+/// # use pwt::prelude::*;
+/// # use pwt::widget::Container;
+/// use pwt::props::css::*;
+/// Container::new()
+///    .class(Viewport)
+/// # ;
+/// ```
+pub struct Viewport;
+impl From<Viewport> for Classes {
+    fn from(_value: Viewport) -> Self { "pwt-viewport".into() }
+}
+
+/// CSS utility type to set the flex property to `flex: 1 1 auto;`
+///
+/// ```
+/// # use pwt::prelude::*;
+/// # use pwt::widget::Container;
+/// use pwt::props::css::*;
+/// Container::new()
+///    .class(FlexFill)
+/// # ;
+/// ```
+pub struct FlexFill;
+impl From<FlexFill> for Classes {
+    fn from(_value: FlexFill) -> Self { "pwt-flex-fill".into() }
+}
