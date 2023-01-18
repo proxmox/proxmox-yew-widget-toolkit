@@ -3,6 +3,21 @@
 //! This module provides wrapper types for common CSS
 //! properties. Using static rust types makes it possible to check
 //! correctness at compile type.
+//!
+//! For common properties, our CSS template contains utility classes
+//! to set properties. Corresponding types implements
+//! [Into]<[Classes]>, so that you can use the wrapper type when
+//! specifying a class name, i.e:
+//!
+//! ```
+//! # use pwt::prelude::*;
+//! # use pwt::widget::Container;
+//! use pwt::props::css::*;
+//! Container::new()
+//!    .class(FlexDirection::Row)
+//! # ;
+//! ```
+
 
 use yew::Classes;
 
