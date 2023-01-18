@@ -34,14 +34,18 @@ use yew::Classes;
 #[derive(Copy, Clone, PartialEq, Eq)]
 pub enum FlexDirection {
     Row,
+    RowReverse,
     Column,
+    ColumnReverse,
 }
 
 impl From<FlexDirection> for Classes {
     fn from(value: FlexDirection) -> Self {
         match value {
             FlexDirection::Row => "pwt-flex-row".into(),
+            FlexDirection::RowReverse => "pwt-flex-row-reverse".into(),
             FlexDirection::Column => "pwt-flex-column".into(),
+            FlexDirection::ColumnReverse => "pwt-flex-column-reverse".into(),
         }
     }
 }
