@@ -30,7 +30,7 @@ impl Column {
 
     /// Method to add a CSS class to set gap between children.
     ///
-    /// The default CSS template defines utility classes for gaps (`pwt-ga-{gap}`).
+    /// The default CSS template defines utility classes for gaps (`pwt-gap-{gap}`).
     pub fn add_gap(&mut self, gap: impl IntoPropValue<Option<usize>>) {
         if let Some(gap) = gap.into_prop_value() {
             self.add_class(format!("pwt-gap-{}", gap))
