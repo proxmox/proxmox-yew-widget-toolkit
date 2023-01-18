@@ -50,6 +50,33 @@ impl From<FlexDirection> for Classes {
     }
 }
 
+/// Wrapper type to specify CSS property `flex-wrap`.
+///
+/// ```
+/// # use pwt::prelude::*;
+/// # use pwt::widget::Container;
+/// use pwt::props::css::*;
+/// Container::new()
+///    .class(FlexWrap::WrapReverse)
+/// # ;
+/// ```
+#[derive(Copy, Clone, PartialEq, Eq)]
+pub enum FlexWrap {
+    Wrap,
+    WrapReverse,
+    NoWrap,
+}
+
+impl From<FlexWrap> for Classes {
+    fn from(value: FlexWrap) -> Self {
+        match value {
+            FlexWrap::Wrap => "pwt-flex-wrap".into(),
+            FlexWrap::NoWrap => "pwt-flex-nowrap".into(),
+            FlexWrap::WrapReverse => "pwt-flex-wrap-reverse".into(),
+        }
+    }
+}
+
 /// Wrapper type to specify CSS property `justify-content`.
 ///
 /// ```
