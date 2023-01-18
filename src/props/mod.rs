@@ -15,8 +15,6 @@ impl AsClassesMut for yew::Classes {
 mod callback_mut;
 pub use callback_mut::{CallbackMut, CallbackMutScopeExt, IntoEventCallbackMut};
 
-pub mod css;
-
 mod extract_key_function;
 pub use extract_key_function::{ExtractKeyFn, ExtractPrimaryKey, IntoExtractKeyFn};
 

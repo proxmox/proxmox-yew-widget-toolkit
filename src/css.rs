@@ -2,7 +2,7 @@
 //!
 //! This module provides wrapper types for common CSS
 //! properties. Using static rust types makes it possible to check
-//! correctness at compile type.
+//! correctness at compile time.
 //!
 //! For common properties, our CSS template contains utility classes
 //! to set properties. Corresponding types implements
@@ -12,7 +12,7 @@
 //! ```
 //! # use pwt::prelude::*;
 //! # use pwt::widget::Container;
-//! use pwt::props::css::*;
+//! use pwt::css::*;
 //! Container::new()
 //!    .class(FlexDirection::Row)
 //! # ;
@@ -26,7 +26,7 @@ use yew::Classes;
 /// ```
 /// # use pwt::prelude::*;
 /// # use pwt::widget::Container;
-/// use pwt::props::css::*;
+/// use pwt::css::*;
 /// Container::new()
 ///    .class(FlexDirection::Row)
 /// # ;
@@ -55,7 +55,7 @@ impl From<FlexDirection> for Classes {
 /// ```
 /// # use pwt::prelude::*;
 /// # use pwt::widget::Container;
-/// use pwt::props::css::*;
+/// use pwt::css::*;
 /// Container::new()
 ///    .class(FlexWrap::WrapReverse)
 /// # ;
@@ -82,7 +82,7 @@ impl From<FlexWrap> for Classes {
 /// ```
 /// # use pwt::prelude::*;
 /// # use pwt::widget::Container;
-/// use pwt::props::css::*;
+/// use pwt::css::*;
 /// Container::new()
 ///    .class(JustifyContent::Center)
 /// # ;
@@ -127,7 +127,7 @@ impl From<JustifyContent> for Classes {
 /// ```
 /// # use pwt::prelude::*;
 /// # use pwt::widget::Container;
-/// use pwt::props::css::*;
+/// use pwt::css::*;
 /// Container::new()
 ///    .class(AlignItems::Center)
 /// # ;
@@ -164,7 +164,7 @@ impl From<AlignItems> for Classes {
 /// ```
 /// # use pwt::prelude::*;
 /// # use pwt::widget::Container;
-/// use pwt::props::css::*;
+/// use pwt::css::*;
 /// Container::new()
 ///    .class(AlignSelf::Center)
 /// # ;
@@ -199,7 +199,7 @@ impl From<AlignSelf> for Classes {
 /// ```
 /// # use pwt::prelude::*;
 /// # use pwt::widget::Container;
-/// use pwt::props::css::*;
+/// use pwt::css::*;
 /// Container::new()
 ///    .class(UserSelect::None)
 /// # ;
@@ -228,7 +228,7 @@ impl From<UserSelect> for Classes {
 /// ```
 /// # use pwt::prelude::*;
 /// # use pwt::widget::Container;
-/// use pwt::props::css::*;
+/// use pwt::css::*;
 /// Container::new()
 ///    .class(TextAlign::Justify)
 /// # ;
@@ -263,7 +263,7 @@ impl From<TextAlign> for Classes {
 /// ```
 /// # use pwt::prelude::*;
 /// # use pwt::widget::Container;
-/// use pwt::props::css::*;
+/// use pwt::css::*;
 /// Container::new()
 ///    .class(Display::InlineBlock)
 /// # ;
@@ -304,7 +304,7 @@ impl From<Display> for Classes {
 /// ```
 /// # use pwt::prelude::*;
 /// # use pwt::widget::Container;
-/// use pwt::props::css::*;
+/// use pwt::css::*;
 /// Container::new()
 ///    .class(Overflow::Hidden)
 /// # ;
@@ -373,7 +373,7 @@ impl From<OverflowY> for Classes {
 /// ```
 /// # use pwt::prelude::*;
 /// # use pwt::widget::Container;
-/// use pwt::props::css::*;
+/// use pwt::css::*;
 /// Container::new()
 ///    .class(WhiteSpace::Pre)
 /// # ;
@@ -408,7 +408,7 @@ impl From<WhiteSpace> for Classes {
 /// ```
 /// # use pwt::prelude::*;
 /// # use pwt::widget::Container;
-/// use pwt::props::css::*;
+/// use pwt::css::*;
 /// Container::new()
 ///    .class(TextTruncate)
 /// # ;
@@ -425,7 +425,7 @@ impl From<TextTruncate> for Classes {
 /// ```
 /// # use pwt::prelude::*;
 /// # use pwt::widget::Container;
-/// use pwt::props::css::*;
+/// use pwt::css::*;
 /// Container::new()
 ///    .class(Fit)
 /// # ;
@@ -440,7 +440,7 @@ impl From<Fit> for Classes {
 /// ```
 /// # use pwt::prelude::*;
 /// # use pwt::widget::Container;
-/// use pwt::props::css::*;
+/// use pwt::css::*;
 /// Container::new()
 ///    .class(Viewport)
 /// # ;
@@ -455,7 +455,7 @@ impl From<Viewport> for Classes {
 /// ```
 /// # use pwt::prelude::*;
 /// # use pwt::widget::Container;
-/// use pwt::props::css::*;
+/// use pwt::css::*;
 /// Container::new()
 ///    .class(FlexFill)
 /// # ;

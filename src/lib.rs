@@ -128,6 +128,7 @@
 //! - [widget::TabPanel::navigation_container]
 //! - [widget::nav_menu::NavigationMenu::navigation_container]
 
+pub mod css;
 pub mod props;
 pub mod state;
 pub mod widget;
