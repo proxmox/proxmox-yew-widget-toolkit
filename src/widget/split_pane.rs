@@ -472,6 +472,8 @@ impl Component for PwtSplitPane {
             Msg::StartResize(child_index, x, y) => {
                 self.drag_offset = if props.vertical { y } else { x };
 
+                self.rtl = detect_rtl(&props.std_props.node_ref);
+
                 let window = web_sys::window().unwrap();
                 let link = ctx.link();
                 let onmousemove = link.callback(move |e: Event| {
@@ -565,16 +567,12 @@ fn detect_rtl(node_ref: &NodeRef) -> Option<bool> {
         None => return None,
     };
 
-    if el.child_element_count() < 2 { return None; }
-
-    let first_x = el.first_element_child().unwrap().get_bounding_client_rect().x();
-    let last_x = el.last_element_child().unwrap().get_bounding_client_rect().x();
-
-    if first_x > last_x {
-        Some(true)
-    } else if first_x < last_x {
-        Some(false)
-    } else {
-        None
+    let window = web_sys::window().unwrap();
+    if let Ok(Some(style)) = window.get_computed_style(&el) {
+        if let Ok(direction) = style.get_property_value("direction") {
+            return Some(direction == "rtl");
+        }
     }
+
+    None
 }
