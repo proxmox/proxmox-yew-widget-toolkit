@@ -259,6 +259,7 @@ impl PwtSplitPane {
     fn create_splitter(&self, ctx: &Context<Self>, index: usize, fraction: Option<f64>) -> Html {
         let props = ctx.props();
         let vertical = props.vertical;
+        let rtl = self.rtl.unwrap_or(false);
 
         let onkeydown = Callback::from({
             let link = ctx.link().clone();
@@ -277,13 +278,21 @@ impl PwtSplitPane {
                         event.stop_propagation();
                         link.send_message(Msg::Grow(index, event.shift_key()));
                     }
-                    "ArrowLeft" if !vertical  => {
+                    "ArrowLeft" if !vertical && !rtl  => {
                         event.stop_propagation();
                         link.send_message(Msg::Shrink(index, event.shift_key()));
                     }
-                    "ArrowRight" if !vertical => {
+                    "ArrowRight" if !vertical && !rtl => {
                         event.stop_propagation();
                         link.send_message(Msg::Grow(index, event.shift_key()));
+                    }
+                    "ArrowLeft" if !vertical && rtl  => {
+                        event.stop_propagation();
+                        link.send_message(Msg::Grow(index, event.shift_key()));
+                    }
+                    "ArrowRight" if !vertical && rtl => {
+                        event.stop_propagation();
+                        link.send_message(Msg::Shrink(index, event.shift_key()));
                     }
                     _ => {}
                 }
