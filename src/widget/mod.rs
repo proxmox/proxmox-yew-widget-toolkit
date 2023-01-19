@@ -18,6 +18,8 @@ pub use container::Container;
 mod dropdown;
 pub use dropdown::{Dropdown, PwtDropdown, RenderDropdownPickerFn};
 
+pub mod dom;
+
 mod fa;
 pub use fa::{Fa, PwtFa};
 

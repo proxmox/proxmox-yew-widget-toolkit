@@ -5,8 +5,10 @@ use yew::html::IntoPropValue;
 use gloo_events::EventListener;
 use wasm_bindgen::{JsCast, UnwrapThrowExt};
 
-use crate::widget::Container;
 use crate::props::{ContainerBuilder, EventSubscriber, WidgetBuilder};
+
+use super::Container;
+use super::dom::element_direction_rtl;
 
 use pwt_macros::widget;
 
@@ -435,7 +437,7 @@ impl Component for PwtSplitPane {
         }
 
         if self.rtl.is_none() {
-            self.rtl = detect_rtl(&props.std_props.node_ref);
+            self.rtl = element_direction_rtl(&props.std_props.node_ref);
         }
 
         match msg {
@@ -472,7 +474,7 @@ impl Component for PwtSplitPane {
             Msg::StartResize(child_index, x, y) => {
                 self.drag_offset = if props.vertical { y } else { x };
 
-                self.rtl = detect_rtl(&props.std_props.node_ref);
+                self.rtl = element_direction_rtl(&props.std_props.node_ref);
 
                 let window = web_sys::window().unwrap();
                 let link = ctx.link();
@@ -558,21 +560,4 @@ impl Component for PwtSplitPane {
             .attribute("style", style)
             .into()
     }
-}
-
-fn detect_rtl(node_ref: &NodeRef) -> Option<bool> {
-
-    let el = match node_ref.cast::<web_sys::HtmlElement>() {
-        Some(el) => el,
-        None => return None,
-    };
-
-    let window = web_sys::window().unwrap();
-    if let Ok(Some(style)) = window.get_computed_style(&el) {
-        if let Ok(direction) = style.get_property_value("direction") {
-            return Some(direction == "rtl");
-        }
-    }
-
-    None
 }
