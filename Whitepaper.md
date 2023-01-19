@@ -6,7 +6,7 @@ first [Product](https://www.proxmox.com/en/proxmox-backup-server)
 entirely written in Rust in 2020.
 
 Well, I need to correct myself: Only the server side is written in
-Rust. The product also includes a GUI, which is browser based and is
+Rust. The product also includes a GUI, which is browser based and
 written in Javascript.
 
 But everyone here is exited about the Rust language, so we asked
@@ -30,8 +30,8 @@ backup server.
 First, let me know you that we currently ship web based GUIs for all
 our products. Some products additionally have native GUIs on Linux,
 and we ship GUIs for mobile devices (i.e. using
-[Flutter](https://flutter.dev)). So we are lokkink for something
-Cross-platform.
+[Flutter](https://flutter.dev)). So we are looking for something
+cross-platform.
 
 I started testing various Rust GUI libraries, and finally decided to
 use [Yew](https://yew.rs) as base, because
@@ -58,6 +58,7 @@ Of cause, I also tested non-browser based libraries like
 [Druid](https://github.com/linebender/druid), but none of them really
 convinced me.
 
+
 ## Using Yew directly.
 
 I started by writing small test apps like
@@ -76,13 +77,18 @@ uses countless of complex UI elements like:
 - Window splitters.
 - Complex charts.
 
-And all other stuff supported by the currently used framework (about
-11Mb JavaScript code!).
+And all other stuff supported by the currently used framework, which
+is about 11Mb JavaScript code!.
 
 So the next step was quite clear. I need to write reusable widget
 library providing all that functionality.
 
+
 ## Writing complex components/widgets.
+
+The set of required widget was quite clear, so this was more of a
+trial and error phase to find convienient APIs and data structures for
+Rust.
 
 It's no secret that sometimes you have to build your Rust code from
 scratch because the compiler won't let you do it the way you
@@ -101,14 +107,16 @@ backup server GUI, but there is still room for improvements:
 
 The good think is that Rust is a strongly typed language. It allows
 you to restructure large parts of your code, and if it still compiles,
-it still works.
+it still works. We will try to gradually improve the library while
+keeping the API stable.
+
 
 ### Use Rust (instead of `html!{}` macro) whenever possible.
 
 Yew provide a ways to create components using the `html!{}` macro, i.e:
 
 ```
-html!{<div class="primary" onclick=|_| { ... }>{"Click me!"}</div>}
+html!{<div class="pwt-color-scheme-primary" onclick=|_| { ... }>{"Click me!"}</div>}
 ```
 
 Instead, our components provides builder function, so you can produce
@@ -116,13 +124,17 @@ the same result with:
 
 ```
 Container::new()
-   .class("primary")
+   .class(TextAlign::Justify)
+   .class(ColorScheme::Primary)
    .onclick(|_| { ...})
    .with_child("Click me!)
 ```
 
-All components implement `Into<Html>`, and `with_child` accepts
-anything implementing it.
+All components implement `Into<Html>`, and the container `with_child`
+method accepts anything implementing `Into<Html>`.
+
+You can still use strings to specify the class attribute, but we
+also provide Rust types for common classes.
 
 We think that this style is much easier to read/format and understand,
 especially when you configure many propertyies. We still use the html
@@ -140,11 +152,11 @@ CSS classes which allows to control all flexbox properties.
 ```
 Column::new()
    // CSS: width: 100%; height: 100%; overflow: auto
-   .class("pwt-fit")
+   .class(Fit)
    // CSS: justify-content: center
-   .class("pwt-justify-content-center")
+   .class(JustifyContent::Center)
    // CSS: align-items: center
-   .class("pwt-align-items-center")
+   .class(AlignItems::Center)
    ...
 ```
 
@@ -154,3 +166,17 @@ similar approach.
 
 To summarize, we simply use HTML layout, either CSS flexbox or CSS
 grid. This is extremely flexible and well known.
+
+
+### Support for right-to-left scripts
+
+Languages like Arabic, Hebrew and Persian are left-to-right, and
+people expect that row-layouts also change direction when you use such
+language. Fortunatly, CSS already support switching between LTR/RTL
+direction, and a flexbox row automatically changes the direction.
+
+There are still things you need to do programatically, and its
+sometime required to consider the script direction. Especially when
+you navigate through flexbox children using arrow keys, or if you
+resize flexbox children using the mouse.
+
