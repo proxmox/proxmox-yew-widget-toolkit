@@ -236,6 +236,7 @@ impl SplitPane {
 
 #[doc(hidden)]
 pub struct PwtSplitPane {
+    rtl: Option<bool>,
     sizes: Vec<f64>, // observer pane sizes
     drag_offset: i32,
     mousemove_listener: Option<EventListener>,
@@ -403,6 +404,7 @@ impl PwtSplitPane {
         } else {
             return false;
         };
+
         self.sizes[child_index] += diff;
         self.sizes[child_index + 1] -= diff;
 
@@ -417,6 +419,7 @@ impl Component for PwtSplitPane {
 
     fn create(_ctx: &Context<Self>) -> Self {
         Self {
+            rtl: None,
             sizes: Vec::new(),
             drag_offset: 0,
             mousemove_listener: None,
@@ -431,6 +434,10 @@ impl Component for PwtSplitPane {
             self.sizes = sizes;
         }
 
+        if self.rtl.is_none() {
+            self.rtl = detect_rtl(&props.std_props.node_ref);
+        }
+
         match msg {
             Msg::MouseMove(child_index, x, y) => {
                 if self.sizes.len() <= child_index { return false; }
@@ -443,7 +450,13 @@ impl Component for PwtSplitPane {
                     let new_size = if props.vertical {
                         (y as f64) - rect.y() - (self.drag_offset as f64)
                     } else {
-                        (x as f64) - rect.x() - (self.drag_offset as f64)
+                        let rtl = self.rtl.unwrap_or(false);
+
+                        if rtl {
+                            rect.right() - (x as f64) - (self.drag_offset as f64)
+                        } else {
+                            (x as f64) - rect.x() - (self.drag_offset as f64)
+                        }
                     };
 
                     return self.resize_pane(props, child_index, new_size);
@@ -542,5 +555,26 @@ impl Component for PwtSplitPane {
         container
             .attribute("style", style)
             .into()
+    }
+}
+
+fn detect_rtl(node_ref: &NodeRef) -> Option<bool> {
+
+    let el = match node_ref.cast::<web_sys::HtmlElement>() {
+        Some(el) => el,
+        None => return None,
+    };
+
+    if el.child_element_count() < 2 { return None; }
+
+    let first_x = el.first_element_child().unwrap().get_bounding_client_rect().x();
+    let last_x = el.last_element_child().unwrap().get_bounding_client_rect().x();
+
+    if first_x > last_x {
+        Some(true)
+    } else if first_x < last_x {
+        Some(false)
+    } else {
+        None
     }
 }
