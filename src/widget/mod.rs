@@ -57,6 +57,9 @@ pub use grid_picker::GridPicker;
 mod row;
 pub use row::Row;
 
+mod rtl_switcher;
+pub use rtl_switcher::RtlSwitcher;
+
 mod segmented_button;
 pub use segmented_button::{PwtSegmentedButton, SegmentedButton};
 
