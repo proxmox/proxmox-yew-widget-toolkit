@@ -464,3 +464,43 @@ pub struct FlexFill;
 impl From<FlexFill> for Classes {
     fn from(_value: FlexFill) -> Self { "pwt-flex-fill".into() }
 }
+
+
+/// Wrapper type to specify CSS color scheme class.
+///
+/// Color schemes defines color/background-color combinations.
+///
+/// ```
+/// # use pwt::prelude::*;
+/// # use pwt::widget::Container;
+/// use pwt::css::*;
+/// Container::new()
+///    .class(ColorScheme::Primary)
+/// # ;
+/// ```
+#[derive(Copy, Clone, PartialEq, Eq)]
+pub enum ColorScheme {
+    Primary,
+    PrimaryContainer,
+    Secondary,
+    SecondaryContainer,
+    Error,
+    ErrorContainer,
+    Neutral,
+    NeutralContainer,
+}
+
+impl From<ColorScheme> for Classes {
+    fn from(value: ColorScheme) -> Self {
+        match value {
+            ColorScheme::Primary => "pwt-scheme-primary".into(),
+            ColorScheme::PrimaryContainer => "pwt-scheme-primary-container".into(),
+            ColorScheme::Secondary => "pwt-scheme-secondary".into(),
+            ColorScheme::SecondaryContainer => "pwt-scheme-secondary-container".into(),
+            ColorScheme::Error => "pwt-scheme-error".into(),
+            ColorScheme::ErrorContainer => "pwt-scheme-error-container".into(),
+            ColorScheme::Neutral => "pwt-scheme-neutral".into(),
+            ColorScheme::NeutralContainer => "pwt-scheme-neutral-container".into(),
+        }
+    }
+}
