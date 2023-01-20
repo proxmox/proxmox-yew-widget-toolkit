@@ -6,6 +6,8 @@ pub use action_icon::{ActionIcon, PwtActionIcon};
 mod alert_dialog;
 pub use alert_dialog::{error_message, AlertDialog, PwtAlertDialog};
 
+pub mod align;
+
 mod button;
 pub use button::{Button, PwtButton};
 
