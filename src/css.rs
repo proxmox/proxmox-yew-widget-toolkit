@@ -478,7 +478,7 @@ impl From<FlexFill> for Classes {
 ///    .class(ColorScheme::Primary)
 /// # ;
 /// ```
-#[derive(Copy, Clone, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum ColorScheme {
     Primary,
     PrimaryContainer,
