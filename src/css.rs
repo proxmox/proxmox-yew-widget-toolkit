@@ -488,6 +488,8 @@ pub enum ColorScheme {
     ErrorContainer,
     Neutral,
     NeutralContainer,
+    NeutralAlt,
+    NeutralAltContainer,
 }
 
 impl From<ColorScheme> for Classes {
@@ -501,6 +503,8 @@ impl From<ColorScheme> for Classes {
             ColorScheme::ErrorContainer => "pwt-scheme-error-container".into(),
             ColorScheme::Neutral => "pwt-scheme-neutral".into(),
             ColorScheme::NeutralContainer => "pwt-scheme-neutral-container".into(),
+            ColorScheme::NeutralAlt => "pwt-scheme-neutral.alt".into(),
+            ColorScheme::NeutralAltContainer => "pwt-scheme-neutral-alt-container".into(),
         }
     }
 }
