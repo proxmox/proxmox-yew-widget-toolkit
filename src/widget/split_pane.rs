@@ -246,6 +246,7 @@ pub struct PwtSplitPane {
 }
 
 pub enum Msg {
+    FocusIn,
     Shrink(usize, bool),
     Grow(usize, bool),
     ResetSize,
@@ -450,6 +451,10 @@ impl Component for PwtSplitPane {
         }
 
         match msg {
+            Msg::FocusIn => {
+                self.rtl = element_direction_rtl(&props.std_props.node_ref);
+                true
+            }
             Msg::MouseMove(child_index, x, y) => {
                 if self.sizes.len() <= child_index { return false; }
 
@@ -567,6 +572,7 @@ impl Component for PwtSplitPane {
 
         container
             .attribute("style", style)
+            .onfocusin(ctx.link().callback(|_| Msg::FocusIn))
             .into()
     }
 }
