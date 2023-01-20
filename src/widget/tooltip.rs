@@ -1,12 +1,12 @@
 use std::rc::Rc;
 
-use serde_json::json;
-use wasm_bindgen::JsValue;
 use gloo_timers::callback::Timeout;
 
+use yew::html::IntoPropValue;
 use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
-use yew::html::IntoPropValue;
+
+use crate::widget::align::{align_to, AlignOptions, GrowDirection, Point};
 
 #[derive(Properties, PartialEq, Clone)]
 pub struct Tooltip {
@@ -15,9 +15,8 @@ pub struct Tooltip {
 }
 
 impl Tooltip {
-
     pub fn new() -> Self {
-        yew::props!{Self {
+        yew::props! {Self {
             children: Vec::new(),
         }}
     }
@@ -53,7 +52,7 @@ pub enum Msg {
 pub struct PwtTooltip {
     content_ref: NodeRef,
     tooltip_ref: NodeRef,
-    popper: Option<JsValue>,
+    align_options: Option<AlignOptions>,
     show: bool,
     timeout: Option<Timeout>,
 }
@@ -66,9 +65,9 @@ impl Component for PwtTooltip {
         Self {
             content_ref: NodeRef::default(),
             tooltip_ref: NodeRef::default(),
-            popper: None,
             show: false,
             timeout: None,
+            align_options: None,
         }
     }
 
@@ -106,7 +105,8 @@ impl Component for PwtTooltip {
         let onkeydown = Callback::from({
             let link = ctx.link().clone();
             move |event: KeyboardEvent| {
-                if show_tooltip && event.key_code() == 27 { // ESC
+                if show_tooltip && event.key_code() == 27 {
+                    // ESC
                     link.send_message(Msg::Hide);
                     event.prevent_default();
                 }
@@ -114,12 +114,11 @@ impl Component for PwtTooltip {
         });
 
         let data_show = show_tooltip.then(|| "");
-        html!{
+        html! {
             <>
                 <div ref={self.content_ref.clone()} {onmouseenter} {onmouseleave} {onfocus} {onblur} {onkeydown}>{props.children.clone()}</div>
                 <div role="tooltip" aria-live="polite" class="tooltip" ref={self.tooltip_ref.clone()} data-show={data_show}>
                 if let Some(tip) = &props.tip { {tip.clone()} }
-                <div class="tooltip-arrow" data-popper-arrow=""></div>
             </div>
             </>
         }
@@ -127,46 +126,22 @@ impl Component for PwtTooltip {
 
     fn rendered(&mut self, _ctx: &Context<Self>, first_render: bool) {
         if first_render {
-            let opts = json!({
-                "placement": "bottom-start",
-                "strategy": "fixed",
-                "modifiers": [
-                    {
-                        "name": "arrow",
-                    },
-                    {
-                        "name": "preventOverflow",
-                        "options": {
-                            "mainAxis": true, // true by default
-                            "altAxis": false, // false by default
-                        },
-                    },
-                    {
-                        "name": "flip",
-                        "options": {
-                            "fallbackPlacements": ["top-start", "right-start", "left-start"],
-                        },
-                    },
-                    {
-                        "name": "offset",
-                        "options": {
-                            "offset": [4, 4],
-                        },
-                    },
-                ],
-            });
-
-            let opts = crate::to_js_value(&opts).unwrap();
-
-            if let Some(content_node) = self.content_ref.get() {
-                if let Some(tooltip_node) = self.tooltip_ref.get() {
-                    self.popper = Some(crate::create_popper(content_node, tooltip_node, &opts));
-                }
-            }
+            self.align_options = Some(
+                AlignOptions::new(Point::BottomStart, Point::TopStart, GrowDirection::None)
+                    .with_fallback_placement(
+                        Point::TopStart,
+                        Point::BottomStart,
+                        GrowDirection::None,
+                    )
+                    .with_fallback_placement(Point::TopEnd, Point::TopStart, GrowDirection::None)
+                    .with_fallback_placement(Point::TopStart, Point::TopEnd, GrowDirection::None)
+                    .offset(4.0, 4.0),
+            );
         }
-
-        if let Some(popper) = &self.popper {
-            crate::update_popper(popper);
+        if let Some(content_node) = self.content_ref.get() {
+            if let Some(tooltip_node) = self.tooltip_ref.get() {
+                let _ = align_to(content_node, tooltip_node, self.align_options.clone());
+            }
         }
     }
 }
