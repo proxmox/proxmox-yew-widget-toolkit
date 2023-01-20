@@ -1,11 +1,13 @@
 use std::rc::Rc;
 
-use yew::prelude::*;
 use yew::virtual_dom::{Key, VComp, VNode};
 use yew::html::{IntoEventCallback, IntoPropValue};
 
-use crate::widget::focus::roving_tabindex_next;
+use crate::prelude::*;
 use crate::state::{NavigationContext, NavigationContextExt};
+use super::focus::roving_tabindex_next;
+use super::dom::element_direction_rtl;
+use super::Container;
 
 #[derive(Clone, PartialEq)]
 pub struct TabBarItem {
@@ -118,12 +120,14 @@ impl TabBar {
 }
 
 pub enum Msg {
+    FocusIn,
     Select(Key, bool),
 }
 
 #[doc(hidden)]
 pub struct PwtTabBar {
     active: Option<Key>,
+    rtl: Option<bool>,
     _nav_ctx_handle: Option<ContextHandle<NavigationContext>>,
 }
 
@@ -172,6 +176,7 @@ impl Component for PwtTabBar {
 
         Self {
             active,
+            rtl: None,
             _nav_ctx_handle,
         }
     }
@@ -179,6 +184,10 @@ impl Component for PwtTabBar {
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
         let props = ctx.props();
         match msg {
+            Msg::FocusIn => {
+                self.rtl = element_direction_rtl(&props.node_ref);
+                true
+            }
             Msg::Select(key, update_route) => {
                 if let Some(active) = &self.active {
                     if &key == active { return false; }
@@ -240,32 +249,30 @@ impl Component for PwtTabBar {
         }).collect::<Html>();
 
         let tabbar_ref =  props.node_ref.clone();
-        let onkeydown = Callback::from( move |event: KeyboardEvent| {
-            match event.key_code() {
-                39 => { // left
-                    roving_tabindex_next(&tabbar_ref, false, false);
-                }
-                37 => { // right
-                    roving_tabindex_next(&tabbar_ref, true, false);
-                }
-                _ => return,
-            }
-            event.prevent_default();
-        });
+        let rtl = self.rtl.unwrap_or(false);
 
-        let class = classes!{
-            "pwt-nav-pills",
-            "pwt-d-flex",
-            "pwt-flex-wrap",
-            "pwt-column-gap-4",
-            props.class.clone(),
-        };
-
-        html!{
-            <div ref={props.node_ref.clone()} {onkeydown} {class}>
-            {pills}
-            </div>
-        }
+        Container::new()
+            .node_ref(props.node_ref.clone())
+            .class("pwt-nav-pills")
+            .class("pwt-d-flex")
+            .class("pwt-flex-wrap")
+            .class("pwt-column-gap-4")
+            .class(props.class.clone())
+            .with_child(pills)
+            .onkeydown(move |event: KeyboardEvent| {
+                match event.key_code() {
+                    39 => { // left
+                        roving_tabindex_next(&tabbar_ref, rtl, false);
+                    }
+                    37 => { // right
+                        roving_tabindex_next(&tabbar_ref, !rtl, false);
+                    }
+                    _ => return,
+                }
+                event.prevent_default();
+            })
+            .onfocusin(ctx.link().callback(|_| Msg::FocusIn))
+            .into()
     }
 }
 
