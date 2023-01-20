@@ -89,6 +89,6 @@ impl Component for PwtRtlSwitcher {
 
     fn view(&self, ctx: &yew::Context<Self>) -> yew::Html {
         let onclick = ctx.link().callback(|_| Msg::ToggleRtl);
-        Checkbox::new().checked(self.rtl).onclick(onclick).into()
+        Checkbox::new().checked(self.rtl).on_change(onclick).into()
     }
 }
