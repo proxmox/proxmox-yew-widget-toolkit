@@ -12,7 +12,8 @@ use yew::html::{IntoPropValue, IntoEventCallback};
 use yew::virtual_dom::{Key, VNode};
 
 use crate::prelude::*;
-use crate::widget::{Container, Input, Tooltip};
+use crate::css::AlignItems;
+use crate::widget::{Container, Row, Input, Tooltip};
 
 use pwt_macros::widget;
 
@@ -147,6 +148,7 @@ pub struct PwtDropdown {
     // other widget can grep the focus after a change (if the want)
     pending_change: bool,
     mousedown_listener: Option<EventListener>,
+    dropdown_ref: NodeRef,
     picker_ref: NodeRef,
     picker_id: String,
     popper: Option<JsValue>,
@@ -174,6 +176,7 @@ impl Component for PwtDropdown {
             pending_change: false,
             value: ctx.props().value.clone().unwrap_or_else(|| String::new()),
             mousedown_listener: None,
+            dropdown_ref: NodeRef::default(),
             picker_ref: NodeRef::default(),
             picker_id: crate::widget::get_unique_element_id(),
             popper: None,
@@ -283,24 +286,14 @@ impl Component for PwtDropdown {
             link.send_message(Msg::Select(key));
         });
 
-        let trigger_cls = classes!{
-            "fa",
-            "fa-lg",
-            "pwt-input-trigger-icon",
-            "fa-caret-down",
-            self.show.then(|| "fa-rotate-180"),
-            disabled.then(|| "disabled"),
-        };
-
         let data_show = self.show.then(|| "true");
 
         let value = props.value.clone().unwrap_or_else(|| self.value.clone());
 
         let input = Input::new()
-            .with_std_props(&props.std_props)
             .with_input_props(&props.input_props)
-            .class("pwt-input")
-            .class("pwt-w-100")
+            .class("pwt-flex-fill")
+            .attribute("style", "border:0;margin:0;padding:0;outline:0;")
             .attribute("value", value)
             .attribute("type", "text")
             .attribute("role", "combobox")
@@ -311,13 +304,27 @@ impl Component for PwtDropdown {
             .onkeydown(onkeydown)
             .onclick(onclick);
 
-        let input = Container::new()
-            .with_child(
-                Container::new()
-                    .attribute("style", "position:relative;") // allows us to position the trigger-icon relatively
-                    .with_child(input)
-                    .with_child(html!{<i onclick={trigger_onclick} class={trigger_cls}></i>})
-            )
+        let trigger_cls = classes!{
+            "fa",
+            "fa-lg",
+            "fa-caret-down",
+            "pwt-fs-6", // normal font size
+            self.show.then(|| "fa-rotate-180"),
+            disabled.then(|| "disabled"),
+        };
+
+        let select = Row::new()
+            .node_ref(self.dropdown_ref.clone())
+            .class(AlignItems::Baseline)
+            .class("pwt-input")
+            .gap(1)
+            .with_child(input)
+            .with_child(html!{<i onclick={trigger_onclick} class={trigger_cls}></i>})
+            ;
+
+        let dropdown = Container::new()
+            .with_std_props(&props.std_props)
+            .with_child(select)
             .with_child(
                 Container::new()
                     .tag("dialog")
@@ -337,7 +344,7 @@ impl Component for PwtDropdown {
             );
 
         let mut tooltip = Tooltip::new()
-            .with_child(input);
+            .with_child(dropdown);
 
         if !self.show {
             tooltip.set_tip(props.tip.clone());
@@ -352,7 +359,6 @@ impl Component for PwtDropdown {
             crate::close_dialog(dialog_node);
         }
     }
-
 
     fn rendered(&mut self, ctx: &Context<Self>, first_render: bool) {
         if first_render {
@@ -383,9 +389,9 @@ impl Component for PwtDropdown {
 
             let opts = crate::to_js_value(&opts).unwrap();
 
-            if let Some(content_node) = props.std_props.node_ref.get() {
+            if let Some(dropdown_node) = self.dropdown_ref.get() {
                 if let Some(picker_node) = self.picker_ref.get() {
-                    self.popper = Some(crate::create_popper(content_node, picker_node, &opts));
+                    self.popper = Some(crate::create_popper(dropdown_node, picker_node, &opts));
                 }
             }
 
