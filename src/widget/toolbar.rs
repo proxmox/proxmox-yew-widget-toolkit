@@ -9,6 +9,7 @@ use pwt_macros::widget;
 
 use crate::prelude::*;
 use super::focus::{roving_tabindex_next, init_roving_tabindex, update_roving_tabindex};
+use super::dom::element_direction_rtl;
 
 /// Horizontal container for buttons with roving tabindex.
 ///
@@ -79,6 +80,7 @@ pub enum Msg {
 pub struct PwtToolbar {
     inner_ref: NodeRef,
     timeout: Option<Timeout>,
+    rtl: Option<bool>,
 }
 
 impl Component for PwtToolbar {
@@ -87,13 +89,14 @@ impl Component for PwtToolbar {
 
     fn create(_ctx: &Context<Self>) -> Self {
         Self {
+            rtl: None,
             inner_ref: NodeRef::default(),
             timeout: None,
         }
     }
 
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
-        //let props = ctx.props();
+        let props = ctx.props();
         match msg {
             Msg::FocusChange(has_focus) => {
                 let link = ctx.link().clone();
@@ -106,6 +109,7 @@ impl Component for PwtToolbar {
                 if has_focus {
                     update_roving_tabindex(&self.inner_ref);
                 }
+                self.rtl = element_direction_rtl(&props.std_props.node_ref);
                 true
             }
         }
@@ -113,6 +117,7 @@ impl Component for PwtToolbar {
 
     fn view(&self, ctx: &Context<Self>) -> Html {
         let inner_ref =  self.inner_ref.clone();
+        let rtl = self.rtl.unwrap_or(false);
 
         let props = ctx.props()
             .clone()
@@ -121,10 +126,10 @@ impl Component for PwtToolbar {
             .onkeydown(move |event: KeyboardEvent| {
                 match event.key_code() {
                     39 => { // left
-                        roving_tabindex_next(&inner_ref, false, true);
+                        roving_tabindex_next(&inner_ref, rtl, true);
                     }
                     37 => { // right
-                        roving_tabindex_next(&inner_ref, true, true);
+                        roving_tabindex_next(&inner_ref, !rtl, true);
                     }
                     _ => return,
                 }
