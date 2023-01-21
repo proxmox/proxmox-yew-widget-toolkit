@@ -280,3 +280,13 @@ impl Row {
     }
 }
 ```
+
+## Conclusion
+
+After more than six months, I start feeling confident that we can
+write high quality user interfaces using Rust. We managed to implement
+quite complex widgets within reasonable time.
+
+The next plan is to make the code available to the public in hopes
+that we can get outside people to try the code and share their ideas
+on how we can further improve the framework.
