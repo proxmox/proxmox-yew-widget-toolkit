@@ -82,8 +82,8 @@ pub fn render_tree_node<T>(
             .into()
     } else {
         let carret = match args.is_expanded() {
-            true => "fa fa-fw fa-caret-down pwt-pe-1",
-            false => "fa fa-fw fa-caret-right pwt-pe-1",
+            true => "pwt-menu-item-arrow fa fa-fw fa-caret-down pwt-pe-1",
+            false => "pwt-menu-item-arrow fa fa-fw fa-caret-right pwt-pe-1",
         };
 
         Row::new()
