@@ -44,6 +44,9 @@ pub(crate) use data_table::HeaderMsg;
 use yew::prelude::*;
 use yew::virtual_dom::VList;
 
+use crate::props::ContainerBuilder;
+use super::Row;
+
 /// Helper function to render tree nodes.
 ///
 /// This function generates a tree node with:
@@ -72,20 +75,23 @@ pub fn render_tree_node<T>(
 
     let leaf = args.is_leaf();
     if leaf {
-        html!{<span role="none">{indent.clone()}<i {class}/>{content}</span>}
+        Row::new()
+            .with_child(indent.clone())
+            .with_child(html!{<i {class}/>})
+            .with_child(content)
+            .into()
     } else {
         let carret = match args.is_expanded() {
             true => "fa fa-fw fa-caret-down pwt-pe-1",
             false => "fa fa-fw fa-caret-right pwt-pe-1",
         };
-        html!{
-            <span role="none">
-                {indent.clone()}
-                <i aria-hidden="true" role="none" class={carret}/>
-                <i {class}/>
-                {content}
-            </span>
-        }
+
+        Row::new()
+            .with_child(indent.clone())
+            .with_child(html!{<i aria-hidden="true" role="none" class={carret}/>})
+            .with_child(html!{<i {class}/>})
+            .with_child(content)
+            .into()
     }
 }
 
