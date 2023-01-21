@@ -7,6 +7,7 @@ use yew::html::IntoPropValue;
 use pwt_macros::widget;
 
 use crate::prelude::*;
+use crate::css::Display;
 
 /// Horizontal container with flex layout.
 ///
@@ -35,7 +36,7 @@ impl Row {
     /// Create a new instance.
     pub fn new() -> Self {
         Self::default()
-            .class("pwt-d-flex")
+            .class(Display::Flex)
     }
 
     /// Builder style method to add a CSS class to set gap between children.
