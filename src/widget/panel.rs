@@ -9,6 +9,9 @@ use crate::prelude::*;
 use crate::widget::Row;
 
 /// Container with header and body.
+///
+/// The header can contain tools, which are widgets displayed on the
+/// right side of the header, like a help button.
 #[widget(pwt=crate, @element, @container)]
 #[derive(Default, Debug, Clone)]
 pub struct Panel {
@@ -22,35 +25,42 @@ pub struct Panel {
 
 impl Panel {
 
+    /// Creates a new instance.
     pub fn new() -> Self {
         Self::default().border(true)
     }
 
+    /// Builder style method to set the title text.
     pub fn title(mut self, title: impl IntoPropValue<Option<AttrValue>>) -> Self {
         self.set_title(title);
         self
     }
 
+    /// Method to set the title text.
     pub fn set_title(&mut self, title: impl IntoPropValue<Option<AttrValue>>) {
         self.title = title.into_prop_value();
     }
 
-    pub fn tool(mut self, tool: impl Into<VNode>) -> Self {
+    /// Builder style method to add a tool.
+    pub fn with_tool(mut self, tool: impl Into<VNode>) -> Self {
         self.add_tool(tool);
         self
     }
 
+    /// Method to add a tool.
     pub fn add_tool(&mut self, tool: impl Into<VNode>) {
         self.tools.push(tool.into());
     }
 
-    pub fn add_header_class(&mut self, class: impl Into<Classes>) {
-        self.header_class.push(class);
-    }
-
+    /// Builder style method to add a header class.
     pub fn header_class(mut self, class: impl Into<Classes>) -> Self {
         self.add_header_class(class);
         self
+    }
+
+    /// Method to add a header class.
+    pub fn add_header_class(&mut self, class: impl Into<Classes>) {
+        self.header_class.push(class);
     }
 }
 
