@@ -9,6 +9,23 @@ use pwt_macros::widget;
 use crate::prelude::*;
 
 /// Horizontal container with flex layout.
+///
+/// Creates a container with horizontal flexbox layout.
+///
+/// ```
+/// # use pwt::prelude::*;
+/// # use pwt::widget::{Row, Button};
+/// # use pwt::css::AlignItems;
+/// Row::new()
+///   .padding(2)
+///   .gap(2)
+///   .class(AlignItems::Center)
+///   .with_child(Button::new("Button1"))
+///   .with_child(Button::new("Button2"))
+///   .with_flex_spacer() // white space between left and right side
+///   .with_child(Button::new("Button3"))
+/// # ;
+/// ```
 #[widget(pwt=crate, @element, @container)]
 #[derive(Default, Debug, Clone)]
 pub struct Row {}
