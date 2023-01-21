@@ -222,15 +222,24 @@ to fix, and we managed to make all widgets working with RTL mode.
 
 ## Rust specific Problems
 
-Rust is a great language, but it also has its weaknesses, i.e. it does
-not support classes with inhertance. But our widgets share a great
-amount of methods, and we don't want to duplicated the code for each
-widget. Inheritance is not available, so we ended up using traits
-having default method implementations.
+Rust is a great language, but it also has its quirks. Worst of all,
+we're still used to having things like class inheritance that just
+aren't available with Rust. Of cause, this isn't necessarily a bad
+thing as long as you find another solution.
 
-We have different kind of widgets, but we want to attach html event
-listeners to any of them. So this is a good example to explain how we
-share code.
+Our widgets share a great amount of methods, and we don't want to
+duplicated the code for each widget. Inheritance is not available, so
+we ended up using traits having default method implementations. For
+example, we want to attach html event listeners to widget, so lets use
+this to show how we share code.
+
+Our trait is called `EventSubscriber`, and has one method which
+provides mutable access to a `Listeners` object, where we can store
+the callbacks. This is the only method without a default
+implementation, and once you implement it for your widget, you get all
+the other methods from the default trait implementation. This is also
+a good way to split functionality and documentations into smaller
+parts.
 
 ```
 pub trait EventSubscriber: Static {
@@ -253,13 +262,8 @@ pub trait EventSubscriber: Static {
 }
 ```
 
-So a widgets just needs to implement `as_listeners_mut()`. All other
-methods are derived from the trait default implementation. This is
-also a good way to split functionality and documentations into smaller
-parts.
-
 For further convenience, we provide a `widget` macro that
-automatically add required properties and method. For example, the
+automatically add required properties and methods. For example, the
 following code implements the buider function for a full featured
 container:
 
@@ -272,7 +276,7 @@ impl Row {
     /// Create a new instance.
     pub fn new() -> Self {
         Self::default()
-            .class("pwt-d-flex")
+            .class(Display::Flex)
     }
 }
 ```
