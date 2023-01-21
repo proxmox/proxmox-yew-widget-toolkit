@@ -481,30 +481,20 @@ impl From<FlexFill> for Classes {
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum ColorScheme {
     Primary,
-    PrimaryContainer,
     Secondary,
-    SecondaryContainer,
     Error,
-    ErrorContainer,
     Neutral,
-    NeutralContainer,
     NeutralAlt,
-    NeutralAltContainer,
 }
 
 impl From<ColorScheme> for Classes {
     fn from(value: ColorScheme) -> Self {
         match value {
             ColorScheme::Primary => "pwt-scheme-primary".into(),
-            ColorScheme::PrimaryContainer => "pwt-scheme-primary-container".into(),
             ColorScheme::Secondary => "pwt-scheme-secondary".into(),
-            ColorScheme::SecondaryContainer => "pwt-scheme-secondary-container".into(),
             ColorScheme::Error => "pwt-scheme-error".into(),
-            ColorScheme::ErrorContainer => "pwt-scheme-error-container".into(),
             ColorScheme::Neutral => "pwt-scheme-neutral".into(),
-            ColorScheme::NeutralContainer => "pwt-scheme-neutral-container".into(),
             ColorScheme::NeutralAlt => "pwt-scheme-neutral-alt".into(),
-            ColorScheme::NeutralAltContainer => "pwt-scheme-neutral-alt-container".into(),
         }
     }
 }
