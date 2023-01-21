@@ -131,10 +131,21 @@ Container::new()
 ```
 
 All components implement `Into<Html>`, and the container `with_child`
-method accepts anything implementing `Into<Html>`.
+method accepts anything implementing `Into<Html>`. So you can simply
+pass text, or use other components:
 
-You can still use strings to specify the class attribute, but we
-also provide Rust types for common classes.
+```
+Row::new()
+  .with_child(Button::new("Button1"))
+  .with_child("Just some text.")
+  .with_child(Button::new("Button2"))
+```
+
+The `class()` method also deserves some attention. You can pass text
+strings to specify CSS classes. But we also provide Rust types for
+common classes which implements `Into<Classes>`. The class method
+directly accepts those types, so you can spefify css classes in a type
+safe way.
 
 We think that this style is much easier to read/format and understand,
 especially when you configure many propertyies. We still use the html
@@ -179,4 +190,3 @@ There are still things you need to do programatically, and its
 sometime required to consider the script direction. Especially when
 you navigate through flexbox children using arrow keys, or if you
 resize flexbox children using the mouse.
-
