@@ -127,7 +127,7 @@ Container::new()
    .class(TextAlign::Justify)
    .class(ColorScheme::Primary)
    .onclick(|_| { ...})
-   .with_child("Click me!)
+   .with_child("Click me!")
 ```
 
 All components implement `Into<Html>`, and the container `with_child`
