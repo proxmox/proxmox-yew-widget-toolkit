@@ -156,13 +156,18 @@ macro for short html fragments, because it's sometimes simpler in that
 case.
 
 
-### Basic Layout Containers
+### Layout Containers
 
-I added some very simple layout containers called `Row` and `Column`,
-but they simply create a HTML flexbox (`<div style="display:
-flex;...`>). Everything else can be controlled by adding class
-attributes to either the container or its children. We ship a set of
-CSS classes which allows to control all flexbox properties.
+I started with some very simple layout containers called `Row` and
+`Column`. They simply create a HTML flexbox (`<div style="display:
+flex;...`>) with the corresponding direction. Everything else can be
+controlled by adding class attributes to either the container or its
+children.
+
+We ship a set of CSS classes which allows you to control all flexbox
+properties. Such CSS class utilities got famous with
+[bootstrap](https://getbootstrap.com), but today many frameworks use a
+similar approach.
 
 ```
 Column::new()
@@ -175,12 +180,27 @@ Column::new()
    ...
 ```
 
-Such CSS class utilities got famous with
-[bootstrap](https://getbootstrap.com), but today many frameworks use a
-similar approach.
+Other layout types like our `SpliPane` require programmatic control,
+but also use flexbox for the layout.
 
 To summarize, we simply use HTML layout, either CSS flexbox or CSS
 grid. This is extremely flexible and well known.
+
+
+### Accessible Rich Internet Applications ([ARIA](https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA))
+
+Without ARIA certain functionality used in Web sites is not available
+to people who rely on screen readers and people who cannot use a
+mouse.
+
+The number of those affected is in the single-digit percentage
+range. This looks relatively low at first, but accounts to a large
+number of unhappy users which can't use your product. So good ARIA
+support is a must have for us (Note: Your eyes don't get better as you
+get older).
+
+We tired to make all widget fully accessible by following the [ARIA
+Authoring Practices Guide](https://www.w3.org/WAI/ARIA/apg).
 
 
 ### Support for right-to-left scripts
@@ -190,7 +210,69 @@ people expect that row-layouts also change direction when you use such
 language. Fortunatly, CSS already support switching between LTR/RTL
 direction, and a flexbox row automatically changes the direction.
 
-There are still things you need to do programatically, and its
-sometime required to consider the script direction. Especially when
+There are still things you need to do programatically, and it is
+sometimes required to consider the script direction. Especially when
 you navigate through flexbox children using arrow keys, or if you
 resize flexbox children using the mouse.
+
+When we first tried RTL mode, basically everything was somehow
+broken. But once you get aware of the problem, this is relatively easy
+to fix, and we managed to make all widgets working with RTL mode.
+
+
+## Rust specific Problems
+
+Rust is a great language, but it also has its weaknesses, i.e. it does
+not support classes with inhertance. But our widgets share a great
+amount of methods, and we don't want to duplicated the code for each
+widget. Inheritance is not available, so we ended up using traits
+having default method implementations.
+
+We have different kind of widgets, but we want to attach html event
+listeners to any of them. So this is a good example to explain how we
+share code.
+
+```
+pub trait EventSubscriber: Static {
+    /// Mutable access to something that can store Listeners.
+    fn as_listeners_mut(&mut self) -> &mut Listeners;
+
+    /// all other method have default implementations
+
+    fn onclick(mut self, cb: IntoEventCallback<MouseEvent>) -> Self {
+        self.as_listeners_mut().add(cb.into_event_callback());
+        self
+    }
+
+    fn ondblclick(mut self, cb: IntoEventCallback<MouseEvent>) -> Self {
+        self.as_listeners_mut().add(cb.into_event_callback());
+        self
+    }
+
+    ...
+}
+```
+
+So a widgets just needs to implement `as_listeners_mut()`. All other
+methods are derived from the trait default implementation. This is
+also a good way to split functionality and documentations into smaller
+parts.
+
+For further convenience, we provide a `widget` macro that
+automatically add required properties and method. For example, the
+following code implements the buider function for a full featured
+container:
+
+```
+#[widget(/* required features */ @element, @container)]
+#[derive(Default, Clone)]
+pub struct Row {}
+
+impl Row {
+    /// Create a new instance.
+    pub fn new() -> Self {
+        Self::default()
+            .class("pwt-d-flex")
+    }
+}
+```
