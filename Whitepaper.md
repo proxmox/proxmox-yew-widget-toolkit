@@ -147,9 +147,13 @@ common classes which implements `Into<Classes>`. The class method
 directly accepts those types, so you can spefify css classes in a type
 safe way.
 
+All base widgets implements a common builder API to specify classes,
+attributes and event callbacks.
+
 We think that this style is much easier to read/format and understand,
 especially when you configure many propertyies. We still use the html
-macro for short html fragments.
+macro for short html fragments, because it's sometimes simpler in that
+case.
 
 
 ### Basic Layout Containers
