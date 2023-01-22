@@ -849,7 +849,7 @@ impl<S: DataStore> PwtDataTable<S> {
         let mut table = Container::new()
         // do not use table tag here to avoid role="table", instead set display type in style"
             .attribute("role", "none")
-            .class("pwt-datatable2-content")
+            .class("pwt-datatable-content")
             .class(props.hover.then(|| "table-hover"))
             .class(props.striped.then(|| "table-striped"))
             .class(props.bordered.then(|| "table-bordered"))
@@ -1530,7 +1530,7 @@ impl <S: DataStore + 'static> Component for PwtDataTable<S> {
         };
 
         Column::new()
-            .class("pwt-datatable2")
+            .class("pwt-datatable")
             .class(props.class.clone())
             .node_ref(self.container_ref.clone())
             .attribute("role", "grid")
@@ -1546,7 +1546,7 @@ impl <S: DataStore + 'static> Component for PwtDataTable<S> {
                     .attribute("aria-label", "table header")
                     .attribute("style", header_style)
                     .class("pwt-overflow-hidden")
-                    .class("pwt-datatable2-header")
+                    .class("pwt-datatable-header")
                     .with_child(
                         HeaderWidget::new(self.headers.clone(), ctx.link().callback(Msg::Header))
                             .focusable(props.header_focusable && props.show_header)

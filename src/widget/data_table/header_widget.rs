@@ -363,7 +363,7 @@ impl <T: 'static> PwtHeaderWidget<T> {
                 .attribute("aria-hidden", "true")
                 .attribute("tabindex", props.focusable.then(|| tabindex))
                 .attribute("id", unique_id)
-                .class("pwt-datatable2-group-header-item")
+                .class("pwt-datatable-group-header-item")
                 .class(props.header_class.clone())
                 .attribute("style", format!(
                     "grid-column: {} / span {}",

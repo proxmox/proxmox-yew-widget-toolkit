@@ -273,7 +273,7 @@ impl Component for PwtResizableHeader {
         let mut row = Row::new()
             .node_ref(self.node_ref.clone())
             .attribute("role", "none")
-            .class("pwt-datatable2-header-item")
+            .class("pwt-datatable-header-item")
             //.class(self.show_picker.then(|| "focused"))
             .class(self.has_focus.then(|| "focused"))
             .class(props.class.clone())
@@ -310,7 +310,7 @@ impl Component for PwtResizableHeader {
                     .node_ref(self.picker_ref.clone())
                     .tabindex(-1)
                     .autoshow_menu(true)
-                    .class("pwt-datatable2-header-menu-trigger")
+                    .class("pwt-datatable-header-menu-trigger")
                     .class((self.has_focus || self.show_picker).then(|| "focused"))
                     .icon_class("fa fa-lg fa-caret-down")
                     .ondblclick(|event: MouseEvent| event.stop_propagation())
@@ -324,7 +324,7 @@ impl Component for PwtResizableHeader {
             row.add_child(
                 Container::new()
                     .attribute("role", "none")
-                    .class("pwt-datatable2-header-resize-trigger")
+                    .class("pwt-datatable-header-resize-trigger")
                     .onmousedown(ctx.link().callback(|_| Msg::StartResize))
                     .ondblclick({
                         let on_size_reset = props.on_size_reset.clone();
