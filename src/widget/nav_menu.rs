@@ -514,8 +514,7 @@ impl Component for PwtNavigationMenu {
             // fixme: ???
             //.margin(props.std_props.margin.clone())
             //.padding(props.std_props.padding.clone())
-            .class("pwt-nav-menu pwt-overflow-none")
-            .class(props.std_props.class.clone());
+            .class("pwt-nav-menu pwt-overflow-none");
 
         let active = self.get_active_or_default(ctx);
         let active = active.as_deref().unwrap_or("");
@@ -533,6 +532,7 @@ impl Component for PwtNavigationMenu {
         SplitPane::new()
             .node_ref(props.node_ref.clone())
             .class("pwt-flex-fill pwt-overflow-auto")
+            .class(props.std_props.class.clone())
             .with_child(Pane::new(menu).size(None))
             .with_child(Pane::new(content.unwrap_or(html!{})).flex(1))
             .into()
