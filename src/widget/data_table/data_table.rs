@@ -1530,6 +1530,7 @@ impl <S: DataStore + 'static> Component for PwtDataTable<S> {
         };
 
         Column::new()
+            .class("pwt-datatable2")
             .class(props.class.clone())
             .node_ref(self.container_ref.clone())
             .attribute("role", "grid")
