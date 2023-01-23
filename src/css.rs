@@ -482,6 +482,7 @@ impl From<FlexFill> for Classes {
 pub enum ColorScheme {
     Primary,
     Secondary,
+    Tertiary,
     Error,
     Neutral,
     NeutralAlt,
@@ -492,6 +493,7 @@ impl From<ColorScheme> for Classes {
         match value {
             ColorScheme::Primary => "pwt-scheme-primary".into(),
             ColorScheme::Secondary => "pwt-scheme-secondary".into(),
+            ColorScheme::Tertiary => "pwt-scheme-tertiary".into(),
             ColorScheme::Error => "pwt-scheme-error".into(),
             ColorScheme::Neutral => "pwt-scheme-neutral".into(),
             ColorScheme::NeutralAlt => "pwt-scheme-neutral-alt".into(),
