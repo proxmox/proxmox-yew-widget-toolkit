@@ -4,16 +4,16 @@ use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 
 use crate::prelude::*;
-use crate::state::Theme;
+use crate::state::{Theme, ThemeMode};
 use crate::widget::Button;
 
 #[derive(Clone, PartialEq, Properties)]
-pub struct ThemeSelector {
+pub struct ThemeModeSelector {
     #[prop_or_default]
     class: Classes,
 }
 
-impl ThemeSelector {
+impl ThemeModeSelector {
     pub fn new() -> Self {
         yew::props!(Self {})
     }
@@ -30,22 +30,22 @@ impl ThemeSelector {
     }
 }
 
-pub struct PwtThemeSelector {
-    theme: Theme,
+pub struct PwtThemeModeSelector {
+    theme: ThemeMode,
 }
 
 pub enum Msg {
     NextMode,
-    SetTheme(Theme),
+    SetThemeMode(ThemeMode),
 }
 
-impl Component for PwtThemeSelector {
+impl Component for PwtThemeModeSelector {
     type Message = Msg;
-    type Properties = ThemeSelector;
+    type Properties = ThemeModeSelector;
 
     fn create(_ctx: &Context<Self>) -> Self {
         Self {
-            theme: Theme::System,
+            theme: ThemeMode::System,
         }
     }
 
@@ -53,21 +53,20 @@ impl Component for PwtThemeSelector {
         match msg {
             Msg::NextMode => {
                 let theme = match self.theme {
-                    Theme::System => Theme::Dark,
-                    Theme::Dark => Theme::Light,
-                    Theme::Light => Theme::System,
+                    ThemeMode::System => ThemeMode::Dark,
+                    ThemeMode::Dark => ThemeMode::Light,
+                    ThemeMode::Light => ThemeMode::System,
                 };
-                return yew::Component::update(self, ctx, Msg::SetTheme(theme));
+                return yew::Component::update(self, ctx, Msg::SetThemeMode(theme));
             }
-            Msg::SetTheme(theme) => {
+            Msg::SetThemeMode(theme) => {
                 let window = web_sys::window().unwrap();
                 let document = window.document().unwrap();
 
-                self.theme = theme;
-                if let Err(err) = self.theme.store() {
+                if let Err(err) = Theme::store_theme_mode(theme) {
                     log::error!("store theme failed: {err}");
                 }
-
+                self.theme = theme;
                 let event = web_sys::Event::new("pwt-theme-changed").unwrap();
                 let _ = document.dispatch_event(&event);
 
@@ -85,25 +84,25 @@ impl Component for PwtThemeSelector {
             .class(props.class.clone())
             .onclick(onclick)
             .icon_class(match self.theme {
-                Theme::System => "fa fa-fw fa-asterisk",
-                Theme::Dark => "fa fa-fw fa-moon-o",
-                Theme::Light => "fa fa-fw fa-sun-o",
+                ThemeMode::System => "fa fa-fw fa-asterisk",
+                ThemeMode::Dark => "fa fa-fw fa-moon-o",
+                ThemeMode::Light => "fa fa-fw fa-sun-o",
             })
-            .aria_label("Select Theme")
+            .aria_label("Select Theme Mode")
             .into()
     }
 
     fn rendered(&mut self, ctx: &Context<Self>, first_render: bool) {
         if first_render {
-            let theme = Theme::load().unwrap_or_default();
-            ctx.link().send_message(Msg::SetTheme(theme));
+            let theme = Theme::load();
+            ctx.link().send_message(Msg::SetThemeMode(theme.mode));
         }
     }
 }
 
-impl Into<VNode> for ThemeSelector {
+impl Into<VNode> for ThemeModeSelector {
     fn into(self) -> VNode {
-        let comp = VComp::new::<PwtThemeSelector>(Rc::new(self), None);
+        let comp = VComp::new::<PwtThemeModeSelector>(Rc::new(self), None);
         VNode::from(comp)
     }
 }

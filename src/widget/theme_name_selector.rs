@@ -1,0 +1,98 @@
+use std::rc::Rc;
+
+use yew::prelude::*;
+use yew::virtual_dom::{VComp, VNode};
+
+use crate::prelude::*;
+use crate::state::Theme;
+use crate::widget::form::{Combobox};
+
+#[derive(Clone, PartialEq, Properties)]
+pub struct ThemeNameSelector {
+    #[prop_or_default]
+    class: Classes,
+}
+
+impl ThemeNameSelector {
+    pub fn new() -> Self {
+        yew::props!(Self {})
+    }
+
+    /// Builder style method to add a html class
+    pub fn class(mut self, class: impl Into<Classes>) -> Self {
+        self.add_class(class);
+        self
+    }
+
+    /// Method to add a html class
+    pub fn add_class(&mut self, class: impl Into<Classes>) {
+        self.class.push(class);
+    }
+}
+
+pub struct PwtThemeNameSelector {
+    theme: String,
+}
+
+pub enum Msg {
+    SetThemeName(String),
+}
+
+impl Component for PwtThemeNameSelector {
+    type Message = Msg;
+    type Properties = ThemeNameSelector;
+
+    fn create(_ctx: &Context<Self>) -> Self {
+        let theme = Theme::load();
+
+        Self {
+            theme: theme.name,
+        }
+    }
+
+    fn update(&mut self, _ctx: &Context<Self>, msg: Self::Message) -> bool {
+        match msg {
+            Msg::SetThemeName(theme) => {
+                let window = web_sys::window().unwrap();
+                let document = window.document().unwrap();
+
+                if let Err(err) = Theme::store_theme_name(&theme) {
+                    log::error!("store theme failed: {err}");
+                }
+                self.theme = theme;
+
+                let event = web_sys::Event::new("pwt-theme-changed").unwrap();
+                let _ = document.dispatch_event(&event);
+
+                true
+            }
+        }
+    }
+
+    fn view(&self, ctx: &Context<Self>) -> Html {
+        let props = ctx.props();
+
+        Combobox::new()
+            .class(props.class.clone())
+            .on_change(ctx.link().callback(|v| Msg::SetThemeName(v)))
+            .aria_label("Select Theme")
+            .default(self.theme.clone())
+            .with_item("Proxmox")
+            .with_item("Material")
+            .into()
+    }
+
+    fn rendered(&mut self, ctx: &Context<Self>, first_render: bool) {
+        if first_render {
+            let theme = Theme::load();
+            ctx.link().send_message(Msg::SetThemeName(theme.name));
+        }
+    }
+}
+
+impl Into<VNode> for ThemeNameSelector {
+    fn into(self) -> VNode {
+        let comp = VComp::new::<PwtThemeNameSelector>(Rc::new(self), None);
+        VNode::from(comp)
+    }
+}

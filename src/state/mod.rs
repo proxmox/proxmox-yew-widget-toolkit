@@ -23,7 +23,7 @@ mod tree_store;
 pub use tree_store::*;
 
 mod theme;
-pub use theme::Theme;
+pub use theme::{Theme, ThemeMode};
 
 /// Helper function to get the window session [Storage](web_sys::Storage)
 pub fn session_storage() -> Option<web_sys::Storage> {

@@ -3,51 +3,64 @@ use crate::state::local_storage;
 use anyhow::{bail, Error};
 
 #[derive(PartialEq, Debug, Clone, Copy)]
-pub enum Theme {
+pub enum ThemeMode {
     System,
     Dark,
     Light,
 }
 
-impl std::fmt::Display for Theme {
+impl std::fmt::Display for ThemeMode {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(match self {
-            Theme::System => "auto",
-            Theme::Dark => "dark",
-            Theme::Light => "light",
+            ThemeMode::System => "auto",
+            ThemeMode::Dark => "dark",
+            ThemeMode::Light => "light",
         })
     }
 }
 
-impl TryFrom<&str> for Theme {
+impl TryFrom<&str> for ThemeMode {
     type Error = Error;
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         Ok(match value {
-            "light" => Theme::Light,
-            "dark" => Theme::Dark,
-            "auto" => Theme::System,
+            "light" => ThemeMode::Light,
+            "dark" => ThemeMode::Dark,
+            "auto" => ThemeMode::System,
             _ => bail!("'{}' is not a valid theme", value),
         })
     }
 }
 
+#[derive(PartialEq, Debug, Clone)]
+pub struct Theme {
+    pub mode: ThemeMode,
+    pub name: String,
+}
+
 impl Theme {
-    pub fn load() -> Option<Self> {
-        local_storage().and_then(|store| {
-            let value = store.get_item("Theme").unwrap_or(None);
-            match value {
-                Some(value) => match Theme::try_from(value.as_str()) {
-                    Ok(theme) => Some(theme),
-                    Err(_) => None,
-                },
-                None => None,
+    pub fn load() -> Self {
+        let mut theme = Theme::default();
+        let store = match local_storage() {
+            Some(store) => store,
+            None => return theme,
+        };
+
+        if let Ok(Some(mode)) = store.get_item("ThemeMode") {
+            if let Ok(mode) = ThemeMode::try_from(mode.as_str()) {
+                theme.mode = mode;
             }
-        })
+        }
+
+        if let Ok(Some(name)) = store.get_item("ThemeName") {
+            theme.name = name;
+        }
+
+        theme
     }
 
-    pub fn store(&self) -> Result<(), Error> {
+    pub fn store_theme_mode(mode: ThemeMode) -> Result<(), Error> {
         if let Some(store) = local_storage() {
-            if let Err(_) = store.set_item("Theme", &self.to_string()) {
+            if let Err(_) = store.set_item("ThemeMode", &mode.to_string()) {
                 bail!("store: set_item failed");
             }
         } else {
@@ -57,20 +70,51 @@ impl Theme {
         Ok(())
     }
 
-    pub fn get_css_filename(&self, prefer_dark_mode: bool) -> &'static str {
-        match *self {
-            Theme::System => match prefer_dark_mode {
-                true => "proxmox-yew-style-dark.css",
-                false => "proxmox-yew-style-light.css",
-            },
-            Theme::Dark => "proxmox-yew-style-dark.css",
-            Theme::Light => "proxmox-yew-style-light.css",
+    pub fn store_theme_name(name: &str) -> Result<(), Error> {
+        if let Some(store) = local_storage() {
+            if let Err(_) = store.set_item("ThemeName", name) {
+                bail!("store: set_item failed");
+            }
+        } else {
+            bail!("no storage");
         }
+
+        Ok(())
+    }
+
+    /*
+    pub fn store(&self) -> Result<(), Error> {
+        if let Some(store) = local_storage() {
+            if let Err(_) = store.set_item("ThemeMode", &self.mode.to_string()) {
+                bail!("store: set_item failed");
+            }
+        } else {
+            bail!("no storage");
+        }
+
+        Ok(())
+    }
+     */
+
+    pub fn get_css_filename(&self, prefer_dark_mode: bool) -> String {
+        let mode_str = match self.mode {
+            ThemeMode::System => match prefer_dark_mode {
+                true => "dark",
+                false => "light",
+            },
+            ThemeMode::Dark => "dark",
+            ThemeMode::Light => "light",
+        };
+
+        format!("{}-yew-style-{}.css", self.name.to_lowercase(), mode_str)
     }
 }
 
 impl Default for Theme {
     fn default() -> Self {
-        Theme::System
+        Self {
+            mode: ThemeMode::System,
+            name: String::from("proxmox"),
+        }
     }
 }

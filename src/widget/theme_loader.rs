@@ -146,7 +146,7 @@ impl Component for PwtThemeLoader {
     type Properties = ThemeLoader;
 
     fn create(_ctx: &Context<Self>) -> Self {
-        let theme = Theme::load().unwrap_or(Theme::default());
+        let theme = Theme::load();
         let system_prefer_dark = get_system_prefer_dark_mode();
 
         let window = web_sys::window().unwrap();
@@ -157,8 +157,8 @@ impl Component for PwtThemeLoader {
 
         Self {
             loadstate: LoadState::Initial,
-            theme,
             theme_css: theme.get_css_filename(system_prefer_dark).to_string(),
+            theme,
             new_theme_css: None,
             scheme_changed_closure: None,
             media_query,
@@ -170,16 +170,16 @@ impl Component for PwtThemeLoader {
     fn update(&mut self, _ctx: &Context<Self>, msg: Self::Message) -> bool {
         match msg {
             Msg::Loaded => {
-                let theme = Theme::load().unwrap_or(Theme::default());
+                let theme = Theme::load();
                 self.update_theme(theme, self.system_prefer_dark, true)
             }
             Msg::ThemeChanged => {
-                let theme = Theme::load().unwrap_or(Theme::default());
+                let theme = Theme::load();
                 self.update_theme(theme, self.system_prefer_dark, false)
             }
             Msg::SchemeChanged => {
                 let system_prefer_dark = get_system_prefer_dark_mode();
-                self.update_theme(self.theme, system_prefer_dark, false)
+                self.update_theme(self.theme.clone(), system_prefer_dark, false)
             }
         }
     }

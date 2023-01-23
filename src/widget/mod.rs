@@ -75,8 +75,11 @@ pub use tab_panel::{PwtTabPanel, TabPanel, TabPanelRenderInfo};
 mod theme_loader;
 pub use theme_loader::ThemeLoader;
 
-mod theme_selector;
-pub use theme_selector::ThemeSelector;
+mod theme_mode_selector;
+pub use theme_mode_selector::ThemeModeSelector;
+
+mod theme_name_selector;
+pub use theme_name_selector::ThemeNameSelector;
 
 mod toolbar;
 pub use toolbar::{PwtToolbar, Toolbar};
