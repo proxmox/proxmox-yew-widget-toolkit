@@ -53,17 +53,10 @@ impl Component for PwtThemeNameSelector {
     fn update(&mut self, _ctx: &Context<Self>, msg: Self::Message) -> bool {
         match msg {
             Msg::SetThemeName(theme) => {
-                let window = web_sys::window().unwrap();
-                let document = window.document().unwrap();
-
                 if let Err(err) = Theme::store_theme_name(&theme) {
                     log::error!("store theme failed: {err}");
                 }
                 self.theme = theme;
-
-                let event = web_sys::Event::new("pwt-theme-changed").unwrap();
-                let _ = document.dispatch_event(&event);
-
                 true
             }
         }

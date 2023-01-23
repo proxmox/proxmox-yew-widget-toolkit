@@ -2,6 +2,7 @@ use crate::state::local_storage;
 
 use anyhow::{bail, Error};
 
+/// Theme mode - dark, light or auto (use system settings).
 #[derive(PartialEq, Debug, Clone, Copy)]
 pub enum ThemeMode {
     System,
@@ -31,13 +32,30 @@ impl TryFrom<&str> for ThemeMode {
     }
 }
 
+/// Theme. Combines a theme name with a theme mode ([ThemeMode])
+///
+/// This struct implements methods to load and store the current theme
+/// settings in the local browser store. The theme name and theme mode
+/// can be stored and changed separately, and we emit a custom
+/// [web_sys::Event] called `pwt-theme-changed`. So it is possible to
+/// observe changes by adding an event listener to the document.
 #[derive(PartialEq, Debug, Clone)]
 pub struct Theme {
     pub mode: ThemeMode,
     pub name: String,
 }
 
+fn emit_theme_changed_event() {
+    if let Some(window) = web_sys::window() {
+        if let Some(document) = window.document() {
+            let event = web_sys::Event::new("pwt-theme-changed").unwrap();
+            let _ = document.dispatch_event(&event);
+        }
+    }
+}
+
 impl Theme {
+    /// Load the current theme settings.
     pub fn load() -> Self {
         let mut theme = Theme::default();
         let store = match local_storage() {
@@ -58,6 +76,7 @@ impl Theme {
         theme
     }
 
+    /// Store the theme mode and emit the `pwt-theme-changed` event.
     pub fn store_theme_mode(mode: ThemeMode) -> Result<(), Error> {
         if let Some(store) = local_storage() {
             if let Err(_) = store.set_item("ThemeMode", &mode.to_string()) {
@@ -67,9 +86,12 @@ impl Theme {
             bail!("no storage");
         }
 
+        emit_theme_changed_event();
+
         Ok(())
     }
 
+    /// Store the theme name and emit the `pwt-theme-changed` event.
     pub fn store_theme_name(name: &str) -> Result<(), Error> {
         if let Some(store) = local_storage() {
             if let Err(_) = store.set_item("ThemeName", name) {
@@ -79,23 +101,12 @@ impl Theme {
             bail!("no storage");
         }
 
-        Ok(())
-    }
-
-    /*
-    pub fn store(&self) -> Result<(), Error> {
-        if let Some(store) = local_storage() {
-            if let Err(_) = store.set_item("ThemeMode", &self.mode.to_string()) {
-                bail!("store: set_item failed");
-            }
-        } else {
-            bail!("no storage");
-        }
+        emit_theme_changed_event();
 
         Ok(())
     }
-     */
 
+    /// Generate a CSS file name: `{name}-yew-style-{mode}.css`
     pub fn get_css_filename(&self, prefer_dark_mode: bool) -> String {
         let mode_str = match self.mode {
             ThemeMode::System => match prefer_dark_mode {
@@ -114,7 +125,7 @@ impl Default for Theme {
     fn default() -> Self {
         Self {
             mode: ThemeMode::System,
-            name: String::from("proxmox"),
+            name: String::from("Proxmox"),
         }
     }
 }
