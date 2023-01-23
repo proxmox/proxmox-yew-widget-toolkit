@@ -1,12 +1,9 @@
 use pwt_macros::widget;
-use yew::{
-    Classes, Component, Properties,
-};
-
-use crate::prelude::EventSubscriber;
+use yew::{Classes, Component, Properties};
 
 use super::form::Checkbox;
 
+/// A checkbox to switch between Left-to-Right and Right-to-Left layouts
 #[widget(pwt=crate, comp=PwtRtlSwitcher, @input, @element)]
 #[derive(Clone, PartialEq, Properties)]
 pub struct RtlSwitcher {
