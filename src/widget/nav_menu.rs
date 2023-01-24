@@ -14,7 +14,7 @@ use crate::state::{NavigationContainer, NavigationContext, NavigationContextExt}
 use pwt_macros::widget;
 
 use crate::widget::focus::roving_tabindex_next;
-use crate::widget::{Column, Pane, SplitPane};
+use crate::widget::{Column, Container, Pane, SplitPane};
 
 #[derive(Clone, PartialEq)]
 pub struct MenuItem {
@@ -215,13 +215,6 @@ impl PwtNavigationMenu {
     ) -> Html {
         let is_active = active == item.id.deref();
 
-        let class = classes!(
-            is_active.then_some("active"),
-            (!visible).then_some("pwt-d-none"),
-            "pwt-nav-link",
-            is_menu.then_some("pwt-nav-menu"),
-        );
-
         let onclick = ctx.link().callback({
             let key = item.id.clone();
             move |_event: MouseEvent| Msg::Select(Some(key.clone()), true)
@@ -245,8 +238,6 @@ impl PwtNavigationMenu {
             }
         });
 
-        let tabindex = if is_active { "0" } else { "-1" };
-
         let open = if is_menu {
             *self.menu_states.get(&item.id).unwrap_or(&true)
         } else {
@@ -259,27 +250,31 @@ impl PwtNavigationMenu {
             None
         };
 
-        html! {
-            <a role="link" aria-expanded={aria_expanded} disabled={!visible} {onclick} {onkeydown} {class} {tabindex} style={"display: flex;"}>
-            { (0..indent_level).map(|_| html!{ <span class="pwt-ps-4" /> }).collect::<Html>() }
-                if let Some(icon) = &item.icon_class {
-                    <i class={classes!(icon.to_string(), "pwt-me-2")}/>
-                }
-            {&item.text}
-            if is_menu {
-                <i style={"flex-grow:1"}></i>
-                <i class={classes!{
-                        "fa",
-                        "fa-fw",
-                        "fa-caret-right",
-                        open.then_some("expanded"),
-                        "pwt-nav-menu-expander"
-                    }}
-                    aria-hidden="true"
-                    onclick={on_expander_click}>{"\u{00a0}"}</i>
-            }
-            </a>
-        }
+        Container::new()
+            .tag("a")
+            .attribute("role", "link")
+            .attribute("aria-expanded", aria_expanded)
+            .attribute("disabled", (!visible).then(|| "true"))
+            .attribute("tabindex",  if is_active { "0" } else { "-1" })
+            .class("pwt-nav-link")
+            .class(if visible { "pwt-d-flex" } else { "pwt-d-none" })
+            .class(is_active.then_some("active"))
+            .class(is_menu.then_some("pwt-nav-menu"))
+            .onclick(onclick)
+            .onkeydown(onkeydown)
+            .with_child((0..indent_level).map(|_| html!{ <span class="pwt-ps-4" /> }).collect::<Html>())
+            .with_child(html!{<div class="pwt-text-truncate pwt-flex-fill">{&item.text}</div>})
+            .with_optional_child(is_menu.then(|| {
+                Container::new()
+                    .tag("i")
+                    .attribute("aria-hidden", "true")
+                    .class("fa fa-fw fa-caret-right")
+                    .class("pwt-nav-menu-expander")
+                    .class(open.then_some("expanded"))
+                    .onclick(on_expander_click)
+                    .with_child("\u{00a0}")
+            }))
+            .into()
     }
 
     fn render_item(
