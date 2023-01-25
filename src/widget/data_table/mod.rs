@@ -44,7 +44,7 @@ pub(crate) use data_table::HeaderMsg;
 use yew::prelude::*;
 use yew::virtual_dom::VList;
 
-use crate::props::ContainerBuilder;
+use crate::props::{WidgetBuilder, ContainerBuilder};
 use super::Row;
 
 /// Helper function to render tree nodes.
@@ -76,6 +76,7 @@ pub fn render_tree_node<T>(
     let leaf = args.is_leaf();
     if leaf {
         Row::new()
+            .class(crate::css::AlignItems::Baseline)
             .with_child(indent.clone())
             .with_child(html!{<i {class}/>})
             .with_child(content)
