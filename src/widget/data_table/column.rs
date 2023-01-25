@@ -77,7 +77,8 @@ impl<T: 'static> DataTableColumn<T> {
     /// selection status.
     pub fn selection_indicator() -> Self {
         Self::new ("selection indicator")
-            .width("2.5em")
+             .width("max-content")
+        //   .width("2.5em")
             .resizable(false)
             .show_menu(false)
             .render_header(super::render_selection_header)
@@ -103,7 +104,7 @@ impl<T: 'static> DataTableColumn<T> {
     /// Genertates a column which shows the now number.
     pub fn row_number() -> Self {
         Self::new("Row")
-            .fixed(60)
+            .width("max-content")
             .render_cell(super::render_row_number)
     }
 
