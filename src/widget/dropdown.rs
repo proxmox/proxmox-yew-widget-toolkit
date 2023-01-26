@@ -1,11 +1,10 @@
 use std::rc::Rc;
 
-use serde_json::json;
 use derivative::Derivative;
 
 use web_sys::HtmlInputElement;
 use gloo_events::EventListener;
-use wasm_bindgen::{JsCast, JsValue, UnwrapThrowExt};
+use wasm_bindgen::{JsCast, UnwrapThrowExt};
 
 use yew::prelude::*;
 use yew::html::{IntoPropValue, IntoEventCallback};
@@ -16,6 +15,8 @@ use crate::css::AlignItems;
 use crate::widget::{Container, Row, Input, Tooltip};
 
 use pwt_macros::widget;
+
+use super::align::{AlignOptions, Point, GrowDirection};
 
 /// Render function to create the [Dropdown] picker.
 #[derive(Clone, Derivative)]
@@ -151,7 +152,7 @@ pub struct PwtDropdown {
     dropdown_ref: NodeRef,
     picker_ref: NodeRef,
     picker_id: String,
-    popper: Option<JsValue>,
+    align_options: Option<AlignOptions>,
 }
 
 impl PwtDropdown {
@@ -179,7 +180,7 @@ impl Component for PwtDropdown {
             dropdown_ref: NodeRef::default(),
             picker_ref: NodeRef::default(),
             picker_id: crate::widget::get_unique_element_id(),
-            popper: None,
+            align_options: None,
         }
     }
 
@@ -367,33 +368,11 @@ impl Component for PwtDropdown {
             let window = web_sys::window().unwrap();
             let picker_ref = self.picker_ref.clone();
 
-            let opts = json!({
-                "placement": "bottom-start",
-                "strategy": "fixed",
-                "modifiers": [
-                    {
-                        "name": "preventOverflow",
-                        "options": {
-                            "mainAxis": true, // true by default
-                            "altAxis": true, // false by default
-                        },
-                    },
-                    {
-                        "name": "flip",
-                        "options": {
-                            "fallbackPlacements": [], // disable fallbacks
-                        },
-                    },
-                ],
-            });
-
-            let opts = crate::to_js_value(&opts).unwrap();
-
-            if let Some(dropdown_node) = self.dropdown_ref.get() {
-                if let Some(picker_node) = self.picker_ref.get() {
-                    self.popper = Some(crate::create_popper(dropdown_node, picker_node, &opts));
-                }
-            }
+            self.align_options = Some(AlignOptions::new(
+                    Point::BottomStart,
+                    Point::TopStart,
+                    GrowDirection::TopBottom,
+                ).align_width(true));
 
             self.mousedown_listener = Some(EventListener::new(
                 &window,
@@ -422,9 +401,17 @@ impl Component for PwtDropdown {
             }
         }
 
-        if let Some(popper) = &self.popper {
-            crate::update_popper(popper);
+
+        if self.align_options.is_some() {
+            if let Err(err) = crate::widget::align::align_to(
+                self.dropdown_ref.clone(),
+                self.picker_ref.clone(),
+                self.align_options.clone(),
+            ) {
+                log::error!("could not align dropdown: {}", err.to_string());
+            }
         }
+
 
         if self.show != self.last_show {
             self.last_show = self.show;
