@@ -485,6 +485,7 @@ pub enum ColorScheme {
     Tertiary,
     Error,
     Neutral,
+    Surface,
     NeutralAlt,
 }
 
@@ -496,6 +497,7 @@ impl From<ColorScheme> for Classes {
             ColorScheme::Tertiary => "pwt-scheme-tertiary".into(),
             ColorScheme::Error => "pwt-scheme-error".into(),
             ColorScheme::Neutral => "pwt-scheme-neutral".into(),
+            ColorScheme::Surface => "pwt-scheme-surface".into(),
             ColorScheme::NeutralAlt => "pwt-scheme-neutral-alt".into(),
         }
     }
