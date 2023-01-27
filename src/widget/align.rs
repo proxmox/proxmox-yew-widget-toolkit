@@ -7,7 +7,7 @@ use crate::widget::dom::{element_direction_rtl, IntoHtmlElement};
 /// Defines a point on a rectangle
 ///
 /// The points are defined on a rectangle with left-to-right direction as follows:
-/// ```
+/// ```asciiart
 /// TopStart ------- Top -------- TopEnd
 /// Start           Center           End
 /// BottomStart --- Bottom --- BottomEnd
