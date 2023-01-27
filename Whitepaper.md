@@ -281,6 +281,22 @@ impl Row {
 }
 ```
 
+## Themes, Colors and Design
+
+As noted previously, our first goal was to replace existing GUIs, so
+we started with the same design and colors.
+
+In parallel, we tried to write a second theme using the material
+design (MD) guidelines from Google. We observed:
+
+- rounded buttons waste extremely much space.
+- in general, MD uses very large margins and padding.
+- Input fields are badly accessible (label font to small, label
+  position changes, label length limited, ...)
+- Button text uses the primary color (instead of black), leading to
+  bad contrast.
+
+
 ## Conclusion
 
 After more than six months, I start feeling confident that we can
