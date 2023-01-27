@@ -267,11 +267,9 @@ impl PwtNavigationMenu {
                     .map(|_| html! { <span class="pwt-ps-4" /> })
                     .collect::<Html>(),
             )
-            .with_child(if let Some(icon) = &item.icon_class {
-                html! { <i class={classes!(icon.to_string(), "pwt-me-2")}></i>}
-            } else {
-                html! {}
-            })
+            .with_optional_child(item.icon_class.as_ref().and_then(|icon| {
+                Some(html!{ <i class={classes!(icon.to_string(), "pwt-me-2")}/>})
+            }))
             .with_child(html! {<div class="pwt-text-truncate pwt-flex-fill">{&item.text}</div>})
             .with_optional_child(is_menu.then(|| {
                 Container::new()
