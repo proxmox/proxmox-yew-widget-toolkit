@@ -189,8 +189,7 @@ impl NavigationMenu {
 }
 
 pub enum Msg {
-    Select(Option<Key>, bool),
-    MenuToggle(Key),
+    Select(Option<Key>, bool, bool),
     MenuClose(Key),
     MenuOpen(Key),
 }
@@ -217,21 +216,13 @@ impl PwtNavigationMenu {
 
         let onclick = ctx.link().callback({
             let key = item.id.clone();
-            move |_event: MouseEvent| Msg::Select(Some(key.clone()), true)
-        });
-
-        let on_expander_click = ctx.link().callback({
-            let key = item.id.clone();
-            move |event: MouseEvent| {
-                event.stop_propagation();
-                Msg::MenuToggle(key.clone())
-            }
+            move |_event: MouseEvent| Msg::Select(Some(key.clone()), true, true)
         });
 
         let onkeydown = ctx.link().batch_callback({
             let key = item.id.clone();
             move |event: KeyboardEvent| match event.key().as_str() {
-                " " => Some(Msg::Select(Some(key.clone()), true)),
+                " " => Some(Msg::Select(Some(key.clone()), true, true)),
                 "ArrowRight" if is_menu => Some(Msg::MenuOpen(key.clone())),
                 "ArrowLeft" if is_menu => Some(Msg::MenuClose(key.clone())),
                 _ => None,
@@ -258,8 +249,8 @@ impl PwtNavigationMenu {
             .attribute("tabindex",  if is_active { "0" } else { "-1" })
             .class("pwt-nav-link")
             .class(if visible { "pwt-d-flex" } else { "pwt-d-none" })
+            .class(crate::css::AlignItems::Baseline)
             .class(is_active.then_some("active"))
-            .class(is_menu.then_some("pwt-nav-menu"))
             .onclick(onclick)
             .onkeydown(onkeydown)
             .with_child(
@@ -275,10 +266,9 @@ impl PwtNavigationMenu {
                 Container::new()
                     .tag("i")
                     .attribute("aria-hidden", "true")
-                    .class("fa fa-fw fa-caret-right")
-                    .class("pwt-nav-menu-expander")
+                    .class("fa fa-caret-down")
+                    .class("pwt-nav-menu-item-arrow")
                     .class(open.then_some("expanded"))
-                    .onclick(on_expander_click)
                     .with_child("\u{00a0}")
             }))
             .into()
@@ -426,7 +416,7 @@ impl Component for PwtNavigationMenu {
                     //log::info!("CTX CHANGE {:?}", nav_ctx);
                     let path = nav_ctx.path();
                     let key = Some(Key::from(path));
-                    link.send_message(Msg::Select(key, false));
+                    link.send_message(Msg::Select(key, false, false));
                 }
             });
             if let Some((nav_ctx, handle)) =
@@ -450,9 +440,15 @@ impl Component for PwtNavigationMenu {
     fn update(&mut self, ctx: &yew::Context<Self>, msg: Self::Message) -> bool {
         let props = ctx.props();
         match msg {
-            Msg::Select(key, update_route) => {
+            Msg::Select(key, update_route, toggle) => {
                 if key == self.active {
-                    return false;
+                    if let Some(key) = key {
+                        if toggle {
+                            let entry = *self.menu_states.entry(key.clone()).or_insert_with(|| true);
+                            self.menu_states.insert(key, !entry);
+                        }
+                    }
+                    return true;
                 }
 
                 let key = if let Some(key) = key {
@@ -470,11 +466,6 @@ impl Component for PwtNavigationMenu {
                 if let Some(on_select) = &props.on_select {
                     on_select.emit(key);
                 }
-                true
-            }
-            Msg::MenuToggle(key) => {
-                let entry = *self.menu_states.entry(key.clone()).or_insert_with(|| true);
-                self.menu_states.insert(key, !entry);
                 true
             }
             Msg::MenuClose(key) => {
