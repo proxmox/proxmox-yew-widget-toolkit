@@ -259,7 +259,7 @@ impl PwtNavigationMenu {
                     .collect::<Html>(),
             )
             .with_optional_child(item.icon_class.as_ref().and_then(|icon| {
-                Some(html!{ <i class={classes!(icon.to_string(), "pwt-me-2")}/>})
+                Some(html!{ <i class={classes!(icon.to_string(), "pwt-nav-menu-icon")}/>})
             }))
             .with_child(html! {<div class="pwt-text-truncate pwt-flex-fill">{&item.text}</div>})
             .with_optional_child(is_menu.then(|| {
