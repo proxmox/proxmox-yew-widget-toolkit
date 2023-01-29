@@ -307,9 +307,8 @@ impl Component for PwtDropdown {
 
         let trigger_cls = classes!{
             "fa",
-            "fa-lg",
             "fa-caret-down",
-            "pwt-fs-6", // normal font size
+            "pwt-dropdown-icon",
             self.show.then(|| "fa-rotate-180"),
             disabled.then(|| "disabled"),
         };
