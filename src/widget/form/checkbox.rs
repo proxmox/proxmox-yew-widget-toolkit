@@ -1,14 +1,12 @@
-use std::rc::Rc;
-use std::borrow::Cow;
-
 use serde_json::Value;
 
 use yew::prelude::*;
-use yew::virtual_dom::{ApplyAttributeAs, Listeners, VList, VTag};
 use yew::html::{IntoEventCallback, IntoPropValue};
 
 use pwt_macros::widget;
 
+use crate::props::{WidgetBuilder, ContainerBuilder, EventSubscriber};
+use crate::widget::Container;
 use super::{FieldState, FieldStateMsg, ValidateFn};
 
 /// Checkbox input element.
@@ -24,6 +22,9 @@ pub struct Checkbox {
     /// Radio group flag
     #[prop_or_default]
     pub radio_group: bool,
+    /// Use switch style layout.
+    #[prop_or_default]
+    pub switch: bool,
     /// Change callback
     pub on_change: Option<Callback<String>>,
     //fixme: on_input()
@@ -72,6 +73,17 @@ impl Checkbox {
     /// Method to set the field default value.
     pub fn set_default(&mut self, default: impl IntoPropValue<Option<bool>>) {
         self.default = default.into_prop_value();
+    }
+
+    /// Builder style method to set the switch flag
+    pub fn switch(mut self, switch: bool) -> Self {
+        self.set_switch(switch);
+        self
+    }
+
+    /// Method to set the switch flag
+    pub fn set_switch(&mut self, switch: bool) {
+        self.switch = switch;
     }
 
     /// Builder style method to set the on_change callback
@@ -207,29 +219,6 @@ impl Component for PwtCheckbox {
         let (value, _) = self.state.get_field_data();
         let checked = value == on_value;
 
-        let class = classes!(
-            "pwt-checkbox",
-            props.radio_group.then(|| "rounded"),
-            "fa",
-            "fa-check",
-            checked.then(|| "checked"),
-            disabled.then(|| "disabled"),
-        );
-
-        let mut attributes = props.std_props.cumulate_attributes(Some(class));
-        let attr_map = attributes.get_mut_index_map();
-        props.input_props.cumulate_attributes(attr_map);
-
-        attr_map.insert(AttrValue::Static("role"), (AttrValue::Static("checkbox"), ApplyAttributeAs::Attribute));
-
-        if props.input_props.tabindex.is_none() {
-            attr_map.insert(AttrValue::Static("tabindex"), (AttrValue::Static("0"), ApplyAttributeAs::Attribute));
-        }
-
-        if checked {
-            attr_map.insert(AttrValue::Static("aria-checked"), (AttrValue::Static("true"), ApplyAttributeAs::Attribute));
-        }
-
         let onclick = ctx.link().callback(|_| Msg::Toggle);
         let onkeyup = Callback::from({
             let link = ctx.link().clone();
@@ -240,25 +229,32 @@ impl Component for PwtCheckbox {
             }
         });
 
-        let mut listeners =  props.listeners.listeners.clone();
-        listeners.push(Some(Rc::new(::yew::html::onkeyup::Wrapper::new(onkeyup))));
-        listeners.push(Some(Rc::new(::yew::html::onclick::Wrapper::new(onclick))));
+        let (layout_class, inner) = match (props.switch, props.radio_group) {
+            (true, _) => {
+                ("pwt-switch", html!{<span class="pwt-switch-slider"><i class="fa fa-check"/></span>})
+            }
+            (false, true) => {
+                ("pwt-radio-button", html!{<span class="pwt-checkbox-icon"><i class="fa fa-check"/></span>})
+            }
+            (false, false) => {
+                ("pwt-checkbox", html!{<span class="pwt-checkbox-icon"><i class="fa fa-check"/></span>})
+            }
+        };
 
-        let listeners = Listeners::Pending(listeners.into_boxed_slice());
+        // TODO: add other props.input_props
 
-        let input: Html = VTag::__new_other(
-            Cow::Borrowed("div"),
-            props.std_props.node_ref.clone(),
-            None,
-            attributes,
-            listeners,
-            VList::new(),
-        ).into();
-
-        html!{
-            // Wrap inside div for fixed size
-            <div>{input}</div>
-        }
+        Container::new()
+            .with_std_props(&props.std_props)
+            .class(layout_class)
+            .class(checked.then(|| "checked"))
+            .class(disabled.then(|| "disabled"))
+            .with_child(inner)
+            .attribute("tabindex", "0")
+            .attribute("role", "checkbox")
+            .attribute("aria-checked", checked.then(|| "true"))
+            .onkeyup(onkeyup)
+            .onclick(onclick)
+            .into()
     }
 
     fn rendered(&mut self, ctx: &Context<Self>, first_render: bool) {
