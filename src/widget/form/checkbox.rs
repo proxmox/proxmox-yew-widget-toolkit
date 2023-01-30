@@ -243,7 +243,7 @@ impl Component for PwtCheckbox {
 
         // TODO: add other props.input_props
 
-        Container::new()
+        let checkbox = Container::new()
             .with_std_props(&props.std_props)
             .class(layout_class)
             .class(checked.then(|| "checked"))
@@ -253,8 +253,16 @@ impl Component for PwtCheckbox {
             .attribute("role", "checkbox")
             .attribute("aria-checked", checked.then(|| "true"))
             .onkeyup(onkeyup)
-            .onclick(onclick)
-            .into()
+            .onclick(onclick);
+
+        if props.switch {
+            checkbox.into()
+        } else {
+            Container::new()
+                .class("pwt-checkbox-state")
+                .with_child(checkbox)
+                .into()
+        }
     }
 
     fn rendered(&mut self, ctx: &Context<Self>, first_render: bool) {
