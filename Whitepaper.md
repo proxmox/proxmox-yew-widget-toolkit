@@ -180,7 +180,7 @@ Column::new()
    ...
 ```
 
-Other layout types like our `SpliPane` require programmatic control,
+Other layout types like our `SplitPane` require programmatic control,
 but also use flexbox for the layout.
 
 To summarize, we simply use HTML layout, either CSS flexbox or CSS
@@ -284,17 +284,18 @@ impl Row {
 ## Themes, Colors and Design
 
 As noted previously, our first goal was to replace existing GUIs, so
-we started with the same design and colors.
+we started with the same design and colors. The resulting theme is
+quite dense, allowing you to display much information on a single
+page.
 
-In parallel, we tried to write a second theme using the material
-design (MD) guidelines from Google. We observed:
+In parallel, we tried to write a second theme suitable for touch
+devices. Touch devices requires much larger buttons and inputs. Else
+it is too difficult to tap them accurately, leaving users frustrated
+and dissatisfied after making mistakes.
 
-- rounded buttons waste extremely much space.
-- in general, MD uses very large margins and padding.
-- Input fields are badly accessible (label font to small, label
-  position changes, label length limited, ...)
-- Button text uses the primary color (instead of black), leading to
-  bad contrast.
+We used the material design (MD) guidelines from Google as
+baseline. The resulting theme wastes a lot of space on the desktop,
+but may get helpful in future when we target mobile devices.
 
 
 ## Conclusion
