@@ -168,7 +168,8 @@ impl Component for PwtDialog {
             panel.add_tool(
                 Button::new("×")
                     .aria_label("Close Dialog")
-                    .class("rounded primary-container")
+                    .class("circle")
+                    .class("pwt-scheme-neutral-alt")
                     .onclick(on_close)
             );
         };
