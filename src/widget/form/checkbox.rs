@@ -1,5 +1,7 @@
 use serde_json::Value;
 
+use wasm_bindgen::closure::Closure;
+use wasm_bindgen::JsCast;
 use yew::prelude::*;
 use yew::html::{IntoEventCallback, IntoPropValue};
 
@@ -101,6 +103,7 @@ pub enum Msg {
 #[doc(hidden)]
 pub struct PwtCheckbox {
     state: FieldState,
+    label_clicked_closure: Option<Closure<dyn Fn()>>,
 }
 
 impl Component for PwtCheckbox {
@@ -132,7 +135,10 @@ impl Component for PwtCheckbox {
             real_validate.clone(),
         );
 
-        let mut me = Self { state };
+        let mut me = Self {
+            state,
+            label_clicked_closure: None,
+        };
 
         let on_value = props.value.as_deref().unwrap_or("on").to_string();
 
@@ -273,6 +279,27 @@ impl Component for PwtCheckbox {
                     let _ = el.focus();
                 }
             }
+
+            if let Some(label_id) = &props.input_props.label_id {
+                let window = web_sys::window().unwrap();
+                let document = window.document().unwrap();
+
+                let label_clicked_closure = Closure::wrap({
+                    let link = ctx.link().clone();
+                    Box::new(move || {
+                        link.send_message(Msg::Toggle);
+                    }) as Box<dyn Fn()>
+                });
+
+                if let Some(el) = document.get_element_by_id(&label_id) {
+                    let _ = el.add_event_listener_with_callback(
+                        "click",
+                        label_clicked_closure.as_ref().unchecked_ref(),
+                    );
+                    self.label_clicked_closure = Some(label_clicked_closure); // keep alive
+                }
+            }
+
         }
     }
 }
