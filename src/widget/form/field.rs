@@ -9,7 +9,7 @@ use yew::html::{IntoEventCallback, IntoPropValue};
 use proxmox_schema::Schema;
 
 use crate::prelude::*;
-use crate::widget::{Input, Tooltip};
+use crate::widget::{Container, Input, Tooltip};
 
 use super::{FieldState, FieldStateMsg, IntoValidateFn, ValidateFn};
 
@@ -356,11 +356,8 @@ impl Component for PwtField {
         });
 
         let input: Html = Input::new()
-            .with_std_props(&props.std_props)
             .with_input_props(&props.input_props)
-            .class("pwt-input")
-            .class("pwt-w-100")
-            .class(if valid.is_ok() { "is-valid" } else { "is-invalid" })
+            .class("pwt-flex-fill")
             .attribute("type", props.input_type.clone())
             .attribute("value", value)
             .attribute("min", props.min.map(|v| v.to_string()))
@@ -369,8 +366,15 @@ impl Component for PwtField {
             .oninput(oninput)
             .into();
 
-        let mut tooltip = Tooltip::new()
+        let input_container = Container::new()
+            .with_std_props(&props.std_props)
+            .class("pwt-input")
+            .class("pwt-w-100")
+            .class(if valid.is_ok() { "is-valid" } else { "is-invalid" })
             .with_child(input);
+
+        let mut tooltip = Tooltip::new()
+            .with_child(input_container);
 
         if let Err(msg) = &valid {
             tooltip.set_tip(Some(html!{msg}))

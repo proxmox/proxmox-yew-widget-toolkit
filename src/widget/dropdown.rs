@@ -294,7 +294,6 @@ impl Component for PwtDropdown {
         let input = Input::new()
             .with_input_props(&props.input_props)
             .class("pwt-flex-fill")
-            .attribute("style", "border:0;margin:0;padding:0;outline:0;")
             .attribute("value", value)
             .attribute("type", "text")
             .attribute("role", "combobox")
@@ -313,14 +312,11 @@ impl Component for PwtDropdown {
             disabled.then(|| "disabled"),
         };
 
-        let select = Row::new()
+        let select = Container::new()
             .node_ref(self.dropdown_ref.clone())
-            .class(AlignItems::Baseline)
             .class("pwt-input")
-            .gap(1)
             .with_child(input)
-            .with_child(html!{<i onclick={trigger_onclick} class={trigger_cls}></i>})
-            ;
+            .with_child(html!{<i onclick={trigger_onclick} class={trigger_cls}></i>});
 
         let dropdown = Container::new()
             .with_std_props(&props.std_props)
