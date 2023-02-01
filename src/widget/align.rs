@@ -2,7 +2,10 @@
 use js_sys::Error;
 use web_sys::{window, HtmlElement};
 
-use crate::widget::dom::{element_direction_rtl, IntoHtmlElement};
+use crate::widget::{
+    dom::{element_direction_rtl, IntoHtmlElement},
+    SizeObserver,
+};
 
 /// Defines a point on a rectangle
 ///
@@ -429,4 +432,63 @@ where
     )?;
 
     Ok(())
+}
+
+/// Uses [`align_to`] and a [`SizeObserver`] to automatically adjust the position of floating
+/// elements when they change size. This is useful for elements where the initial size is not
+/// known (e.g. a [`crate::widget::data_table::DataTable`] with virtual scrolling).
+pub struct AutoFloatingPlacement {
+    base: HtmlElement,
+    element: HtmlElement,
+    options: AlignOptions,
+    _size_observer: SizeObserver,
+}
+
+impl AutoFloatingPlacement {
+    /// Sets up the [`SizeObserver`] on `element` and updates the intial alignment.
+    pub fn new<B, N>(base: B, element: N, options: AlignOptions) -> Result<Self, Error>
+    where
+        B: IntoHtmlElement + Clone + 'static,
+        N: IntoHtmlElement + Clone + 'static,
+    {
+        let observer_base = base.clone();
+        let observer_element = element.clone();
+        let observer_opts = options.clone();
+
+        let base = base
+            .into_html_element()
+            .ok_or_else(|| js_sys::Error::new("base is not an HtmlElement"))?;
+        let element = element
+            .into_html_element()
+            .ok_or_else(|| js_sys::Error::new("element is not an HtmlElement"))?;
+
+        let size_observer = SizeObserver::new(element.as_ref(), move |_| {
+            if let Err(err) = align_to(
+                observer_base.clone(),
+                observer_element.clone(),
+                Some(observer_opts.clone()),
+            ) {
+                log::error!("could not align element: {}", err.to_string());
+            }
+        });
+        let this = Self {
+            base,
+            element,
+            options,
+            _size_observer: size_observer,
+        };
+
+        this.update()?;
+
+        Ok(this)
+    }
+
+    /// Updates the placement manually
+    pub fn update(&self) -> Result<(), Error> {
+        align_to(
+            self.base.clone(),
+            self.element.clone(),
+            Some(self.options.clone()),
+        )
+    }
 }
