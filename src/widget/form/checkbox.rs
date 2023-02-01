@@ -249,7 +249,7 @@ impl Component for PwtCheckbox {
             .class(checked.then(|| "checked"))
             .class(disabled.then(|| "disabled"))
             .with_child(inner)
-            .attribute("tabindex", "0")
+            .attribute("tabindex", props.input_props.tabindex.unwrap_or(0).to_string())
             .attribute("role", "checkbox")
             .attribute("aria-checked", checked.then(|| "true"))
             .onkeyup(onkeyup)
