@@ -315,6 +315,7 @@ impl Component for PwtDropdown {
         let select = Container::new()
             .node_ref(self.dropdown_ref.clone())
             .class("pwt-input")
+            .class("pwt-w-100")
             .with_child(input)
             .with_child(html!{<i onclick={trigger_onclick} class={trigger_cls}></i>});
 
