@@ -16,7 +16,7 @@ use crate::widget::{Container, Row, Input, Tooltip};
 
 use pwt_macros::widget;
 
-use super::align::{AlignOptions, Point, GrowDirection};
+use crate::widget::align::{AlignOptions, AutoFloatingPlacement, GrowDirection, Point};
 
 /// Render function to create the [Dropdown] picker.
 #[derive(Clone, Derivative)]
@@ -152,7 +152,7 @@ pub struct PwtDropdown {
     dropdown_ref: NodeRef,
     picker_ref: NodeRef,
     picker_id: String,
-    align_options: Option<AlignOptions>,
+    picker_placer: Option<AutoFloatingPlacement>
 }
 
 impl PwtDropdown {
@@ -180,7 +180,7 @@ impl Component for PwtDropdown {
             dropdown_ref: NodeRef::default(),
             picker_ref: NodeRef::default(),
             picker_id: crate::widget::get_unique_element_id(),
-            align_options: None,
+            picker_placer: None,
         }
     }
 
@@ -367,11 +367,23 @@ impl Component for PwtDropdown {
             let window = web_sys::window().unwrap();
             let picker_ref = self.picker_ref.clone();
 
-            self.align_options = Some(AlignOptions::new(
+            self.picker_placer = match AutoFloatingPlacement::new(
+                self.dropdown_ref.clone(),
+                self.picker_ref.clone(),
+                AlignOptions::new(
                     Point::BottomStart,
                     Point::TopStart,
                     GrowDirection::TopBottom,
-                ).align_width(true));
+                )
+                .viewport_padding(5.0)
+                .align_width(true),
+            ) {
+                Ok(placer) => Some(placer),
+                Err(err) => {
+                    log::error!("error creating placer: {}", err.to_string());
+                    None
+                }
+            };
 
             self.mousedown_listener = Some(EventListener::new(
                 &window,
@@ -400,17 +412,11 @@ impl Component for PwtDropdown {
             }
         }
 
-
-        if self.align_options.is_some() {
-            if let Err(err) = crate::widget::align::align_to(
-                self.dropdown_ref.clone(),
-                self.picker_ref.clone(),
-                self.align_options.clone(),
-            ) {
-                log::error!("could not align dropdown: {}", err.to_string());
+        if let Some(placer) = &self.picker_placer {
+            if let Err(err) = placer.update() {
+                log::error!("error updating placement: {}", err.to_string());
             }
         }
-
 
         if self.show != self.last_show {
             self.last_show = self.show;
