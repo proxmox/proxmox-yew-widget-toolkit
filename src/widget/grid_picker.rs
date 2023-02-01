@@ -133,7 +133,7 @@ impl<S: DataStore> PwtGridPicker<S> {
                 crate::props::FilterFn::new(
                     move |item| {
                         let key = extract_key_fn.apply(item);
-                        key.to_lowercase().contains(&filter)
+                        key.to_lowercase().contains(&filter.to_lowercase())
                     }
                 )
             });
