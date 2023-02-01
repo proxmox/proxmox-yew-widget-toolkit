@@ -11,8 +11,7 @@ use yew::html::{IntoPropValue, IntoEventCallback};
 use yew::virtual_dom::{Key, VNode};
 
 use crate::prelude::*;
-use crate::css::AlignItems;
-use crate::widget::{Container, Row, Input, Tooltip};
+use crate::widget::{Container, Input, Tooltip};
 
 use pwt_macros::widget;
 
@@ -149,7 +148,7 @@ pub struct PwtDropdown {
     // other widget can grep the focus after a change (if the want)
     pending_change: bool,
     mousedown_listener: Option<EventListener>,
-    dropdown_ref: NodeRef,
+    input_ref: NodeRef,
     picker_ref: NodeRef,
     picker_id: String,
     picker_placer: Option<AutoFloatingPlacement>
@@ -177,7 +176,7 @@ impl Component for PwtDropdown {
             pending_change: false,
             value: ctx.props().value.clone().unwrap_or_else(|| String::new()),
             mousedown_listener: None,
-            dropdown_ref: NodeRef::default(),
+            input_ref: NodeRef::default(),
             picker_ref: NodeRef::default(),
             picker_id: crate::widget::get_unique_element_id(),
             picker_placer: None,
@@ -292,6 +291,7 @@ impl Component for PwtDropdown {
         let value = props.value.clone().unwrap_or_else(|| self.value.clone());
 
         let input = Input::new()
+            .node_ref(self.input_ref.clone())
             .with_input_props(&props.input_props)
             .class("pwt-flex-fill")
             .attribute("value", value)
@@ -313,14 +313,13 @@ impl Component for PwtDropdown {
         };
 
         let select = Container::new()
-            .node_ref(self.dropdown_ref.clone())
+            .with_std_props(&props.std_props)
             .class("pwt-input")
             .class("pwt-w-100")
             .with_child(input)
             .with_child(html!{<i onclick={trigger_onclick} class={trigger_cls}></i>});
 
         let dropdown = Container::new()
-            .with_std_props(&props.std_props)
             .with_child(select)
             .with_child(
                 Container::new()
@@ -365,7 +364,7 @@ impl Component for PwtDropdown {
             let picker_ref = self.picker_ref.clone();
 
             self.picker_placer = match AutoFloatingPlacement::new(
-                self.dropdown_ref.clone(),
+                props.std_props.node_ref.clone(),
                 self.picker_ref.clone(),
                 AlignOptions::new(
                     Point::BottomStart,
@@ -403,7 +402,7 @@ impl Component for PwtDropdown {
             ));
 
             if props.input_props.autofocus {
-                if let Some(el) = props.std_props.node_ref.cast::<web_sys::HtmlElement>() {
+                if let Some(el) = self.input_ref.cast::<web_sys::HtmlElement>() {
                     let _ = el.focus();
                 }
             }
