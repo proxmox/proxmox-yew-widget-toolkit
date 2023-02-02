@@ -186,7 +186,7 @@ impl Component for PwtButton {
                     false => None,
                 };
                 children.push(html!{
-                    <i {onclick} role="none" aria-hidden="true" class={icon_class.clone()}></i>
+                    <span class="pwt-font-label-large"><i {onclick} role="none" aria-hidden="true" class={icon_class.clone()}></i></span>
                 });
             }
         }
