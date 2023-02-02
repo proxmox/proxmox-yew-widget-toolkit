@@ -175,8 +175,6 @@ impl Component for PwtButton {
 
         let mut children = Vec::new();
 
-        let has_text = props.text.as_ref().map(|t| !t.is_empty()).unwrap_or(false);
-
         if let Some(icon_class) = &props.icon_class {
             if !icon_class.is_empty() {
                 // Chromium fires onclick from nested elements, so we need to suppress that manually here
@@ -188,10 +186,7 @@ impl Component for PwtButton {
                     false => None,
                 };
                 children.push(html!{
-                    <i {onclick} role="none" aria-hidden="true" class={classes!(
-                        icon_class.clone(),
-                        has_text.then(|| "pwt-me-2"),
-                    )}></i>
+                    <i {onclick} role="none" aria-hidden="true" class={icon_class.clone()}></i>
                 });
             }
         }
