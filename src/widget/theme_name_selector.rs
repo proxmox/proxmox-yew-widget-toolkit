@@ -32,6 +32,7 @@ impl ThemeNameSelector {
 
 pub struct PwtThemeNameSelector {
     theme: String,
+    combobox_ref: NodeRef,
 }
 
 pub enum Msg {
@@ -47,6 +48,7 @@ impl Component for PwtThemeNameSelector {
 
         Self {
             theme: theme.name,
+            combobox_ref: NodeRef::default(),
         }
     }
 
@@ -66,6 +68,7 @@ impl Component for PwtThemeNameSelector {
         let props = ctx.props();
 
         Combobox::new()
+            .node_ref(self.combobox_ref.clone())
             .class(props.class.clone())
             .on_change(ctx.link().callback(|v| Msg::SetThemeName(v)))
             .aria_label("Select Theme")
