@@ -163,6 +163,26 @@ impl PwtDropdown {
             let _ = el.focus();
         }
     }
+
+    fn update_picker_placer(&mut self, props: &Dropdown) {
+        self.picker_placer = match AutoFloatingPlacement::new(
+            props.std_props.node_ref.clone(),
+            self.picker_ref.clone(),
+            AlignOptions::new(
+                Point::BottomStart,
+                Point::TopStart,
+                GrowDirection::TopBottom,
+            )
+                .viewport_padding(5.0)
+                .align_width(true),
+        ) {
+            Ok(placer) => Some(placer),
+            Err(err) => {
+                log::error!("error creating placer: {}", err.to_string());
+                None
+            }
+        };
+    }
 }
 
 impl Component for PwtDropdown {
@@ -356,6 +376,16 @@ impl Component for PwtDropdown {
         }
     }
 
+    fn changed(&mut self, ctx: &Context<Self>, old_props: &Self::Properties) -> bool {
+        let props = ctx.props();
+
+        if props.std_props.node_ref != old_props.std_props.node_ref {
+            self.update_picker_placer(props);
+        }
+
+        true
+    }
+
     fn rendered(&mut self, ctx: &Context<Self>, first_render: bool) {
         if first_render {
             let props = ctx.props();
@@ -363,23 +393,7 @@ impl Component for PwtDropdown {
             let window = web_sys::window().unwrap();
             let picker_ref = self.picker_ref.clone();
 
-            self.picker_placer = match AutoFloatingPlacement::new(
-                props.std_props.node_ref.clone(),
-                self.picker_ref.clone(),
-                AlignOptions::new(
-                    Point::BottomStart,
-                    Point::TopStart,
-                    GrowDirection::TopBottom,
-                )
-                .viewport_padding(5.0)
-                .align_width(true),
-            ) {
-                Ok(placer) => Some(placer),
-                Err(err) => {
-                    log::error!("error creating placer: {}", err.to_string());
-                    None
-                }
-            };
+            self.update_picker_placer(props);
 
             self.mousedown_listener = Some(EventListener::new(
                 &window,
