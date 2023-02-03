@@ -219,6 +219,7 @@ impl<S: DataStore + 'static> Component for PwtGridPicker<S> {
                 .with_child(
                    Input::new()
                         .attribute("autocomplete", "off")
+                        .attribute("size", "1") // make size minimal
                         .class("pwt-input")
                         .class("pwt-w-100")
                         .class(if filter_invalid { "is-invalid" } else { "is-valid" })
