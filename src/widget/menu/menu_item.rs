@@ -240,13 +240,11 @@ impl Component for PwtMenuItem {
             submenu = Some(sub);
         }
 
-        let icon = props.icon_class.as_ref().filter(|c| !c.is_empty()).map(|icon_class| {
-            let icon_class = classes!(
-                icon_class.clone(),
-                if props.inside_menubar { "pwt-menubar-item-icon" }  else { "pwt-menu-item-icon" },
-            );
-            html!{<i role="none" aria-hidden="true" class={icon_class}/>}
-        });
+        let icon_class = classes!(
+            props.icon_class.clone().filter(|c| !c.is_empty()),
+            if props.inside_menubar { "pwt-menubar-item-icon" }  else { "pwt-menu-item-icon" },
+        );
+        let icon = html!{<i role="none" aria-hidden="true" class={icon_class}/>};
 
         let has_submenu = props.menu.is_some();
 
@@ -267,15 +265,8 @@ impl Component for PwtMenuItem {
             .attribute("role", "menuitem")
             .attribute("aria-haspopup", has_submenu.then(|| "true"))
             .attribute("aria-expanded", has_submenu.then(|| if show_submenu { "true" } else { "false" }))
-            .with_optional_child(icon)
-            .with_child({
-                let class = if props.menu.is_some() {
-                    "pwt-menu-submenu-indent"
-                } else {
-                    "pwt-menu-item-indent"
-                };
-                html!{<span {class}>{props.text.clone()}</span>}
-            })
+            .with_child(icon)
+            .with_child(html!{<span class="pwt-flex-fill">{props.text.clone()}</span>})
             .with_optional_child(arrow)
             .with_optional_child(submenu)
             .onkeydown({

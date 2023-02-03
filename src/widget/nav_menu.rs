@@ -248,7 +248,7 @@ impl PwtNavigationMenu {
             .attribute("disabled", (!visible).then(|| "true"))
             .attribute("tabindex",  if is_active { "0" } else { "-1" })
             .class("pwt-nav-link")
-            .class(if visible { "pwt-d-flex" } else { "pwt-d-none" })
+            .class((!visible).then(|| "pwt-d-none"))
             .class(crate::css::AlignItems::Baseline)
             .class(is_active.then_some("active"))
             .onclick(onclick)
