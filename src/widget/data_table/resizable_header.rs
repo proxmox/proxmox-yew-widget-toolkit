@@ -13,6 +13,7 @@ use crate::prelude::*;
 use crate::props::{BuilderFn, IntoOptionalBuilderFn};
 use crate::widget::{Row, Container, SizeObserver};
 use crate::widget::menu::{Menu, MenuButton};
+use crate::widget::dom::element_direction_rtl;
 
 // Note about node_ref property: make it optional, and generate an
 // unique one in Component::create(). That way we can clone Properies without
@@ -152,6 +153,7 @@ pub enum Msg {
 
 #[doc(hidden)]
 pub struct PwtResizableHeader {
+    rtl: Option<bool>,
     node_ref: NodeRef,
     width: f64,
     mousemove_listener: Option<EventListener>,
@@ -182,6 +184,7 @@ impl Component for PwtResizableHeader {
 
         Self {
             node_ref: props.node_ref.clone().unwrap_or(NodeRef::default()),
+            rtl: None,
             width: 0.0,
             mousemove_listener: None,
             mouseup_listener: None,
@@ -196,11 +199,20 @@ impl Component for PwtResizableHeader {
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
         let props = ctx.props();
 
+        if self.rtl.is_none() {
+            self.rtl = element_direction_rtl(&self.node_ref);
+        }
+
         match msg {
             Msg::MouseMove(x) => {
                 if let Some(el) = self.node_ref.cast::<web_sys::Element>() {
                     let rect = el.get_bounding_client_rect();
-                    let new_width = (x as f64) - rect.x();
+                    let rtl = self.rtl.unwrap_or(false);
+                    let new_width = if rtl {
+                         rect.right() - (x as f64)
+                    } else {
+                        (x as f64) - rect.x()
+                    };
                     self.width = new_width.max(0.0);
                     if let Some(on_resize) = &props.on_resize {
                         on_resize.emit(self.width);
@@ -216,6 +228,9 @@ impl Component for PwtResizableHeader {
                 false
             }
             Msg::StartResize => {
+
+                self.rtl = element_direction_rtl(&self.node_ref);
+
                 let window = web_sys::window().unwrap();
                 let link = ctx.link();
                 let onmousemove = link.callback(|e: Event| {
@@ -248,6 +263,9 @@ impl Component for PwtResizableHeader {
             }
             Msg::DelayedFocusChange(has_focus) => {
                 self.has_focus = has_focus;
+                if has_focus {
+                    self.rtl = element_direction_rtl(&self.node_ref);
+                }
                 true
             }
             Msg::HidePicker => {
