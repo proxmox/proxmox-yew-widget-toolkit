@@ -122,11 +122,11 @@ pub struct DataTable<S: DataStore> {
     // The data collection ([Store] or [TreeStore](crate::state::TreeStore)).
     store: S,
 
-    /// Set class for table cells (default is "pwt-p-2").
+    /// Set class for table cells (default is "pwt-datatable-cell").
     #[prop_or_default]
     pub cell_class: Classes,
 
-    /// CSS class for header cells (default is "pwt-p-2").
+    /// CSS class for header cells (default is "pwt-datatable-header-cell").
     #[prop_or_default]
     pub header_class: Classes,
 
@@ -983,7 +983,7 @@ impl <S: DataStore + 'static> Component for PwtDataTable<S> {
         }
 
         let cell_class = if props.cell_class.is_empty() {
-            Classes::from("pwt-p-2")
+            Classes::from("pwt-datatable-cell")
         } else {
             props.cell_class.clone()
         };
@@ -1529,6 +1529,11 @@ impl <S: DataStore + 'static> Component for PwtDataTable<S> {
             "flex: 0 0 auto;height:0px;"
         };
 
+        let mut header_class =  props.header_class.clone();
+        if header_class.is_empty() {
+            header_class.push("pwt-datatable-header-cell");
+        }
+
         Column::new()
             .class("pwt-datatable")
             .class(props.class.clone())
@@ -1551,7 +1556,7 @@ impl <S: DataStore + 'static> Component for PwtDataTable<S> {
                         HeaderWidget::new(self.headers.clone(), ctx.link().callback(Msg::Header))
                             .focusable(props.header_focusable && props.show_header)
                             .selection_status(self.selection_status)
-                            .header_class(props.header_class.clone())
+                            .header_class(header_class)
                             .reserve_scroll_space(self.scrollbar_size.unwrap_or_default()),
                     ),
             )

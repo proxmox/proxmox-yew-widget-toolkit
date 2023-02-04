@@ -447,7 +447,7 @@ impl <T: 'static> Component for PwtHeaderWidget<T> {
         let props = ctx.props();
         match msg {
             Msg::ResizeColumn(col_idx, width) => {
-                self.state.set_width(col_idx, Some(width.max(40.0)));
+                self.state.set_width(col_idx, Some(width.max(50.0)));
 
                 // Set flex columns on the left to fixed size to avoid unexpected effects.
                 self.state.copy_observed_widths(col_idx, &self.observed_widths);
