@@ -274,7 +274,6 @@ impl Component for PwtResizableHeader {
             .node_ref(self.node_ref.clone())
             .attribute("role", "none")
             .class("pwt-datatable-header-item")
-            //.class(self.show_picker.then(|| "focused"))
             .class(self.has_focus.then(|| "focused"))
             .class(props.class.clone())
             .attribute("id", props.id.clone())
@@ -295,8 +294,7 @@ impl Component for PwtResizableHeader {
             .with_child(
                 Container::new()
                     .attribute("role", "none")
-                    .class("pwt-align-self-center")
-                    .class("pwt-text-truncate")
+                    .class("pwt-datatable-header-content")
                     .with_optional_child(props.content.clone())
             );
 
@@ -304,8 +302,11 @@ impl Component for PwtResizableHeader {
             row.set_attribute(name.clone(), value);
         }
 
+        let mut anchor = Container::new()
+            .class("pwt-datatable-header-anchor");
+
         if props.show_menu {
-            row.add_child(
+            anchor.add_child(
                 MenuButton::new("")
                     .node_ref(self.picker_ref.clone())
                     .tabindex(-1)
@@ -316,12 +317,11 @@ impl Component for PwtResizableHeader {
                     .ondblclick(|event: MouseEvent| event.stop_propagation())
                     .menu_builder(props.menu_builder.clone())
                     .on_close(ctx.link().callback(|_| Msg::HidePicker))
-
             );
         }
 
         if props.resizable {
-            row.add_child(
+            anchor.add_child(
                 Container::new()
                     .attribute("role", "none")
                     .class("pwt-datatable-header-resize-trigger")
@@ -336,6 +336,10 @@ impl Component for PwtResizableHeader {
                         }
                     })
             );
+        }
+
+        if !anchor.children.is_empty() {
+            row.add_child(anchor);
         }
 
         row.into()
