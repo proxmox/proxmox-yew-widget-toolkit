@@ -27,9 +27,9 @@ pub struct DataTableColumn<T: 'static> {
     pub name: AttrValue,
     /// Unique Column Key
     pub key: Option<Key>,
-    /// Horizontal table cell justification.
-    #[prop_or(AttrValue::Static("left"))]
-    pub justify: AttrValue, // left, center, right, justify
+    /// Horizontal table cell justification (start, end, left, center, right, justify).
+    #[prop_or(AttrValue::Static("start"))]
+    pub justify: AttrValue,
     /// Render function (returns cell content)
     pub render_cell: DataTableCellRenderer<T>,
     /// Rendert function for Header content. If set, this is used instead of `name`.
