@@ -150,6 +150,7 @@ pub struct PwtDropdown {
     mousedown_listener: Option<EventListener>,
     input_ref: NodeRef,
     picker_ref: NodeRef,
+    dropdown_ref: NodeRef,
     picker_id: String,
     picker_placer: Option<AutoFloatingPlacement>
 }
@@ -166,7 +167,7 @@ impl PwtDropdown {
 
     fn update_picker_placer(&mut self, props: &Dropdown) {
         self.picker_placer = match AutoFloatingPlacement::new(
-            props.std_props.node_ref.clone(),
+            self.dropdown_ref.clone(),
             self.picker_ref.clone(),
             AlignOptions::new(
                 Point::BottomStart,
@@ -198,6 +199,7 @@ impl Component for PwtDropdown {
             mousedown_listener: None,
             input_ref: NodeRef::default(),
             picker_ref: NodeRef::default(),
+            dropdown_ref: NodeRef::default(),
             picker_id: crate::widget::get_unique_element_id(),
             picker_placer: None,
         }
@@ -334,6 +336,8 @@ impl Component for PwtDropdown {
 
         let select = Container::new()
             .with_std_props(&props.std_props)
+            // overwrite node_ref, becaus AutoFloatingPlacement needs stable ref
+            .node_ref(self.dropdown_ref.clone()) 
             .class("pwt-input")
             .class("pwt-w-100")
             .with_child(input)
