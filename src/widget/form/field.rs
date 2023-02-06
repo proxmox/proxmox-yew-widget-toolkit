@@ -250,6 +250,7 @@ fn create_field_validation_cb(props: Field) -> ValidateFn<Value> {
 #[doc(hidden)]
 pub struct PwtField {
     state: FieldState,
+    input_ref: NodeRef,
 }
 
 // Field are type Value::String(), but we also allow Value::Number ..
@@ -291,7 +292,10 @@ impl Component for PwtField {
         let value = props.default.as_deref().unwrap_or("").to_string();
         let default = props.default.as_deref().unwrap_or("").to_string();
 
-        let mut me = Self { state };
+        let mut me = Self {
+            state,
+            input_ref: NodeRef::default(),
+        };
 
         if let Some(name) = &props.input_props.name {
             me.state.register_field(&props.input_props, value, default, false);
@@ -356,6 +360,7 @@ impl Component for PwtField {
         });
 
         let input: Html = Input::new()
+            .node_ref(self.input_ref.clone())
             .with_input_props(&props.input_props)
             .class("pwt-flex-fill")
             .attribute("type", props.input_type.clone())
@@ -382,4 +387,16 @@ impl Component for PwtField {
 
         tooltip.into()
     }
+
+    fn rendered(&mut self, ctx: &Context<Self>, first_render: bool) {
+        if first_render {
+            let props = ctx.props();
+            if props.input_props.autofocus {
+                if let Some(el) = self.input_ref.cast::<web_sys::HtmlElement>() {
+                    let _ = el.focus();
+                }
+            }
+        }
+    }
+
 }
