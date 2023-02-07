@@ -2,7 +2,7 @@ use std::borrow::Cow;
 
 use yew::prelude::*;
 use yew::html::IntoPropValue;
-use yew::virtual_dom::{Attributes, ApplyAttributeAs, Listeners, Key, VList, VTag};
+use yew::virtual_dom::{Attributes, ApplyAttributeAs, Listeners, Key, VList, VNode, VTag};
 
 use crate::props::ListenersWrapper;
 
@@ -59,7 +59,14 @@ impl WidgetStdProps {
     }
 
     /// Helper to create a VTag from [WidgetStdProps].
-    pub fn into_vtag(self, tag: &'static str, listeners: Option<ListenersWrapper>) -> VTag {
+    pub fn into_vtag(
+        self,
+        tag: Cow<'static, str>,
+        listeners: Option<ListenersWrapper>,
+        children: Option<Vec<VNode>>,
+    ) -> VTag {
+        let attributes = self.cumulate_attributes(None::<&str>);
+
         let listeners = match listeners {
             None => Listeners::None,
             Some(wrapper) => Listeners::Pending(
@@ -67,13 +74,19 @@ impl WidgetStdProps {
             ),
         };
 
+        let vlist = if let Some(children) = children {
+            VList::with_children(children, None)
+        } else {
+            VList::new()
+        };
+
         VTag::__new_other(
-            Cow::Borrowed(tag),
+            tag,
             self.node_ref,
             self.key,
-            self.attributes,
+            attributes,
             listeners,
-            VList::new(),
+            vlist,
         )
     }
 }

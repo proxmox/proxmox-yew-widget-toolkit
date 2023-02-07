@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 
 use yew::prelude::*;
-use yew::virtual_dom::{Listeners, VList, VTag};
+use yew::virtual_dom::VTag;
 
 use pwt_macros::widget;
 
@@ -31,23 +31,6 @@ impl Container {
 
 impl Into<VTag> for Container {
     fn into(self) -> VTag {
-
-        let attributes = self.std_props.cumulate_attributes(None::<&str>);
-
-        let listeners = Listeners::Pending(
-            self.listeners.listeners.into_boxed_slice()
-        );
-
-        let children = VList::with_children(self.children, None);
-
-
-        VTag::__new_other(
-            self.tag,
-            self.std_props.node_ref,
-            self.std_props.key,
-            attributes,
-            listeners,
-            children,
-        )
+        self.std_props.into_vtag(self.tag, Some(self.listeners), Some(self.children))
     }
 }
