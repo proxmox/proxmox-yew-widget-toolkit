@@ -165,7 +165,7 @@ impl PwtDropdown {
         }
     }
 
-    fn update_picker_placer(&mut self, props: &Dropdown) {
+    fn update_picker_placer(&mut self, _props: &Dropdown) {
         self.picker_placer = match AutoFloatingPlacement::new(
             self.dropdown_ref.clone(),
             self.picker_ref.clone(),
