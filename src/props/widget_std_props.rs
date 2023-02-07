@@ -1,6 +1,10 @@
+use std::borrow::Cow;
+
 use yew::prelude::*;
 use yew::html::IntoPropValue;
-use yew::virtual_dom::{ApplyAttributeAs, Attributes, Key};
+use yew::virtual_dom::{Attributes, ApplyAttributeAs, Listeners, Key, VList, VTag};
+
+use crate::props::ListenersWrapper;
 
 /// Standard widget properties.
 #[derive(PartialEq, Debug, Default, Clone)]
@@ -21,6 +25,25 @@ pub struct WidgetStdProps {
 
 impl WidgetStdProps {
 
+    /// Method to set attributes.
+    ///
+    /// Note: Value 'None' removes the attribute.
+    pub fn set_attribute(
+        &mut self,
+        key: impl Into<AttrValue>,
+        value: impl IntoPropValue<Option<AttrValue>>,
+    ) {
+        if let Some(value) = value.into_prop_value() {
+            self.attributes.get_mut_index_map()
+                .insert(key.into(), (value, ApplyAttributeAs::Attribute));
+        } else {
+            self.attributes.get_mut_index_map()
+                .remove(&key.into());
+        }
+    }
+
+    /// Helper to gather all attributes into a single [Attributes]
+    /// map.
     pub fn cumulate_attributes(&self, additional_class: Option<impl Into<Classes>>) -> Attributes {
         let mut class = self.class.clone();
 
@@ -35,4 +58,22 @@ impl WidgetStdProps {
         attributes
     }
 
+    /// Helper to create a VTag from [WidgetStdProps].
+    pub fn into_vtag(self, tag: &'static str, listeners: Option<ListenersWrapper>) -> VTag {
+        let listeners = match listeners {
+            None => Listeners::None,
+            Some(wrapper) => Listeners::Pending(
+                wrapper.listeners.into_boxed_slice()
+            ),
+        };
+
+        VTag::__new_other(
+            Cow::Borrowed(tag),
+            self.node_ref,
+            self.key,
+            self.attributes,
+            listeners,
+            VList::new(),
+        )
+    }
 }

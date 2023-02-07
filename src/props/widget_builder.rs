@@ -1,6 +1,6 @@
 use yew::prelude::*;
 use yew::html::IntoPropValue;
-use yew::virtual_dom::{ApplyAttributeAs, Key, VNode};
+use yew::virtual_dom::{Key, VNode};
 
 use super::WidgetStdProps;
 
@@ -68,12 +68,6 @@ pub trait WidgetBuilder: Into<VNode> {
         key: impl Into<AttrValue>,
         value: impl IntoPropValue<Option<AttrValue>>,
     ) {
-        if let Some(value) = value.into_prop_value() {
-            self.as_std_props_mut().attributes.get_mut_index_map()
-                .insert(key.into(), (value, ApplyAttributeAs::Attribute));
-        } else {
-            self.as_std_props_mut().attributes.get_mut_index_map()
-                .remove(&key.into());
-        }
+        self.as_std_props_mut().set_attribute(key, value);
     }
 }
