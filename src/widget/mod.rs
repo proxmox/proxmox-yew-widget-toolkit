@@ -11,6 +11,8 @@ pub mod align;
 mod button;
 pub use button::{Button, PwtButton};
 
+pub mod canvas;
+
 mod column;
 pub use column::Column;
 
