@@ -4,6 +4,9 @@ pub use circle::Circle;
 mod polygon;
 pub use polygon::Polygon;
 
+mod path;
+pub use path::Path;
+
 mod polyline;
 pub use polyline::Polyline;
 
