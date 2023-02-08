@@ -47,6 +47,12 @@ impl From<usize> for SvgLength {
     }
 }
 
+impl From<i32> for SvgLength {
+    fn from(v: i32) -> SvgLength {
+        SvgLength::Px(v as f32)
+    }
+}
+
 impl Into<AttrValue> for SvgLength {
     fn into(self) -> AttrValue {
         self.to_string().into()

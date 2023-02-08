@@ -65,6 +65,17 @@ impl Circle {
     pub fn set_stroke(&mut self, stroke: impl Into<AttrValue>) {
         self.set_attribute("stroke", stroke.into());
     }
+
+    /// Builder style method to set the circle fill color/pattern.
+    pub fn fill(mut self, fill: impl Into<AttrValue>) -> Self {
+        self.set_fill(fill);
+        self
+    }
+
+    /// Method to set the circle fill color/pattern.
+    pub fn set_fill(&mut self, fill: impl Into<AttrValue>) {
+        self.set_attribute("fill", fill.into());
+    }
 }
 
 impl Into<VTag> for Circle {
