@@ -1,6 +1,9 @@
 mod circle;
 pub use circle::Circle;
 
+mod rect;
+pub use rect::Rect;
+
 use std::fmt::Display;
 use std::borrow::Cow;
 
