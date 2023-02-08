@@ -1,6 +1,9 @@
 mod circle;
 pub use circle::Circle;
 
+mod group;
+pub use group:: Group;
+
 mod polygon;
 pub use polygon::Polygon;
 
