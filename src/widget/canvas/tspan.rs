@@ -5,9 +5,9 @@ use yew::virtual_dom::{VNode, VTag};
 
 use pwt_macros::widget;
 
-use crate::props::WidgetBuilder;
+use crate::props::{ContainerBuilder, WidgetBuilder};
 
-use super::SvgLength;
+use super::{Hyperlink, SvgLength};
 
 pub trait IntoSvgTSpanChild {
     fn into_svg_tspan_child(self) -> VNode;
@@ -16,6 +16,12 @@ pub trait IntoSvgTSpanChild {
 impl<T: Into<AttrValue>> IntoSvgTSpanChild for T {
     fn into_svg_tspan_child(self) -> VNode {
         self.into().into()
+    }
+}
+
+impl IntoSvgTSpanChild for Hyperlink {
+    fn into_svg_tspan_child(self) -> VNode {
+        self.into()
     }
 }
 

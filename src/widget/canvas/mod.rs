@@ -4,6 +4,9 @@ pub use circle::Circle;
 mod group;
 pub use group:: Group;
 
+mod hyperlink;
+pub use hyperlink::Hyperlink;
+
 mod line;
 pub use line::Line;
 
