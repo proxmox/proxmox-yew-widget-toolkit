@@ -19,6 +19,12 @@ pub use polyline::Polyline;
 mod rect;
 pub use rect::Rect;
 
+mod text;
+pub use text::Text;
+
+mod tspan;
+pub use tspan::TSpan;
+
 use std::fmt::Display;
 use std::borrow::Cow;
 
