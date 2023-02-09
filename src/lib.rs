@@ -117,6 +117,11 @@
 //! the most complex widget. It is able to display tables and trees, and
 //! has virtual scroll support.
 
+//! ### Drawing Canvas
+//!
+//! The [Canvas](widget::canvas) component utilizes the Html `<svg>` element to
+//! provide a full features 2D drawing interface.
+
 //! ## Router
 //!
 //! [Yew](https://yew.rs) provides a framework to implement
