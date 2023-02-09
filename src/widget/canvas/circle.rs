@@ -9,7 +9,7 @@ use crate::props::WidgetBuilder;
 
 use super::SvgLength;
 
-/// SVG circle element.
+/// SVG `<circle>` element.
 #[widget(pwt=crate, @element)]
 #[derive(Properties, Clone, PartialEq)]
 pub struct Circle {}

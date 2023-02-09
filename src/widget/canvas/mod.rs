@@ -4,6 +4,9 @@ mod macros;
 mod circle;
 pub use circle::Circle;
 
+mod ellipse;
+pub use ellipse::Ellipse;
+
 mod group;
 pub use group:: Group;
 
