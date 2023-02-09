@@ -70,4 +70,27 @@ pub trait WidgetBuilder: Into<VNode> {
     ) {
         self.as_std_props_mut().set_attribute(key, value);
     }
+
+    /// Builder style method to set the element ID.
+    fn id(mut self, id: impl Into<AttrValue>) -> Self {
+        self.set_id(id);
+        self
+    }
+
+    /// Method to set the element ID.
+    fn set_id(&mut self, id: impl Into<AttrValue>) {
+        self.set_attribute("id", id.into());
+    }
+
+    /// Builder style method to set the element tabindex.
+    fn tabindex(mut self, tabindex: i32) -> Self {
+        self.set_tabindex(tabindex);
+        self
+    }
+
+    /// Method to set the element tabinde.
+    fn set_tabindex(&mut self, tabindex: i32) {
+        self.set_attribute("tabindex", tabindex.to_string());
+    }
+
 }

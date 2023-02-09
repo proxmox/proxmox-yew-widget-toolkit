@@ -1,5 +1,4 @@
-
-macro_rules!impl_svg_presentation_attributes{
+macro_rules! impl_svg_presentation_attributes {
     () => {
         /// Builder style method to set the stroke width.
         pub fn stroke_width(mut self, w: impl Into<SvgLength>) -> Self {
