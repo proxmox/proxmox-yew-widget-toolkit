@@ -10,7 +10,7 @@ use crate::props::WidgetBuilder;
 use super::SvgLength;
 
 /// SVG group (`<g>`) element.
-#[widget(pwt=crate, @element, @container)]
+#[widget(pwt=crate, @element, @container, @svg)]
 #[derive(Properties, Clone, PartialEq)]
 pub struct Group {}
 

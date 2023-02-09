@@ -10,7 +10,7 @@ use crate::props::WidgetBuilder;
 use super::SvgLength;
 
 /// SVG `<line>` element.
-#[widget(pwt=crate, @element)]
+#[widget(pwt=crate, @element, @svg)]
 #[derive(Properties, Clone, PartialEq)]
 pub struct Line {}
 

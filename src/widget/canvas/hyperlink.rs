@@ -10,7 +10,7 @@ use crate::props::WidgetBuilder;
 /// SVG `<a>` element (hyperlink).
 ///
 /// This a container, which means you can create a link around any text or shape.
-#[widget(pwt=crate, @element, @container)]
+#[widget(pwt=crate, @element, @container, @svg)]
 #[derive(Properties, Clone, PartialEq)]
 pub struct Hyperlink {}
 

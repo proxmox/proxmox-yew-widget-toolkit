@@ -15,7 +15,7 @@ use super::SvgLength;
 ///
 /// Presentation attributes are ignored if the corresponding attribute
 /// is already defined on the referenced element.
-#[widget(pwt=crate, @element)]
+#[widget(pwt=crate, @element, @svg)]
 #[derive(Properties, Clone, PartialEq)]
 pub struct Reference {}
 

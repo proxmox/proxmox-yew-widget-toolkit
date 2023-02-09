@@ -32,7 +32,7 @@ impl IntoSvgTextChild for Hyperlink {
 }
 
 /// SVG `<text>` element.
-#[widget(pwt=crate, @element)]
+#[widget(pwt=crate, @element, @svg)]
 #[derive(Properties, Clone, PartialEq)]
 pub struct Text {
     #[prop_or_default]

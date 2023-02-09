@@ -26,7 +26,7 @@ impl IntoSvgTSpanChild for Hyperlink {
 }
 
 /// SVG `<tspan>` element.
-#[widget(pwt=crate, @element)]
+#[widget(pwt=crate, @element, @svg)]
 #[derive(Properties, Clone, PartialEq)]
 pub struct TSpan {
     #[prop_or_default]

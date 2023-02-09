@@ -13,6 +13,7 @@ pub(crate)struct WidgetSetup {
     is_input: bool,
     is_container: bool,
     is_element: bool,
+    is_svg: bool,
 }
 
 impl Parse for WidgetSetup {
@@ -22,6 +23,7 @@ impl Parse for WidgetSetup {
         let mut is_input = false;
         let mut is_container = false;
         let mut is_element = false;
+        let mut is_svg = false;
 
         loop {
             if input.is_empty() { break; }
@@ -35,6 +37,8 @@ impl Parse for WidgetSetup {
                     is_container = true;
                 } else if mixin == "element" {
                     is_element = true;
+                } else if mixin == "svg" {
+                    is_svg = true;
                 } else {
                     return Err(Error::new(mixin.span(), "no such widget mixin"));
                 }
@@ -77,6 +81,7 @@ impl Parse for WidgetSetup {
             is_input,
             is_container,
             is_element,
+            is_svg,
         })
     }
 }
@@ -191,22 +196,27 @@ fn derive_widget(setup: &WidgetSetup, widget: DeriveInput) -> Result<proc_macro2
         }
     };
 
+
     output.extend(quote!{
         impl #impl_generics #pwt::props::WidgetBuilder for #ident #ty_generics #where_clause {
             fn as_std_props_mut(&mut self) -> &mut #pwt::props::WidgetStdProps {
                 &mut self.std_props
             }
         }
-
-        impl #impl_generics #pwt::props::AsClassesMut for #ident #ty_generics #where_clause {
-            fn as_classes_mut(&mut self) -> &mut ::yew::Classes {
-                &mut self.std_props.class
-            }
-        }
-        impl #impl_generics #pwt::props::CssMarginBuilder for #ident #ty_generics #where_clause {}
-        impl #impl_generics #pwt::props::CssPaddingBuilder for #ident #ty_generics #where_clause {}
-        impl #impl_generics #pwt::props::CssBorderBuilder for #ident #ty_generics #where_clause {}
     });
+
+    if !setup.is_svg {
+        output.extend(quote!{
+            impl #impl_generics #pwt::props::AsClassesMut for #ident #ty_generics #where_clause {
+                fn as_classes_mut(&mut self) -> &mut ::yew::Classes {
+                    &mut self.std_props.class
+                }
+            }
+            impl #impl_generics #pwt::props::CssMarginBuilder for #ident #ty_generics #where_clause {}
+            impl #impl_generics #pwt::props::CssPaddingBuilder for #ident #ty_generics #where_clause {}
+            impl #impl_generics #pwt::props::CssBorderBuilder for #ident #ty_generics #where_clause {}
+        });
+    }
 
     if setup.is_element {
         output.extend(quote!{
