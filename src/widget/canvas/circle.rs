@@ -21,26 +21,48 @@ impl Circle {
         yew::props!(Self {})
     }
 
-    /// Builder style method to set the circle position.
+    /// Builder style method to set the circle center position.
     pub fn position(mut self, cx: impl Into<SvgLength>, cy: impl Into<SvgLength>) -> Self {
         self.set_position(cx, cy);
         self
     }
 
-    /// Method to set the circle position.
+    /// Method to set the circle center position.
     pub fn set_position(&mut self, cx: impl Into<SvgLength>, cy: impl Into<SvgLength>) {
         self.set_attribute("cx", cx.into());
         self.set_attribute("cy", cy.into());
     }
 
+    /// Builder style method to set the circle center x position.
+    pub fn cx(mut self, cx: impl Into<SvgLength>) -> Self {
+        self.set_cx(cx);
+        self
+    }
+
+    /// Method to set the circle center x position.
+    pub fn set_cx(&mut self, cx: impl Into<SvgLength>) {
+        self.set_attribute("cx", cx.into());
+    }
+
+    /// Builder style method to set the circle center y position.
+    pub fn cy(mut self, cy: impl Into<SvgLength>) -> Self {
+        self.set_cy(cy);
+        self
+    }
+
+    /// Method to set the circle center y position.
+    pub fn set_cy(&mut self, cy: impl Into<SvgLength>) {
+        self.set_attribute("cy", cy.into());
+    }
+
     /// Builder style method to set the circle radius.
-    pub fn radius(mut self, r: impl Into<SvgLength>) -> Self {
-        self.set_radius(r);
+    pub fn r(mut self, r: impl Into<SvgLength>) -> Self {
+        self.set_r(r);
         self
     }
 
     /// Method to set the circle radius.
-    pub fn set_radius(&mut self, r: impl Into<SvgLength>) {
+    pub fn set_r(&mut self, r: impl Into<SvgLength>) {
         self.set_attribute("r", r.into());
     }
 

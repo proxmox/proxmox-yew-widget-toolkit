@@ -1,3 +1,52 @@
+//! Drawing Canvas (SVG wrapper)
+//!
+//! The [Canvas] component creates an Html `<svg>` element. SVG elements are
+//! mapped into the DOM, so you can use the yew html marco to create
+//! objects inside the canvas (as long as the are valid SVG elements like `<circle>`, `<line>`, ...).
+//!
+//! ```
+//! use pwt::prelude::*;
+//! use pwt::widget::canvas::Canvas;
+//! # fn test() -> Canvas {
+//!
+//! Canvas::new()
+//!     .with_child(html!{ <circle cx="50" cy="50" r="50" />})
+//! # }
+//! ```
+//!
+//! We also provide rust types to build common SVG element, so you can
+//! rewite above example as:
+//!
+//! ```
+//! # use pwt::prelude::*;
+//! # use pwt::widget::canvas::{Canvas, Circle};
+//! # fn test() -> Canvas {
+//! Canvas::new()
+//!     .with_child(
+//!          Circle::new()
+//!              .cx(50)
+//!              .cy(50)
+//!              .r(50)
+//!     )
+//! # }
+//! ```
+//!
+//! SVG elements use the same event model as Html element, so you can
+//! also attach event hanlers:
+//!
+//! ```
+//! # use pwt::prelude::*;
+//! # use pwt::widget::canvas::{Canvas, Circle};
+//! # fn test() -> Canvas {
+//! Canvas::new()
+//!     .with_child(
+//!          Circle::new()
+//!              .position(50, 50)
+//!              .r(50)
+//!              .onclick(Callback::from(|_| log::info!("Circle clicked!")))
+//!     )
+//! # }
+
 #[macro_use]
 mod macros;
 
@@ -48,6 +97,7 @@ use crate::props::WidgetBuilder;
 
 use pwt_macros::widget;
 
+/// SVG length in pixel, em or percentage.
 #[derive(Copy, Clone, PartialEq)]
 pub enum SvgLength {
     Px(f32),
