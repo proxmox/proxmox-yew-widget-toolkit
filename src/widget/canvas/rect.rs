@@ -21,17 +21,7 @@ impl Rect {
         yew::props!(Self {})
     }
 
-    /// Builder style method to set the rect position.
-    pub fn position(mut self, cx: impl Into<SvgLength>, cy: impl Into<SvgLength>) -> Self {
-        self.set_position(cx, cy);
-        self
-    }
-
-    /// Method to set the rect position.
-    pub fn set_position(&mut self, cx: impl Into<SvgLength>, cy: impl Into<SvgLength>) {
-        self.set_attribute("x", cx.into());
-        self.set_attribute("y", cy.into());
-    }
+    impl_svg_position_attributes!();
 
     /// Builder style method to set the rect width.
     pub fn width(mut self, width: impl Into<SvgLength>) -> Self {

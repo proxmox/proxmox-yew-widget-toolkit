@@ -25,6 +25,9 @@ pub use path::Path;
 mod polyline;
 pub use polyline::Polyline;
 
+mod reference;
+pub use reference::Reference;
+
 mod rect;
 pub use rect::Rect;
 
