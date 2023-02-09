@@ -1,3 +1,6 @@
+#[macro_use]
+mod macros;
+
 mod circle;
 pub use circle::Circle;
 

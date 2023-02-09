@@ -7,7 +7,7 @@ use pwt_macros::widget;
 
 use crate::props::WidgetBuilder;
 
-use super:: {SvgLength, TSpan};
+use super:: {Hyperlink, SvgLength, TSpan};
 
 pub trait IntoSvgTextChild {
     fn into_svg_text_child(self) -> VNode;
@@ -20,6 +20,12 @@ impl<T: Into<AttrValue>> IntoSvgTextChild for T {
 }
 
 impl IntoSvgTextChild for TSpan {
+    fn into_svg_text_child(self) -> VNode {
+        self.into()
+    }
+}
+
+impl IntoSvgTextChild for Hyperlink {
     fn into_svg_text_child(self) -> VNode {
         self.into()
     }
@@ -97,38 +103,7 @@ impl Text {
         self.set_attribute("dy", dy.into());
     }
 
-    /// Builder style method to set the text stroke width.
-    pub fn stroke_width(mut self, w: impl Into<SvgLength>) -> Self {
-        self.set_stroke_width(w);
-        self
-    }
-
-    /// Method to set the text stroke width.
-    pub fn set_stroke_width(&mut self, w: impl Into<SvgLength>) {
-        self.set_attribute("stroke-width", w.into());
-    }
-
-    /// Builder style method to set the text stroke color/pattern.
-    pub fn stroke(mut self, stroke: impl Into<AttrValue>) -> Self {
-        self.set_stroke(stroke);
-        self
-    }
-
-    /// Method to set the text stroke color/pattern.
-    pub fn set_stroke(&mut self, stroke: impl Into<AttrValue>) {
-        self.set_attribute("stroke", stroke.into());
-    }
-
-    /// Builder style method to set the text fill color/pattern.
-    pub fn fill(mut self, fill: impl Into<AttrValue>) -> Self {
-        self.set_fill(fill);
-        self
-    }
-
-    /// Method to set the text fill color/pattern.
-    pub fn set_fill(&mut self, fill: impl Into<AttrValue>) {
-        self.set_attribute("fill", fill.into());
-    }
+    impl_svg_presentation_attributes!();
 
     /// Builder style method to add a text child node.
     pub fn with_child(mut self, child: impl IntoSvgTextChild) -> Self {

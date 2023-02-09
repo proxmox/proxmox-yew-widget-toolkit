@@ -1,13 +1,11 @@
 use std::borrow::Cow;
 
 use yew::prelude::*;
-use yew::virtual_dom::{VNode, VTag};
+use yew::virtual_dom::VTag;
 
 use pwt_macros::widget;
 
 use crate::props::WidgetBuilder;
-
-use super:: {SvgLength, TSpan};
 
 /// SVG `<a>` element (hyperlink).
 ///
