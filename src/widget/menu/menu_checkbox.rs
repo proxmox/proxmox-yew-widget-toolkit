@@ -25,7 +25,11 @@ pub struct MenuCheckbox {
     pub radio_group: bool,
 
     /// Force value.
+    ///
+    /// To implement controlled components (for use without a FormContext).
+    /// This is ignored if the field has a name.
     pub checked: Option<bool>,
+
     /// Default value.
     pub default: Option<bool>,
 
@@ -33,7 +37,19 @@ pub struct MenuCheckbox {
     #[prop_or_default]
     pub input_props: FieldStdProps,
 
+    /// Click callback
+    ///
+    /// This callback is emited when the user clicks on the checkbox.
+    pub on_click: Option<Callback<MenuEvent>>,
+
     /// Change callback
+    ///
+    /// This callback is emited on any data change, i.e. if data
+    /// inside the [FormContext](crate::widget::form::FormContext) changed.
+    ///
+    /// # Note
+    ///
+    /// This callback is not emitted for controlled components ([Self::checked] property defined).
     pub on_change: Option<Callback<MenuEvent>>,
 
     pub(crate) menu_controller: Option<Callback<MenuControllerMsg>>,
@@ -96,6 +112,12 @@ impl MenuCheckbox {
     /// Method to set the field default value.
     pub fn set_default(&mut self, default: impl IntoPropValue<Option<bool>>) {
         self.default = default.into_prop_value();
+    }
+
+    /// Builder style method to set the on_click callback.
+    pub fn on_click(mut self, cb: impl IntoEventCallback<MenuEvent>) -> Self {
+        self.on_click = cb.into_event_callback();
+        self
     }
 
     /// Builder style method to set the on_change callback.
@@ -176,26 +198,42 @@ impl Component for PwtMenuCheckbox {
                 self.state.update_hook(&props.input_props, state_msg, default, props.radio_group)
             }
             Msg::Toggle => {
-                if props.input_props.disabled { return true; }
+                if props.input_props.disabled { return false; }
+
                 let on_value = props.value.as_deref().unwrap_or("on").to_string();
                 let (value, _) = self.state.get_field_data();
                 let checked = value == on_value;
-                let new_value = if checked {
-                    String::new()
-                } else {
-                    on_value
-                };
 
-                self.state.set_value(new_value);
+                let mut event = MenuEvent::new();
+                event.checked = checked;
 
-                if let Some(on_change) = &props.on_change {
-                    let mut event = MenuEvent::new();
-                    event.checked = checked;
-                    on_change.emit(event.clone());
+                if let Some(on_click) = &props.on_click {
+                    on_click.emit(event.clone());
                     if !event.get_keep_open() {
                         if let Some(menu_controller) = &props.menu_controller {
                             menu_controller.emit(MenuControllerMsg::Collapse);
                         }
+                    }
+                }
+
+                if props.input_props.name.is_some() || props.checked.is_none() { // not forced
+                    let new_value = if checked {
+                        String::new()
+                    } else {
+                        on_value
+                    };
+
+                    self.state.set_value(new_value);
+
+                    if let Some(on_change) = &props.on_change {
+                        event.checked = checked; // in case it was modified
+                        on_change.emit(event.clone());
+                    }
+                }
+
+                if !event.get_keep_open() {
+                    if let Some(menu_controller) = &props.menu_controller {
+                        menu_controller.emit(MenuControllerMsg::Collapse);
                     }
                 }
 

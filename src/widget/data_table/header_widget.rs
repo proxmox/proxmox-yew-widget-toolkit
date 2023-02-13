@@ -613,11 +613,11 @@ fn headers_to_menu<T>(
         .collect();
 
     for header in headers {
-        let on_change = {
+        let on_click = {
             let cell_idx = *cell_idx;
             link.callback(move |event: MenuEvent| {
                 event.keep_open(true);
-                Msg::HideClick(cell_idx, event.checked)
+                Msg::HideClick(cell_idx, !event.checked)
             })
         };
 
@@ -627,7 +627,7 @@ fn headers_to_menu<T>(
                 menu.add_item(
                     MenuCheckbox::new(label)
                         .checked(!hidden_cells[*cell_idx])
-                        .on_change(on_change)
+                        .on_click(on_click)
                 );
                 *cell_idx += 1;
             }
@@ -636,7 +636,7 @@ fn headers_to_menu<T>(
                 menu.add_item(
                     MenuCheckbox::new(label)
                         .checked(!hidden_cells[*cell_idx])
-                        .on_change(on_change)
+                        .on_click(on_click)
                 );
                 *cell_idx += 1;
                 headers_to_menu(menu, indent_level + 1, &group.children, link, cell_idx, hidden_cells);
