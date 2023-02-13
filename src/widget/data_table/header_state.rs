@@ -169,8 +169,11 @@ impl<T: 'static> HeaderState<T> {
         &self.columns
     }
 
-    pub fn column_count(&self) -> usize {
-        self.columns.len()
+    pub fn visible_column_count(&self) -> usize {
+        self.columns
+            .iter()
+            .filter(|cell| !self.get_cell_hidden(cell.cell_idx))
+            .count()
     }
 
     pub fn copy_observed_widths(&mut self, col_idx: usize, observed_widths: &[Option<f64>]) {

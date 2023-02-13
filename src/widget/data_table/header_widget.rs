@@ -524,7 +524,7 @@ impl <T: 'static> Component for PwtHeaderWidget<T> {
             &mut header_row,
         );
 
-        let column_count = self.state.column_count();
+        let column_count = self.state.visible_column_count();
 
         // add some space at the end to make room for the tables vertical scrollbar
         let scrollbar_size = ctx.props().reserve_scroll_space;
