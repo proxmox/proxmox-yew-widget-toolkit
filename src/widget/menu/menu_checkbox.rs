@@ -153,11 +153,24 @@ impl Component for PwtMenuCheckbox {
             Ok(())
         });
 
+        let on_change = match &props.on_change {
+            Some(on_change) => Some(Callback::from({
+                let on_change = on_change.clone();
+                let on_value = props.value.as_deref().unwrap_or("on").to_string();
+                move |value: Value| {
+                    let mut event = MenuEvent::new();
+                    event.checked = value.as_str().unwrap_or("") == on_value;
+                    on_change.emit(event);
+                }
+            })),
+            None => None,
+        };
+
         let state = FieldState::create(
             ctx,
             &props.input_props,
             ctx.link().callback(Msg::StateUpdate),
-            None, // fixme: on_change
+            on_change,
             real_validate.clone(),
         );
 
