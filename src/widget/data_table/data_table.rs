@@ -1077,11 +1077,12 @@ impl <S: DataStore + 'static> Component for PwtDataTable<S> {
                 self.viewport_height = height.max(0.0);
                 self.viewport_width = width.max(0.0);
 
-                if self.scrollbar_size.is_none() && scrollbar_size > 0.0 {
-                    self.scrollbar_size = Some(scrollbar_size);
-                } else if scrollbar_size.abs() < 1.0 {
+                if scrollbar_size.abs() < 1.0 {
+                    log::info!("scrollbar: {scrollbar_size}");
                     // on certain zoom levels, the scrollbar size calculation is not perfect...
                     self.scrollbar_size = None;
+                } else {
+                    self.scrollbar_size = Some(scrollbar_size);
                 }
 
                 self.update_scroll_info(props);
