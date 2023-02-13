@@ -374,6 +374,7 @@ impl Component for PwtField {
         let input_container = Container::new()
             .with_std_props(&props.std_props)
             .class("pwt-input")
+            .class(format!("pwt-input-type-{}", props.input_type))
             .class("pwt-w-100")
             .class(if valid.is_ok() { "is-valid" } else { "is-invalid" })
             .with_child(input);
