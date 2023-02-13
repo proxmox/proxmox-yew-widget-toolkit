@@ -80,6 +80,7 @@ impl Component for PwtThemeModeSelector {
                 ThemeMode::Light => "fa fa-fw fa-sun-o",
         })
             .class(props.class.clone())
+            .class("circle")
             .onclick(onclick)
             .aria_label("Select Theme Mode")
             .into()
