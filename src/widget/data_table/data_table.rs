@@ -960,10 +960,6 @@ impl<S: DataStore> PwtDataTable<S> {
         let height =
             offset + self.table_height + row_count.saturating_sub(end) as f64 * self.row_height;
 
-        if height <= self.viewport_height {
-            self.scrollbar_size = None;
-        }
-
         self.scroll_info = VirtualScrollInfo { start, end, offset, height };
     }
 }
@@ -1083,6 +1079,9 @@ impl <S: DataStore + 'static> Component for PwtDataTable<S> {
 
                 if self.scrollbar_size.is_none() && scrollbar_size > 0.0 {
                     self.scrollbar_size = Some(scrollbar_size);
+                } else if scrollbar_size.abs() < 1.0 {
+                    // on certain zoom levels, the scrollbar size calculation is not perfect...
+                    self.scrollbar_size = None;
                 }
 
                 self.update_scroll_info(props);
