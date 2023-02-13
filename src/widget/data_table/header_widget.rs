@@ -43,7 +43,7 @@ pub struct HeaderWidget<T: 'static> {
     #[prop_or(true)]
     pub focusable: bool,
 
-    reserve_scroll_space: usize,
+    reserve_scroll_space: f64,
 }
 
 impl<T: 'static> HeaderWidget<T> {
@@ -52,7 +52,7 @@ impl<T: 'static> HeaderWidget<T> {
         yew::props!(Self {
             headers,
             on_message,
-            reserve_scroll_space: 0,
+            reserve_scroll_space: 0.0,
         })
     }
 
@@ -98,13 +98,13 @@ impl<T: 'static> HeaderWidget<T> {
     }
 
     /// Builder style method to reserve scroll space.
-    pub fn reserve_scroll_space(mut self, reserve_scroll_space: usize) -> Self {
+    pub fn reserve_scroll_space(mut self, reserve_scroll_space: f64) -> Self {
         self.set_reserve_scroll_space(reserve_scroll_space);
         self
     }
 
     /// Method to set if space should be reserved for the scroller.
-    pub fn set_reserve_scroll_space(&mut self, reserve_scroll_space: usize) {
+    pub fn set_reserve_scroll_space(&mut self, reserve_scroll_space: f64) {
         self.reserve_scroll_space = reserve_scroll_space;
     }
 }
@@ -151,7 +151,7 @@ impl <T: 'static> PwtHeaderWidget<T> {
         }
 
         let scrollbar_size = ctx.props().reserve_scroll_space;
-        if scrollbar_size > 0 {
+        if scrollbar_size > 0.0 {
             grid_style.push_str(&format!(" {scrollbar_size}px;"));
         }
 
@@ -528,7 +528,7 @@ impl <T: 'static> Component for PwtHeaderWidget<T> {
 
         // add some space at the end to make room for the tables vertical scrollbar
         let scrollbar_size = ctx.props().reserve_scroll_space;
-        if scrollbar_size > 0 {
+        if scrollbar_size > 0.0 {
             header_row.push(
                 Container::new()
                     .key(Key::from("last")) // important: all children need a key

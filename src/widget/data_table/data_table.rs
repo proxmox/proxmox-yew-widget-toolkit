@@ -399,8 +399,8 @@ impl <S: DataStore> DataTable<S> {
 struct VirtualScrollInfo {
     start: usize,
     end: usize,
-    height: usize,
-    offset: usize,
+    height: f64,
+    offset: f64,
 }
 
 impl VirtualScrollInfo {
@@ -443,21 +443,21 @@ pub struct PwtDataTable<S: DataStore> {
     scroll_ref: NodeRef,
     scroll_top: usize,
     set_scroll_top: Option<usize>,
-    viewport_height: usize,
-    viewport_width: usize,
-    table_height: usize,
+    viewport_height: f64,
+    viewport_width: f64,
+    table_height: f64,
 
     viewport_size_observer: Option<SizeObserver>,
 
     table_ref: NodeRef,
     table_size_observer: Option<SizeObserver>,
 
-    row_height: usize,
-    scrollbar_size: Option<usize>,
+    row_height: f64,
+    scrollbar_size: Option<f64>,
 
     container_ref: NodeRef,
     container_size_observer: Option<SizeObserver>,
-    container_width: usize,
+    container_width: f64,
 
     keypress_timeout: Option<Timeout>,
 }
@@ -506,7 +506,7 @@ fn render_empty_row_with_sizes(widths: &[f64], column_hidden: &[bool], bordered:
                 })
                 .map(|(_, width)| html!{
                     // Note: we substract the border width (1.0) here
-                    <td role="none" style={format!("width:{:.3}px;height:0px;", (width - border_width).max(0.0))}></td>
+                    <td role="none" style={format!("width:{}px;height:0px;", (width - border_width).max(0.0))}></td>
                 })
         )
         .into()
@@ -825,12 +825,12 @@ impl<S: DataStore> PwtDataTable<S> {
         };
 
         if !(self.scroll_info.start..self.scroll_info.end).contains(&cursor) {
-            let height =  (self.row_height * cursor).saturating_sub(self.viewport_height/2);
-            self.set_scroll_top = Some(height);
+            let height = (self.row_height * cursor as f64) - (self.viewport_height / 2.0);
+            self.set_scroll_top = Some(height.max(0.0).round() as usize);
         }
     }
 
-    fn render_table(&self, props: &DataTable<S>, offset: usize, start: usize, end: usize) -> Html {
+    fn render_table(&self, props: &DataTable<S>, offset: f64, start: usize, end: usize) -> Html {
 
         let virtual_scroll = props.virtual_scroll.unwrap_or(true);
         let fixed_mode =  props.show_header || virtual_scroll;
@@ -930,7 +930,7 @@ impl<S: DataStore> PwtDataTable<S> {
         if virtual_scroll {
             return self.scroll_info.visible_rows();
         }
-        self.viewport_height/self.row_height
+        (self.viewport_height / self.row_height).floor() as usize
     }
 
     fn update_scroll_info(&mut self, props: &DataTable<S>) {
@@ -939,7 +939,7 @@ impl<S: DataStore> PwtDataTable<S> {
         let virtual_scroll = props.virtual_scroll.unwrap_or(row_count >= VIRTUAL_SCROLL_TRIGGER);
 
         let mut start = if virtual_scroll {
-            self.scroll_top / self.row_height
+            (self.scroll_top as f64 / self.row_height).floor() as usize
         } else {
             0
         };
@@ -947,16 +947,18 @@ impl<S: DataStore> PwtDataTable<S> {
         if start > 0 { start -= 1; }
         if (start & 1) == 1 { start -= 1; } // make it work with striped rows
 
-        let max_visible_rows = (self.viewport_height / props.min_row_height) + 5;
+        let max_visible_rows =
+            (self.viewport_height / props.min_row_height as f64).ceil() as usize + 5;
         let end = if virtual_scroll {
             (start + max_visible_rows).min(row_count)
         } else {
             row_count
         };
 
-        let offset = start * self.row_height;
+        let offset = (start as f64) * self.row_height;
 
-        let height = offset + self.table_height + row_count.saturating_sub(end) * self.row_height;
+        let height =
+            offset + self.table_height + row_count.saturating_sub(end) as f64 * self.row_height;
 
         if height <= self.viewport_height {
             self.scrollbar_size = None;
@@ -1015,21 +1017,21 @@ impl <S: DataStore + 'static> Component for PwtDataTable<S> {
             cell_class: Rc::new(cell_class),
             scroll_top: 0,
             set_scroll_top: None,
-            viewport_height: 0,
-            viewport_width: 0,
+            viewport_height: 0.0,
+            viewport_width: 0.0,
             viewport_size_observer: None,
             header_scroll_ref: NodeRef::default(),
             scroll_ref: NodeRef::default(),
 
             table_ref: NodeRef::default(),
             table_size_observer: None,
-            table_height: 0,
+            table_height: 0.0,
 
             container_ref: NodeRef::default(),
             container_size_observer: None,
-            container_width: 0,
+            container_width: 0.0,
 
-            row_height: props.min_row_height,
+            row_height: props.min_row_height as f64,
             scrollbar_size: None,
             keypress_timeout: None,
         };
@@ -1076,11 +1078,11 @@ impl <S: DataStore + 'static> Component for PwtDataTable<S> {
                 props.virtual_scroll.unwrap_or(true)
             }
             Msg::ViewportResize(width, height, scrollbar_size) => {
-                self.viewport_height = height.max(0.0) as usize;
-                self.viewport_width = width.max(0.0) as usize;
+                self.viewport_height = height.max(0.0);
+                self.viewport_width = width.max(0.0);
 
-                if self.scrollbar_size.is_none() && scrollbar_size.round() > 0.0 {
-                    self.scrollbar_size = Some(scrollbar_size.round() as usize);
+                if self.scrollbar_size.is_none() && scrollbar_size > 0.0 {
+                    self.scrollbar_size = Some(scrollbar_size);
                 }
 
                 self.update_scroll_info(props);
@@ -1088,16 +1090,18 @@ impl <S: DataStore + 'static> Component for PwtDataTable<S> {
                 true
             }
             Msg::ContainerResize(width, _height) => {
-                self.container_width = width.max(0.0) as usize;
+                self.container_width = width.max(0.0);
                 true
             }
             Msg::TableResize(_width, height) => {
-                let height = height.max(0.0) as usize;
-                if self.table_height == height { return false; };
+                let height = height.max(0.0);
+                if self.table_height == height {
+                    return false;
+                };
                 self.table_height = height;
                 let visible_rows = self.scroll_info.visible_rows();
-                if (height > 0) && (visible_rows > 0) {
-                    let row_height = (height as usize) / visible_rows;
+                if (height > 0.0) && (visible_rows > 0) {
+                    let row_height = height / visible_rows as f64;
                     if row_height > self.row_height {
                         self.row_height = row_height;
                     }
@@ -1463,8 +1467,8 @@ impl <S: DataStore + 'static> Component for PwtDataTable<S> {
             active_descendant = Some(self.get_unique_item_id(&record_key));
         }
 
-        let column_widths = self.column_widths.iter().sum::<f64>() as usize +
-            self.scrollbar_size.unwrap_or_default();
+        let column_widths =
+            self.column_widths.iter().sum::<f64>() + self.scrollbar_size.unwrap_or_default();
 
         let viewport = Container::new()
             .node_ref(self.scroll_ref.clone())
