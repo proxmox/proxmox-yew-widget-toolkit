@@ -21,6 +21,7 @@ impl Group {
         yew::props!(Self {})
     }
 
+    impl_svg_container_animation_attributes!();
     impl_svg_presentation_attributes!();
 }
 

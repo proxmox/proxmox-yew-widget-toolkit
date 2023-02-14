@@ -100,3 +100,36 @@ macro_rules! impl_svg_presentation_attributes {
         }
     }
 }
+
+macro_rules! impl_svg_animation_attributes {
+    () => {
+        /// Builder style Method to add an animation.
+        pub fn animate(mut self, animation: impl super::IntoSvgAnimation) -> Self {
+            self.add_animate(animation);
+            self
+        }
+
+        /// Method to add an animation.
+        pub fn add_animate(&mut self, animation: impl super::IntoSvgAnimation) {
+            match &mut self.children {
+                Some(children) => children.push(animation.into_svg_animation()),
+                None => self.children = Some(vec![animation.into_svg_animation()]),
+            }
+        }
+    }
+}
+
+macro_rules! impl_svg_container_animation_attributes {
+    () => {
+        /// Builder style Method to add an animation.
+        pub fn animate(mut self, animation: impl super::IntoSvgAnimation) -> Self {
+            self.add_animate(animation);
+            self
+        }
+
+        /// Method to add an animation.
+        pub fn add_animate(&mut self, animation: impl super::IntoSvgAnimation) {
+            self.children.push(animation.into_svg_animation());
+        }
+    }
+}

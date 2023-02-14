@@ -50,6 +50,12 @@
 #[macro_use]
 mod macros;
 
+mod animate;
+pub use animate::{IntoSvgAnimation, Animate};
+
+mod animate_transform;
+pub use animate_transform::AnimateTransform;
+
 mod circle;
 pub use circle::Circle;
 

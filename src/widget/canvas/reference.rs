@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 
 use yew::prelude::*;
-use yew::virtual_dom::VTag;
+use yew::virtual_dom::{VNode, VTag};
 
 use pwt_macros::widget;
 
@@ -17,7 +17,9 @@ use super::SvgLength;
 /// is already defined on the referenced element.
 #[widget(pwt=crate, @element, @svg)]
 #[derive(Properties, Clone, PartialEq)]
-pub struct Reference {}
+pub struct Reference {
+    children: Option<Vec<VNode>>,
+}
 
 impl Reference {
 
@@ -50,11 +52,12 @@ impl Reference {
         self.set_attribute("height", height.into());
     }
 
+    impl_svg_animation_attributes!();
     impl_svg_presentation_attributes!();
 }
 
 impl Into<VTag> for Reference {
     fn into(self) -> VTag {
-        self.std_props.into_vtag(Cow::Borrowed("use"), Some(self.listeners), None)
+        self.std_props.into_vtag(Cow::Borrowed("use"), Some(self.listeners), self.children)
     }
 }

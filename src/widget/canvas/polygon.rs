@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 
 use yew::prelude::*;
-use yew::virtual_dom::VTag;
+use yew::virtual_dom::{VNode, VTag};
 
 use pwt_macros::widget;
 
@@ -12,7 +12,9 @@ use super::SvgLength;
 /// SVG `<polygon>` element.
 #[widget(pwt=crate, @element, @svg)]
 #[derive(Properties, Clone, PartialEq)]
-pub struct Polygon {}
+pub struct Polygon {
+    children: Option<Vec<VNode>>,
+}
 
 impl Polygon {
 
@@ -37,11 +39,12 @@ impl Polygon {
         self.set_attribute("points", points);
     }
 
+    impl_svg_animation_attributes!();
     impl_svg_presentation_attributes!();
 }
 
 impl Into<VTag> for Polygon {
     fn into(self) -> VTag {
-        self.std_props.into_vtag(Cow::Borrowed("polygon"), Some(self.listeners), None)
+        self.std_props.into_vtag(Cow::Borrowed("polygon"), Some(self.listeners), self.children)
     }
 }

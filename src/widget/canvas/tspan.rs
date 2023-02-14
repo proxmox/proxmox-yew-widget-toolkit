@@ -64,6 +64,7 @@ impl TSpan {
         self.set_attribute("dy", dy.into());
     }
 
+    impl_svg_container_animation_attributes!();
     impl_svg_presentation_attributes!();
 
     /// Builder style method to add a tspan child node.

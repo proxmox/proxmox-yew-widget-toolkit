@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 
 use yew::prelude::*;
-use yew::virtual_dom::VTag;
+use yew::virtual_dom::{VNode, VTag};
 
 use pwt_macros::widget;
 
@@ -12,7 +12,9 @@ use super::SvgLength;
 /// SVG `<ellipse>` element.
 #[widget(pwt=crate, @element, @svg)]
 #[derive(Properties, Clone, PartialEq)]
-pub struct Ellipse {}
+pub struct Ellipse {
+    children: Option<Vec<VNode>>,
+}
 
 impl Ellipse {
 
@@ -55,6 +57,7 @@ impl Ellipse {
         self.set_attribute("ry", r.into());
     }
 
+    impl_svg_animation_attributes!();
     impl_svg_presentation_attributes!();
 }
 

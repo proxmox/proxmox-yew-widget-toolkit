@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 
 use yew::prelude::*;
-use yew::virtual_dom::VTag;
+use yew::virtual_dom::{VNode, VTag};
 
 use pwt_macros::widget;
 
@@ -12,7 +12,9 @@ use super::SvgLength;
 /// SVG `<circle>` element.
 #[widget(pwt=crate, @element, @svg)]
 #[derive(Properties, Clone, PartialEq)]
-pub struct Circle {}
+pub struct Circle {
+    children: Option<Vec<VNode>>,
+}
 
 impl Circle {
 
@@ -66,11 +68,12 @@ impl Circle {
         self.set_attribute("r", r.into());
     }
 
+    impl_svg_animation_attributes!();
     impl_svg_presentation_attributes!();
 }
 
 impl Into<VTag> for Circle {
     fn into(self) -> VTag {
-        self.std_props.into_vtag(Cow::Borrowed("circle"), Some(self.listeners), None)
+        self.std_props.into_vtag(Cow::Borrowed("circle"), Some(self.listeners), self.children)
     }
 }
