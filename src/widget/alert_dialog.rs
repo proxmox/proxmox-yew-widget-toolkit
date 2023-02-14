@@ -16,6 +16,9 @@ pub struct AlertDialog {
     pub message: String,
     /// Close window callback.
     pub on_close: Option<Callback<()>>,
+    /// Enable/disable dragging
+    #[prop_or_default]
+    pub draggable: bool,
 }
 
 impl AlertDialog {
@@ -40,6 +43,17 @@ impl AlertDialog {
     pub fn on_close(mut self, cb: impl IntoEventCallback<()>) -> Self {
         self.on_close = cb.into_event_callback();
         self
+    }
+
+    /// Builder style method to enable/disable dragging
+    pub fn draggable(mut self, draggable: bool) -> Self {
+        self.set_draggable(draggable);
+        self
+    }
+
+    /// Enable/disable dragging
+    pub fn set_draggable(&mut self, draggable: bool) {
+        self.draggable = draggable;
     }
 }
 
@@ -89,6 +103,7 @@ pub fn pwt_alert_dialog(props: &AlertDialog) -> Html {
     let title = format!("{}", props.title.as_deref().unwrap_or("Alert"));
 
     Dialog::new(title.clone())
+        .draggable(props.draggable)
         .on_close(props.on_close.clone())
         .with_child(error_message(&props.message, "pwt-p-4"))
         .with_child(

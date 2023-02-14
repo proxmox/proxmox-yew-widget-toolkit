@@ -35,7 +35,7 @@ derivative = "2.2.0"
 # yew-router = { git = "https://github.com/yewstack/yew/" }
 yew = { version = "0.20",  features = ["csr"] }
 yew-router = { version = "0.17" }
-web-sys = { version = "0.3", features = ["DomRect", "DomStringMap", "Element", "HtmlCollection", 'Headers', "NodeList", "Storage", 'Request', 'RequestInit', 'RequestCredentials', 'RequestMode', 'Response', 'Window', "MediaQueryList", "CssStyleDeclaration", "ScrollToOptions", "ScrollIntoViewOptions", "ScrollLogicalPosition", "IntersectionObserver", "IntersectionObserverEntry", "KeyboardEventInit"] }
+web-sys = { version = "0.3", features = ["DomRect", "DomStringMap", "DomTokenList", "Element", "HtmlCollection", 'Headers', "NodeList", "Storage", 'Request', 'RequestInit', 'RequestCredentials', 'RequestMode', 'Response', 'Window', "MediaQueryList", "CssStyleDeclaration", "ScrollToOptions", "ScrollIntoViewOptions", "ScrollLogicalPosition", "IntersectionObserver", "IntersectionObserverEntry", "KeyboardEventInit"] }
 js-sys = "0.3"
 log = "0.4.6"
 indexmap = { version = "1", features = ["std"] }

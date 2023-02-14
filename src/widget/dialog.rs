@@ -1,13 +1,16 @@
 use std::rc::Rc;
 
-use web_sys::HtmlElement;
+use gloo_events::EventListener;
 use wasm_bindgen::JsCast;
+use web_sys::{window, HtmlElement};
 
 use yew::prelude::*;
 use yew::virtual_dom::{Key, VComp, VNode};
 use yew::html::IntoEventCallback;
 
 use crate::prelude::*;
+use crate::widget::align::{align_to_xy, Point};
+use crate::widget::dom::IntoHtmlElement;
 use crate::widget::{Button, Panel};
 
 /// Modal Dialog.
@@ -27,6 +30,9 @@ pub struct Dialog {
     pub children: Vec<VNode>,
 
     pub style: Option<AttrValue>,
+
+    #[prop_or_default]
+    pub draggable: bool,
 }
 
 impl ContainerBuilder for Dialog {
@@ -68,16 +74,34 @@ impl Dialog {
     pub fn html(self) -> VNode {
         self.into()
     }
+
+    pub fn draggable(mut self, draggable: bool) -> Self {
+        self.set_draggable(draggable);
+        self
+    }
+
+    pub fn set_draggable(&mut self, draggable: bool) {
+        self.draggable = draggable;
+    }
 }
 
 pub enum Msg {
     Open,
     Close,
+    PointerDown(PointerEvent),
+    PointerMove(PointerEvent),
+    PointerUp(i32),
+}
+
+enum DragState {
+    Idle,
+    Dragging(f64, f64, EventListener, EventListener, i32),
 }
 
 #[doc(hidden)]
 pub struct PwtDialog {
     open: bool,
+    dragging_state: DragState,
     last_active: Option<web_sys::HtmlElement>, // last focused element
 }
 
@@ -104,6 +128,7 @@ impl Component for PwtDialog {
 
         Self {
             open: false,
+            dragging_state: DragState::Idle,
             last_active,
         }
     }
@@ -134,6 +159,57 @@ impl Component for PwtDialog {
                     }
                 }
             }
+            Msg::PointerDown(event) => {
+                let mut is_draggable = false;
+
+                if let Some(target) = event.target() {
+                    if let Some(target) = target.dyn_ref::<HtmlElement>() {
+                        is_draggable = target.class_list().contains("pwt-draggable");
+                    }
+                }
+
+                if props.draggable && is_draggable {
+                    if let Some(element) = props.node_ref.clone().into_html_element() {
+                        let client = element.get_bounding_client_rect();
+                        let x = event.screen_x() as f64 - client.x();
+                        let y = event.screen_y() as f64 - client.y();
+
+                        let onmousemove = ctx.link().callback(Msg::PointerMove);
+                        let onpointerup = ctx
+                            .link()
+                            .callback(|event: PointerEvent| Msg::PointerUp(event.pointer_id()));
+
+                        self.dragging_state = DragState::Dragging(
+                            x,
+                            y,
+                            EventListener::new(&window().unwrap(), "pointermove", move |event| {
+                                log::info!("window move");
+                                onmousemove.emit(event.clone().dyn_into().unwrap());
+                            }),
+                            EventListener::new(&window().unwrap(), "pointerup", move |event| {
+                                onpointerup.emit(event.clone().dyn_into().unwrap());
+                            }),
+                            event.pointer_id(),
+                        );
+                    }
+                }
+            }
+            Msg::PointerMove(event) => match &self.dragging_state {
+                DragState::Dragging(offset_x, offset_y, _, _, id) if *id == event.pointer_id() => {
+                    let x = event.screen_x() as f64 - offset_x;
+                    let y = event.screen_y() as f64 - offset_y;
+                    if let Err(err) = align_to_xy(props.node_ref.clone(), (x, y), Point::TopStart) {
+                        log::error!("align_to_xy failed: {}", err.to_string());
+                    }
+                }
+                _ => {}
+            },
+            Msg::PointerUp(pointer_id) => match &self.dragging_state {
+                DragState::Dragging(_, _, _, _, id) if *id == pointer_id => {
+                    self.dragging_state = DragState::Idle;
+                }
+                _ => {}
+            },
         }
         false
     }
@@ -162,6 +238,7 @@ impl Component for PwtDialog {
         let mut panel = Panel::new()
             .class("pwt-overflow-auto")
             .title(props.title.clone())
+            .header_class(props.draggable.then_some("pwt-draggable"))
             .border(false);
 
         if props.on_close.is_some() {
@@ -178,8 +255,9 @@ impl Component for PwtDialog {
             panel.add_child(child.clone());
         }
 
+        let onpointerdown = link.callback(Msg::PointerDown);
         html! {
-            <dialog aria-label={props.title.clone()} ref={props.node_ref.clone()} {oncancel} style={props.style.clone()}>
+            <dialog {onpointerdown} aria-label={props.title.clone()} ref={props.node_ref.clone()} {oncancel} style={props.style.clone()}>
             {panel}
             </dialog>
         }
