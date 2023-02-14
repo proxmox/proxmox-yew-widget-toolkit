@@ -190,6 +190,7 @@ impl NavigationMenu {
 
 pub enum Msg {
     Select(Option<Key>, bool, bool),
+    MenuToggle(Key),
     MenuClose(Key),
     MenuOpen(Key),
 }
@@ -217,6 +218,14 @@ impl PwtNavigationMenu {
         let onclick = ctx.link().callback({
             let key = item.id.clone();
             move |_event: MouseEvent| Msg::Select(Some(key.clone()), true, true)
+        });
+
+        let ontoggle = ctx.link().callback({
+            let key = item.id.clone();
+            move |event: MouseEvent| {
+                event.stop_propagation();
+                Msg::MenuToggle(key.clone())
+            }
         });
 
         let onkeydown = ctx.link().batch_callback({
@@ -269,6 +278,7 @@ impl PwtNavigationMenu {
                     .class("fa fa-caret-down")
                     .class("pwt-nav-menu-item-arrow")
                     .class(open.then_some("expanded"))
+                    .onclick(ontoggle)
                     .with_child("\u{00a0}")
             }))
             .into()
@@ -466,6 +476,11 @@ impl Component for PwtNavigationMenu {
                 if let Some(on_select) = &props.on_select {
                     on_select.emit(key);
                 }
+                true
+            }
+            Msg::MenuToggle(key) => {
+                let entry = *self.menu_states.entry(key.clone()).or_insert_with(|| true);
+                self.menu_states.insert(key, !entry);
                 true
             }
             Msg::MenuClose(key) => {
