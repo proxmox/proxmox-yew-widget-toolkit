@@ -255,7 +255,7 @@ impl PwtNavigationMenu {
             .attribute("role", "link")
             .attribute("aria-expanded", aria_expanded)
             .attribute("disabled", (!visible).then(|| "true"))
-            .attribute("tabindex",  if is_active { "0" } else { "-1" })
+            .attribute("tabindex", if is_active { "0" } else { "-1" })
             .class("pwt-nav-link")
             .class((!visible).then(|| "pwt-d-none"))
             .class(crate::css::AlignItems::Baseline)
@@ -268,7 +268,7 @@ impl PwtNavigationMenu {
                     .collect::<Html>(),
             )
             .with_optional_child(item.icon_class.as_ref().and_then(|icon| {
-                Some(html!{ <i class={classes!(icon.to_string(), "pwt-nav-menu-icon")}/>})
+                Some(html! { <i class={classes!(icon.to_string(), "pwt-nav-menu-icon")}/>})
             }))
             .with_child(html! {<div class="pwt-text-truncate pwt-flex-fill">{&item.text}</div>})
             .with_optional_child(is_menu.then(|| {
@@ -454,7 +454,8 @@ impl Component for PwtNavigationMenu {
                 if key == self.active {
                     if let Some(key) = key {
                         if toggle {
-                            let entry = *self.menu_states.entry(key.clone()).or_insert_with(|| true);
+                            let entry =
+                                *self.menu_states.entry(key.clone()).or_insert_with(|| true);
                             self.menu_states.insert(key, !entry);
                         }
                     }
@@ -542,7 +543,7 @@ impl Component for PwtNavigationMenu {
             .class("pwt-flex-fill pwt-overflow-auto")
             .class(props.std_props.class.clone())
             .with_child(Pane::new(menu).size(None))
-            .with_child(Pane::new(content.unwrap_or(html!{})).flex(1))
+            .with_child(Pane::new(content.unwrap_or(html! {})).flex(1))
             .into()
     }
 }
