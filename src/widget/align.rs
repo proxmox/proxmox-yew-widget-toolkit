@@ -434,6 +434,35 @@ where
     Ok(())
 }
 
+/// Aligns the `point` of `element` to the given x/y coordinates.
+///
+/// The possible options are described in [`AlignOptions`].
+pub fn align_to_xy<N>(element: N, coordinates: (f64, f64), point: Point) -> Result<(), Error>
+where
+    N: IntoHtmlElement,
+{
+    let element = element
+        .into_html_element()
+        .ok_or_else(|| js_sys::Error::new("element is not an HtmlElement"))?;
+
+    let style = element.style();
+    style.set_property("position", "fixed")?;
+    style.set_property("inset", "0px auto auto 0px")?;
+
+    let offset = get_offset(&element, point, (0.0, 0.0));
+
+    style.set_property(
+        "transform",
+        &format!(
+            "translate({}px, {}px)",
+            coordinates.0 - offset.0,
+            coordinates.1 - offset.1
+        ),
+    )?;
+
+    Ok(())
+}
+
 /// Uses [`align_to`] and a [`SizeObserver`] to automatically adjust the position of floating
 /// elements when they change size. This is useful for elements where the initial size is not
 /// known (e.g. a [`crate::widget::data_table::DataTable`] with virtual scrolling).
