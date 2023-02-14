@@ -241,8 +241,9 @@ pub struct PwtSplitPane {
     rtl: Option<bool>,
     sizes: Vec<f64>, // observer pane sizes
     drag_offset: i32,
-    mousemove_listener: Option<EventListener>,
-    mouseup_listener: Option<EventListener>,
+    pointermove_listener: Option<EventListener>,
+    pointerup_listener: Option<EventListener>,
+    pointer_id: Option<i32>,
 }
 
 pub enum Msg {
@@ -250,9 +251,9 @@ pub enum Msg {
     Shrink(usize, bool),
     Grow(usize, bool),
     ResetSize,
-    StartResize(usize, i32, i32),
-    StopResize,
-    MouseMove(usize, i32, i32)
+    StartResize(usize, i32, i32, i32),
+    StopResize(i32),
+    PointerMove(usize, i32, i32, i32)
 }
 
 impl PwtSplitPane {
@@ -309,8 +310,8 @@ impl PwtSplitPane {
             .class(if props.vertical { "column-split-handle" } else { "row-split-handle" })
             .onkeydown(onkeydown)
             .ondblclick(ctx.link().callback(|_| Msg::ResetSize))
-            .onmousedown(ctx.link().callback(move |event: MouseEvent| {
-                Msg::StartResize(index, event.offset_x(), event.offset_y())
+            .onpointerdown(ctx.link().callback(move |event: PointerEvent| {
+                Msg::StartResize(index, event.offset_x(), event.offset_y(), event.pointer_id())
             }));
 
         splitter.into()
@@ -434,8 +435,9 @@ impl Component for PwtSplitPane {
             rtl: None,
             sizes: Vec::new(),
             drag_offset: 0,
-            mousemove_listener: None,
-            mouseup_listener: None,
+            pointermove_listener: None,
+            pointerup_listener: None,
+            pointer_id: None,
         }
     }
 
@@ -455,61 +457,70 @@ impl Component for PwtSplitPane {
                 self.rtl = element_direction_rtl(&props.std_props.node_ref);
                 true
             }
-            Msg::MouseMove(child_index, x, y) => {
-                if self.sizes.len() <= child_index { return false; }
+            Msg::PointerMove(child_index, x, y, pointer_id) => {
+                if self.pointer_id == Some(pointer_id) {
+                    if self.sizes.len() <= child_index { return false; }
 
-                let pane = &props.children[child_index];
+                    let pane = &props.children[child_index];
 
-                if let Some(el) = pane.node_ref.cast::<web_sys::Element>() {
-                    let rect = el.get_bounding_client_rect();
+                    if let Some(el) = pane.node_ref.cast::<web_sys::Element>() {
+                        let rect = el.get_bounding_client_rect();
 
-                    let new_size = if props.vertical {
-                        (y as f64) - rect.y() - (self.drag_offset as f64)
-                    } else {
-                        let rtl = self.rtl.unwrap_or(false);
-
-                        if rtl {
-                            rect.right() - (x as f64) - (self.drag_offset as f64)
+                        let new_size = if props.vertical {
+                            (y as f64) - rect.y() - (self.drag_offset as f64)
                         } else {
-                            (x as f64) - rect.x() - (self.drag_offset as f64)
-                        }
-                    };
+                            let rtl = self.rtl.unwrap_or(false);
 
-                    return self.resize_pane(props, child_index, new_size);
+                            if rtl {
+                                rect.right() - (x as f64) - (self.drag_offset as f64)
+                            } else {
+                                (x as f64) - rect.x() - (self.drag_offset as f64)
+                            }
+                        };
+
+                        return self.resize_pane(props, child_index, new_size);
+                    }
                 }
                 true
             }
-            Msg::StopResize => {
-                self.mouseup_listener = None;
-                self.mousemove_listener = None;
-                self.drag_offset = 0;
+            Msg::StopResize(pointer_id) => {
+                if self.pointer_id == Some(pointer_id) {
+                    self.pointerup_listener = None;
+                    self.pointermove_listener = None;
+                    self.drag_offset = 0;
+                    self.pointer_id = None;
+                }
                 false
             }
-            Msg::StartResize(child_index, x, y) => {
+            Msg::StartResize(child_index, x, y, pointer_id) => {
                 self.drag_offset = if props.vertical { y } else { x };
 
                 self.rtl = element_direction_rtl(&props.std_props.node_ref);
 
                 let window = web_sys::window().unwrap();
                 let link = ctx.link();
-                let onmousemove = link.callback(move |e: Event| {
-                    let event = e.dyn_ref::<web_sys::MouseEvent>().unwrap_throw();
-                    Msg::MouseMove(child_index, event.client_x(), event.client_y())
+                let onpointermove = link.callback(move |e: Event| {
+                    let event = e.dyn_ref::<web_sys::PointerEvent>().unwrap_throw();
+                    Msg::PointerMove(child_index, event.client_x(), event.client_y(), event.pointer_id())
                 });
-                let mousemove_listener = EventListener::new(
+                let pointermove_listener = EventListener::new(
                     &window,
-                    "mousemove",
-                    move |e| onmousemove.emit(e.clone()),
+                    "pointermove",
+                    move |e| onpointermove.emit(e.clone()),
                 );
-                self.mousemove_listener = Some(mousemove_listener);
+                self.pointermove_listener = Some(pointermove_listener);
 
-                let onmouseup = link.callback(|_: Event| Msg::StopResize);
-                let mouseup_listener = EventListener::new(
+                let onpointerup = link.callback(|e: Event| {
+                    let event = e.dyn_ref::<web_sys::PointerEvent>().unwrap_throw();
+                    Msg::StopResize(event.pointer_id())
+                });
+                let pointerup_listener = EventListener::new(
                     &window,
-                    "mouseup",
-                    move |e| onmouseup.emit(e.clone()),
+                    "pointerup",
+                    move |e| onpointerup.emit(e.clone()),
                 );
-                self.mouseup_listener = Some(mouseup_listener);
+                self.pointerup_listener = Some(pointerup_listener);
+                self.pointer_id = Some(pointer_id);
 
                 false
             }
