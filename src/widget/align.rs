@@ -324,10 +324,13 @@ fn fits(inner: &Rect, outer: &Rect, direction: &GrowDirection) -> bool {
 // for 'position: fixed' elements, gets the containing block, either the root, or the next parent
 // up with a transform property that is not 'none'
 fn get_containing_block(element: &HtmlElement) -> Option<HtmlElement> {
+    if element.node_name().to_lowercase() == "dialog" {
+        return None;
+    }
     let mut current = element.parent_node();
 
     while let Some(node) = current {
-        let node_name = node.node_name();
+        let node_name = node.node_name().to_lowercase();
         if node_name == "html" || node_name == "body" || node_name == "#document" {
             break;
         }
