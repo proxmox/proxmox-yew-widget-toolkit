@@ -183,7 +183,6 @@ impl Component for PwtDialog {
                             x,
                             y,
                             EventListener::new(&window().unwrap(), "pointermove", move |event| {
-                                log::info!("window move");
                                 onmousemove.emit(event.clone().dyn_into().unwrap());
                             }),
                             EventListener::new(&window().unwrap(), "pointerup", move |event| {
