@@ -44,6 +44,9 @@ pub use mask::{Mask, PwtMask};
 
 pub mod menu;
 
+mod meter;
+pub use meter::{Meter, PwtMeter};
+
 mod split_pane;
 pub use split_pane::{Pane, SplitPane, PwtSplitPane};
 
