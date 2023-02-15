@@ -58,6 +58,9 @@ pub use panel::Panel;
 mod grid_picker;
 pub use grid_picker::GridPicker;
 
+mod progress;
+pub use progress::Progress;
+
 mod row;
 pub use row::Row;
 
