@@ -240,6 +240,7 @@ impl Component for PwtCheckbox {
                 ("pwt-switch", html!{<span class="pwt-switch-slider"><i class="fa fa-check"/></span>})
             }
             (false, true) => {
+                // Note: icon is invisible, but necessary for correct baseline alignment
                 ("pwt-radio-button", html!{<span class="pwt-checkbox-icon"><i class="fa fa-check"/></span>})
             }
             (false, false) => {
