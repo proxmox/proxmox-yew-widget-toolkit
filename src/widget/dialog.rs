@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::rc::Rc;
 
 use gloo_events::EventListener;
@@ -36,6 +37,12 @@ pub struct Dialog {
     /// Makes it draggable by the title bar (exclusive the title text/tools)
     #[prop_or_default]
     pub draggable: bool,
+
+    /// Determines if the dialog can be resized
+    ///
+    /// Adds a resizer on each edge and corner
+    #[prop_or_default]
+    pub resizable: bool,
 }
 
 impl ContainerBuilder for Dialog {
@@ -85,6 +92,15 @@ impl Dialog {
     pub fn set_draggable(&mut self, draggable: bool) {
         self.draggable = draggable;
     }
+
+    pub fn resizable(mut self, resizable: bool) -> Self {
+        self.set_resizable(resizable);
+        self
+    }
+
+    pub fn set_resizable(&mut self, resizable: bool) {
+        self.resizable = resizable;
+    }
 }
 
 pub enum Msg {
@@ -93,6 +109,9 @@ pub enum Msg {
     PointerDown(PointerEvent),
     PointerMove(PointerEvent),
     PointerUp(i32),
+    ResizeStart(Point, PointerEvent),
+    ResizeMove(Point, PointerEvent),
+    ResizeUp(Point, i32),
 }
 
 enum DragState {
@@ -105,6 +124,7 @@ pub struct PwtDialog {
     open: bool,
     dragging_state: DragState,
     last_active: Option<web_sys::HtmlElement>, // last focused element
+    resizer_state: HashMap<Point, DragState>,
 }
 
 impl PwtDialog {
@@ -131,6 +151,7 @@ impl Component for PwtDialog {
         Self {
             open: false,
             dragging_state: DragState::Idle,
+            resizer_state: HashMap::new(),
             last_active,
         }
     }
@@ -211,6 +232,102 @@ impl Component for PwtDialog {
                 }
                 _ => {}
             },
+            Msg::ResizeStart(point, event) => {
+                let onmousemove = ctx
+                    .link()
+                    .callback(move |event| Msg::ResizeMove(point, event));
+                let onpointerup = ctx
+                    .link()
+                    .callback(move |event: PointerEvent| Msg::ResizeUp(point, event.pointer_id()));
+
+                let offset = if let Some(element) = props.node_ref.clone().into_html_element() {
+                    let rect = element.get_bounding_client_rect();
+                    let x = match point {
+                        Point::TopStart | Point::Start | Point::BottomStart => {
+                            event.client_x() as f64 - rect.x()
+                        }
+                        Point::BottomEnd | Point::End | Point::TopEnd => {
+                            rect.right() - event.client_x() as f64
+                        }
+                        _ => 0.0,
+                    };
+
+                    let y = match point {
+                        Point::TopStart | Point::Top | Point::TopEnd => {
+                            event.client_y() as f64 - rect.y()
+                        }
+                        Point::BottomStart | Point::BottomEnd | Point::Bottom => {
+                            rect.bottom() - event.client_y() as f64
+                        }
+                        _ => 0.0,
+                    };
+                    (x, y)
+                } else {
+                    (0.0, 0.0)
+                };
+
+                self.resizer_state.insert(
+                    point,
+                    DragState::Dragging(
+                        offset.0,
+                        offset.1,
+                        EventListener::new(&window().unwrap(), "pointermove", move |event| {
+                            onmousemove.emit(event.clone().dyn_into().unwrap());
+                        }),
+                        EventListener::new(&window().unwrap(), "pointerup", move |event| {
+                            onpointerup.emit(event.clone().dyn_into().unwrap());
+                        }),
+                        event.pointer_id(),
+                    ),
+                );
+            }
+            Msg::ResizeMove(point, event) => match self.resizer_state.get(&point) {
+                Some(DragState::Dragging(x, y, _, _, id)) if *id == event.pointer_id() => {
+                    if let Some(element) = props.node_ref.clone().into_html_element() {
+                        let rect = element.get_bounding_client_rect();
+                        let mut pos = (rect.x(), rect.y());
+                        let new_width = match point {
+                            Point::TopStart | Point::Start | Point::BottomStart => {
+                                pos.0 = event.client_x() as f64 - x;
+                                Some(rect.right() - event.client_x() as f64 + x)
+                            }
+                            Point::TopEnd | Point::End | Point::BottomEnd => {
+                                Some(event.client_x() as f64 - pos.0 + x)
+                            }
+                            _ => None,
+                        };
+                        let new_height = match point {
+                            Point::TopStart | Point::Top | Point::TopEnd => {
+                                pos.1 = event.client_y() as f64 - y;
+                                Some(rect.bottom() - event.client_y() as f64 + y)
+                            }
+                            Point::BottomStart | Point::Bottom | Point::BottomEnd => {
+                                Some(event.client_y() as f64 - pos.1 + y)
+                            }
+                            _ => None,
+                        };
+                        if let Some(width) = new_width {
+                            let _ = element.style().set_property("width", &format!("{width}px"));
+                        }
+                        if let Some(height) = new_height {
+                            let _ = element
+                                .style()
+                                .set_property("height", &format!("{height}px"));
+                        }
+                        if let Err(err) = align_to_xy(props.node_ref.clone(), pos, Point::TopStart)
+                        {
+                            log::error!("could not align dialog: {}", err.to_string())
+                        }
+                    }
+                }
+                _ => {}
+            },
+            Msg::ResizeUp(point, pointer_id) => match self.resizer_state.get(&point) {
+                Some(DragState::Dragging(_, _, _, _, id)) if *id == pointer_id => {
+                    self.resizer_state.remove(&point);
+                }
+                _ => {}
+            },
         }
         false
     }
@@ -257,8 +374,31 @@ impl Component for PwtDialog {
         }
 
         let onpointerdown = link.callback(Msg::PointerDown);
+
+        let resizable = props.resizable;
+
+        let west_down = link.callback(|e| Msg::ResizeStart(Point::Start, e));
+        let east_down = link.callback(|e| Msg::ResizeStart(Point::End, e));
+        let north_down = link.callback(|e| Msg::ResizeStart(Point::Top, e));
+        let south_down = link.callback(|e| Msg::ResizeStart(Point::Bottom, e));
+
+        let northwest_down = link.callback(|e| Msg::ResizeStart(Point::TopStart, e));
+        let southwest_down = link.callback(|e| Msg::ResizeStart(Point::BottomStart, e));
+        let northeast_down = link.callback(|e| Msg::ResizeStart(Point::TopEnd, e));
+        let southeast_down = link.callback(|e| Msg::ResizeStart(Point::BottomEnd, e));
+
         html! {
             <dialog {onpointerdown} aria-label={props.title.clone()} ref={props.node_ref.clone()} {oncancel} style={props.style.clone()}>
+            if resizable {
+                <div onpointerdown={west_down} class="dialog-resize-handle west"></div>
+                <div onpointerdown={east_down} class="dialog-resize-handle east"></div>
+                <div onpointerdown={north_down} class="dialog-resize-handle north"></div>
+                <div onpointerdown={south_down} class="dialog-resize-handle south"></div>
+                <div onpointerdown={northeast_down} class="dialog-resize-handle north-east"></div>
+                <div onpointerdown={northwest_down} class="dialog-resize-handle north-west"></div>
+                <div onpointerdown={southeast_down} class="dialog-resize-handle south-east"></div>
+                <div onpointerdown={southwest_down} class="dialog-resize-handle south-west"></div>
+            }
             {panel}
             </dialog>
         }

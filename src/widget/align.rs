@@ -18,7 +18,7 @@ use crate::widget::{
 ///
 /// In case the direction is right-to-left, all `Start` and `End` points are
 /// switched.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum Point {
     TopStart,
     Top,
