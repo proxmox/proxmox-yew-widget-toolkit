@@ -4,9 +4,9 @@ use gloo_events::EventListener;
 use wasm_bindgen::JsCast;
 use web_sys::{window, HtmlElement};
 
+use yew::html::IntoEventCallback;
 use yew::prelude::*;
 use yew::virtual_dom::{Key, VComp, VNode};
-use yew::html::IntoEventCallback;
 
 use crate::prelude::*;
 use crate::widget::align::{align_to_xy, Point};
@@ -42,7 +42,6 @@ impl ContainerBuilder for Dialog {
 }
 
 impl Dialog {
-
     pub fn new(title: impl Into<AttrValue>) -> Self {
         yew::props!(Self {
             title: title.into(),
@@ -106,7 +105,6 @@ pub struct PwtDialog {
 }
 
 impl PwtDialog {
-
     fn restore_focus(&mut self) {
         if let Some(el) = self.last_active.take() {
             let _ = el.focus();
@@ -123,7 +121,8 @@ impl Component for PwtDialog {
 
         let window = web_sys::window().unwrap();
         let document = window.document().unwrap();
-        let last_active = document.active_element()
+        let last_active = document
+            .active_element()
             .and_then(|el| el.dyn_into::<HtmlElement>().ok());
 
         Self {
@@ -246,7 +245,7 @@ impl Component for PwtDialog {
                     .aria_label("Close Dialog")
                     .class("circle")
                     .class("pwt-scheme-neutral-alt")
-                    .onclick(on_close)
+                    .onclick(on_close),
             );
         };
 

@@ -1,8 +1,8 @@
 use std::rc::Rc;
 
+use yew::html::{IntoEventCallback, IntoPropValue};
 use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
-use yew::html::{IntoEventCallback, IntoPropValue};
 
 use crate::prelude::*;
 use crate::widget::{Button, Dialog, Row, Toolbar};
@@ -22,10 +22,11 @@ pub struct AlertDialog {
 }
 
 impl AlertDialog {
-
     /// Create a new instance.
     pub fn new(message: impl Into<String>) -> Self {
-        yew::props!(AlertDialog { message: message.into() })
+        yew::props!(AlertDialog {
+            message: message.into()
+        })
     }
 
     /// Builder style method to set the dialog title.
@@ -67,7 +68,7 @@ pub fn error_message(text: &str, class: &str) -> Html {
         .class(class.to_owned())
         .class("pwt-align-items-center")
         .attribute("style", "max-width:600px;")
-        .with_child(html!{<span class={icon_class} aria-hidden="true"/>})
+        .with_child(html! {<span class={icon_class} aria-hidden="true"/>})
         .with_child(text)
         .into()
 }
@@ -110,7 +111,7 @@ pub fn pwt_alert_dialog(props: &AlertDialog) -> Html {
             Toolbar::new()
                 .class("emphased pwt-border-top")
                 .with_flex_spacer()
-                .with_child(Button::new("Continue").onclick(onclick).autofocus(true))
+                .with_child(Button::new("Continue").onclick(onclick).autofocus(true)),
         )
         .into()
 }
