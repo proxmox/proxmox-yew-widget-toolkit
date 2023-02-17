@@ -218,8 +218,11 @@ impl Component for PwtDialog {
             }
             Msg::PointerMove(event) => match &self.dragging_state {
                 DragState::Dragging(offset_x, offset_y, _, _, id) if *id == event.pointer_id() => {
-                    let x = event.client_x() as f64 - offset_x;
-                    let y = event.client_y() as f64 - offset_y;
+                    let window = window().unwrap();
+                    let width = window.inner_width().unwrap().as_f64().unwrap();
+                    let height = window.inner_height().unwrap().as_f64().unwrap();
+                    let x = (event.client_x() as f64).max(0.0).min(width) - offset_x;
+                    let y = (event.client_y() as f64).max(0.0).min(height) - offset_y;
                     if let Err(err) = align_to_xy(props.node_ref.clone(), (x, y), Point::TopStart) {
                         log::error!("align_to_xy failed: {}", err.to_string());
                     }
