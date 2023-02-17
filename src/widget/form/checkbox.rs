@@ -179,7 +179,12 @@ impl Component for PwtCheckbox {
                 let on_value = props.value.as_deref().unwrap_or("on").to_string();
                 let (value, _) = self.state.get_field_data();
                 let new_value = if value == on_value {
-                    String::new()
+                    if props.radio_group {
+                        // do not allow to deselect radio buttons (same behaviour as browser).
+                        on_value
+                    } else {
+                        String::new()
+                    }
                 } else {
                     on_value
                 };
