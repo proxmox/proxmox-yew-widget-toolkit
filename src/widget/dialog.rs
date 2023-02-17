@@ -31,6 +31,9 @@ pub struct Dialog {
 
     pub style: Option<AttrValue>,
 
+    /// Determines if the dialog can be moved
+    ///
+    /// Makes it draggable by the title bar (exclusive the title text/tools)
     #[prop_or_default]
     pub draggable: bool,
 }
@@ -170,8 +173,8 @@ impl Component for PwtDialog {
                 if props.draggable && is_draggable {
                     if let Some(element) = props.node_ref.clone().into_html_element() {
                         let client = element.get_bounding_client_rect();
-                        let x = event.screen_x() as f64 - client.x();
-                        let y = event.screen_y() as f64 - client.y();
+                        let x = event.client_x() as f64 - client.x();
+                        let y = event.client_y() as f64 - client.y();
 
                         let onmousemove = ctx.link().callback(Msg::PointerMove);
                         let onpointerup = ctx
@@ -194,8 +197,8 @@ impl Component for PwtDialog {
             }
             Msg::PointerMove(event) => match &self.dragging_state {
                 DragState::Dragging(offset_x, offset_y, _, _, id) if *id == event.pointer_id() => {
-                    let x = event.screen_x() as f64 - offset_x;
-                    let y = event.screen_y() as f64 - offset_y;
+                    let x = event.client_x() as f64 - offset_x;
+                    let y = event.client_y() as f64 - offset_y;
                     if let Err(err) = align_to_xy(props.node_ref.clone(), (x, y), Point::TopStart) {
                         log::error!("align_to_xy failed: {}", err.to_string());
                     }
