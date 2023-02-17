@@ -254,9 +254,6 @@ impl Component for PwtTabBar {
         Container::new()
             .node_ref(props.node_ref.clone())
             .class("pwt-nav-pills")
-            .class("pwt-d-flex")
-            .class("pwt-flex-wrap")
-            .class("pwt-column-gap-4")
             .class(props.class.clone())
             .with_child(pills)
             .onkeydown(move |event: KeyboardEvent| {
