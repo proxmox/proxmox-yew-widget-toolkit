@@ -191,7 +191,7 @@ impl Component for PwtBarScroll {
             .class("pwt-autoscroll-left-arrow")
             .class(arrow_visible.then(|| "visible"))
             .class((self.pos <= 0.0).then(|| "disabled"))
-            .with_child(html!{<i class="fa fa-angle-double-left"/>})
+            .with_child(html!{<i class="fa fa-chevron-left"/>})
             .onmousedown(ctx.link().callback(|_| Msg::ScrollLeft))
             .onmouseout(ctx.link().callback(|_| Msg::ScrollStop))
             .onmouseup(ctx.link().callback(|_| Msg::ScrollStop));
@@ -200,7 +200,7 @@ impl Component for PwtBarScroll {
             .class("pwt-autoscroll-right-arrow")
             .class(arrow_visible.then(|| "visible"))
             .class((self.pos >= 1.0).then(|| "disabled"))
-            .with_child(html!{<i class="fa fa-angle-double-right"/>})
+            .with_child(html!{<i class="fa fa-chevron-right"/>})
             .onmousedown(ctx.link().callback(|_| Msg::ScrollRight))
             .onmouseout(ctx.link().callback(|_| Msg::ScrollStop))
             .onmouseup(ctx.link().callback(|_| Msg::ScrollStop));
