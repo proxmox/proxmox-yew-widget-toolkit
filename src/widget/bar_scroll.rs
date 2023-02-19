@@ -188,7 +188,7 @@ impl Component for PwtBarScroll {
 
         let left = Container::new()
             .node_ref(self.handle_ref.clone())
-            .class("pwt-autoscroll-left-arrow")
+            .class("pwt-bar-scroll-left-arrow")
             .class(arrow_visible.then(|| "visible"))
             .class((self.pos <= 0.0).then(|| "disabled"))
             .with_child(html!{<i class="fa fa-chevron-left"/>})
@@ -197,7 +197,7 @@ impl Component for PwtBarScroll {
             .onmouseup(ctx.link().callback(|_| Msg::ScrollStop));
 
         let right = Container::new()
-            .class("pwt-autoscroll-right-arrow")
+            .class("pwt-bar-scroll-right-arrow")
             .class(arrow_visible.then(|| "visible"))
             .class((self.pos >= 1.0).then(|| "disabled"))
             .with_child(html!{<i class="fa fa-chevron-right"/>})
@@ -209,7 +209,7 @@ impl Component for PwtBarScroll {
             std_props: props.std_props.clone(),
             listeners: props.listeners.clone(),
         })
-            .class("pwt-autoscroll")
+            .class("pwt-bar-scroll")
             .with_child(left)
             .with_child(scroll)
             .with_child(right)
