@@ -8,6 +8,9 @@ pub use alert_dialog::{error_message, AlertDialog, PwtAlertDialog};
 
 pub mod align;
 
+mod bar_scroll;
+pub use bar_scroll::BarScroll;
+
 mod button;
 pub use button::{Button, PwtButton};
 
