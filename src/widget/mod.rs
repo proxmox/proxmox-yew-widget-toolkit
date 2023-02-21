@@ -45,6 +45,9 @@ pub mod nav_menu;
 mod mask;
 pub use mask::{Mask, PwtMask};
 
+mod mini_scroll;
+pub use mini_scroll::{MiniScroll, MiniScrollMode, IntoOptionalMiniScrollMode, PwtMiniScroll};
+
 pub mod menu;
 
 mod meter;
