@@ -249,7 +249,7 @@ impl Component for PwtMiniScroll {
 
         let scroll = Container::new()
             .node_ref(self.scroll_ref.clone())
-            .class((!arrow_mode).then(|| "pwt-mini-scroll"))
+            .class((!arrow_mode).then(|| "pwt-mini-scroll-content"))
             .class(arrow_mode.then(|| "pwt-overflow-hidden"))
             .with_child(content)
             .onwheel({
@@ -268,7 +268,7 @@ impl Component for PwtMiniScroll {
 
         let left = Container::new()
             .node_ref(self.handle_ref.clone())
-            .class("pwt-bar-scroll-left-arrow")
+            .class("pwt-mini-scroll-left-arrow")
             .class(arrow_visible.then(|| "visible"))
             .class((self.pos <= 0.0).then(|| "disabled"))
             .with_child(html! {<i class="fa fa-chevron-left"/>})
@@ -277,7 +277,7 @@ impl Component for PwtMiniScroll {
             .onpointerup(ctx.link().callback(|_| Msg::ScrollStop));
 
         let right = Container::new()
-            .class("pwt-bar-scroll-right-arrow")
+            .class("pwt-mini-scroll-right-arrow")
             .class(arrow_visible.then(|| "visible"))
             .class((self.pos >= 1.0).then(|| "disabled"))
             .with_child(html! {<i class="fa fa-chevron-right"/>})
@@ -289,7 +289,7 @@ impl Component for PwtMiniScroll {
             std_props: props.std_props.clone(),
             listeners: props.listeners.clone(),
         })
-        .class("pwt-bar-scroll")
+        .class("pwt-mini-scroll")
         .with_child(left)
         .with_child(scroll)
         .with_child(right)
