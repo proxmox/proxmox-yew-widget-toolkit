@@ -33,6 +33,9 @@ impl IntoOptionalMiniScrollMode for Option<MiniScrollMode> {
 }
 
 /// Scroll content horizontally using minimalistic srollbar.
+///
+/// This widget provides scrolling for horizontal containers like toolbars or
+/// tab-panel headers, where normal browser scrollbars are visually too heavy.
 #[widget(pwt=crate, comp=PwtMiniScroll, @element)]
 #[derive(Clone, PartialEq, Properties)]
 pub struct MiniScroll {
