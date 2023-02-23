@@ -35,11 +35,11 @@
 //!
 //! Simple Widgets which corresponds to Html elements implements
 //! [EventSubscriber](props::EventSubscriber). This trait provides builder
-//! functions most Html event. By convention, JavaScript objects that
+//! functions for most Html event. By convention, JavaScript objects that
 //! fire events have a corresponding "onevent" properties (named by
 //! prefixing "on" to the name of the event). We use the same naming
 //! convention for this kind of callbacks. It is possible to bind
-//! multiple different callbacks to the same event - all callback will
+//! multiple different callbacks to the same event - all callbacks will
 //! be called when the event occur.
 //!
 //! Some components compute there own custom events. The naming
@@ -60,6 +60,7 @@
 //! - [widget::SplitPane]: Container where children are separated by a draggable sparator.
 //! - [widget::TabPanel]: A set of layered items where only one item is displayed at a time.
 //! - [widget::Toolbar]: Horizontal container for buttons.
+//! - [widget::MiniScroll]: Scrolled container used by toolbar and tab panel.
 //!
 
 //! ### Modal Dialogs

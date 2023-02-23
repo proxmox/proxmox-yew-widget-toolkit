@@ -11,8 +11,10 @@ use pwt_macros::widget;
 #[derive(Copy, Clone, PartialEq)]
 pub enum MiniScrollMode {
     /// Use native browser scrollbars.
+    ///
+    /// This uses custom CSS styling to make the scollbars as small as possible.
     Native,
-    /// Use custom arrow buttons.
+    /// Use arrow buttons at left and right side.
     Arrow,
 }
 
