@@ -126,7 +126,6 @@ pub enum Msg {
 
 #[doc(hidden)]
 pub struct PwtTabBar {
-    pills_ref: NodeRef,
     active: Option<Key>,
     rtl: Option<bool>,
     _nav_ctx_handle: Option<ContextHandle<NavigationContext>>,
@@ -176,7 +175,6 @@ impl Component for PwtTabBar {
         }
 
         Self {
-            pills_ref: NodeRef::default(),
             active,
             rtl: None,
             _nav_ctx_handle,
@@ -250,14 +248,14 @@ impl Component for PwtTabBar {
             }
         }).collect::<Html>();
 
-        let pills_ref = self.pills_ref.clone();
+        let pills_ref = props.node_ref.clone();
         let rtl = self.rtl.unwrap_or(false);
 
         Container::new()
             .node_ref(props.node_ref.clone())
             .class("pwt-nav-pills")
             .class(props.class.clone())
-            .with_child(html!{<div ref={self.pills_ref.clone()} class="pwt-nav-pills-content">{pills}</div>})
+            .with_child(pills)
             .onkeydown(move |event: KeyboardEvent| {
                 match event.key_code() {
                     39 => { // left

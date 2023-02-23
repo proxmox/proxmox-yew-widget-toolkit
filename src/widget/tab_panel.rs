@@ -10,7 +10,7 @@ use yew::html::IntoPropValue;
 use crate::prelude::*;
 use crate::props::RenderFn;
 use crate::state::NavigationContainer;
-use super::{Column, Row, TabBar};
+use super::{Column, IntoOptionalMiniScrollMode, MiniScroll, Row, TabBar, MiniScrollMode};
 
 /// Infos passed to the [TabPanel] render function.
 pub struct TabPanelRenderInfo {
@@ -45,6 +45,10 @@ pub struct TabPanel {
 
     #[prop_or_default]
     pub class: Classes,
+
+    /// Use [MiniScroll] for [TabBar] to allow scrolling.
+    #[prop_or_default]
+    pub scroll_mode: Option<MiniScrollMode>,
 }
 
 impl TabPanel {
@@ -159,6 +163,17 @@ impl TabPanel {
         self.bar.add_item(key.clone(), label, icon_class);
         self.tabs.insert(key, RenderFn::new(renderer));
     }
+
+    /// Builder style method to set the scroll mode.
+    pub fn scroll_mode(mut self, scroll_mode: impl IntoOptionalMiniScrollMode) -> Self {
+        self.set_scroll_mode(scroll_mode);
+        self
+    }
+
+    /// Method to set the scroll mode.
+    pub fn set_scroll_mode(&mut self, scroll_mode: impl IntoOptionalMiniScrollMode) {
+        self.scroll_mode = scroll_mode.into_optional_mini_scroll_mode();
+    }
 }
 
 pub enum Msg {
@@ -197,8 +212,13 @@ impl Component for PwtTabPanel {
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
 
-        let bar = props.bar.clone()
-            .on_select(ctx.link().callback(|key| Msg::Select(key))) ;
+        let mut bar: Html = props.bar.clone()
+            .on_select(ctx.link().callback(|key| Msg::Select(key)))
+            .into();
+
+        if let Some(scroll_mode) = props.scroll_mode {
+            bar = MiniScroll::new(bar).scroll_mode(scroll_mode).into();
+        }
 
         let content: Html = props.tabs.iter().map(|(key, render_fn)| {
             let active = match &self.active {
@@ -237,7 +257,7 @@ impl Component for PwtTabPanel {
                     .with_child(VList::with_children(props.tools.clone(), None))
                     .into()
             } else {
-                header = bar.class("pwt-panel-header").into();
+                header = bar;
             }
         };
 
