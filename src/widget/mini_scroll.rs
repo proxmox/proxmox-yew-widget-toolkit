@@ -249,8 +249,11 @@ impl Component for PwtMiniScroll {
 
         let scroll = Container::new()
             .node_ref(self.scroll_ref.clone())
-            .class((!arrow_mode).then(|| "pwt-mini-scroll-content"))
-            .class(arrow_mode.then(|| "pwt-overflow-hidden"))
+            .class(if arrow_mode {
+                "pwt-mini-scroll-content-arrow"
+            } else {
+                "pwt-mini-scroll-content-native"
+            })
             .with_child(content)
             .onwheel({
                 let link = ctx.link().clone();
@@ -259,6 +262,9 @@ impl Component for PwtMiniScroll {
                     link.send_message(Msg::Wheel(event.delta_y() < 0.0))
                 }
             });
+
+        // add intermediate container, so that we can use the "width:0;min-width:100%" trick
+        let scroll = Container::new().class("pwt-flex-fill").with_child(scroll);
 
         let arrow_visible = if arrow_mode {
             (self.width + 2.0 * self.handle_width) < self.content_width

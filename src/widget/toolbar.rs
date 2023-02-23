@@ -9,6 +9,7 @@ use pwt_macros::widget;
 
 use super::dom::element_direction_rtl;
 use super::focus::{init_roving_tabindex, roving_tabindex_next, update_roving_tabindex};
+use super::{IntoOptionalMiniScrollMode, MiniScroll, MiniScrollMode};
 use crate::prelude::*;
 
 /// Horizontal container for buttons with roving tabindex.
@@ -35,7 +36,11 @@ use crate::prelude::*;
 /// the first element, focus the last element.
 #[widget(pwt=crate, comp=PwtToolbar, @element, @container)]
 #[derive(Properties, PartialEq, Clone)]
-pub struct Toolbar {}
+pub struct Toolbar {
+    /// Use [MiniScroll] to allow scrolling.
+    #[prop_or_default]
+    pub scroll_mode: Option<MiniScrollMode>,
+}
 
 impl Toolbar {
     /// Create a new instance.
@@ -69,6 +74,17 @@ impl Toolbar {
     /// Flex spacers are empty cells filling the remainig space.
     pub fn add_flex_spacer(&mut self) {
         self.add_child(html! {<div aria-hidden="true" class="pwt-flex-fill"/>});
+    }
+
+    /// Builder style method to set the scroll mode.
+    pub fn scroll_mode(mut self, scroll_mode: impl IntoOptionalMiniScrollMode) -> Self {
+        self.set_scroll_mode(scroll_mode);
+        self
+    }
+
+    /// Method to set the scroll mode.
+    pub fn set_scroll_mode(&mut self, scroll_mode: impl IntoOptionalMiniScrollMode) {
+        self.scroll_mode = scroll_mode.into_optional_mini_scroll_mode();
     }
 }
 
@@ -169,7 +185,11 @@ impl Component for PwtToolbar {
 
         let children = VList::with_children(props.children, None);
 
-        let inner = html! { <div ref={self.inner_ref.clone()} class="pwt-toolbar-content">{children}</div> };
+        let mut inner = html! { <div ref={self.inner_ref.clone()} class="pwt-toolbar-content">{children}</div> };
+
+        if let Some(scroll_mode) = props.scroll_mode {
+            inner = MiniScroll::new(inner).scroll_mode(scroll_mode).into();
+        }
 
         VTag::__new_other(
             Cow::Borrowed("div"),
