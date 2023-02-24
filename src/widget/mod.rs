@@ -31,6 +31,9 @@ pub mod focus;
 
 pub mod form;
 
+mod gesture_detector;
+pub use gesture_detector::{GestureDetector, PwtGestureDetector};
+
 mod input;
 pub use input::Input;
 
