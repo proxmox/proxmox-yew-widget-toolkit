@@ -1,6 +1,6 @@
+use core::ops::Deref;
 use std::collections::HashMap;
 use std::rc::Rc;
-use core::ops::Deref;
 
 use gloo_timers::callback::Timeout;
 use yew::html::IntoEventCallback;
@@ -16,13 +16,29 @@ pub struct GestureDragEvent {
 
 impl GestureDragEvent {
     fn new(event: PointerEvent) -> Self {
-        Self {
-            event,
-        }
+        Self { event }
     }
 }
 
 impl Deref for GestureDragEvent {
+    type Target = PointerEvent;
+    fn deref(&self) -> &Self::Target {
+        &self.event
+    }
+}
+
+pub struct GestureSwipeEvent {
+    event: PointerEvent,
+    pub direction: f64,
+}
+
+impl GestureSwipeEvent {
+    fn new(event: PointerEvent, direction: f64) -> Self {
+        Self { event, direction}
+    }
+}
+
+impl Deref for GestureSwipeEvent {
     type Target = PointerEvent;
     fn deref(&self) -> &Self::Target {
         &self.event
@@ -38,6 +54,13 @@ pub struct GestureDetector {
     #[prop_or(10.0)]
     pub tap_tolerance: f64,
 
+    #[prop_or(200.0)]
+    pub swipe_min_distance: f64,
+    #[prop_or(0.5)]
+    pub swipe_max_duration: f64,
+    #[prop_or(200.0)]
+    pub swipe_min_velocity: f64,
+
     /// Callback for tap events.
     pub on_tap: Option<Callback<PointerEvent>>,
     /// Callback for long-tap events.
@@ -49,6 +72,8 @@ pub struct GestureDetector {
     pub on_drag_update: Option<Callback<GestureDragEvent>>,
     /// Callback for drag-start events.
     pub on_drag_end: Option<Callback<GestureDragEvent>>,
+
+    pub on_swipe: Option<Callback<GestureSwipeEvent>>,
 }
 
 impl GestureDetector {
@@ -90,6 +115,12 @@ impl GestureDetector {
     /// Builder style method to set the on_drag_end callback
     pub fn on_drag_end(mut self, cb: impl IntoEventCallback<GestureDragEvent>) -> Self {
         self.on_drag_end = cb.into_event_callback();
+        self
+    }
+
+    /// Builder style method to set the on_swipe callback
+    pub fn on_swipe(mut self, cb: impl IntoEventCallback<GestureSwipeEvent>) -> Self {
+        self.on_swipe = cb.into_event_callback();
         self
     }
 }
@@ -297,21 +328,11 @@ impl PwtGestureDetector {
                     }
                 }
             }
-            Msg::PointerCancel(event) => {
+            Msg::PointerCancel(event) | Msg::PointerLeave(event) => {
                 let pointer_count = self.pointers.len();
                 assert!(pointer_count == 1);
                 if let Some(_pointer_state) = self.unregister_pointer(event.pointer_id()) {
                     self.state = DetectionState::Initial;
-                }
-            }
-            Msg::PointerLeave(event) => {
-                log::info!("LEAVE0");
-                let pointer_count = self.pointers.len();
-                assert!(pointer_count == 1);
-                if let Some(pointer_state) = self.unregister_pointer(event.pointer_id()) {
-                    self.state = DetectionState::Initial;
-                    //if pointer_state.speed
-                    log::info!("LEAVE {}", pointer_state.speed);
                 }
             }
         }
@@ -326,9 +347,10 @@ impl PwtGestureDetector {
             Msg::PointerDown(event) => {
                 let pointer_count = self.pointers.len();
                 assert!(pointer_count == 1);
+                // Abort current drag
                 self.register_pointer(ctx, event.pointer_id(), event.x(), event.y());
-                log::info!("DRAG END");
                 self.state = DetectionState::Double;
+                log::info!("DRAG END");
                 if let Some(on_drag_end) = &props.on_drag_end {
                     let event = GestureDragEvent::new(event);
                     on_drag_end.emit(event);
@@ -350,10 +372,26 @@ impl PwtGestureDetector {
                     let speed = distance / time_diff;
                     log::info!("DRAG END {time_diff} {speed}");
                     if let Some(on_drag_end) = &props.on_drag_end {
-                        let event = GestureDragEvent::new(event);
+                        let event = GestureDragEvent::new(event.clone());
                         on_drag_end.emit(event);
                     }
-                    // fixme: emit swipe ?
+
+                    if let Some(on_swipe) = &props.on_swipe {
+                        if distance > props.swipe_min_distance
+                            && time_diff < props.swipe_max_duration
+                            && speed > props.swipe_min_velocity
+                        {
+                            let direction = compute_direction(
+                                pointer_state.start_x,
+                                pointer_state.start_y,
+                                event.x(),
+                                event.y(),
+                            );
+
+                            let event = GestureSwipeEvent::new(event,direction);
+                            on_swipe.emit(event)
+                        }
+                    }
                 }
             }
             Msg::PointerMove(event) => {
