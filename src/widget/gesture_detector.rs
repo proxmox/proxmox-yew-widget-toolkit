@@ -21,7 +21,7 @@ pub struct GestureDetector {
     /// Callback for tap events.
     pub on_tap: Option<Callback<PointerEvent>>,
     /// Callback for long-tap events.
-    pub on_long_tap: Option<Callback<()>>,
+    pub on_long_press: Option<Callback<()>>,
 }
 
 impl GestureDetector {
@@ -42,9 +42,9 @@ impl GestureDetector {
         self
     }
 
-    /// Builder style method to set the on_long_tap callback
-    pub fn on_long_tap(mut self, cb: impl IntoEventCallback<()>) -> Self {
-        self.on_long_tap = cb.into_event_callback();
+    /// Builder style method to set the on_long_press callback
+    pub fn on_long_press(mut self, cb: impl IntoEventCallback<()>) -> Self {
+        self.on_long_press = cb.into_event_callback();
         self
     }
 }
@@ -194,10 +194,10 @@ impl PwtGestureDetector {
                         pointer_state.y,
                     );
                     if distance < props.tap_tolerance {
-                        log::info!("LONG TAP");
+                        log::info!("LONG PRESS");
                         self.state = DetectionState::Done;
-                        if let Some(on_long_tap) = &props.on_long_tap {
-                            on_long_tap.emit(());
+                        if let Some(on_long_press) = &props.on_long_press {
+                            on_long_press.emit(());
                         }
                     }
                 }
