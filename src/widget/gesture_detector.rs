@@ -49,6 +49,8 @@ impl Deref for GestureSwipeEvent {
 pub struct GestureDetector {
     pub key: Option<Key>,
 
+    pub content: Html,
+
     #[prop_or(3000)]
     pub tap_max_delay: u32,
     #[prop_or(10.0)]
@@ -78,8 +80,8 @@ pub struct GestureDetector {
 
 impl GestureDetector {
     /// Creates a new instance.
-    pub fn new() -> Self {
-        yew::props!(Self {})
+    pub fn new(content: impl Into<Html>) -> Self {
+        yew::props!(Self { content: content.into() })
     }
 
     /// Builder style method to set the yew `key` property
@@ -487,7 +489,7 @@ impl Component for PwtGestureDetector {
     }
 
     fn view(&self, ctx: &Context<Self>) -> Html {
-        //let props = ctx.props();
+        let props = ctx.props();
 
         Container::new()
             .node_ref(self.node_ref.clone())
@@ -497,17 +499,8 @@ impl Component for PwtGestureDetector {
             .onpointerup(ctx.link().callback(Msg::PointerUp))
             .onpointermove(ctx.link().callback(Msg::PointerMove))
             .onpointercancel(ctx.link().callback(Msg::PointerCancel))
-            //.onpointerleave(ctx.link().callback(Msg::PointerLeave))
-            //.onmouseleave(|_| {
-            //    log::info!("MOUSE LEAVE");
-            //})
-            //.ontouchend(|_| {
-            //    log::info!("TOUCH END");
-            //})
-            // .ontouchmove(|_| {
-            //     log::info!("TOUCH MOVE");
-            // })
-            .with_child("TEST")
+            .onpointerleave(ctx.link().callback(Msg::PointerLeave))
+            .with_child(props.content.clone())
             .into()
     }
 }
