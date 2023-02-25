@@ -1,13 +1,33 @@
 use std::collections::HashMap;
 use std::rc::Rc;
+use core::ops::Deref;
 
 use gloo_timers::callback::Timeout;
+use yew::html::IntoEventCallback;
 use yew::prelude::*;
 use yew::virtual_dom::{Key, VComp, VNode};
-use yew::html::IntoEventCallback;
 
 use crate::props::{ContainerBuilder, EventSubscriber, WidgetBuilder};
 use crate::widget::Container;
+
+pub struct GestureDragEvent {
+    event: PointerEvent,
+}
+
+impl GestureDragEvent {
+    fn new(event: PointerEvent) -> Self {
+        Self {
+            event,
+        }
+    }
+}
+
+impl Deref for GestureDragEvent {
+    type Target = PointerEvent;
+    fn deref(&self) -> &Self::Target {
+        &self.event
+    }
+}
 
 #[derive(Properties, Clone, PartialEq)]
 pub struct GestureDetector {
@@ -22,6 +42,13 @@ pub struct GestureDetector {
     pub on_tap: Option<Callback<PointerEvent>>,
     /// Callback for long-tap events.
     pub on_long_press: Option<Callback<()>>,
+
+    /// Callback for drag-start events.
+    pub on_drag_start: Option<Callback<GestureDragEvent>>,
+    /// Callback for drag-start events.
+    pub on_drag_update: Option<Callback<GestureDragEvent>>,
+    /// Callback for drag-start events.
+    pub on_drag_end: Option<Callback<GestureDragEvent>>,
 }
 
 impl GestureDetector {
@@ -47,6 +74,24 @@ impl GestureDetector {
         self.on_long_press = cb.into_event_callback();
         self
     }
+
+    /// Builder style method to set the on_drag_start callback
+    pub fn on_drag_start(mut self, cb: impl IntoEventCallback<GestureDragEvent>) -> Self {
+        self.on_drag_start = cb.into_event_callback();
+        self
+    }
+
+    /// Builder style method to set the on_drag_update callback
+    pub fn on_drag_update(mut self, cb: impl IntoEventCallback<GestureDragEvent>) -> Self {
+        self.on_drag_update = cb.into_event_callback();
+        self
+    }
+
+    /// Builder style method to set the on_drag_end callback
+    pub fn on_drag_end(mut self, cb: impl IntoEventCallback<GestureDragEvent>) -> Self {
+        self.on_drag_end = cb.into_event_callback();
+        self
+    }
 }
 
 pub enum Msg {
@@ -64,8 +109,9 @@ pub enum Msg {
 enum DetectionState {
     Initial,
     Single,
+    Drag,
     Double,
-//    Error,
+    //    Error,
     Done,
 }
 struct PointerState {
@@ -211,7 +257,6 @@ impl PwtGestureDetector {
             }
             Msg::PointerUp(event) => {
                 event.prevent_default();
-                log::info!("POINTERUP");
                 let pointer_count = self.pointers.len();
                 assert!(pointer_count == 1);
                 if let Some(pointer_state) = self.unregister_pointer(event.pointer_id()) {
@@ -227,16 +272,11 @@ impl PwtGestureDetector {
                             log::info!("tap {} {}", event.x(), event.y());
                             on_tap.emit(event);
                         }
-                    } else {
-                        let time_diff = now() - pointer_state.start_ctime;
-                        let speed = distance / time_diff;
-                        log::info!("DRAG END {time_diff} {speed}");
                     }
                 }
             }
             Msg::PointerMove(event) => {
                 event.prevent_default();
-                log::info!("MOVE");
                 if let Some(pointer_state) =
                     self.update_pointer_position(event.pointer_id(), event.x(), event.y())
                 {
@@ -246,8 +286,14 @@ impl PwtGestureDetector {
                         event.x(),
                         event.y(),
                     );
-                    if distance >= props.tap_tolerance || pointer_state.got_tap_timeout {
-                        log::info!("DRAG TO {} {}", event.x(), event.y());
+                    // Make sure it cannot be a TAP or LONG PRESS event
+                    if distance >= props.tap_tolerance {
+                        log::info!("DRAG START {} {}", event.x(), event.y());
+                        self.state = DetectionState::Drag;
+                        if let Some(on_drag_start) = &props.on_drag_start {
+                            let event = GestureDragEvent::new(event);
+                            on_drag_start.emit(event);
+                        }
                     }
                 }
             }
@@ -272,6 +318,81 @@ impl PwtGestureDetector {
         true
     }
 
+    fn update_drag(&mut self, ctx: &Context<Self>, msg: Msg) -> bool {
+        let props = ctx.props();
+        match msg {
+            Msg::TapTimeout(_id) => { /* ignore */ }
+            Msg::Timeout1(_id) => { /* ignore */ }
+            Msg::PointerDown(event) => {
+                let pointer_count = self.pointers.len();
+                assert!(pointer_count == 1);
+                self.register_pointer(ctx, event.pointer_id(), event.x(), event.y());
+                log::info!("DRAG END");
+                self.state = DetectionState::Double;
+                if let Some(on_drag_end) = &props.on_drag_end {
+                    let event = GestureDragEvent::new(event);
+                    on_drag_end.emit(event);
+                }
+            }
+            Msg::PointerUp(event) => {
+                event.prevent_default();
+                let pointer_count = self.pointers.len();
+                assert!(pointer_count == 1);
+                if let Some(pointer_state) = self.unregister_pointer(event.pointer_id()) {
+                    self.state = DetectionState::Initial;
+                    let distance = compute_distance(
+                        pointer_state.start_x,
+                        pointer_state.start_y,
+                        event.x(),
+                        event.y(),
+                    );
+                    let time_diff = now() - pointer_state.start_ctime;
+                    let speed = distance / time_diff;
+                    log::info!("DRAG END {time_diff} {speed}");
+                    if let Some(on_drag_end) = &props.on_drag_end {
+                        let event = GestureDragEvent::new(event);
+                        on_drag_end.emit(event);
+                    }
+                    // fixme: emit swipe ?
+                }
+            }
+            Msg::PointerMove(event) => {
+                event.prevent_default();
+                if let Some(pointer_state) =
+                    self.update_pointer_position(event.pointer_id(), event.x(), event.y())
+                {
+                    let distance = compute_distance(
+                        pointer_state.start_x,
+                        pointer_state.start_y,
+                        event.x(),
+                        event.y(),
+                    );
+                    if distance >= props.tap_tolerance || pointer_state.got_tap_timeout {
+                        log::info!("DRAG TO {} {}", event.x(), event.y());
+                        if let Some(on_drag_update) = &props.on_drag_update {
+                            let event = GestureDragEvent::new(event);
+                            on_drag_update.emit(event);
+                        }
+                    }
+                }
+            }
+            Msg::PointerCancel(event) | Msg::PointerLeave(event) => {
+                let pointer_count = self.pointers.len();
+                assert!(pointer_count == 1);
+                if let Some(_pointer_state) = self.unregister_pointer(event.pointer_id()) {
+                    self.state = DetectionState::Initial;
+                    log::info!("DRAG END");
+                    if let Some(on_drag_end) = &props.on_drag_end {
+                        let event = GestureDragEvent::new(event);
+                        on_drag_end.emit(event);
+                    }
+                }
+            }
+        }
+        true
+    }
+
+    // Wait until all pointers are released
     fn update_error(&mut self, ctx: &Context<Self>, msg: Msg) -> bool {
         match msg {
             Msg::TapTimeout(_id) => { /* ignore */ }
@@ -320,6 +441,7 @@ impl Component for PwtGestureDetector {
         match self.state {
             DetectionState::Initial => self.update_initial(ctx, msg),
             DetectionState::Single => self.update_single(ctx, msg),
+            DetectionState::Drag => self.update_drag(ctx, msg),
             DetectionState::Double => todo!(),
             //DetectionState::Error => self.update_error(ctx, msg),
             DetectionState::Done => self.update_error(ctx, msg),
