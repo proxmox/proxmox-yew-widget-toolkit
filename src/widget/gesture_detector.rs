@@ -482,7 +482,7 @@ impl Component for PwtGestureDetector {
             DetectionState::Initial => self.update_initial(ctx, msg),
             DetectionState::Single => self.update_single(ctx, msg),
             DetectionState::Drag => self.update_drag(ctx, msg),
-            DetectionState::Double => todo!(),
+            DetectionState::Double => self.update_error(ctx, msg), // todo
             //DetectionState::Error => self.update_error(ctx, msg),
             DetectionState::Done => self.update_error(ctx, msg),
         }
