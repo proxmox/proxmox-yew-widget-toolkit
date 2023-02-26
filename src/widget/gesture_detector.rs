@@ -243,9 +243,6 @@ impl PwtGestureDetector {
                 assert!(pointer_count == 0);
                 self.register_pointer(ctx, event.pointer_id(), event.x(), event.y());
                 self.state = DetectionState::Single;
-                if let Some(el) = self.node_ref.cast::<web_sys::Element>() {
-                    let _ = el.set_pointer_capture(event.pointer_id());
-                }
             }
             Msg::PointerUp(_event) => { /* ignore */ }
             Msg::PointerMove(_event) => { /* ignore */ }
@@ -323,6 +320,9 @@ impl PwtGestureDetector {
                     if distance >= props.tap_tolerance {
                         log::info!("DRAG START {} {}", event.x(), event.y());
                         self.state = DetectionState::Drag;
+                        if let Some(el) = self.node_ref.cast::<web_sys::Element>() {
+                            let _ = el.set_pointer_capture(event.pointer_id());
+                        }
                         if let Some(on_drag_start) = &props.on_drag_start {
                             let event = GestureDragEvent::new(event);
                             on_drag_start.emit(event);
