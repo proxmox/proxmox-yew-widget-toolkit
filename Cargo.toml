@@ -18,11 +18,12 @@ members = [
     "pwt-macros",
 
     # Examples
-    
+
     "examples/counter",
     "examples/demo",
     "examples/form",
     "examples/loader",
+    "examples/mobile",
     "examples/router",
     "examples/themes",
 ]

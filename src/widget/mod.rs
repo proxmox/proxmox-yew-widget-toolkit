@@ -64,6 +64,9 @@ pub use dialog::{Dialog, PwtDialog};
 mod panel;
 pub use panel::Panel;
 
+mod page_view;
+pub use page_view::{PageView, PwtPageView};
+
 mod grid_picker;
 pub use grid_picker::GridPicker;
 
