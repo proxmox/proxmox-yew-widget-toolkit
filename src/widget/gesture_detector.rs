@@ -174,8 +174,12 @@ fn now() -> f64 {
 }
 
 impl PwtGestureDetector {
-    fn register_pointer(&mut self, ctx: &Context<Self>, id: i32, start_x: i32, start_y: i32) {
+    fn register_pointer(&mut self, ctx: &Context<Self>, event: &PointerEvent) {
         let props = ctx.props();
+
+        let id = event.pointer_id();
+        let start_x = event.x();
+        let start_y = event.y();
 
         let link = ctx.link().clone();
         let _timeout1 = Timeout::new(2000, move || link.send_message(Msg::Timeout1(id)));
@@ -210,6 +214,12 @@ impl PwtGestureDetector {
         self.pointers.remove(&id)
     }
 
+    fn capture_pointer(&self, pointer_id: i32) {
+        if let Some(el) = self.node_ref.cast::<web_sys::Element>() {
+            let _ = el.set_pointer_capture(pointer_id);
+        }
+    }
+
     fn update_pointer_position(&mut self, id: i32, x: i32, y: i32) -> Option<&PointerState> {
         if let Some(pointer_state) = self.pointers.get_mut(&id) {
             let ctime = now();
@@ -241,7 +251,7 @@ impl PwtGestureDetector {
             Msg::PointerDown(event) => {
                 let pointer_count = self.pointers.len();
                 assert!(pointer_count == 0);
-                self.register_pointer(ctx, event.pointer_id(), event.x(), event.y());
+                self.register_pointer(ctx, &event);
                 self.state = DetectionState::Single;
             }
             Msg::PointerUp(_event) => { /* ignore */ }
@@ -271,6 +281,10 @@ impl PwtGestureDetector {
                     );
                     if distance < props.tap_tolerance {
                         log::info!("LONG PRESS");
+
+                        // supress further (click) events on children
+                        self.capture_pointer(id);
+
                         self.state = DetectionState::Done;
                         if let Some(on_long_press) = &props.on_long_press {
                             on_long_press.emit(());
@@ -282,7 +296,7 @@ impl PwtGestureDetector {
                 event.prevent_default();
                 let pointer_count = self.pointers.len();
                 assert!(pointer_count == 1);
-                self.register_pointer(ctx, event.pointer_id(), event.x(), event.y());
+                self.register_pointer(ctx, &event);
                 self.state = DetectionState::Double;
             }
             Msg::PointerUp(event) => {
@@ -320,9 +334,7 @@ impl PwtGestureDetector {
                     if distance >= props.tap_tolerance {
                         log::info!("DRAG START {} {}", event.x(), event.y());
                         self.state = DetectionState::Drag;
-                        if let Some(el) = self.node_ref.cast::<web_sys::Element>() {
-                            let _ = el.set_pointer_capture(event.pointer_id());
-                        }
+                        self.capture_pointer(event.pointer_id());
                         if let Some(on_drag_start) = &props.on_drag_start {
                             let event = GestureDragEvent::new(event);
                             on_drag_start.emit(event);
@@ -350,7 +362,7 @@ impl PwtGestureDetector {
                 let pointer_count = self.pointers.len();
                 assert!(pointer_count == 1);
                 // Abort current drag
-                self.register_pointer(ctx, event.pointer_id(), event.x(), event.y());
+                self.register_pointer(ctx, &event);
                 self.state = DetectionState::Double;
                 log::info!("DRAG END");
                 if let Some(on_drag_end) = &props.on_drag_end {
@@ -438,7 +450,7 @@ impl PwtGestureDetector {
             Msg::TapTimeout(_id) => { /* ignore */ }
             Msg::Timeout1(_id) => { /* ignore */ }
             Msg::PointerDown(event) => {
-                self.register_pointer(ctx, event.pointer_id(), event.x(), event.y());
+                self.register_pointer(ctx, &event);
             }
             Msg::PointerUp(event) => {
                 self.unregister_pointer(event.pointer_id());
