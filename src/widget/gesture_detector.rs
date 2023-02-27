@@ -280,8 +280,7 @@ impl PwtGestureDetector {
                         pointer_state.y,
                     );
                     if distance < props.tap_tolerance {
-                        log::info!("LONG PRESS");
-
+                        //log::info!("LONG PRESS");
                         // supress further (click) events on children
                         self.capture_pointer(id);
 
@@ -313,7 +312,7 @@ impl PwtGestureDetector {
                     );
                     if !pointer_state.got_tap_timeout && distance < props.tap_tolerance {
                         if let Some(on_tap) = &props.on_tap {
-                            log::info!("tap {} {}", event.x(), event.y());
+                            //log::info!("tap {} {}", event.x(), event.y());
                             on_tap.emit(event);
                         }
                     }
@@ -332,7 +331,7 @@ impl PwtGestureDetector {
                     );
                     // Make sure it cannot be a TAP or LONG PRESS event
                     if distance >= props.tap_tolerance {
-                        log::info!("DRAG START {} {}", event.x(), event.y());
+                        //log::info!("DRAG START {} {}", event.x(), event.y());
                         self.state = DetectionState::Drag;
                         self.capture_pointer(event.pointer_id());
                         if let Some(on_drag_start) = &props.on_drag_start {
@@ -364,7 +363,7 @@ impl PwtGestureDetector {
                 // Abort current drag
                 self.register_pointer(ctx, &event);
                 self.state = DetectionState::Double;
-                log::info!("DRAG END");
+                //log::info!("DRAG END");
                 if let Some(on_drag_end) = &props.on_drag_end {
                     let event = GestureDragEvent::new(event);
                     on_drag_end.emit(event);
@@ -384,7 +383,7 @@ impl PwtGestureDetector {
                     );
                     let time_diff = now() - pointer_state.start_ctime;
                     let speed = distance / time_diff;
-                    log::info!("DRAG END {time_diff} {speed}");
+                    //log::info!("DRAG END {time_diff} {speed}");
                     if let Some(on_drag_end) = &props.on_drag_end {
                         let event = GestureDragEvent::new(event.clone());
                         on_drag_end.emit(event);
@@ -420,7 +419,7 @@ impl PwtGestureDetector {
                         event.y(),
                     );
                     if distance >= props.tap_tolerance || pointer_state.got_tap_timeout {
-                        log::info!("DRAG TO {} {}", event.x(), event.y());
+                        //log::info!("DRAG TO {} {}", event.x(), event.y());
                         if let Some(on_drag_update) = &props.on_drag_update {
                             let event = GestureDragEvent::new(event);
                             on_drag_update.emit(event);
@@ -433,7 +432,7 @@ impl PwtGestureDetector {
                 assert!(pointer_count == 1);
                 if let Some(_pointer_state) = self.unregister_pointer(event.pointer_id()) {
                     self.state = DetectionState::Initial;
-                    log::info!("DRAG END");
+                    //log::info!("DRAG END");
                     if let Some(on_drag_end) = &props.on_drag_end {
                         let event = GestureDragEvent::new(event);
                         on_drag_end.emit(event);
