@@ -82,6 +82,9 @@ pub use rtl_switcher::RtlSwitcher;
 mod segmented_button;
 pub use segmented_button::{PwtSegmentedButton, SegmentedButton};
 
+mod slidable;
+pub use slidable::{Slidable, PwtSlidable};
+
 mod size_observer;
 pub use size_observer::SizeObserver;
 
