@@ -249,6 +249,13 @@ impl PwtGestureDetector {
             Msg::TapTimeout(_id) => { /* ignore */ }
             Msg::Timeout1(_id) => { /* ignore */ }
             Msg::PointerDown(event) => {
+                match event.pointer_type().as_str() {
+                    "mouse" | "pen" => {
+                        if event.button() != 0 { return false; }
+                    }
+                    "touch" => { /* Ok */}
+                    _ => return false, // unreachable
+                }
                 let pointer_count = self.pointers.len();
                 assert!(pointer_count == 0);
                 self.register_pointer(ctx, &event);
