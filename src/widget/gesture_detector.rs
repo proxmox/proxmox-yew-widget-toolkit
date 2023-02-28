@@ -511,7 +511,7 @@ impl Component for PwtGestureDetector {
 
         Container::new()
             .node_ref(self.node_ref.clone())
-            .class("pwt-fit")
+            .class("pwt-d-contents")
             .attribute("style", "touch-action:none;")
             .onpointerdown(ctx.link().callback(Msg::PointerDown))
             .onpointerup(ctx.link().callback(Msg::PointerUp))
