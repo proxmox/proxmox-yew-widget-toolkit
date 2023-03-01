@@ -1,4 +1,4 @@
-use yew::html::IntoPropValue;
+use yew::html::{IntoPropValue, IntoEventCallback};
 use yew::prelude::*;
 use yew::virtual_dom::VNode;
 
@@ -10,9 +10,14 @@ use pwt_macros::widget;
 #[widget(pwt=crate, comp=PwtSlidable, @element)]
 #[derive(Properties, Clone, PartialEq)]
 pub struct Slidable {
-    content: VNode,
-    left_actions: Option<VNode>,
-    right_actions: Option<VNode>,
+    pub content: VNode,
+    pub left_actions: Option<VNode>,
+    pub right_actions: Option<VNode>,
+
+    /// Dismiss callback.
+    ///
+    /// Without a callback, dismiss is disabled on slidables without actions.
+    pub on_dismiss: Option<Callback<()>>,
 }
 
 impl Slidable {
@@ -44,6 +49,13 @@ impl Slidable {
     pub fn set_right_actions(&mut self, actions: impl IntoPropValue<Option<VNode>>) {
         self.right_actions = actions.into_prop_value();
     }
+
+    /// Builder style method to set the dismiss callback.
+    pub fn on_dismiss(mut self, cb: impl IntoEventCallback<()>) -> Self {
+        self.on_dismiss = cb.into_event_callback();
+        self
+    }
+
 }
 
 #[doc(hidden)]
@@ -173,15 +185,20 @@ impl Component for PwtSlidable {
                 let direction = event.direction.abs();
                 if direction < 45.0 || direction > 135.0 {
                     if props.left_actions.is_none() && props.right_actions.is_none() {
-                        log::info!("START DISMISS");
-                        self.dismiss = true;
+                        if props.on_dismiss.is_some() {
+                            // log::info!("START DISMISS");
+                            self.dismiss = true;
+                        }
                     }
                 }
             }
             Msg::TransitionEnd => {
                 if props.left_actions.is_none() && props.right_actions.is_none() {
                     if self.dismiss {
-                        log::info!("DISMISS");
+                        //log::info!("DISMISS");
+                        if let Some(on_dismiss) = &props.on_dismiss {
+                            on_dismiss.emit(());
+                        }
                     }
                 }
             }
