@@ -34,7 +34,7 @@ pub struct GestureSwipeEvent {
 
 impl GestureSwipeEvent {
     fn new(event: PointerEvent, direction: f64) -> Self {
-        Self { event, direction}
+        Self { event, direction }
     }
 }
 
@@ -45,6 +45,11 @@ impl Deref for GestureSwipeEvent {
     }
 }
 
+/// Gesture detector.
+///
+/// # Note
+///
+/// We use "display: contents;", so events reports wrong relative coordiantes (offsetX and offsetY).
 #[derive(Properties, Clone, PartialEq)]
 pub struct GestureDetector {
     pub key: Option<Key>,
@@ -81,7 +86,9 @@ pub struct GestureDetector {
 impl GestureDetector {
     /// Creates a new instance.
     pub fn new(content: impl Into<Html>) -> Self {
-        yew::props!(Self { content: content.into() })
+        yew::props!(Self {
+            content: content.into()
+        })
     }
 
     /// Builder style method to set the yew `key` property
@@ -251,9 +258,11 @@ impl PwtGestureDetector {
             Msg::PointerDown(event) => {
                 match event.pointer_type().as_str() {
                     "mouse" | "pen" => {
-                        if event.button() != 0 { return false; }
+                        if event.button() != 0 {
+                            return false;
+                        }
                     }
-                    "touch" => { /* Ok */}
+                    "touch" => { /* Ok */ }
                     _ => return false, // unreachable
                 }
                 let pointer_count = self.pointers.len();
@@ -408,7 +417,7 @@ impl PwtGestureDetector {
                                 event.y(),
                             );
 
-                            let event = GestureSwipeEvent::new(event,direction);
+                            let event = GestureSwipeEvent::new(event, direction);
                             on_swipe.emit(event)
                         }
                     }
