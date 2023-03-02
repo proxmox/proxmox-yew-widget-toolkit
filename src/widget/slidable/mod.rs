@@ -59,6 +59,14 @@ impl Slidable {
     }
 }
 
+#[derive(Copy, Clone, PartialEq)]
+pub enum ViewState {
+    Normal,
+    DismissStart,
+    DismissTransition,
+    Dismissed,
+}
+
 #[doc(hidden)]
 pub struct PwtSlidable {
     start_pos: f64,
@@ -70,12 +78,13 @@ pub struct PwtSlidable {
     right_size: f64,
     right_ref: NodeRef,
     right_observer: Option<SizeObserver>,
-    content_size: f64,
+    content_width: f64,
+    content_height: f64,
     content_ref: NodeRef,
     content_observer: Option<SizeObserver>,
     last_action_left: bool,
     switch_back: bool,
-    dismiss: bool,
+    view_state: ViewState,
 }
 
 pub enum Msg {
@@ -85,11 +94,19 @@ pub enum Msg {
     Swipe(GestureSwipeEvent),
     LeftResize(f64),
     RightResize(f64),
-    ContentResize(f64),
+    ContentResize(f64, f64),
     TransitionEnd,
 }
 
 impl PwtSlidable {
+
+    fn start_dismiss(&mut self) {
+        self.view_state = match self.view_state {
+            ViewState::Normal => ViewState::DismissStart,
+            state => state,
+        }
+    }
+
     fn finalize_drag(&mut self) {
         if self.start_pos > 0f64 {
             if self.left_size > 0f64 && self.start_pos > self.left_size {
@@ -156,12 +173,13 @@ impl Component for PwtSlidable {
             right_size: 0f64,
             right_ref: NodeRef::default(),
             right_observer: None,
-            content_size: 0f64,
+            content_width: 0f64,
+            content_height: 0f64,
             content_ref: NodeRef::default(),
             content_observer: None,
             last_action_left: true,
             switch_back: false,
-            dismiss: false,
+            view_state: ViewState::Normal,
         }
     }
 
@@ -179,10 +197,11 @@ impl Component for PwtSlidable {
                 self.start_pos -= self.drag_pos.take().unwrap_or(0) as f64;
                 self.finalize_drag();
             }
-            Msg::ContentResize(width) => {
+            Msg::ContentResize(width, height) => {
                 if self.start_pos == 0f64 && self.drag_pos.is_none() && !self.switch_back {
-                    self.content_size = width.max(0f64);
-                    log::info!("CONTENT RESIZE {width}")
+                    self.content_width = width.max(0f64);
+                    self.content_height = height.max(0f64);
+                    //log::info!("CONTENT RESIZE {width} {height}")
                 }
             }
             Msg::LeftResize(width) => {
@@ -205,7 +224,7 @@ impl Component for PwtSlidable {
                     if props.left_actions.is_none() && props.right_actions.is_none() {
                         if props.on_dismiss.is_some() {
                             // log::info!("START DISMISS");
-                            self.dismiss = true;
+                            self.start_dismiss()
                         }
                     }
                 }
@@ -213,8 +232,9 @@ impl Component for PwtSlidable {
             Msg::TransitionEnd => {
                 self.switch_back = false;
                 if props.left_actions.is_none() && props.right_actions.is_none() {
-                    if self.dismiss {
+                    if self.view_state == ViewState::DismissTransition {
                         //log::info!("DISMISS");
+                        self.view_state = ViewState::Dismissed;
                         if let Some(on_dismiss) = &props.on_dismiss {
                             on_dismiss.emit(());
                         }
@@ -292,17 +312,17 @@ impl Component for PwtSlidable {
                     if self.start_pos == 0f64 && self.drag_pos.is_none() && !self.switch_back {
                         String::from("100%")
                     } else {
-                        format!("{}px", self.content_size)
+                        format!("{}px", self.content_width)
                     },
                     if self.last_action_left {
                         "left"
                     } else {
                         "right"
                     },
-                    if self.dismiss {
-                        "height:0px;"
-                    } else {
-                        "height:50px;"
+                    match self.view_state {
+                        ViewState::Normal => String::new(),
+                        ViewState::DismissStart => format!("height:{}px;", self.content_height),
+                        ViewState::DismissTransition | ViewState::Dismissed => String::from("height:0px;"),
                     }
                 ),
             )
@@ -324,8 +344,8 @@ impl Component for PwtSlidable {
         if first_render {
             if let Some(el) = self.content_ref.cast::<web_sys::HtmlElement>() {
                 let link = ctx.link().clone();
-                self.content_observer = Some(SizeObserver::new(&el, move |(x, _y)| {
-                    link.send_message(Msg::ContentResize(x));
+                self.content_observer = Some(SizeObserver::new(&el, move |(x, y)| {
+                    link.send_message(Msg::ContentResize(x, y));
                 }));
             }
             if let Some(el) = self.left_ref.cast::<web_sys::HtmlElement>() {
@@ -340,6 +360,9 @@ impl Component for PwtSlidable {
                     link.send_message(Msg::RightResize(x));
                 }));
             }
+        }
+        if self.view_state == ViewState::DismissStart {
+            self.view_state = ViewState::DismissTransition;
         }
     }
 }
