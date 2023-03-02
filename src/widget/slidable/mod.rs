@@ -31,25 +31,25 @@ impl Slidable {
     }
 
     /// Builder style method to set the left actions pane.
-    pub fn left_actions(mut self, actions: impl IntoPropValue<Option<VNode>>) -> Self {
+    pub fn left_actions<N: Into<VNode>>(mut self, actions: impl IntoPropValue<Option<N>>) -> Self {
         self.set_left_actions(actions);
         self
     }
 
     /// Method to set the left actions pane.
-    pub fn set_left_actions(&mut self, actions: impl IntoPropValue<Option<VNode>>) {
-        self.left_actions = actions.into_prop_value();
+    pub fn set_left_actions<N: Into<VNode>>(&mut self, actions: impl IntoPropValue<Option<N>>) {
+        self.left_actions = actions.into_prop_value().map(|p| p.into());
     }
 
     /// Builder style method to set the right actions pane.
-    pub fn right_actions(mut self, actions: impl IntoPropValue<Option<VNode>>) -> Self {
+    pub fn right_actions<N: Into<VNode>>(mut self, actions: impl IntoPropValue<Option<N>>) -> Self {
         self.set_right_actions(actions);
         self
     }
 
     /// Method to set the right actions pane.
-    pub fn set_right_actions(&mut self, actions: impl IntoPropValue<Option<VNode>>) {
-        self.right_actions = actions.into_prop_value();
+    pub fn set_right_actions<N: Into<VNode>>(&mut self, actions: impl IntoPropValue<Option<N>>) {
+        self.right_actions = actions.into_prop_value().map(|p| p.into());
     }
 
     /// Builder style method to set the dismiss callback.
