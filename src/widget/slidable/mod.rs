@@ -1,9 +1,11 @@
-use yew::html::{IntoPropValue, IntoEventCallback};
+use yew::html::{IntoEventCallback, IntoPropValue};
 use yew::prelude::*;
 use yew::virtual_dom::VNode;
 
 use crate::prelude::*;
-use crate::widget::{Container, GestureDetector, GestureDragEvent, GestureSwipeEvent, Row, SizeObserver};
+use crate::widget::{
+    Container, GestureDetector, GestureDragEvent, GestureSwipeEvent, Row, SizeObserver,
+};
 
 use pwt_macros::widget;
 
@@ -55,7 +57,6 @@ impl Slidable {
         self.on_dismiss = cb.into_event_callback();
         self
     }
-
 }
 
 #[doc(hidden)]
@@ -69,7 +70,11 @@ pub struct PwtSlidable {
     right_size: f64,
     right_ref: NodeRef,
     right_observer: Option<SizeObserver>,
+    content_size: f64,
+    content_ref: NodeRef,
+    content_observer: Option<SizeObserver>,
     last_action_left: bool,
+    switch_back: bool,
     dismiss: bool,
 }
 
@@ -80,22 +85,25 @@ pub enum Msg {
     Swipe(GestureSwipeEvent),
     LeftResize(f64),
     RightResize(f64),
+    ContentResize(f64),
     TransitionEnd,
 }
 
 impl PwtSlidable {
     fn finalize_drag(&mut self) {
-        if self.start_pos >= 0f64 {
-            if self.start_pos > self.left_size {
+        if self.start_pos > 0f64 {
+            if self.left_size > 0f64 && self.start_pos > self.left_size {
                 self.start_pos = self.left_size;
             } else {
                 self.start_pos = 0f64;
+                self.switch_back = true;
             }
-        } else {
-            if (self.start_pos) < -self.right_size {
+        } else if self.start_pos < 0f64 {
+            if self.right_size > 0f64 && (self.start_pos) < -self.right_size {
                 self.start_pos = -self.right_size;
             } else {
                 self.start_pos = 0f64;
+                self.switch_back = true;
             }
         }
     }
@@ -148,7 +156,11 @@ impl Component for PwtSlidable {
             right_size: 0f64,
             right_ref: NodeRef::default(),
             right_observer: None,
+            content_size: 0f64,
+            content_ref: NodeRef::default(),
+            content_observer: None,
             last_action_left: true,
+            switch_back: false,
             dismiss: false,
         }
     }
@@ -166,6 +178,12 @@ impl Component for PwtSlidable {
                 self.drag_start = 0;
                 self.start_pos -= self.drag_pos.take().unwrap_or(0) as f64;
                 self.finalize_drag();
+            }
+            Msg::ContentResize(width) => {
+                if self.start_pos == 0f64 && self.drag_pos.is_none() && !self.switch_back {
+                    self.content_size = width.max(0f64);
+                    log::info!("CONTENT RESIZE {width}")
+                }
             }
             Msg::LeftResize(width) => {
                 self.left_size = width.max(0f64);
@@ -193,6 +211,7 @@ impl Component for PwtSlidable {
                 }
             }
             Msg::TransitionEnd => {
+                self.switch_back = false;
                 if props.left_actions.is_none() && props.right_actions.is_none() {
                     if self.dismiss {
                         //log::info!("DISMISS");
@@ -232,9 +251,11 @@ impl Component for PwtSlidable {
 
         let upper = GestureDetector::new(
             Container::new()
+                .node_ref(self.content_ref.clone())
+                .class("pwt-slidable-slider")
                 .attribute(
                     "style",
-                    "touch-action:none;width:100%;flex:0 0 auto;background:green;overflow:hidden;",
+                    "touch-action:none;width:100%;flex:0 0 auto;overflow:hidden;",
                 )
                 .with_child(props.content.clone()),
         )
@@ -247,7 +268,7 @@ impl Component for PwtSlidable {
             .attribute(
                 "style",
                 format!(
-                    "width:{left}px;flex: 0 0 auto;{};overflow:hidden;background:blue;",
+                    "width:{left}px;flex: 0 0 auto;{};overflow:hidden;",
                     transition
                 ),
             )
@@ -257,29 +278,32 @@ impl Component for PwtSlidable {
             .attribute(
                 "style",
                 format!(
-                    "width:{right}px;flex: 0 0 auto;{};overflow:hidden;background:blue;",
+                    "width:{right}px;flex: 0 0 auto;{};overflow:hidden;",
                     transition
                 ),
             )
             .with_child(self.right_container(ctx));
 
-        let height = if self.dismiss {
-            "height:0px;"
-        } else {
-            "height:50px;"
-        };
-
         let row = Row::new()
             .attribute(
                 "style",
                 format!(
-                    "width:100%;overflow:hidden;justify-content:{};transition:height 0.3s ease-out;{}",
+                    "width:{};overflow:hidden;justify-content:{};transition:height 0.2s ease-out;{}",
+                    if self.start_pos == 0f64 && self.drag_pos.is_none() && !self.switch_back {
+                        String::from("100%")
+                    } else {
+                        format!("{}px", self.content_size)
+                    },
                     if self.last_action_left {
                         "left"
                     } else {
                         "right"
                     },
-                    height,
+                    if self.dismiss {
+                        "height:0px;"
+                    } else {
+                        "height:50px;"
+                    }
                 ),
             )
             .with_child(left_container)
@@ -291,13 +315,19 @@ impl Component for PwtSlidable {
             std_props: props.std_props.clone(),
             listeners: props.listeners.clone(),
         })
-        //.attribute("style", "background:red;")
+        .class("pwt-slidable")
         .with_child(row)
         .into()
     }
 
     fn rendered(&mut self, ctx: &Context<Self>, first_render: bool) {
         if first_render {
+            if let Some(el) = self.content_ref.cast::<web_sys::HtmlElement>() {
+                let link = ctx.link().clone();
+                self.content_observer = Some(SizeObserver::new(&el, move |(x, _y)| {
+                    link.send_message(Msg::ContentResize(x));
+                }));
+            }
             if let Some(el) = self.left_ref.cast::<web_sys::HtmlElement>() {
                 let link = ctx.link().clone();
                 self.left_observer = Some(SizeObserver::new(&el, move |(x, _y)| {
