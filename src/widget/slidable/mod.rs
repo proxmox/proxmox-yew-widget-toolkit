@@ -1,5 +1,5 @@
 mod slidable_action;
-pub use slidable_action::{SlidableAction, PwtSlidableAction};
+pub use slidable_action::{PwtSlidableAction, SlidableAction};
 
 use yew::html::{IntoEventCallback, IntoPropValue};
 use yew::prelude::*;
@@ -77,9 +77,11 @@ pub struct PwtSlidable {
     drag_pos: Option<i32>,
     left_size: f64,
     left_ref: NodeRef,
+    left_action_ref: NodeRef,
     left_observer: Option<SizeObserver>,
     right_size: f64,
     right_ref: NodeRef,
+    right_action_ref: NodeRef,
     right_observer: Option<SizeObserver>,
     content_width: f64,
     content_height: f64,
@@ -102,7 +104,6 @@ pub enum Msg {
 }
 
 impl PwtSlidable {
-
     fn start_dismiss(&mut self) {
         self.view_state = match self.view_state {
             ViewState::Normal => ViewState::DismissStart,
@@ -112,14 +113,14 @@ impl PwtSlidable {
 
     fn finalize_drag(&mut self) {
         if self.start_pos > 0f64 {
-            if self.left_size > 0f64 && self.start_pos > self.left_size {
+            if self.left_size > 0f64 && self.start_pos >= self.left_size {
                 self.start_pos = self.left_size;
             } else {
                 self.start_pos = 0f64;
                 self.switch_back = true;
             }
         } else if self.start_pos < 0f64 {
-            if self.right_size > 0f64 && (self.start_pos) < -self.right_size {
+            if self.right_size > 0f64 && (self.start_pos) <= -self.right_size {
                 self.start_pos = -self.right_size;
             } else {
                 self.start_pos = 0f64;
@@ -133,14 +134,17 @@ impl PwtSlidable {
         let actions = props.left_actions.clone();
 
         Row::new()
+            .node_ref(self.left_ref.clone())
             .class("pwt-w-100 pwt-h-100")
             .with_child(
                 Container::new()
-                    .node_ref(self.left_ref.clone())
+                    .node_ref(self.left_action_ref.clone())
                     .attribute("style", "height:100%;min-width:0;flex:0 1 auto")
                     .with_optional_child(actions),
             )
-            .with_child(html! {<div style="flex: 1 1 auto;"></div>})
+            .with_child(
+                html! {<div style="flex: 1 1 auto;"></div>},
+            )
             .into()
     }
 
@@ -149,11 +153,12 @@ impl PwtSlidable {
         let actions = props.right_actions.clone();
 
         Row::new()
+            .node_ref(self.right_ref.clone())
             .class("pwt-w-100 pwt-h-100")
             .with_child(html! {<div style="flex: 1 1 auto;"></div>})
             .with_child(
                 Container::new()
-                    .node_ref(self.right_ref.clone())
+                    .node_ref(self.right_action_ref.clone())
                     .attribute("style", "height:100%;min-width:0;flex:0 1 auto")
                     .with_optional_child(actions),
             )
@@ -172,9 +177,11 @@ impl Component for PwtSlidable {
             drag_pos: None,
             left_size: 0f64,
             left_ref: NodeRef::default(),
+            left_action_ref: NodeRef::default(),
             left_observer: None,
             right_size: 0f64,
             right_ref: NodeRef::default(),
+            right_action_ref: NodeRef::default(),
             right_observer: None,
             content_width: 0f64,
             content_height: 0f64,
@@ -208,14 +215,36 @@ impl Component for PwtSlidable {
                 }
             }
             Msg::LeftResize(width) => {
-                self.left_size = width.max(0f64);
+
+                let left_size = self
+                    .left_action_ref
+                    .cast::<web_sys::HtmlElement>()
+                    .unwrap()
+                    .offset_width()
+                    .max(0) as f64;
+
+                if width > (left_size + 1.0) {
+                    self.left_size = left_size;
+                }
+
                 if self.drag_pos.is_none() {
                     // RESIZE after DRAG
                     self.finalize_drag();
                 }
             }
             Msg::RightResize(width) => {
-                self.right_size = width.max(0f64);
+
+                let right_size = self
+                    .right_action_ref
+                    .cast::<web_sys::HtmlElement>()
+                    .unwrap()
+                    .offset_width()
+                    .max(0) as f64;
+
+                if width > (right_size + 1.0) {
+                    self.right_size = right_size;
+                }
+
                 if self.drag_pos.is_none() {
                     // RESIZE after DRAG
                     self.finalize_drag();
