@@ -1,3 +1,6 @@
+mod slidable_action;
+pub use slidable_action::{SlidableAction, PwtSlidableAction};
+
 use yew::html::{IntoEventCallback, IntoPropValue};
 use yew::prelude::*;
 use yew::virtual_dom::VNode;

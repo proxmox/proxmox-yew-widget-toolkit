@@ -83,7 +83,7 @@ mod segmented_button;
 pub use segmented_button::{PwtSegmentedButton, SegmentedButton};
 
 mod slidable;
-pub use slidable::{Slidable, PwtSlidable};
+pub use slidable::{Slidable, PwtSlidable, SlidableAction, PwtSlidableAction};
 
 mod size_observer;
 pub use size_observer::SizeObserver;
