@@ -61,7 +61,7 @@ pub struct GestureDetector {
     #[prop_or(10.0)]
     pub tap_tolerance: f64,
 
-    #[prop_or(200.0)]
+    #[prop_or(100.0)]
     pub swipe_min_distance: f64,
     #[prop_or(0.5)]
     pub swipe_max_duration: f64,
