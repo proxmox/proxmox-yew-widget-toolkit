@@ -1,3 +1,9 @@
+mod slidable_controller;
+pub use slidable_controller::{SlidableController, SlidableControllerMsg};
+
+mod slidable_action_event;
+pub use slidable_action_event::SlidableActionMouseEvent;
+
 mod slidable_action;
 pub use slidable_action::{PwtSlidableAction, SlidableAction};
 
@@ -90,6 +96,7 @@ pub struct PwtSlidable {
     last_action_left: bool,
     switch_back: bool,
     view_state: ViewState,
+    controller: SlidableController,
 }
 
 pub enum Msg {
@@ -101,6 +108,7 @@ pub enum Msg {
     RightResize(f64),
     ContentResize(f64, f64),
     TransitionEnd,
+    Controller(SlidableControllerMsg),
 }
 
 impl PwtSlidable {
@@ -142,9 +150,7 @@ impl PwtSlidable {
                     .attribute("style", "height:100%;min-width:0;flex:0 1 auto")
                     .with_optional_child(actions),
             )
-            .with_child(
-                html! {<div style="flex: 1 1 auto;"></div>},
-            )
+            .with_child(html! {<div style="flex: 1 1 auto;"></div>})
             .into()
     }
 
@@ -170,7 +176,9 @@ impl Component for PwtSlidable {
     type Message = Msg;
     type Properties = Slidable;
 
-    fn create(_ctx: &Context<Self>) -> Self {
+    fn create(ctx: &Context<Self>) -> Self {
+        let controller = SlidableController::new(ctx.link().callback(Msg::Controller));
+
         Self {
             start_pos: 0f64,
             drag_start: 0,
@@ -190,6 +198,7 @@ impl Component for PwtSlidable {
             last_action_left: true,
             switch_back: false,
             view_state: ViewState::Normal,
+            controller,
         }
     }
 
@@ -215,7 +224,6 @@ impl Component for PwtSlidable {
                 }
             }
             Msg::LeftResize(width) => {
-
                 let left_size = self
                     .left_action_ref
                     .cast::<web_sys::HtmlElement>()
@@ -233,7 +241,6 @@ impl Component for PwtSlidable {
                 }
             }
             Msg::RightResize(width) => {
-
                 let right_size = self
                     .right_action_ref
                     .cast::<web_sys::HtmlElement>()
@@ -273,6 +280,21 @@ impl Component for PwtSlidable {
                     }
                 }
             }
+            Msg::Controller(msg) => match msg {
+                SlidableControllerMsg::Dismiss => {
+                    log::info!("REquest Dismiss");
+                    self.start_dismiss();
+                }
+                SlidableControllerMsg::Collapse => {
+                    log::info!("REquest Collapse");
+                    if self.drag_pos.is_none() {
+                        if self.start_pos != 0f64 {
+                            self.start_pos = 0f64;
+                            self.switch_back = true;
+                        }
+                    }
+                }
+            },
         }
         let pos = self.start_pos - (self.drag_pos.unwrap_or(0) as f64);
         if pos > 0f64 {
@@ -368,7 +390,11 @@ impl Component for PwtSlidable {
             listeners: props.listeners.clone(),
         })
         .class("pwt-slidable")
-        .with_child(row)
+        .with_child(html! {
+            <ContextProvider<SlidableController> context={self.controller.clone()}>
+                {row}
+            </ContextProvider<SlidableController>>
+        })
         .into()
     }
 

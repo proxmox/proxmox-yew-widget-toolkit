@@ -32,7 +32,9 @@ pub mod focus;
 pub mod form;
 
 mod gesture_detector;
-pub use gesture_detector::{GestureDetector, GestureDragEvent, GestureSwipeEvent, PwtGestureDetector};
+pub use gesture_detector::{
+    GestureDetector, GestureDragEvent, GestureSwipeEvent, PwtGestureDetector,
+};
 
 mod input;
 pub use input::Input;
@@ -46,7 +48,7 @@ mod mask;
 pub use mask::{Mask, PwtMask};
 
 mod mini_scroll;
-pub use mini_scroll::{MiniScroll, MiniScrollMode, IntoOptionalMiniScrollMode, PwtMiniScroll};
+pub use mini_scroll::{IntoOptionalMiniScrollMode, MiniScroll, MiniScrollMode, PwtMiniScroll};
 
 pub mod menu;
 
@@ -54,7 +56,7 @@ mod meter;
 pub use meter::{Meter, PwtMeter};
 
 mod split_pane;
-pub use split_pane::{Pane, SplitPane, PwtSplitPane};
+pub use split_pane::{Pane, PwtSplitPane, SplitPane};
 
 pub mod data_table;
 
@@ -83,7 +85,10 @@ mod segmented_button;
 pub use segmented_button::{PwtSegmentedButton, SegmentedButton};
 
 mod slidable;
-pub use slidable::{Slidable, PwtSlidable, SlidableAction, PwtSlidableAction};
+pub use slidable::{
+    PwtSlidable, PwtSlidableAction, Slidable, SlidableAction, SlidableActionMouseEvent,
+    SlidableController,
+};
 
 mod size_observer;
 pub use size_observer::SizeObserver;
