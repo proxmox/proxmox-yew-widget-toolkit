@@ -18,11 +18,20 @@ use crate::touch::{GestureDetector, GestureDragEvent, GestureSwipeEvent};
 
 use pwt_macros::widget;
 
+/// Slidable widget with directional slide actions that can be dismissed.
+///
+/// The Slidable provides a [SlidableController] using a [yew::ContextProvider]. The
+/// controller can be used to programmatically collapse or dismiss the slidable.
+/// The [SlidableAction] button automaticall uses that controller.
 #[widget(pwt=crate, comp=PwtSlidable, @element)]
 #[derive(Properties, Clone, PartialEq)]
 pub struct Slidable {
-    pub content: VNode,
+    content: VNode,
+
+    /// Widget displayed on the left side (below the slider).
     pub left_actions: Option<VNode>,
+
+    /// Widget displayed on the right side (below the slider).
     pub right_actions: Option<VNode>,
 
     /// Dismiss callback.

@@ -7,6 +7,9 @@ pub enum SlidableControllerMsg {
     Dismiss,
 }
 
+/// Slidable controller can collapse and dismiss slidables programmatically.
+///
+/// Each [Slidable](super::Slidable) provides a [SlidableController] using a [yew::ContextProvider].
 #[derive(Clone, PartialEq)]
 pub struct SlidableController {
     callback: Callback<SlidableControllerMsg>,

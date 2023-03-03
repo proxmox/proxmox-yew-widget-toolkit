@@ -9,6 +9,10 @@ use crate::widget::{Container, Fa};
 
 use super::{SlidableActionMouseEvent, SlidableController};
 
+/// A button which automatically connects to the [SlidableController].
+///
+/// The [on_click](Self::on_click) handler gets an [SlidableActionMouseEvent] argument,
+/// which lets you collapse or dismiss the slidable.
 #[derive(Properties, Clone, PartialEq)]
 pub struct SlidableAction {
     /// The yew component key.

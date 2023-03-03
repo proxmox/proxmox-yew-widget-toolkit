@@ -10,17 +10,20 @@ use crate::touch::GestureDetector;
 
 use super::GestureSwipeEvent;
 
+/// A scrollable list that works page by page.
 #[derive(Properties, Clone, PartialEq)]
 pub struct PageView {
     /// The yew component key.
     pub key: Option<Key>,
 
     #[prop_or_default]
-    pub children: Vec<VNode>,
+    children: Vec<VNode>,
 
+    /// Index of the currently active/viewed page.
     #[prop_or(0)]
     pub view_page: usize,
 
+    /// This callback is called when the user swipes to the next/previous page.
     pub on_page_change: Option<Callback<usize>>,
 }
 
@@ -30,15 +33,18 @@ impl PageView {
         yew::props!(Self {})
     }
 
+    /// Builder style method to set the actual page.
     pub fn view_page(mut self, page_num: usize) -> Self {
         self.set_view_page(page_num);
         self
     }
 
+    /// Method to set the actual page.
     pub fn set_view_page(&mut self, page_num: usize) {
         self.view_page = page_num;
     }
 
+    /// Builder style method to set the `on_page_change` callback.
     pub fn on_page_change(mut self, cb: impl IntoEventCallback<usize>) -> Self {
         self.on_page_change = cb.into_event_callback();
         self

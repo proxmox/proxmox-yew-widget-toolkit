@@ -10,6 +10,7 @@ use yew::virtual_dom::{Key, VComp, VNode};
 use crate::props::{ContainerBuilder, EventSubscriber, WidgetBuilder};
 use crate::widget::Container;
 
+/// Like [PointerEvent](web_sys::PointerEvent) (currently no additional features)
 pub struct GestureDragEvent {
     event: PointerEvent,
 }
@@ -27,8 +28,10 @@ impl Deref for GestureDragEvent {
     }
 }
 
+/// Like [PointerEvent](web_sys::PointerEvent), but includes the swipe direction
 pub struct GestureSwipeEvent {
     event: PointerEvent,
+    /// Direction angle (from -180 to +180 degree)
     pub direction: f64,
 }
 
@@ -47,28 +50,49 @@ impl Deref for GestureSwipeEvent {
 
 /// Gesture detector.
 ///
+/// You need to set the CSS attribute `touch-action: none;` on children to receive all events.
+///
+/// Detected gestures:
+///
+/// - tap: single tap.
+/// - long press: long tab without drag.
+/// - drag: pointer move while touching the surface.
+/// - swipe: fired at the end of a fast drag.
+///
 /// # Note
 ///
 /// We use "display: contents;", so events reports wrong relative coordiantes (offsetX and offsetY).
+///
+/// Nested gesture detection is currently not implemented.
+///
+/// Scale and rotate detection is also not implemented.
 #[derive(Properties, Clone, PartialEq)]
 pub struct GestureDetector {
+    /// The yew component key.
     pub key: Option<Key>,
 
-    pub content: Html,
 
+    content: Html,
+
+    /// The maximum delay in miliseconds between a tap start and end event.
     #[prop_or(3000)]
     pub tap_max_delay: u32,
+    /// The maximum tolerated movement in pixel unless tap detection fail.
     #[prop_or(10.0)]
     pub tap_tolerance: f64,
 
+    /// Long press delay in millisecods.
     #[prop_or(1000)]
     pub long_press_delay: u32,
 
+    /// Minimum swipe distance in pixel.
     #[prop_or(100.0)]
     pub swipe_min_distance: f64,
     #[prop_or(0.5)]
+    /// Maximum swipe duration in milliseconds.
     pub swipe_max_duration: f64,
     #[prop_or(200.0)]
+    /// Mimimum swipe speed in pixel/second.
     pub swipe_min_velocity: f64,
 
     /// Callback for tap events.

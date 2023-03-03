@@ -96,7 +96,6 @@
 //! There are also special buttons for [reset](widget::form::ResetButton)
 //! and [submit](widget::form::SubmitButton).
 
-
 //! ### Buttons
 //!
 //! - [widget::Button]: Standard Html Button (Text, Icon + Text, Icon only).
@@ -123,6 +122,15 @@
 //! The [Canvas](widget::canvas) component utilizes the Html `<svg>` element to
 //! provide a full features 2D drawing interface.
 
+//! ### Widgets for Touch devices
+//!
+//! Please note that these widgets are badly accessible with keyboard, so it is best
+//! to avoid them for desktop applications.
+//!
+//! - [touch::GestureDetector]: Gesture detector.
+//! - [touch::Slidable]: Slidable widget with directional slide actions that can be dismissed.
+//! - [touch::PageView]: A scrollable list that works page by page.
+
 //! ## Router
 //!
 //! [Yew](https://yew.rs) provides a framework to implement
@@ -137,8 +145,8 @@
 pub mod css;
 pub mod props;
 pub mod state;
-pub mod widget;
 pub mod touch;
+pub mod widget;
 
 #[doc(hidden)]
 pub mod web_sys_ext;
@@ -146,7 +154,7 @@ pub mod web_sys_ext;
 // Bindgen javascript code from js-helper-module.js
 use wasm_bindgen::{self, prelude::*};
 #[wasm_bindgen(module = "/js-helper-module.js")]
-#[cfg(target_arch="wasm32")]
+#[cfg(target_arch = "wasm32")]
 extern "C" {
     fn test_alert();
 
@@ -161,22 +169,30 @@ extern "C" {
 
 // Create wrapper which panics if called from target_arch!=wasm32
 // This allows us to run tests with "cargo test".
-#[cfg(not(target_arch="wasm32"))]
+#[cfg(not(target_arch = "wasm32"))]
 pub(crate) use panic_wrapper::*;
-#[cfg(not(target_arch="wasm32"))]
+#[cfg(not(target_arch = "wasm32"))]
 mod panic_wrapper {
     use wasm_bindgen::JsValue;
-    pub fn create_popper(_content: web_sys::Node, _tip: web_sys::Node, _opts: &JsValue) -> JsValue { unreachable!() }
-    pub fn update_popper(_popper: &JsValue) { unreachable!() }
-    pub fn show_modal_dialog(_dialog: web_sys::Node) { unreachable!() }
-    pub fn close_dialog(_dialog: web_sys::Node) { unreachable!() }
+    pub fn create_popper(_content: web_sys::Node, _tip: web_sys::Node, _opts: &JsValue) -> JsValue {
+        unreachable!()
+    }
+    pub fn update_popper(_popper: &JsValue) {
+        unreachable!()
+    }
+    pub fn show_modal_dialog(_dialog: web_sys::Node) {
+        unreachable!()
+    }
+    pub fn close_dialog(_dialog: web_sys::Node) {
+        unreachable!()
+    }
 }
 
 // some helpers
 
 use serde::Serialize;
 /// Serialize data into a [JsValue] using `serde_wasm_bindgen`.
-pub fn to_js_value<T:  Serialize + ?Sized>(value: &T) -> Result<JsValue, serde_wasm_bindgen::Error> {
+pub fn to_js_value<T: Serialize + ?Sized>(value: &T) -> Result<JsValue, serde_wasm_bindgen::Error> {
     value.serialize(&serde_wasm_bindgen::Serializer::json_compatible())
 }
 
@@ -196,12 +212,12 @@ pub mod prelude {
     #[doc(hidden)]
     pub use yew::prelude::*;
 
-    pub use crate::props::WidgetBuilder;
+    pub use crate::props::CallbackMutScopeExt;
+    pub use crate::props::ContainerBuilder;
+    pub use crate::props::CssBorderBuilder;
     pub use crate::props::CssMarginBuilder;
     pub use crate::props::CssPaddingBuilder;
-    pub use crate::props::CssBorderBuilder;
-    pub use crate::props::ContainerBuilder;
-    pub use crate::props::FieldBuilder;
     pub use crate::props::EventSubscriber;
-    pub use crate::props::CallbackMutScopeExt;
+    pub use crate::props::FieldBuilder;
+    pub use crate::props::WidgetBuilder;
 }
