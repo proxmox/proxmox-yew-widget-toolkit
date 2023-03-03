@@ -7,6 +7,7 @@ pub use slidable_action_event::SlidableActionMouseEvent;
 mod slidable_action;
 pub use slidable_action::{PwtSlidableAction, SlidableAction};
 
+use gloo_timers::callback::Timeout;
 use yew::html::{IntoEventCallback, IntoPropValue};
 use yew::prelude::*;
 use yew::virtual_dom::VNode;
@@ -68,7 +69,7 @@ impl Slidable {
     }
 }
 
-#[derive(Copy, Clone, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum ViewState {
     Normal,
     DismissStart,
@@ -97,9 +98,11 @@ pub struct PwtSlidable {
     switch_back: bool,
     view_state: ViewState,
     controller: SlidableController,
+    dismiss_start_timeout: Option<Timeout>,
 }
 
 pub enum Msg {
+    StartDismissTransition,
     Drag(GestureDragEvent),
     DragStart(GestureDragEvent),
     DragEnd(GestureDragEvent),
@@ -199,12 +202,16 @@ impl Component for PwtSlidable {
             switch_back: false,
             view_state: ViewState::Normal,
             controller,
+            dismiss_start_timeout: None,
         }
     }
 
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
         let props = ctx.props();
         match msg {
+            Msg::StartDismissTransition => {
+                self.view_state = ViewState::DismissTransition;
+            }
             Msg::Drag(event) => {
                 self.drag_pos = Some(self.drag_start - event.x());
             }
@@ -420,7 +427,12 @@ impl Component for PwtSlidable {
             }
         }
         if self.view_state == ViewState::DismissStart {
-            self.view_state = ViewState::DismissTransition;
+            // We use a timeout to make sure the browser gets the correct height before we
+            // start animating the height.
+            self.dismiss_start_timeout = Some(Timeout::new(1, {
+                let link = ctx.link().clone();
+                move || link.send_message(Msg::StartDismissTransition)
+            }));
         }
     }
 }
