@@ -31,11 +31,6 @@ pub mod focus;
 
 pub mod form;
 
-mod gesture_detector;
-pub use gesture_detector::{
-    GestureDetector, GestureDragEvent, GestureSwipeEvent, PwtGestureDetector,
-};
-
 mod input;
 pub use input::Input;
 
@@ -66,9 +61,6 @@ pub use dialog::{Dialog, PwtDialog};
 mod panel;
 pub use panel::Panel;
 
-mod page_view;
-pub use page_view::{PageView, PwtPageView};
-
 mod grid_picker;
 pub use grid_picker::GridPicker;
 
@@ -83,12 +75,6 @@ pub use rtl_switcher::RtlSwitcher;
 
 mod segmented_button;
 pub use segmented_button::{PwtSegmentedButton, SegmentedButton};
-
-mod slidable;
-pub use slidable::{
-    PwtSlidable, PwtSlidableAction, Slidable, SlidableAction, SlidableActionMouseEvent,
-    SlidableController,
-};
 
 mod size_observer;
 pub use size_observer::SizeObserver;

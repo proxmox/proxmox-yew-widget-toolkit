@@ -138,6 +138,7 @@ pub mod css;
 pub mod props;
 pub mod state;
 pub mod widget;
+pub mod touch;
 
 #[doc(hidden)]
 pub mod web_sys_ext;

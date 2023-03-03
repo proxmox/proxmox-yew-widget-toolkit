@@ -13,9 +13,8 @@ use yew::prelude::*;
 use yew::virtual_dom::VNode;
 
 use crate::prelude::*;
-use crate::widget::{
-    Container, GestureDetector, GestureDragEvent, GestureSwipeEvent, Row, SizeObserver,
-};
+use crate::widget::{Container, Row, SizeObserver};
+use crate::touch::{GestureDetector, GestureDragEvent, GestureSwipeEvent};
 
 use pwt_macros::widget;
 

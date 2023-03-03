@@ -5,7 +5,8 @@ use yew::prelude::*;
 use yew::virtual_dom::{Key, VComp, VNode};
 
 use crate::props::{ContainerBuilder, WidgetBuilder};
-use crate::widget::{Container, GestureDetector};
+use crate::widget::Container;
+use crate::touch::GestureDetector;
 
 use super::GestureSwipeEvent;
 
