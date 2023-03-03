@@ -61,6 +61,9 @@ pub struct GestureDetector {
     #[prop_or(10.0)]
     pub tap_tolerance: f64,
 
+    #[prop_or(1000)]
+    pub long_press_delay: u32,
+
     #[prop_or(100.0)]
     pub swipe_min_distance: f64,
     #[prop_or(0.5)]
@@ -141,7 +144,7 @@ pub enum Msg {
     PointerCancel(PointerEvent),
     PointerLeave(PointerEvent),
 
-    Timeout1(i32),
+    LongPressTimeout(i32),
     TapTimeout(i32),
 }
 
@@ -157,8 +160,8 @@ enum DetectionState {
 struct PointerState {
     _tap_timeout: Timeout,
     got_tap_timeout: bool,
-    _timeout1: Timeout,
-    got_timeout1: bool,
+    _long_press_timeout: Timeout,
+    got_long_press_timeout: bool,
     start_ctime: f64,
     start_x: i32,
     start_y: i32,
@@ -189,7 +192,9 @@ impl PwtGestureDetector {
         let start_y = event.y();
 
         let link = ctx.link().clone();
-        let _timeout1 = Timeout::new(2000, move || link.send_message(Msg::Timeout1(id)));
+        let _long_press_timeout = Timeout::new(props.long_press_delay, move || {
+            link.send_message(Msg::LongPressTimeout(id))
+        });
 
         let link = ctx.link().clone();
         let _tap_timeout = Timeout::new(props.tap_max_delay, move || {
@@ -203,8 +208,8 @@ impl PwtGestureDetector {
             PointerState {
                 _tap_timeout,
                 got_tap_timeout: false,
-                _timeout1,
-                got_timeout1: false,
+                _long_press_timeout,
+                got_long_press_timeout: false,
                 start_x,
                 start_y,
                 start_ctime: ctime,
@@ -254,7 +259,7 @@ impl PwtGestureDetector {
     fn update_initial(&mut self, ctx: &Context<Self>, msg: Msg) -> bool {
         match msg {
             Msg::TapTimeout(_id) => { /* ignore */ }
-            Msg::Timeout1(_id) => { /* ignore */ }
+            Msg::LongPressTimeout(_id) => { /* ignore */ }
             Msg::PointerDown(event) => {
                 match event.pointer_type().as_str() {
                     "mouse" | "pen" => {
@@ -286,9 +291,9 @@ impl PwtGestureDetector {
                     pointer_state.got_tap_timeout = true;
                 }
             }
-            Msg::Timeout1(id) => {
+            Msg::LongPressTimeout(id) => {
                 if let Some(pointer_state) = self.pointers.get_mut(&id) {
-                    pointer_state.got_timeout1 = true;
+                    pointer_state.got_long_press_timeout = true;
                     let distance = compute_distance(
                         pointer_state.start_x,
                         pointer_state.start_y,
@@ -372,7 +377,7 @@ impl PwtGestureDetector {
         let props = ctx.props();
         match msg {
             Msg::TapTimeout(_id) => { /* ignore */ }
-            Msg::Timeout1(_id) => { /* ignore */ }
+            Msg::LongPressTimeout(_id) => { /* ignore */ }
             Msg::PointerDown(event) => {
                 let pointer_count = self.pointers.len();
                 assert!(pointer_count == 1);
@@ -463,7 +468,7 @@ impl PwtGestureDetector {
     fn update_error(&mut self, ctx: &Context<Self>, msg: Msg) -> bool {
         match msg {
             Msg::TapTimeout(_id) => { /* ignore */ }
-            Msg::Timeout1(_id) => { /* ignore */ }
+            Msg::LongPressTimeout(_id) => { /* ignore */ }
             Msg::PointerDown(event) => {
                 self.register_pointer(ctx, &event);
             }
