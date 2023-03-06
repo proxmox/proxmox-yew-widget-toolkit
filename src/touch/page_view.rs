@@ -114,7 +114,7 @@ impl Component for PwtPageView {
             .attribute(
                 "style",
                 format!(
-                    "transition: all ease 0.3s;margin-left:calc(-{}*100vw);",
+                    "transition: all ease 0.5s;margin-left:calc(-{}*100vw);",
                     props.view_page,
                 ),
             )
@@ -132,9 +132,9 @@ impl Component for PwtPageView {
             let link = ctx.link().clone();
             move |event: GestureSwipeEvent| {
                 if event.direction.abs() < 45.0 {
-                    link.send_message(Msg::NextRight)
-                } else if event.direction.abs() > 135.0 {
                     link.send_message(Msg::NextLeft)
+                } else if event.direction.abs() > 135.0 {
+                    link.send_message(Msg::NextRight)
                 }
             }
         })
