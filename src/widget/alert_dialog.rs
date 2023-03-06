@@ -60,7 +60,7 @@ impl AlertDialog {
 
 /// Creates a nicely formated error message.
 pub fn error_message(text: &str, class: &str) -> Html {
-    let icon_class = "pwt-bg-color-error pwt-color-on-error pwt-p-2 pwt-shape-circle \
+    let icon_class = "pwt-bg-color-surface pwt-color-error pwt-p-2 pwt-shape-circle \
                       fa fa-lg fa-align-center fa-exclamation-triangle pwt-me-2";
 
     Row::new()
