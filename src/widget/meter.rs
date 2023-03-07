@@ -1,7 +1,7 @@
 use yew::prelude::*;
 use yew::html::IntoPropValue;
 
-use pwt_macros::widget;
+use pwt_macros::{widget, builder};
 
 use crate::widget::Container;
 use crate::props::{ContainerBuilder, WidgetBuilder};
@@ -9,12 +9,14 @@ use crate::props::{ContainerBuilder, WidgetBuilder};
 
 /// Wrapper for Html `<meter>`.
 #[widget(pwt=crate, comp=PwtMeter, @element)]
+#[builder]
 #[derive(Default, Debug, Clone, PartialEq, Properties)]
 pub struct Meter {
     /// Minimum value (default 0)
     ///
     /// Lower numeric bound. This must be less than the maximum value.
     #[prop_or(0.0)]
+    #[builder(IntoPropValue, into_prop_value, 1.0)]
     pub min: f32,
 
     /// Maximum value (default 1)
@@ -22,12 +24,15 @@ pub struct Meter {
     /// Upper numeric bound. This must be greater than the minimum
     /// value.
     #[prop_or(1.0)]
+    #[builder(IntoPropValue, into_prop_value, 1.0)]
     pub max: f32,
 
     /// Define the low end range.
+    #[builder(IntoPropValue, into_prop_value)]
     pub low: Option<f32>,
 
     /// Define the high end range.
+    #[builder(IntoPropValue, into_prop_value)]
     pub high: Option<f32>,
 
     /// Optimal value.
@@ -37,6 +42,7 @@ pub struct Meter {
     /// and the low attribute, then the lower range is considered
     /// preferred. The meter's bar color depends on whether the value
     /// is less than or equal to the optimum value.
+    #[builder(IntoPropValue, into_prop_value)]
     pub optimum: Option<f32>,
 
     /// Current value (default 0).
@@ -46,6 +52,7 @@ pub struct Meter {
     /// and max attribute, the value is equal to the nearest end of
     /// the range.
     #[prop_or(0.0)]
+    #[builder(IntoPropValue, into_prop_value, 0.0)]
     pub value: f32,
 
     /// Show percentage as text.
@@ -56,73 +63,7 @@ pub struct Meter {
 impl Meter {
     /// Create a new instance.
     pub fn new() -> Self {
-        yew::props!{ Self {}}
-    }
-
-    /// Builder style method to set minimum value.
-    pub fn min(mut self, value: impl IntoPropValue<Option<f32>>) -> Self {
-        self.set_min(value);
-        self
-    }
-
-    /// Method to set minimum value.
-    pub fn set_min(&mut self, value: impl IntoPropValue<Option<f32>>) {
-        self.min = value.into_prop_value().unwrap_or(1.0);
-    }
-
-    /// Builder style method to set maximum value.
-    pub fn max(mut self, value: impl IntoPropValue<Option<f32>>) -> Self {
-        self.set_max(value);
-        self
-    }
-
-    /// Method to set maximum value.
-    pub fn set_max(&mut self, value: impl IntoPropValue<Option<f32>>) {
-        self.max = value.into_prop_value().unwrap_or(1.0);
-    }
-
-    /// Builder style method to set the optimal value.
-    pub fn optimum(mut self, value: impl IntoPropValue<Option<f32>>) -> Self {
-        self.set_optimum(value);
-        self
-    }
-
-    /// Method to set the optimal value.
-    pub fn set_optimum(&mut self, value: impl IntoPropValue<Option<f32>>) {
-        self.optimum = value.into_prop_value();
-    }
-
-    /// Builder style method to set the low value.
-    pub fn low(mut self, value: impl IntoPropValue<Option<f32>>) -> Self {
-        self.set_low(value);
-        self
-    }
-
-    /// Method to set the low value.
-    pub fn set_low(&mut self, value: impl IntoPropValue<Option<f32>>) {
-        self.low = value.into_prop_value();
-    }
-
-    /// Builder style method to set the high value.
-    pub fn high(mut self, value: impl IntoPropValue<Option<f32>>) -> Self {
-        self.set_high(value);
-        self
-    }
-
-    /// Method to set the high value.
-    pub fn set_high(&mut self, value: impl IntoPropValue<Option<f32>>) {
-        self.high = value.into_prop_value();
-    }
-
-    /// Builder style method to set the current value.
-    pub fn value(mut self, value: impl IntoPropValue<Option<f32>>) -> Self {
-        self.set_value(value);
-        self
-    }
-
-    /// Method to set the current value.
-    pub fn set_value(&mut self, value: impl IntoPropValue<Option<f32>>) {
-        self.value = value.into_prop_value().unwrap_or(0.0);
+        yew::props! { Self {}}
     }
 
     /// Builder style method to set the `show_text` flag.
