@@ -143,7 +143,7 @@ impl FieldState {
         }
     }
 
-    /// Register the field inm the FormContext
+    /// Register the field in the FormContext
     pub fn register_field(
         &mut self,
         props: &FieldStdProps,

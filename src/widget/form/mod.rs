@@ -7,6 +7,9 @@ pub use context::{
     FieldHandle, FieldOptions,
 };
 
+mod boolean;
+pub use boolean::{Boolean, PwtBoolean};
+
 mod checkbox;
 pub use checkbox::{Checkbox, PwtCheckbox};
 
