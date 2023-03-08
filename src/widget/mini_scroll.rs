@@ -247,7 +247,7 @@ impl Component for PwtMiniScroll {
 
         let content = Container::new()
             .node_ref(self.content_ref.clone())
-            .class("pwt-size-fit-content")
+            .class("pwt-d-flex pwt-flex-fill")
             .with_child(props.content.clone());
 
         let arrow_mode = props.scroll_mode == MiniScrollMode::Arrow;
@@ -267,9 +267,6 @@ impl Component for PwtMiniScroll {
                     link.send_message(Msg::Wheel(event.delta_y() < 0.0))
                 }
             });
-
-        // add intermediate container, so that we can use the "width:0;min-width:100%" trick
-        let scroll = Container::new().class("pwt-flex-fill").with_child(scroll);
 
         let arrow_visible = if arrow_mode {
             (self.width + 2.0 * self.handle_width) < self.content_width
