@@ -217,7 +217,7 @@ impl Component for PwtTabPanel {
             .into();
 
         if let Some(scroll_mode) = props.scroll_mode {
-            bar = MiniScroll::new(bar).scroll_mode(scroll_mode).into();
+            bar = MiniScroll::new(bar).scroll_mode(scroll_mode).class("pwt-flex-fill").into();
         }
 
         let content: Html = props.tabs.iter().map(|(key, render_fn)| {
@@ -249,16 +249,13 @@ impl Component for PwtTabPanel {
                 .class("pwt-pb-2");
             header = html!{<div class="pwt-panel-header">{title}{bar}</div>};
         } else {
-            if !props.tools.is_empty() {
-                header = Row::new()
-                    .class("pwt-panel-header pwt-align-items-center pwt-gap-1")
-                    .with_child(bar)
-                    .with_flex_spacer()
-                    .with_child(VList::with_children(props.tools.clone(), None))
-                    .into()
-            } else {
-                header = bar;
-            }
+            header = Row::new()
+                .class("pwt-panel-header pwt-align-items-center pwt-gap-2")
+                .with_child(bar)
+                .with_optional_child((!props.tools.is_empty()).then(|| {
+                    VList::with_children(props.tools.clone(), None)
+                }))
+                .into();
         };
 
         Column::new()
