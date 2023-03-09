@@ -13,6 +13,9 @@ pub use button::{Button, PwtButton};
 
 pub mod canvas;
 
+mod card;
+pub use card::Card;
+
 mod column;
 pub use column::Column;
 
