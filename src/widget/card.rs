@@ -30,8 +30,6 @@ impl Into<VTag> for Card {
             self.listeners.listeners.into_boxed_slice()
         );
 
-        //let children: Vec<VNode> = Vec::new();
-
         let children = VList::with_children(self.children, None);
 
         VTag::__new_other(
