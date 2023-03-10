@@ -323,8 +323,7 @@ impl Component for PwtDropdown {
             .attribute("aria-controls", self.picker_id.clone())
             .attribute("aria-haspopup", props.popup_type.clone())
             .oninput(oninput)
-            .onkeydown(onkeydown)
-            .onclick(onclick);
+            .onkeydown(onkeydown);
 
         let trigger_cls = classes!{
             "fa",
@@ -341,7 +340,8 @@ impl Component for PwtDropdown {
             .class("pwt-input")
             .class("pwt-w-100")
             .with_child(input)
-            .with_child(html!{<i onclick={trigger_onclick} class={trigger_cls}></i>});
+            .with_child(html!{<i onclick={trigger_onclick} class={trigger_cls}></i>})
+            .onclick(onclick);
 
         let dropdown = Container::new()
             .with_child(select)
