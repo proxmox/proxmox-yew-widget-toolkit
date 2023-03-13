@@ -4,7 +4,7 @@ use yew::html::{IntoEventCallback, IntoPropValue};
 use yew::prelude::*;
 use yew::virtual_dom::{Key, VComp, VNode};
 
-use crate::props::{AsClassesMut, WidgetBuilder};
+use crate::props::{AsClassesMut, WidgetBuilder, EventSubscriber};
 use crate::widget::Button;
 
 use super::GestureSwipeEvent;
@@ -28,6 +28,9 @@ pub struct Fab {
 
     /// Style attribute (use this to set button position)
     pub style: Option<AttrValue>,
+
+    /// Click callback
+    pub on_click: Option<Callback<MouseEvent>>,
 }
 
 impl AsClassesMut for Fab {
@@ -76,6 +79,12 @@ impl Fab {
     pub fn set_small(&mut self, small: bool) {
         self.small = small;
     }
+
+    /// Builder style method to set the on_click callback.
+    pub fn on_click(mut self, cb: impl IntoEventCallback<MouseEvent>) -> Self {
+        self.on_click = cb.into_event_callback();
+        self
+    }
 }
 
 #[doc(hidden)]
@@ -103,6 +112,14 @@ impl Component for PwtFab {
         Button::new_icon(icon_class)
             .class(class)
             .attribute("style", props.style.clone())
+            .onclick(Callback::from({
+                let on_click = props.on_click.clone();
+                move |event: MouseEvent| {
+                    if let Some(on_click) = &on_click {
+                        on_click.emit(event);
+                    }
+                }
+            }))
             .into()
     }
 }
