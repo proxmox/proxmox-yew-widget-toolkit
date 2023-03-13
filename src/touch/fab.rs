@@ -1,6 +1,6 @@
 use std::rc::Rc;
 
-use yew::html::IntoEventCallback;
+use yew::html::{IntoEventCallback, IntoPropValue};
 use yew::prelude::*;
 use yew::virtual_dom::{Key, VComp, VNode};
 
@@ -25,6 +25,9 @@ pub struct Fab {
     /// CSS class.
     #[prop_or_default]
     pub class: Classes,
+
+    /// Style attribute (use this to set button position)
+    pub style: Option<AttrValue>,
 }
 
 impl AsClassesMut for Fab {
@@ -50,6 +53,17 @@ impl Fab {
     /// Method to add a html class.
     pub fn add_class(&mut self, class: impl Into<Classes>) {
         self.class.push(class);
+    }
+
+    /// Builder style method to set the html style
+    pub fn style(mut self, style: impl IntoPropValue<Option<AttrValue>>) -> Self {
+        self.set_style(style);
+        self
+    }
+
+    /// Method to set the html style
+    pub fn set_style(&mut self, style: impl IntoPropValue<Option<AttrValue>>) {
+        self.style = style.into_prop_value();
     }
 
     /// Builder style method to set the small flag
@@ -86,7 +100,10 @@ impl Component for PwtFab {
         if props.small {
             class.push("pwt-fab-small");
         }
-        Button::new_icon(icon_class).class(class).into()
+        Button::new_icon(icon_class)
+            .class(class)
+            .attribute("style", props.style.clone())
+            .into()
     }
 }
 
