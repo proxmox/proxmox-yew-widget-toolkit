@@ -6,6 +6,8 @@ pub use gesture_detector::{
     GestureDetector, GestureDragEvent, GestureSwipeEvent, PwtGestureDetector,
 };
 
+mod fab;
+pub use fab::{Fab, PwtFab};
 mod page_view;
 pub use page_view::{PageView, PwtPageView};
 
