@@ -4,7 +4,7 @@ use yew::html::{IntoEventCallback, IntoPropValue};
 use yew::prelude::*;
 use yew::virtual_dom::{Key, VComp, VNode};
 
-use crate::props::{AsClassesMut, WidgetBuilder, EventSubscriber};
+use crate::props::{AsClassesMut, EventSubscriber, WidgetBuilder};
 use crate::widget::Button;
 
 use super::GestureSwipeEvent;
@@ -45,6 +45,17 @@ impl Fab {
         yew::props!(Self {
             icon_class: icon_class.into(),
         })
+    }
+
+    /// Builder style method to set the yew `key` property
+    pub fn key(mut self, key: impl IntoPropValue<Option<Key>>) -> Self {
+        self.set_key(key);
+        self
+    }
+
+    /// Method to set the yew `key` property
+    pub fn set_key(&mut self, key: impl IntoPropValue<Option<Key>>) {
+        self.key = key.into_prop_value();
     }
 
     /// Builder style method to add a html class

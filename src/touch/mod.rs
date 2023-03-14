@@ -8,6 +8,10 @@ pub use gesture_detector::{
 
 mod fab;
 pub use fab::{Fab, PwtFab};
+
+mod fab_menu;
+pub use fab_menu::{FabMenu, FabMenuDirection, PwtFabMenu};
+
 mod page_view;
 pub use page_view::{PageView, PwtPageView};
 
