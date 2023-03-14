@@ -81,6 +81,7 @@ impl FabMenu {
 
 pub enum Msg {
     Toggle,
+    Close,
 }
 
 #[doc(hidden)]
@@ -104,6 +105,10 @@ impl Component for PwtFabMenu {
                 self.show_items = !self.show_items;
                 true
             }
+            Msg::Close => {
+                self.show_items = false;
+                true
+            }
         }
     }
 
@@ -122,7 +127,15 @@ impl Component for PwtFabMenu {
                 FabMenuDirection::Down => "active-down",
                 FabMenuDirection::Left => "active-left",
                 FabMenuDirection::Right => "active-right",
-            }));
+            }))
+            .onkeydown({
+                let link = ctx.link().clone();
+                move |event: KeyboardEvent| {
+                    if event.key() == "Escape" {
+                        link.send_message(Msg::Close)
+                    }
+                }
+            });
 
         let main_button = Fab::new(main_class)
             .on_click(ctx.link().callback(|_| Msg::Toggle));
