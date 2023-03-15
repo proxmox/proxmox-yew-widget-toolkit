@@ -42,6 +42,22 @@ impl TryFrom<&str> for ThemeMode {
     }
 }
 
+use std::sync::{Arc, Mutex};
+
+static mut DEFAULT_THEME_NAME: &'static str = "Material";
+
+pub fn set_default_theme_name(name: &'static str) {
+    unsafe {
+        DEFAULT_THEME_NAME = name;
+    }
+}
+
+pub fn get_default_theme_name() -> &'static str {
+    unsafe {
+        DEFAULT_THEME_NAME
+    }
+}
+
 /// Theme. Combines a theme name with a theme mode ([ThemeMode])
 ///
 /// This struct implements methods to load and store the current theme
@@ -53,6 +69,15 @@ impl TryFrom<&str> for ThemeMode {
 pub struct Theme {
     pub mode: ThemeMode,
     pub name: String,
+}
+
+impl Default for Theme {
+    fn default() -> Self {
+        Self {
+            mode: ThemeMode::System,
+            name: String::from(get_default_theme_name()),
+        }
+    }
 }
 
 fn emit_theme_changed_event() {
@@ -128,15 +153,6 @@ impl Theme {
         };
 
         format!("{}-yew-style-{}.css", self.name.to_lowercase(), mode_str)
-    }
-}
-
-impl Default for Theme {
-    fn default() -> Self {
-        Self {
-            mode: ThemeMode::System,
-            name: String::from("Proxmox"),
-        }
     }
 }
 
