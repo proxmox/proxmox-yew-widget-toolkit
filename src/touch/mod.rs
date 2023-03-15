@@ -10,7 +10,7 @@ mod fab;
 pub use fab::{Fab, PwtFab};
 
 mod fab_menu;
-pub use fab_menu::{FabMenu, FabMenuDirection, PwtFabMenu};
+pub use fab_menu::{FabMenu, FabMenuAlign, FabMenuDirection, PwtFabMenu};
 
 mod page_view;
 pub use page_view::{PageView, PwtPageView};

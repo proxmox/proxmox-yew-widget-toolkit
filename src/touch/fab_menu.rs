@@ -18,6 +18,13 @@ pub enum FabMenuDirection {
     Right,
 }
 
+#[derive(Copy, Clone, PartialEq)]
+pub enum FabMenuAlign {
+    Start,
+    Center,
+    End,
+}
+
 /// Favorite actions button Menu.
 #[derive(Properties, Clone, PartialEq)]
 pub struct FabMenu {
@@ -30,6 +37,11 @@ pub struct FabMenu {
     /// Menu popup direction
     #[prop_or(FabMenuDirection::Up)]
     pub direction: FabMenuDirection,
+
+    /// Menu alignment
+    ///
+    #[prop_or(FabMenuAlign::Center)]
+    pub align: FabMenuAlign,
 
     /// Child buttons, which popup when main button is pressed.
     ///
@@ -53,6 +65,17 @@ impl FabMenu {
     /// Method to set the yew `key` property
     pub fn set_key(&mut self, key: impl IntoPropValue<Option<Key>>) {
         self.key = key.into_prop_value();
+    }
+
+    /// Builder style method to set the popup alignment
+    pub fn align(mut self, align: FabMenuAlign) -> Self {
+        self.set_align(align);
+        self
+    }
+
+    /// Method to set the popup alignment
+    pub fn set_align(&mut self, align: FabMenuAlign) {
+        self.align = align;
     }
 
     /// Builder style method to set the popup direction
@@ -122,12 +145,18 @@ impl Component for PwtFabMenu {
 
         let mut container = Container::new()
             .class("pwt-fab-menu-container")
-            .class(self.show_items.then(|| match props.direction {
-                FabMenuDirection::Up => "active-up",
-                FabMenuDirection::Down => "active-down",
-                FabMenuDirection::Left => "active-left",
-                FabMenuDirection::Right => "active-right",
-            }))
+            .class(match props.align {
+                FabMenuAlign::Start => Some("pwt-fab-align-start"),
+                FabMenuAlign::End => Some("pwt-fab-align-end"),
+                FabMenuAlign::Center => None,
+            })
+            .class(match props.direction {
+                FabMenuDirection::Up => "pwt-fab-direction-up",
+                FabMenuDirection::Down => "pwt-fab-direction-down",
+                FabMenuDirection::Left => "pwt-fab-direction-left",
+                FabMenuDirection::Right => "pwt-fab-direction-right",
+            })
+            .class(self.show_items.then(|| "active"))
             .onkeydown({
                 let link = ctx.link().clone();
                 move |event: KeyboardEvent| {
