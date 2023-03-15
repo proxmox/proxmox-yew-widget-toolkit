@@ -5,8 +5,8 @@ use yew::prelude::*;
 use yew::virtual_dom::{Key, VComp, VNode};
 
 use crate::css::FlexDirection;
-use crate::props::{AsClassesMut, EventSubscriber, WidgetBuilder, ContainerBuilder};
-use crate::widget::{Container};
+use crate::props::{AsClassesMut, ContainerBuilder, EventSubscriber, WidgetBuilder};
+use crate::widget::Container;
 
 use super::{Fab, GestureSwipeEvent};
 
@@ -33,6 +33,9 @@ pub struct FabMenu {
 
     /// Main button Icon (CSS class).
     pub main_icon_class: Option<Classes>,
+
+    /// Main button CSS class.
+    pub main_button_class: Option<Classes>,
 
     /// Menu popup direction
     #[prop_or(FabMenuDirection::Up)]
@@ -67,6 +70,32 @@ impl FabMenu {
         self.key = key.into_prop_value();
     }
 
+    /// Builder style method to set the icon class for the main button.
+    pub fn main_icon_class(mut self, class: impl Into<Classes>) -> Self {
+        self.set_main_icon_class(class);
+        self
+    }
+
+    /// Method to set the icon class for the main button.
+    pub fn set_main_icon_class(&mut self, class: impl Into<Classes>) {
+        self.main_icon_class = Some(class.into());
+    }
+
+    /// Builder style method to add a html class to the main button.
+    pub fn main_button_class(mut self, class: impl Into<Classes>) -> Self {
+        self.add_main_button_class(class);
+        self
+    }
+
+    /// Method to add a html class to the main button.
+    pub fn add_main_button_class(&mut self, class: impl Into<Classes>) {
+        if let Some(main_button_class) = &mut self.main_button_class {
+            main_button_class.push(class);
+        } else {
+            self.main_button_class = Some(class.into());
+        }
+    }
+
     /// Builder style method to set the popup alignment
     pub fn align(mut self, align: FabMenuAlign) -> Self {
         self.set_align(align);
@@ -99,7 +128,6 @@ impl FabMenu {
     pub fn add_child(&mut self, child: impl Into<Fab>) {
         self.children.push(child.into());
     }
-
 }
 
 pub enum Msg {
@@ -117,9 +145,7 @@ impl Component for PwtFabMenu {
     type Properties = FabMenu;
 
     fn create(_ctx: &Context<Self>) -> Self {
-        Self {
-            show_items: false,
-        }
+        Self { show_items: false }
     }
 
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
@@ -138,7 +164,7 @@ impl Component for PwtFabMenu {
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
 
-        let main_class = match &props.main_icon_class {
+        let main_icon_class = match &props.main_icon_class {
             Some(class) => class.clone(),
             None => classes!("fa", "fa-plus"),
         };
@@ -166,8 +192,10 @@ impl Component for PwtFabMenu {
                 }
             });
 
-        let main_button = Fab::new(main_class)
-            .on_click(ctx.link().callback(|_| Msg::Toggle));
+        let main_button = Fab::new(main_icon_class)
+            .class(props.main_button_class.clone())
+            .on_click(ctx.link()
+            .callback(|_| Msg::Toggle));
 
         container.add_child(main_button);
 
@@ -179,7 +207,8 @@ impl Component for PwtFabMenu {
             let orig_on_click = child.on_click.clone();
             let link = ctx.link().clone();
 
-            let child_button = child.clone()
+            let child_button = child
+                .clone()
                 .small(true)
                 .class("pwt-fab-menu-item")
                 .on_click(move |event| {
