@@ -209,7 +209,7 @@ impl Component for PwtFabMenu {
 
             let child_button = child
                 .clone()
-                .small(true)
+                .small()
                 .class("pwt-fab-menu-item")
                 .on_click(move |event| {
                     link.send_message(Msg::Toggle);
