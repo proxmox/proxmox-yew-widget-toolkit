@@ -18,6 +18,9 @@ pub struct Fab {
     /// Icon (CSS class).
     pub icon_class: Classes,
 
+    /// Optional Button text (for small buttons)
+    pub text: Option<AttrValue>,
+
     /// Use the small variant
     #[prop_or_default]
     pub small: bool,
@@ -86,6 +89,17 @@ impl Fab {
         self
     }
 
+    /// Builder style method to set the button text
+    pub fn text(mut self, text: impl IntoPropValue<Option<AttrValue>>) -> Self {
+        self.set_text(text);
+        self
+    }
+
+    /// Method to set the button text
+    pub fn set_text(&mut self, text: impl IntoPropValue<Option<AttrValue>>) {
+        self.text = text.into_prop_value();
+    }
+
     /// Method to set the small flag
     pub fn set_small(&mut self, small: bool) {
         self.small = small;
@@ -120,7 +134,13 @@ impl Component for PwtFab {
         if props.small {
             class.push("pwt-fab-small");
         }
-        Button::new_icon(icon_class)
+
+        let button = match &props.text {
+            Some(text) => Button::new(text).icon_class(icon_class),
+            None => Button::new_icon(icon_class),
+        };
+
+        button
             .class(class)
             .attribute("style", props.style.clone())
             .onclick(Callback::from({
