@@ -130,7 +130,7 @@ impl Component for PwtFab {
         class.push("pwt-fab");
 
         let button = match &props.text {
-            Some(text) => Button::new(text).icon_class(icon_class),
+            Some(text) => Button::new(text).icon_class(icon_class).class("pwt-fab-extended"),
             None => Button::new_icon(icon_class),
         };
 
