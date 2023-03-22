@@ -3,18 +3,23 @@
 use std::rc::Rc;
 
 mod data_store;
-pub use data_store::{DataStore, DataNode, DataNodeDerefGuard};
+pub use data_store::{DataNode, DataNodeDerefGuard, DataStore};
 
 mod loader;
 pub use loader::{Loader, LoaderState};
 
 mod navigation_container;
 pub use navigation_container::{
-    NavigationContainer, NavigationContext, NavigationContextExt, PwtNavigationContainer
+    NavigationContainer, NavigationContext, NavigationContextExt, PwtNavigationContainer,
 };
 
 mod selection;
 pub use selection::{use_selection, Selection, SelectionObserver};
+
+mod shared_state;
+pub use shared_state::{
+    SharedState, SharedStateInner, SharedStateObserver, SharedStateReadGuard, SharedStateWriteGuard,
+};
 
 mod store;
 pub use store::*;
