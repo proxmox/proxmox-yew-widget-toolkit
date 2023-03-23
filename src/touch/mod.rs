@@ -15,6 +15,9 @@ pub use fab_menu::{FabMenu, FabMenuAlign, FabMenuDirection, PwtFabMenu};
 mod page_view;
 pub use page_view::{PageView, PwtPageView};
 
+mod page_stack;
+pub use page_stack::{PageAnimationStyle, PageStack, PmgPageStack};
+
 mod slidable;
 pub use slidable::{
     PwtSlidable, PwtSlidableAction, Slidable, SlidableAction, SlidableActionMouseEvent,

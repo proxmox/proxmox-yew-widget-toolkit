@@ -10,11 +10,15 @@ use crate::prelude::*;
 use crate::props::{LoadCallback, IntoLoadCallback};
 use crate::widget::{error_message, Button, Fa};
 
+/// Shared HTTP load state
+///
+/// This struct stores the state (loading) and the result of the load.
 pub struct LoaderState<T> {
     pub loading: u64,
     pub data: Option<Result<Rc<T>, Error>>,
 }
 
+/// Share HTTP loaded data.
 pub struct Loader<T> {
     state: Rc<RefCell<LoaderState<T>>>,
     loader: Option<LoadCallback<T>>,
