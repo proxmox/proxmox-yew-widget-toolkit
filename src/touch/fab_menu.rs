@@ -1,14 +1,13 @@
 use std::rc::Rc;
 
-use yew::html::{IntoEventCallback, IntoPropValue};
+use yew::html::IntoPropValue;
 use yew::prelude::*;
 use yew::virtual_dom::{Key, VComp, VNode};
 
-use crate::css::FlexDirection;
-use crate::props::{AsClassesMut, ContainerBuilder, EventSubscriber, WidgetBuilder};
+use crate::props::{ContainerBuilder, EventSubscriber, WidgetBuilder};
 use crate::widget::Container;
 
-use super::{Fab, GestureSwipeEvent};
+use super::Fab;
 
 #[derive(Copy, Clone, PartialEq)]
 pub enum FabMenuDirection {
@@ -148,7 +147,7 @@ impl Component for PwtFabMenu {
         Self { show_items: false }
     }
 
-    fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
+    fn update(&mut self, _ctx: &Context<Self>, msg: Self::Message) -> bool {
         match msg {
             Msg::Toggle => {
                 self.show_items = !self.show_items;

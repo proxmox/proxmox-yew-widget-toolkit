@@ -1,13 +1,10 @@
 use std::borrow::Cow;
 
-use yew::prelude::*;
-use yew::virtual_dom::{Listeners, VList, VNode, VTag};
-use yew::html::IntoPropValue;
+use yew::virtual_dom::{Listeners, VList, VTag};
 
 use pwt_macros::widget;
 
 use crate::prelude::*;
-use crate::css::{Display, FlexDirection};
 
 /// Vertical container with flex layout.
 #[widget(pwt=crate, @element, @container)]

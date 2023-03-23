@@ -42,8 +42,6 @@ impl TryFrom<&str> for ThemeMode {
     }
 }
 
-use std::sync::{Arc, Mutex};
-
 static mut DEFAULT_THEME_NAME: &'static str = "Material";
 
 pub fn set_default_theme_name(name: &'static str) {

@@ -7,9 +7,7 @@ use yew::virtual_dom::{Key, VComp, VNode};
 use crate::props::{AsClassesMut, EventSubscriber, WidgetBuilder};
 use crate::widget::Button;
 
-use super::GestureSwipeEvent;
-
-/// Favorite actions button.
+/// Favorite action button.
 #[derive(Properties, Clone, PartialEq)]
 pub struct Fab {
     /// The yew component key.

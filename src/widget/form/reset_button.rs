@@ -55,6 +55,7 @@ impl ResetButton {
         self.class.push(class);
     }
 
+    /// Builder style method to set the button press callback.
     pub fn on_reset(mut self, cb: impl IntoEventCallback<()>) -> Self {
         self.on_reset = cb.into_event_callback();
         self
