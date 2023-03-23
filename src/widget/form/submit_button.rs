@@ -14,11 +14,14 @@ use super::{FormContext, FormContextObserver};
 /// modified data).
 #[derive(Clone, PartialEq, Properties)]
 pub struct SubmitButton {
+    /// Button disabled flag.
     #[prop_or_default]
     pub disabled: bool,
 
+    /// Submit button press callback.
     pub on_submit: Option<Callback<FormContext>>,
 
+    /// Button text (default "Submit").
     #[prop_or(AttrValue::Static("Submit"))]
     pub text: AttrValue,
 
@@ -28,24 +31,29 @@ pub struct SubmitButton {
 }
 
 impl SubmitButton {
+    /// Createa new instance.
     pub fn new() -> Self {
         yew::props!(Self {})
     }
 
+    /// Builder style method to set the button text.
     pub fn text(mut self, text: impl IntoPropValue<AttrValue>) -> Self {
         self.set_text(text);
         self
     }
 
+    /// Method to set the button text.
     pub fn set_text(&mut self, text: impl IntoPropValue<AttrValue>) {
         self.text = text.into_prop_value();
     }
 
+    /// Builder style method to set the disabled flag.
     pub fn disabled(mut self, disabled: bool) -> Self {
         self.set_disabled(disabled);
         self
     }
 
+    /// Method to set the disabled flag.
     pub fn set_disabled(&mut self, disabled: bool) {
         self.disabled = disabled;
     }
@@ -61,6 +69,7 @@ impl SubmitButton {
         self.class.push(class);
     }
 
+    /// Builder style method to set the button press callback.
     pub fn on_submit(mut self, cb: impl IntoEventCallback<FormContext>) -> Self {
         self.on_submit = cb.into_event_callback();
         self

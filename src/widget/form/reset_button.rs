@@ -14,24 +14,45 @@ use super::{FormContext, FormContextObserver};
 /// modified data).
 #[derive(Clone, PartialEq, Properties)]
 pub struct ResetButton {
+    /// Button text (default "Reset").
     #[prop_or(AttrValue::Static("Reset"))]
     pub text: AttrValue,
+
+    /// Reset button press callback.
     pub on_reset: Option<Callback<()>>,
+
+    /// CSS class
+    #[prop_or_default]
+    pub class: Classes,
 }
 
 impl ResetButton {
 
+    /// Create a new instance.
     pub fn new() -> Self {
         yew::props!(Self {})
     }
 
+    /// Builder style method to set the button text.
     pub fn text(mut self, text: impl IntoPropValue<AttrValue>) -> Self {
         self.set_text(text);
         self
     }
 
+    /// Method to set the button text.
     pub fn set_text(&mut self, text: impl IntoPropValue<AttrValue>) {
         self.text = text.into_prop_value();
+    }
+
+    /// Builder style method to add a html class.
+    pub fn class(mut self, class: impl Into<Classes>) -> Self {
+        self.add_class(class);
+        self
+    }
+
+    /// Method to add a html class.
+    pub fn add_class(&mut self, class: impl Into<Classes>) {
+        self.class.push(class);
     }
 
     pub fn on_reset(mut self, cb: impl IntoEventCallback<()>) -> Self {
@@ -134,11 +155,16 @@ impl Component for PwtResetButton {
             }
         });
 
+        let class = classes!(
+            "pwt-button",
+            props.class.clone(),
+        );
+
         html!{
             <button
                 type="button" // Note: important, as we do not want type=submit/reset behavior
                 onclick={reset}
-                class="pwt-button"
+                {class}
                 disabled={!form_dirty}>
             {&props.text}
             </button>
