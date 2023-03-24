@@ -101,32 +101,33 @@ impl Component for PwtPageView {
         let pages: Vec<Html> = props
             .children
             .iter()
-            .map(|child| {
+            .enumerate()
+            .map(|(i, child)| {
+                let pos = if i <  props.view_page {
+                    -1
+                } else if i > props.view_page {
+                    1
+                } else {
+                    0
+                };
+
+                let style = format!(
+                    "position:absolute;width:100%;height:100%,top:0;transition: all ease 0.5s;left:calc({}*100%);",
+                    pos,
+                );
                 Container::new()
-                    .attribute("style", "flex: 0 0 auto;width: 100vw; height: 100vh;")
+                    .attribute("style", style)
                     .with_child(child.clone())
                     .into()
             })
             .collect();
 
-        let content = Container::new()
-            .class("pwt-d-flex")
-            .attribute(
-                "style",
-                format!(
-                    "transition: all ease 0.5s;margin-left:calc(-{}*100vw);",
-                    props.view_page,
-                ),
-            )
-            .children(pages);
-
-        log::info!("TEST");
-
         GestureDetector::new(
             Container::new()
+                .class("pwt-position-relative")
                 .class("pwt-overflow-hidden")
-                .attribute("style", "width: 100vw; height: 100vh;")
-                .with_child(content),
+                .attribute("style", "width: 100%; height: 100%;")
+                .children(pages),
         )
         .on_swipe({
             let link = ctx.link().clone();
