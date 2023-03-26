@@ -138,7 +138,12 @@ impl Component for PmgPageStack {
             children.push(page.into())
         }
 
-        Container::new().children(children).into()
+        Container::new()
+            .class("pwt-position-relative")
+            .class("pwt-overflow-hidden")
+            .attribute("style", "width: 100%; height: 100%;")
+            .children(children)
+            .into()
     }
 }
 

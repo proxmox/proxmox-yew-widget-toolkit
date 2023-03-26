@@ -1,11 +1,15 @@
-use yew::html::IntoPropValue;
-use yew::virtual_dom::VNode;
+use yew::html::{IntoEventCallback, IntoPropValue};
+
+use yew::virtual_dom::{VNode, Key};
 
 use yew::prelude::*;
 
 /// Navigation bar item.
 #[derive(Properties, Clone, PartialEq)]
 pub struct NavigationBarItem {
+    /// The yew component key.
+    pub key: Option<Key>,
+
     /// Icon (CSS class).
     pub icon_class: Option<Classes>,
 
@@ -17,12 +21,25 @@ pub struct NavigationBarItem {
 
     /// Optional tooltip.
     pub tip: Option<VNode>,
+
+    pub on_activate: Option<Callback<()>>,
 }
 
 impl NavigationBarItem {
     /// Create a new instance.
     pub fn new() -> Self {
         yew::props!(Self {})
+    }
+
+    /// Builder style method to set the yew `key` property
+    pub fn key(mut self, key: impl IntoPropValue<Option<Key>>) -> Self {
+        self.set_key(key);
+        self
+    }
+
+    /// Method to set the yew `key` property
+    pub fn set_key(&mut self, key: impl IntoPropValue<Option<Key>>) {
+        self.key = key.into_prop_value();
     }
 
     /// Builder style method to set the button label.
@@ -58,8 +75,8 @@ impl NavigationBarItem {
         self.active_icon_class = Some(active_icon_class.into());
     }
 
-     /// Builder style method to set the tooltip
-     pub fn tooltip(mut self, tip: impl IntoPropValue<Option<VNode>>) -> Self {
+    /// Builder style method to set the tooltip
+    pub fn tooltip(mut self, tip: impl IntoPropValue<Option<VNode>>) -> Self {
         self.set_tip(tip);
         self
     }
@@ -69,4 +86,8 @@ impl NavigationBarItem {
         self.tip = tip.into_prop_value();
     }
 
+    pub fn on_activate(mut self, cb: impl IntoEventCallback<()>) -> Self {
+        self.on_activate = cb.into_event_callback();
+        self
+    }
 }

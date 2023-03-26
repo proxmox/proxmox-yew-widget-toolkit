@@ -3,7 +3,6 @@ use std::rc::Rc;
 use yew::html::IntoPropValue;
 use yew::prelude::*;
 use yew::virtual_dom::{Key, VComp, VNode};
-use yew::html::IntoEventCallback;
 
 use crate::props::{ContainerBuilder, EventSubscriber, WidgetBuilder};
 use crate::widget::Container;
@@ -19,9 +18,7 @@ pub struct NavigationBar {
     items: Vec<NavigationBarItem>,
 
     // Currently active item.
-    pub active_item: Option<usize>,
-
-    pub on_select: Option<Callback<usize>>,
+    pub active_item: Option<Key>,
 }
 
 impl NavigationBar {
@@ -42,19 +39,14 @@ impl NavigationBar {
     }
 
     /// Builder style method to set the active item.
-    pub fn active_item(mut self, active_item: usize) -> Self {
+    pub fn active_item(mut self, active_item: impl IntoPropValue<Option<Key>>) -> Self {
         self.set_active_item(active_item);
         self
     }
 
     /// Builder style method to set the active item.
-    pub fn set_active_item(&mut self, active_item: usize) {
-        self.active_item = Some(active_item);
-    }
-
-    pub fn on_select(mut self, cb: impl IntoEventCallback<usize>) -> Self {
-        self.on_select = cb.into_event_callback();
-        self
+    pub fn set_active_item(&mut self, active_item: impl IntoPropValue<Option<Key>>) {
+        self.active_item = active_item.into_prop_value();
     }
 }
 
@@ -72,10 +64,10 @@ impl Component for PwtNavigationBar {
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
 
-        let children = props.items.iter().enumerate().map(|(i, item)| {
-            let is_active = match props.active_item {
-                Some(pos) => pos == i,
-                None => false,
+        let children = props.items.iter().map(|item| {
+            let is_active = match (&props.active_item, &item.key) {
+                (Some(key1), Some(key2)) => key1 == key2,
+                _ => false,
             };
 
             let icon_class = if is_active {
@@ -110,10 +102,10 @@ impl Component for PwtNavigationBar {
                 .with_optional_child(icon)
                 .with_optional_child(label)
                 .onclick(Callback::from({
-                    let on_select = props.on_select.clone();
+                    let on_activate = item.on_activate.clone();
                     move |_| {
-                        if let Some(on_select) = &on_select {
-                            on_select.emit(i);
+                        if let Some(on_activate) = &on_activate {
+                            on_activate.emit(());
                         }
                     }
                 }))
