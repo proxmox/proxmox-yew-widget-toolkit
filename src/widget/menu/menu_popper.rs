@@ -19,6 +19,11 @@ impl MenuPopper {
         }
     }
 
+    pub fn update_refs(&mut self, base: NodeRef, submenu: NodeRef) {
+        self.content_ref = base;
+        self.submenu_ref = submenu;
+    }
+
     pub fn update(&mut self) {
         if self.align_options.is_none() {
             self.align_options = Some(if self.prefer_bottom {

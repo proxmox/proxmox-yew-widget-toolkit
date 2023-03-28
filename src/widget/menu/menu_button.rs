@@ -172,6 +172,15 @@ impl Component for PwtMenuButton {
         }
     }
 
+    fn changed(&mut self, ctx: &Context<Self>, _old_props: &Self::Properties) -> bool {
+        self.popper.update_refs(
+            ctx.props().std_props.node_ref.clone(),
+            self.submenu_ref.clone(),
+        );
+
+        false
+    }
+
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
         let props = ctx.props();
         match msg {
