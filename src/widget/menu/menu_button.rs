@@ -1,14 +1,14 @@
-use wasm_bindgen::JsCast;
 use gloo_timers::callback::Timeout;
+use wasm_bindgen::JsCast;
 
-use yew::prelude::*;
 use yew::html::{IntoEventCallback, IntoPropValue};
+use yew::prelude::*;
 
 use crate::prelude::*;
 use crate::props::{BuilderFn, IntoOptionalBuilderFn};
 use crate::widget::{Button, Container};
 
-use super::{Menu, MenuPopper, MenuControllerMsg};
+use super::{Menu, MenuControllerMsg, MenuPopper};
 
 use pwt_macros::widget;
 
@@ -46,12 +46,9 @@ pub struct MenuButton {
 }
 
 impl MenuButton {
-
     /// Create a new menu button
     pub fn new(text: impl Into<AttrValue>) -> Self {
-        yew::props!(Self {
-            text: text.into()
-        })
+        yew::props!(Self { text: text.into() })
     }
 
     /// Builder style method to set the autoshow_menu flag
@@ -136,7 +133,6 @@ pub struct PwtMenuButton {
 }
 
 impl PwtMenuButton {
-
     fn restore_focus(&mut self, props: &MenuButton) {
         if let Some(node) = props.std_props.node_ref.get() {
             if let Some(el) = node.dyn_into::<web_sys::HtmlElement>().ok() {
@@ -159,8 +155,8 @@ impl Component for PwtMenuButton {
             let link = ctx.link().clone();
             Callback::from(move |msg: MenuControllerMsg| {
                 match msg {
-                    MenuControllerMsg::Next => { /* ignore */ },
-                    MenuControllerMsg::Previous => { /* ignore */ },
+                    MenuControllerMsg::Next => { /* ignore */ }
+                    MenuControllerMsg::Previous => { /* ignore */ }
                     MenuControllerMsg::Collapse => link.send_message(Msg::CloseMenu),
                 }
             })
@@ -179,7 +175,7 @@ impl Component for PwtMenuButton {
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
         let props = ctx.props();
         match msg {
-            Msg::ShowMenu =>  {
+            Msg::ShowMenu => {
                 self.show_submenu = true;
                 true
             }
@@ -199,7 +195,9 @@ impl Component for PwtMenuButton {
                 false
             }
             Msg::DelayedFocusChange(has_focus) => {
-                if has_focus == self.last_has_focus { return false; }
+                if has_focus == self.last_has_focus {
+                    return false;
+                }
                 self.last_has_focus = has_focus;
 
                 if has_focus {
@@ -228,17 +226,18 @@ impl Component for PwtMenuButton {
         if show_submenu {
             if let Some(menu_builder) = &props.menu_builder {
                 menu = Some(
-                    menu_builder.apply()
+                    menu_builder
+                        .apply()
                         .autofocus(true)
                         .menu_controller(self.menu_controller.clone())
-                        .on_close(ctx.link().callback(|_| Msg::CloseMenu))
+                        .on_close(ctx.link().callback(|_| Msg::CloseMenu)),
                 );
             } else if let Some(m) = &props.menu {
                 menu = Some(
                     m.clone()
                         .autofocus(true)
                         .menu_controller(self.menu_controller.clone())
-                        .on_close(ctx.link().callback(|_| Msg::CloseMenu))
+                        .on_close(ctx.link().callback(|_| Msg::CloseMenu)),
                 );
             }
         }
@@ -271,7 +270,7 @@ impl Component for PwtMenuButton {
                     match event.key_code() {
                         27 => link.send_message(Msg::CloseMenu),
                         40 => link.send_message(Msg::ShowMenu),
-                       _ => return,
+                        _ => return,
                     }
                     event.stop_propagation();
                     event.prevent_default();
