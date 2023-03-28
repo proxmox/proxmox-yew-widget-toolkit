@@ -90,6 +90,7 @@ impl Component for PwtProgress {
 
 
         let mut progress = Container::new()
+            .with_std_props(&props.std_props)
             .class("pwt-progress");
 
         if let Some(value) = props.value {

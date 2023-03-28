@@ -103,6 +103,7 @@ impl Component for PwtMeter {
         let props = ctx.props();
 
         let mut meter = Container::new()
+            .with_std_props(&props.std_props)
             .class("pwt-meter");
 
         let percentage = (((props.value - props.min).max(0.0) / (props.max - props.min)) * 100.0).min(100.0).max(0.0);
@@ -116,7 +117,6 @@ impl Component for PwtMeter {
         } else {
             0
         };
-
 
         if props.show_text {
             meter.add_child(
