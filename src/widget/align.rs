@@ -278,30 +278,43 @@ fn try_fit_rect(
     constraint: &Rect,
     placement: &Placement,
     offset: (f64, f64),
+    has_fallback: bool,
 ) -> Rect {
     let (x, y) = get_position(base, element, placement, offset);
     let (x_end, y_end) = get_offset(element, Point::BottomEnd, (x, y));
     let mut rect = Rect { x, y, x_end, y_end };
 
-    // try to move inside viewport along the grow direction
-    match placement.direction {
-        GrowDirection::None => {}
-        GrowDirection::TopBottom => {
-            if rect.y_end > constraint.y_end {
-                rect.shift(0.0, constraint.y_end - rect.y_end);
+    let shift_y = |rect: &mut Rect| {
+        if rect.y_end > constraint.y_end {
+            rect.shift(0.0, constraint.y_end - rect.y_end);
+        }
+        if rect.y < constraint.y {
+            rect.shift(0.0, constraint.y - rect.y);
+        }
+    };
+
+    let shift_x = |rect: &mut Rect| {
+        if rect.x_end > constraint.x_end {
+            rect.shift(constraint.x_end - rect.x_end, 0.0);
+        }
+        if rect.x < constraint.x {
+            rect.shift(constraint.x - rect.x, 0.0);
+        }
+    };
+    // try to move inside viewport along the grow direction if there is a fallback
+    if has_fallback {
+        match placement.direction {
+            GrowDirection::None => {}
+            GrowDirection::TopBottom => {
+                shift_y(&mut rect);
             }
-            if rect.y < constraint.y {
-                rect.shift(0.0, constraint.y - rect.y);
+            GrowDirection::StartEnd => {
+                shift_x(&mut rect);
             }
         }
-        GrowDirection::StartEnd => {
-            if rect.x_end > constraint.x_end {
-                rect.shift(constraint.x_end - rect.x_end, 0.0);
-            }
-            if rect.x < constraint.x {
-                rect.shift(constraint.x - rect.x, 0.0);
-            }
-        }
+    } else {
+        shift_y(&mut rect);
+        shift_x(&mut rect);
     }
 
     rect
@@ -397,6 +410,7 @@ where
         style.set_property("min-width", &format!("{}px", base.client_width()))?;
     }
 
+    let num_placements = options.placements.len();
     // try first placement
     let mut rect = try_fit_rect(
         &base,
@@ -404,13 +418,21 @@ where
         &window_rect,
         &options.placements[0],
         options.offset,
+        num_placements > 1,
     );
 
     // try fallback placements if the first one does not fit
     if options.placements.len() > 1 && !fits(&rect, &window_rect, &options.placements[0].direction)
     {
-        for placement in options.placements.iter().skip(1) {
-            let new_rect = try_fit_rect(&base, &element, &window_rect, placement, options.offset);
+        for (idx, placement) in options.placements.iter().skip(1).enumerate() {
+            let new_rect = try_fit_rect(
+                &base,
+                &element,
+                &window_rect,
+                placement,
+                options.offset,
+                idx < num_placements,
+            );
 
             if fits(&new_rect, &window_rect, &placement.direction) {
                 rect = new_rect;
