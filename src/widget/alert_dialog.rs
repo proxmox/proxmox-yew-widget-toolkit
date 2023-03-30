@@ -69,7 +69,7 @@ pub fn error_message(text: &str, class: &str) -> Html {
         .class("pwt-align-items-center")
         .attribute("style", "max-width:600px;")
         .with_child(html! {<span class={icon_class} aria-hidden="true"/>})
-        .with_child(text)
+        .with_child(html! {<p>{text}</p>})
         .into()
 }
 
