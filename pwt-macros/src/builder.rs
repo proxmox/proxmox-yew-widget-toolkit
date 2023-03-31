@@ -12,6 +12,11 @@ pub(crate) fn handle_builder_struct(input: TokenStream) -> TokenStream {
         .into()
 }
 
+enum BuilderType {
+    Field,
+    Callback,
+}
+
 fn derive_builder(builder: DeriveInput) -> Result<proc_macro2::TokenStream> {
     let DeriveInput {
         attrs,
@@ -49,7 +54,11 @@ fn derive_builder(builder: DeriveInput) -> Result<proc_macro2::TokenStream> {
         for (i, attr) in field.attrs.iter_mut().enumerate() {
             if let Ok(meta) = attr.parse_meta() {
                 if meta.path().is_ident("builder") {
-                    builder.push((field.clone(), meta.clone()));
+                    builder.push((field.clone(), meta.clone(), BuilderType::Field));
+                    field.attrs.remove(i);
+                    break;
+                } else if meta.path().is_ident("builder_cb") {
+                    builder.push((field.clone(), meta.clone(), BuilderType::Callback));
                     field.attrs.remove(i);
                     break;
                 }
@@ -57,14 +66,9 @@ fn derive_builder(builder: DeriveInput) -> Result<proc_macro2::TokenStream> {
         }
     }
 
-    let mut output = quote! {
-        #(#attrs)*
-        #vis struct #ident #generics {
-            #fields
-        }
-    };
+    let mut quotes = quote! {};
 
-    for (field, attr) in builder {
+    for (field, attr, builder_type) in builder {
         let field_ident = field.ident.unwrap();
         let field_name = field_ident.to_string();
         let field_type = field.ty;
@@ -97,18 +101,16 @@ fn derive_builder(builder: DeriveInput) -> Result<proc_macro2::TokenStream> {
 
         match attr {
             syn::Meta::Path(_) => {
-                output.extend(quote! {
-                    impl #impl_generics #ident #ty_generics #where_clause {
-                        #[doc = #setter_doc]
-                        pub fn #setter(&mut self, #field_ident: #field_type) {
-                            self.#field_ident = #field_ident;
-                        }
+                quotes.extend(quote! {
+                    #[doc = #setter_doc]
+                    pub fn #setter(&mut self, #field_ident: #field_type) {
+                        self.#field_ident = #field_ident;
+                    }
 
-                        #[doc = #builder_doc]
-                        pub fn #field_ident(mut self, #field_ident: #field_type) -> Self {
-                            self.#setter(#field_ident);
-                            self
-                        }
+                    #[doc = #builder_doc]
+                    pub fn #field_ident(mut self, #field_ident: #field_type) -> Self {
+                        self.#setter(#field_ident);
+                        self
                     }
                 });
             }
@@ -118,29 +120,37 @@ fn derive_builder(builder: DeriveInput) -> Result<proc_macro2::TokenStream> {
                     .next()
                     .expect("List must not contain the generic trait.");
                 let into_fn = iter.next().expect("List must contain the 'into' function");
-                let (param_type, convert) = match iter.next() {
-                    Some(default) => (
+                let (param_type, convert) = match (builder_type, iter.next()) {
+                    (BuilderType::Field, Some(default)) => (
                         quote! {impl #into_trait<Option<#field_type>>},
                         quote! {#field_ident.#into_fn().unwrap_or(#default)},
                     ),
-                    None => (
+                    (BuilderType::Callback, Some(cb_type)) => (
+                        quote! {impl #into_trait<#cb_type>},
+                        quote! {#field_ident.#into_fn()},
+                    ),
+                    (BuilderType::Field, None) => (
                         quote! {impl #into_trait<#field_type>},
                         quote! {#field_ident.#into_fn()},
                     ),
+                    (BuilderType::Callback, None) => {
+                        return Err(Error::new(
+                            ident.span(),
+                            "callback builder needs a parameter type",
+                        ))
+                    }
                 };
 
-                output.extend(quote! {
-                    impl #impl_generics #ident #ty_generics #where_clause {
-                        #[doc = #setter_doc]
-                        pub fn #setter(&mut self, #field_ident: #param_type) {
-                            self.#field_ident = #convert;
-                        }
+                quotes.extend(quote! {
+                    #[doc = #setter_doc]
+                    pub fn #setter(&mut self, #field_ident: #param_type) {
+                        self.#field_ident = #convert;
+                    }
 
-                        #[doc = #builder_doc]
-                        pub fn #field_ident(mut self, #field_ident: #param_type) -> Self {
-                            self.#setter(#field_ident);
-                            self
-                        }
+                    #[doc = #builder_doc]
+                    pub fn #field_ident(mut self, #field_ident: #param_type) -> Self {
+                        self.#setter(#field_ident);
+                        self
                     }
                 });
             }
@@ -148,5 +158,15 @@ fn derive_builder(builder: DeriveInput) -> Result<proc_macro2::TokenStream> {
         }
     }
 
-    Ok(output)
+    Ok(quote! {
+        #(#attrs)*
+        #vis struct #ident #generics {
+            #fields
+        }
+
+        /// Auto-generated builder methods
+        impl #impl_generics #ident #ty_generics #where_clause {
+            #quotes
+        }
+    })
 }
