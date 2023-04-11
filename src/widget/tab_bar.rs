@@ -4,10 +4,12 @@ use yew::virtual_dom::{Key, VComp, VNode};
 use yew::html::{IntoEventCallback, IntoPropValue};
 
 use crate::prelude::*;
-use crate::state::{NavigationContext, NavigationContextExt};
+use crate::state::{NavigationContext, NavigationContextExt, Selection};
 use super::focus::roving_tabindex_next;
 use super::dom::element_direction_rtl;
 use super::Container;
+
+use pwt_macros::builder;
 
 #[derive(Clone, PartialEq)]
 pub struct TabBarItem {
@@ -17,6 +19,7 @@ pub struct TabBarItem {
 }
 
 #[derive(Clone, Default, PartialEq, Properties)]
+#[builder]
 pub struct TabBar {
     #[prop_or_default]
     node_ref: NodeRef,
@@ -27,10 +30,20 @@ pub struct TabBar {
 
     #[prop_or_default]
     pub tabs: Vec<TabBarItem>,
+
+    /// Selection object to store the currently selected tab key.
+    #[builder(IntoPropValue, into_prop_value)]
+    pub selection: Option<Selection>,
+
+    //#[builder_cb(IntoEventCallback, into_event_callback, Option<Key>)]
     on_select: Option<Callback<Option<Key>>>,
 
     pub default_active: Option<Key>,
 
+    /// Enable router functionality.
+    ///
+    /// Save/Load state from parent NavigationContainer
+    #[builder]
     #[prop_or_default]
     router: bool,
 }
@@ -52,19 +65,6 @@ impl TabBar {
     pub fn key(mut self, key: impl Into<Key>) -> Self {
         self.key = Some(key.into());
         self
-    }
-
-    /// Builder style method to enable router functionality
-    pub fn router(mut self, enable: bool) -> Self {
-        self.set_router(enable);
-        self
-    }
-
-    /// Method to enable router functionality.
-    ///
-    /// Save/Load state from parent NavigationContainer
-    pub fn set_router(&mut self, enable: bool) {
-        self.router = enable;
     }
 
     pub fn with_item(
@@ -121,7 +121,8 @@ impl TabBar {
 
 pub enum Msg {
     FocusIn,
-    Select(Key, bool),
+    Select(Key),
+    SelectionChange(Selection),
 }
 
 #[doc(hidden)]
@@ -129,6 +130,7 @@ pub struct PwtTabBar {
     active: Option<Key>,
     rtl: Option<bool>,
     _nav_ctx_handle: Option<ContextHandle<NavigationContext>>,
+    selection: Selection,
 }
 
 fn get_active_or_default(props: &TabBar, active: &Option<Key>) -> Option<Key> {
@@ -138,6 +140,23 @@ fn get_active_or_default(props: &TabBar, active: &Option<Key>) -> Option<Key> {
         }
     }
     props.get_default_active()
+}
+
+impl PwtTabBar {
+    fn init_selection(ctx: &Context<Self>, selection: Option<Selection>, active: &Option<Key>) -> Selection {
+        let selection = match selection {
+            Some(selection) => selection,
+            None => Selection::new(),
+        }.on_select(ctx.link().callback(Msg::SelectionChange));
+
+        if let Some(active) = &active {
+            selection.select(active.clone());
+        } else  {
+            selection.clear();
+        }
+
+        selection
+    }
 }
 
 impl Component for PwtTabBar {
@@ -157,7 +176,7 @@ impl Component for PwtTabBar {
                     //log::info!("CTX CHANGE {:?}", nav_ctx);
                     let path = nav_ctx.path();
                     let key = Key::from(path);
-                    link.send_message(Msg::Select(key, false));
+                    link.send_message(Msg::Select(key));
                 }
             });
             if let Some((nav_ctx, handle)) = ctx.link().context::<NavigationContext>(on_nav_ctx_change) {
@@ -168,14 +187,11 @@ impl Component for PwtTabBar {
             }
         }
 
-        if active.is_some() {
-            if let Some(on_select) = &props.on_select {
-                on_select.emit(active.clone());
-            }
-        }
+        let selection = Self::init_selection(ctx, props.selection.clone(), &active);
 
         Self {
-            active,
+            active: None,
+            selection,
             rtl: None,
             _nav_ctx_handle,
         }
@@ -188,24 +204,39 @@ impl Component for PwtTabBar {
                 self.rtl = element_direction_rtl(&props.node_ref);
                 true
             }
-            Msg::Select(key, update_route) => {
-                if let Some(active) = &self.active {
-                    if &key == active { return false; }
+            Msg::SelectionChange(selection) => {
+                let key = selection.selected_key();
+                if &self.active == &key { return false; }
+
+                self.active = get_active_or_default(props, &key);
+
+                if let Some(key) = &self.active {
+                    if props.router {
+                        ctx.link().push_relative_route(&key);
+                    }
                 }
-
-                self.active = get_active_or_default(props, &Some(key.clone()));
-
-                if props.router && update_route {
-                    ctx.link().push_relative_route(&key);
-                }
-
                 if let Some(on_select) = &props.on_select {
                     on_select.emit(self.active.clone());
                 }
 
                 true
             }
+            Msg::Select(key) => {
+                if let Some(active) = &self.active {
+                    if &key == active { return false; }
+                }
+                self.selection.select(key.clone());
+                true
+            }
         }
+    }
+
+    fn changed(&mut self, ctx: &Context<Self>, old_props: &Self::Properties) -> bool {
+        let props = ctx.props();
+        if props.selection != old_props.selection {
+            self.selection = Self::init_selection(ctx, props.selection.clone(), &self.active);
+        }
+        true
     }
 
     fn view(&self, ctx: &Context<Self>) -> Html {
@@ -224,14 +255,14 @@ impl Component for PwtTabBar {
 
             let onclick = ctx.link().callback({
                 let key = panel.key.clone();
-                move |_| Msg::Select(key.clone(), true)
+                move |_| Msg::Select(key.clone())
             });
             let onkeyup = Callback::from({
                 let link = ctx.link().clone();
                 let key = panel.key.clone();
                 move |event: KeyboardEvent| {
                     if event.key_code() == 32 {
-                        link.send_message(Msg::Select(key.clone(), true));
+                        link.send_message(Msg::Select(key.clone()));
                     }
                 }
             });
