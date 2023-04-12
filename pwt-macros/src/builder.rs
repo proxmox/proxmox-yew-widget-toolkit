@@ -1,6 +1,7 @@
 use proc_macro::TokenStream;
 use quote::{format_ident, quote};
-use syn::{parse_macro_input, Data, DeriveInput};
+
+use syn::{parse::Parse, parse_macro_input, Data, DeriveInput, Token};
 
 use syn::{Error, Fields, Result};
 
@@ -15,6 +16,75 @@ pub(crate) fn handle_builder_struct(input: TokenStream) -> TokenStream {
 enum BuilderType {
     Field,
     Callback,
+}
+
+// options for normal fields with the #[builder] attribute
+struct FieldOptions {
+    into_trait: syn::Type,
+    into_fn: syn::Ident,
+    default_value: Option<syn::Lit>,
+}
+
+impl Parse for FieldOptions {
+    fn parse(input: syn::parse::ParseStream) -> Result<Self> {
+        let into_trait: syn::Type = input
+            .parse()
+            .map_err(|err| Error::new(input.span(), format!("expected Into trait: {err}")))?;
+        let _: Token![,] = input
+            .parse()
+            .map_err(|err| Error::new(input.span(), format!("expected into function: {err}")))?;
+        let into_fn: syn::Ident = input
+            .parse()
+            .map_err(|err| Error::new(input.span(), format!("expected into function: {err}")))?;
+        let default_value = if input.is_empty() {
+            None
+        } else {
+            let _: Token![,] = input.parse()?;
+            Some(input.parse()?)
+        };
+
+        Ok(Self {
+            into_trait,
+            into_fn,
+            default_value,
+        })
+    }
+}
+
+// options for callback fields with the #[builder_cb] attribute
+struct CallbackOptions {
+    into_trait: syn::Type,
+    into_fn: syn::Ident,
+    inner_type: syn::Type,
+}
+
+impl Parse for CallbackOptions {
+    fn parse(input: syn::parse::ParseStream) -> Result<Self> {
+        let into_trait: syn::Type = input
+            .parse()
+            .map_err(|err| Error::new(input.span(), format!("expected Into trait: {err}")))?;
+        let _: Token![,] = input
+            .parse()
+            .map_err(|err| Error::new(input.span(), format!("expected into function: {err}")))?;
+        let into_fn: syn::Ident = input
+            .parse()
+            .map_err(|err| Error::new(input.span(), format!("expected into function: {err}")))?;
+        let _: Token![,] = input.parse().map_err(|err| {
+            Error::new(input.span(), format!("expected inner callback type: {err}"))
+        })?;
+        let inner_type: syn::Type = input.parse().map_err(|err| {
+            Error::new(
+                input.span(),
+                format!("expected inner callback type function: {err}"),
+            )
+        })?;
+
+        Ok(Self {
+            into_trait,
+            into_fn,
+            inner_type,
+        })
+    }
 }
 
 fn derive_builder(builder: DeriveInput) -> Result<proc_macro2::TokenStream> {
@@ -52,16 +122,16 @@ fn derive_builder(builder: DeriveInput) -> Result<proc_macro2::TokenStream> {
     let mut builder = Vec::new();
     for field in fields.iter_mut() {
         for (i, attr) in field.attrs.iter_mut().enumerate() {
-            if let Ok(meta) = attr.parse_meta() {
-                if meta.path().is_ident("builder") {
-                    builder.push((field.clone(), meta.clone(), BuilderType::Field));
-                    field.attrs.remove(i);
-                    break;
-                } else if meta.path().is_ident("builder_cb") {
-                    builder.push((field.clone(), meta.clone(), BuilderType::Callback));
-                    field.attrs.remove(i);
-                    break;
-                }
+            if attr.path.is_ident("builder") {
+                let attr = attr.clone();
+                builder.push((field.clone(), attr, BuilderType::Field));
+                field.attrs.remove(i);
+                break;
+            } else if attr.path.is_ident("builder_cb") {
+                let attr = attr.clone();
+                builder.push((field.clone(), attr, BuilderType::Callback));
+                field.attrs.remove(i);
+                break;
             }
         }
     }
@@ -99,63 +169,59 @@ fn derive_builder(builder: DeriveInput) -> Result<proc_macro2::TokenStream> {
             }
         };
 
-        match attr {
-            syn::Meta::Path(_) => {
-                quotes.extend(quote! {
-                    #[doc = #setter_doc]
-                    pub fn #setter(&mut self, #field_ident: #field_type) {
-                        self.#field_ident = #field_ident;
-                    }
-
-                    #[doc = #builder_doc]
-                    pub fn #field_ident(mut self, #field_ident: #field_type) -> Self {
-                        self.#setter(#field_ident);
-                        self
-                    }
-                });
-            }
-            syn::Meta::List(syn::MetaList { nested: list, .. }) => {
-                let mut iter = list.into_iter();
-                let into_trait = iter
-                    .next()
-                    .expect("List must not contain the generic trait.");
-                let into_fn = iter.next().expect("List must contain the 'into' function");
-                let (param_type, convert) = match (builder_type, iter.next()) {
-                    (BuilderType::Field, Some(default)) => (
-                        quote! {impl #into_trait<Option<#field_type>>},
-                        quote! {#field_ident.#into_fn().unwrap_or(#default)},
-                    ),
-                    (BuilderType::Callback, Some(cb_type)) => (
-                        quote! {impl #into_trait<#cb_type>},
-                        quote! {#field_ident.#into_fn()},
-                    ),
-                    (BuilderType::Field, None) => (
-                        quote! {impl #into_trait<#field_type>},
-                        quote! {#field_ident.#into_fn()},
-                    ),
-                    (BuilderType::Callback, None) => {
-                        return Err(Error::new(
-                            ident.span(),
-                            "callback builder needs a parameter type",
-                        ))
-                    }
+        let mut parameter_tokens = attr.tokens.clone().into_iter();
+        let (param_type, convert) = match parameter_tokens.next() {
+            Some(parameters) => {
+                let tokens = match parameters {
+                    proc_macro2::TokenTree::Group(group) => group.stream(),
+                    _ => panic!("invalid syntax"),
                 };
 
-                quotes.extend(quote! {
-                    #[doc = #setter_doc]
-                    pub fn #setter(&mut self, #field_ident: #param_type) {
-                        self.#field_ident = #convert;
-                    }
+                match builder_type {
+                    BuilderType::Field => {
+                        let options = syn::parse2::<FieldOptions>(tokens)?;
 
-                    #[doc = #builder_doc]
-                    pub fn #field_ident(mut self, #field_ident: #param_type) -> Self {
-                        self.#setter(#field_ident);
-                        self
+                        let into_fn = options.into_fn;
+                        let into_trait = options.into_trait;
+                        if let Some(default) = options.default_value {
+                            (
+                                quote! {impl #into_trait<Option<#field_type>>},
+                                quote! {#field_ident.#into_fn().unwrap_or(#default)},
+                            )
+                        } else {
+                            (
+                                quote! {impl #into_trait<#field_type>},
+                                quote! {#field_ident.#into_fn()},
+                            )
+                        }
                     }
-                });
+                    BuilderType::Callback => {
+                        let options = syn::parse2::<CallbackOptions>(tokens)?;
+                        let into_fn = options.into_fn;
+                        let into_trait = options.into_trait;
+                        let inner_type = options.inner_type;
+                        (
+                            quote! {impl #into_trait<#inner_type>},
+                            quote! {#field_ident.#into_fn()},
+                        )
+                    }
+                }
             }
-            syn::Meta::NameValue(_) => unreachable!("not implemented"),
-        }
+            None => (quote! { #field_type }, quote! { #field_ident}),
+        };
+
+        quotes.extend(quote! {
+            #[doc = #setter_doc]
+            pub fn #setter(&mut self, #field_ident: #param_type) {
+                self.#field_ident = #convert;
+            }
+
+            #[doc = #builder_doc]
+            pub fn #field_ident(mut self, #field_ident: #param_type) -> Self {
+                self.#setter(#field_ident);
+                self
+            }
+        });
     }
 
     Ok(quote! {

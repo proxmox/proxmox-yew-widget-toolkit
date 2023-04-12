@@ -154,8 +154,8 @@ pub fn widget(attr: TokenStream, item: TokenStream) -> TokenStream {
 /// # use pwt_macros::builder;
 /// #[builder]
 /// struct Foo {
-///     #[builder_cb(IntoEventCallback, into_event_callback, f32)]
-///     on_something: Option<Callback<f32>>,
+///     #[builder_cb(IntoEventCallback, into_event_callback, Option<f32>)]
+///     on_something: Option<Callback<Option<f32>>>,
 /// }
 /// ```
 ///
