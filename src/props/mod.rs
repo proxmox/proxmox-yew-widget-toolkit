@@ -49,7 +49,7 @@ mod padding;
 pub use padding::CssPaddingBuilder;
 
 mod render_function;
-pub use render_function::{RenderFn, BuilderFn, IntoOptionalBuilderFn};
+pub use render_function::{RenderFn, IntoOptionalRenderFn, BuilderFn, IntoOptionalBuilderFn};
 
 mod sorter_function;
 pub use sorter_function::{SorterFn, IntoSorterFn};

@@ -5,11 +5,11 @@ use indexmap::IndexMap;
 use yew::prelude::*;
 use yew::virtual_dom::Key;
 
-use crate::props::{ContainerBuilder, RenderFn};
+use crate::props::{ContainerBuilder, RenderFn, IntoOptionalRenderFn};
 use crate::state::{Selection, SelectionObserver};
 use crate::widget::Container;
 
-use pwt_macros::widget;
+use pwt_macros::{widget, builder};
 
 /// Infos passed to the [SelectionView] render function.
 pub struct SelectionViewRenderInfo {
@@ -25,6 +25,7 @@ pub struct SelectionViewRenderInfo {
 /// A Container that listens to changes from a [Selection].
 #[widget(pwt=crate, comp=PwtSelectionView, @element)]
 #[derive(Clone, PartialEq, Properties)]
+#[builder]
 pub struct SelectionView {
     /// The Selection object.
     ///
@@ -38,7 +39,8 @@ pub struct SelectionView {
     #[prop_or_default]
     pub builders: IndexMap<Key, RenderFn<SelectionViewRenderInfo>>,
 
-    // The default render function.
+    /// The default render function.
+    #[builder_cb(IntoOptionalRenderFn, into_optional_render_fn, SelectionViewRenderInfo)]
     pub renderer: Option<RenderFn<SelectionViewRenderInfo>>,
 }
 

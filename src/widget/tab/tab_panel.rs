@@ -24,7 +24,7 @@ pub struct TabPanelRenderInfo {
 
 /// A set of layered items where only one item is displayed at a time.
 ///
-/// [TabPanel]s (like [super::Panel]s]) may have a title and tool buttons.
+/// [TabPanel]s (like [crate::widget::Panel]s]) may have a title and tool buttons.
 ///
 /// Panel item are either static or dynamic. Static items are rendered
 /// once before you add them. Dynamic items use a render function

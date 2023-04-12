@@ -31,6 +31,23 @@ impl<T, F: 'static + Fn(&T) -> Html> From<F> for RenderFn<T> {
     }
 }
 
+/// Helper trait to create an optional [RenderFn] property.
+pub trait IntoOptionalRenderFn<T> {
+    fn into_optional_render_fn(self) -> Option<RenderFn<T>>;
+}
+
+impl<T> IntoOptionalRenderFn<T> for Option<RenderFn<T>> {
+    fn into_optional_render_fn(self) -> Option<RenderFn<T>> {
+        self
+    }
+}
+
+impl<T, F: 'static + Fn(&T) -> Html> IntoOptionalRenderFn<T> for F {
+    fn into_optional_render_fn(self) -> Option<RenderFn<T>> {
+        Some(RenderFn::new(self))
+    }
+}
+
 /// A [BuilderFn] function is a callback that returns [Html].
 ///
 /// Wraps `Rc` around `Fn` so it can be passed as a prop.
