@@ -1,26 +1,15 @@
 use std::rc::Rc;
-use std::collections::HashSet;
 
-use indexmap::IndexMap;
-
+use yew::html::IntoPropValue;
 use yew::prelude::*;
 use yew::virtual_dom::{Key, VComp, VList, VNode};
-use yew::html::IntoPropValue;
 
 use crate::prelude::*;
-use crate::props::RenderFn;
-use crate::state::NavigationContainer;
-use crate::widget::{Column, IntoOptionalMiniScrollMode, MiniScroll, Row, TabBar, TabBarItem, MiniScrollMode};
-
-/// Infos passed to the [TabPanel] render function.
-pub struct TabPanelRenderInfo {
-    /// The key of the item to render
-    pub key: Key,
-    /// Set if this item is visible/active.
-    ///
-    /// So that the item can react on visibility changes.
-    pub visible: bool,
-}
+use crate::state::{NavigationContainer, Selection};
+use crate::widget::{
+    Column, IntoOptionalMiniScrollMode, MiniScroll, MiniScrollMode, Row, SelectionView,
+    SelectionViewRenderInfo, TabBar, TabBarItem,
+};
 
 /// A set of layered items where only one item is displayed at a time.
 ///
@@ -34,8 +23,13 @@ pub struct TabPanelRenderInfo {
 #[derive(Clone, PartialEq, Properties)]
 pub struct TabPanel {
     pub key: Option<Key>,
-    #[prop_or_default]
-    pub tabs: IndexMap<Key, RenderFn<TabPanelRenderInfo>>,
+
+    selection: Selection,
+
+    //#[prop_or_default]
+    //pub tabs: IndexMap<Key, RenderFn<SelectionViewRenderInfo>>,
+    pub view: SelectionView,
+
     #[prop_or_default]
     pub bar: TabBar,
 
@@ -52,10 +46,14 @@ pub struct TabPanel {
 }
 
 impl TabPanel {
-
     /// Creates a new instance.
     pub fn new() -> Self {
-        yew::props!(TabPanel {})
+        let selection = Selection::new();
+        let view = SelectionView::new(selection.clone()).class("pwt-fit");
+        yew::props!(TabPanel {
+            selection,
+            view,
+        })
     }
 
     /// Builder style method to set the `title` property
@@ -100,8 +98,7 @@ impl TabPanel {
     /// Embed the [TabPanel] into a [NavigationContainer]
     pub fn navigation_container(mut self) -> NavigationContainer {
         self.bar.set_router(true);
-        NavigationContainer::new()
-            .with_child(self)
+        NavigationContainer::new().with_child(self)
     }
 
     /// Builder style method to add a static tab panel.
@@ -112,12 +109,7 @@ impl TabPanel {
         icon_class: impl IntoPropValue<Option<AttrValue>>,
         panel: impl Into<VNode>,
     ) -> Self {
-        self.add_item(
-            key,
-            label,
-            icon_class,
-            panel,
-        );
+        self.add_item(key, label, icon_class, panel);
         self
     }
 
@@ -131,12 +123,7 @@ impl TabPanel {
     ) {
         let html = panel.into();
 
-        self.add_item_builder(
-            key,
-            label,
-            icon_class,
-            move |_| html.clone(),
-        )
+        self.add_item_builder(key, label, icon_class, move |_| html.clone())
     }
 
     /// Builder style method to add a dynamic tab panel.
@@ -145,7 +132,7 @@ impl TabPanel {
         key: impl Into<Key>,
         label: impl Into<AttrValue>,
         icon_class: impl IntoPropValue<Option<AttrValue>>,
-        renderer: impl 'static + Fn(&TabPanelRenderInfo) -> Html,
+        renderer: impl 'static + Fn(&SelectionViewRenderInfo) -> Html,
     ) -> Self {
         self.add_item_builder(key, label, icon_class, renderer);
         self
@@ -157,19 +144,17 @@ impl TabPanel {
         key: impl Into<Key>,
         label: impl Into<AttrValue>,
         icon_class: impl IntoPropValue<Option<AttrValue>>,
-        renderer: impl 'static + Fn(&TabPanelRenderInfo) -> Html,
+        renderer: impl 'static + Fn(&SelectionViewRenderInfo) -> Html,
     ) {
         let key = key.into();
-        let mut item = TabBarItem::new()
-            .key(key.clone())
-            .label(label.into());
+        let mut item = TabBarItem::new().key(key.clone()).label(label.into());
 
         if let Some(icon_class) = icon_class.into_prop_value() {
             item.set_icon_class(icon_class);
         }
 
         self.bar.add_item(item);
-        self.tabs.insert(key, RenderFn::new(renderer));
+        self.view.add_builder(key, renderer);
     }
 
     /// Builder style method to set the scroll mode.
@@ -184,85 +169,50 @@ impl TabPanel {
     }
 }
 
-pub enum Msg {
-    Select(Option<Key>),
-}
-
 #[doc(hidden)]
-pub struct PwtTabPanel {
-    active: Option<Key>,
-    render_set: HashSet<Key>,
-}
+pub struct PwtTabPanel {}
 
 impl Component for PwtTabPanel {
-    type Message = Msg;
+    type Message = ();
     type Properties = TabPanel;
 
     fn create(_ctx: &Context<Self>) -> Self {
-        Self {
-            active: None,
-            render_set: HashSet::new(),
-        }
-    }
-
-    fn update(&mut self, _ctx: &Context<Self>, msg: Self::Message) -> bool {
-        match msg {
-            Msg::Select(opt_key) => {
-                self.active = opt_key.clone();
-                if let Some(key) = opt_key {
-                    self.render_set.insert(key);
-                }
-                true
-            }
-        }
+        Self {}
     }
 
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
 
-        let mut bar: Html = props.bar.clone()
-            .on_select(ctx.link().callback(|key| Msg::Select(key)))
+        let mut bar: Html = props
+            .bar
+            .clone()
+            .selection(props.selection.clone())
             .into();
 
         if let Some(scroll_mode) = props.scroll_mode {
-            bar = MiniScroll::new(bar).scroll_mode(scroll_mode).class("pwt-flex-fill").into();
+            bar = MiniScroll::new(bar)
+                .scroll_mode(scroll_mode)
+                .class("pwt-flex-fill")
+                .into();
         }
 
-        let content: Html = props.tabs.iter().map(|(key, render_fn)| {
-            let active = match &self.active {
-                Some(active_key) => active_key == key,
-                None => false,
-            };
-
-            let panel_html = if self.render_set.contains(key) {
-                render_fn.apply(&TabPanelRenderInfo{
-                    key: key.clone(),
-                    visible: active,
-                })
-            } else {
-                html!{}
-            };
-
-            if active {
-                html!{ <div key={key.clone()} class="pwt-flex-fill pwt-overflow-auto">{panel_html} </div>}
-           } else {
-                html!{ <div key={key.clone()} class="pwt-d-none">{panel_html}</div>}
-            }
-        }).collect();
+        let content = props.view.clone();
 
         let header;
 
         if props.title.is_some() {
-            let title = crate::widget::panel::create_panel_title(props.title.clone(), props.tools.clone())
-                .class("pwt-pb-2");
-            header = html!{<div class="pwt-panel-header">{title}{bar}</div>};
+            let title =
+                crate::widget::panel::create_panel_title(props.title.clone(), props.tools.clone())
+                    .class("pwt-pb-2");
+            header = html! {<div class="pwt-panel-header">{title}{bar}</div>};
         } else {
             header = Row::new()
                 .class("pwt-panel-header pwt-align-items-center pwt-gap-2")
                 .with_child(bar)
-                .with_optional_child((!props.tools.is_empty()).then(|| {
-                    VList::with_children(props.tools.clone(), None)
-                }))
+                .with_optional_child(
+                    (!props.tools.is_empty())
+                        .then(|| VList::with_children(props.tools.clone(), None)),
+                )
                 .into();
         };
 
