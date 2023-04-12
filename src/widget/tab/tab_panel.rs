@@ -10,7 +10,7 @@ use yew::html::IntoPropValue;
 use crate::prelude::*;
 use crate::props::RenderFn;
 use crate::state::NavigationContainer;
-use super::{Column, IntoOptionalMiniScrollMode, MiniScroll, Row, TabBar, MiniScrollMode};
+use crate::widget::{Column, IntoOptionalMiniScrollMode, MiniScroll, Row, TabBar, MiniScrollMode};
 
 /// Infos passed to the [TabPanel] render function.
 pub struct TabPanelRenderInfo {
@@ -245,7 +245,7 @@ impl Component for PwtTabPanel {
         let header;
 
         if props.title.is_some() {
-            let title = super::panel::create_panel_title(props.title.clone(), props.tools.clone())
+            let title = crate::widget::panel::create_panel_title(props.title.clone(), props.tools.clone())
                 .class("pwt-pb-2");
             header = html!{<div class="pwt-panel-header">{title}{bar}</div>};
         } else {

@@ -82,11 +82,8 @@ pub use segmented_button::{PwtSegmentedButton, SegmentedButton};
 mod size_observer;
 pub use size_observer::SizeObserver;
 
-mod tab_bar;
-pub use tab_bar::{PwtTabBar, TabBar, TabBarItem};
-
-mod tab_panel;
-pub use tab_panel::{PwtTabPanel, TabPanel, TabPanelRenderInfo};
+mod tab;
+pub use tab::*;
 
 mod theme_loader;
 pub use theme_loader::ThemeLoader;

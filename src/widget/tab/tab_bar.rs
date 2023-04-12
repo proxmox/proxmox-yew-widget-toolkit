@@ -5,9 +5,9 @@ use yew::html::{IntoEventCallback, IntoPropValue};
 
 use crate::prelude::*;
 use crate::state::{NavigationContext, NavigationContextExt, Selection};
-use super::focus::roving_tabindex_next;
-use super::dom::element_direction_rtl;
-use super::Container;
+use crate::widget::focus::roving_tabindex_next;
+use crate::widget::dom::element_direction_rtl;
+use crate::widget::Container;
 
 use pwt_macros::builder;
 
