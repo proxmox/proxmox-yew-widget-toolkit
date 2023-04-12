@@ -9,14 +9,10 @@ use crate::widget::focus::roving_tabindex_next;
 use crate::widget::dom::element_direction_rtl;
 use crate::widget::Container;
 
+use super::TabBarItem;
+
 use pwt_macros::builder;
 
-#[derive(Clone, PartialEq)]
-pub struct TabBarItem {
-    pub key: Key,
-    pub label: AttrValue,
-    pub icon_class: Option<AttrValue>,
-}
 
 #[derive(Clone, Default, PartialEq, Properties)]
 #[builder]
@@ -67,27 +63,13 @@ impl TabBar {
         self
     }
 
-    pub fn with_item(
-        mut self,
-        key: impl Into<Key>,
-        label: impl Into<AttrValue>,
-        icon_class: impl IntoPropValue<Option<AttrValue>>,
-    ) -> Self {
-        self.add_item(key, label, icon_class);
+    pub fn with_item(mut self, item: impl Into<TabBarItem>) -> Self {
+        self.add_item(item);
         self
     }
 
-    pub fn add_item(
-        &mut self,
-        key: impl Into<Key>,
-        label: impl Into<AttrValue>,
-        icon_class: impl IntoPropValue<Option<AttrValue>>,
-    ) {
-        self.tabs.push(TabBarItem {
-            key: key.into(),
-            label: label.into(),
-            icon_class: icon_class.into_prop_value(),
-        });
+    pub fn add_item(&mut self, item: impl Into<TabBarItem>) {
+        self.tabs.push(item.into());
     }
 
     /// Builder style method to add a html class
@@ -111,8 +93,10 @@ impl TabBar {
             return self.default_active.clone();
         }
 
-        if let Some(first) = self.tabs.get(0) {
-            return Some(first.key.clone());
+        for item in &self.tabs {
+            if let TabBarItem { key: Some(key), ..} = item {
+                return Some(key.clone());
+            }
         }
 
         None
@@ -121,7 +105,7 @@ impl TabBar {
 
 pub enum Msg {
     FocusIn,
-    Select(Key),
+    Select(Option<Key>),
     SelectionChange(Selection),
 }
 
@@ -176,7 +160,7 @@ impl Component for PwtTabBar {
                     //log::info!("CTX CHANGE {:?}", nav_ctx);
                     let path = nav_ctx.path();
                     let key = Key::from(path);
-                    link.send_message(Msg::Select(key));
+                    link.send_message(Msg::Select(Some(key)));
                 }
             });
             if let Some((nav_ctx, handle)) = ctx.link().context::<NavigationContext>(on_nav_ctx_change) {
@@ -222,10 +206,13 @@ impl Component for PwtTabBar {
                 true
             }
             Msg::Select(key) => {
-                if let Some(active) = &self.active {
-                    if &key == active { return false; }
+                if &self.active == &key { return false; }
+
+                if let Some(key) = &key {
+                    self.selection.select(key.clone());
+                } else {
+                    self.selection.clear();
                 }
-                self.selection.select(key.clone());
                 true
             }
         }
@@ -246,7 +233,7 @@ impl Component for PwtTabBar {
 
         let pills = props.tabs.iter().map(|panel| {
             let is_active = if let Some(active) = &active {
-                &panel.key == active
+                panel.key.as_ref() == Some(active)
             } else {
                 false
             };
@@ -274,7 +261,7 @@ impl Component for PwtTabBar {
                     if let Some(class) = &panel.icon_class {
                         <span class={class.to_string()} aria-hidden="true"/>
                     }
-                    {&panel.label}
+                    {panel.label.as_deref().unwrap_or("")}
                 </a>
             }
         }).collect::<Html>();

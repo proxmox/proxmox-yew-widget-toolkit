@@ -10,7 +10,7 @@ use yew::html::IntoPropValue;
 use crate::prelude::*;
 use crate::props::RenderFn;
 use crate::state::NavigationContainer;
-use crate::widget::{Column, IntoOptionalMiniScrollMode, MiniScroll, Row, TabBar, MiniScrollMode};
+use crate::widget::{Column, IntoOptionalMiniScrollMode, MiniScroll, Row, TabBar, TabBarItem, MiniScrollMode};
 
 /// Infos passed to the [TabPanel] render function.
 pub struct TabPanelRenderInfo {
@@ -160,7 +160,15 @@ impl TabPanel {
         renderer: impl 'static + Fn(&TabPanelRenderInfo) -> Html,
     ) {
         let key = key.into();
-        self.bar.add_item(key.clone(), label, icon_class);
+        let mut item = TabBarItem::new()
+            .key(key.clone())
+            .label(label.into());
+
+        if let Some(icon_class) = icon_class.into_prop_value() {
+            item.set_icon_class(icon_class);
+        }
+
+        self.bar.add_item(item);
         self.tabs.insert(key, RenderFn::new(renderer));
     }
 
