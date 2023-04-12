@@ -33,7 +33,8 @@ pub struct TabBar {
     #[builder(IntoPropValue, into_prop_value)]
     pub selection: Option<Selection>,
 
-    //#[builder_cb(IntoEventCallback, into_event_callback, Option<Key>)]
+    /// Selection callback.
+    #[builder_cb(IntoEventCallback, into_event_callback, Option<Key>)]
     pub on_select: Option<Callback<Option<Key>>>,
 
     pub default_active: Option<Key>,
@@ -83,11 +84,6 @@ impl TabBar {
     /// Method to add a html class
     pub fn add_class(&mut self, class: impl Into<Classes>) {
         self.class.push(class);
-    }
-
-    pub fn on_select(mut self, cb: impl IntoEventCallback<Option<Key>>) -> Self {
-        self.on_select = cb.into_event_callback();
-        self
     }
 
     fn get_default_active(&self) -> Option<Key> {
