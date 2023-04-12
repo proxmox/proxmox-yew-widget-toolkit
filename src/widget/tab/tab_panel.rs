@@ -7,9 +7,11 @@ use yew::virtual_dom::{Key, VComp, VList, VNode};
 use crate::prelude::*;
 use crate::state::{NavigationContainer, Selection};
 use crate::widget::{
-    Column, IntoOptionalMiniScrollMode, MiniScroll, MiniScrollMode, Row, SelectionView,
+    Column, MiniScroll, MiniScrollMode, Row, SelectionView,
     SelectionViewRenderInfo, TabBar, TabBarItem,
 };
+
+use pwt_macros::builder;
 
 /// A set of layered items where only one item is displayed at a time.
 ///
@@ -21,6 +23,7 @@ use crate::widget::{
 /// that the render function is called whenever another panel gets
 /// activated.
 #[derive(Clone, PartialEq, Properties)]
+#[builder]
 pub struct TabPanel {
     pub key: Option<Key>,
 
@@ -33,6 +36,8 @@ pub struct TabPanel {
     #[prop_or_default]
     pub bar: TabBar,
 
+    /// Panel title text.
+    #[builder(IntoPropValue, into_prop_value)]
     pub title: Option<AttrValue>,
     #[prop_or_default]
     pub tools: Vec<VNode>,
@@ -42,6 +47,7 @@ pub struct TabPanel {
 
     /// Use [MiniScroll] for [TabBar] to allow scrolling.
     #[prop_or_default]
+    #[builder(IntoPropValue, into_prop_value)]
     pub scroll_mode: Option<MiniScrollMode>,
 }
 
@@ -54,17 +60,6 @@ impl TabPanel {
             selection,
             view,
         })
-    }
-
-    /// Builder style method to set the `title` property
-    pub fn title(mut self, title: impl IntoPropValue<Option<AttrValue>>) -> Self {
-        self.set_title(title);
-        self
-    }
-
-    /// Method to set the `title` property
-    pub fn set_title(&mut self, title: impl IntoPropValue<Option<AttrValue>>) {
-        self.title = title.into_prop_value();
     }
 
     /// Builder style method to add a tool
@@ -155,17 +150,6 @@ impl TabPanel {
 
         self.bar.add_item(item);
         self.view.add_builder(key, renderer);
-    }
-
-    /// Builder style method to set the scroll mode.
-    pub fn scroll_mode(mut self, scroll_mode: impl IntoOptionalMiniScrollMode) -> Self {
-        self.set_scroll_mode(scroll_mode);
-        self
-    }
-
-    /// Method to set the scroll mode.
-    pub fn set_scroll_mode(&mut self, scroll_mode: impl IntoOptionalMiniScrollMode) {
-        self.scroll_mode = scroll_mode.into_optional_mini_scroll_mode();
     }
 }
 

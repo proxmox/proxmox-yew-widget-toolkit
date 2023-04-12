@@ -4,12 +4,13 @@ use gloo_timers::callback::Timeout;
 
 use yew::prelude::*;
 use yew::virtual_dom::{Listeners, VList, VTag};
+use yew::html::IntoPropValue;
 
-use pwt_macros::widget;
+use pwt_macros::{widget, builder};
 
 use super::dom::element_direction_rtl;
 use super::focus::{init_roving_tabindex, roving_tabindex_next, update_roving_tabindex};
-use super::{IntoOptionalMiniScrollMode, MiniScroll, MiniScrollMode};
+use super::{MiniScroll, MiniScrollMode};
 use crate::prelude::*;
 
 /// Horizontal container for buttons with roving tabindex.
@@ -36,9 +37,11 @@ use crate::prelude::*;
 /// the first element, focus the last element.
 #[widget(pwt=crate, comp=PwtToolbar, @element, @container)]
 #[derive(Properties, PartialEq, Clone)]
+#[builder]
 pub struct Toolbar {
     /// Use [MiniScroll] to allow scrolling.
     #[prop_or_default]
+    #[builder(IntoPropValue, into_prop_value)]
     pub scroll_mode: Option<MiniScrollMode>,
 }
 
@@ -74,17 +77,6 @@ impl Toolbar {
     /// Flex spacers are empty cells filling the remainig space.
     pub fn add_flex_spacer(&mut self) {
         self.add_child(html! {<div aria-hidden="true" class="pwt-flex-fill"/>});
-    }
-
-    /// Builder style method to set the scroll mode.
-    pub fn scroll_mode(mut self, scroll_mode: impl IntoOptionalMiniScrollMode) -> Self {
-        self.set_scroll_mode(scroll_mode);
-        self
-    }
-
-    /// Method to set the scroll mode.
-    pub fn set_scroll_mode(&mut self, scroll_mode: impl IntoOptionalMiniScrollMode) {
-        self.scroll_mode = scroll_mode.into_optional_mini_scroll_mode();
     }
 }
 

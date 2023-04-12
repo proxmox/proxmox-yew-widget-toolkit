@@ -46,7 +46,7 @@ mod mask;
 pub use mask::{Mask, PwtMask};
 
 mod mini_scroll;
-pub use mini_scroll::{IntoOptionalMiniScrollMode, MiniScroll, MiniScrollMode, PwtMiniScroll};
+pub use mini_scroll::{MiniScroll, MiniScrollMode, PwtMiniScroll};
 
 pub mod menu;
 

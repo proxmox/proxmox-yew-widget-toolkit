@@ -18,22 +18,6 @@ pub enum MiniScrollMode {
     Arrow,
 }
 
-pub trait IntoOptionalMiniScrollMode {
-    fn into_optional_mini_scroll_mode(self) -> Option<MiniScrollMode>;
-}
-
-impl IntoOptionalMiniScrollMode for MiniScrollMode {
-    fn into_optional_mini_scroll_mode(self) -> Option<MiniScrollMode> {
-        Some(self)
-    }
-}
-
-impl IntoOptionalMiniScrollMode for Option<MiniScrollMode> {
-    fn into_optional_mini_scroll_mode(self) -> Option<MiniScrollMode> {
-        self
-    }
-}
-
 /// Scroll content horizontally using minimalistic srollbar.
 ///
 /// This widget provides scrolling for horizontal containers like toolbars or
