@@ -76,6 +76,9 @@ pub use row::Row;
 mod rtl_switcher;
 pub use rtl_switcher::RtlSwitcher;
 
+mod selection_view;
+pub use selection_view::{SelectionView, SelectionViewRenderInfo, PwtSelectionView};
+
 mod segmented_button;
 pub use segmented_button::{PwtSegmentedButton, SegmentedButton};
 

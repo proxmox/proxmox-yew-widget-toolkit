@@ -28,11 +28,13 @@ pub struct TabBar {
     pub tabs: Vec<TabBarItem>,
 
     /// Selection object to store the currently selected tab key.
+    ///
+    /// The optional selction object allows you to control and observer the state from outside.
     #[builder(IntoPropValue, into_prop_value)]
     pub selection: Option<Selection>,
 
     //#[builder_cb(IntoEventCallback, into_event_callback, Option<Key>)]
-    on_select: Option<Callback<Option<Key>>>,
+    pub on_select: Option<Callback<Option<Key>>>,
 
     pub default_active: Option<Key>,
 
