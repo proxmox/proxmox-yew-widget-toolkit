@@ -13,7 +13,7 @@ mod fab_menu;
 pub use fab_menu::{FabMenu, FabMenuAlign, FabMenuDirection, PwtFabMenu};
 
 mod navigation_bar;
-pub use navigation_bar::{NavigationBar, NavigationBarItem};
+pub use navigation_bar::NavigationBar;
 
 mod page_view;
 pub use page_view::{PageView, PwtPageView};

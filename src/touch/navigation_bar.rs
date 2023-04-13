@@ -7,7 +7,7 @@ use yew::virtual_dom::{Key, VComp, VNode};
 use crate::props::{ContainerBuilder, EventSubscriber, WidgetBuilder};
 use crate::widget::Container;
 
-use super::NavigationBarItem;
+use crate::widget::TabBarItem;
 
 /// Navigation bar (bottom)
 #[derive(Properties, Clone, PartialEq)]
@@ -15,7 +15,7 @@ pub struct NavigationBar {
     /// The yew component key.
     pub key: Option<Key>,
 
-    items: Vec<NavigationBarItem>,
+    items: Vec<TabBarItem>,
 
     // Currently active item.
     pub active_item: Option<Key>,
@@ -23,7 +23,7 @@ pub struct NavigationBar {
 
 impl NavigationBar {
     /// Create a new instance.
-    pub fn new(items: Vec<NavigationBarItem>) -> Self {
+    pub fn new(items: Vec<TabBarItem>) -> Self {
         yew::props!(Self { items })
     }
 
@@ -77,7 +77,8 @@ impl Component for PwtNavigationBar {
             };
 
             let icon = match icon_class {
-                Some(mut icon_class) => {
+                Some(icon_class) => {
+                    let mut icon_class = Classes::from(icon_class.to_string());
                     icon_class.push("pwt-navigation-bar-icon");
 
                     let class = classes!(
