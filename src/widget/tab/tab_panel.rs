@@ -99,57 +99,47 @@ impl TabPanel {
     /// Builder style method to add a static tab panel.
     pub fn with_item(
         mut self,
-        key: impl Into<Key>,
-        label: impl Into<AttrValue>,
-        icon_class: impl IntoPropValue<Option<AttrValue>>,
-        panel: impl Into<VNode>,
+        item: impl Into<TabBarItem>,
+        view: impl Into<VNode>,
     ) -> Self {
-        self.add_item(key, label, icon_class, panel);
+        self.add_item(item, view);
         self
     }
 
     /// Method to add a static tab panel.
     pub fn add_item(
         &mut self,
-        key: impl Into<Key>,
-        label: impl Into<AttrValue>,
-        icon_class: impl IntoPropValue<Option<AttrValue>>,
-        panel: impl Into<VNode>,
+        item: impl Into<TabBarItem>,
+        view: impl Into<VNode>,
     ) {
-        let html = panel.into();
-
-        self.add_item_builder(key, label, icon_class, move |_| html.clone())
+        let html = view.into();
+        self.add_item_builder(item, move |_| html.clone())
     }
 
     /// Builder style method to add a dynamic tab panel.
     pub fn with_item_builder(
         mut self,
-        key: impl Into<Key>,
-        label: impl Into<AttrValue>,
-        icon_class: impl IntoPropValue<Option<AttrValue>>,
+        item: impl Into<TabBarItem>,
         renderer: impl 'static + Fn(&SelectionViewRenderInfo) -> Html,
     ) -> Self {
-        self.add_item_builder(key, label, icon_class, renderer);
+        self.add_item_builder(item, renderer);
         self
     }
 
     /// Method to add a dynamic tab panel.
     pub fn add_item_builder(
         &mut self,
-        key: impl Into<Key>,
-        label: impl Into<AttrValue>,
-        icon_class: impl IntoPropValue<Option<AttrValue>>,
+        item: impl Into<TabBarItem>,
         renderer: impl 'static + Fn(&SelectionViewRenderInfo) -> Html,
     ) {
-        let key = key.into();
-        let mut item = TabBarItem::new().key(key.clone()).label(label.into());
+        let mut item = item.into();
 
-        if let Some(icon_class) = icon_class.into_prop_value() {
-            item.set_icon_class(icon_class);
+        if item.key.is_none() {
+            item.key = Some(Key::from(format!("__tab_panel_item{}", self.bar.tabs.len())));
         }
 
+        self.view.add_builder(item.key.clone().unwrap(), renderer);
         self.bar.add_item(item);
-        self.view.add_builder(key, renderer);
     }
 }
 
