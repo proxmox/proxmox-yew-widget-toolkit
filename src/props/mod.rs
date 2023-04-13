@@ -1,5 +1,12 @@
 //! Common Property types and builder traits
 
+use std::rc::Rc;
+use std::ops::Deref;
+
+use yew::prelude::*;
+use yew::virtual_dom::Key;
+use yew::html::IntoPropValue;
+
 /// Trait which provides mutable access to the class property.
 pub trait AsClassesMut {
     /// Mutable access to the class property.
@@ -11,6 +18,54 @@ impl AsClassesMut for yew::Classes {
         self
     }
 }
+
+
+/// Trait to create optional Key.
+///
+/// # Note
+///
+/// Yew 0.20 does not provide IntoPropValue for Key ...
+/// https://github.com/yewstack/yew/pull/2804
+/// https://github.com/yewstack/yew/issues/3205
+pub trait IntoOptionalKey {
+    fn into_optional_key(self) -> Option<Key>;
+}
+
+impl IntoOptionalKey for Key {
+    fn into_optional_key(self) -> Option<Key> {
+        Some(self)
+    }
+}
+
+impl IntoOptionalKey for Option<Key> {
+    fn into_optional_key(self) -> Option<Key> {
+        self
+    }
+}
+
+macro_rules! key_impl_from_into_prop_value {
+    ($type:ty) => {
+        impl IntoOptionalKey for $type {
+            fn into_optional_key(self) -> Option<Key> {
+                let attr: Option<AttrValue> = self.into_prop_value();
+                attr.map(|me| Key::from(me.deref()))
+            }
+        }
+        impl IntoOptionalKey for Option<$type> {
+            fn into_optional_key(self) -> Option<Key> {
+                let attr: Option<AttrValue> = self.into_prop_value();
+                attr.map(|me| Key::from(me.deref()))
+            }
+        }
+
+    }
+}
+
+key_impl_from_into_prop_value!(&'static str);
+key_impl_from_into_prop_value!(Rc<str>);
+key_impl_from_into_prop_value!(AttrValue);
+key_impl_from_into_prop_value!(String);
+
 
 mod callback_mut;
 pub use callback_mut::{CallbackMut, CallbackMutScopeExt, IntoEventCallbackMut};

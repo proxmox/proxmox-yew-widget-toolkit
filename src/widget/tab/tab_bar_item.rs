@@ -4,6 +4,8 @@ use yew::virtual_dom::{VNode, Key};
 
 use yew::prelude::*;
 
+use crate::props::IntoOptionalKey;
+
 /// TabBar item.
 #[derive(Properties, Clone, PartialEq)]
 pub struct TabBarItem {
@@ -35,14 +37,14 @@ impl TabBarItem {
     }
 
     /// Builder style method to set the yew `key` property
-    pub fn key(mut self, key: impl IntoPropValue<Option<Key>>) -> Self {
+    pub fn key(mut self, key: impl IntoOptionalKey) -> Self {
         self.set_key(key);
         self
     }
 
     /// Method to set the yew `key` property
-    pub fn set_key(&mut self, key: impl IntoPropValue<Option<Key>>) {
-        self.key = key.into_prop_value();
+    pub fn set_key(&mut self, key: impl IntoOptionalKey) {
+        self.key = key.into_optional_key();
     }
 
     /// Builder style method to set the button label.

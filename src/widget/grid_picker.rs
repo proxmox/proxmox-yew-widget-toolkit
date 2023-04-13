@@ -1,20 +1,20 @@
-use std::rc::Rc;
 use std::marker::PhantomData;
+use std::rc::Rc;
 
 use derivative::Derivative;
 use web_sys::HtmlInputElement;
 
-use yew::prelude::*;
 use yew::html::{IntoEventCallback, IntoPropValue};
+use yew::prelude::*;
 use yew::virtual_dom::{Key, VComp, VNode};
 
 use crate::prelude::*;
-use crate::state::{Selection, SelectionObserver, DataStore};
-use crate::widget::{Column, Input, Row};
+use crate::state::{DataStore, Selection, SelectionObserver};
 use crate::widget::data_table::{DataTable, DataTableMouseEvent};
+use crate::widget::{Column, Input, Row};
 
 #[derive(Derivative, Properties)]
-#[derivative(Clone(bound=""), PartialEq(bound=""))]
+#[derivative(Clone(bound = ""), PartialEq(bound = ""))]
 pub struct GridPicker<S: DataStore> {
     #[prop_or_default]
     node_ref: NodeRef,
@@ -43,7 +43,6 @@ pub struct GridPicker<S: DataStore> {
 }
 
 impl<S: DataStore> GridPicker<S> {
-
     // Create a new instance.
     pub fn new(table: DataTable<S>) -> Self {
         yew::props!(Self { table })
@@ -61,14 +60,14 @@ impl<S: DataStore> GridPicker<S> {
     }
 
     /// Builder style method to set the yew `key` property
-    pub fn key(mut self, key: impl IntoPropValue<Option<Key>>) -> Self {
+    pub fn key(mut self, key: impl IntoOptionalKey) -> Self {
         self.set_key(key);
         self
     }
 
     /// Method to set the yew `key` property
-    pub fn set_key(&mut self, key: impl IntoPropValue<Option<Key>>) {
-        self.key = key.into_prop_value();
+    pub fn set_key(&mut self, key: impl IntoOptionalKey) {
+        self.key = key.into_optional_key();
     }
 
     /// Builder style method to set the selection model.
@@ -116,7 +115,6 @@ pub struct PwtGridPicker<S> {
 }
 
 impl<S: DataStore> PwtGridPicker<S> {
-
     fn update_filter(&mut self, props: &GridPicker<S>, filter: String) {
         self.filter = filter;
 
@@ -130,12 +128,10 @@ impl<S: DataStore> PwtGridPicker<S> {
             self.store.set_filter({
                 let extract_key_fn = self.store.get_extract_key_fn();
                 let filter = self.filter.clone();
-                crate::props::FilterFn::new(
-                    move |item| {
-                        let key = extract_key_fn.apply(item);
-                        key.to_lowercase().contains(&filter.to_lowercase())
-                    }
-                )
+                crate::props::FilterFn::new(move |item| {
+                    let key = extract_key_fn.apply(item);
+                    key.to_lowercase().contains(&filter.to_lowercase())
+                })
             });
         }
     }
@@ -187,7 +183,9 @@ impl<S: DataStore + 'static> Component for PwtGridPicker<S> {
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
 
-        let table: Html = props.table.clone()
+        let table: Html = props
+            .table
+            .clone()
             .key(Key::from("picker-table"))
             .autoselect(false)
             .hover(true)
@@ -206,7 +204,11 @@ impl<S: DataStore + 'static> Component for PwtGridPicker<S> {
             .class("pwt-flex-fill pwt-overflow-auto");
 
         let show_filter = props.show_filter.unwrap_or_else(|| {
-            if self.store.data_len() > 10 { true } else { false }
+            if self.store.data_len() > 10 {
+                true
+            } else {
+                false
+            }
         });
 
         if show_filter {
@@ -215,20 +217,24 @@ impl<S: DataStore + 'static> Component for PwtGridPicker<S> {
                 .key(Key::from("picker-filter"))
                 .gap(2)
                 .class("pwt-p-2 pwt-w-100 pwt-align-items-center")
-                .with_child(html!{<label for="testinput">{"Filter"}</label>})
+                .with_child(html! {<label for="testinput">{"Filter"}</label>})
                 .with_child(
-                   Input::new()
+                    Input::new()
                         .attribute("autocomplete", "off")
                         .attribute("size", "1") // make size minimal
                         .class("pwt-input")
                         .class("pwt-w-100")
-                        .class(if filter_invalid { "is-invalid" } else { "is-valid" })
+                        .class(if filter_invalid {
+                            "is-invalid"
+                        } else {
+                            "is-valid"
+                        })
                         .attribute("value", self.filter.clone())
                         .attribute("aria-invalid", filter_invalid.then(|| "true"))
                         .oninput(ctx.link().callback(move |event: InputEvent| {
                             let input: HtmlInputElement = event.target_unchecked_into();
                             Msg::FilterUpdate(input.value())
-                        }))
+                        })),
                 );
 
             view.add_child(filter);

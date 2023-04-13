@@ -1,8 +1,8 @@
 use yew::prelude::*;
 use yew::html::IntoPropValue;
-use yew::virtual_dom::{Key, VNode};
+use yew::virtual_dom::VNode;
 
-use super::WidgetStdProps;
+use super::{WidgetStdProps, IntoOptionalKey};
 
 /// Defines common builder methods for widgets.
 pub trait WidgetBuilder: Into<VNode> {
@@ -27,14 +27,14 @@ pub trait WidgetBuilder: Into<VNode> {
     }
 
     /// Builder style method to set the yew `key` property
-    fn key(mut self, key: impl IntoPropValue<Option<Key>>) -> Self {
+    fn key(mut self, key: impl IntoOptionalKey) -> Self {
         self.set_key(key);
         self
     }
 
     /// Method to set the yew `key` property
-    fn set_key(&mut self, key: impl IntoPropValue<Option<Key>>) {
-        self.as_std_props_mut().key = key.into_prop_value();
+    fn set_key(&mut self, key: impl IntoOptionalKey) {
+        self.as_std_props_mut().key = key.into_optional_key();
     }
 
     /// Builder style method to add a html class

@@ -1,13 +1,13 @@
 use std::rc::Rc;
 
-use web_sys::HtmlElement;
 use wasm_bindgen::JsCast;
+use web_sys::HtmlElement;
 
+use yew::html::IntoPropValue;
 use yew::prelude::*;
 use yew::virtual_dom::{Key, VComp, VNode};
-use yew::html::IntoPropValue;
 
-use crate::props::ContainerBuilder;
+use crate::props::{ContainerBuilder, IntoOptionalKey};
 use crate::widget::Fa;
 
 /// Container which optionaly masks its content.
@@ -38,7 +38,6 @@ impl ContainerBuilder for Mask {
 }
 
 impl Mask {
-
     /// Create a new instance.
     pub fn new() -> Self {
         yew::props!(Mask {})
@@ -56,14 +55,14 @@ impl Mask {
     }
 
     /// Builder style method to set the yew `key` property
-    pub fn key(mut self, key: impl IntoPropValue<Option<Key>>) -> Self {
+    pub fn key(mut self, key: impl IntoOptionalKey) -> Self {
         self.set_key(key);
         self
     }
 
     /// Method to set the yew `key` property
-    pub fn set_key(&mut self, key: impl IntoPropValue<Option<Key>>) {
-        self.key = key.into_prop_value();
+    pub fn set_key(&mut self, key: impl IntoOptionalKey) {
+        self.key = key.into_optional_key();
     }
 
     /// Builder style method to set the `vibible` property
@@ -95,7 +94,6 @@ pub struct PwtMask {
 }
 
 impl PwtMask {
-
     fn save_focused_element(&mut self, node_ref: &NodeRef) {
         if let Some(el) = node_ref.cast::<HtmlElement>() {
             if let Ok(Some(focused_el)) = el.query_selector(":focus") {
@@ -119,19 +117,17 @@ impl Component for PwtMask {
     type Properties = Mask;
 
     fn create(_ctx: &Context<Self>) -> Self {
-        Self {
-            last_active: None,
-         }
+        Self { last_active: None }
     }
 
-     fn rendered(&mut self, ctx: &Context<Self>, first_render: bool) {
-         if first_render {
-             let props = ctx.props();
-             if props.visible {
-                 self.save_focused_element(&props.node_ref);
-             }
-         }
-     }
+    fn rendered(&mut self, ctx: &Context<Self>, first_render: bool) {
+        if first_render {
+            let props = ctx.props();
+            if props.visible {
+                self.save_focused_element(&props.node_ref);
+            }
+        }
+    }
 
     fn changed(&mut self, ctx: &Context<Self>, old_props: &Self::Properties) -> bool {
         let props = ctx.props();
@@ -154,7 +150,7 @@ impl Component for PwtMask {
             &props.text
         };
 
-        html!{
+        html! {
             <div class="pwt-fit" ref={props.node_ref.clone()} style="position:relative;">
             {props.children.clone()}
             if props.visible {

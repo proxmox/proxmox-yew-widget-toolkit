@@ -212,6 +212,7 @@ pub mod prelude {
     #[doc(hidden)]
     pub use yew::prelude::*;
 
+    pub use crate::props::IntoOptionalKey;
     pub use crate::props::CallbackMutScopeExt;
     pub use crate::props::ContainerBuilder;
     pub use crate::props::CssBorderBuilder;

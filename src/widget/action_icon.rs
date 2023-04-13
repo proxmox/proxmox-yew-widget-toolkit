@@ -4,6 +4,7 @@ use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode, Key};
 use yew::html::{IntoEventCallback, IntoPropValue};
 
+use crate::prelude::IntoOptionalKey;
 use crate::props::{EventSubscriber, WidgetBuilder};
 use crate::widget::Container;
 
@@ -59,14 +60,14 @@ impl ActionIcon {
     }
 
     /// Builder style method to set the yew `key` property
-    pub fn key(mut self, key: impl IntoPropValue<Option<Key>>) -> Self {
+    pub fn key(mut self, key: impl IntoOptionalKey) -> Self {
         self.set_key(key);
         self
     }
 
     /// Method to set the yew `key` property
-    pub fn set_key(&mut self, key: impl IntoPropValue<Option<Key>>) {
-        self.key = key.into_prop_value();
+    pub fn set_key(&mut self, key: impl IntoOptionalKey) {
+        self.key = key.into_optional_key();
     }
 
     /// Builder style method to add a html class
