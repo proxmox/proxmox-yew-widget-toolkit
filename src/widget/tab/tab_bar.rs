@@ -1,18 +1,17 @@
 use std::rc::Rc;
 
-use yew::virtual_dom::{Key, VComp, VNode};
 use yew::html::{IntoEventCallback, IntoPropValue};
+use yew::virtual_dom::{Key, VComp, VNode};
 
 use crate::prelude::*;
 use crate::state::{NavigationContext, NavigationContextExt, Selection};
-use crate::widget::focus::roving_tabindex_next;
 use crate::widget::dom::element_direction_rtl;
+use crate::widget::focus::roving_tabindex_next;
 use crate::widget::Container;
 
 use super::TabBarItem;
 
 use pwt_macros::builder;
-
 
 #[derive(Clone, Default, PartialEq, Properties)]
 #[builder]
@@ -47,9 +46,7 @@ pub struct TabBar {
     router: bool,
 }
 
-
 impl TabBar {
-
     pub fn new() -> Self {
         yew::props!(TabBar {})
     }
@@ -92,7 +89,7 @@ impl TabBar {
         }
 
         for item in &self.tabs {
-            if let TabBarItem { key: Some(key), ..} = item {
+            if let TabBarItem { key: Some(key), .. } = item {
                 return Some(key.clone());
             }
         }
@@ -125,15 +122,20 @@ fn get_active_or_default(props: &TabBar, active: &Option<Key>) -> Option<Key> {
 }
 
 impl PwtTabBar {
-    fn init_selection(ctx: &Context<Self>, selection: Option<Selection>, active: &Option<Key>) -> Selection {
+    fn init_selection(
+        ctx: &Context<Self>,
+        selection: Option<Selection>,
+        active: &Option<Key>,
+    ) -> Selection {
         let selection = match selection {
             Some(selection) => selection,
             None => Selection::new(),
-        }.on_select(ctx.link().callback(Msg::SelectionChange));
+        }
+        .on_select(ctx.link().callback(Msg::SelectionChange));
 
         if let Some(active) = &active {
             selection.select(active.clone());
-        } else  {
+        } else {
             selection.clear();
         }
 
@@ -161,7 +163,9 @@ impl Component for PwtTabBar {
                     link.send_message(Msg::Select(Some(key)));
                 }
             });
-            if let Some((nav_ctx, handle)) = ctx.link().context::<NavigationContext>(on_nav_ctx_change) {
+            if let Some((nav_ctx, handle)) =
+                ctx.link().context::<NavigationContext>(on_nav_ctx_change)
+            {
                 //log::info!("INIT CTX {:?}", nav_ctx);
                 _nav_ctx_handle = Some(handle);
                 let path = nav_ctx.path();
@@ -188,7 +192,9 @@ impl Component for PwtTabBar {
             }
             Msg::SelectionChange(selection) => {
                 let key = selection.selected_key();
-                if &self.active == &key { return false; }
+                if &self.active == &key {
+                    return false;
+                }
 
                 self.active = get_active_or_default(props, &key);
 
@@ -204,7 +210,9 @@ impl Component for PwtTabBar {
                 true
             }
             Msg::Select(key) => {
-                if &self.active == &key { return false; }
+                if &self.active == &key {
+                    return false;
+                }
 
                 if let Some(key) = &key {
                     self.selection.select(key.clone());
@@ -229,40 +237,58 @@ impl Component for PwtTabBar {
 
         let active = get_active_or_default(props, &self.active);
 
-        let pills = props.tabs.iter().map(|panel| {
-            let is_active = if let Some(active) = &active {
-                panel.key.as_ref() == Some(active)
-            } else {
-                false
-            };
+        let pills = props
+            .tabs
+            .iter()
+            .map(|panel| {
+                let is_active = if let Some(active) = &active {
+                    panel.key.as_ref() == Some(active)
+                } else {
+                    false
+                };
 
-            let nav_class = if is_active { "pwt-nav-link active" } else { "pwt-nav-link" };
+                let nav_class = if is_active {
+                    "pwt-nav-link active"
+                } else {
+                    "pwt-nav-link"
+                };
 
-            let onclick = ctx.link().callback({
-                let key = panel.key.clone();
-                move |_| Msg::Select(key.clone())
-            });
-            let onkeyup = Callback::from({
-                let link = ctx.link().clone();
-                let key = panel.key.clone();
-                move |event: KeyboardEvent| {
-                    if event.key_code() == 32 {
-                        link.send_message(Msg::Select(key.clone()));
+                let onclick = ctx.link().callback({
+                    let key = panel.key.clone();
+                    let on_activate = panel.on_activate.clone();
+                    move |_| {
+                        if let Some(on_activate) = &on_activate {
+                            on_activate.emit(());
+                        }
+                        Msg::Select(key.clone())
                     }
+                });
+                let onkeyup = Callback::from({
+                    let link = ctx.link().clone();
+                    let key = panel.key.clone();
+                    let on_activate = panel.on_activate.clone();
+                    move |event: KeyboardEvent| {
+                        if event.key_code() == 32 {
+                            if let Some(on_activate) = &on_activate {
+                                on_activate.emit(());
+                            }
+                            link.send_message(Msg::Select(key.clone()));
+                        }
+                    }
+                });
+
+                let tabindex = if is_active { "0" } else { "-1" };
+
+                html! {
+                    <a {onclick} {onkeyup} class={nav_class} {tabindex}>
+                        if let Some(class) = &panel.icon_class {
+                            <span class={class.to_string()} aria-hidden="true"/>
+                        }
+                        {panel.label.as_deref().unwrap_or("")}
+                    </a>
                 }
-            });
-
-            let tabindex = if is_active { "0" } else { "-1" };
-
-            html!{
-                <a {onclick} {onkeyup} class={nav_class} {tabindex}>
-                    if let Some(class) = &panel.icon_class {
-                        <span class={class.to_string()} aria-hidden="true"/>
-                    }
-                    {panel.label.as_deref().unwrap_or("")}
-                </a>
-            }
-        }).collect::<Html>();
+            })
+            .collect::<Html>();
 
         let pills_ref = props.node_ref.clone();
         let rtl = self.rtl.unwrap_or(false);
@@ -274,10 +300,12 @@ impl Component for PwtTabBar {
             .with_child(pills)
             .onkeydown(move |event: KeyboardEvent| {
                 match event.key_code() {
-                    39 => { // left
+                    39 => {
+                        // left
                         roving_tabindex_next(&pills_ref, rtl, false);
                     }
-                    37 => { // right
+                    37 => {
+                        // right
                         roving_tabindex_next(&pills_ref, !rtl, false);
                     }
                     _ => return,

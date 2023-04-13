@@ -4,7 +4,7 @@ use yew::virtual_dom::{VNode, Key};
 
 use yew::prelude::*;
 
-/// Navigation bar item.
+/// TabBar item.
 #[derive(Properties, Clone, PartialEq)]
 pub struct TabBarItem {
     /// The yew component key.
@@ -22,6 +22,9 @@ pub struct TabBarItem {
     /// Optional tooltip.
     pub tip: Option<VNode>,
 
+    /// Activation callback.
+    ///
+    /// Emitted when the button is tapped, clicked or activated by keyboard.
     pub on_activate: Option<Callback<()>>,
 }
 
