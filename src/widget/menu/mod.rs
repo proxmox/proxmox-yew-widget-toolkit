@@ -13,6 +13,8 @@ use crate::prelude::*;
 use crate::widget::{get_unique_element_id, Container};
 use crate::widget::focus::get_first_focusable;
 
+use pwt_macros::builder;
+
 mod menu_event;
 pub use menu_event::MenuEvent;
 
@@ -74,6 +76,7 @@ pub enum MenuControllerMsg {
 ///
 /// See <https://www.w3.org/WAI/ARIA/apg/patterns/menu/>.
 #[derive(Clone, PartialEq, Properties)]
+#[builder]
 pub struct Menu {
     #[prop_or_default]
     children: Vec<MenuEntry>,
@@ -87,16 +90,21 @@ pub struct Menu {
     // Methods below are used internally.
 
     #[prop_or_default]
+    #[builder]
     pub(crate) autofocus: bool,
 
     #[prop_or_default]
+    #[builder]
     pub(crate) menubar: bool,
 
     #[prop_or_default]
+    #[builder]
     pub(crate) menubar_child: bool,
 
+    #[builder_cb(IntoEventCallback, into_event_callback, MenuControllerMsg)]
     pub(crate) menu_controller: Option<Callback<MenuControllerMsg>>,
 
+   #[builder_cb(IntoEventCallback, into_event_callback, ())]
     pub(crate) on_close: Option<Callback<()>>,
 }
 
@@ -162,39 +170,6 @@ impl Menu {
     /// Method to add multiple items.
     pub fn add_items(&mut self, children: impl IntoIterator<Item = MenuEntry>) {
         self.children.extend(children);
-    }
-
-    pub fn autofocus(mut self, autofocus: bool) -> Self {
-        self.set_autofocus(autofocus);
-        self
-    }
-
-    pub fn set_autofocus(&mut self, autofocus: bool) {
-        self.autofocus = autofocus;
-    }
-
-    pub(crate) fn menubar(mut self, menubar: bool) -> Self {
-        self.set_menubar(menubar);
-        self
-    }
-
-    pub(crate) fn set_menubar(&mut self, menubar: bool) {
-        self.menubar = menubar;
-    }
-
-    pub(crate) fn menubar_child(mut self, menubar_child: bool) -> Self {
-        self.menubar_child = menubar_child;
-        self
-    }
-
-    pub fn on_close(mut self, cb: impl IntoEventCallback<()>) -> Self {
-        self.on_close = cb.into_event_callback();
-        self
-    }
-
-    pub(crate) fn menu_controller(mut self, cb: impl IntoEventCallback<MenuControllerMsg>) -> Self {
-        self.menu_controller = cb.into_event_callback();
-        self
     }
 }
 
