@@ -104,7 +104,7 @@ pub struct Menu {
     #[builder_cb(IntoEventCallback, into_event_callback, MenuControllerMsg)]
     pub(crate) menu_controller: Option<Callback<MenuControllerMsg>>,
 
-   #[builder_cb(IntoEventCallback, into_event_callback, ())]
+    #[builder_cb(IntoEventCallback, into_event_callback, ())]
     pub(crate) on_close: Option<Callback<()>>,
 }
 

@@ -150,6 +150,7 @@ impl FieldState {
         value: impl Into<Value>,
         default: impl Into<Value>,
         radio_group: bool,
+        unique: bool,
     ) {
         let name = match &props.name {
             Some(name) => name,
@@ -181,6 +182,7 @@ impl FieldState {
             radio_group,
             Some(self.real_validate.clone()),
             options,
+            unique,
         );
 
         self.field_handle = Some(field_handle);
@@ -207,12 +209,13 @@ impl FieldState {
         msg: FieldStateMsg,
         default: impl Into<Value>,
         radio_group: bool,
+        unique: bool,
     ) -> bool {
         match msg {
             FieldStateMsg::FormCtxUpdate(form_ctx) => {
                 self._form_ctx_observer = Some(form_ctx.add_listener(self.on_form_data_change.clone()));
                 self.form_ctx = Some(form_ctx);
-                self.register_field(props, self.value.clone(), default, radio_group);
+                self.register_field(props, self.value.clone(), default, radio_group, unique);
                 true
             }
             FieldStateMsg::FormCtxDataChange => {

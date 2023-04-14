@@ -39,6 +39,7 @@ struct FieldRegistration {
     pub name: AttrValue,
     pub validate: Option<ValidateFn<Value>>,
     pub radio_group: bool,
+    pub unique: bool,
     pub options: FieldOptions,
     pub value: Value,
     pub default: Value,
@@ -231,9 +232,10 @@ impl FormContext {
         radio_group: bool,
         validate: Option<ValidateFn<Value>>,
         options: FieldOptions,
+        unique: bool,
     ) -> FieldHandle {
         let key = self.inner.borrow_mut()
-            .register_field(name, value, default, radio_group, validate, options);
+            .register_field(name, value, default, radio_group, validate, options, unique);
 
         FieldHandle { key, form_ctx: self.clone() }
     }
@@ -348,6 +350,8 @@ impl FormContextState {
         self.listeners.remove(key);
     }
 
+    // Note: "unique" fields try to reuse existing state. We need this for MenuCheckbox.
+    // There might be a better solution providing an extra state-key instead...
     fn register_field(
         &mut self,
         name: impl IntoPropValue<AttrValue>,
@@ -356,8 +360,11 @@ impl FormContextState {
         radio_group: bool,
         validate: Option<ValidateFn<Value>>,
         options: FieldOptions,
+        unique: bool,
     ) -> usize {
         let name = name.into_prop_value();
+
+        let unique = if radio_group { false } else { unique };
 
         let mut valid = Ok(());
         if let Some(validate) = &validate {
@@ -369,14 +376,26 @@ impl FormContextState {
             name: name.clone(),
             validate,
             radio_group,
+            unique,
             options,
             value,
             default: default.clone(),
             valid,
         };
 
+        let slab_key;
+
+        if unique {
+            if let Some((old_key, _)) = self.fields.iter().find(|(_key, reg)| reg.name == name) {
+                slab_key = old_key;
+            } else {
+                slab_key = self.fields.insert(field);
+            }
+        } else {
+            slab_key = self.fields.insert(field);
+        }
+
         self.version += 1;
-        let slab_key = self.fields.insert(field);
 
         let group = self.groups.entry(name).or_insert(GroupState {
             value: None,
@@ -399,6 +418,12 @@ impl FormContextState {
 
     fn unregister_field(&mut self, key: usize) {
         self.version += 1;
+        if let Some(field) = self.fields.get(key) {
+            if field.unique {
+                // log::info!("Keep Unique field data");
+                return;
+            }
+        }
         let field = self.fields.remove(key);
         let group = self.groups.get_mut(&field.name).unwrap();
         group.members.retain(|k| k != &key);

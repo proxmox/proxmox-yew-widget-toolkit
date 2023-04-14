@@ -298,7 +298,7 @@ impl Component for PwtField {
         };
 
         if let Some(name) = &props.input_props.name {
-            me.state.register_field(&props.input_props, value, default, false);
+            me.state.register_field(&props.input_props, value, default, false, false);
             if props.value.is_some() || props.valid.is_some() {
                 log::error!("Field '{name}' is named - unable to force value/valid");
             }
@@ -316,7 +316,7 @@ impl Component for PwtField {
         match msg {
             Msg::StateUpdate(state_msg) => {
                 let default = props.default.as_deref().unwrap_or("").to_string();
-                self.state.update_hook(&props.input_props, state_msg, default, false)
+                self.state.update_hook(&props.input_props, state_msg, default, false, false)
             }
             Msg::Update(value) => {
                 if props.input_props.disabled { return true; }

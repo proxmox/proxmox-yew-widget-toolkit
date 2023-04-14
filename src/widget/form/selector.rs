@@ -285,7 +285,7 @@ impl<S: DataStore + 'static> Component for PwtSelector<S> {
         };
 
         if props.input_props.name.is_some() {
-            me.state.register_field(&props.input_props, default.clone(), default, false);
+            me.state.register_field(&props.input_props, default.clone(), default, false, false);
         } else {
             me.state.force_value(default, None);
         }
@@ -300,7 +300,7 @@ impl<S: DataStore + 'static> Component for PwtSelector<S> {
         match msg {
             Msg::StateUpdate(state_msg) => {
                 let default = props.default.as_deref().unwrap_or("").to_string();
-                let changes = self.state.update_hook(&props.input_props, state_msg, default, false);
+                let changes = self.state.update_hook(&props.input_props, state_msg, default, false, false);
                 if changes {
                     let (value, _valid) = self.state.get_field_data();
                     self.selection.select(Key::from(value.as_str().unwrap_or("")));

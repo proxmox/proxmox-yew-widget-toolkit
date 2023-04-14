@@ -123,7 +123,7 @@ impl Component for PwtBoolean {
         let default = props.default.unwrap_or(false);
 
         if let Some(name) = &props.input_props.name {
-            me.state.register_field(&props.input_props, default, default, false);
+            me.state.register_field(&props.input_props, default, default, false, false);
             if props.checked.is_some() {
                 log::error!("Boolean '{name}' is named - unable to force checked.");
             }
@@ -140,7 +140,7 @@ impl Component for PwtBoolean {
         match msg {
             Msg::StateUpdate(state_msg) => {
                 let default = props.default.unwrap_or(false);
-                self.state.update_hook(&props.input_props, state_msg, default, false)
+                self.state.update_hook(&props.input_props, state_msg, default, false, false)
             }
             Msg::Toggle => {
                 if props.input_props.disabled { return true; }

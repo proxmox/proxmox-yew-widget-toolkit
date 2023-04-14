@@ -184,7 +184,7 @@ impl Component for PwtMenuCheckbox {
         };
 
         if let Some(name) = &props.input_props.name {
-            me.state.register_field(&props.input_props, default.clone(), default, props.radio_group);
+            me.state.register_field(&props.input_props, default.clone(), default, props.radio_group, true);
             if props.checked.is_some() {
                 log::error!("MenuCheckbox '{name}' is named - unable to force checked.");
             }
@@ -208,7 +208,7 @@ impl Component for PwtMenuCheckbox {
                     Some(true) => on_value.clone(),
                     _ => String::new(),
                 };
-                self.state.update_hook(&props.input_props, state_msg, default, props.radio_group)
+                self.state.update_hook(&props.input_props, state_msg, default, props.radio_group, true)
             }
             Msg::Toggle => {
                 if props.input_props.disabled { return false; }
@@ -244,11 +244,13 @@ impl Component for PwtMenuCheckbox {
                     }
                 }
 
+                /*
                 if !event.get_keep_open() {
                     if let Some(menu_controller) = &props.menu_controller {
                         menu_controller.emit(MenuControllerMsg::Collapse);
                     }
                 }
+                */
 
                 true
             }
