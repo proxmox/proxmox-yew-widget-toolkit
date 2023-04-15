@@ -25,8 +25,9 @@ impl AsClassesMut for yew::Classes {
 /// # Note
 ///
 /// Yew 0.20 does not provide IntoPropValue for Key ...
-/// https://github.com/yewstack/yew/pull/2804
-/// https://github.com/yewstack/yew/issues/3205
+///
+/// - see <https://github.com/yewstack/yew/pull/2804>
+/// - see <https://github.com/yewstack/yew/issues/3205>
 pub trait IntoOptionalKey {
     fn into_optional_key(self) -> Option<Key>;
 }

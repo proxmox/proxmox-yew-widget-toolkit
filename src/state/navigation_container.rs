@@ -33,6 +33,11 @@ fn normalize_path(path: &str) -> String {
     new
 }
 
+/// Context for [NavigationContainer] to create a composable route hierarchy.
+///
+/// Each [NavigationContainer] provides this context using a [ContextProvider].
+///
+/// The route is split into three compoments as "/parent_path/path/child_path".
 #[derive(Clone, Debug, PartialEq)]
 pub struct NavigationContext {
     child_path: Option<String>,
@@ -43,9 +48,22 @@ pub struct NavigationContext {
 
 impl NavigationContext {
 
+    /// Returns the path component of the route.
     pub fn path(&self) -> String {
         self.path.clone()
     }
+
+    /// Returns the parent_path of the route.
+    pub fn parent_path(&self) -> Option<String> {
+        self.parent_path.clone()
+    }
+
+    /// Returns the child_path of the route.
+    pub fn child_path(&self) -> Option<String> {
+        self.child_path.clone()
+    }
+
+    /// Returns the full route to this context ("/parent_path/path")
     pub fn full_path(&self) -> String {
         if let Some(parent_path) = &self.parent_path {
             format!("{}/{}", normalize_segment(parent_path), normalize_segment(&self.path))
@@ -54,6 +72,7 @@ impl NavigationContext {
         }
     }
 
+    /// Returns the [NavigationContext] for the next route component.
     pub fn child_context(&self) -> NavigationContext {
         match &self.child_path {
             Some(full_path) => {
@@ -202,9 +221,13 @@ impl Into<VNode> for NavigationContainer {
 }
 
 pub trait NavigationContextExt {
+    /// Access the [NavigationContext] from the [ContextProvider].
     fn nav_context(&self) -> Option<NavigationContext>;
+    /// Returns the full route to this context ("/parent_path/path").
     fn full_path(&self) -> Option<String>;
-    fn child_path(&self) -> Option<String>;
+    /// Change the current route to "/parent_path/path".
+    ///
+    /// Only works if the scope provides a [Navigator](yew_router::navigator::Navigator).
     fn push_relative_route(&self, path: &str);
 }
 
@@ -218,11 +241,6 @@ impl<COMP: Component> NavigationContextExt for yew::html::Scope<COMP> {
     fn full_path(&self) -> Option<String> {
         self.nav_context()
             .map(|nav_ctx| nav_ctx.full_path())
-    }
-
-    fn child_path(&self) -> Option<String> {
-        self.nav_context()
-            .map(|nav_ctx| nav_ctx.child_context().path)
     }
 
     fn push_relative_route(&self, path: &str) {

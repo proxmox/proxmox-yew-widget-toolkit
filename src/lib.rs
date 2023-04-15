@@ -109,7 +109,7 @@
 //! - [widget::menu::MenuBar]: Operating system like menu bar.
 //! - [widget::menu::MenuButton]: A button that opens a [Menu](widget::menu::Menu).
 //! - [widget::menu::MenuCheckbox]: Checkbox/RadioGroup widget for [Menu](widget::menu::Menu)s.
-//! - [widget::nav_menu::NavigationMenu]: Navigation menu with routing support.
+//! - [widget::nav_menu::NavMenu]: Navigation menu with routing support.
 
 //! ### DataTable and Trees
 //!
@@ -140,7 +140,7 @@
 //! routing. Please note that navigation container can be nested.
 //!
 //! - [widget::TabPanel::navigation_container]
-//! - [widget::nav_menu::NavigationMenu::navigation_container]
+//! - [widget::nav_menu::NavMenu::navigation_container]
 
 pub mod css;
 pub mod props;
