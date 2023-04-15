@@ -119,6 +119,14 @@ fn location_to_nav_ctx(loc: &Option<Location>) -> NavigationContext {
     }
 }
 
+/// Simple way to create a router using nested components.
+///
+/// Each [NavigationContainer] manages one hierarchy of route, and provides
+/// a [NavigationContext] to its children using a [ContextProvider].
+///
+/// Widgets like [TabPanel](crate::widget::TabPanel::navigation_container) and
+/// [NavMenu](widget::nav_menu::NavMenu::navigation_container]) use the
+/// [NavigationContainer] to implement fully automatic routing.
 #[derive(Properties, PartialEq, Clone)]
 pub struct NavigationContainer {
     active: Option<AttrValue>,
