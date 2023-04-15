@@ -1,12 +1,11 @@
 use std::rc::Rc;
 
+use crate::props::ContainerBuilder;
 use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
-use yew_router::AnyRoute;
-use yew_router::scope_ext::{RouterScopeExt, LocationHandle};
 use yew_router::history::Location;
-use crate::props::ContainerBuilder;
-
+use yew_router::scope_ext::{LocationHandle, RouterScopeExt};
+use yew_router::AnyRoute;
 
 // Note: We do not use empty path segment. Instead we use '_' for empty segments.
 // gloo::HashHistory constructs the location using (for "https://example.com#//menu2")
@@ -26,7 +25,9 @@ fn normalize_path(path: &str) -> String {
     let mut new = String::new();
     for seg in path.split('/') {
         if !seg.is_empty() {
-            if !new.is_empty() { new.push('/'); }
+            if !new.is_empty() {
+                new.push('/');
+            }
             new.push_str(seg);
         }
     }
@@ -45,9 +46,7 @@ pub struct NavigationContext {
     path: String,
 }
 
-
 impl NavigationContext {
-
     /// Returns the path component of the route.
     pub fn path(&self) -> String {
         self.path.clone()
@@ -66,7 +65,11 @@ impl NavigationContext {
     /// Returns the full route to this context ("/parent_path/path")
     pub fn full_path(&self) -> String {
         if let Some(parent_path) = &self.parent_path {
-            format!("{}/{}", normalize_segment(parent_path), normalize_segment(&self.path))
+            format!(
+                "{}/{}",
+                normalize_segment(parent_path),
+                normalize_segment(&self.path)
+            )
         } else {
             format!("/{}", normalize_segment(&self.path))
         }
@@ -86,19 +89,16 @@ impl NavigationContext {
                     parent_path: Some(self.full_path()),
                 }
             }
-            None => {
-                NavigationContext {
-                    child_path: None,
-                    path: String::new(),
-                    parent_path: Some(self.full_path()),
-                }
-            }
+            None => NavigationContext {
+                child_path: None,
+                path: String::new(),
+                parent_path: Some(self.full_path()),
+            },
         }
     }
 }
 
 fn location_to_nav_ctx(loc: &Option<Location>) -> NavigationContext {
-
     //log::info!("LOCATION {:?}", loc);
 
     let full_path = match loc {
@@ -127,11 +127,9 @@ pub struct NavigationContainer {
 }
 
 impl NavigationContainer {
-
     pub fn new() -> Self {
         yew::props!(Self {})
     }
-
 }
 
 impl ContainerBuilder for NavigationContainer {
@@ -161,7 +159,9 @@ impl Component for PwtNavigationContainer {
         let location_context_handle;
         let nav_ctx;
         let on_ctx_update = ctx.link().callback(|nav_ctx| Msg::NavCtxUpdate(nav_ctx));
-        if let Some((parent_nav_ctx, handle)) = ctx.link().context::<NavigationContext>(on_ctx_update) {
+        if let Some((parent_nav_ctx, handle)) =
+            ctx.link().context::<NavigationContext>(on_ctx_update)
+        {
             nav_ctx = parent_nav_ctx.child_context();
             parent_context_handle = Some(handle);
             location_context_handle = None;
@@ -205,11 +205,11 @@ impl Component for PwtNavigationContainer {
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
         //log::info!("NAVCTX {:?}", self.nav_ctx);
-        html!{
-            <ContextProvider<NavigationContext> context={self.nav_ctx.clone()}>
-                {props.children.clone()}
-            </ContextProvider<NavigationContext>>
-         }
+        html! {
+           <ContextProvider<NavigationContext> context={self.nav_ctx.clone()}>
+               {props.children.clone()}
+           </ContextProvider<NavigationContext>>
+        }
     }
 }
 
@@ -232,21 +232,20 @@ pub trait NavigationContextExt {
 }
 
 impl<COMP: Component> NavigationContextExt for yew::html::Scope<COMP> {
-
     fn nav_context(&self) -> Option<NavigationContext> {
         self.context::<NavigationContext>(Callback::from(|_| {}))
             .map(|(nav_ctx, _)| nav_ctx)
     }
 
     fn full_path(&self) -> Option<String> {
-        self.nav_context()
-            .map(|nav_ctx| nav_ctx.full_path())
+        self.nav_context().map(|nav_ctx| nav_ctx.full_path())
     }
 
     fn push_relative_route(&self, path: &str) {
         let path = normalize_segment(path);
         //log::info!("PUSH REL {}", path);
-        if let Some((nav_ctx, _handle)) = self.context::<NavigationContext>(Callback::from(|_| {})) {
+        if let Some((nav_ctx, _handle)) = self.context::<NavigationContext>(Callback::from(|_| {}))
+        {
             let abs_path = match &nav_ctx.parent_path {
                 Some(parent_path) => format!("{}/{}", parent_path, path),
                 None => format!("/{}", path),
@@ -271,5 +270,4 @@ impl<COMP: Component> NavigationContextExt for yew::html::Scope<COMP> {
             }
         }
     }
-
 }
