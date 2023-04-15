@@ -57,10 +57,26 @@ impl TabBar {
         self
     }
 
-    /// Builder style method to set the yew `key` property
-    pub fn key(mut self, key: impl Into<Key>) -> Self {
-        self.key = Some(key.into());
+    // Builder style method to set the yew `key` property.
+    pub fn key(mut self, key: impl IntoOptionalKey) -> Self {
+        self.set_key(key);
         self
+    }
+
+    /// Method to set the yew `key` property.
+    pub fn set_key(&mut self, key: impl IntoOptionalKey) {
+        self.key = key.into_optional_key();
+    }
+
+    // Builder style method to set `default_active` property.
+    pub fn default_active(mut self, default_active: impl IntoOptionalKey) -> Self {
+        self.set_default_active(default_active);
+        self
+    }
+
+    /// Method to set the yew `default_active` property.
+    pub fn set_default_active(&mut self, default_active: impl IntoOptionalKey) {
+        self.default_active = default_active.into_optional_key();
     }
 
     pub fn with_item(mut self, item: impl Into<TabBarItem>) -> Self {
