@@ -4,6 +4,7 @@ use indexmap::IndexMap;
 
 use yew::prelude::*;
 use yew::virtual_dom::Key;
+use yew::html::IntoPropValue;
 
 use crate::props::{ContainerBuilder, RenderFn, IntoOptionalRenderFn};
 use crate::state::{Selection, SelectionObserver};
@@ -30,8 +31,9 @@ pub struct SelectionView {
     /// The Selection object.
     ///
     /// This object listens to selection changes and redraws the content
-    /// whenever the selection changes.
-    pub selection: Selection,
+    /// whenever the selection changes. Setting a selection object is mandatory.
+    #[builder(IntoPropValue, into_prop_value)]
+    pub selection: Option<Selection>,
 
     /// Selection specific render functions.
     ///
@@ -46,8 +48,8 @@ pub struct SelectionView {
 
 impl SelectionView {
     /// Creates a new instance.
-    pub fn new(selection: Selection) -> Self {
-        yew::props!(Self { selection })
+    pub fn new() -> Self {
+        yew::props!(Self {})
     }
 
     /// Builder style method to add a view builder.
@@ -89,6 +91,8 @@ impl Component for PwtSelectionView {
         let props = ctx.props();
         let _selection_observer = props
             .selection
+            .clone()
+            .unwrap_or(Selection::new())
             .add_listener(ctx.link().callback(Msg::SelectionChange));
 
         Self {

@@ -24,8 +24,6 @@ pub struct NavigationPanel {
     #[prop_or_default]
     pub class: Classes,
 
-    selection: Selection,
-
     view: SelectionView,
 
 }
@@ -34,10 +32,8 @@ impl NavigationPanel {
     /// Create a new instance.
     pub fn new() -> Self {
         // fixme: move selection to state
-        let selection = Selection::new();
-        let view = SelectionView::new(selection.clone()).class("pwt-fit");
+        let view = SelectionView::new().class("pwt-fit");
         yew::props!(Self {
-            selection,
             view,
         })
     }
@@ -67,7 +63,7 @@ impl NavigationPanel {
 
 #[doc(hidden)]
 pub struct PwtNavigationPanel {
-
+    selection: Selection,
 }
 
 impl Component for PwtNavigationPanel {

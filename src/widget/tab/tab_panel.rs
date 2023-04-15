@@ -27,8 +27,6 @@ use pwt_macros::builder;
 pub struct TabPanel {
     pub key: Option<Key>,
 
-    selection: Selection,
-
     //#[prop_or_default]
     //pub tabs: IndexMap<Key, RenderFn<SelectionViewRenderInfo>>,
     pub view: SelectionView,
@@ -54,10 +52,8 @@ pub struct TabPanel {
 impl TabPanel {
     /// Creates a new instance.
     pub fn new() -> Self {
-        let selection = Selection::new();
-        let view = SelectionView::new(selection.clone()).class("pwt-fit");
+        let view = SelectionView::new().class("pwt-fit");
         yew::props!(TabPanel {
-            selection,
             view,
         })
     }
@@ -144,14 +140,18 @@ impl TabPanel {
 }
 
 #[doc(hidden)]
-pub struct PwtTabPanel {}
+pub struct PwtTabPanel {
+    selection: Selection,
+}
 
 impl Component for PwtTabPanel {
     type Message = ();
     type Properties = TabPanel;
 
     fn create(_ctx: &Context<Self>) -> Self {
-        Self {}
+        Self {
+            selection: Selection::new(),
+        }
     }
 
     fn view(&self, ctx: &Context<Self>) -> Html {
@@ -160,7 +160,7 @@ impl Component for PwtTabPanel {
         let mut bar: Html = props
             .bar
             .clone()
-            .selection(props.selection.clone())
+            .selection(self.selection.clone())
             .into();
 
         if let Some(scroll_mode) = props.scroll_mode {
@@ -170,7 +170,10 @@ impl Component for PwtTabPanel {
                 .into();
         }
 
-        let content = props.view.clone();
+        let content = props
+            .view
+            .clone()
+            .selection(self.selection.clone());
 
         let header;
 
