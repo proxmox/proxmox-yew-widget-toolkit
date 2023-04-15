@@ -14,6 +14,7 @@ use super::{NavigationDrawer};
 #[derive(Clone, PartialEq, Properties)]
 #[builder]
 pub struct NavigationPanel {
+    /// The yew node ref.
     #[prop_or_default]
     #[builder]
     pub node_ref: NodeRef,

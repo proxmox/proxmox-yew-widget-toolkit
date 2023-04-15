@@ -16,13 +16,18 @@ use pwt_macros::builder;
 #[derive(Clone, Default, PartialEq, Properties)]
 #[builder]
 pub struct TabBar {
+    /// The yew node ref.
     #[prop_or_default]
     node_ref: NodeRef,
+
+    /// The yew component key.
     pub key: Option<Key>,
 
+    /// CSS class.
     #[prop_or_default]
     pub class: Classes,
 
+    /// Tab bar items.
     #[prop_or_default]
     pub tabs: Vec<TabBarItem>,
 
@@ -36,6 +41,7 @@ pub struct TabBar {
     #[builder_cb(IntoEventCallback, into_event_callback, Option<Key>)]
     pub on_select: Option<Callback<Option<Key>>>,
 
+    /// Default active key.
     pub default_active: Option<Key>,
 
     /// Enable router functionality.

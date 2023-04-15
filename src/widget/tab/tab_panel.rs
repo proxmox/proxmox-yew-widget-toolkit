@@ -25,21 +25,25 @@ use pwt_macros::builder;
 #[derive(Clone, PartialEq, Properties)]
 #[builder]
 pub struct TabPanel {
+    /// The yew component key.
     pub key: Option<Key>,
 
-    //#[prop_or_default]
-    //pub tabs: IndexMap<Key, RenderFn<SelectionViewRenderInfo>>,
-    pub view: SelectionView,
+    /// The content view
+    view: SelectionView,
 
+    /// The [TabBar].
     #[prop_or_default]
     pub bar: TabBar,
 
     /// Panel title text.
     #[builder(IntoPropValue, into_prop_value)]
     pub title: Option<AttrValue>,
+
+    /// Tools, displayed right aligned in the header.
     #[prop_or_default]
     pub tools: Vec<VNode>,
 
+    /// CSS class.
     #[prop_or_default]
     pub class: Classes,
 

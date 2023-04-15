@@ -22,6 +22,8 @@ use crate::widget::{Button, Panel};
 pub struct Dialog {
     #[prop_or_default]
     node_ref: NodeRef,
+
+    /// The yew component key.
     pub key: Option<Key>,
 
     pub title: AttrValue,
