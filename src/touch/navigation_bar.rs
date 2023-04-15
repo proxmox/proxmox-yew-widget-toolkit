@@ -9,15 +9,20 @@ use crate::widget::Container;
 
 use crate::widget::TabBarItem;
 
+use pwt_macros::builder;
+
 /// Navigation bar (bottom)
 #[derive(Properties, Clone, PartialEq)]
+#[builder]
 pub struct NavigationBar {
     /// The yew component key.
     pub key: Option<Key>,
 
+    /// Navigation bar items.
     items: Vec<TabBarItem>,
 
     // Currently active item.
+    #[builder(IntoPropValue, into_prop_value)]
     pub active_item: Option<Key>,
 }
 
@@ -36,17 +41,6 @@ impl NavigationBar {
     /// Method to set the yew `key` property
     pub fn set_key(&mut self, key: impl IntoPropValue<Option<Key>>) {
         self.key = key.into_prop_value();
-    }
-
-    /// Builder style method to set the active item.
-    pub fn active_item(mut self, active_item: impl IntoPropValue<Option<Key>>) -> Self {
-        self.set_active_item(active_item);
-        self
-    }
-
-    /// Builder style method to set the active item.
-    pub fn set_active_item(&mut self, active_item: impl IntoPropValue<Option<Key>>) {
-        self.active_item = active_item.into_prop_value();
     }
 }
 
