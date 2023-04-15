@@ -7,8 +7,8 @@ use yew::virtual_dom::{Key, VComp, VList, VNode};
 use crate::prelude::*;
 use crate::state::{NavigationContainer, Selection};
 use crate::widget::{
-    Column, MiniScroll, MiniScrollMode, Row, SelectionView,
-    SelectionViewRenderInfo, TabBar, TabBarItem,
+    Column, MiniScroll, MiniScrollMode, Row, SelectionView, SelectionViewRenderInfo, TabBar,
+    TabBarItem,
 };
 
 use pwt_macros::builder;
@@ -53,9 +53,7 @@ impl TabPanel {
     /// Creates a new instance.
     pub fn new() -> Self {
         let view = SelectionView::new().class("pwt-fit");
-        yew::props!(TabPanel {
-            view,
-        })
+        yew::props!(TabPanel { view })
     }
 
     /// Builder style method to add a tool
@@ -69,10 +67,15 @@ impl TabPanel {
         self.tools.push(tool.into());
     }
 
-    /// Builder style method to set the yew `key` property
-    pub fn key(mut self, key: impl Into<Key>) -> Self {
-        self.key = Some(key.into());
+    // Builder style method to set the yew `key` property.
+    pub fn key(mut self, key: impl IntoOptionalKey) -> Self {
+        self.set_key(key);
         self
+    }
+
+    /// Method to set the yew `key` property.
+    pub fn set_key(&mut self, key: impl IntoOptionalKey) {
+        self.key = key.into_optional_key();
     }
 
     /// Builder style method to add a html class
@@ -93,21 +96,13 @@ impl TabPanel {
     }
 
     /// Builder style method to add a static tab panel.
-    pub fn with_item(
-        mut self,
-        item: impl Into<TabBarItem>,
-        view: impl Into<VNode>,
-    ) -> Self {
+    pub fn with_item(mut self, item: impl Into<TabBarItem>, view: impl Into<VNode>) -> Self {
         self.add_item(item, view);
         self
     }
 
     /// Method to add a static tab panel.
-    pub fn add_item(
-        &mut self,
-        item: impl Into<TabBarItem>,
-        view: impl Into<VNode>,
-    ) {
+    pub fn add_item(&mut self, item: impl Into<TabBarItem>, view: impl Into<VNode>) {
         let html = view.into();
         self.add_item_builder(item, move |_| html.clone())
     }
@@ -131,7 +126,10 @@ impl TabPanel {
         let mut item = item.into();
 
         if item.key.is_none() {
-            item.key = Some(Key::from(format!("__tab_panel_item{}", self.bar.tabs.len())));
+            item.key = Some(Key::from(format!(
+                "__tab_panel_item{}",
+                self.bar.tabs.len()
+            )));
         }
 
         self.view.add_builder(item.key.clone().unwrap(), renderer);
@@ -157,11 +155,7 @@ impl Component for PwtTabPanel {
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
 
-        let mut bar: Html = props
-            .bar
-            .clone()
-            .selection(self.selection.clone())
-            .into();
+        let mut bar: Html = props.bar.clone().selection(self.selection.clone()).into();
 
         if let Some(scroll_mode) = props.scroll_mode {
             bar = MiniScroll::new(bar)
@@ -170,10 +164,7 @@ impl Component for PwtTabPanel {
                 .into();
         }
 
-        let content = props
-            .view
-            .clone()
-            .selection(self.selection.clone());
+        let content = props.view.clone().selection(self.selection.clone());
 
         let header;
 
