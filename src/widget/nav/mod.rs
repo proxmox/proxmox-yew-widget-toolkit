@@ -26,17 +26,22 @@ pub struct NavMenuItem {
     label: AttrValue,
 
     /// Menu icon displayed on the left side.
-    #[builder]
+    #[builder(IntoPropValue, into_prop_value)]
     icon_class: Option<AttrValue>,
 
     /// Optional submenu.
-    #[builder]
+    #[builder(IntoPropValue, into_prop_value)]
     pub submenu: Option<NavMenu>,
+
+    /// Selectable flag.
+    #[prop_or(true)]
+    #[builder]
+    pub selectable: bool,
 
     /// Activation callback.
     ///
     /// Emitted when the item is tapped, clicked or activated by keyboard.
-    #[builder_cb]
+    #[builder_cb(IntoEventCallback, into_event_callback, ())]
     pub on_activate: Option<Callback<()>>,
 }
 
@@ -66,10 +71,16 @@ pub enum NavMenuEntry {
     Component(VNode),
 }
 
+impl From<NavMenuItem> for NavMenuEntry  {
+    fn from(item: NavMenuItem) -> Self {
+        Self::Item(item)
+    }
+}
+
 #[derive(Clone, PartialEq, Properties)]
 pub struct NavMenu {
     #[prop_or_default]
-    children: Vec<NavMenuEntry>,
+    pub children: Vec<NavMenuEntry>,
 }
 
 impl NavMenu {
