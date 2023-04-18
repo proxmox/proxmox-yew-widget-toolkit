@@ -11,6 +11,7 @@ use crate::props::{ContainerBuilder, EventSubscriber, IntoOptionalKey, WidgetBui
 use crate::state::{NavigationContainer, NavigationContext, NavigationContextExt, Selection};
 
 use crate::widget::{Column, Container};
+use crate::widget::focus::roving_tabindex_next;
 
 use super::{NavMenu, NavMenuEntry, NavMenuItem};
 
@@ -116,6 +117,7 @@ pub enum Msg {
 pub struct PwtNavigationDrawer {
     active: Option<Key>,
     menu_states: HashMap<Key, bool>, // true = open
+    menu_ref: NodeRef,
     _nav_ctx_handle: Option<ContextHandle<NavigationContext>>,
 }
 
@@ -349,8 +351,6 @@ impl PwtNavigationDrawer {
     }
 }
 
-impl PwtNavigationDrawer {}
-
 impl Component for PwtNavigationDrawer {
     type Message = Msg;
     type Properties = NavigationDrawer;
@@ -383,6 +383,7 @@ impl Component for PwtNavigationDrawer {
         Self {
             active: None,
             menu_states: HashMap::new(),
+            menu_ref: NodeRef::default(),
             _nav_ctx_handle,
         }
     }
@@ -453,9 +454,24 @@ impl Component for PwtNavigationDrawer {
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
 
+        let menu_ref = self.menu_ref.clone();
+        let onkeydown = Callback::from(move |event: KeyboardEvent| {
+            match event.key().as_str() {
+                "ArrowDown" => {
+                    roving_tabindex_next(&menu_ref, false, false);
+                }
+                "ArrowUp" => {
+                    roving_tabindex_next(&menu_ref, true, false);
+                }
+                _ => return,
+            }
+            event.prevent_default();
+        });
+
         let mut column = Column::new()
+            .node_ref(self.menu_ref.clone())
             .class("pwt-fit")
-            // fixme: .onkeydown(onkeydown)
+            .onkeydown(onkeydown)
             // avoid https://bugzilla.mozilla.org/show_bug.cgi?id=1069739
             .attribute("tabindex", "-1")
             .attribute("role", "navigation")
