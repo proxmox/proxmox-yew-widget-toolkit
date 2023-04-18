@@ -108,6 +108,7 @@ impl NavigationDrawer {
 
 pub enum Msg {
     Select(Option<Key>, bool, bool),
+    SelectionChange(Selection),
     MenuToggle(Key),
     MenuClose(Key),
     MenuOpen(Key),
@@ -116,6 +117,7 @@ pub enum Msg {
 #[doc(hidden)]
 pub struct PwtNavigationDrawer {
     active: Option<Key>,
+    selection: Selection,
     menu_states: HashMap<Key, bool>, // true = open
     menu_ref: NodeRef,
     _nav_ctx_handle: Option<ContextHandle<NavigationContext>>,
@@ -327,28 +329,34 @@ impl PwtNavigationDrawer {
 
     }
 
-    fn get_active_or_default(&self, ctx: &Context<Self>) -> Option<Key> {
-        let props = ctx.props();
-        if let Some(active) = self.active.as_deref() {
-            if !active.is_empty() && active != "_" {
-                return self.active.clone();
-            }
+    fn init_selection(
+        ctx: &Context<Self>,
+        selection: Option<Selection>,
+        active: &Option<Key>,
+    ) -> Selection {
+        let selection = match selection {
+            Some(selection) => selection,
+            None => Selection::new(),
         }
-        if props.default_active.is_some() {
-            return props.default_active.clone();
+        .on_select(ctx.link().callback(Msg::SelectionChange));
+
+        if let Some(active) = &active {
+            selection.select(active.clone());
+        } else {
+            selection.clear();
         }
-        for menu in props.menu.children.iter() {
-            match menu {
-                NavMenuEntry::Item(item) => {
-                    if item.key.is_some() {
-                        return item.key.clone();
-                    }
-                }
-                _ => {}
-            }
-        }
-        None
+
+        selection
     }
+}
+
+fn get_active_or_default(props: &NavigationDrawer, active: &Option<Key>) -> Option<Key> {
+    if let Some(active_str) = active.as_deref() {
+        if !active_str.is_empty() && active_str != "_" {
+            return active.clone();
+        }
+    }
+    props.get_default_active()
 }
 
 impl Component for PwtNavigationDrawer {
@@ -359,6 +367,7 @@ impl Component for PwtNavigationDrawer {
         let props = ctx.props();
 
         let mut _nav_ctx_handle = None;
+        let mut active = get_active_or_default(props, &None);
 
         if props.router {
             let on_nav_ctx_change = Callback::from({
@@ -376,12 +385,19 @@ impl Component for PwtNavigationDrawer {
                 //log::info!("INIT CTX {:?}", nav_ctx);
                 _nav_ctx_handle = Some(handle);
                 let path = nav_ctx.path();
-                let active = Some(Key::from(path));
-                ctx.link().send_message(Msg::Select(active, false, false));
+                active = get_active_or_default(props, &Some(Key::from(path)));
             }
         }
+
+        let selection = Self::init_selection(ctx, props.selection.clone(), &active);
+
+        if let Some(on_select) = &props.on_select {
+            on_select.emit(active.clone());
+        }
+
         Self {
-            active: None,
+            active,
+            selection,
             menu_states: HashMap::new(),
             menu_ref: NodeRef::default(),
             _nav_ctx_handle,
@@ -391,8 +407,43 @@ impl Component for PwtNavigationDrawer {
     fn update(&mut self, ctx: &yew::Context<Self>, msg: Self::Message) -> bool {
         let props = ctx.props();
         match msg {
+            // Handle external selection changes
+            Msg::SelectionChange(selection) => {
+                let key = selection.selected_key();
+                let key = get_active_or_default(props, &key);
+
+                let key = if let Some(key) = key {
+                    self.find_selectable_key(ctx, &key)
+                } else {
+                    None
+                };
+
+                if &self.active == &key {
+                    return false;
+                }
+
+                log::info!("SELCHANGE {:?}  {:?}", key, self.active);
+
+                self.active = key.clone();
+
+                if props.router {
+                    ctx.link().push_relative_route(key.as_deref().unwrap_or(""));
+                }
+
+                if let Some(on_select) = &props.on_select {
+                    on_select.emit(key);
+                }
+
+                true
+            }
+            // Handle internal selection changes
             Msg::Select(key, update_route, toggle) => {
-                log::info!("SELECT {:?}", key);
+                let key = get_active_or_default(props, &key);
+                let key = if let Some(key) = key {
+                    self.find_selectable_key(ctx, &key)
+                } else {
+                    None
+                };
 
                 if key == self.active {
                     if let Some(key) = key {
@@ -405,26 +456,16 @@ impl Component for PwtNavigationDrawer {
                     return true;
                 }
 
-                let key = if let Some(key) = key {
-                    match self.find_selectable_entry(ctx, &key) {
-                        Some(entry) => {
-                            match entry {
-                                NavMenuEntry::Item(item) => {
-                                    if let Some(on_activate) = &item.on_activate {
-                                        on_activate.emit(());
-                                    }
-                                    item.key.clone()
-                                }
-                                NavMenuEntry::Component(_) => None,
-                            }
-                        }
-                        None => None,
-                    }
-                } else {
-                    None
-                };
+                log::info!("SELECT {:?}", key);
 
+                // set active to avoid Msg::SelectionChange
                 self.active = key.clone();
+
+                if let Some(key) = &key {
+                    self.selection.select(key.clone());
+                } else {
+                    self.selection.clear();
+                }
 
                 if props.router && update_route {
                     ctx.link().push_relative_route(key.as_deref().unwrap_or(""));
@@ -433,6 +474,7 @@ impl Component for PwtNavigationDrawer {
                 if let Some(on_select) = &props.on_select {
                     on_select.emit(key);
                 }
+
                 true
             }
             Msg::MenuToggle(key) => {
@@ -449,6 +491,14 @@ impl Component for PwtNavigationDrawer {
                 true
             }
         }
+    }
+
+    fn changed(&mut self, ctx: &Context<Self>, old_props: &Self::Properties) -> bool {
+        let props = ctx.props();
+        if props.selection != old_props.selection {
+            self.selection = Self::init_selection(ctx, props.selection.clone(), &self.active);
+        }
+        true
     }
 
     fn view(&self, ctx: &Context<Self>) -> Html {
@@ -479,7 +529,7 @@ impl Component for PwtNavigationDrawer {
             .class("pwt-nav-menu pwt-overflow-none")
             .class(props.class.clone());
 
-        let active = self.get_active_or_default(ctx);
+        let active = get_active_or_default(props, &self.active);
         let active = active.as_deref().unwrap_or("");
 
         for item in props.menu.children.iter() {

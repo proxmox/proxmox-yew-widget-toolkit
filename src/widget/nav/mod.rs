@@ -37,12 +37,6 @@ pub struct NavMenuItem {
     #[prop_or(true)]
     #[builder]
     pub selectable: bool,
-
-    /// Activation callback.
-    ///
-    /// Emitted when the item is tapped, clicked or activated by keyboard.
-    #[builder_cb(IntoEventCallback, into_event_callback, ())]
-    pub on_activate: Option<Callback<()>>,
 }
 
 impl NavMenuItem {
