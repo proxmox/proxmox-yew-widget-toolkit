@@ -18,10 +18,6 @@ use super::{NavMenu, NavMenuEntry, NavMenuItem};
 #[derive(Clone, PartialEq, Properties)]
 #[builder]
 pub struct NavigationDrawer {
-    #[prop_or_default]
-    #[builder]
-    node_ref: NodeRef,
-
     /// The yew component key.
     pub key: Option<Key>,
 
@@ -459,7 +455,6 @@ impl Component for PwtNavigationDrawer {
 
         let mut column = Column::new()
             .class("pwt-fit")
-            .node_ref(props.node_ref.clone())
             // fixme: .onkeydown(onkeydown)
             // avoid https://bugzilla.mozilla.org/show_bug.cgi?id=1069739
             .attribute("tabindex", "-1")
