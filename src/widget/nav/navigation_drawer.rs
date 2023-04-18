@@ -37,6 +37,7 @@ pub struct NavigationDrawer {
     #[builder_cb(IntoEventCallback, into_event_callback, Option<Key>)]
     pub on_select: Option<Callback<Option<Key>>>,
 
+    /// Default active key.
     pub default_active: Option<Key>,
 
     /// Enable router functionality.
@@ -86,6 +87,7 @@ impl NavigationDrawer {
         self.class.push(class);
     }
 
+    /// Embed the [NavigationDrawer] into a [NavigationContainer]
     pub fn navigation_container(mut self) -> NavigationContainer {
         self.router = true;
         NavigationContainer::new().with_child(self)
