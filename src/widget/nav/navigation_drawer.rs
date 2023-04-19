@@ -424,7 +424,7 @@ impl Component for PwtNavigationDrawer {
                     return false;
                 }
 
-                log::info!("SELCHANGE {:?}  {:?}", key, self.active);
+                //log::info!("SELCHANGE {:?}  {:?}", key, self.active);
 
                 self.active = key.clone();
 
@@ -458,7 +458,7 @@ impl Component for PwtNavigationDrawer {
                     return true;
                 }
 
-                log::info!("SELECT {:?}", key);
+                // log::info!("SELECT {:?}", key);
 
                 // set active to avoid Msg::SelectionChange
                 self.active = key.clone();
