@@ -2,15 +2,15 @@ use std::collections::HashSet;
 
 use indexmap::IndexMap;
 
+use yew::html::IntoPropValue;
 use yew::prelude::*;
 use yew::virtual_dom::Key;
-use yew::html::IntoPropValue;
 
-use crate::props::{ContainerBuilder, RenderFn, IntoOptionalRenderFn};
+use crate::props::{ContainerBuilder, IntoOptionalRenderFn, RenderFn};
 use crate::state::{Selection, SelectionObserver};
 use crate::widget::Container;
 
-use pwt_macros::{widget, builder};
+use pwt_macros::{builder, widget};
 
 /// Infos passed to the [SelectionView] render function.
 pub struct SelectionViewRenderInfo {
@@ -44,6 +44,15 @@ pub struct SelectionView {
     /// The default render function.
     #[builder_cb(IntoOptionalRenderFn, into_optional_render_fn, SelectionViewRenderInfo)]
     pub renderer: Option<RenderFn<SelectionViewRenderInfo>>,
+
+    /// Enable the page cache.
+    ///
+    /// If enabled, pages gets cached and will be rendered to html so that the keep
+    /// there state. Although pages below the top page will be invisible by
+    /// setting CSS "display: none;".
+    #[prop_or_default]
+    #[builder]
+    pub page_cache: bool,
 }
 
 impl SelectionView {
@@ -102,11 +111,14 @@ impl Component for PwtSelectionView {
         }
     }
 
-    fn update(&mut self, _ctx: &Context<Self>, msg: Self::Message) -> bool {
+    fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
+        let props = ctx.props();
         match msg {
             Msg::SelectionChange(selection) => {
-                /* just redraw */
                 self.active = selection.selected_key();
+                if !props.page_cache {
+                    self.render_set.clear();
+                }
                 if let Some(key) = &self.active {
                     self.render_set.insert(key.clone());
                 }

@@ -56,7 +56,9 @@ pub struct TabPanel {
 impl TabPanel {
     /// Creates a new instance.
     pub fn new() -> Self {
-        let view = SelectionView::new().class("pwt-fit");
+        let view = SelectionView::new()
+            .page_cache(true)
+            .class("pwt-fit");
         yew::props!(TabPanel { view })
     }
 
