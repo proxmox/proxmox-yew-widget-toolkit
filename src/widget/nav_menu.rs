@@ -262,11 +262,9 @@ impl PwtNavMenu {
             .class(is_active.then_some("active"))
             .onclick(onclick)
             .onkeydown(onkeydown)
-            .with_child(
-                (0..indent_level)
-                    .map(|_| html! { <span class="pwt-ps-4" /> })
-                    .collect::<Html>(),
-            )
+            .with_optional_child((indent_level > 0).then(|| {
+                html!{<span style={format!("width: {}rem", (indent_level as f32) * 1.0)}/>}
+            }))
             .with_optional_child(item.icon_class.as_ref().and_then(|icon| {
                 Some(html! { <i class={classes!(icon.to_string(), "pwt-nav-menu-icon")}/>})
             }))

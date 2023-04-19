@@ -198,11 +198,9 @@ impl PwtNavigationDrawer {
             .onclick(onclick)
             .onkeydown(onkeydown)
             // add indentation
-            .with_child(
-                (0..indent_level)
-                    .map(|_| html! { <span class="pwt-ps-4" /> })
-                    .collect::<Html>(),
-            )
+            .with_optional_child((indent_level > 0).then(|| {
+                html!{<span style={format!("width: {}rem", (indent_level as f32) * 1.0)}/>}
+            }))
             // add optional icon on the left
             .with_optional_child(item.icon_class.as_ref().and_then(|icon| {
                 Some(html! { <i class={classes!(icon.to_string(), "pwt-nav-menu-icon")}/>})
