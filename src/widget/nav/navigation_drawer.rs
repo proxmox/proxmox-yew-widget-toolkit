@@ -10,8 +10,8 @@ use pwt_macros::builder;
 use crate::props::{ContainerBuilder, EventSubscriber, IntoOptionalKey, WidgetBuilder};
 use crate::state::{NavigationContainer, NavigationContext, NavigationContextExt, Selection};
 
-use crate::widget::{Column, Container};
 use crate::widget::focus::roving_tabindex_next;
+use crate::widget::{Column, Container};
 
 use super::{NavMenu, NavMenuEntry, NavMenuItem};
 
@@ -26,6 +26,10 @@ pub struct NavigationDrawer {
     pub class: Classes,
 
     menu: NavMenu,
+
+    /// Menu header.
+    #[builder(IntoPropValue, into_prop_value)]
+    pub header: Option<Html>,
 
     /// Selection object to store the currently selected tab key.
     ///
@@ -251,32 +255,33 @@ impl PwtNavigationDrawer {
     }
 
     fn find_selectable_key(&mut self, ctx: &Context<Self>, desired: &Key) -> Option<Key> {
-        self.find_selectable_entry(ctx, desired).and_then(|entry|  {
-            match entry {
+        self.find_selectable_entry(ctx, desired)
+            .and_then(|entry| match entry {
                 NavMenuEntry::Item(item) => item.key.clone(),
                 NavMenuEntry::Component(_) => None,
-            }
-        })
+            })
     }
 
-    fn find_selectable_entry<'a>(&'a mut self, ctx: &'a Context<Self>, desired: &Key) -> Option<&'a NavMenuEntry> {
+    fn find_selectable_entry<'a>(
+        &'a mut self,
+        ctx: &'a Context<Self>,
+        desired: &Key,
+    ) -> Option<&'a NavMenuEntry> {
         let props = ctx.props();
 
         fn find_first_key_recursive(menu: &[NavMenuEntry]) -> Option<&NavMenuEntry> {
             for menu in menu.iter() {
                 let res = match menu {
-                    NavMenuEntry::Item(item) => {
-                        match &item.submenu {
-                            None => Some(menu),
-                            Some(submenu) => {
-                                if item.key.is_none() || !item.selectable {
-                                    find_first_key_recursive(&submenu.children[..])
-                                } else {
-                                    Some(menu)
-                                }
+                    NavMenuEntry::Item(item) => match &item.submenu {
+                        None => Some(menu),
+                        Some(submenu) => {
+                            if item.key.is_none() || !item.selectable {
+                                find_first_key_recursive(&submenu.children[..])
+                            } else {
+                                Some(menu)
                             }
                         }
-                    }
+                    },
                     _ => None,
                 };
                 if res.is_some() {
@@ -311,24 +316,19 @@ impl PwtNavigationDrawer {
         }
 
         match find_item_recursive(&props.menu.children, &desired) {
-            Some(entry @ NavMenuEntry::Item(item)) => {
-                match &item.submenu {
-                    None => {
-                        item.selectable.then(|| entry)
-                    }
-                    Some(submenu) =>  {
-                        if item.selectable {
-                            Some(entry)
-                        } else {
-                            self.menu_states.insert(desired.clone(), true);
-                            find_first_key_recursive(&submenu.children)
-                        }
+            Some(entry @ NavMenuEntry::Item(item)) => match &item.submenu {
+                None => item.selectable.then(|| entry),
+                Some(submenu) => {
+                    if item.selectable {
+                        Some(entry)
+                    } else {
+                        self.menu_states.insert(desired.clone(), true);
+                        find_first_key_recursive(&submenu.children)
                     }
                 }
-            }
+            },
             _ => None,
         }
-
     }
 
     fn init_selection(
@@ -529,7 +529,8 @@ impl Component for PwtNavigationDrawer {
             .attribute("role", "navigation")
             // fixme: .attribute("aria-label", props.aria_label.clone())
             .class("pwt-nav-menu pwt-overflow-none")
-            .class(props.class.clone());
+            .class(props.class.clone())
+            .with_optional_child(props.header.clone());
 
         let active = get_active_or_default(props, &self.active);
         let active = active.as_deref().unwrap_or("");

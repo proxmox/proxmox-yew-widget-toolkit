@@ -48,7 +48,7 @@ impl<T, F: 'static + Fn(&T) -> Html> IntoOptionalRenderFn<T> for F {
     }
 }
 
-/// A [BuilderFn] function is a callback that returns [Html].
+/// A [BuilderFn] function is a callback that returns a generic type.
 ///
 /// Wraps `Rc` around `Fn` so it can be passed as a prop.
 #[derive(Derivative)]
@@ -57,6 +57,12 @@ pub struct BuilderFn<T>(
     #[derivative(PartialEq(compare_with="Rc::ptr_eq"))]
     Rc<dyn Fn() -> T>
 );
+
+impl<T: Into<Html>> Into<Html> for BuilderFn<T> {
+    fn into(self) -> Html {
+        self.apply().into()
+     }
+}
 
 impl<T> BuilderFn<T> {
     /// Creates a new [`BuilderFn`]

@@ -1,13 +1,12 @@
 mod navigation_drawer;
 pub use navigation_drawer::{NavigationDrawer, PwtNavigationDrawer};
-use yew::html::{IntoEventCallback, IntoPropValue};
+use yew::html::IntoPropValue;
 use yew::prelude::*;
 use yew::virtual_dom::{Key, VNode};
 
 use pwt_macros::builder;
 
 use crate::props::IntoOptionalKey;
-use crate::state::Selection;
 
 #[derive(Clone, PartialEq, Properties)]
 #[builder]
