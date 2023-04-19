@@ -369,7 +369,7 @@ impl Component for PwtNavigationDrawer {
         let props = ctx.props();
 
         let mut _nav_ctx_handle = None;
-        let mut active = get_active_or_default(props, &None);
+        let mut active = props.get_default_active();
 
         if props.router {
             let on_nav_ctx_change = Callback::from({

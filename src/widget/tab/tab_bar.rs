@@ -122,7 +122,7 @@ impl TabBar {
 
 pub enum Msg {
     FocusIn,
-    Select(Option<Key>),
+    Select(Option<Key>, bool),
     SelectionChange(Selection),
 }
 
@@ -182,7 +182,7 @@ impl Component for PwtTabBar {
                     //log::info!("CTX CHANGE {:?}", nav_ctx);
                     let path = nav_ctx.path();
                     let key = Key::from(path);
-                    link.send_message(Msg::Select(Some(key)));
+                    link.send_message(Msg::Select(Some(key), false));
                 }
             });
             if let Some((nav_ctx, handle)) =
@@ -197,8 +197,11 @@ impl Component for PwtTabBar {
 
         let selection = Self::init_selection(ctx, props.selection.clone(), &active);
 
+        if let Some(on_select) = &props.on_select {
+            on_select.emit(active.clone());
+        }
         Self {
-            active: None,
+            active,
             selection,
             rtl: None,
             _nav_ctx_handle,
@@ -212,13 +215,16 @@ impl Component for PwtTabBar {
                 self.rtl = element_direction_rtl(&props.node_ref);
                 true
             }
+            // Handle external selection changes
             Msg::SelectionChange(selection) => {
                 let key = selection.selected_key();
+                let key = get_active_or_default(props, &key);
+
                 if &self.active == &key {
                     return false;
                 }
 
-                self.active = get_active_or_default(props, &key);
+                self.active = key;
 
                 if let Some(key) = &self.active {
                     if props.router {
@@ -231,16 +237,30 @@ impl Component for PwtTabBar {
 
                 true
             }
-            Msg::Select(key) => {
+            // Handle internal selection changes
+            Msg::Select(key, update_route) => {
+                let key = get_active_or_default(props, &key);
                 if &self.active == &key {
                     return false;
                 }
+
+                // set active to avoid Msg::SelectionChange
+                self.active = key.clone();
 
                 if let Some(key) = &key {
                     self.selection.select(key.clone());
                 } else {
                     self.selection.clear();
                 }
+
+                if props.router && update_route {
+                    ctx.link().push_relative_route(key.as_deref().unwrap_or(""));
+                }
+
+                if let Some(on_select) = &props.on_select {
+                    on_select.emit(key);
+                }
+
                 true
             }
         }
@@ -282,7 +302,7 @@ impl Component for PwtTabBar {
                         if let Some(on_activate) = &on_activate {
                             on_activate.emit(());
                         }
-                        Msg::Select(key.clone())
+                        Msg::Select(key.clone(), true)
                     }
                 });
                 let onkeyup = Callback::from({
@@ -294,7 +314,7 @@ impl Component for PwtTabBar {
                             if let Some(on_activate) = &on_activate {
                                 on_activate.emit(());
                             }
-                            link.send_message(Msg::Select(key.clone()));
+                            link.send_message(Msg::Select(key.clone(), true));
                         }
                     }
                 });
