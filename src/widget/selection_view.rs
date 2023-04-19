@@ -115,6 +115,18 @@ impl Component for PwtSelectionView {
         true
     }
 
+    fn changed(&mut self, ctx: &Context<Self>, old_props: &Self::Properties) -> bool {
+        let props = ctx.props();
+        if props.selection != old_props.selection {
+            self._selection_observer = props
+                .selection
+                .clone()
+                .unwrap_or(Selection::new())
+                .add_listener(ctx.link().callback(Msg::SelectionChange));
+        }
+        true
+    }
+
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
 
