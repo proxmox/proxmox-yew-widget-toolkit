@@ -8,7 +8,7 @@ use yew::virtual_dom::{Key, VComp, VNode};
 use pwt_macros::builder;
 
 use crate::props::{ContainerBuilder, EventSubscriber, IntoOptionalKey, WidgetBuilder};
-use crate::state::{NavigationContainer, NavigationContext, NavigationContextExt, Selection};
+use crate::state::{NavigationContext, NavigationContextExt, Selection};
 
 use crate::widget::focus::roving_tabindex_next;
 use crate::widget::{Column, Container};
@@ -93,12 +93,6 @@ impl NavigationDrawer {
     /// Method to add a html class.
     pub fn add_class(&mut self, class: impl Into<Classes>) {
         self.class.push(class);
-    }
-
-    /// Embed the [NavigationDrawer] into a [NavigationContainer]
-    pub fn navigation_container(mut self) -> NavigationContainer {
-        self.router = true;
-        NavigationContainer::new().with_child(self)
     }
 
     fn get_default_active(&self) -> Option<Key> {

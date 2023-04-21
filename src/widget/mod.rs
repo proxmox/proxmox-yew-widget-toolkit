@@ -40,8 +40,6 @@ pub use input::Input;
 mod input_panel;
 pub use input_panel::InputPanel;
 
-pub mod nav_menu;
-
 mod mask;
 pub use mask::{Mask, PwtMask};
 

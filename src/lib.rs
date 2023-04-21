@@ -109,7 +109,7 @@
 //! - [widget::menu::MenuBar]: Operating system like menu bar.
 //! - [widget::menu::MenuButton]: A button that opens a [Menu](widget::menu::Menu).
 //! - [widget::menu::MenuCheckbox]: Checkbox/RadioGroup widget for [Menu](widget::menu::Menu)s.
-//! - [widget::nav_menu::NavMenu]: Navigation menu with routing support.
+//! - [widget::nav::NavigationDrawer]: Navigation menu with routing support.
 
 //! ### DataTable and Trees
 //!
@@ -135,12 +135,12 @@
 //!
 //! [Yew](https://yew.rs) provides a framework to implement
 //! [routers](https://yew.rs/docs/concepts/router). To simplify that
-//! further, some widgets can be turned into an
+//! further, some widgets can be used inside a
 //! [state::NavigationContainer] which support fully automatic
-//! routing. Please note that navigation container can be nested.
+//! routing. Please note that such navigation container can be nested.
 //!
-//! - [widget::TabPanel::navigation_container]
-//! - [widget::nav_menu::NavMenu::navigation_container]
+//! - [widget::TabPanel]
+//! - [widget::nav::NavigationDrawer]
 
 pub mod css;
 pub mod props;
