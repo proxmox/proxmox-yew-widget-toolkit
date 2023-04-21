@@ -10,7 +10,7 @@ use crate::props::IntoOptionalKey;
 
 #[derive(Clone, PartialEq, Properties)]
 #[builder]
-pub struct NavMenuItem {
+pub struct MenuItem {
     /// The yew component key.
     ///
     /// This key is used to uniquely identify entries. Items without
@@ -26,7 +26,7 @@ pub struct NavMenuItem {
 
     /// Optional submenu.
     #[builder(IntoPropValue, into_prop_value)]
-    pub submenu: Option<NavMenu>,
+    pub submenu: Option<Menu>,
 
     /// Selectable flag.
     #[prop_or(true)]
@@ -34,7 +34,7 @@ pub struct NavMenuItem {
     pub selectable: bool,
 }
 
-impl NavMenuItem {
+impl MenuItem {
     /// Create a new instance.
     pub fn new(label: impl Into<AttrValue>) -> Self {
         yew::props!(Self {
@@ -55,35 +55,35 @@ impl NavMenuItem {
 }
 
 #[derive(Clone, PartialEq)]
-pub enum NavMenuEntry {
-    Item(NavMenuItem),
+pub enum MenuEntry {
+    Item(MenuItem),
     Component(VNode),
 }
 
-impl From<NavMenuItem> for NavMenuEntry  {
-    fn from(item: NavMenuItem) -> Self {
+impl From<MenuItem> for MenuEntry  {
+    fn from(item: MenuItem) -> Self {
         Self::Item(item)
     }
 }
 
 #[derive(Clone, PartialEq, Properties)]
-pub struct NavMenu {
+pub struct Menu {
     #[prop_or_default]
-    pub children: Vec<NavMenuEntry>,
+    pub children: Vec<MenuEntry>,
 }
 
-impl NavMenu {
+impl Menu {
     /// Create a new instance.
     pub fn new() -> Self {
         yew::props!(Self {})
     }
 
-    pub fn with_item(mut self, item: impl Into<NavMenuEntry>) -> Self {
+    pub fn with_item(mut self, item: impl Into<MenuEntry>) -> Self {
         self.add_item(item);
         self
     }
 
-    pub fn add_item(&mut self, item: impl Into<NavMenuEntry>) {
+    pub fn add_item(&mut self, item: impl Into<MenuEntry>) {
         self.children.push(item.into());
     }
 
@@ -94,6 +94,6 @@ impl NavMenu {
 
     pub fn add_component(&mut self, component: impl Into<VNode>) {
         self.children
-            .push(NavMenuEntry::Component(component.into()))
+            .push(MenuEntry::Component(component.into()))
     }
 }

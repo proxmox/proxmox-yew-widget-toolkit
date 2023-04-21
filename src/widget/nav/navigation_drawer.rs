@@ -13,7 +13,7 @@ use crate::state::{NavigationContainer, NavigationContext, NavigationContextExt,
 use crate::widget::focus::roving_tabindex_next;
 use crate::widget::{Column, Container};
 
-use super::{NavMenu, NavMenuEntry, NavMenuItem};
+use super::{Menu, MenuEntry, MenuItem};
 
 /// Navigation Menu Widget.
 #[derive(Clone, PartialEq, Properties)]
@@ -25,7 +25,7 @@ pub struct NavigationDrawer {
     #[prop_or_default]
     pub class: Classes,
 
-    menu: NavMenu,
+    menu: Menu,
 
     /// Menu header.
     #[builder(IntoPropValue, into_prop_value)]
@@ -54,7 +54,7 @@ pub struct NavigationDrawer {
 
 impl NavigationDrawer {
     /// Create a new instance.
-    pub fn new(menu: NavMenu) -> Self {
+    pub fn new(menu: Menu) -> Self {
         yew::props!(Self { menu })
     }
 
@@ -103,7 +103,7 @@ impl NavigationDrawer {
         }
 
         for item in &self.menu.children {
-            if let NavMenuEntry::Item(NavMenuItem { key: Some(key), .. }) = item {
+            if let MenuEntry::Item(MenuItem { key: Some(key), .. }) = item {
                 return Some(key.clone());
             }
         }
@@ -133,7 +133,7 @@ impl PwtNavigationDrawer {
     fn render_single_item(
         &self,
         ctx: &yew::Context<PwtNavigationDrawer>,
-        item: &NavMenuItem,
+        item: &MenuItem,
         active: &str,
         indent_level: usize,
         open: bool, // submenu open ?
@@ -224,13 +224,13 @@ impl PwtNavigationDrawer {
     fn render_menu_entry(
         &self,
         ctx: &yew::Context<PwtNavigationDrawer>,
-        item: &NavMenuEntry,
+        item: &MenuEntry,
         menu: &mut Column,
         active: &str,
         level: usize,
     ) {
         match item {
-            NavMenuEntry::Item(child) => {
+            MenuEntry::Item(child) => {
                 let open = match &child.key {
                     Some(key) => *self.menu_states.get(key).unwrap_or(&true),
                     None => false,
@@ -246,7 +246,7 @@ impl PwtNavigationDrawer {
                     }
                 }
             }
-            NavMenuEntry::Component(comp) => {
+            MenuEntry::Component(comp) => {
                 menu.add_child(comp.clone());
             }
         }
@@ -255,8 +255,8 @@ impl PwtNavigationDrawer {
     fn find_selectable_key(&mut self, ctx: &Context<Self>, desired: &Key) -> Option<Key> {
         self.find_selectable_entry(ctx, desired)
             .and_then(|entry| match entry {
-                NavMenuEntry::Item(item) => item.key.clone(),
-                NavMenuEntry::Component(_) => None,
+                MenuEntry::Item(item) => item.key.clone(),
+                MenuEntry::Component(_) => None,
             })
     }
 
@@ -264,13 +264,13 @@ impl PwtNavigationDrawer {
         &'a mut self,
         ctx: &'a Context<Self>,
         desired: &Key,
-    ) -> Option<&'a NavMenuEntry> {
+    ) -> Option<&'a MenuEntry> {
         let props = ctx.props();
 
-        fn find_first_key_recursive(menu: &[NavMenuEntry]) -> Option<&NavMenuEntry> {
+        fn find_first_key_recursive(menu: &[MenuEntry]) -> Option<&MenuEntry> {
             for menu in menu.iter() {
                 let res = match menu {
-                    NavMenuEntry::Item(item) => match &item.submenu {
+                    MenuEntry::Item(item) => match &item.submenu {
                         None => Some(menu),
                         Some(submenu) => {
                             if item.key.is_none() || !item.selectable {
@@ -290,12 +290,12 @@ impl PwtNavigationDrawer {
         }
 
         fn find_item_recursive<'a>(
-            menu: &'a [NavMenuEntry],
+            menu: &'a [MenuEntry],
             desired: &Key,
-        ) -> Option<&'a NavMenuEntry> {
+        ) -> Option<&'a MenuEntry> {
             for menu in menu.iter() {
                 match menu {
-                    NavMenuEntry::Item(item) => {
+                    MenuEntry::Item(item) => {
                         if item.key.as_ref() == Some(desired) {
                             return Some(menu);
                         }
@@ -314,7 +314,7 @@ impl PwtNavigationDrawer {
         }
 
         match find_item_recursive(&props.menu.children, &desired) {
-            Some(entry @ NavMenuEntry::Item(item)) => match &item.submenu {
+            Some(entry @ MenuEntry::Item(item)) => match &item.submenu {
                 None => item.selectable.then(|| entry),
                 Some(submenu) => {
                     if item.selectable {

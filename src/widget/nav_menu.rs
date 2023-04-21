@@ -17,14 +17,14 @@ use crate::widget::focus::roving_tabindex_next;
 use crate::widget::{Column, Container, Pane, SplitPane};
 
 #[derive(Clone, PartialEq)]
-pub struct NavMenuItem {
+pub struct MenuItem {
     id: Key,
     text: AttrValue,
     icon_class: Option<AttrValue>,
     content: RenderFn<Key>,
 }
 
-impl NavMenuItem {
+impl MenuItem {
     pub fn new(
         id: impl Into<Key>,
         text: impl IntoPropValue<AttrValue>,
@@ -46,13 +46,13 @@ impl NavMenuItem {
 
 #[derive(Clone, PartialEq)]
 pub struct NavSubMenu {
-    item: NavMenuItem,
-    children: Vec<NavMenuEntry>,
+    item: MenuItem,
+    children: Vec<MenuEntry>,
     selectable: bool,
 }
 
-impl From<NavMenuItem> for NavSubMenu {
-    fn from(item: NavMenuItem) -> Self {
+impl From<MenuItem> for NavSubMenu {
+    fn from(item: MenuItem) -> Self {
         NavSubMenu {
             item,
             children: Vec::new(),
@@ -62,12 +62,12 @@ impl From<NavMenuItem> for NavSubMenu {
 }
 
 impl NavSubMenu {
-    pub fn with_item(mut self, item: impl Into<NavMenuEntry>) -> Self {
+    pub fn with_item(mut self, item: impl Into<MenuEntry>) -> Self {
         self.add_item(item);
         self
     }
 
-    pub fn add_item(&mut self, item: impl Into<NavMenuEntry>) {
+    pub fn add_item(&mut self, item: impl Into<MenuEntry>) {
         self.children.push(item.into());
     }
 
@@ -77,7 +77,7 @@ impl NavSubMenu {
     }
 
     pub fn add_component(&mut self, component: impl Into<VNode>) {
-        self.children.push(NavMenuEntry::Component(component.into()))
+        self.children.push(MenuEntry::Component(component.into()))
     }
 
     pub fn unselectable(mut self) -> Self {
@@ -91,41 +91,41 @@ impl NavSubMenu {
 }
 
 #[derive(Clone, PartialEq)]
-pub enum NavMenuEntry {
-    Item(NavMenuItem),
+pub enum MenuEntry {
+    Item(MenuItem),
     SubMenu(NavSubMenu),
     Component(VNode),
 }
 
-impl From<NavSubMenu> for NavMenuEntry {
+impl From<NavSubMenu> for MenuEntry {
     fn from(submenu: NavSubMenu) -> Self {
-        NavMenuEntry::SubMenu(submenu)
+        MenuEntry::SubMenu(submenu)
     }
 }
 
-impl From<NavMenuItem> for NavMenuEntry {
-    fn from(item: NavMenuItem) -> Self {
-        NavMenuEntry::Item(item)
+impl From<MenuItem> for MenuEntry {
+    fn from(item: MenuItem) -> Self {
+        MenuEntry::Item(item)
     }
 }
 
-#[widget(pwt=crate, comp=PwtNavMenu, @element)]
+#[widget(pwt=crate, comp=PwtMenu, @element)]
 #[derive(PartialEq, Clone, Properties)]
-pub struct NavMenu {
+pub struct Menu {
     #[prop_or_default]
     node_ref: NodeRef,
     pub key: Option<Key>,
     /// ARIA label.
     pub aria_label: Option<AttrValue>,
     #[prop_or_default]
-    menu: Vec<NavMenuEntry>,
+    menu: Vec<MenuEntry>,
     default_active: Option<Key>,
     #[prop_or_default]
     router: bool,
     on_select: Option<Callback<Option<Key>>>,
 }
 
-impl NavMenu {
+impl Menu {
     pub fn new() -> Self {
         yew::props!(Self {})
     }
@@ -164,12 +164,12 @@ impl NavMenu {
         self
     }
 
-    pub fn with_item(mut self, item: impl Into<NavMenuEntry>) -> Self {
+    pub fn with_item(mut self, item: impl Into<MenuEntry>) -> Self {
         self.add_item(item);
         self
     }
 
-    pub fn add_item(&mut self, item: impl Into<NavMenuEntry>) {
+    pub fn add_item(&mut self, item: impl Into<MenuEntry>) {
         self.menu.push(item.into());
     }
 
@@ -179,7 +179,7 @@ impl NavMenu {
     }
 
     pub fn add_component(&mut self, component: impl Into<VNode>) {
-        self.menu.push(NavMenuEntry::Component(component.into()))
+        self.menu.push(MenuEntry::Component(component.into()))
     }
 
     pub fn on_select(mut self, cb: impl IntoEventCallback<Option<Key>>) -> Self {
@@ -196,18 +196,18 @@ pub enum Msg {
 }
 
 #[doc(hidden)]
-pub struct PwtNavMenu {
+pub struct PwtMenu {
     active: Option<Key>,
     menu_states: HashMap<Key, bool>, // true = open
     menu_ref: NodeRef,
     _nav_ctx_handle: Option<ContextHandle<NavigationContext>>,
 }
 
-impl PwtNavMenu {
+impl PwtMenu {
     fn render_child(
         &self,
-        ctx: &yew::Context<PwtNavMenu>,
-        item: &NavMenuItem,
+        ctx: &yew::Context<PwtMenu>,
+        item: &MenuItem,
         active: &str,
         indent_level: usize,
         is_menu: bool,
@@ -284,8 +284,8 @@ impl PwtNavMenu {
 
     fn render_item(
         &self,
-        ctx: &yew::Context<PwtNavMenu>,
-        item: &NavMenuEntry,
+        ctx: &yew::Context<PwtMenu>,
+        item: &MenuEntry,
         menu: &mut Column,
         active: &str,
         level: usize,
@@ -293,13 +293,13 @@ impl PwtNavMenu {
     ) -> Option<(AttrValue, Html)> {
         let mut content = None;
         match item {
-            NavMenuEntry::Item(child) => {
+            MenuEntry::Item(child) => {
                 menu.add_child(self.render_child(ctx, child, active, level, false, visible));
                 if child.id.deref() == active {
                     content = Some((child.text.clone(), child.content.apply(&child.id)));
                 }
             }
-            NavMenuEntry::SubMenu(NavSubMenu {
+            MenuEntry::SubMenu(NavSubMenu {
                 item,
                 children,
                 selectable: _selectable,
@@ -319,7 +319,7 @@ impl PwtNavMenu {
                     }
                 }
             }
-            NavMenuEntry::Component(comp) => {
+            MenuEntry::Component(comp) => {
                 menu.add_child(comp.clone());
             }
         }
@@ -338,8 +338,8 @@ impl PwtNavMenu {
         }
         for menu in props.menu.iter() {
             match menu {
-                NavMenuEntry::Item(item) => return Some(item.id.clone()),
-                NavMenuEntry::SubMenu(sub) => return Some(sub.item.id.clone()),
+                MenuEntry::Item(item) => return Some(item.id.clone()),
+                MenuEntry::SubMenu(sub) => return Some(sub.item.id.clone()),
                 _ => {}
             }
         }
@@ -349,11 +349,11 @@ impl PwtNavMenu {
     fn find_selectable_key(&mut self, ctx: &Context<Self>, desired: Key) -> Option<Key> {
         let props = ctx.props();
 
-        fn find_first_key_recursive(menu: &[NavMenuEntry]) -> Option<Key> {
+        fn find_first_key_recursive(menu: &[MenuEntry]) -> Option<Key> {
             for menu in menu.iter() {
                 let res = match menu {
-                    NavMenuEntry::Item(item) => Some(item.id.clone()),
-                    NavMenuEntry::SubMenu(sub) => {
+                    MenuEntry::Item(item) => Some(item.id.clone()),
+                    MenuEntry::SubMenu(sub) => {
                         if sub.selectable {
                             Some(sub.item.id.clone())
                         } else {
@@ -369,15 +369,15 @@ impl PwtNavMenu {
             None
         }
 
-        fn find_item_recursive<'a, 'b>(menu: &'a [NavMenuEntry], desired: &'b Key) -> Option<&'a NavMenuEntry> {
+        fn find_item_recursive<'a, 'b>(menu: &'a [MenuEntry], desired: &'b Key) -> Option<&'a MenuEntry> {
             for menu in menu.iter() {
                 match menu {
-                    NavMenuEntry::Item(item) => {
+                    MenuEntry::Item(item) => {
                         if &item.id == desired {
                             return Some(menu);
                         }
                     }
-                    NavMenuEntry::SubMenu(sub) => {
+                    MenuEntry::SubMenu(sub) => {
                         if &sub.item.id == desired {
                             return Some(menu);
                         } else {
@@ -394,8 +394,8 @@ impl PwtNavMenu {
         }
 
         match find_item_recursive(&props.menu, &desired) {
-            Some(NavMenuEntry::Item(_)) => Some(desired),
-            Some(NavMenuEntry::SubMenu(sub)) => {
+            Some(MenuEntry::Item(_)) => Some(desired),
+            Some(MenuEntry::SubMenu(sub)) => {
                 if sub.selectable {
                     Some(desired)
                 } else {
@@ -408,9 +408,9 @@ impl PwtNavMenu {
     }
 }
 
-impl Component for PwtNavMenu {
+impl Component for PwtMenu {
     type Message = Msg;
-    type Properties = NavMenu;
+    type Properties = Menu;
 
     fn create(ctx: &yew::Context<Self>) -> Self {
         let props = ctx.props();
