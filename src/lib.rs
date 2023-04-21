@@ -125,11 +125,15 @@
 //! ### Widgets for Touch devices
 //!
 //! Please note that these widgets are badly accessible with keyboard, so it is best
-//! to avoid them for desktop applications.
+//! to avoid them for desktop applications (no focus handling).
 //!
 //! - [touch::GestureDetector]: Gesture detector.
 //! - [touch::Slidable]: Slidable widget with directional slide actions that can be dismissed.
 //! - [touch::PageView]: A scrollable list that works page by page.
+//! - [touch::PageStack]: Stack of Pages using animation when switching pages.
+//! - [touch::NavigationBar]: Navigation bar (bottom)
+//! - [touch::Fab]: Favorite action button.
+//! - [touch::FabMenu]: Favorite actions button Menu.
 
 //! ## Router
 //!
