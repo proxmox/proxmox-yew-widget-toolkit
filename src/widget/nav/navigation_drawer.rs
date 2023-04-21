@@ -44,6 +44,10 @@ pub struct NavigationDrawer {
     /// Default active key.
     pub default_active: Option<Key>,
 
+    /// ARIA label.
+    #[builder(IntoPropValue, into_prop_value)]
+    pub aria_label: Option<AttrValue>,
+
     /// Enable router functionality.
     ///
     /// Save/Load state from parent NavigationContainer
@@ -525,7 +529,7 @@ impl Component for PwtNavigationDrawer {
             // avoid https://bugzilla.mozilla.org/show_bug.cgi?id=1069739
             .attribute("tabindex", "-1")
             .attribute("role", "navigation")
-            // fixme: .attribute("aria-label", props.aria_label.clone())
+            .attribute("aria-label", props.aria_label.clone())
             .class("pwt-nav-menu pwt-overflow-none")
             .class(props.class.clone())
             .with_optional_child(props.header.clone());
