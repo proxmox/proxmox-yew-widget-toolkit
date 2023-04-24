@@ -5,7 +5,7 @@ use yew::prelude::*;
 use yew::virtual_dom::{Key, VComp, VList, VNode};
 
 use crate::prelude::*;
-use crate::state::{NavigationContainer, Selection};
+use crate::state::Selection;
 use crate::widget::{
     Column, MiniScroll, MiniScrollMode, Row, SelectionView, SelectionViewRenderInfo, TabBar,
     TabBarItem,
@@ -95,10 +95,17 @@ impl TabPanel {
         self.class.push(class);
     }
 
-    /// Embed the [TabPanel] into a [NavigationContainer]
-    pub fn navigation_container(mut self) -> NavigationContainer {
-        self.bar.set_router(true);
-        NavigationContainer::new().with_child(self)
+    /// Builder style method to enable router functionality.
+    ///
+    /// Save/Load state from parent NavigationContainer
+    pub fn router(mut self, router: bool) -> Self {
+        self.set_router(router);
+        self
+    }
+
+    /// Method to enable router functionality.
+    pub fn set_router(&mut self, router: bool) {
+        self.bar.set_router(router);
     }
 
     /// Builder style method to add a static tab panel.
