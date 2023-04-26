@@ -450,21 +450,33 @@ impl From<Viewport> for Classes {
     fn from(_value: Viewport) -> Self { "pwt-viewport".into() }
 }
 
-/// CSS utility type to set the flex property to `flex: 1 1 auto;`
+/// CSS utility type to set the flex property.
 ///
 /// ```
 /// # use pwt::prelude::*;
 /// # use pwt::widget::Container;
 /// use pwt::css::*;
 /// Container::new()
-///    .class(FlexFill)
+///    .class(Flex::Auto)
 /// # ;
 /// ```
-pub struct FlexFill;
-impl From<FlexFill> for Classes {
-    fn from(_value: FlexFill) -> Self { "pwt-flex-fill".into() }
+pub enum Flex {
+    Fill,
+    Auto,
+    Initial,
+    None,
 }
 
+impl From<Flex> for Classes {
+    fn from(value: Flex) -> Self {
+        match value {
+            Flex::Fill => "pwt-flex-fill".into(),
+            Flex::Auto => "pwt-flex-auto".into(),
+            Flex::Initial => "pwt-flex-initial".into(),
+            Flex::None => "pwt-flex-none".into(),
+        }
+    }
+}
 
 /// Wrapper type to specify CSS color scheme class.
 ///
