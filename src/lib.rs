@@ -60,7 +60,7 @@
 //! - [widget::SplitPane]: Container where children are separated by a draggable sparator.
 //! - [widget::TabPanel]: A set of layered items where only one item is displayed at a time.
 //! - [widget::Toolbar]: Horizontal container for buttons.
-//! - [widget::MiniScroll]: Scrolled container used by toolbar and tab panel.
+//! - [widget::MiniScroll]: Scrolled container usefull for toolbar and tab panels.
 //!
 
 //! ### Modal Dialogs
