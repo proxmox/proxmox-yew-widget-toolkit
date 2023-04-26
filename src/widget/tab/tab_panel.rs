@@ -15,13 +15,38 @@ use pwt_macros::builder;
 
 /// A set of layered items where only one item is displayed at a time.
 ///
-/// [TabPanel]s (like [crate::widget::Panel]s]) may have a title and tool buttons.
+/// TabPanels (like [Panel](crate::widget::Panel)]) may have a title and tool buttons.
 ///
 /// Panel item are either static or dynamic. Static items are rendered
 /// once before you add them. Dynamic items use a render function
 /// which is called when the item gets activated the first time. After
 /// that the render function is called whenever another panel gets
 /// activated.
+///
+/// # Automatic routing.
+///
+/// TabPanels support fully automatic routing if you put the panel inside
+/// a [NavigationContainer](crate::state::NavigationContainer) and
+/// set the router flag,
+///
+/// ```
+/// use pwt::state::NavigationContainer;
+/// use pwt::widget::TabPanel;
+///
+/// NavigationContainer::new()
+///     .with_child(
+///         TabPanel::new()
+///             .router(true)
+///             .add_item(
+///                 TabBarItem::new().key("item1").label("Item 1"),
+///                 html!{"This is Item 1."}
+///             )
+///             .add_item(
+///                 TabBarItem::new().key("item2").label("Item 2"),
+///                 html!{"This is Item 2."}
+///             )
+///     );
+/// ```
 #[derive(Clone, PartialEq, Properties)]
 #[builder]
 pub struct TabPanel {

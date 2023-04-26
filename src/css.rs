@@ -17,9 +17,28 @@
 //!    .class(FlexDirection::Row)
 //! # ;
 //! ```
+//!
+//! Please note the special traits [CssMarginBuilder], [CssPaddingBuilder] and
+//! [CssBorderBuilder] which provides convienient builder methods to set margin,
+//! padding and borders.
+//!
+//! ```
+//! //! # use pwt::prelude::*;
+//! //! # use pwt::widget::Container;
+//! Container::new()
+//!     .margin_top(2)
+//!     .padding(1)
+//!     .border(true)
+//! # ;
+//! ```
+//!
+
 
 
 use yew::Classes;
+
+#[cfg(doc)]
+use crate::prelude::*;
 
 /// Wrapper type to specify CSS property `flex-direction`.
 ///
