@@ -6,27 +6,35 @@ use yew::prelude::*;
 
 use crate::props::IntoOptionalKey;
 
+use pwt_macros::builder;
+
 /// TabBar item.
 #[derive(Properties, Clone, PartialEq)]
+#[builder]
 pub struct TabBarItem {
     /// The yew component key.
     pub key: Option<Key>,
 
     /// Icon (CSS class).
+    #[builder(IntoPropValue, into_prop_value)]
     pub icon_class: Option<AttrValue>,
 
     /// Active Icon (CSS class).
+    #[builder(IntoPropValue, into_prop_value)]
     pub active_icon_class: Option<AttrValue>,
 
     /// Optional button label.
+    #[builder(IntoPropValue, into_prop_value)]
     pub label: Option<AttrValue>,
 
     /// Optional tooltip.
+    #[builder(IntoPropValue, into_prop_value)]
     pub tip: Option<VNode>,
 
     /// Activation callback.
     ///
     /// Emitted when the button is tapped, clicked or activated by keyboard.
+    #[builder_cb(IntoEventCallback, into_event_callback, ())]
     pub on_activate: Option<Callback<()>>,
 }
 
@@ -45,54 +53,5 @@ impl TabBarItem {
     /// Method to set the yew `key` property
     pub fn set_key(&mut self, key: impl IntoOptionalKey) {
         self.key = key.into_optional_key();
-    }
-
-    /// Builder style method to set the button label.
-    pub fn label(mut self, label: impl IntoPropValue<Option<AttrValue>>) -> Self {
-        self.set_label(label);
-        self
-    }
-
-    /// Method to set the button label.
-    pub fn set_label(&mut self, label: impl IntoPropValue<Option<AttrValue>>) {
-        self.label = label.into_prop_value();
-    }
-
-    /// Builder style method to set the icon class
-    pub fn icon_class(mut self, icon_class: impl IntoPropValue<Option<AttrValue>>) -> Self {
-        self.set_icon_class(icon_class);
-        self
-    }
-
-    /// Method to set the icon_class.
-    pub fn set_icon_class(&mut self, icon_class: impl IntoPropValue<Option<AttrValue>>) {
-        self.icon_class = icon_class.into_prop_value();
-    }
-
-    /// Builder style method to set the active icon class
-    pub fn active_icon_class(mut self, active_icon_class: impl IntoPropValue<Option<AttrValue>>) -> Self {
-        self.set_active_icon_class(active_icon_class);
-        self
-    }
-
-    /// Method to set the active_icon_class.
-    pub fn set_active_icon_class(&mut self, active_icon_class: impl IntoPropValue<Option<AttrValue>>) {
-        self.active_icon_class = active_icon_class.into_prop_value();
-    }
-
-    /// Builder style method to set the tooltip
-    pub fn tooltip(mut self, tip: impl IntoPropValue<Option<VNode>>) -> Self {
-        self.set_tip(tip);
-        self
-    }
-
-    /// Method to set the tooltip
-    pub fn set_tip(&mut self, tip: impl IntoPropValue<Option<VNode>>) {
-        self.tip = tip.into_prop_value();
-    }
-
-    pub fn on_activate(mut self, cb: impl IntoEventCallback<()>) -> Self {
-        self.on_activate = cb.into_event_callback();
-        self
     }
 }
