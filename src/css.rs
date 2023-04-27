@@ -23,8 +23,8 @@
 //! padding and borders.
 //!
 //! ```
-//! //! # use pwt::prelude::*;
-//! //! # use pwt::widget::Container;
+//! use pwt::prelude::*;
+//! use pwt::widget::Container;
 //! Container::new()
 //!     .margin_top(2)
 //!     .padding(1)
