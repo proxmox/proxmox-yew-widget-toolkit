@@ -30,18 +30,19 @@ use pwt_macros::builder;
 /// set the router flag,
 ///
 /// ```
+/// # use pwt::prelude::*;
 /// use pwt::state::NavigationContainer;
-/// use pwt::widget::TabPanel;
+/// use pwt::widget::{TabPanel, TabBarItem};
 ///
 /// NavigationContainer::new()
 ///     .with_child(
 ///         TabPanel::new()
 ///             .router(true)
-///             .add_item(
+///             .with_item(
 ///                 TabBarItem::new().key("item1").label("Item 1"),
 ///                 html!{"This is Item 1."}
 ///             )
-///             .add_item(
+///             .with_item(
 ///                 TabBarItem::new().key("item2").label("Item 2"),
 ///                 html!{"This is Item 2."}
 ///             )
