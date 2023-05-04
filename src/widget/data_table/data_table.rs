@@ -1524,7 +1524,10 @@ impl<S: DataStore + 'static> Component for PwtDataTable<S> {
                 "style",
                 format!(
                     "overflow: {}; outline: 0",
-                    if column_widths > self.viewport_width {
+                    if self.table_height < 1.0 {
+                        // if the content cannot be visible, omit the scrollbars
+                        "hidden"
+                    } else if column_widths > self.viewport_width {
                         "auto"
                     } else {
                         "hidden auto"
