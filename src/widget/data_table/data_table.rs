@@ -1608,6 +1608,7 @@ impl<S: DataStore + 'static> Component for PwtDataTable<S> {
                     .attribute("style", header_style)
                     .class("pwt-overflow-hidden")
                     .class("pwt-datatable-header")
+                    .class((!props.show_header).then_some("pwt-datatable-header-hidden"))
                     .with_child(
                         HeaderWidget::new(self.headers.clone(), ctx.link().callback(Msg::Header))
                             .focusable(props.header_focusable && props.show_header)
