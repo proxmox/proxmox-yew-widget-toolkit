@@ -29,6 +29,7 @@ impl MenuPopper {
             self.align_options = Some(if self.prefer_bottom {
                 AlignOptions::new(Point::BottomStart, Point::TopStart, GrowDirection::StartEnd)
                     .align_width(true)
+                    .offset(0.0, 1.0)
                     .viewport_padding(5.0)
                     .with_fallback_placement(
                         Point::TopEnd,
@@ -43,6 +44,7 @@ impl MenuPopper {
             } else {
                 AlignOptions::new(Point::TopEnd, Point::TopStart, GrowDirection::TopBottom)
                     .viewport_padding(5.0)
+                    .offset(1.0, 0.0)
                     .align_width(true)
                     .with_fallback_placement(
                         Point::TopStart,
