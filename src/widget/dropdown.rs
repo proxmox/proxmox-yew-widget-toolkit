@@ -175,6 +175,7 @@ impl PwtDropdown {
                 GrowDirection::TopBottom,
             )
                 .viewport_padding(5.0)
+                .offset(0.0, 1.0)
                 .align_width(true),
         ) {
             Ok(placer) => Some(placer),
