@@ -225,7 +225,7 @@ impl Rect {
 fn get_offset(element: &HtmlElement, point: Point, mut base: (f64, f64)) -> (f64, f64) {
     let rect = element.get_bounding_client_rect();
     let width = rect.width();
-    let height = element.client_height() as f64;
+    let height = rect.height();
 
     match &point {
         Point::Top | Point::Center | Point::Bottom => base.0 += width / 2.0,
