@@ -6,7 +6,7 @@ use yew::html::IntoPropValue;
 use yew::prelude::*;
 use yew::virtual_dom::Key;
 
-use crate::props::{ContainerBuilder, IntoOptionalRenderFn, RenderFn};
+use crate::props::{ContainerBuilder, WidgetBuilder, IntoOptionalRenderFn, RenderFn};
 use crate::state::{Selection, SelectionObserver};
 use crate::widget::Container;
 
@@ -162,7 +162,7 @@ impl Component for PwtSelectionView {
                 html! {}
             };
             if active {
-                html! { <div key={key.clone()} class="pwt-fit">{page}</div>}
+                html! { <div key={key.clone()} class="pwt-d-flex pwt-flex-fill">{page}</div>}
             } else {
                 html! { <div key={key.clone()} class="pwt-d-none">{page}</div>}
             }
@@ -172,6 +172,7 @@ impl Component for PwtSelectionView {
             std_props: props.std_props.clone(),
             listeners: props.listeners.clone(),
         })
+        .class("pwt-d-flex pwt-flex-direction-column")
         .children(content)
         .into()
     }
