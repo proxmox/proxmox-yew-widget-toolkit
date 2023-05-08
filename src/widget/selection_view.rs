@@ -162,6 +162,7 @@ impl Component for PwtSelectionView {
                 html! {}
             };
             if active {
+                // Note: use "pwt-d-flex pwt-flex-fill" to make it work with min-height, min-width, ...
                 html! { <div key={key.clone()} class="pwt-d-flex pwt-flex-fill">{page}</div>}
             } else {
                 html! { <div key={key.clone()} class="pwt-d-none">{page}</div>}
