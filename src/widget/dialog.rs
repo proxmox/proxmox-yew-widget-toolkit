@@ -360,6 +360,7 @@ impl Component for PwtDialog {
 
         let mut panel = Panel::new()
             .class("pwt-overflow-auto")
+            .class("pwt-flex-fill")
             .title(props.title.clone())
             .header_class(props.draggable.then_some("pwt-draggable"))
             .border(false);
