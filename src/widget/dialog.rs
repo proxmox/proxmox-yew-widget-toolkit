@@ -215,6 +215,7 @@ impl Component for PwtDialog {
                             }),
                             event.pointer_id(),
                         );
+                        return true;
                     }
                 }
             }
@@ -234,6 +235,7 @@ impl Component for PwtDialog {
             Msg::PointerUp(pointer_id) => match &self.dragging_state {
                 DragState::Dragging(_, _, _, _, id) if *id == pointer_id => {
                     self.dragging_state = DragState::Idle;
+                    return true;
                 }
                 _ => {}
             },
@@ -393,8 +395,11 @@ impl Component for PwtDialog {
         let northeast_down = link.callback(|e| Msg::ResizeStart(Point::TopEnd, e));
         let southeast_down = link.callback(|e| Msg::ResizeStart(Point::BottomEnd, e));
 
+        let is_dragging = !matches!(self.dragging_state, DragState::Idle);
+        let classes = classes!(is_dragging.then_some("pwt-user-select-none"));
+
         html! {
-            <dialog {onpointerdown} aria-label={props.title.clone()} ref={props.node_ref.clone()} {oncancel} style={props.style.clone()}>
+            <dialog {onpointerdown} class={classes} aria-label={props.title.clone()} ref={props.node_ref.clone()} {oncancel} style={props.style.clone()}>
             if resizable {
                 <div onpointerdown={west_down} class="dialog-resize-handle west"></div>
                 <div onpointerdown={east_down} class="dialog-resize-handle east"></div>
