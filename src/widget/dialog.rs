@@ -37,7 +37,7 @@ pub struct Dialog {
     /// Determines if the dialog can be moved
     ///
     /// Makes it draggable by the title bar (exclusive the title text/tools)
-    #[prop_or_default]
+    #[prop_or(true)]
     pub draggable: bool,
 
     /// Determines if the dialog can be resized
