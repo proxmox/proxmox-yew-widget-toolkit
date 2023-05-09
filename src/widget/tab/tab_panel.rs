@@ -84,7 +84,7 @@ impl TabPanel {
     pub fn new() -> Self {
         let view = SelectionView::new()
             .page_cache(true)
-            .class("pwt-flex-fill");
+            .class("pwt-flex-fill pwt-overflow-auto");
         yew::props!(TabPanel { view })
     }
 
