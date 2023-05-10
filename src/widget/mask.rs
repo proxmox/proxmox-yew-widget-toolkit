@@ -7,7 +7,7 @@ use yew::html::IntoPropValue;
 use yew::prelude::*;
 use yew::virtual_dom::{Key, VComp, VNode};
 
-use crate::props::{ContainerBuilder, IntoOptionalKey};
+use crate::props::{AsClassesMut, ContainerBuilder, IntoOptionalKey};
 use crate::widget::Fa;
 
 /// Container which optionaly masks its content.
@@ -17,6 +17,10 @@ pub struct Mask {
     node_ref: NodeRef,
     /// Yew component key
     pub key: Option<Key>,
+
+    /// CSS class.
+    #[prop_or_default]
+    pub class: Classes,
 
     /// Flag to show/hide the mask
     #[prop_or_default]
@@ -34,6 +38,12 @@ pub struct Mask {
 impl ContainerBuilder for Mask {
     fn as_children_mut(&mut self) -> &mut Vec<VNode> {
         &mut self.children
+    }
+}
+
+impl AsClassesMut for Mask {
+    fn as_classes_mut(&mut self) -> &mut yew::Classes {
+        &mut self.class
     }
 }
 
@@ -63,6 +73,17 @@ impl Mask {
     /// Method to set the yew `key` property
     pub fn set_key(&mut self, key: impl IntoOptionalKey) {
         self.key = key.into_optional_key();
+    }
+
+    /// Builder style method to add a html class
+    pub fn class(mut self, class: impl Into<Classes>) -> Self {
+        self.add_class(class);
+        self
+    }
+
+    /// Method to add a html class.
+    pub fn add_class(&mut self, class: impl Into<Classes>) {
+        self.class.push(class);
     }
 
     /// Builder style method to set the `vibible` property
@@ -151,7 +172,7 @@ impl Component for PwtMask {
         };
 
         html! {
-            <div class="pwt-fit" ref={props.node_ref.clone()} style="position:relative;">
+            <div class={props.class.clone()} ref={props.node_ref.clone()} style="display:flex;position:relative;">
             {props.children.clone()}
             if props.visible {
                 <div class="pwt-load-mask">
