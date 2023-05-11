@@ -13,6 +13,16 @@ use super::TabBarItem;
 
 use pwt_macros::builder;
 
+/// Tab bar
+///
+/// The [TabPanel](super::TabPanel) combines a [TabBar] with
+/// [SelectionView](crate::widget::SelectionView) to simplify usage.
+///
+/// # Automatic routing.
+///
+/// [TabBar] supports fully automatic routing if you put the bar inside
+/// a [NavigationContainer](crate::state::NavigationContainer) and
+/// set the router flag.
 #[derive(Clone, Default, PartialEq, Properties)]
 #[builder]
 pub struct TabBar {
