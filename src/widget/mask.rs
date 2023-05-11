@@ -172,10 +172,10 @@ impl Component for PwtMask {
         };
 
         let mut class = props.class.clone();
-        class.push("pwt-fit-first-child");
+        class.push("pwt-flex-fill-first-child");
 
         html! {
-            <div {class} ref={props.node_ref.clone()} style="position:relative;">
+            <div {class} ref={props.node_ref.clone()} style="display:flex;position:relative;">
             {props.children.clone()}
             if props.visible {
                 <div class="pwt-load-mask">
