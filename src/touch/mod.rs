@@ -15,6 +15,9 @@ pub use fab_menu::{FabMenu, FabMenuAlign, FabMenuDirection, PwtFabMenu};
 mod navigation_bar;
 pub use navigation_bar::NavigationBar;
 
+mod navigation_rail;
+pub use navigation_rail::NavigationRail;
+
 mod page_view;
 pub use page_view::{PageView, PwtPageView};
 
