@@ -1,89 +1,33 @@
-use std::rc::Rc;
-
 use wasm_bindgen::JsCast;
 use web_sys::HtmlElement;
 
 use yew::html::IntoPropValue;
-use yew::prelude::*;
-use yew::virtual_dom::{Key, VComp, VNode};
+use yew::virtual_dom::VNode;
 
-use crate::props::{AsClassesMut, ContainerBuilder, IntoOptionalKey};
-use crate::widget::Fa;
+use crate::prelude::*;
+use crate::widget::{Container, Fa};
+
+use pwt_macros::widget;
 
 /// Container which optionaly masks its content.
-#[derive(Clone, PartialEq, Properties)]
+#[widget(pwt=crate, comp=PwtMask, @element)]
+#[derive(Default, Debug, Clone, PartialEq, Properties)]
 pub struct Mask {
-    #[prop_or_default]
-    node_ref: NodeRef,
-    /// Yew component key
-    pub key: Option<Key>,
+    content: VNode,
 
-    /// CSS class.
-    #[prop_or_default]
-    pub class: Classes,
-
-    /// Flag to show/hide the mask
+     /// Flag to show/hide the mask
     #[prop_or_default]
     pub visible: bool,
-
-    /// Container content.
-    #[prop_or_default]
-    pub children: Vec<VNode>,
 
     /// Mask text. Defaults to "Loading...".
     #[prop_or_default]
     pub text: AttrValue,
 }
 
-impl ContainerBuilder for Mask {
-    fn as_children_mut(&mut self) -> &mut Vec<VNode> {
-        &mut self.children
-    }
-}
-
-impl AsClassesMut for Mask {
-    fn as_classes_mut(&mut self) -> &mut yew::Classes {
-        &mut self.class
-    }
-}
-
 impl Mask {
     /// Create a new instance.
-    pub fn new() -> Self {
-        yew::props!(Mask {})
-    }
-
-    /// Builder style method to set the yew `node_ref`
-    pub fn node_ref(mut self, node_ref: ::yew::html::NodeRef) -> Self {
-        self.set_node_ref(node_ref);
-        self
-    }
-
-    /// Method to set the yew `node_ref`
-    pub fn set_node_ref(&mut self, node_ref: ::yew::html::NodeRef) {
-        self.node_ref = node_ref;
-    }
-
-    /// Builder style method to set the yew `key` property
-    pub fn key(mut self, key: impl IntoOptionalKey) -> Self {
-        self.set_key(key);
-        self
-    }
-
-    /// Method to set the yew `key` property
-    pub fn set_key(&mut self, key: impl IntoOptionalKey) {
-        self.key = key.into_optional_key();
-    }
-
-    /// Builder style method to add a html class
-    pub fn class(mut self, class: impl Into<Classes>) -> Self {
-        self.add_class(class);
-        self
-    }
-
-    /// Method to add a html class.
-    pub fn add_class(&mut self, class: impl Into<Classes>) {
-        self.class.push(class);
+    pub fn new(content: impl Into<VNode>) -> Self {
+        yew::props!(Mask { content: content.into() })
     }
 
     /// Builder style method to set the `vibible` property
@@ -145,7 +89,7 @@ impl Component for PwtMask {
         if first_render {
             let props = ctx.props();
             if props.visible {
-                self.save_focused_element(&props.node_ref);
+                self.save_focused_element(&props.std_props.node_ref);
             }
         }
     }
@@ -155,7 +99,7 @@ impl Component for PwtMask {
         let visible = props.visible;
         if old_props.visible != visible {
             if visible {
-                self.save_focused_element(&props.node_ref);
+                self.save_focused_element(&props.std_props.node_ref);
             } else {
                 self.restore_focused_element();
             }
@@ -171,29 +115,26 @@ impl Component for PwtMask {
             &props.text
         };
 
-        let mut class = props.class.clone();
-        class.push("pwt-flex-fill-first-child");
+        let mask = props.visible.then(|| {
+            Container::new()
+                .class("pwt-load-mask")
+                .with_child(
+                    Container::new()
+                        .class("pwt-load-mask-inner")
+                        .with_child(Fa::new("spinner").pulse())
+                        .with_child(text)
+                )
+        });
 
-        html! {
-            <div {class} ref={props.node_ref.clone()} style="display:flex;position:relative;">
-            {props.children.clone()}
-            if props.visible {
-                <div class="pwt-load-mask">
-                    <div class="pwt-load-mask-inner">
-                        {Fa::new("spinner").pulse()}
-                        {text}
-                    </div>
-                </div>
-            }
-            </div>
-        }
-    }
-}
-
-impl Into<VNode> for Mask {
-    fn into(self) -> VNode {
-        let key = self.key.clone();
-        let comp = VComp::new::<PwtMask>(Rc::new(self), key);
-        VNode::from(comp)
+        yew::props!(Container {
+            std_props: props.std_props.clone(),
+            listeners: props.listeners.clone(),
+        })
+        .class("pwt-flex-fill-first-child")
+        .class("pwt-d-flex")
+        .class("pwt-position-relative")
+        .with_child(props.content.clone())
+        .with_optional_child(mask)
+        .into()
     }
 }
