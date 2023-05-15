@@ -5,6 +5,7 @@ use yew::html::IntoPropValue;
 use yew::prelude::*;
 use yew::virtual_dom::{Key, VComp, VNode};
 
+use crate::css::JustifyContent;
 use crate::prelude::*;
 use crate::props::{ContainerBuilder, EventSubscriber, WidgetBuilder};
 use crate::state::{NavigationContext, NavigationContextExt, Selection};
@@ -28,6 +29,13 @@ use pwt_macros::builder;
 pub struct NavigationRail {
     /// The yew component key.
     pub key: Option<Key>,
+
+    /// Leading widget placed abot the navigation group.
+    pub leading: Option<Html>,
+
+    #[builder]
+    #[prop_or(JustifyContent::Center)]
+    pub group_alignment: JustifyContent,
 
     /// Navigation bar items.
     items: Vec<TabBarItem>,
@@ -79,6 +87,17 @@ impl NavigationRail {
     /// Method to set the yew `default_active` property.
     pub fn set_default_active(&mut self, default_active: impl IntoOptionalKey) {
         self.default_active = default_active.into_optional_key();
+    }
+
+    /// Builder style method to set the leading widget.
+    pub fn leading(mut self, leading: impl Into<VNode>) -> Self {
+        self.set_leading(leading);
+        self
+    }
+
+    /// Method to set the leading widget.
+    pub fn set_leading(&mut self, leading: impl Into<VNode>) {
+        self.leading = Some(leading.into());
     }
 
     fn get_default_active(&self) -> Option<Key> {
@@ -305,7 +324,13 @@ impl Component for PwtNavigationRail {
 
         Container::new()
             .class("pwt-navigation-rail")
-            .children(children)
+            .with_optional_child(props.leading.clone())
+            .with_child(
+                Container::new()
+                    .class("pwt-navigation-rail-tabs")
+                    .class(props.group_alignment)
+                    .children(children),
+            )
             .into()
     }
 }
