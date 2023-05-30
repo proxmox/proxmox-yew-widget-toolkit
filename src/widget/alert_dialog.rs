@@ -60,8 +60,7 @@ impl AlertDialog {
 
 /// Creates a nicely formated error message.
 pub fn error_message(text: &str, class: &str) -> Html {
-    let icon_class = "pwt-bg-color-surface pwt-color-error pwt-p-2 pwt-shape-circle \
-                      fa fa-lg fa-align-center fa-exclamation-triangle pwt-me-2";
+    let icon_class = "pwt-message-sign fa fa-lg fa-align-center fa-exclamation-triangle";
 
     Row::new()
         .padding(2)
@@ -104,12 +103,12 @@ pub fn pwt_alert_dialog(props: &AlertDialog) -> Html {
     let title = format!("{}", props.title.as_deref().unwrap_or("Alert"));
 
     Dialog::new(title.clone())
+        .style("min-width: 300px;")
         .draggable(props.draggable)
         .on_close(props.on_close.clone())
-        .with_child(error_message(&props.message, "pwt-p-4"))
+        .with_child(error_message(&props.message, "pwt-p-2"))
         .with_child(
             Toolbar::new()
-                .class("emphased pwt-border-top")
                 .with_flex_spacer()
                 .with_child(Button::new("Continue").onclick(onclick).autofocus(true)),
         )
