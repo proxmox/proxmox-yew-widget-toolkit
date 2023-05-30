@@ -12,7 +12,7 @@ use yew::virtual_dom::{Key, VComp, VNode};
 use crate::prelude::*;
 use crate::widget::align::{align_to_xy, Point};
 use crate::widget::dom::IntoHtmlElement;
-use crate::widget::{Button, Panel};
+use crate::widget::{Panel, ActionIcon};
 
 /// Modal Dialog.
 ///
@@ -369,11 +369,9 @@ impl Component for PwtDialog {
 
         if props.on_close.is_some() {
             panel.add_tool(
-                Button::new("×")
+                ActionIcon::new("fa fa-close")
                     .aria_label("Close Dialog")
-                    .class("circle")
-                    .class("pwt-scheme-neutral-alt")
-                    .onclick(on_close),
+                    .on_activate(on_close),
             );
         };
 
