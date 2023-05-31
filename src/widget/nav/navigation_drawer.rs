@@ -7,7 +7,10 @@ use yew::virtual_dom::{Key, VComp, VNode};
 
 use pwt_macros::builder;
 
-use crate::props::{ContainerBuilder, EventSubscriber, IntoOptionalKey, WidgetBuilder};
+use crate::props::{
+    AsClassesMut, ContainerBuilder, CssBorderBuilder, CssMarginBuilder, CssPaddingBuilder,
+    EventSubscriber, IntoOptionalKey, WidgetBuilder,
+};
 use crate::state::{NavigationContext, NavigationContextExt, Selection};
 
 use crate::widget::focus::roving_tabindex_next;
@@ -55,6 +58,14 @@ pub struct NavigationDrawer {
     #[prop_or_default]
     router: bool,
 }
+
+impl AsClassesMut for NavigationDrawer {
+    fn as_classes_mut(&mut self) -> &mut yew::Classes {
+        &mut self.class
+    }
+}
+impl CssBorderBuilder for NavigationDrawer {}
+impl CssPaddingBuilder for NavigationDrawer {}
 
 impl NavigationDrawer {
     /// Create a new instance.
@@ -197,7 +208,7 @@ impl PwtNavigationDrawer {
             .onkeydown(onkeydown)
             // add indentation
             .with_optional_child((indent_level > 0).then(|| {
-                html!{<span style={format!("width: {}rem", (indent_level as f32) * 1.0)}/>}
+                html! {<span style={format!("width: {}rem", (indent_level as f32) * 1.0)}/>}
             }))
             // add optional icon on the left
             .with_optional_child(item.icon_class.as_ref().and_then(|icon| {
@@ -287,10 +298,7 @@ impl PwtNavigationDrawer {
             None
         }
 
-        fn find_item_recursive<'a>(
-            menu: &'a [MenuEntry],
-            desired: &Key,
-        ) -> Option<&'a MenuEntry> {
+        fn find_item_recursive<'a>(menu: &'a [MenuEntry], desired: &Key) -> Option<&'a MenuEntry> {
             for menu in menu.iter() {
                 match menu {
                     MenuEntry::Item(item) => {
@@ -518,7 +526,6 @@ impl Component for PwtNavigationDrawer {
 
         let mut column = Column::new()
             .node_ref(self.menu_ref.clone())
-            .class("pwt-fit")
             .onkeydown(onkeydown)
             // avoid https://bugzilla.mozilla.org/show_bug.cgi?id=1069739
             .attribute("tabindex", "-1")
