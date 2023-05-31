@@ -5,6 +5,7 @@ use yew::html::IntoPropValue;
 use gloo_events::EventListener;
 use wasm_bindgen::{JsCast, UnwrapThrowExt};
 
+use crate::css::{FlexFillFirstChild, Display};
 use crate::props::{ContainerBuilder, EventSubscriber, WidgetBuilder};
 
 use super::Container;
@@ -360,6 +361,8 @@ impl PwtSplitPane {
         let pane = Container::new()
             .node_ref(child.node_ref.clone())
             .attribute("style", style)
+            .class(Display::Flex)
+            .class(FlexFillFirstChild)
             .with_child(child.content.clone());
 
         pane.into()
