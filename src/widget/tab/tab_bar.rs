@@ -43,7 +43,7 @@ pub struct TabBar {
 
     /// Selection object to store the currently selected tab key.
     ///
-    /// The optional selction object allows you to control and observer the state from outside.
+    /// The optional selction object allows you to control and observe the state from outside.
     #[builder(IntoPropValue, into_prop_value)]
     pub selection: Option<Selection>,
 

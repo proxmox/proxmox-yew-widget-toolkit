@@ -441,6 +441,9 @@ impl From<TextTruncate> for Classes {
 ///
 /// `width: 100%`, `height: 100%`, `overflow: auto`, `box-sizing: border-box`.
 ///
+/// Please note that this only works if the size of the parent is
+/// known. Otherwise it is better to use [FlexFillFirstChild].
+///
 /// ```
 /// # use pwt::prelude::*;
 /// # use pwt::widget::Container;
@@ -453,6 +456,31 @@ pub struct Fit;
 impl From<Fit> for Classes {
     fn from(_value: Fit) -> Self { "pwt-fit".into() }
 }
+
+
+/// CSS utility type to set "flex: 1 1 auto;" to the first child of a container.
+///
+/// This is useful for placing a child inside the parent box. Please
+/// note that this always works even if the parent has no width/height
+/// set ("pwt-fit" wont work in that case).
+///
+/// ```
+/// # use pwt::prelude::*;
+/// # use pwt::widget::Container;
+/// use pwt::css::*;
+/// # fn(your_child: Html) (
+/// Container::new() // parent
+///    .class(Display::Flex)
+///    .class(FlexFillFirstChild)
+///    .with_child(your_child)
+/// # ;)
+/// ```
+pub struct FlexFillFirstChild;
+impl From<FlexFillFirstChild> for Classes {
+    fn from(_value: FlexFillFirstChild) -> Self { "pwt-flex-fill-first-child".into() }
+}
+
+
 
 /// CSS utility type to fit into viewport (use all visible space)
 ///

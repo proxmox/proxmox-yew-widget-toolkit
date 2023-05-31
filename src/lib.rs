@@ -132,6 +132,7 @@
 //! - [touch::PageView]: A scrollable list that works page by page.
 //! - [touch::PageStack]: Stack of Pages using animation when switching pages.
 //! - [touch::NavigationBar]: Navigation bar (bottom)
+//! - [touch::NavigationRail]: Navigation rail (left)
 //! - [touch::Fab]: Favorite action button.
 //! - [touch::FabMenu]: Favorite actions button Menu.
 
