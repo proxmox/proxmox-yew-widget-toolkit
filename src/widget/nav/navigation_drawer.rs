@@ -8,7 +8,7 @@ use yew::virtual_dom::{Key, VComp, VNode};
 use pwt_macros::builder;
 
 use crate::props::{
-    AsClassesMut, ContainerBuilder, CssBorderBuilder, CssMarginBuilder, CssPaddingBuilder,
+    AsClassesMut, ContainerBuilder, CssBorderBuilder, CssPaddingBuilder,
     EventSubscriber, IntoOptionalKey, WidgetBuilder,
 };
 use crate::state::{NavigationContext, NavigationContextExt, Selection};
