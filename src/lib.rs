@@ -1,8 +1,28 @@
 //! # Proxmox Widget Toolkit (for Yew)
 //!
 //! This toolkit provides Yew components to build Single Page
-//! Apps. The main goal is rewriting the existing Proxmox UIs, so the
-//! style/theme of the widgets mimics the current Proxmox UI style.
+//! Apps. It provides evertything you need to build complex user
+//! interfaces:
+//!
+//! - Basic layout widgets like [Row](widget::Row) and [Column](widget::Column) (using css flexbox).
+//! - Standard widgets like buttons, menus, toolbars, tooltips, tab panels,
+//! - Data table with virtual scroll, sorting, nested resizable headers, tree support ...
+//! - Helpers to build complex forms easily ([widget::form])
+//! - Modal dialogs
+//! - Dropdown with arbitrary complex content (i.e. [GridPicker](widget::GridPicker))
+//! - Various navigation widgets like [NavigationDrawer](widget::nav::NavigationDrawer),
+//!   [NavigationBar](touch::NavigationBar) and [NavigationRail](touch::NavigationRail)
+//! - Html SVG Canvas bindings for easy 2D drawings.
+//! - Flexible theming using CSS.
+//!
+//! # History
+//!
+//! The main goal was to rewrite the existing Proxmox user interfaces.
+//! Hence the original style/theme of the widgets was to mimic the current
+//! Proxmox UI style which uses a very dense layout.
+//!
+//! Later, a Material Design-like style was added that uses larger
+//! spacing suitable for touch devices.
 //!
 //! ## Builder Pattern
 //!

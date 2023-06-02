@@ -42,7 +42,7 @@ impl<F: 'static + Fn(&Callback<Key>) -> Html> From<F> for RenderDropdownPickerFn
     }
 }
 
-/// Base widget to implement [crate::widget::form::Combobox] like widgets.
+/// Base widget to implement [Combobox](crate::widget::form::Combobox) like widgets.
 ///
 /// # Note
 ///
@@ -337,7 +337,7 @@ impl Component for PwtDropdown {
         let select = Container::new()
             .with_std_props(&props.std_props)
             // overwrite node_ref, becaus AutoFloatingPlacement needs stable ref
-            .node_ref(self.dropdown_ref.clone()) 
+            .node_ref(self.dropdown_ref.clone())
             .class("pwt-input")
             .class("pwt-w-100")
             .with_child(input)

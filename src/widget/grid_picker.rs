@@ -13,6 +13,10 @@ use crate::state::{DataStore, Selection, SelectionObserver};
 use crate::widget::data_table::{DataTable, DataTableMouseEvent};
 use crate::widget::{Column, Input, Row};
 
+/// Display a [DataTable] with optional text filter field.
+///
+/// Allows you to select one or more items from a table. This is usually used
+/// to implement [Dropdown](crate::widget::Dropdown) pickers.
 #[derive(Derivative, Properties)]
 #[derivative(Clone(bound = ""), PartialEq(bound = ""))]
 pub struct GridPicker<S: DataStore> {
@@ -38,7 +42,7 @@ pub struct GridPicker<S: DataStore> {
 
     /// Show filter
     ///
-    /// Defaul behavior is to show the filter for pickers with more than 10 items.
+    /// Default behavior is to show the filter for pickers with more than 10 items.
     pub show_filter: Option<bool>,
 }
 

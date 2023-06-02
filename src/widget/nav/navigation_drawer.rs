@@ -19,12 +19,19 @@ use crate::widget::{Column, Container};
 use super::{Menu, MenuEntry, MenuItem};
 
 /// Navigation Menu Widget.
+///
+/// # Automatic routing.
+///
+/// [NavigationDrawer] supports fully automatic routing if you put the widget inside
+/// a [NavigationContainer](crate::state::NavigationContainer) and
+/// set the router flag.
 #[derive(Clone, PartialEq, Properties)]
 #[builder]
 pub struct NavigationDrawer {
     /// The yew component key.
     pub key: Option<Key>,
 
+    /// CSS Class
     #[prop_or_default]
     pub class: Classes,
 
