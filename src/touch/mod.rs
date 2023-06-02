@@ -22,7 +22,7 @@ mod page_view;
 pub use page_view::{PageView, PwtPageView};
 
 mod page_stack;
-pub use page_stack::{PageAnimationStyle, PageStack, PmgPageStack};
+pub use page_stack::{PageAnimationStyle, PageStack, PwtPageStack};
 
 mod slidable;
 pub use slidable::{

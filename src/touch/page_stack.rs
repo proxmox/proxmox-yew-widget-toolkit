@@ -60,11 +60,12 @@ pub enum Msg {
     AnimationEnd,
 }
 
-pub struct PmgPageStack {
+#[doc(hidden)]
+pub struct PwtPageStack {
     state: ViewState,
 }
 
-impl Component for PmgPageStack {
+impl Component for PwtPageStack {
     type Message = Msg;
     type Properties = PageStack;
 
@@ -149,7 +150,7 @@ impl Component for PmgPageStack {
 
 impl Into<VNode> for PageStack {
     fn into(self) -> VNode {
-        let comp = VComp::new::<PmgPageStack>(Rc::new(self), None);
+        let comp = VComp::new::<PwtPageStack>(Rc::new(self), None);
         VNode::from(comp)
     }
 }

@@ -9,6 +9,7 @@
 //! - Data table with virtual scroll, sorting, nested resizable headers, tree support ...
 //! - Helpers to build complex forms easily ([widget::form])
 //! - Modal dialogs
+//! - Split pane with a draggable sparator.
 //! - Dropdown with arbitrary complex content (i.e. [GridPicker](widget::GridPicker))
 //! - Various navigation widgets like [NavigationDrawer](widget::nav::NavigationDrawer),
 //!   [NavigationBar](touch::NavigationBar) and [NavigationRail](touch::NavigationRail)
@@ -26,11 +27,9 @@
 //!
 //! ## Builder Pattern
 //!
-//! This toolkit uses the builder pattern to create Yew components. It
-//! is currently not possible to create the components using the Yew
-//! 'html' macro.
-//!
+//! This toolkit uses the builder pattern to create Yew components.
 //! Here's an example of creating a simple list:
+//!
 //! ```
 //! use pwt::prelude::*;
 //! use pwt::widget::{Button, Column};

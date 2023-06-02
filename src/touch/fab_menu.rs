@@ -9,6 +9,7 @@ use crate::widget::Container;
 
 use super::Fab;
 
+/// [FabMenu] direction.
 #[derive(Copy, Clone, PartialEq)]
 pub enum FabMenuDirection {
     Up,
@@ -17,6 +18,7 @@ pub enum FabMenuDirection {
     Right,
 }
 
+/// [FabMenu] alignment.
 #[derive(Copy, Clone, PartialEq)]
 pub enum FabMenuAlign {
     Start,
