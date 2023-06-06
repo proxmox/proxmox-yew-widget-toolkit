@@ -109,6 +109,23 @@ impl Theme {
         theme
     }
 
+    /// Load theme, but resctict possible values.
+    ///
+    /// If the loaded value isn't in the list, we simply return the first
+    ///  value from the list.
+    pub fn load_filtered(themes: &[&str]) -> Self {
+        let mut theme = Self::load();
+
+        let name = &theme.name;
+        if themes.iter().find(|t| *t == name).is_some() {
+            return theme;
+        }
+
+        theme.name = themes.get(0).unwrap_or(&get_default_theme_name()).to_string();
+
+        theme
+    }
+
     /// Store the theme mode and emit the `pwt-theme-changed` event.
     pub fn store_theme_mode(mode: ThemeMode) -> Result<(), Error> {
         if let Some(store) = local_storage() {
@@ -176,6 +193,7 @@ fn use_dark_mode(theme: &Theme, system_prefer_dark_mode: bool) -> bool {
 /// This helper listens to the `pwt-theme-changed` event, and uses a media
 /// query to get notified when `prefers-color-scheme` changes.
 pub struct ThemeObserver {
+    themes: &'static [&'static str],
     media_query: MediaQueryList,
     scheme_changed_closure: Option<Closure<dyn Fn()>>,
     theme_changed_closure: Option<Closure<dyn Fn()>>,
@@ -193,8 +211,8 @@ impl Drop for ThemeObserver {
 impl ThemeObserver {
 
     /// Creates a new listener.
-    pub fn new(on_theme_change: Callback<(Theme, bool)>) -> Self {
-        let theme = Theme::load();
+    pub fn new(themes: &'static [&'static str], on_theme_change: Callback<(Theme, bool)>) -> Self {
+        let theme = Theme::load_filtered(themes);
         let system_prefer_dark = get_system_prefer_dark_mode();
 
         let window = web_sys::window().unwrap();
@@ -207,6 +225,7 @@ impl ThemeObserver {
         on_theme_change.emit((theme.clone(), use_dark_mode));
 
         let mut me = Self {
+            themes,
             media_query,
             on_theme_change,
             scheme_changed_closure: None,
@@ -234,8 +253,9 @@ impl ThemeObserver {
         let theme_changed_closure = Closure::wrap({
             let on_theme_change = self.on_theme_change.clone();
             let state = self.state.clone();
+            let themes = self.themes;
             Box::new(move || {
-                let theme = Theme::load();
+                let theme = Theme::load_filtered(themes);
                 let system_prefer_dark = get_system_prefer_dark_mode();
                 let use_dark_mode = use_dark_mode(&theme, system_prefer_dark);
                 *state.borrow_mut() = (theme.clone(), use_dark_mode);
@@ -270,8 +290,9 @@ impl ThemeObserver {
         let scheme_changed_closure = Closure::wrap({
             let on_theme_change = self.on_theme_change.clone();
             let state = self.state.clone();
+            let themes = self.themes;
             Box::new(move || {
-                let theme = Theme::load();
+                let theme = Theme::load_filtered(themes);
                 let system_prefer_dark = get_system_prefer_dark_mode();
                 let use_dark_mode = use_dark_mode(&theme, system_prefer_dark);
                 *state.borrow_mut() = (theme.clone(), use_dark_mode);

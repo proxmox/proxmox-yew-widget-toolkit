@@ -8,11 +8,12 @@ use crate::state::{Theme, ThemeObserver};
 #[derive(Properties, Clone, PartialEq)]
 pub struct ThemeLoader {
     body: VNode,
+    themes: &'static [&'static str]
 }
 
 impl ThemeLoader {
-    pub fn new(body: impl Into<VNode>) -> Self {
-        Self { body: body.into() }
+    pub fn new(themes: &'static [&'static str], body: impl Into<VNode>) -> Self {
+        Self { themes, body: body.into() }
     }
 }
 
@@ -62,8 +63,12 @@ impl Component for PwtThemeLoader {
     type Properties = ThemeLoader;
 
     fn create(ctx: &Context<Self>) -> Self {
+        let props = ctx.props();
 
-        let theme_observer = ThemeObserver::new(ctx.link().callback(Msg::ThemeChanged));
+        let theme_observer = ThemeObserver::new(
+            props.themes,
+            ctx.link().callback(Msg::ThemeChanged)
+        );
 
         let theme = theme_observer.theme();
         let dark_mode =  theme_observer.dark_mode();
