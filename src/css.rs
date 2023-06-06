@@ -442,7 +442,7 @@ impl From<TextTruncate> for Classes {
 /// `width: 100%`, `height: 100%`, `overflow: auto`, `box-sizing: border-box`.
 ///
 /// Please note that this only works if the size of the parent is
-/// known. Otherwise it is better to use [FlexFillFirstChild].
+/// known.
 ///
 /// ```
 /// # use pwt::prelude::*;
