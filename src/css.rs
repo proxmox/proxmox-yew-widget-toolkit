@@ -468,12 +468,12 @@ impl From<Fit> for Classes {
 /// # use pwt::prelude::*;
 /// # use pwt::widget::Container;
 /// use pwt::css::*;
-/// # fn(your_child: Html) (
+/// # fn dummy(your_child: Html) {
 /// Container::new() // parent
 ///    .class(Display::Flex)
 ///    .class(FlexFillFirstChild)
 ///    .with_child(your_child)
-/// # ;)
+/// # ;}
 /// ```
 pub struct FlexFillFirstChild;
 impl From<FlexFillFirstChild> for Classes {
