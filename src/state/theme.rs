@@ -42,18 +42,22 @@ impl TryFrom<&str> for ThemeMode {
     }
 }
 
-static mut DEFAULT_THEME_NAME: &'static str = "Material";
+static mut AVAILABLE_THEMES: &'static [&'static str] = &[ "Material" ];
 
-pub fn set_default_theme_name(name: &'static str) {
+pub fn set_available_themes(themes: &'static [&'static str]) {
     unsafe {
-        DEFAULT_THEME_NAME = name;
+        AVAILABLE_THEMES = themes;
     }
 }
 
-pub fn get_default_theme_name() -> &'static str {
+pub fn get_available_themes() -> &'static [&'static str] {
     unsafe {
-        DEFAULT_THEME_NAME
+        AVAILABLE_THEMES
     }
+}
+
+fn get_default_theme_name() -> String {
+    get_available_themes().get(0).unwrap_or(&"Material").to_string()
 }
 
 /// Theme. Combines a theme name with a theme mode ([ThemeMode])
@@ -88,8 +92,8 @@ fn emit_theme_changed_event() {
 }
 
 impl Theme {
-    /// Load the current theme settings.
-    pub fn load() -> Self {
+    // Load the current theme settings from local storage.
+    fn load_from_storage() -> Self {
         let mut theme = Theme::default();
         let store = match local_storage() {
             Some(store) => store,
@@ -109,23 +113,26 @@ impl Theme {
         theme
     }
 
-    /// Load theme, but restrict possible values.
+    /// Load theme.
     ///
+    /// Theme names are restricted by the list of availabnle themes (see [set_available_themes]).
     /// If the loaded value isn't in the list, we simply return the first
-    ///  value from the list.
+    /// value from the list.
     ///
     /// # Note
     ///
     /// Theme name comparison is case-insensitive.
-    pub fn load_filtered(themes: &[&str]) -> Self {
-        let mut theme = Self::load();
+    pub fn load() -> Self {
+        let mut theme = Self::load_from_storage();
 
         let name = theme.name.to_lowercase();
+        let themes = get_available_themes();
+
         if themes.iter().find(|t| t.to_lowercase() == name).is_some() {
             return theme;
         }
 
-        theme.name = themes.get(0).unwrap_or(&get_default_theme_name()).to_string();
+        theme.name = get_default_theme_name();
 
         theme
     }
@@ -197,7 +204,6 @@ fn use_dark_mode(theme: &Theme, system_prefer_dark_mode: bool) -> bool {
 /// This helper listens to the `pwt-theme-changed` event, and uses a media
 /// query to get notified when `prefers-color-scheme` changes.
 pub struct ThemeObserver {
-    themes: &'static [&'static str],
     media_query: MediaQueryList,
     scheme_changed_closure: Option<Closure<dyn Fn()>>,
     theme_changed_closure: Option<Closure<dyn Fn()>>,
@@ -215,8 +221,8 @@ impl Drop for ThemeObserver {
 impl ThemeObserver {
 
     /// Creates a new listener.
-    pub fn new(themes: &'static [&'static str], on_theme_change: Callback<(Theme, bool)>) -> Self {
-        let theme = Theme::load_filtered(themes);
+    pub fn new(on_theme_change: Callback<(Theme, bool)>) -> Self {
+        let theme = Theme::load();
         let system_prefer_dark = get_system_prefer_dark_mode();
 
         let window = web_sys::window().unwrap();
@@ -229,7 +235,6 @@ impl ThemeObserver {
         on_theme_change.emit((theme.clone(), use_dark_mode));
 
         let mut me = Self {
-            themes,
             media_query,
             on_theme_change,
             scheme_changed_closure: None,
@@ -257,9 +262,8 @@ impl ThemeObserver {
         let theme_changed_closure = Closure::wrap({
             let on_theme_change = self.on_theme_change.clone();
             let state = self.state.clone();
-            let themes = self.themes;
             Box::new(move || {
-                let theme = Theme::load_filtered(themes);
+                let theme = Theme::load();
                 let system_prefer_dark = get_system_prefer_dark_mode();
                 let use_dark_mode = use_dark_mode(&theme, system_prefer_dark);
                 *state.borrow_mut() = (theme.clone(), use_dark_mode);
@@ -294,9 +298,8 @@ impl ThemeObserver {
         let scheme_changed_closure = Closure::wrap({
             let on_theme_change = self.on_theme_change.clone();
             let state = self.state.clone();
-            let themes = self.themes;
             Box::new(move || {
-                let theme = Theme::load_filtered(themes);
+                let theme = Theme::load();
                 let system_prefer_dark = get_system_prefer_dark_mode();
                 let use_dark_mode = use_dark_mode(&theme, system_prefer_dark);
                 *state.borrow_mut() = (theme.clone(), use_dark_mode);
