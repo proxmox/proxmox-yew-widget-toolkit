@@ -109,15 +109,19 @@ impl Theme {
         theme
     }
 
-    /// Load theme, but resctict possible values.
+    /// Load theme, but restrict possible values.
     ///
     /// If the loaded value isn't in the list, we simply return the first
     ///  value from the list.
+    ///
+    /// # Note
+    ///
+    /// Theme name comparison is case-insensitive.
     pub fn load_filtered(themes: &[&str]) -> Self {
         let mut theme = Self::load();
 
-        let name = &theme.name;
-        if themes.iter().find(|t| *t == name).is_some() {
+        let name = theme.name.to_lowercase();
+        if themes.iter().find(|t| t.to_lowercase() == name).is_some() {
             return theme;
         }
 
