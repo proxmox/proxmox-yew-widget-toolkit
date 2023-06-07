@@ -76,7 +76,7 @@ impl Component for PwtForm {
 
         let form_ctx = self.form_ctx.clone();
 
-        let mut attributes = props.std_props.cumulate_attributes(None::<&str>);
+        let mut attributes = props.std_props.cumulate_attributes(Some("pwt-d-flex"));
         let attr_map = attributes.get_mut_index_map();
         attr_map.insert(AttrValue::Static("novalidate"), (AttrValue::Static("true"), ApplyAttributeAs::Attribute));
 
