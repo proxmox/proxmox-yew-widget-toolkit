@@ -33,6 +33,7 @@ impl ThemeNameSelector {
 pub struct PwtThemeNameSelector {
     theme: String,
     combobox_ref: NodeRef,
+    available_themes: Rc<Vec<AttrValue>>,
 }
 
 pub enum Msg {
@@ -45,10 +46,15 @@ impl Component for PwtThemeNameSelector {
 
     fn create(_ctx: &Context<Self>) -> Self {
         let theme = Theme::load();
+        let available_themes: Vec<AttrValue> = crate::state::get_available_themes()
+            .iter()
+            .map(|name| AttrValue::from(*name))
+            .collect();
 
         Self {
             theme: theme.name,
             combobox_ref: NodeRef::default(),
+            available_themes: Rc::new(available_themes),
         }
     }
 
@@ -73,8 +79,7 @@ impl Component for PwtThemeNameSelector {
             .on_change(ctx.link().callback(|v| Msg::SetThemeName(v)))
             .aria_label("Select Theme")
             .default(self.theme.clone())
-            .with_item("Proxmox")
-            .with_item("Material")
+            .items(self.available_themes.clone())
             .into()
     }
 
