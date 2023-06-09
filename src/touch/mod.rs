@@ -24,6 +24,9 @@ pub use page_view::{PageView, PwtPageView};
 mod page_stack;
 pub use page_stack::{PageAnimationStyle, PageStack, PwtPageStack};
 
+mod scaffold;
+pub use scaffold::{Scaffold, PwtScaffold};
+
 mod slidable;
 pub use slidable::{
     PwtSlidable, PwtSlidableAction, Slidable, SlidableAction, SlidableActionMouseEvent,
