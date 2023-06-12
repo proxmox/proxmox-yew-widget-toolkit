@@ -30,7 +30,7 @@ pub struct NavigationRail {
     /// The yew component key.
     pub key: Option<Key>,
 
-    /// Leading widget placed abot the navigation group.
+    /// Leading widget placed above the navigation group.
     pub leading: Option<Html>,
 
     #[builder]
