@@ -1,6 +1,9 @@
 //! ### Widgets for Touch devices
 //!
 
+mod application_bar;
+pub use application_bar::{ApplicationBar, PwtApplicationBar};
+
 mod gesture_detector;
 pub use gesture_detector::{
     GestureDetector, GestureDragEvent, GestureSwipeEvent, PwtGestureDetector,
