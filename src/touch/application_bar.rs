@@ -15,6 +15,9 @@ pub struct ApplicationBar {
     /// The yew component key.
     pub key: Option<Key>,
 
+    /// Leading widget placed before the title.
+    pub leading: Option<Html>,
+
     /// Application title.
     #[builder(IntoPropValue, into_prop_value)]
     pub title: Option<AttrValue>,
@@ -36,6 +39,17 @@ impl ApplicationBar {
     pub fn set_key(&mut self, key: impl IntoOptionalKey) {
         self.key = key.into_optional_key();
     }
+
+    /// Builder style method to set the leading widget.
+    pub fn leading(mut self, leading: impl Into<VNode>) -> Self {
+        self.set_leading(leading);
+        self
+    }
+
+    /// Method to set the leading widget.
+    pub fn set_leading(&mut self, leading: impl Into<VNode>) {
+        self.leading = Some(leading.into());
+    }
 }
 
 pub struct PwtApplicationBar {}
@@ -51,6 +65,8 @@ impl Component for PwtApplicationBar {
     fn view(&self, ctx: &yew::Context<Self>) -> yew::Html {
         let props = ctx.props();
 
+        let actions = html!{"actions"};
+
         Row::new()
             .attribute("style", "z-index: 1;") // make shadow visible
             .attribute("role", "banner")
@@ -60,9 +76,12 @@ impl Component for PwtApplicationBar {
             .class("pwt-border-bottom")
             .class("pwt-shadow1")
             .padding(2)
+            .gap(2)
+            .with_optional_child(props.leading.clone())
             .with_child(html! {
-                <span class="pwt-ps-1 pwt-font-headline-small">{props.title.clone()}</span>
+                <span class="pwt-font-headline-small pwt-text-truncate">{props.title.clone()}</span>
             })
+            .with_child(actions)
             .into()
     }
 }
