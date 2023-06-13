@@ -4,7 +4,7 @@ use yew::html::IntoPropValue;
 use yew::virtual_dom::{Key, VComp, VNode};
 
 use crate::prelude::*;
-use crate::widget::Row;
+use crate::widget::{Column, Row};
 
 use pwt_macros::builder;
 
@@ -25,6 +25,9 @@ pub struct ApplicationBar {
     #[prop_or_default]
     /// Actions, displayed right aligned in the header.
     pub actions: Vec<VNode>,
+
+    /// Widget placed at the bottom, usually a [TabBar].
+    pub bottom: Option<Html>,
 }
 
 impl ApplicationBar {
@@ -74,7 +77,7 @@ impl ApplicationBar {
 
     /// Method to add multiple actions.
     pub fn add_actions(&mut self, actions: Vec<VNode>) {
-            self.actions.extend(actions);
+        self.actions.extend(actions);
     }
 
     /// Method to set the actions property.
@@ -82,6 +85,16 @@ impl ApplicationBar {
         self.actions = actions;
     }
 
+    /// Builder style method to set the bottom widget.
+    pub fn bottom(mut self, bottom: impl Into<VNode>) -> Self {
+        self.set_bottom(bottom);
+        self
+    }
+
+    /// Method to set the bottom widget.
+    pub fn set_bottom(&mut self, bottom: impl Into<VNode>) {
+        self.bottom = Some(bottom.into());
+    }
 }
 
 pub struct PwtApplicationBar {}
@@ -103,21 +116,25 @@ impl Component for PwtApplicationBar {
             actions.add_children(props.actions.clone())
         }
 
-        Row::new()
-            .attribute("style", "z-index: 1;") // make shadow visible
-            .attribute("role", "banner")
+        let row1 = Row::new()
             .attribute("aria-label", props.title.clone())
-            .class("pwt-navbar")
             .class("pwt-justify-content-space-between pwt-align-items-center")
-            .class("pwt-border-bottom")
-            .class("pwt-shadow1")
             .padding(2)
             .gap(2)
             .with_optional_child(props.leading.clone())
             .with_child(html! {
                 <span class="pwt-font-headline-small pwt-text-truncate">{props.title.clone()}</span>
             })
-            .with_child(actions)
+            .with_child(actions);
+
+        Column::new()
+            .attribute("style", "z-index: 1;") // make shadow visible
+            .attribute("role", "banner")
+            .class("pwt-navbar")
+            .class("pwt-border-bottom")
+            .class("pwt-shadow1")
+            .with_child(row1)
+            .with_optional_child(props.bottom.clone())
             .into()
     }
 }
