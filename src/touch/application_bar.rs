@@ -21,6 +21,10 @@ pub struct ApplicationBar {
     /// Application title.
     #[builder(IntoPropValue, into_prop_value)]
     pub title: Option<AttrValue>,
+
+    #[prop_or_default]
+    /// Actions, displayed right aligned in the header.
+    pub actions: Vec<VNode>,
 }
 
 impl ApplicationBar {
@@ -50,6 +54,34 @@ impl ApplicationBar {
     pub fn set_leading(&mut self, leading: impl Into<VNode>) {
         self.leading = Some(leading.into());
     }
+
+    /// Builder style method to add an action.
+    pub fn with_action(mut self, action: impl Into<VNode>) -> Self {
+        self.add_action(action);
+        self
+    }
+
+    /// Method to add an action.
+    pub fn add_action(&mut self, action: impl Into<VNode>) {
+        self.actions.push(action.into());
+    }
+
+    /// Builder style method to add multiple actions.
+    pub fn actions(mut self, actions: Vec<VNode>) -> Self {
+        self.add_actions(actions);
+        self
+    }
+
+    /// Method to add multiple actions.
+    pub fn add_actions(&mut self, actions: Vec<VNode>) {
+            self.actions.extend(actions);
+    }
+
+    /// Method to set the actions property.
+    pub fn set_actions(&mut self, actions: Vec<VNode>) {
+        self.actions = actions;
+    }
+
 }
 
 pub struct PwtApplicationBar {}
@@ -65,7 +97,11 @@ impl Component for PwtApplicationBar {
     fn view(&self, ctx: &yew::Context<Self>) -> yew::Html {
         let props = ctx.props();
 
-        let actions = html!{"actions"};
+        let mut actions = Row::new().gap(0);
+
+        if !props.actions.is_empty() {
+            actions.add_children(props.actions.clone())
+        }
 
         Row::new()
             .attribute("style", "z-index: 1;") // make shadow visible
