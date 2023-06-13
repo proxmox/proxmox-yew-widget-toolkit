@@ -9,8 +9,11 @@ use crate::props::{ContainerBuilder, WidgetBuilder};
 
 use super::NavigationBar;
 
+use pwt_macros::builder;
+
 /// Implements the basic Material Design visual layout structure.
 #[derive(Properties, Clone, PartialEq)]
+#[builder]
 pub struct Scaffold {
     /// The yew component key.
     pub key: Option<Key>,
@@ -22,10 +25,14 @@ pub struct Scaffold {
     pub body: Option<VNode>,
 
     /// The bottom navigation bar.
+    #[builder(IntoPropValue, into_prop_value)]
     pub navigation_bar: Option<NavigationBar>,
 
     /// Favorite action button.
     pub favorite_action_button: Option<VNode>,
+
+    /// A panel displayed to the left side of the body.
+    pub drawer: Option<VNode>,
 }
 
 impl Scaffold {
@@ -35,23 +42,27 @@ impl Scaffold {
         yew::props!(Self {})
     }
 
+    /// Builder style method to set the application bar.
     pub fn application_bar(mut self, app_bar: impl Into<VNode>) -> Self {
         self.application_bar = Some(app_bar.into());
         self
     }
 
+    /// Builder style method to set the body.
     pub fn body(mut self, body: impl Into<VNode>) -> Self {
         self.body = Some(body.into());
         self
     }
 
-    pub fn navigation_bar(mut self, nav_bar: impl IntoPropValue<Option<NavigationBar>>) -> Self {
-        self.navigation_bar = nav_bar.into_prop_value();
+    /// Builder style method to set the favorite action button.
+    pub fn favorite_action_button(mut self, fav: impl Into<VNode>) -> Self {
+        self.favorite_action_button = Some(fav.into());
         self
     }
 
-    pub fn favorite_action_button(mut self, fav: impl Into<VNode>) -> Self {
-        self.favorite_action_button = Some(fav.into());
+    /// Builder style method to set the drawer.
+    pub fn drawer(mut self, drawer: impl Into<VNode>) -> Self {
+        self.drawer = Some(drawer.into());
         self
     }
 }
@@ -88,12 +99,19 @@ impl Component for PwtScaffold {
             .with_optional_child(props.body.clone())
             .with_optional_child(positioned_fab);
 
+        let drawer = Container::new()
+            .attribute("style", "z-index:2;min-width:200px;top:0;left:0;bottom:0;")
+            .class("pwt-position-absolute")
+            .class("pwt-bg-color-neutral")
+            .with_optional_child(props.drawer.clone());
 
         Column::new()
             .class("pwt-viewport")
+            .class("pwt-position-relative")
             .with_optional_child(props.application_bar.clone())
             .with_child(body)
             .with_optional_child(props.navigation_bar.clone())
+            .with_child(drawer)
             .into()
     }
 
