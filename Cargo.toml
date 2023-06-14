@@ -24,6 +24,7 @@ members = [
     "examples/form",
     "examples/loader",
     "examples/mobile",
+    "examples/mobile2",
     "examples/router",
     "examples/themes",
 ]
