@@ -28,7 +28,7 @@ mod page_stack;
 pub use page_stack::{PageAnimationStyle, PageStack, PwtPageStack};
 
 mod scaffold;
-pub use scaffold::{Scaffold, PwtScaffold};
+pub use scaffold::{Scaffold, PwtScaffold, ScaffoldController};
 
 mod slidable;
 pub use slidable::{
