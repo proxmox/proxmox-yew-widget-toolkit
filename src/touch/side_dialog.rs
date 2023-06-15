@@ -13,11 +13,22 @@ use crate::widget::Container;
 
 use super::{GestureDetector, GestureDragEvent};
 
-/// Modal Dialog.
+#[derive(Copy, Clone, PartialEq)]
+pub enum SideDialogDirection {
+    Left,
+    Right,
+    Top,
+    Bottom,
+}
+
+use pwt_macros::builder;
+
+/// Modal Dialog with slide in/out animations.
 ///
 /// This widget is implemented using the relatively new Html `<dialog>`
 /// tag in order to get correct focus handling.
 #[derive(Properties, Clone, PartialEq)]
+#[builder]
 pub struct SideDialog {
     #[prop_or_default]
     node_ref: NodeRef,
@@ -25,12 +36,15 @@ pub struct SideDialog {
     /// The yew component key.
     pub key: Option<Key>,
 
+    #[builder_cb(IntoEventCallback, into_event_callback, ())]
     pub on_close: Option<Callback<()>>,
 
     #[prop_or_default]
     pub children: Vec<VNode>,
 
-    pub style: Option<AttrValue>,
+    #[prop_or(SideDialogDirection::Left)]
+    #[builder]
+    pub direction: SideDialogDirection,
 }
 
 impl ContainerBuilder for SideDialog {
@@ -54,16 +68,6 @@ impl SideDialog {
     /// Builder style method to set the yew `key` property
     pub fn key(mut self, key: impl IntoOptionalKey) -> Self {
         self.key = key.into_optional_key();
-        self
-    }
-
-    pub fn style(mut self, style: impl Into<AttrValue>) -> Self {
-        self.style = Some(style.into());
-        self
-    }
-
-    pub fn on_close(mut self, cb: impl IntoEventCallback<()>) -> Self {
-        self.on_close = cb.into_event_callback();
         self
     }
 }
@@ -104,8 +108,6 @@ impl Component for PwtSideDialog {
     type Properties = SideDialog;
 
     fn create(ctx: &Context<Self>) -> Self {
-        ctx.link().send_message(Msg::Open);
-
         let window = web_sys::window().unwrap();
         let document = window.document().unwrap();
         let last_active = document
@@ -197,16 +199,23 @@ impl Component for PwtSideDialog {
             SliderState::Visible | SliderState::SlideIn => "visible",
         };
 
+        let slider_direction_class = match props.direction {
+            SideDialogDirection::Left => "pwt-side-dialog-left",
+            SideDialogDirection::Right => "pwt-side-dialog-right",
+            SideDialogDirection::Top => "pwt-side-dialog-top",
+            SideDialogDirection::Bottom => "pwt-side-dialog-bottom",
+        };
+
         let dialog = Container::new()
             .node_ref(props.node_ref.clone())
             .tag("dialog")
             .class("pwt-side-dialog")
-            .attribute("style", props.style.clone())
             .oncancel(oncancel)
             .with_child(
                 Container::new()
                     .node_ref(self.slider_ref.clone())
                     .class("pwt-side-dialog-slider")
+                    .class(slider_direction_class)
                     .class(slider_state_class)
                     .ontransitionend(ctx.link().callback(|_| Msg::SliderAnimationEnd))
                     .children(props.children.clone())
@@ -238,6 +247,12 @@ impl Component for PwtSideDialog {
                 log::info!("Update0 {} {}", event.x(), event.y());
             })
             .into()
+    }
+
+    fn rendered(&mut self, ctx: &Context<Self>, first_render: bool) {
+        if first_render {
+            ctx.link().send_message(Msg::Open);
+        }
     }
 }
 
