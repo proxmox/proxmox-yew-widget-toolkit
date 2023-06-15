@@ -394,7 +394,7 @@ impl Component for PwtDialog {
         let southeast_down = link.callback(|e| Msg::ResizeStart(Point::BottomEnd, e));
 
         let is_dragging = !matches!(self.dragging_state, DragState::Idle);
-        let classes = classes!(is_dragging.then_some("pwt-user-select-none"));
+        let classes = classes!("pwt-dialog", is_dragging.then_some("pwt-user-select-none"));
 
         html! {
             <dialog {onpointerdown} class={classes} aria-label={props.title.clone()} ref={props.node_ref.clone()} {oncancel} style={props.style.clone()}>

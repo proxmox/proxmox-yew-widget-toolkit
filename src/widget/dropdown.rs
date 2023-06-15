@@ -349,6 +349,7 @@ impl Component for PwtDropdown {
             .with_child(
                 Container::new()
                     .tag("dialog")
+                    .class("pwt-dialog")
                     .class("pwt-dropdown")
                     .attribute("id", self.picker_id.clone())
                     .attribute("data-show", data_show)
