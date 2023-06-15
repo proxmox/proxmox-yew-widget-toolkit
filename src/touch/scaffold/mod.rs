@@ -186,9 +186,11 @@ impl Component for PwtScaffold {
 
         let show_drawer = self.drawer_state != DrawerState::Hidden;
         let drawer_animation_class = match self.drawer_state {
-            DrawerState::Hidden | DrawerState::SlideOut => "slide-out",
-            DrawerState::Visible | DrawerState::SlideIn => "slide-in",
+            DrawerState::Hidden | DrawerState::SlideOut => "hidden",
+            DrawerState::Visible | DrawerState::SlideIn => "visible",
         };
+
+        let visible_class = (show_drawer && props.drawer.is_some()).then(|| "visible");
 
         let drawer = Container::new()
             .class("pwt-scaffold-drawer-mask")
@@ -204,7 +206,7 @@ impl Component for PwtScaffold {
                     .class("pwt-scaffold-drawer")
                     .class(drawer_animation_class)
                     .onclick(|event: MouseEvent| event.stop_propagation())
-                    .onanimationend(ctx.link().callback(|_| Msg::DrawerAnimationEnd))
+                    .ontransitionend(ctx.link().callback(|_| Msg::DrawerAnimationEnd))
                     .with_optional_child(props.drawer.clone())
             );
 
