@@ -153,13 +153,12 @@ impl Component for PwtSideDialog {
                 false
             }
             Msg::Dismiss => {
-                self.slider_state = match self.slider_state {
-                    SliderState::Hidden => SliderState::Hidden,
-                    SliderState::SlideIn => SliderState::Hidden,
-                    SliderState::Visible => SliderState::SlideOut,
-                    SliderState::SlideOut => SliderState::SlideOut,
-                };
-                true
+                if self.slider_state == SliderState::Visible {  }
+                    self.slider_state = SliderState::SlideOut;
+                    true
+                } else {
+                    false
+                }
             }
             Msg::SliderAnimationEnd => {
                 self.slider_state = match self.slider_state {
