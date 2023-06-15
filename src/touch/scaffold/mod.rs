@@ -4,11 +4,11 @@ use yew::html::IntoPropValue;
 use yew::prelude::*;
 use yew::virtual_dom::{Key, VComp, VNode};
 
-use crate::props::{ContainerBuilder, EventSubscriber, WidgetBuilder};
+use crate::props::{ContainerBuilder, WidgetBuilder};
 use crate::state::{SharedState, SharedStateObserver};
 use crate::widget::{Column, Container};
 
-use super::NavigationBar;
+use super::{NavigationBar, SideDialog};
 
 use pwt_macros::builder;
 
@@ -103,23 +103,15 @@ impl Scaffold {
     }
 }
 
-#[derive(Copy, Clone, PartialEq)]
-enum DrawerState {
-    Hidden,
-    Visible,
-    SlideIn,
-    SlideOut,
-}
 #[doc(hidden)]
 pub struct PwtScaffold {
     controller: ScaffoldController,
     _state_observer: SharedStateObserver<ScaffoldState>,
-    drawer_state: DrawerState,
 }
 
 pub enum Msg {
+    Close,
     StateChange,
-    DrawerAnimationEnd,
 }
 
 impl Component for PwtScaffold {
@@ -141,28 +133,14 @@ impl Component for PwtScaffold {
         Self {
             controller,
             _state_observer,
-            drawer_state: DrawerState::Hidden,
         }
     }
 
-    fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
+    fn update(&mut self, _ctx: &Context<Self>, msg: Self::Message) -> bool {
         match msg {
-            Msg::StateChange => {
-                let state: ScaffoldState = **self.controller.state.read();
-                self.drawer_state = match (state.show_drawer, self.drawer_state) {
-                    (false, DrawerState::Hidden) => DrawerState::Hidden,
-                    (false, _) => DrawerState::SlideOut,
-                    (true, DrawerState::Visible) => DrawerState::Visible,
-                    (true, _) => DrawerState::SlideIn,
-                };
-                true
-            },
-            Msg::DrawerAnimationEnd => {
-                self.drawer_state = match self.drawer_state {
-                    DrawerState::SlideIn => DrawerState::Visible,
-                    DrawerState::SlideOut => DrawerState::Hidden,
-                    _ => self.drawer_state,
-                };
+            Msg::StateChange => true,
+            Msg::Close => {
+                self.controller.show_drawer(false);
                 true
             }
         }
@@ -184,15 +162,18 @@ impl Component for PwtScaffold {
             .with_optional_child(props.body.clone())
             .with_optional_child(positioned_fab);
 
-        let show_drawer = self.drawer_state != DrawerState::Hidden;
-        let drawer_animation_class = match self.drawer_state {
-            DrawerState::Hidden | DrawerState::SlideOut => "hidden",
-            DrawerState::Visible | DrawerState::SlideIn => "visible",
+        let show_drawer = self.controller.state.read().show_drawer;
+        let drawer = match (show_drawer, props.drawer.clone()) {
+            (true, Some(drawer)) => Some(
+                SideDialog::new()
+                .on_close(ctx.link().callback(|_| Msg::Close))
+                //.with_child("TESTDIALOG")
+                .with_child(drawer)
+            ),
+            _ => None,
         };
 
-        let visible_class = (show_drawer && props.drawer.is_some()).then(|| "visible");
-
-        let drawer = Container::new()
+        /*
             .class("pwt-scaffold-drawer-mask")
             .class((show_drawer && props.drawer.is_some()).then(|| "visible"))
             .onclick({
@@ -201,6 +182,7 @@ impl Component for PwtScaffold {
                     controller.show_drawer(false);
                 }
             })
+
             .with_child(
                 Container::new()
                     .class("pwt-scaffold-drawer")
@@ -209,6 +191,7 @@ impl Component for PwtScaffold {
                     .ontransitionend(ctx.link().callback(|_| Msg::DrawerAnimationEnd))
                     .with_optional_child(props.drawer.clone())
             );
+        */
 
         Column::new()
             .class("pwt-viewport")
@@ -216,7 +199,7 @@ impl Component for PwtScaffold {
             .with_optional_child(props.application_bar.clone())
             .with_child(body)
             .with_optional_child(props.navigation_bar.clone())
-            .with_child(drawer)
+            .with_optional_child(drawer)
             .into()
     }
 }
