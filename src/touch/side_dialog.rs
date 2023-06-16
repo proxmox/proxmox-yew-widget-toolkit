@@ -107,7 +107,7 @@ impl Component for PwtSideDialog {
     type Message = Msg;
     type Properties = SideDialog;
 
-    fn create(ctx: &Context<Self>) -> Self {
+    fn create(_ctx: &Context<Self>) -> Self {
         let window = web_sys::window().unwrap();
         let document = window.document().unwrap();
         let last_active = document
@@ -153,7 +153,7 @@ impl Component for PwtSideDialog {
                 false
             }
             Msg::Dismiss => {
-                if self.slider_state == SliderState::Visible {  }
+                if self.slider_state == SliderState::Visible {
                     self.slider_state = SliderState::SlideOut;
                     true
                 } else {
