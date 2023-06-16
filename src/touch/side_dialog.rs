@@ -77,6 +77,9 @@ pub enum Msg {
     Close,
     Dismiss, // Slide out, then close
     SliderAnimationEnd,
+    DragStart(GestureDragEvent),
+    DragEnd(GestureDragEvent),
+    Drag(GestureDragEvent),
 }
 
 #[derive(Copy, Clone, PartialEq)]
@@ -93,6 +96,8 @@ pub struct PwtSideDialog {
     last_active: Option<web_sys::HtmlElement>, // last focused element
     slider_ref: NodeRef,
     slider_state: SliderState,
+    drag_start: Option<(f64, f64)>,
+    drag_delta: Option<(f64, f64)>,
 }
 
 impl PwtSideDialog {
@@ -119,6 +124,8 @@ impl Component for PwtSideDialog {
             last_active,
             slider_ref: NodeRef::default(),
             slider_state: SliderState::Hidden,
+            drag_start: None,
+            drag_delta: None,
         }
     }
 
@@ -171,6 +178,30 @@ impl Component for PwtSideDialog {
                 };
                 true
             }
+            Msg::DragStart(event) => {
+                let x = event.x() as f64;
+                let y = event.y() as f64;
+                if x > 0.0 && y > 0.0 {
+                    // prevent divide by zero
+                    self.drag_start = Some((x, y));
+                    self.drag_delta = Some((0.0, 0.0));
+                }
+                false
+            }
+            Msg::DragEnd(event) => {
+                self.drag_start = None;
+                self.drag_delta = None;
+                true
+            }
+            Msg::Drag(event) => {
+                if let Some(start) = &self.drag_start {
+                    let x = event.x() as f64;
+                    let y = event.y() as f64;
+
+                    self.drag_delta = Some((x - start.0, y - start.1));
+                }
+                true
+            }
         }
     }
 
@@ -205,6 +236,28 @@ impl Component for PwtSideDialog {
             SideDialogDirection::Bottom => "pwt-side-dialog-bottom",
         };
 
+        let mut transform = None;
+        if let Some((delta_x, delta_y)) = self.drag_delta {
+            match props.direction {
+                SideDialogDirection::Left => {
+                    let delta_x = delta_x.min(0.0);
+                    transform = Some(format!("transform: translateX({}px);", delta_x));
+                }
+                SideDialogDirection::Right => {
+                    let delta_x = delta_x.max(0.0);
+                    transform = Some(format!("transform: translateX({}px);", delta_x));
+                }
+                SideDialogDirection::Top => {
+                    let delta_y = delta_y.min(0.0);
+                    transform = Some(format!("transform: translateY({}px);", delta_y));
+                }
+                SideDialogDirection::Bottom => {
+                    let delta_y = delta_y.max(0.0);
+                    transform = Some(format!("transform: translateY({}px);", delta_y));
+                }
+            }
+        }
+
         let dialog = Container::new()
             .node_ref(props.node_ref.clone())
             .tag("dialog")
@@ -216,8 +269,9 @@ impl Component for PwtSideDialog {
                     .class("pwt-side-dialog-slider")
                     .class(slider_direction_class)
                     .class(slider_state_class)
+                    .attribute("style", transform)
                     .ontransitionend(ctx.link().callback(|_| Msg::SliderAnimationEnd))
-                    .children(props.children.clone())
+                    .children(props.children.clone()),
             );
 
         GestureDetector::new(dialog)
@@ -242,9 +296,9 @@ impl Component for PwtSideDialog {
                     }
                 }
             })
-            .on_drag_update(|event: GestureDragEvent| {
-                log::info!("Update0 {} {}", event.x(), event.y());
-            })
+            .on_drag_start(ctx.link().callback(Msg::DragStart))
+            .on_drag_end(ctx.link().callback(Msg::DragEnd))
+            .on_drag_update(ctx.link().callback(Msg::Drag))
             .into()
     }
 
