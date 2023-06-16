@@ -11,7 +11,7 @@ use crate::prelude::*;
 use crate::widget::dom::IntoHtmlElement;
 use crate::widget::Container;
 
-use super::{GestureDetector, GestureDragEvent};
+use super::{GestureDetector, GestureDragEvent, GestureSwipeEvent};
 
 #[derive(Copy, Clone, PartialEq)]
 pub enum SideDialogDirection {
@@ -80,6 +80,7 @@ pub enum Msg {
     DragStart(GestureDragEvent),
     DragEnd(GestureDragEvent),
     Drag(GestureDragEvent),
+    Swipe(GestureSwipeEvent),
 }
 
 #[derive(Copy, Clone, PartialEq)]
@@ -188,7 +189,7 @@ impl Component for PwtSideDialog {
                 }
                 false
             }
-            Msg::DragEnd(event) => {
+            Msg::DragEnd(_event) => {
                 self.drag_start = None;
                 self.drag_delta = None;
                 true
@@ -199,6 +200,19 @@ impl Component for PwtSideDialog {
                     let y = event.y() as f64;
 
                     self.drag_delta = Some((x - start.0, y - start.1));
+                }
+                true
+            }
+            Msg::Swipe(event) => {
+                let angle = event.direction; // -180 to + 180
+                let dismiss = match props.direction {
+                    SideDialogDirection::Left => angle > 135.0 || angle < -135.0,
+                    SideDialogDirection::Right => angle > -45.0 && angle < 45.0,
+                    SideDialogDirection::Top => angle > 45.0 && angle < 135.0,
+                    SideDialogDirection::Bottom => angle > -135.0 && angle < -45.0,
+                };
+                if dismiss {
+                    ctx.link().send_message(Msg::Dismiss);
                 }
                 true
             }
@@ -299,6 +313,7 @@ impl Component for PwtSideDialog {
             .on_drag_start(ctx.link().callback(Msg::DragStart))
             .on_drag_end(ctx.link().callback(Msg::DragEnd))
             .on_drag_update(ctx.link().callback(Msg::Drag))
+            .on_swipe(ctx.link().callback(Msg::Swipe))
             .into()
     }
 
