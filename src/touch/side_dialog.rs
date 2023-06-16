@@ -8,6 +8,7 @@ use yew::prelude::*;
 use yew::virtual_dom::{Key, VComp, VNode};
 
 use crate::prelude::*;
+use crate::state::ThemeObserver;
 use crate::widget::dom::IntoHtmlElement;
 use crate::widget::Container;
 
@@ -190,8 +191,22 @@ impl Component for PwtSideDialog {
                 false
             }
             Msg::DragEnd(_event) => {
+                let mut dismiss = false;
+                let threshold = 100.0;
+                if let Some((delta_x, delta_y)) = self.drag_delta {
+                    dismiss = match props.direction {
+                        SideDialogDirection::Left => delta_x < -threshold,
+                        SideDialogDirection::Right => delta_x > threshold,
+                        SideDialogDirection::Top => delta_y < -threshold,
+                        SideDialogDirection::Bottom => delta_y > threshold,
+                    };
+                }
                 self.drag_start = None;
                 self.drag_delta = None;
+
+                if dismiss {
+                    ctx.link().send_message(Msg::Dismiss);
+                }
                 true
             }
             Msg::Drag(event) => {
@@ -255,19 +270,31 @@ impl Component for PwtSideDialog {
             match props.direction {
                 SideDialogDirection::Left => {
                     let delta_x = delta_x.min(0.0);
-                    transform = Some(format!("transition:none;transform: translateX({}px);", delta_x));
+                    transform = Some(format!(
+                        "transition:none;transform: translateX({}px);",
+                        delta_x
+                    ));
                 }
                 SideDialogDirection::Right => {
                     let delta_x = delta_x.max(0.0);
-                    transform = Some(format!("transition:none;transform: translateX({}px);", delta_x));
+                    transform = Some(format!(
+                        "transition:none;transform: translateX({}px);",
+                        delta_x
+                    ));
                 }
                 SideDialogDirection::Top => {
                     let delta_y = delta_y.min(0.0);
-                    transform = Some(format!("transition:none;transform: translateY({}px);", delta_y));
+                    transform = Some(format!(
+                        "transition:none;transform: translateY({}px);",
+                        delta_y
+                    ));
                 }
                 SideDialogDirection::Bottom => {
                     let delta_y = delta_y.max(0.0);
-                    transform = Some(format!("transition:none;transform: translateY({}px);", delta_y));
+                    transform = Some(format!(
+                        "transition:none;transform: translateY({}px);",
+                        delta_y
+                    ));
                 }
             }
         }
