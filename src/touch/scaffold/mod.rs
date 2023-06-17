@@ -8,13 +8,14 @@ use crate::props::{ContainerBuilder, WidgetBuilder};
 use crate::state::{SharedState, SharedStateObserver};
 use crate::widget::{Column, Container};
 
-use super::{NavigationBar, SideDialog};
+use super::{NavigationBar, SideDialog, SideDialogDirection};
 
 use pwt_macros::builder;
 
 #[derive(Copy, Clone)]
 struct ScaffoldState {
     show_drawer: bool,
+    show_end_drawer: bool,
 }
 
 /// Scaffold controller.
@@ -27,7 +28,10 @@ impl ScaffoldController {
     /// Crteate a new instance.
     pub fn new() -> Self {
         Self {
-            state: SharedState::new(ScaffoldState { show_drawer: false }),
+            state: SharedState::new(ScaffoldState {
+                show_drawer: false,
+                show_end_drawer: false,
+             }),
         }
     }
 
@@ -37,10 +41,22 @@ impl ScaffoldController {
         state.show_drawer = show;
     }
 
-    /// Toggle between show( and hide.
+    /// Toggle drawer between show and hide.
     pub fn toggle_drawer(&self) {
         let mut state = self.state.write();
         state.show_drawer = !state.show_drawer;
+    }
+
+    /// Show/hide the end drawer.
+    pub fn show_end_drawer(&self, show: bool) {
+        let mut state = self.state.write();
+        state.show_end_drawer = show;
+    }
+
+    /// Toggle end drawer between show and hide.
+    pub fn toggle_end_drawer(&self) {
+        let mut state = self.state.write();
+        state.show_end_drawer = !state.show_end_drawer;
     }
 }
 
@@ -68,8 +84,11 @@ pub struct Scaffold {
     /// Favorite action button.
     pub favorite_action_button: Option<VNode>,
 
-    /// A panel displayed to the left side of the body.
+    /// A modal panel displayed to the left side of the body.
     pub drawer: Option<VNode>,
+
+    /// A modal panel displayed to the right side of the body.
+    pub end_drawer: Option<VNode>,
 }
 
 impl Scaffold {
@@ -101,6 +120,12 @@ impl Scaffold {
         self.drawer = Some(drawer.into());
         self
     }
+
+    /// Builder style method to set the end_drawer.
+    pub fn end_drawer(mut self, end_drawer: impl Into<VNode>) -> Self {
+        self.end_drawer = Some(end_drawer.into());
+        self
+    }
 }
 
 #[doc(hidden)]
@@ -110,7 +135,8 @@ pub struct PwtScaffold {
 }
 
 pub enum Msg {
-    Close,
+    DrawerClose,
+    EndDrawerClose,
     StateChange,
 }
 
@@ -139,8 +165,12 @@ impl Component for PwtScaffold {
     fn update(&mut self, _ctx: &Context<Self>, msg: Self::Message) -> bool {
         match msg {
             Msg::StateChange => true,
-            Msg::Close => {
+            Msg::DrawerClose => {
                 self.controller.show_drawer(false);
+                true
+            }
+            Msg::EndDrawerClose => {
+                self.controller.show_end_drawer(false);
                 true
             }
         }
@@ -166,32 +196,23 @@ impl Component for PwtScaffold {
         let drawer = match (show_drawer, props.drawer.clone()) {
             (true, Some(drawer)) => Some(
                 SideDialog::new()
-                .on_close(ctx.link().callback(|_| Msg::Close))
-                //.with_child("TESTDIALOG")
-                .with_child(drawer)
+                    .direction(SideDialogDirection::Left)
+                    .on_close(ctx.link().callback(|_| Msg::DrawerClose))
+                    .with_child(drawer),
             ),
             _ => None,
         };
 
-        /*
-            .class("pwt-scaffold-drawer-mask")
-            .class((show_drawer && props.drawer.is_some()).then(|| "visible"))
-            .onclick({
-                let controller = self.controller.clone();
-                move |_| {
-                    controller.show_drawer(false);
-                }
-            })
-
-            .with_child(
-                Container::new()
-                    .class("pwt-scaffold-drawer")
-                    .class(drawer_animation_class)
-                    .onclick(|event: MouseEvent| event.stop_propagation())
-                    .ontransitionend(ctx.link().callback(|_| Msg::DrawerAnimationEnd))
-                    .with_optional_child(props.drawer.clone())
-            );
-        */
+        let show_end_drawer = self.controller.state.read().show_end_drawer;
+        let end_drawer = match (show_end_drawer, props.end_drawer.clone()) {
+            (true, Some(end_drawer)) => Some(
+                SideDialog::new()
+                    .direction(SideDialogDirection::Right)
+                    .on_close(ctx.link().callback(|_| Msg::EndDrawerClose))
+                    .with_child(end_drawer),
+            ),
+            _ => None,
+        };
 
         Column::new()
             .class("pwt-viewport")
@@ -200,6 +221,7 @@ impl Component for PwtScaffold {
             .with_child(body)
             .with_optional_child(props.navigation_bar.clone())
             .with_optional_child(drawer)
+            .with_optional_child(end_drawer)
             .into()
     }
 }
