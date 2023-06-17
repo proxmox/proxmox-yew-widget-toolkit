@@ -49,7 +49,7 @@ impl Component for PwtMaterialApp {
     type Message = ();
     type Properties = MaterialApp;
 
-    fn create(ctx: &Context<Self>) -> Self {
+    fn create(_ctx: &Context<Self>) -> Self {
         static THEMES: &'static [&'static str] = &["Material"];
         crate::state::set_available_themes(THEMES);
 

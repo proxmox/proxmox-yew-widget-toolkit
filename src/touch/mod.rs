@@ -41,3 +41,6 @@ pub use slidable::{
     PwtSlidable, PwtSlidableAction, Slidable, SlidableAction, SlidableActionMouseEvent,
     SlidableController,
 };
+
+mod snack_bar;
+pub use snack_bar::{SnackBar, PwtSnackBar};
