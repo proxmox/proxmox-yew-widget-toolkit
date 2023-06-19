@@ -68,14 +68,14 @@ impl Component for PwtSnackBar {
         });
 
 
-        let snackbar = Container::new()
-            .class("pwt-snackbar")
-            .with_optional_child(props.message.clone())
-            .with_optional_child(action);
-
         Container::new()
-            .class("pwt-snackbar-container")
-            .with_child(snackbar)
+            .class("pwt-snackbar")
+            .with_child(
+                Container::new()
+                    .class("pwt-snackbar-message")
+                    .with_child(props.message.clone().unwrap_or(AttrValue::Static("")))
+            )
+            .with_optional_child(action)
             .into()
     }
 }
