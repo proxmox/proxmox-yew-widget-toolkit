@@ -61,14 +61,21 @@ impl Component for PwtSnackBar {
 
         let action = props.action_label.as_ref().map(|label| {
             Button::new(props.action_label.clone())
+                .class("pwt-button-filled")
                 .class("pwt-snackbar-action")
+                .class("pwt-scheme-inverse-surface")
                 .onclick(ctx.link().callback(|_| Msg::Action))
         });
 
-        Container::new()
+
+        let snackbar = Container::new()
             .class("pwt-snackbar")
             .with_optional_child(props.message.clone())
-            .with_optional_child(action)
+            .with_optional_child(action);
+
+        Container::new()
+            .class("pwt-snackbar-container")
+            .with_child(snackbar)
             .into()
     }
 }

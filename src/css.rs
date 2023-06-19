@@ -551,6 +551,7 @@ pub enum ColorScheme {
     WarningContainer,
     Neutral,
     Surface,
+    InverseSurface,
     NeutralAlt,
 }
 
@@ -569,6 +570,7 @@ impl From<ColorScheme> for Classes {
             ColorScheme::WarningContainer => "pwt-scheme-warning-container".into(),
             ColorScheme::Neutral => "pwt-scheme-neutral".into(),
             ColorScheme::Surface => "pwt-scheme-surface".into(),
+            ColorScheme::InverseSurface => "pwt-scheme-surface".into(),
             ColorScheme::NeutralAlt => "pwt-scheme-neutral-alt".into(),
         }
     }
