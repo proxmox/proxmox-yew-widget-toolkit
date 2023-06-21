@@ -26,7 +26,7 @@ pub struct ApplicationBar {
     /// Actions, displayed right aligned in the header.
     pub actions: Vec<VNode>,
 
-    /// Widget placed at the bottom, usually a [TabBar].
+    /// Widget placed at the bottom, usually a [TabBar](crate::widget::TabBar).
     pub bottom: Option<Html>,
 }
 
@@ -97,6 +97,7 @@ impl ApplicationBar {
     }
 }
 
+#[doc(hidden)]
 pub struct PwtApplicationBar {}
 
 impl Component for PwtApplicationBar {

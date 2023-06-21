@@ -31,7 +31,7 @@ mod page_stack;
 pub use page_stack::{PageAnimationStyle, PageStack, PwtPageStack};
 
 mod side_dialog;
-pub use side_dialog::{SideDialog, PwtSideDialog, SideDialogDirection};
+pub use side_dialog::{SideDialog, PwtSideDialog, SideDialogLocation};
 
 mod scaffold;
 pub use scaffold::{Scaffold, PwtScaffold, ScaffoldController};
@@ -47,3 +47,6 @@ pub use snack_bar::SnackBar;
 
 mod snack_bar_manager;
 pub use snack_bar_manager::{SnackBarController, SnackBarManager, PwtSnackBarManager};
+
+mod snack_bar_context_extension;
+pub use snack_bar_context_extension::SnackBarContextExt;

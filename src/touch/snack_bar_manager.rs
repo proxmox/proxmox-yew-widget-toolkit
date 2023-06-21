@@ -4,17 +4,16 @@ use std::rc::Rc;
 
 use gloo_timers::callback::Timeout;
 
-use yew::html::{IntoEventCallback, IntoPropValue, Scope};
+use yew::html::IntoPropValue;
 use yew::prelude::*;
 use yew::virtual_dom::{Key, VComp, VNode};
 
-use crate::props::{ContainerBuilder, EventSubscriber, IntoOptionalKey, WidgetBuilder};
+use crate::props::{EventSubscriber, IntoOptionalKey, WidgetBuilder};
 use crate::state::{SharedState, SharedStateObserver};
-use crate::widget::{Button, Container};
 
 use pwt_macros::builder;
 
-use super::{SnackBar, snack_bar};
+use super::SnackBar;
 
 /// Messages sent from the [SnackBarController] to the [SnackBarManager].
 pub enum SnackBarControllerMsg {
@@ -56,7 +55,6 @@ impl SnackBarController {
 
         id
     }
-
 
     /// Dismiss a specific snackbar.
     pub fn dismiss(&self, id: AttrValue) {
@@ -255,14 +253,14 @@ impl Component for PwtSnackBarManager {
                 self.handle_controller_messages(ctx);
                 true
             },
-            Msg::AnimationEnd(event) => {
+            Msg::AnimationEnd(_event) => {
                 match &self.view_state {
                     ViewState::Idle | ViewState::Visible(_) => false,
                     ViewState::FadeIn(snackbar) => {
                         self.view_state = ViewState::Visible(snackbar.clone());
                         true
                     }
-                    ViewState::FadeOut(snackbar) => {
+                    ViewState::FadeOut(_snackbar) => {
                         self.view_state = ViewState::Idle;
                         self.display_next(ctx);
                         true

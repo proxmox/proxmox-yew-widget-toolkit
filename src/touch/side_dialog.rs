@@ -8,14 +8,14 @@ use yew::prelude::*;
 use yew::virtual_dom::{Key, VComp, VNode};
 
 use crate::prelude::*;
-use crate::state::ThemeObserver;
 use crate::widget::dom::IntoHtmlElement;
 use crate::widget::Container;
 
 use super::{GestureDetector, GestureDragEvent, GestureSwipeEvent};
 
+/// Define the location where the dialog should be displayed.
 #[derive(Copy, Clone, PartialEq)]
-pub enum SideDialogDirection {
+pub enum SideDialogLocation {
     Left,
     Right,
     Top,
@@ -43,9 +43,9 @@ pub struct SideDialog {
     #[prop_or_default]
     pub children: Vec<VNode>,
 
-    #[prop_or(SideDialogDirection::Left)]
+    #[prop_or(SideDialogLocation::Left)]
     #[builder]
-    pub direction: SideDialogDirection,
+    pub direction: SideDialogLocation,
 }
 
 impl ContainerBuilder for SideDialog {
@@ -195,10 +195,10 @@ impl Component for PwtSideDialog {
                 let threshold = 100.0;
                 if let Some((delta_x, delta_y)) = self.drag_delta {
                     dismiss = match props.direction {
-                        SideDialogDirection::Left => delta_x < -threshold,
-                        SideDialogDirection::Right => delta_x > threshold,
-                        SideDialogDirection::Top => delta_y < -threshold,
-                        SideDialogDirection::Bottom => delta_y > threshold,
+                        SideDialogLocation::Left => delta_x < -threshold,
+                        SideDialogLocation::Right => delta_x > threshold,
+                        SideDialogLocation::Top => delta_y < -threshold,
+                        SideDialogLocation::Bottom => delta_y > threshold,
                     };
                 }
                 self.drag_start = None;
@@ -221,10 +221,10 @@ impl Component for PwtSideDialog {
             Msg::Swipe(event) => {
                 let angle = event.direction; // -180 to + 180
                 let dismiss = match props.direction {
-                    SideDialogDirection::Left => angle > 135.0 || angle < -135.0,
-                    SideDialogDirection::Right => angle > -45.0 && angle < 45.0,
-                    SideDialogDirection::Top => angle > 45.0 && angle < 135.0,
-                    SideDialogDirection::Bottom => angle > -135.0 && angle < -45.0,
+                    SideDialogLocation::Left => angle > 135.0 || angle < -135.0,
+                    SideDialogLocation::Right => angle > -45.0 && angle < 45.0,
+                    SideDialogLocation::Top => angle > 45.0 && angle < 135.0,
+                    SideDialogLocation::Bottom => angle > -135.0 && angle < -45.0,
                 };
                 if dismiss {
                     ctx.link().send_message(Msg::Dismiss);
@@ -259,37 +259,37 @@ impl Component for PwtSideDialog {
         };
 
         let slider_direction_class = match props.direction {
-            SideDialogDirection::Left => "pwt-side-dialog-left",
-            SideDialogDirection::Right => "pwt-side-dialog-right",
-            SideDialogDirection::Top => "pwt-side-dialog-top",
-            SideDialogDirection::Bottom => "pwt-side-dialog-bottom",
+            SideDialogLocation::Left => "pwt-side-dialog-left",
+            SideDialogLocation::Right => "pwt-side-dialog-right",
+            SideDialogLocation::Top => "pwt-side-dialog-top",
+            SideDialogLocation::Bottom => "pwt-side-dialog-bottom",
         };
 
         let mut transform = None;
         if let Some((delta_x, delta_y)) = self.drag_delta {
             match props.direction {
-                SideDialogDirection::Left => {
+                SideDialogLocation::Left => {
                     let delta_x = delta_x.min(0.0);
                     transform = Some(format!(
                         "transition:none;transform: translateX({}px);",
                         delta_x
                     ));
                 }
-                SideDialogDirection::Right => {
+                SideDialogLocation::Right => {
                     let delta_x = delta_x.max(0.0);
                     transform = Some(format!(
                         "transition:none;transform: translateX({}px);",
                         delta_x
                     ));
                 }
-                SideDialogDirection::Top => {
+                SideDialogLocation::Top => {
                     let delta_y = delta_y.min(0.0);
                     transform = Some(format!(
                         "transition:none;transform: translateY({}px);",
                         delta_y
                     ));
                 }
-                SideDialogDirection::Bottom => {
+                SideDialogLocation::Bottom => {
                     let delta_y = delta_y.max(0.0);
                     transform = Some(format!(
                         "transition:none;transform: translateY({}px);",

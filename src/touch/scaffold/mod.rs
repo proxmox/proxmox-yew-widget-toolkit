@@ -8,7 +8,7 @@ use crate::props::{ContainerBuilder, WidgetBuilder};
 use crate::state::{SharedState, SharedStateObserver};
 use crate::widget::{Column, Container};
 
-use super::{NavigationBar, SideDialog, SideDialogDirection};
+use super::{NavigationBar, SideDialog, SideDialogLocation};
 
 use pwt_macros::builder;
 
@@ -196,7 +196,7 @@ impl Component for PwtScaffold {
         let drawer = match (show_drawer, props.drawer.clone()) {
             (true, Some(drawer)) => Some(
                 SideDialog::new()
-                    .direction(SideDialogDirection::Left)
+                    .direction(SideDialogLocation::Left)
                     .on_close(ctx.link().callback(|_| Msg::DrawerClose))
                     .with_child(drawer),
             ),
@@ -207,7 +207,7 @@ impl Component for PwtScaffold {
         let end_drawer = match (show_end_drawer, props.end_drawer.clone()) {
             (true, Some(end_drawer)) => Some(
                 SideDialog::new()
-                    .direction(SideDialogDirection::Right)
+                    .direction(SideDialogLocation::Right)
                     .on_close(ctx.link().callback(|_| Msg::EndDrawerClose))
                     .with_child(end_drawer),
             ),

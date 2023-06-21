@@ -7,12 +7,15 @@ use yew_router::HashRouter;
 use crate::prelude::IntoOptionalKey;
 use crate::widget::{Container, ThemeLoader};
 
+use super::SnackBarController;
+
 /// An application that uses material design gudelines.
 ///
 /// This is just a convenient wrapper which set up a few thing:
 ///
 /// - Provides a yew_router::HashRouter;
 /// - uses [ThemeLoader] to load the material design theme (dark/light)
+/// - Provides a [SnackBarController]
 ///
 #[derive(Properties, Clone, PartialEq)]
 pub struct MaterialApp {
@@ -43,7 +46,10 @@ impl MaterialApp {
 }
 
 #[doc(hidden)]
-pub struct PwtMaterialApp {}
+pub struct PwtMaterialApp {
+    snackbar_controller: SnackBarController,
+
+}
 
 impl Component for PwtMaterialApp {
     type Message = ();
@@ -53,7 +59,9 @@ impl Component for PwtMaterialApp {
         static THEMES: &'static [&'static str] = &["Material"];
         crate::state::set_available_themes(THEMES);
 
-        Self {}
+        Self {
+            snackbar_controller: SnackBarController::new(),
+        }
     }
 
     fn view(&self, ctx: &Context<Self>) -> Html {
@@ -65,9 +73,11 @@ impl Component for PwtMaterialApp {
         };
 
         html! {
-            <HashRouter>{
-                ThemeLoader::new(app)
-            }</HashRouter>
+            <HashRouter>
+                <ContextProvider<SnackBarController> context={self.snackbar_controller.clone()}>
+                {ThemeLoader::new(app)}
+                </ContextProvider<SnackBarController>>
+            </HashRouter>
         }
     }
 }
