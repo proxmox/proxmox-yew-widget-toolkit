@@ -20,6 +20,8 @@ use super::{SnackBar, snack_bar};
 pub enum SnackBarControllerMsg {
     Show(SnackBar),
     Dismiss(AttrValue),
+    DismissCurrent,
+    DismissAll,
 }
 
 /// Snackbar controller can show and dismiss snackbars.
@@ -40,7 +42,14 @@ impl SnackBarController {
     /// Returns the snackbar ID, which can be used to dismiss specific items.
     pub fn show_snackbar(&self, mut snackbar: SnackBar) -> AttrValue {
 
-        let id = snackbar.id.clone().unwrap_or(AttrValue::from(crate::widget::get_unique_element_id()));
+        let id = match &snackbar.id {
+            Some(id) => id.clone(),
+            None => {
+                let id = AttrValue::from(crate::widget::get_unique_element_id());
+                snackbar.id = Some(id.clone());
+                id
+            }
+        };
 
         self.state.write()
             .push(SnackBarControllerMsg::Show(snackbar));
@@ -48,10 +57,23 @@ impl SnackBarController {
         id
     }
 
+
     /// Dismiss a specific snackbar.
     pub fn dismiss(&self, id: AttrValue) {
         self.state.write()
             .push(SnackBarControllerMsg::Dismiss(id));
+    }
+
+    /// Dismiss currently shown snackbar.
+    pub fn dismiss_current(&self) {
+        self.state.write()
+            .push(SnackBarControllerMsg::DismissCurrent);
+    }
+
+    /// Dismiss all queued snackbars.
+    pub fn dismiss_all(&self) {
+        self.state.write()
+            .push(SnackBarControllerMsg::DismissAll);
     }
 }
 
@@ -129,6 +151,17 @@ impl PwtSnackBarManager {
         };
     }
 
+    fn dismiss_current(&mut self, opt_id: Option<&AttrValue>) {
+        match &self.view_state {
+            ViewState::Idle | ViewState::FadeOut(_) => { /* do nothing */ }
+            ViewState::FadeIn(snackbar) | ViewState::Visible(snackbar) => {
+                if opt_id.is_none() || snackbar.id.as_ref() == opt_id {
+                    self.view_state = ViewState::FadeOut(snackbar.clone());
+                }
+            }
+        };
+    }
+
     fn handle_controller_messages(&mut self, ctx: &Context<Self>) {
         let count = self.controller.state.read().len();
         if count == 0 { return; } // Note: avoid endless loop
@@ -142,14 +175,14 @@ impl PwtSnackBarManager {
                 }
                 SnackBarControllerMsg::Dismiss(id) => {
                     self.queue.retain(|s| s.id.as_ref() != Some(&id));
-                    match &self.view_state {
-                        ViewState::Idle | ViewState::FadeOut(_) => { /* do nothing */ }
-                        ViewState::FadeIn(snackbar) | ViewState::Visible(snackbar) => {
-                            if snackbar.id.as_ref() == Some(&id) {
-                                self.view_state = ViewState::FadeOut(snackbar.clone());
-                            }
-                        }
-                    };
+                    self.dismiss_current(Some(&id));
+                }
+                SnackBarControllerMsg::DismissAll => {
+                    self.queue.clear();
+                    self.dismiss_current(None);
+                }
+                SnackBarControllerMsg::DismissCurrent => {
+                    self.dismiss_current(None);
                 }
             }
         }
