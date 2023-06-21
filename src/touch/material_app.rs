@@ -1,29 +1,35 @@
 use std::rc::Rc;
 
-use yew::prelude::*;
+use yew::html::IntoPropValue;
 use yew::virtual_dom::{Key, VComp, VNode};
 use yew_router::HashRouter;
 
-use crate::prelude::IntoOptionalKey;
-use crate::widget::{Container, ThemeLoader};
+use pwt_macros::builder;
 
-use super::SnackBarController;
+use crate::prelude::*;
+use crate::touch::{SnackBarController, SnackBarManager};
+use crate::widget::{Container, ThemeLoader};
 
 /// An application that uses material design gudelines.
 ///
-/// This is just a convenient wrapper which set up a few thing:
+/// This is just a convenient way to set up the following things:
 ///
-/// - Provides a yew_router::HashRouter;
+/// - Provide a yew_router::HashRouter;
 /// - uses [ThemeLoader] to load the material design theme (dark/light)
-/// - Provides a [SnackBarController]
+/// - Provides a [SnackBarController], an d display snackbars using [SnackBarManager]
 ///
 #[derive(Properties, Clone, PartialEq)]
+#[builder]
 pub struct MaterialApp {
     /// The yew component key.
     pub key: Option<Key>,
 
     /// The home page ("/")
     pub home: Option<VNode>,
+
+    /// Optional Scaffold Controller.
+    #[builder(IntoPropValue, into_prop_value)]
+    pub snackbar_controller: Option<SnackBarController>,
 }
 
 impl MaterialApp {
@@ -48,29 +54,35 @@ impl MaterialApp {
 #[doc(hidden)]
 pub struct PwtMaterialApp {
     snackbar_controller: SnackBarController,
-
 }
 
 impl Component for PwtMaterialApp {
     type Message = ();
     type Properties = MaterialApp;
 
-    fn create(_ctx: &Context<Self>) -> Self {
+    fn create(ctx: &Context<Self>) -> Self {
+        let props = ctx.props();
+
         static THEMES: &'static [&'static str] = &["Material"];
         crate::state::set_available_themes(THEMES);
 
+        let snackbar_controller = props
+            .snackbar_controller
+            .clone()
+            .unwrap_or(SnackBarController::new());
+
         Self {
-            snackbar_controller: SnackBarController::new(),
+            snackbar_controller,
         }
     }
 
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
 
-        let app: Html= match &props.home {
-            None => Container::new().into(),
-            Some(home) => home.clone().into(),
-        };
+        let app = Container::new()
+            .class("pwt-viewport")
+            .with_child(props.home.clone().unwrap_or(Container::new().into()))
+            .with_child(SnackBarManager::new().controller(self.snackbar_controller.clone()));
 
         html! {
             <HashRouter>
