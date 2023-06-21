@@ -87,6 +87,9 @@ pub struct SnackBarManager {
     /// Optional Scaffold Controller
     #[builder(IntoPropValue, into_prop_value)]
     pub controller: Option<SnackBarController>,
+
+    #[builder(IntoPropValue, into_prop_value)]
+    pub bottom_offset: Option<u32>,
 }
 
 impl SnackBarManager {
@@ -281,7 +284,7 @@ impl Component for PwtSnackBarManager {
     }
 
     fn view(&self, ctx: &Context<Self>) -> Html {
-        //let props = ctx.props();
+        let props = ctx.props();
 
         let snackbar = match &self.view_state {
             ViewState::Idle => return html! {},
@@ -290,6 +293,7 @@ impl Component for PwtSnackBarManager {
             ViewState::Visible(snackbar) => snackbar.clone().class("visible"),
         };
         let snackbar = snackbar
+            .attribute("style", props.bottom_offset.map(|offset| format!("bottom: {offset}px;")))
             .on_action(ctx.link().callback(|_| Msg::ActionButtonPress))
             .on_close(ctx.link().callback(|_| Msg::CloseButtonPress))
             .onanimationend(ctx.link().callback(Msg::AnimationEnd));

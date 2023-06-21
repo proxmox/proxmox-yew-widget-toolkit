@@ -30,6 +30,9 @@ pub struct MaterialApp {
     /// Optional Scaffold Controller.
     #[builder(IntoPropValue, into_prop_value)]
     pub snackbar_controller: Option<SnackBarController>,
+
+    #[builder(IntoPropValue, into_prop_value)]
+    pub snackbar_bottom_offset: Option<u32>,
 }
 
 impl MaterialApp {
@@ -82,7 +85,11 @@ impl Component for PwtMaterialApp {
         let app = Container::new()
             .class("pwt-viewport")
             .with_child(props.home.clone().unwrap_or(Container::new().into()))
-            .with_child(SnackBarManager::new().controller(self.snackbar_controller.clone()));
+            .with_child(
+                SnackBarManager::new()
+                    .controller(self.snackbar_controller.clone())
+                    .bottom_offset(props.snackbar_bottom_offset)
+            );
 
         html! {
             <HashRouter>
