@@ -43,4 +43,7 @@ pub use slidable::{
 };
 
 mod snack_bar;
-pub use snack_bar::{SnackBar, PwtSnackBar};
+pub use snack_bar::SnackBar;
+
+mod snack_bar_manager;
+pub use snack_bar_manager::{SnackBarController, SnackBarManager, PwtSnackBarManager};

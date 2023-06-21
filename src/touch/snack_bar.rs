@@ -1,20 +1,30 @@
 use std::rc::Rc;
+use std::borrow::Cow;
 
+use yew::html::{IntoEventCallback, IntoPropValue};
 use yew::prelude::*;
-use yew::virtual_dom::{Key, VComp, VNode};
-use yew::html::{IntoPropValue, IntoEventCallback};
+use yew::virtual_dom::{Listeners, VList, VTag};
 
-use crate::props::{IntoOptionalKey, ContainerBuilder, EventSubscriber, WidgetBuilder};
-use crate::widget::{Container, Button};
+use crate::props::{ContainerBuilder, EventSubscriber, IntoOptionalKey, WidgetBuilder};
+use crate::widget::{Button, Container};
 
 use pwt_macros::builder;
+use pwt_macros::widget;
 
-#[derive(Properties, Clone, PartialEq)]
+/// Lightweight message with an optional action button.
+///
+/// Snackbars provide updates on an app’s processes.
+///
+/// - Dismissive snackbars appear temporarily, and disappear on their own without requiring user input.
+/// - Non-dismissive snackbars persist until the user takes an action or selects the close affordance.
+///
+/// Only one snackbar may be displayed at a time, so it is more convenient to use [SnackBarManager], which
+/// automatically serializes the display of snackbars.
+//#[derive(Properties, Clone, PartialEq)]
+#[widget(pwt=crate, @element)]
+#[derive(Clone, PartialEq, Properties)]
 #[builder]
 pub struct SnackBar {
-    /// The yew component key.
-    pub key: Option<Key>,
-
     /// The text message.
     #[builder(IntoPropValue, into_prop_value)]
     pub message: Option<AttrValue>,
@@ -29,61 +39,52 @@ pub struct SnackBar {
 }
 
 impl SnackBar {
-      /// Create a new instance.
-      pub fn new() -> Self {
+    /// Create a new instance.
+    pub fn new() -> Self {
         yew::props!(Self {})
     }
-
-    /// Builder style method to set the yew `key` property
-    pub fn key(mut self, key: impl IntoOptionalKey) -> Self {
-        self.key = key.into_optional_key();
-        self
-    }
 }
 
-pub enum Msg {
-    Action,
-}
+impl Into<VTag> for SnackBar {
+    fn into(self) -> VTag {
+        let attributes = self.std_props.cumulate_attributes(Some("pwt-snackbar"));
 
-#[doc(hidden)]
-pub struct PwtSnackBar {}
+        let listeners = Listeners::Pending(self.listeners.listeners.into_boxed_slice());
 
-impl Component for PwtSnackBar {
-    type Message = Msg;
-    type Properties = SnackBar;
+        let mut children = Vec::new();
+        children.push(
+            Container::new()
+                .class("pwt-snackbar-message")
+                .with_child(self.message.clone().unwrap_or(AttrValue::Static("")))
+                .into()
+        );
+        if let Some(action_label) = &self.action_label {
+            children.push(
+                Button::new(action_label.clone())
+                    .class("pwt-button-filled")
+                    .class("pwt-snackbar-action")
+                    .class("pwt-scheme-inverse-surface")
+                    .onclick({
+                        let on_action = self.on_action.clone();
+                        move |_| {
+                            if let Some(on_action) = &on_action {
+                                on_action.emit(());
+                            }
+                        }
+                    })
+                    .into()
+            );
+        }
 
-    fn create(_ctx: &Context<Self>) -> Self {
-        Self {}
-    }
+        let children = VList::with_children(children, None);
 
-    fn view(&self, ctx: &Context<Self>) -> Html {
-        let props = ctx.props();
-
-        let action = props.action_label.as_ref().map(|label| {
-            Button::new(props.action_label.clone())
-                .class("pwt-button-filled")
-                .class("pwt-snackbar-action")
-                .class("pwt-scheme-inverse-surface")
-                .onclick(ctx.link().callback(|_| Msg::Action))
-        });
-
-
-        Container::new()
-            .class("pwt-snackbar")
-            .with_child(
-                Container::new()
-                    .class("pwt-snackbar-message")
-                    .with_child(props.message.clone().unwrap_or(AttrValue::Static("")))
-            )
-            .with_optional_child(action)
-            .into()
-    }
-}
-
-impl Into<VNode> for SnackBar {
-    fn into(self) -> VNode {
-        let key = self.key.clone();
-        let comp = VComp::new::<PwtSnackBar>(Rc::new(self), key);
-        VNode::from(comp)
+        VTag::__new_other(
+            Cow::Borrowed("div"),
+            self.std_props.node_ref,
+            self.std_props.key,
+            attributes,
+            listeners,
+            children,
+        )
     }
 }
