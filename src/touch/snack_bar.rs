@@ -1,12 +1,12 @@
-use std::rc::Rc;
 use std::borrow::Cow;
+use std::rc::Rc;
 
 use yew::html::{IntoEventCallback, IntoPropValue};
 use yew::prelude::*;
 use yew::virtual_dom::{Listeners, VList, VTag};
 
 use crate::props::{ContainerBuilder, EventSubscriber, IntoOptionalKey, WidgetBuilder};
-use crate::widget::{Button, Container};
+use crate::widget::{Button, Container, ActionIcon};
 
 use pwt_macros::builder;
 use pwt_macros::widget;
@@ -36,12 +36,29 @@ pub struct SnackBar {
     /// Callback for action button.
     #[builder_cb(IntoEventCallback, into_event_callback, ())]
     pub on_action: Option<Callback<()>>,
+
+    /// Callback for close button.
+    #[builder_cb(IntoEventCallback, into_event_callback, ())]
+    pub on_close: Option<Callback<()>>,
+
+    /// Time in milliseconds the snack bar should be displayed (default is 4000).
+    #[builder(IntoPropValue, into_prop_value)]
+    pub duration: Option<u32>,
+
+    #[prop_or_default]
+    #[builder]
+    pub show_close_icon: bool,
 }
 
 impl SnackBar {
     /// Create a new instance.
     pub fn new() -> Self {
         yew::props!(Self {})
+    }
+
+    /// Return whether the snackbart is dismissive.
+    pub fn is_dismissive(&self) -> bool {
+        !(self.action_label.is_some() || self.show_close_icon)
     }
 }
 
@@ -56,7 +73,7 @@ impl Into<VTag> for SnackBar {
             Container::new()
                 .class("pwt-snackbar-message")
                 .with_child(self.message.clone().unwrap_or(AttrValue::Static("")))
-                .into()
+                .into(),
         );
         if let Some(action_label) = &self.action_label {
             children.push(
@@ -72,6 +89,13 @@ impl Into<VTag> for SnackBar {
                             }
                         }
                     })
+                    .into(),
+            );
+        }
+        if self.show_close_icon {
+            children.push(
+                ActionIcon::new("fa fa-lg fa-close")
+                    .on_activate(self.on_close.clone())
                     .into()
             );
         }

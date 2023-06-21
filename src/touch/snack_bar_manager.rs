@@ -70,6 +70,7 @@ impl SnackBarManager {
 
 pub enum Msg {
     ActionButtonPress,
+    CloseButtonPress,
     Controller, // Controller has new messages
     AnimationEnd(AnimationEvent),
     Timeout,
@@ -102,10 +103,13 @@ impl PwtSnackBarManager {
         self.view_state = match next_snackbar {
             None => ViewState::Idle,
             Some(snackbar) => {
-                self.timeout = Some(Timeout::new(2000, {
-                    let link = ctx.link().clone();
-                    move || link.send_message(Msg::Timeout)
-                }));
+                if snackbar.is_dismissive() {
+                    let duration = snackbar.duration.unwrap_or(4000).max(1000);
+                    self.timeout = Some(Timeout::new(duration, {
+                      let link = ctx.link().clone();
+                        move || link.send_message(Msg::Timeout)
+                    }));
+                }
                 ViewState::FadeIn(snackbar)
             }
         };
@@ -173,6 +177,22 @@ impl Component for PwtSnackBarManager {
 
                 true
             }
+            Msg::CloseButtonPress => {
+                self.timeout = None;
+
+                let snackbar = match &self.view_state {
+                    ViewState::Idle | ViewState::FadeOut(_) => return false,
+                    ViewState::FadeIn(snackbar) => snackbar,
+                    ViewState::Visible(snackbar) => snackbar,
+                };
+
+                if let Some(on_close) = &snackbar.on_close {
+                    on_close.emit(())
+                }
+                self.view_state = ViewState::FadeOut(snackbar.clone());
+
+                true
+            }
             Msg::Controller  => {
                 self.handle_controller_messages(ctx);
                 true
@@ -215,6 +235,7 @@ impl Component for PwtSnackBarManager {
         };
         let snackbar = snackbar
             .on_action(ctx.link().callback(|_| Msg::ActionButtonPress))
+            .on_close(ctx.link().callback(|_| Msg::CloseButtonPress))
             .onanimationend(ctx.link().callback(Msg::AnimationEnd));
 
 
