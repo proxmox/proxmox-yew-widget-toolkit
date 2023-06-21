@@ -14,16 +14,17 @@ use crate::widget::{Button, Container};
 
 use pwt_macros::builder;
 
-use super::SnackBar;
+use super::{SnackBar, snack_bar};
 
 /// Messages sent from the [SnackBarController] to the [SnackBarManager].
 pub enum SnackBarControllerMsg {
     Show(SnackBar),
+    Dismiss(AttrValue),
 }
 
 /// Snackbar controller can show and dismiss snackbars.
 ///
-/// Each [SnackBarManager]  provides a [SnmackBarController] using a [yew::ContextProvider].
+/// Each [SnackBarManager]  provides a [SnackBarController] using a [yew::ContextProvider].
 #[derive(Clone, PartialEq)]
 pub struct SnackBarController {
     state: SharedState<Vec<SnackBarControllerMsg>>,
@@ -35,15 +36,28 @@ impl SnackBarController {
     }
 
     /// Push a new snackbar to the display queue.
-    pub fn show_snackbar(&self, snackbar: SnackBar) {
+    ///
+    /// Returns the snackbar ID, which can be used to dismiss specific items.
+    pub fn show_snackbar(&self, mut snackbar: SnackBar) -> AttrValue {
+
+        let id = snackbar.id.clone().unwrap_or(AttrValue::from(crate::widget::get_unique_element_id()));
+
         self.state.write()
             .push(SnackBarControllerMsg::Show(snackbar));
+
+        id
+    }
+
+    /// Dismiss a specific snackbar.
+    pub fn dismiss(&self, id: AttrValue) {
+        self.state.write()
+            .push(SnackBarControllerMsg::Dismiss(id));
     }
 }
 
 /// Display snackbars one after another.
 ///
-/// This widget can be used to serialize the display of [Snackbar]s.
+/// This widget can be used to serialize the display of [SnackBar]s.
 #[derive(Properties, Clone, PartialEq)]
 #[builder]
 pub struct SnackBarManager {
@@ -125,6 +139,17 @@ impl PwtSnackBarManager {
             match msg {
                 SnackBarControllerMsg::Show(snackbar) => {
                     self.queue.push_back(snackbar);
+                }
+                SnackBarControllerMsg::Dismiss(id) => {
+                    self.queue.retain(|s| s.id.as_ref() != Some(&id));
+                    match &self.view_state {
+                        ViewState::Idle | ViewState::FadeOut(_) => { /* do nothing */ }
+                        ViewState::FadeIn(snackbar) | ViewState::Visible(snackbar) => {
+                            if snackbar.id.as_ref() == Some(&id) {
+                                self.view_state = ViewState::FadeOut(snackbar.clone());
+                            }
+                        }
+                    };
                 }
             }
         }
