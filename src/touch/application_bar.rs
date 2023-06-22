@@ -119,12 +119,12 @@ impl Component for PwtApplicationBar {
 
         let row1 = Row::new()
             .attribute("aria-label", props.title.clone())
-            .class("pwt-justify-content-space-between pwt-align-items-center")
+            .class("pwt-align-items-center")
             .padding(2)
             .gap(2)
             .with_optional_child(props.leading.clone())
             .with_child(html! {
-                <span class="pwt-font-headline-small pwt-text-truncate">{props.title.clone()}</span>
+                <span class="pwt-flex-fill pwt-font-headline-small pwt-text-truncate">{props.title.clone()}</span>
             })
             .with_child(actions);
 
