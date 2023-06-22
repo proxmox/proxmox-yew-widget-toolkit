@@ -52,7 +52,6 @@ mod snack_bar_context_extension;
 pub use snack_bar_context_extension::SnackBarContextExt;
 
 /// # Prelude for mobile apps, including common scope extension.
-
 ///
 /// ```
 /// use pwt::touch::prelude::*;

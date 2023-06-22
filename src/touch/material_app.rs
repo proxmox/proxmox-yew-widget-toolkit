@@ -7,6 +7,7 @@ use yew_router::HashRouter;
 use pwt_macros::builder;
 
 use crate::prelude::*;
+use crate::state::NavigationContainer;
 use crate::touch::{SnackBarController, SnackBarManager};
 use crate::widget::{Container, ThemeLoader};
 
@@ -14,7 +15,7 @@ use crate::widget::{Container, ThemeLoader};
 ///
 /// This is just a convenient way to set up the following things:
 ///
-/// - Provide a yew_router::HashRouter;
+/// - Provide a yew_router::HashRouter and [NavigationContainer]
 /// - uses [ThemeLoader] to load the material design theme (dark/light)
 /// - Provides a [SnackBarController], an d display snackbars using [SnackBarManager]
 ///
@@ -94,7 +95,7 @@ impl Component for PwtMaterialApp {
         html! {
             <HashRouter>
                 <ContextProvider<SnackBarController> context={self.snackbar_controller.clone()}>
-                {ThemeLoader::new(app)}
+                { ThemeLoader::new(NavigationContainer::new().with_child(app))}
                 </ContextProvider<SnackBarController>>
             </HashRouter>
         }
