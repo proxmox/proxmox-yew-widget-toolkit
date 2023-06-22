@@ -231,7 +231,10 @@ pub fn to_js_value<T: Serialize + ?Sized>(value: &T) -> Result<JsValue, serde_wa
 /// ```
 ///
 /// This also re-exports the yew prelude: `use yew::prelude::*;`
-
+///
+/// # Note
+///
+/// You may want to use [crate::touch::prelude] instead if you develop a mobile app.
 pub mod prelude {
     #[doc(hidden)]
     pub use yew::prelude::*;

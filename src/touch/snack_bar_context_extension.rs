@@ -9,8 +9,8 @@ use super::{SnackBar, SnackBarController};
 ///
 /// The following example shows how to emit a message from inside a button click handler.
 /// ```
-/// use pwt::prelude::*;
-/// use pwt::touch::{SnackBar, SnackBarContextExt};
+/// use pwt::touch::prelude::*;
+/// use pwt::touch::SnackBar;
 /// use pwt::widget::Button;
 ///
 /// # fn test(ctx: &Context<pwt::widget::PwtButton>) { // fake context for testing

@@ -3,6 +3,31 @@ use yew::prelude::*;
 use super::ScaffoldController;
 
 
+/// Simplify access to the [ScaffoldController].
+///
+/// The [Scaffold](crate::touch::Scaffold) use the [ContextProvider] to expose
+/// a [ScaffoldController]. This class simplifies access to that controller.
+///
+/// The following example shows how to open/show the scaffold drawer.
+/// ```
+/// use pwt::touch::prelude::*;
+/// use pwt::touch::Scaffold;
+/// use pwt::widget::Button;
+///
+/// # fn test(ctx: &Context<pwt::widget::PwtButton>) { // fake context for testing
+///
+/// // assume we have access to a component context in 'ctx' ...
+///
+/// let button = Button::new("Show scaffold drawer")
+///     .onclick({
+///         let link = ctx.link().clone();
+///         move |_| {
+///             link.show_drawer(true);
+///         }
+///     });
+/// # }
+///
+/// ```
 pub trait ScaffoldContextExt {
     /// Access the [ScaffoldController] from the [ContextProvider].
     fn scaffold_controller(&self) -> Option<ScaffoldController>;

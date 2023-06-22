@@ -34,7 +34,7 @@ mod side_dialog;
 pub use side_dialog::{SideDialog, PwtSideDialog, SideDialogLocation};
 
 mod scaffold;
-pub use scaffold::{Scaffold, PwtScaffold, ScaffoldController};
+pub use scaffold::{Scaffold, PwtScaffold, ScaffoldController, ScaffoldContextExt};
 
 mod slidable;
 pub use slidable::{
@@ -50,3 +50,21 @@ pub use snack_bar_manager::{SnackBarController, SnackBarManager, PwtSnackBarMana
 
 mod snack_bar_context_extension;
 pub use snack_bar_context_extension::SnackBarContextExt;
+
+/// # Prelude for mobile apps, including common scope extension.
+
+///
+/// ```
+/// use pwt::touch::prelude::*;
+/// ```
+///
+/// This also re-exports the pwt standard prelude: `use pwt::prelude::*;`
+///
+pub mod prelude {
+    #[doc(hidden)]
+    pub use crate::prelude::*;
+
+    pub use crate::touch::SnackBarContextExt;
+    pub use crate::touch::ScaffoldContextExt;
+
+}
