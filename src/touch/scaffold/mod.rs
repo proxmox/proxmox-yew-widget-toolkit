@@ -11,8 +11,8 @@ use crate::widget::{Column, Container};
 use super::{NavigationBar, SideDialog, SideDialogLocation};
 
 mod scaffold_controller;
-use scaffold_controller::ScaffoldState;
 pub use scaffold_controller::ScaffoldController;
+use scaffold_controller::ScaffoldState;
 
 use pwt_macros::builder;
 
@@ -170,15 +170,20 @@ impl Component for PwtScaffold {
             _ => None,
         };
 
-        Column::new()
+        let scaffold = Column::new()
             .class("pwt-viewport")
             .class("pwt-position-relative")
             .with_optional_child(props.application_bar.clone())
             .with_child(body)
             .with_optional_child(props.navigation_bar.clone())
             .with_optional_child(drawer)
-            .with_optional_child(end_drawer)
-            .into()
+            .with_optional_child(end_drawer);
+
+        html! {
+            <ContextProvider<ScaffoldController> context={self.controller.clone()}>
+                {scaffold}
+            </ContextProvider<ScaffoldController>>
+        }
     }
 }
 
