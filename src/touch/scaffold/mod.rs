@@ -14,6 +14,9 @@ mod scaffold_controller;
 pub use scaffold_controller::ScaffoldController;
 use scaffold_controller::ScaffoldState;
 
+mod scaffold_context_extension;
+pub use scaffold_context_extension::ScaffoldContextExt;
+
 use pwt_macros::builder;
 
 /// Implements the basic Material Design visual layout structure.
