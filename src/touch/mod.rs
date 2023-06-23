@@ -17,6 +17,7 @@ pub use fab_menu::{FabMenu, FabMenuAlign, FabMenuDirection, PwtFabMenu};
 
 mod material_app;
 pub use material_app::{MaterialApp, PwtMaterialApp};
+pub use material_app::PageController;
 
 mod navigation_bar;
 pub use navigation_bar::NavigationBar;
