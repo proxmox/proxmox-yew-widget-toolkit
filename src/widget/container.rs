@@ -31,6 +31,6 @@ impl Container {
 
 impl Into<VTag> for Container {
     fn into(self) -> VTag {
-        self.std_props.into_vtag(self.tag, Some(self.listeners), Some(self.children))
+        self.std_props.into_vtag(self.tag, None::<&str>, Some(self.listeners), Some(self.children))
     }
 }

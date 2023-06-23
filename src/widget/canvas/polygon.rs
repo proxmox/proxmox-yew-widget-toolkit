@@ -45,6 +45,6 @@ impl Polygon {
 
 impl Into<VTag> for Polygon {
     fn into(self) -> VTag {
-        self.std_props.into_vtag(Cow::Borrowed("polygon"), Some(self.listeners), self.children)
+        self.std_props.into_vtag(Cow::Borrowed("polygon"), None::<&str>, Some(self.listeners), self.children)
     }
 }

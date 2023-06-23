@@ -27,6 +27,6 @@ impl Group {
 
 impl Into<VTag> for Group {
     fn into(self) -> VTag {
-        self.std_props.into_vtag(Cow::Borrowed("g"), Some(self.listeners), Some(self.children))
+        self.std_props.into_vtag(Cow::Borrowed("g"), None::<&str>, Some(self.listeners), Some(self.children))
     }
 }

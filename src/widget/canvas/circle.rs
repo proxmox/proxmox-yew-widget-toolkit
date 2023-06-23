@@ -74,6 +74,6 @@ impl Circle {
 
 impl Into<VTag> for Circle {
     fn into(self) -> VTag {
-        self.std_props.into_vtag(Cow::Borrowed("circle"), Some(self.listeners), self.children)
+        self.std_props.into_vtag(Cow::Borrowed("circle"), None::<&str>, Some(self.listeners), self.children)
     }
 }

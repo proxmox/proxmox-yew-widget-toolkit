@@ -2,10 +2,9 @@ use std::borrow::Cow;
 
 use yew::prelude::*;
 use yew::html::IntoPropValue;
-use yew::virtual_dom::{VList, VTag};
+use yew::virtual_dom::VTag;
 
 use pwt_macros::{builder, widget};
-use yew::virtual_dom::Listeners;
 
 use crate::props::WidgetBuilder;
 use crate::widget::Container;
@@ -43,8 +42,6 @@ impl Progress {
 
 impl Into<VTag> for Progress {
     fn into(self) -> VTag {
-        let attributes = self.std_props.cumulate_attributes(Some("pwt-progress"));
-
         let max = self.max.unwrap_or(1.0);
 
         let bar = match self.value {
@@ -62,15 +59,6 @@ impl Into<VTag> for Progress {
             }
         };
 
-        let children = VList::with_children(vec![bar], None);
-
-        VTag::__new_other(
-            Cow::Borrowed("div"),
-            self.std_props.node_ref,
-            self.std_props.key,
-            attributes,
-            Listeners::None,
-            children,
-        )
+        self.std_props.into_vtag(Cow::Borrowed("div"), Some("pwt-progress"), None, Some(vec![bar]))
     }
 }

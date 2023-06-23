@@ -188,6 +188,6 @@ impl Canvas {
 
 impl Into<VTag> for Canvas {
     fn into(self) -> VTag {
-        self.std_props.into_vtag(Cow::Borrowed("svg"), Some(self.listeners), Some(self.children))
+        self.std_props.into_vtag(Cow::Borrowed("svg"), None::<&str>, Some(self.listeners), Some(self.children))
     }
 }

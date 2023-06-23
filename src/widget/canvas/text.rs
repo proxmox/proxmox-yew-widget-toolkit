@@ -87,6 +87,6 @@ impl Text {
 
 impl Into<VTag> for Text {
     fn into(self) -> VTag {
-        self.std_props.into_vtag(Cow::Borrowed("text"), Some(self.listeners), Some(self.children))
+        self.std_props.into_vtag(Cow::Borrowed("text"), None::<&str>, Some(self.listeners), Some(self.children))
     }
 }

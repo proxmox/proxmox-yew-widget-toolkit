@@ -1,5 +1,8 @@
+use std::borrow::Cow;
+
 use yew::prelude::*;
 use yew::html::IntoPropValue;
+use yew::virtual_dom::VTag;
 
 use pwt_macros::{widget, builder};
 
@@ -8,7 +11,7 @@ use crate::props::{ContainerBuilder, WidgetBuilder};
 
 
 /// Wrapper for Html `<meter>`.
-#[widget(pwt=crate, comp=PwtMeter, @element)]
+#[widget(pwt=crate, @element)]
 #[builder]
 #[derive(Default, Debug, Clone, PartialEq, Properties)]
 pub struct Meter {
@@ -88,51 +91,41 @@ impl Meter {
     }
 }
 
-#[doc(hidden)]
-pub struct PwtMeter {}
 
-impl Component for PwtMeter {
-    type Message = ();
-    type Properties = Meter;
+impl Into<VTag> for Meter {
+    fn into(self) -> VTag {
+        let percentage = (((self.value - self.min).max(0.0) / (self.max - self.min)) * 100.0).min(100.0).max(0.0);
 
-    fn create(_ctx: &Context<Self>) -> Self {
-        Self {}
-    }
-
-    fn view(&self, ctx: &Context<Self>) -> Html {
-        let props = ctx.props();
-
-        let mut meter = Container::new()
-            .with_std_props(&props.std_props)
-            .class("pwt-meter");
-
-        let percentage = (((props.value - props.min).max(0.0) / (props.max - props.min)) * 100.0).min(100.0).max(0.0);
-
-        let distance_to_optimum = if let Some(optimum) = props.optimum {
-            if optimum > props.value {
-                props.get_range_index(optimum) - props.get_range_index(props.value)
+        let distance_to_optimum = if let Some(optimum) = self.optimum {
+            if optimum > self.value {
+                self.get_range_index(optimum) - self.get_range_index(self.value)
             } else {
-                props.get_range_index(props.value) - props.get_range_index(optimum)
+                self.get_range_index(self.value) - self.get_range_index(optimum)
             }
         } else {
             0
         };
 
-        if props.show_text {
-            meter.add_child(
+        let mut children = Vec::new();
+
+        if self.show_text {
+            children.push(
                 Container::new()
                     .class("pwt-meter-text")
-                    .with_child(format!("{}", props.value))
+                    .with_child(format!("{}", self.value))
+                    .into()
             );
         }
 
-        meter.add_child(
+        children.push(
             Container::new()
                 .class("pwt-meter-bar")
                 .class(format!("pwt-meter-distance-{}", distance_to_optimum))
                 .attribute("style", format!("width:{percentage}%"))
+                .into()
         );
 
-        meter.into()
+
+        self.std_props.into_vtag(Cow::Borrowed("div"), Some("pwt-meter"), None, Some(children))
     }
 }

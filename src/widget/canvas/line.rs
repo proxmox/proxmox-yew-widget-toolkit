@@ -26,7 +26,7 @@ impl Line {
         me.set_attribute("y1", y1.to_string());
         me.set_attribute("x2", x2.to_string());
         me.set_attribute("y2", y2.to_string());
-        
+
         me
     }
 
@@ -36,6 +36,6 @@ impl Line {
 
 impl Into<VTag> for Line {
     fn into(self) -> VTag {
-        self.std_props.into_vtag(Cow::Borrowed("line"), Some(self.listeners), self.children)
+        self.std_props.into_vtag(Cow::Borrowed("line"), None::<&str>, Some(self.listeners), self.children)
     }
 }

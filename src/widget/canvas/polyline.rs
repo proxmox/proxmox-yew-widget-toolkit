@@ -45,6 +45,6 @@ impl Polyline {
 
 impl Into<VTag> for Polyline {
     fn into(self) -> VTag {
-        self.std_props.into_vtag(Cow::Borrowed("polyline"), Some(self.listeners), self.children)
+        self.std_props.into_vtag(Cow::Borrowed("polyline"), None::<&str>,  Some(self.listeners), self.children)
     }
 }

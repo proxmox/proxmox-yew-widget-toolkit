@@ -75,6 +75,6 @@ impl Rect {
 
 impl Into<VTag> for Rect {
     fn into(self) -> VTag {
-        self.std_props.into_vtag(Cow::Borrowed("rect"), Some(self.listeners), self.children)
+        self.std_props.into_vtag(Cow::Borrowed("rect"), None::<&str>, Some(self.listeners), self.children)
     }
 }

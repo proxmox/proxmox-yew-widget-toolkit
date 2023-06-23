@@ -63,6 +63,6 @@ impl Ellipse {
 
 impl Into<VTag> for Ellipse {
     fn into(self) -> VTag {
-        self.std_props.into_vtag(Cow::Borrowed("ellipse"), Some(self.listeners), None)
+        self.std_props.into_vtag(Cow::Borrowed("ellipse"), None::<&str>,  Some(self.listeners), None)
     }
 }

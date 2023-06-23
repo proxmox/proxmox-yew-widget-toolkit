@@ -51,7 +51,7 @@ pub mod nav;
 pub mod menu;
 
 mod meter;
-pub use meter::{Meter, PwtMeter};
+pub use meter::Meter;
 
 mod split_pane;
 pub use split_pane::{Pane, PwtSplitPane, SplitPane};

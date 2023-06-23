@@ -62,10 +62,11 @@ impl WidgetStdProps {
     pub fn into_vtag(
         self,
         tag: Cow<'static, str>,
+        additional_class: Option<impl Into<Classes>>,
         listeners: Option<ListenersWrapper>,
         children: Option<Vec<VNode>>,
     ) -> VTag {
-        let attributes = self.cumulate_attributes(None::<&str>);
+        let attributes = self.cumulate_attributes(additional_class);
 
         let listeners = match listeners {
             None => Listeners::None,

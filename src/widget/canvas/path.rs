@@ -40,6 +40,6 @@ impl Path {
 
 impl Into<VTag> for Path {
     fn into(self) -> VTag {
-        self.std_props.into_vtag(Cow::Borrowed("path"), Some(self.listeners), self.children)
+        self.std_props.into_vtag(Cow::Borrowed("path"), None::<&str>, Some(self.listeners), self.children)
     }
 }
