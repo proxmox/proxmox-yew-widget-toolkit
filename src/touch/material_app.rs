@@ -1,8 +1,12 @@
 use std::rc::Rc;
+use std::marker::PhantomData;
+
+use derivative::Derivative;
 
 use gloo_history::HistoryListener;
 use yew::html::IntoPropValue;
 use yew::virtual_dom::{Key, VComp, VNode};
+use yew_router::Routable;
 use yew_router::history::{AnyHistory, HashHistory};
 use yew_router::{history::History, Router};
 
@@ -57,36 +61,32 @@ impl PageController {
 ///
 #[derive(Properties, Clone, PartialEq)]
 #[builder]
-pub struct MaterialApp {
+pub struct MaterialApp<R: Routable> {
+
     /// The yew component key.
     pub key: Option<Key>,
-
-    /// The home page ("/")
-    pub home: Option<VNode>,
 
     /// Optional Scaffold Controller.
     #[builder(IntoPropValue, into_prop_value)]
     pub snackbar_controller: Option<SnackBarController>,
 
+    /// Optional snackbar bottom offset.
     #[builder(IntoPropValue, into_prop_value)]
     pub snackbar_bottom_offset: Option<u32>,
+
+    /// Page render function.
+    pub render_route: PageRenderFn<R>,
 }
 
-impl MaterialApp {
+impl<R: Routable + 'static> MaterialApp<R> {
     /// Create a new instance.
-    pub fn new() -> Self {
-        yew::props!(Self {})
+    pub fn new(render_fn: impl Into<PageRenderFn<R>>) -> Self {
+        yew::props!(Self { render_route: render_fn.into()})
     }
 
     /// Builder style method to set the yew `key` property
     pub fn key(mut self, key: impl IntoOptionalKey) -> Self {
         self.key = key.into_optional_key();
-        self
-    }
-
-    /// Builder style method to set the home page.
-    pub fn home(mut self, home: impl Into<VNode>) -> Self {
-        self.home = Some(home.into());
         self
     }
 }
@@ -97,16 +97,17 @@ pub enum Msg {
 }
 
 #[doc(hidden)]
-pub struct PwtMaterialApp {
+pub struct PwtMaterialApp<R> {
     snackbar_controller: SnackBarController,
     page_controller: PageController,
     _page_controller_observer: SharedStateObserver<Vec<PageControllerMsg>>,
     page_stack: Vec<Html>,
     history: AnyHistory,
     _history_listener: HistoryListener,
+    phantom: PhantomData<R>,
 }
 
-impl PwtMaterialApp {
+impl<R: Routable + 'static> PwtMaterialApp<R> {
     fn handle_page_controller_messages(&mut self, _ctx: &Context<Self>) {
         let count = self.page_controller.state.read().len();
         if count == 0 {
@@ -128,9 +129,10 @@ impl PwtMaterialApp {
         }
     }
 }
-impl Component for PwtMaterialApp {
+
+impl<R: Routable + 'static> Component for PwtMaterialApp<R> {
     type Message = Msg;
-    type Properties = MaterialApp;
+    type Properties = MaterialApp<R>;
 
     fn create(ctx: &Context<Self>) -> Self {
         let props = ctx.props();
@@ -165,6 +167,7 @@ impl Component for PwtMaterialApp {
             page_stack,
             history,
             _history_listener,
+            phantom: PhantomData,
         };
 
         me.handle_page_controller_messages(ctx);
@@ -188,8 +191,16 @@ impl Component for PwtMaterialApp {
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
 
+        let location = self.history.location();
+        let path = location.path();
+        let route = R::recognize(path);
+
         let mut page_stack = Vec::new();
-        page_stack.push(props.home.clone().unwrap_or(Container::new().into()));
+
+        if let Some(route) = route {
+            page_stack.extend(props.render_route.apply(&route));
+        }
+
         page_stack.extend(self.page_stack.clone());
 
         let app = Container::new()
@@ -213,10 +224,38 @@ impl Component for PwtMaterialApp {
     }
 }
 
-impl Into<VNode> for MaterialApp {
+impl<R: Routable + 'static> Into<VNode> for MaterialApp<R> {
     fn into(self) -> VNode {
         let key = self.key.clone();
-        let comp = VComp::new::<PwtMaterialApp>(Rc::new(self), key);
+        let comp = VComp::new::<PwtMaterialApp<R>>(Rc::new(self), key);
         VNode::from(comp)
+    }
+}
+
+/// A [PageRenderFn] function is a callback that transforms a [Route] into
+/// a stack of [Html] pages.
+///
+/// Wraps `Rc` around `Fn` so it can be passed as a prop.
+#[derive(Derivative)]
+#[derivative(Clone(bound=""), PartialEq(bound=""))]
+pub struct PageRenderFn<R: Routable>(
+    #[derivative(PartialEq(compare_with="Rc::ptr_eq"))]
+    Rc<dyn Fn(&R) -> Vec<Html>>
+);
+
+impl<R: Routable> PageRenderFn<R> {
+    /// Creates a new [`PageRenderFn`]
+    pub fn new(renderer: impl Into<Self>) -> Self {
+        renderer.into()
+    }
+    /// Apply the render function
+    pub fn apply(&self, route: &R) -> Vec<Html> {
+        (self.0)(route)
+    }
+}
+
+impl<R: Routable, F: 'static + Fn(&R) -> Vec<Html>> From<F> for PageRenderFn<R> {
+    fn from(renderer: F) -> Self {
+        PageRenderFn(Rc::new(renderer))
     }
 }
