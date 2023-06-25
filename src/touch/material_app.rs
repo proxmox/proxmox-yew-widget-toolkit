@@ -35,22 +35,33 @@ pub struct PageController {
 }
 
 impl PageController {
+    /// Create a new instance.
     pub fn new() -> Self {
         Self {
             state: SharedState::new(Vec::new()),
         }
     }
 
+    /// Push an anonymous page on top of the page stack.
     pub fn push_page(&self, page: impl Into<VNode>) {
         self.state
             .write()
             .push(PageControllerMsg::Push(page.into()));
     }
 
+    /// Pop one anonymous page from the page stack.
+    ///
+    /// This does nothing if there are no anonymous pages on the stack.
+    /// You may want to use [Self::last_page] to implement the "Back"
+    /// opertation, because that also use the browser history.
     pub fn pop_page(&self) {
         self.state.write().push(PageControllerMsg::Pop);
     }
 
+    /// Nagigate to the last page.
+    ///
+    /// If there are anonymous pages on the stack, simply pop one.
+    /// Else, use the browser history to navigate back.
     pub fn last_page(&self) {
         self.state.write().push(PageControllerMsg::LastPage);
     }
