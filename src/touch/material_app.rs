@@ -23,6 +23,7 @@ use super::PageStack;
 pub enum PageControllerMsg {
     Push(VNode),
     Pop,
+    LastPage,
 }
 
 /// Page controller can show and dismiss pages.
@@ -48,6 +49,10 @@ impl PageController {
 
     pub fn pop_page(&self) {
         self.state.write().push(PageControllerMsg::Pop);
+    }
+
+    pub fn last_page(&self) {
+        self.state.write().push(PageControllerMsg::LastPage);
     }
 }
 
@@ -124,6 +129,13 @@ impl<R: Routable + 'static> PwtMaterialApp<R> {
                 }
                 PageControllerMsg::Pop => {
                     self.page_stack.pop();
+                }
+                PageControllerMsg::LastPage => {
+                    if self.page_stack.is_empty() {
+                        self.history.back();
+                    } else {
+                        self.page_stack.pop();
+                    }
                 }
             }
         }
