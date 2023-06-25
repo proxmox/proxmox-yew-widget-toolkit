@@ -56,6 +56,23 @@ impl Scaffold {
         yew::props!(Self {})
     }
 
+    /// Create a scaffold with text title in application bar.
+    ///
+    /// This is just a cenvenient wrapper for:
+    /// ```
+    /// # fn test(title: String) {
+    /// # use pwt::touch::{Scaffold, ApplicationBar};
+    /// Scaffold::new()
+    ///   .application_bar(ApplicationBar::new().title(title))
+    /// # ;}
+    /// ```
+
+    pub fn with_title(title: impl Into<AttrValue>) -> Self {
+        let title = title.into();
+        Scaffold::new()
+            .application_bar(super::ApplicationBar::new().title(title))
+    }
+
     /// Builder style method to set the application bar.
     pub fn application_bar(mut self, app_bar: impl Into<VNode>) -> Self {
         self.application_bar = Some(app_bar.into());

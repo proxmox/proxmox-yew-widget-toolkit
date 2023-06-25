@@ -77,18 +77,19 @@ impl PageController {
 /// - Uses [PageStack] to dislay/animate overlapping pages.
 /// - Provides a [PageController] to navigate and control the [PageStack].
 ///
-/// You need to provide a simple rendering function that translates [routes] into
-/// HTML pages. More specifically, each route can reeturn a stack of pages.
+/// You need to provide a simple rendering function that translates routes into HTML pages.
+/// More specifically, each route can reeturn a stack of pages.
 /// Internally, this stack is passed to a [PageStack] widget that provides
 /// animations when switching between pages.
 ///
 /// First, one usually defines a [Routable] enum to express routes using
-/// static rust types.
+/// static rust types. Then you define you render functions to map the
+/// routes to a page stack.
 ///
 /// ```
 /// use yew_router::prelude::*;
 /// use pwt::prelude::*;
-/// use pwt::touch::MaterialApp;
+/// use pwt::touch::{MaterialApp, Scaffold};
 ///
 /// #[derive(Clone, Copy, PartialEq, Routable)]
 /// enum Route {
@@ -100,19 +101,17 @@ impl PageController {
 ///    Network,
 /// }
 ///
-/// // Then you define you render functions to map routes to a page stack.
-///
 /// fn switch(route: &Route) -> Vec<Html> {
 ///    match route {
 ///        Route::Home => vec![
-///             html! {"Home"},
+///             Scaffold::with_title("Home").into(),
 ///        ],
 ///        Route::Config => vec![
-///             html! {"Config"},
+///             Scaffold::with_title("Config").into(),
 ///        ],
 ///        Route::Network => vec![
-///             html! {"Config"},
-///             html! {"Network"},
+///             Scaffold::with_title("Config").into(),
+///             Scaffold::with_title("Network").into(),
 ///        ],
 ///    }
 /// }
@@ -146,7 +145,7 @@ pub struct MaterialApp<R: Routable> {
 impl<R: Routable + 'static> MaterialApp<R> {
     /// Create a new instance.
     ///
-    /// The 'render' functions maps from [Routes] to html pages.
+    /// The 'render' functions maps from routes to html pages.
     pub fn new(render: impl Into<PageRenderFn<R>>) -> Self {
         yew::props!(Self { render_route: render.into()})
     }
