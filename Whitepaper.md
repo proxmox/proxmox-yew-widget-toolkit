@@ -54,10 +54,6 @@ use [Yew](https://yew.rs) as base, because
 
 - [ARIA](https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA) support.
 
-Of cause, I also tested non-browser based libraries like
-[Druid](https://github.com/linebender/druid), but none of them really
-convinced me.
-
 
 ## Using Yew directly.
 
@@ -90,13 +86,7 @@ The set of required widget was quite clear, so this was more of a
 trial and error phase to find convienient APIs and data structures for
 Rust.
 
-It's no secret that sometimes you have to build your Rust code from
-scratch because the compiler won't let you do it the way you
-want. Another reason is when the produced HTML doesn't behave as
-expected. A third reason is that ARIA roles are not flexible enough to
-describe your component, so accessibility is not good enough.
-
-I short, the current library is called [Proxmox Yew Widget
+The current library is called [Proxmox Yew Widget
 Toolkit](https://git.proxmox.com) and is the result of multiple
 rewrites. It is flexible enought to implement larger parts of the
 backup server GUI, but there is still room for improvements:
@@ -113,7 +103,7 @@ keeping the API stable.
 
 ### Use Rust (instead of `html!{}` macro) whenever possible.
 
-Yew provide a ways to create components using the `html!{}` macro, i.e:
+Yew provides a way to create components using the `html!{}` macro, i.e:
 
 ```
 html!{<div class="pwt-color-scheme-primary" onclick=|_| { ... }>{"Click me!"}</div>}
@@ -171,8 +161,8 @@ similar approach.
 
 ```
 Column::new()
-   // CSS: width: 100%; height: 100%; overflow: auto
-   .class(Fit)
+   // CSS: flex: 1 1 auto;
+   .class(Flex::Fill)
    // CSS: justify-content: center
    .class(JustifyContent::Center)
    // CSS: align-items: center
@@ -230,8 +220,8 @@ thing as long as you find another solution.
 Our widgets share a great amount of methods, and we don't want to
 duplicated the code for each widget. Inheritance is not available, so
 we ended up using traits having default method implementations. For
-example, we want to attach html event listeners to widget, so lets use
-this to show how we share code.
+example, we want to attach html event listeners to widget. Let us use
+this example to show how we implemented code sharing.
 
 Our trait is called `EventSubscriber`, and has one method which
 provides mutable access to a `Listeners` object, where we can store
@@ -293,14 +283,79 @@ devices. Touch devices requires much larger buttons and inputs. Else
 it is too difficult to tap them accurately, leaving users frustrated
 and dissatisfied after making mistakes.
 
-We used the material design (MD) guidelines from Google as
+We used the [material design](https://m3.material.io) guidelines from Google as
 baseline. The resulting theme wastes a lot of space on the desktop,
-but may get helpful in future when we target mobile devices.
+but is a requirement for mobile devices.
+
+
+## Mobile Devices
+
+Small mobile devices, such as smartphones or tablets, come with unique
+characteristics and constraints that lead to specific widget
+requirements.
+
+Mobile devices have much smaller screens compared to desktop
+computers. This means that GUI widgets need to be carefully designed
+and arranged to make the best use of the available space without
+cluttering the interface.
+
+Most mobile devices primarily use touch interfaces, which means that
+GUI widgets need to be large enough to be easily selected with a
+finger. This is a significant shift from desktop interfaces that
+primarily use a mouse cursor, which can select much smaller targets.
+
+Also, modern user interface on mobile devices use animations, much
+more than one would expect on the desktop.
+
+Fortunately, The material design guidelines from Google describes
+many widgets used by modern mobile applications, so we just needed to
+implement them.
+
+We ended up with a set of special widget for mobile devices, making it
+really easy write a mobile app.
+
+```
+/// Define your routes (uses yew_router library)
+#[derive(Clone, Copy, PartialEq, Routable)]
+enum Route {
+   #[at("/")]
+   Home,
+   #[at("/config")]
+   Config,
+   #[at("/config/network")]
+   Network,
+}
+
+/// Map routes to a stack of pages (automatically adds page animations)
+fn switch(route: &Route) -> Vec<Html> {
+   match route {
+       Route::Home => vec![
+            Scaffold::with_title("Home").into(),
+       ],
+       Route::Config => vec![
+            Scaffold::with_title("Config").into(),
+       ],
+       Route::Network => vec![
+            Scaffold::with_title("Config").into(),
+            Scaffold::with_title("Network").into(),
+       ],
+   }
+}
+
+/// Finally, implement the application component.
+#[function_component]
+fn YourApp() -> Html {
+    MaterialApp::new(switch)
+        .into()
+}
+```
+
+
 
 
 ## Conclusion
 
-After more than six months, I start feeling confident that we can
+After more than one year, I start feeling confident that we can
 write high quality user interfaces using Rust. We managed to implement
 quite complex widgets within reasonable time.
 
