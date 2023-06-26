@@ -1,9 +1,7 @@
 use std::rc::Rc;
 
 use yew::prelude::*;
-use yew::{
-    virtual_dom::{VComp, VNode},
-};
+use yew::virtual_dom::{VComp, VNode};
 //use yew::html::IntoEventCallback;
 use yew::virtual_dom::Key;
 
@@ -24,7 +22,8 @@ impl Into<Classes> for PageAnimationStyle {
             PageAnimationStyle::Push => "pwt-page-animation-push",
             PageAnimationStyle::Fade => "pwt-page-animation-fade",
             PageAnimationStyle::Cover => "pwt-page-animation-cover",
-        }.into()
+        }
+        .into()
     }
 }
 
@@ -49,11 +48,10 @@ impl PageStack {
     }
 }
 
-
 #[derive(Clone, PartialEq)]
 enum ViewState {
     Normal,
-    Grow,
+    Grow(Html),
     Shrink(Html),
 }
 pub enum Msg {
@@ -88,10 +86,12 @@ impl Component for PwtPageStack {
     fn changed(&mut self, ctx: &Context<Self>, old_props: &Self::Properties) -> bool {
         let props = ctx.props();
 
-        if props.stack.len() > old_props.stack.len() {
-            self.state = ViewState::Grow;
-        } else if props.stack.len() < old_props.stack.len() {
-            self.state = ViewState::Shrink(old_props.stack.last().unwrap().clone());
+        if let Some(last) = old_props.stack.last() {
+            if props.stack.len() > old_props.stack.len() {
+                self.state = ViewState::Grow(last.clone())
+            } else if props.stack.len() < old_props.stack.len() {
+                self.state = ViewState::Shrink(last.clone());
+            }
         }
 
         true
@@ -103,7 +103,15 @@ impl Component for PwtPageStack {
         let mut children: Vec<Html> = Vec::new();
 
         let mut stack = props.stack.clone();
+        if let ViewState::Grow(parent) = &self.state {
+            let stack_len = stack.len();
+            if stack_len > 1 {
+                // show last visible page as parent
+                stack[stack_len - 2] = parent.clone();
+            }
+        }
         if let ViewState::Shrink(child) = &self.state {
+            // show last visible page as top page
             stack.push(child.clone());
         }
 
@@ -112,14 +120,12 @@ impl Component for PwtPageStack {
         let animation: Classes = props.animation_style.into();
 
         for (i, child) in stack.into_iter().enumerate() {
-
             let top_child = (i + 1) == stack_len;
             let parent = (i + 2) == stack_len;
 
-
             let child_class = match self.state {
-                ViewState::Grow if top_child => "pwt-page-grow",
-                ViewState::Grow if parent => "pwt-page-shrink",
+                ViewState::Grow(_) if top_child => "pwt-page-grow",
+                ViewState::Grow(_) if parent => "pwt-page-shrink",
                 ViewState::Shrink(_) if top_child => "pwt-page-grow-reverse",
                 ViewState::Shrink(_) if parent => "pwt-page-shrink-reverse",
                 _ if top_child => "pwt-page-visible",
@@ -134,7 +140,6 @@ impl Component for PwtPageStack {
                 .key(Key::from(format!("stack-level-{i}")))
                 .onanimationend(ctx.link().callback(|_| Msg::AnimationEnd))
                 .with_child(child);
-
 
             children.push(page.into())
         }
