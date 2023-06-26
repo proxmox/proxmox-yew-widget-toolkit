@@ -8,8 +8,8 @@ use yew::virtual_dom::{Key, VComp, VNode};
 use pwt_macros::builder;
 
 use crate::props::{
-    AsClassesMut, ContainerBuilder, CssBorderBuilder, CssPaddingBuilder,
-    EventSubscriber, IntoOptionalKey, WidgetBuilder,
+    AsClassesMut, ContainerBuilder, CssBorderBuilder, CssPaddingBuilder, EventSubscriber,
+    IntoOptionalKey, WidgetBuilder,
 };
 use crate::state::{NavigationContext, NavigationContextExt, Selection};
 
@@ -38,7 +38,6 @@ pub struct NavigationDrawer {
     menu: Menu,
 
     /// Menu header.
-    #[builder(IntoPropValue, into_prop_value)]
     pub header: Option<Html>,
 
     /// Selection object to store the currently selected tab key.
@@ -111,6 +110,17 @@ impl NavigationDrawer {
     /// Method to add a html class.
     pub fn add_class(&mut self, class: impl Into<Classes>) {
         self.class.push(class);
+    }
+
+    // Builder style method to set the menu header.
+    pub fn header(mut self, header: impl Into<Html>) -> Self {
+        self.set_header(header);
+        self
+    }
+
+    /// Method to set the menu header
+    pub fn set_header(&mut self, header: impl Into<Html>) {
+        self.header = Some(header.into());
     }
 
     fn get_default_active(&self) -> Option<Key> {
