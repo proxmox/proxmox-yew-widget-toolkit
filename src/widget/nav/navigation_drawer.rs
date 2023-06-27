@@ -170,9 +170,13 @@ impl PwtNavigationDrawer {
         let onclick = Callback::from({
             let link = ctx.link().clone();
             let key = item.key.clone();
+            let on_activate = item.on_activate.clone();
             move |_event: MouseEvent| {
                 if key.is_some() {
                     link.send_message(Msg::Select(key.clone(), true, true));
+                }
+                if let Some(on_acticate) = &on_activate {
+                    on_acticate.emit(());
                 }
             }
         });
@@ -184,7 +188,7 @@ impl PwtNavigationDrawer {
                 event.stop_propagation();
                 if let Some(key) = &key {
                     link.send_message(Msg::MenuToggle(key.clone()));
-                }
+                 }
             }
         });
 

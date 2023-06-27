@@ -1,6 +1,6 @@
 mod navigation_drawer;
 pub use navigation_drawer::{NavigationDrawer, PwtNavigationDrawer};
-use yew::html::IntoPropValue;
+use yew::html::{IntoEventCallback, IntoPropValue};
 use yew::prelude::*;
 use yew::virtual_dom::{Key, VNode};
 
@@ -32,6 +32,17 @@ pub struct MenuItem {
     #[prop_or(true)]
     #[builder]
     pub selectable: bool,
+
+    /// Activation callback.
+    ///
+    /// Emitted when the item is tapped, clicked or activated by keyboard.
+    ///
+    /// # Note
+    ///
+    /// This is not emitted when the active item is changed using the selection.
+    #[builder_cb(IntoEventCallback, into_event_callback, ())]
+    pub on_activate: Option<Callback<()>>,
+
 }
 
 impl MenuItem {
@@ -52,6 +63,8 @@ impl MenuItem {
     pub fn set_key(&mut self, key: impl IntoOptionalKey) {
         self.key = key.into_optional_key();
     }
+
+
 }
 
 #[derive(Clone, PartialEq)]
