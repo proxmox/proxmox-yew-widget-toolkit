@@ -32,7 +32,7 @@ mod page_stack;
 pub use page_stack::{PageAnimationStyle, PageStack, PwtPageStack};
 
 mod side_dialog;
-pub use side_dialog::{SideDialog, PwtSideDialog, SideDialogLocation};
+pub use side_dialog::{SideDialog, PwtSideDialog, SideDialogLocation, SideDialogController};
 
 mod scaffold;
 pub use scaffold::{Scaffold, PwtScaffold};

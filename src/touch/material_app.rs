@@ -1,13 +1,13 @@
-use std::rc::Rc;
 use std::marker::PhantomData;
+use std::rc::Rc;
 
 use derivative::Derivative;
 
 use gloo_history::HistoryListener;
 use yew::html::IntoPropValue;
 use yew::virtual_dom::{Key, VComp, VNode};
-use yew_router::Routable;
 use yew_router::history::{AnyHistory, HashHistory};
+use yew_router::Routable;
 use yew_router::{history::History, Router};
 
 use pwt_macros::builder;
@@ -17,11 +17,12 @@ use crate::state::{NavigationContainer, SharedState, SharedStateObserver};
 use crate::touch::{SnackBarController, SnackBarManager};
 use crate::widget::{Container, ThemeLoader};
 
-use super::{PageStack, SideDialog, SideDialogLocation};
+use super::{PageStack, SideDialog, SideDialogController, SideDialogLocation};
 
 // Messages sent from the [PageController].
 pub enum PageControllerMsg {
     Dialog(SideDialog), // Show modal dialog
+    CloseDialog,
     Push(VNode),
     Pop,
     LastPage,
@@ -59,6 +60,11 @@ impl PageController {
             .push(PageControllerMsg::Dialog(dialog.into()));
     }
 
+    /// Close/dismiss the dialog on top of the page stack (if any).
+    pub fn close_side_dialog(&self) {
+        self.state.write().push(PageControllerMsg::CloseDialog);
+    }
+
     /// Show the drawer on the left side of the body.
     ///
     /// This is just a convenient wrapper for [Self::show_side_dialog].
@@ -66,7 +72,7 @@ impl PageController {
         self.show_side_dialog(
             SideDialog::new()
                 .direction(SideDialogLocation::Left)
-                .with_child(drawer.into())
+                .with_child(drawer.into()),
         );
     }
 
@@ -77,7 +83,7 @@ impl PageController {
         self.show_side_dialog(
             SideDialog::new()
                 .direction(SideDialogLocation::Right)
-                .with_child(drawer.into())
+                .with_child(drawer.into()),
         );
     }
 
@@ -88,10 +94,9 @@ impl PageController {
         self.show_side_dialog(
             SideDialog::new()
                 .direction(SideDialogLocation::Bottom)
-                .with_child(bottom_sheet.into())
+                .with_child(bottom_sheet.into()),
         );
     }
-
 
     /// Pop one anonymous page from the page stack.
     ///
@@ -170,7 +175,6 @@ impl PageController {
 #[derive(Properties, Clone, PartialEq)]
 #[builder]
 pub struct MaterialApp<R: Routable> {
-
     /// The yew component key.
     pub key: Option<Key>,
 
@@ -191,7 +195,9 @@ impl<R: Routable + 'static> MaterialApp<R> {
     ///
     /// The 'render' functions maps from routes to html pages.
     pub fn new(render: impl Into<PageRenderFn<R>>) -> Self {
-        yew::props!(Self { render_route: render.into()})
+        yew::props!(Self {
+            render_route: render.into()
+        })
     }
 
     /// Builder style method to set the yew `key` property
@@ -213,7 +219,7 @@ pub struct PwtMaterialApp<R> {
     page_controller: PageController,
     _page_controller_observer: SharedStateObserver<Vec<PageControllerMsg>>,
     page_stack: Vec<Html>,
-    dialog: Option<Html>,
+    dialog: Option<(SideDialogController, Html)>,
     history: AnyHistory,
     _history_listener: HistoryListener,
     phantom: PhantomData<R>,
@@ -231,7 +237,10 @@ impl<R: Routable + 'static> PwtMaterialApp<R> {
         for msg in list.into_iter() {
             match msg {
                 PageControllerMsg::Dialog(dialog) => {
-                    log::info!("SHOW DIALOG");
+                    let controller = dialog
+                        .controller
+                        .clone()
+                        .unwrap_or(SideDialogController::new());
                     let on_close = dialog.on_close.clone();
                     let on_close = ctx.link().callback(move |_| {
                         if let Some(on_close) = &on_close {
@@ -239,7 +248,18 @@ impl<R: Routable + 'static> PwtMaterialApp<R> {
                         }
                         Msg::CloseDialog
                     });
-                    self.dialog = Some(dialog.on_close(on_close).into());
+                    self.dialog = Some((
+                        controller.clone(),
+                        dialog
+                            .controller(controller)
+                            .on_close(on_close)
+                            .into(),
+                    ));
+                }
+                PageControllerMsg::CloseDialog => {
+                    if let Some((controller, _)) = &self.dialog {
+                        controller.close_dialog();
+                    }
                 }
                 PageControllerMsg::Push(page) => {
                     //self.history.push("/testhistory");
@@ -346,7 +366,7 @@ impl<R: Routable + 'static> Component for PwtMaterialApp<R> {
                     .controller(self.snackbar_controller.clone())
                     .bottom_offset(props.snackbar_bottom_offset),
             )
-            .with_optional_child(self.dialog.clone());
+            .with_optional_child(self.dialog.as_ref().map(|(_, dialog)| dialog.clone()));
 
         html! {
             <Router history={self.history.clone()}>
@@ -373,10 +393,9 @@ impl<R: Routable + 'static> Into<VNode> for MaterialApp<R> {
 ///
 /// Wraps `Rc` around `Fn` so it can be passed as a prop.
 #[derive(Derivative)]
-#[derivative(Clone(bound=""), PartialEq(bound=""))]
+#[derivative(Clone(bound = ""), PartialEq(bound = ""))]
 pub struct PageRenderFn<R: Routable>(
-    #[derivative(PartialEq(compare_with="Rc::ptr_eq"))]
-    Rc<dyn Fn(&R) -> Vec<Html>>
+    #[derivative(PartialEq(compare_with = "Rc::ptr_eq"))] Rc<dyn Fn(&R) -> Vec<Html>>,
 );
 
 impl<R: Routable> PageRenderFn<R> {

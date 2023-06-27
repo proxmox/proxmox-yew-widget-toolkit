@@ -3,15 +3,43 @@ use std::rc::Rc;
 use wasm_bindgen::JsCast;
 use web_sys::HtmlElement;
 
-use yew::html::IntoEventCallback;
+use yew::html::{IntoEventCallback, IntoPropValue};
 use yew::prelude::*;
 use yew::virtual_dom::{Key, VComp, VNode};
 
 use crate::prelude::*;
+use crate::state::{SharedState, SharedStateObserver};
 use crate::widget::dom::IntoHtmlElement;
 use crate::widget::Container;
 
 use super::{GestureDetector, GestureDragEvent, GestureSwipeEvent};
+
+// Messages sent from the [SideDialogController].
+pub enum SideDialogControllerMsg {
+    Close, // Close the dialog
+}
+
+/// Side dialog controller can dismiss the dialog.
+///
+/// Each [SideDialog] provides a [SideDialogController] using a [yew::ContextProvider].
+#[derive(Clone, PartialEq)]
+pub struct SideDialogController {
+    state: SharedState<Vec<SideDialogControllerMsg>>,
+}
+
+impl SideDialogController {
+    /// Create a new instance.
+    pub fn new() -> Self {
+        Self {
+            state: SharedState::new(Vec::new()),
+        }
+    }
+
+    /// Close the dialog.
+    pub fn close_dialog(&self) {
+        self.state.write().push(SideDialogControllerMsg::Close);
+    }
+}
 
 /// Define the location where the dialog should be displayed.
 #[derive(Copy, Clone, PartialEq)]
@@ -36,6 +64,10 @@ pub struct SideDialog {
 
     /// The yew component key.
     pub key: Option<Key>,
+
+    /// Optional controller to trigger a dialog close.
+    #[builder(IntoPropValue, into_prop_value)]
+    pub controller: Option<SideDialogController>,
 
     #[builder_cb(IntoEventCallback, into_event_callback, ())]
     pub on_close: Option<Callback<()>>,
@@ -82,6 +114,7 @@ pub enum Msg {
     DragEnd(GestureDragEvent),
     Drag(GestureDragEvent),
     Swipe(GestureSwipeEvent),
+    Controller,
 }
 
 #[derive(Copy, Clone, PartialEq)]
@@ -100,6 +133,8 @@ pub struct PwtSideDialog {
     slider_state: SliderState,
     drag_start: Option<(f64, f64)>,
     drag_delta: Option<(f64, f64)>,
+    controller: SideDialogController,
+    _controller_observer: SharedStateObserver<Vec<SideDialogControllerMsg>>,
 }
 
 impl PwtSideDialog {
@@ -110,16 +145,47 @@ impl PwtSideDialog {
     }
 }
 
+impl PwtSideDialog {
+    fn handle_controller_messages(&mut self, ctx: &Context<Self>) {
+        let count = self.controller.state.read().len();
+        if count == 0 {
+            // Note: avoid endless loop
+            return;
+        }
+
+        let list = self.controller.state.write().split_off(0);
+
+        for msg in list.into_iter() {
+            match msg {
+                SideDialogControllerMsg::Close => {
+                    ctx.link().send_message(Msg::Dismiss)
+                }
+            }
+        }
+    }
+}
+
 impl Component for PwtSideDialog {
     type Message = Msg;
     type Properties = SideDialog;
 
-    fn create(_ctx: &Context<Self>) -> Self {
+    fn create(ctx: &Context<Self>) -> Self {
+        let props = ctx.props();
+
         let window = web_sys::window().unwrap();
         let document = window.document().unwrap();
         let last_active = document
             .active_element()
             .and_then(|el| el.dyn_into::<HtmlElement>().ok());
+
+        let controller = props
+            .controller
+            .clone()
+            .unwrap_or(SideDialogController::new());
+
+        let _controller_observer = controller
+            .state
+            .add_listener(ctx.link().callback(|_| Msg::Controller));
 
         Self {
             open: false,
@@ -128,6 +194,8 @@ impl Component for PwtSideDialog {
             slider_state: SliderState::Hidden,
             drag_start: None,
             drag_delta: None,
+            controller,
+            _controller_observer,
         }
     }
 
@@ -159,6 +227,10 @@ impl Component for PwtSideDialog {
                         self.restore_focus();
                     }
                 }
+                false
+            }
+            Msg::Controller => {
+                self.handle_controller_messages(ctx);
                 false
             }
             Msg::Dismiss => {
