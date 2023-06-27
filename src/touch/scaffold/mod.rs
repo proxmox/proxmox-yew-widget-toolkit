@@ -5,17 +5,9 @@ use yew::prelude::*;
 use yew::virtual_dom::{Key, VComp, VNode};
 
 use crate::props::{ContainerBuilder, WidgetBuilder};
-use crate::state::SharedStateObserver;
 use crate::widget::{Column, Container};
 
-use super::{NavigationBar, SideDialog, SideDialogLocation};
-
-mod scaffold_controller;
-pub use scaffold_controller::ScaffoldController;
-use scaffold_controller::ScaffoldState;
-
-mod scaffold_context_extension;
-pub use scaffold_context_extension::ScaffoldContextExt;
+use super::NavigationBar;
 
 use pwt_macros::builder;
 
@@ -25,10 +17,6 @@ use pwt_macros::builder;
 pub struct Scaffold {
     /// The yew component key.
     pub key: Option<Key>,
-
-    /// Optional Scaffold Controller
-    #[builder(IntoPropValue, into_prop_value)]
-    pub controller: Option<ScaffoldController>,
 
     /// The top application bar.
     pub application_bar: Option<VNode>,
@@ -42,12 +30,6 @@ pub struct Scaffold {
 
     /// Favorite action button.
     pub favorite_action_button: Option<VNode>,
-
-    /// A modal panel displayed to the left side of the body.
-    pub drawer: Option<VNode>,
-
-    /// A modal panel displayed to the right side of the body.
-    pub end_drawer: Option<VNode>,
 }
 
 impl Scaffold {
@@ -66,11 +48,9 @@ impl Scaffold {
     ///   .application_bar(ApplicationBar::new().title(title))
     /// # ;}
     /// ```
-
     pub fn with_title(title: impl Into<AttrValue>) -> Self {
         let title = title.into();
-        Scaffold::new()
-            .application_bar(super::ApplicationBar::new().title(title))
+        Scaffold::new().application_bar(super::ApplicationBar::new().title(title))
     }
 
     /// Builder style method to set the application bar.
@@ -90,66 +70,17 @@ impl Scaffold {
         self.favorite_action_button = Some(fav.into());
         self
     }
-
-    /// Builder style method to set the drawer.
-    pub fn drawer(mut self, drawer: impl Into<VNode>) -> Self {
-        self.drawer = Some(drawer.into());
-        self
-    }
-
-    /// Builder style method to set the end_drawer.
-    pub fn end_drawer(mut self, end_drawer: impl Into<VNode>) -> Self {
-        self.end_drawer = Some(end_drawer.into());
-        self
-    }
 }
 
 #[doc(hidden)]
-pub struct PwtScaffold {
-    controller: ScaffoldController,
-    _state_observer: SharedStateObserver<ScaffoldState>,
-}
-
-pub enum Msg {
-    DrawerClose,
-    EndDrawerClose,
-    StateChange,
-}
+pub struct PwtScaffold {}
 
 impl Component for PwtScaffold {
-    type Message = Msg;
+    type Message = ();
     type Properties = Scaffold;
 
-    fn create(ctx: &Context<Self>) -> Self {
-        let props = ctx.props();
-
-        let controller = props
-            .controller
-            .clone()
-            .unwrap_or(ScaffoldController::new());
-
-        let _state_observer = controller
-            .state
-            .add_listener(ctx.link().callback(|_| Msg::StateChange));
-
-        Self {
-            controller,
-            _state_observer,
-        }
-    }
-
-    fn update(&mut self, _ctx: &Context<Self>, msg: Self::Message) -> bool {
-        match msg {
-            Msg::StateChange => true,
-            Msg::DrawerClose => {
-                self.controller.show_drawer(false);
-                true
-            }
-            Msg::EndDrawerClose => {
-                self.controller.show_end_drawer(false);
-                true
-            }
-        }
+    fn create(_ctx: &Context<Self>) -> Self {
+        Self {}
     }
 
     fn view(&self, ctx: &Context<Self>) -> Html {
@@ -168,42 +99,14 @@ impl Component for PwtScaffold {
             .with_optional_child(props.body.clone())
             .with_optional_child(positioned_fab);
 
-        let show_drawer = self.controller.state.read().show_drawer;
-        let drawer = match (show_drawer, props.drawer.clone()) {
-            (true, Some(drawer)) => Some(
-                SideDialog::new()
-                    .direction(SideDialogLocation::Left)
-                    .on_close(ctx.link().callback(|_| Msg::DrawerClose))
-                    .with_child(drawer),
-            ),
-            _ => None,
-        };
 
-        let show_end_drawer = self.controller.state.read().show_end_drawer;
-        let end_drawer = match (show_end_drawer, props.end_drawer.clone()) {
-            (true, Some(end_drawer)) => Some(
-                SideDialog::new()
-                    .direction(SideDialogLocation::Right)
-                    .on_close(ctx.link().callback(|_| Msg::EndDrawerClose))
-                    .with_child(end_drawer),
-            ),
-            _ => None,
-        };
-
-        let scaffold = Column::new()
+        Column::new()
             .class("pwt-viewport")
             .class("pwt-position-relative")
             .with_optional_child(props.application_bar.clone())
             .with_child(body)
             .with_optional_child(props.navigation_bar.clone())
-            .with_optional_child(drawer)
-            .with_optional_child(end_drawer);
-
-        html! {
-            <ContextProvider<ScaffoldController> context={self.controller.clone()}>
-                {scaffold}
-            </ContextProvider<ScaffoldController>>
-        }
+            .into()
     }
 }
 

@@ -35,7 +35,7 @@ mod side_dialog;
 pub use side_dialog::{SideDialog, PwtSideDialog, SideDialogLocation};
 
 mod scaffold;
-pub use scaffold::{Scaffold, PwtScaffold, ScaffoldController, ScaffoldContextExt};
+pub use scaffold::{Scaffold, PwtScaffold};
 
 mod slidable;
 pub use slidable::{
@@ -65,6 +65,4 @@ pub mod prelude {
     pub use crate::prelude::*;
 
     pub use crate::touch::SnackBarContextExt;
-    pub use crate::touch::ScaffoldContextExt;
-
 }

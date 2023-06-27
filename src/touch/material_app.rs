@@ -17,10 +17,11 @@ use crate::state::{NavigationContainer, SharedState, SharedStateObserver};
 use crate::touch::{SnackBarController, SnackBarManager};
 use crate::widget::{Container, ThemeLoader};
 
-use super::PageStack;
+use super::{PageStack, SideDialog, SideDialogLocation};
 
 // Messages sent from the [PageController].
 pub enum PageControllerMsg {
+    Dialog(SideDialog), // Show modal dialog
     Push(VNode),
     Pop,
     LastPage,
@@ -48,6 +49,49 @@ impl PageController {
             .write()
             .push(PageControllerMsg::Push(page.into()));
     }
+
+    /// Show a modal dialog on top of the page stack.
+    ///
+    /// Used to show drawers and bottom sheets.
+    pub fn show_side_dialog(&self, dialog: impl Into<SideDialog>) {
+        self.state
+            .write()
+            .push(PageControllerMsg::Dialog(dialog.into()));
+    }
+
+    /// Show the drawer on the left side of the body.
+    ///
+    /// This is just a convenient wrapper for [Self::show_side_dialog].
+    pub fn show_drawer(&self, drawer: impl Into<VNode>) {
+        self.show_side_dialog(
+            SideDialog::new()
+                .direction(SideDialogLocation::Left)
+                .with_child(drawer.into())
+        );
+    }
+
+    /// Show the drawer on the right side of the body.
+    ///
+    /// This is just a convenient wrapper for [Self::show_side_dialog].
+    pub fn show_end_drawer(&self, drawer: impl Into<VNode>) {
+        self.show_side_dialog(
+            SideDialog::new()
+                .direction(SideDialogLocation::Right)
+                .with_child(drawer.into())
+        );
+    }
+
+    /// Show a modal bottom sheet.
+    ///
+    /// This is just a convenient wrapper for [Self::show_side_dialog].
+    pub fn show_modal_bottom_sheet(&self, bottom_sheet: impl Into<VNode>) {
+        self.show_side_dialog(
+            SideDialog::new()
+                .direction(SideDialogLocation::Bottom)
+                .with_child(bottom_sheet.into())
+        );
+    }
+
 
     /// Pop one anonymous page from the page stack.
     ///
@@ -160,6 +204,7 @@ impl<R: Routable + 'static> MaterialApp<R> {
 pub enum Msg {
     PageController,
     HistoryChange,
+    CloseDialog,
 }
 
 #[doc(hidden)]
@@ -168,13 +213,14 @@ pub struct PwtMaterialApp<R> {
     page_controller: PageController,
     _page_controller_observer: SharedStateObserver<Vec<PageControllerMsg>>,
     page_stack: Vec<Html>,
+    dialog: Option<Html>,
     history: AnyHistory,
     _history_listener: HistoryListener,
     phantom: PhantomData<R>,
 }
 
 impl<R: Routable + 'static> PwtMaterialApp<R> {
-    fn handle_page_controller_messages(&mut self, _ctx: &Context<Self>) {
+    fn handle_page_controller_messages(&mut self, ctx: &Context<Self>) {
         let count = self.page_controller.state.read().len();
         if count == 0 {
             return;
@@ -184,6 +230,17 @@ impl<R: Routable + 'static> PwtMaterialApp<R> {
 
         for msg in list.into_iter() {
             match msg {
+                PageControllerMsg::Dialog(dialog) => {
+                    log::info!("SHOW DIALOG");
+                    let on_close = dialog.on_close.clone();
+                    let on_close = ctx.link().callback(move |_| {
+                        if let Some(on_close) = &on_close {
+                            on_close.emit(());
+                        }
+                        Msg::CloseDialog
+                    });
+                    self.dialog = Some(dialog.on_close(on_close).into());
+                }
                 PageControllerMsg::Push(page) => {
                     //self.history.push("/testhistory");
                     self.page_stack.push(page);
@@ -238,6 +295,7 @@ impl<R: Routable + 'static> Component for PwtMaterialApp<R> {
             page_controller,
             _page_controller_observer,
             page_stack,
+            dialog: None,
             history,
             _history_listener,
             phantom: PhantomData,
@@ -255,7 +313,11 @@ impl<R: Routable + 'static> Component for PwtMaterialApp<R> {
             }
             Msg::HistoryChange => {
                 log::info!("HISTORY CHANGE");
-                self.page_stack.clear(); // fixme: only remove anonymous pages
+                self.page_stack.clear();
+                true
+            }
+            Msg::CloseDialog => {
+                self.dialog = None;
                 true
             }
         }
@@ -283,7 +345,8 @@ impl<R: Routable + 'static> Component for PwtMaterialApp<R> {
                 SnackBarManager::new()
                     .controller(self.snackbar_controller.clone())
                     .bottom_offset(props.snackbar_bottom_offset),
-            );
+            )
+            .with_optional_child(self.dialog.clone());
 
         html! {
             <Router history={self.history.clone()}>
