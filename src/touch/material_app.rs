@@ -334,6 +334,9 @@ impl<R: Routable + 'static> Component for PwtMaterialApp<R> {
             Msg::HistoryChange => {
                 log::info!("HISTORY CHANGE");
                 self.page_stack.clear();
+                if let Some((controller, _)) = &self.dialog {
+                    controller.close_dialog();
+                }
                 true
             }
             Msg::CloseDialog => {
