@@ -388,7 +388,7 @@ impl Component for PwtSideDialog {
                     .children(props.children.clone()),
             );
 
-        GestureDetector::new(dialog)
+        let view = GestureDetector::new(dialog)
             .on_tap({
                 let slider_ref = self.slider_ref.clone();
                 let link = ctx.link().clone();
@@ -413,8 +413,13 @@ impl Component for PwtSideDialog {
             .on_drag_start(ctx.link().callback(Msg::DragStart))
             .on_drag_end(ctx.link().callback(Msg::DragEnd))
             .on_drag_update(ctx.link().callback(Msg::Drag))
-            .on_swipe(ctx.link().callback(Msg::Swipe))
-            .into()
+            .on_swipe(ctx.link().callback(Msg::Swipe));
+
+        html!{
+            <ContextProvider<SideDialogController> context={self.controller.clone()}>
+            {view}
+            </ContextProvider<SideDialogController>>
+        }
     }
 
     fn rendered(&mut self, ctx: &Context<Self>, first_render: bool) {
