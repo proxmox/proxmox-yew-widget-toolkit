@@ -4,9 +4,11 @@ use yew::html::IntoPropValue;
 use yew::virtual_dom::{Key, VComp, VNode};
 
 use crate::prelude::*;
-use crate::widget::{Column, Row};
+use crate::widget::{Column, Row, ActionIcon};
 
 use pwt_macros::builder;
+
+use super::PageController;
 
 /// Material Design application bar.
 #[derive(Properties, Clone, PartialEq)]
@@ -16,6 +18,8 @@ pub struct ApplicationBar {
     pub key: Option<Key>,
 
     /// Leading widget placed before the title.
+    ///
+    /// By default, we add a back button if the context provides a [PageContoller].
     pub leading: Option<Html>,
 
     /// Application title.
@@ -98,14 +102,18 @@ impl ApplicationBar {
 }
 
 #[doc(hidden)]
-pub struct PwtApplicationBar {}
+pub struct PwtApplicationBar {
+    page_controller: Option<PageController>,
+}
 
 impl Component for PwtApplicationBar {
     type Message = ();
     type Properties = ApplicationBar;
 
-    fn create(_ctx: &yew::Context<Self>) -> Self {
-        Self {}
+    fn create(ctx: &yew::Context<Self>) -> Self {
+        let page_controller =  ctx.link().context::<PageController>(Callback::from(|_| {})).map(|(c, _)| c);
+
+        Self { page_controller}
     }
 
     fn view(&self, ctx: &yew::Context<Self>) -> yew::Html {
@@ -117,12 +125,20 @@ impl Component for PwtApplicationBar {
             actions.add_children(props.actions.clone())
         }
 
+        let leading = props.leading.clone().or_else(|| {
+            if self.page_controller.is_some() {
+                Some(create_back_button(self.page_controller.clone()).into())
+            } else {
+                None
+            }
+        });
+
         let row1 = Row::new()
             .attribute("aria-label", props.title.clone())
             .class("pwt-align-items-center")
             .padding(2)
             .gap(2)
-            .with_optional_child(props.leading.clone())
+            .with_optional_child(leading)
             .with_child(html! {
                 <span class="pwt-flex-fill pwt-font-headline-small pwt-text-truncate">{props.title.clone()}</span>
             })
@@ -146,4 +162,15 @@ impl Into<VNode> for ApplicationBar {
         let comp = VComp::new::<PwtApplicationBar>(Rc::new(self), key);
         VNode::from(comp)
     }
+}
+
+fn create_back_button(page_controller: Option<PageController>) -> ActionIcon {
+    ActionIcon::new("fa fa-lg fa-arrow-left").on_activate({
+        let page_controller = page_controller.clone();
+        move |_| {
+            if let Some(page_controller) = &page_controller {
+                page_controller.last_page();
+            }
+        }
+    })
 }
