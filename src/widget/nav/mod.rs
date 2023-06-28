@@ -35,14 +35,9 @@ pub struct MenuItem {
 
     /// Activation callback.
     ///
-    /// Emitted when the item is tapped, clicked or activated by keyboard.
-    ///
-    /// # Note
-    ///
-    /// This is not emitted when the active item is changed using the selection.
+    /// Emitted when the item is activated.
     #[builder_cb(IntoEventCallback, into_event_callback, ())]
     pub on_activate: Option<Callback<()>>,
-
 }
 
 impl MenuItem {
@@ -63,8 +58,6 @@ impl MenuItem {
     pub fn set_key(&mut self, key: impl IntoOptionalKey) {
         self.key = key.into_optional_key();
     }
-
-
 }
 
 #[derive(Clone, PartialEq)]
@@ -73,7 +66,7 @@ pub enum MenuEntry {
     Component(VNode),
 }
 
-impl From<MenuItem> for MenuEntry  {
+impl From<MenuItem> for MenuEntry {
     fn from(item: MenuItem) -> Self {
         Self::Item(item)
     }
@@ -106,7 +99,6 @@ impl Menu {
     }
 
     pub fn add_component(&mut self, component: impl Into<VNode>) {
-        self.children
-            .push(MenuEntry::Component(component.into()))
+        self.children.push(MenuEntry::Component(component.into()))
     }
 }

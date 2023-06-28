@@ -170,13 +170,9 @@ impl PwtNavigationDrawer {
         let onclick = Callback::from({
             let link = ctx.link().clone();
             let key = item.key.clone();
-            let on_activate = item.on_activate.clone();
             move |_event: MouseEvent| {
                 if key.is_some() {
                     link.send_message(Msg::Select(key.clone(), true, true));
-                }
-                if let Some(on_acticate) = &on_activate {
-                    on_acticate.emit(());
                 }
             }
         });
@@ -188,7 +184,7 @@ impl PwtNavigationDrawer {
                 event.stop_propagation();
                 if let Some(key) = &key {
                     link.send_message(Msg::MenuToggle(key.clone()));
-                 }
+                }
             }
         });
 
@@ -375,6 +371,18 @@ impl PwtNavigationDrawer {
 
         selection
     }
+
+    fn emit_item_activate(&mut self, key: &Key, ctx: &Context<Self>) {
+        self.find_selectable_entry(ctx, key)
+            .map(|entry| match entry {
+                MenuEntry::Item(item) => {
+                    if let Some(on_acticate) = &item.on_activate {
+                        on_acticate.emit(());
+                    }
+                }
+                MenuEntry::Component(_) => {}
+            });
+    }
 }
 
 fn get_active_or_default(props: &NavigationDrawer, active: &Option<Key>) -> Option<Key> {
@@ -457,6 +465,10 @@ impl Component for PwtNavigationDrawer {
                     ctx.link().push_relative_route(key.as_deref().unwrap_or(""));
                 }
 
+                if let Some(key) = &key {
+                    self.emit_item_activate(&key, ctx);
+                }
+
                 if let Some(on_select) = &props.on_select {
                     on_select.emit(key);
                 }
@@ -474,6 +486,9 @@ impl Component for PwtNavigationDrawer {
 
                 if key == self.active {
                     if let Some(key) = key {
+                        if update_route {
+                            self.emit_item_activate(&key, ctx);
+                        }
                         if toggle {
                             let entry =
                                 *self.menu_states.entry(key.clone()).or_insert_with(|| true);
@@ -483,13 +498,12 @@ impl Component for PwtNavigationDrawer {
                     return true;
                 }
 
-                // log::info!("SELECT {:?}", key);
-
                 // set active to avoid Msg::SelectionChange
                 self.active = key.clone();
 
                 if let Some(key) = &key {
                     self.selection.select(key.clone());
+                    self.emit_item_activate(key, ctx);
                 } else {
                     self.selection.clear();
                 }
