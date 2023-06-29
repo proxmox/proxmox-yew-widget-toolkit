@@ -188,6 +188,10 @@ pub struct MaterialApp {
 
     /// Page render function.
     pub render_route: PageRenderFn,
+
+    /// Basename passed to the [Router]
+    #[builder(IntoPropValue, into_prop_value)]
+    pub basename: Option<AttrValue>,
 }
 
 impl MaterialApp {
@@ -365,7 +369,7 @@ impl Component for PwtMaterialApp {
             .with_optional_child(self.dialog.as_ref().map(|(_, dialog)| dialog.clone()));
 
         html! {
-            <Router history={self.history.clone()}>
+            <Router history={self.history.clone()} basename={props.basename.clone()}>
                 <ContextProvider<SnackBarController> context={self.snackbar_controller.clone()}>
                     <ContextProvider<PageController> context={self.page_controller.clone()}>
                     { ThemeLoader::new(NavigationContainer::new().with_child(app))}
