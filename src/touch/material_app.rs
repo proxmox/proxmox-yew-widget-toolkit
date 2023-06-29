@@ -1,5 +1,5 @@
-use std::marker::PhantomData;
 use std::rc::Rc;
+use std::borrow::Cow;
 
 use derivative::Derivative;
 
@@ -7,7 +7,6 @@ use gloo_history::HistoryListener;
 use yew::html::IntoPropValue;
 use yew::virtual_dom::{Key, VComp, VNode};
 use yew_router::history::{AnyHistory, HashHistory};
-use yew_router::Routable;
 use yew_router::{history::History, Router};
 
 use pwt_macros::builder;
@@ -150,7 +149,8 @@ impl PageController {
 ///    Network,
 /// }
 ///
-/// fn switch(route: &Route) -> Vec<Html> {
+/// fn switch(path: &str) -> Vec<Html> {
+///    let route = R::recognize(&path);
 ///    match route {
 ///        Route::Home => vec![
 ///             Scaffold::with_title("Home").into(),
@@ -174,7 +174,7 @@ impl PageController {
 ///
 #[derive(Properties, Clone, PartialEq)]
 #[builder]
-pub struct MaterialApp<R: Routable> {
+pub struct MaterialApp {
     /// The yew component key.
     pub key: Option<Key>,
 
@@ -187,14 +187,14 @@ pub struct MaterialApp<R: Routable> {
     pub snackbar_bottom_offset: Option<u32>,
 
     /// Page render function.
-    pub render_route: PageRenderFn<R>,
+    pub render_route: PageRenderFn,
 }
 
-impl<R: Routable + 'static> MaterialApp<R> {
+impl MaterialApp {
     /// Create a new instance.
     ///
     /// The 'render' functions maps from routes to html pages.
-    pub fn new(render: impl Into<PageRenderFn<R>>) -> Self {
+    pub fn new(render: impl Into<PageRenderFn>) -> Self {
         yew::props!(Self {
             render_route: render.into()
         })
@@ -214,7 +214,7 @@ pub enum Msg {
 }
 
 #[doc(hidden)]
-pub struct PwtMaterialApp<R> {
+pub struct PwtMaterialApp {
     snackbar_controller: SnackBarController,
     page_controller: PageController,
     _page_controller_observer: SharedStateObserver<Vec<PageControllerMsg>>,
@@ -222,10 +222,9 @@ pub struct PwtMaterialApp<R> {
     dialog: Option<(SideDialogController, Html)>,
     history: AnyHistory,
     _history_listener: HistoryListener,
-    phantom: PhantomData<R>,
 }
 
-impl<R: Routable + 'static> PwtMaterialApp<R> {
+impl PwtMaterialApp {
     fn handle_page_controller_messages(&mut self, ctx: &Context<Self>) {
         let count = self.page_controller.state.read().len();
         if count == 0 {
@@ -250,10 +249,7 @@ impl<R: Routable + 'static> PwtMaterialApp<R> {
                     });
                     self.dialog = Some((
                         controller.clone(),
-                        dialog
-                            .controller(controller)
-                            .on_close(on_close)
-                            .into(),
+                        dialog.controller(controller).on_close(on_close).into(),
                     ));
                 }
                 PageControllerMsg::CloseDialog => {
@@ -280,9 +276,9 @@ impl<R: Routable + 'static> PwtMaterialApp<R> {
     }
 }
 
-impl<R: Routable + 'static> Component for PwtMaterialApp<R> {
+impl Component for PwtMaterialApp {
     type Message = Msg;
-    type Properties = MaterialApp<R>;
+    type Properties = MaterialApp;
 
     fn create(ctx: &Context<Self>) -> Self {
         let props = ctx.props();
@@ -318,7 +314,6 @@ impl<R: Routable + 'static> Component for PwtMaterialApp<R> {
             dialog: None,
             history,
             _history_listener,
-            phantom: PhantomData,
         };
 
         me.handle_page_controller_messages(ctx);
@@ -332,7 +327,7 @@ impl<R: Routable + 'static> Component for PwtMaterialApp<R> {
                 true
             }
             Msg::HistoryChange => {
-                log::info!("HISTORY CHANGE");
+                //log::info!("HISTORY CHANGE");
                 self.page_stack.clear();
                 if let Some((controller, _)) = &self.dialog {
                     controller.close_dialog();
@@ -349,15 +344,13 @@ impl<R: Routable + 'static> Component for PwtMaterialApp<R> {
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
 
+        let basename: Option<AttrValue> = None;
         let location = self.history.location();
-        let path = location.path();
-        let route = R::recognize(path);
+        let path = strip_basename(&basename, location.path().into());
 
         let mut page_stack = Vec::new();
 
-        if let Some(route) = route {
-            page_stack.extend(props.render_route.apply(&route));
-        }
+        page_stack.extend(props.render_route.apply(&path));
 
         page_stack.extend(self.page_stack.clone());
 
@@ -383,37 +376,56 @@ impl<R: Routable + 'static> Component for PwtMaterialApp<R> {
     }
 }
 
-impl<R: Routable + 'static> Into<VNode> for MaterialApp<R> {
+impl Into<VNode> for MaterialApp {
     fn into(self) -> VNode {
         let key = self.key.clone();
-        let comp = VComp::new::<PwtMaterialApp<R>>(Rc::new(self), key);
+        let comp = VComp::new::<PwtMaterialApp>(Rc::new(self), key);
         VNode::from(comp)
     }
 }
 
-/// A [PageRenderFn] function is a callback that transforms a [Route] into
+/// A [PageRenderFn] function is a callback that transforms a path into
 /// a stack of [Html] pages.
 ///
 /// Wraps `Rc` around `Fn` so it can be passed as a prop.
 #[derive(Derivative)]
 #[derivative(Clone(bound = ""), PartialEq(bound = ""))]
-pub struct PageRenderFn<R: Routable>(
-    #[derivative(PartialEq(compare_with = "Rc::ptr_eq"))] Rc<dyn Fn(&R) -> Vec<Html>>,
+pub struct PageRenderFn (
+    #[derivative(PartialEq(compare_with = "Rc::ptr_eq"))] Rc<dyn Fn(&str) -> Vec<Html>>,
 );
 
-impl<R: Routable> PageRenderFn<R> {
+impl PageRenderFn {
     /// Creates a new [`PageRenderFn`]
     pub fn new(renderer: impl Into<Self>) -> Self {
         renderer.into()
     }
     /// Apply the render function
-    pub fn apply(&self, route: &R) -> Vec<Html> {
-        (self.0)(route)
+    pub fn apply(&self, path: &str) -> Vec<Html> {
+        (self.0)(path)
     }
 }
 
-impl<R: Routable, F: 'static + Fn(&R) -> Vec<Html>> From<F> for PageRenderFn<R> {
+impl<F: 'static + Fn(&str) -> Vec<Html>> From<F> for PageRenderFn {
     fn from(renderer: F) -> Self {
         PageRenderFn(Rc::new(renderer))
+    }
+}
+
+// copied from yew_router::Router, because its not acessible from outside
+fn strip_basename<'a>(basename: &Option<AttrValue>, path: Cow<'a, str>) -> Cow<'a, str> {
+    match basename.as_deref() {
+        Some(m) => {
+            let mut path = path
+                .strip_prefix(m)
+                .map(|m| Cow::from(m.to_owned()))
+                .unwrap_or(path);
+
+            if !path.starts_with('/') {
+                path = format!("/{m}").into();
+            }
+
+            path
+        }
+        None => path,
     }
 }
