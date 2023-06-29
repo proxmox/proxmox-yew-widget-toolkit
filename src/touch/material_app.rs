@@ -1,5 +1,5 @@
-use std::rc::Rc;
 use std::borrow::Cow;
+use std::rc::Rc;
 
 use derivative::Derivative;
 
@@ -192,6 +192,10 @@ pub struct MaterialApp {
     /// Basename passed to the [Router]
     #[builder(IntoPropValue, into_prop_value)]
     pub basename: Option<AttrValue>,
+
+    /// History used for the [Router]
+    #[builder(IntoPropValue, into_prop_value)]
+    pub history: Option<AnyHistory>,
 }
 
 impl MaterialApp {
@@ -290,7 +294,7 @@ impl Component for PwtMaterialApp {
         static THEMES: &'static [&'static str] = &["Material"];
         crate::state::set_available_themes(THEMES);
 
-        let history = AnyHistory::from(HashHistory::new());
+        let history = props.history.clone().unwrap_or(AnyHistory::from(HashHistory::new()));
 
         let snackbar_controller = props
             .snackbar_controller
@@ -394,7 +398,7 @@ impl Into<VNode> for MaterialApp {
 /// Wraps `Rc` around `Fn` so it can be passed as a prop.
 #[derive(Derivative)]
 #[derivative(Clone(bound = ""), PartialEq(bound = ""))]
-pub struct PageRenderFn (
+pub struct PageRenderFn(
     #[derivative(PartialEq(compare_with = "Rc::ptr_eq"))] Rc<dyn Fn(&str) -> Vec<Html>>,
 );
 
