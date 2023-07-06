@@ -150,7 +150,7 @@ impl PageController {
 /// }
 ///
 /// fn switch(path: &str) -> Vec<Html> {
-///    let route = R::recognize(&path);
+///    let route = Route::recognize(&path).unwrap();
 ///    match route {
 ///        Route::Home => vec![
 ///             Scaffold::with_title("Home").into(),
