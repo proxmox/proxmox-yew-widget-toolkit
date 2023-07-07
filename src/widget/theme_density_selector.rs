@@ -138,7 +138,7 @@ impl Component for PwtThemeDensitySelector {
     fn update(&mut self, _ctx: &Context<Self>, msg: Self::Message) -> bool {
         match msg {
             Msg::SetThemeDensity(density) => {
-                log::info!("SET DENSITY {density}");
+                //log::info!("SET DENSITY {density}");
                 self.set_density(density);
                 true
             }
@@ -154,14 +154,6 @@ impl Component for PwtThemeDensitySelector {
             .items(self.items.clone())
             .on_change(ctx.link().callback(Msg::SetThemeDensity))
             .into()
-    }
-
-    fn rendered(&mut self, ctx: &Context<Self>, first_render: bool) {
-        if first_render {
-            if let Some(density) = get_density()  {
-                ctx.link().send_message(Msg::SetThemeDensity(density.to_string()));
-            }
-        }
     }
 }
 
