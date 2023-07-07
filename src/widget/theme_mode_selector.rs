@@ -7,6 +7,7 @@ use crate::prelude::*;
 use crate::state::{Theme, ThemeMode};
 use crate::widget::Button;
 
+/// Round icon button to select light/dark theme.
 #[derive(Clone, PartialEq, Properties)]
 pub struct ThemeModeSelector {
     #[prop_or_default]
@@ -30,6 +31,7 @@ impl ThemeModeSelector {
     }
 }
 
+#[doc(hidden)]
 pub struct PwtThemeModeSelector {
     theme: ThemeMode,
 }
