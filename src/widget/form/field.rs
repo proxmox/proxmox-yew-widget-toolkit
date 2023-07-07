@@ -230,7 +230,7 @@ fn create_field_validation_cb(props: Field) -> ValidateFn<Value> {
             };
             if let Some(min) = props.min {
                 if value_f64 < min {
-                    return Err(format_err!("value must be greate than or equal to '{}'", min));
+                    return Err(format_err!("value must be greater than or equal to '{}'", min));
                 }
             }
             if let Some(max) = props.max {
