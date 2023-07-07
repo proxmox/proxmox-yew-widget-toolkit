@@ -92,7 +92,7 @@ fn get_density() -> Option<&'static str> {
     match spacer.as_str() {
         "3px" => Some("High"),
         "5px" => Some("Medium"),
-        "10px" => Some("Desktop"),
+        "10px" => Some("Touch"),
         _ => None,
     }
 }
