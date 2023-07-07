@@ -91,6 +91,9 @@ pub use tab::*;
 mod theme_loader;
 pub use theme_loader::ThemeLoader;
 
+mod theme_density_selector;
+pub use theme_density_selector::{PwtThemeDensitySelector, ThemeDensitySelector};
+
 mod theme_mode_selector;
 pub use theme_mode_selector::ThemeModeSelector;
 
