@@ -4,6 +4,7 @@ use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 
 use crate::prelude::*;
+use crate::state::{Theme, ThemeDensity};
 use crate::widget::form::Combobox;
 
 /// Combobox for selecting the theme density.
@@ -32,12 +33,12 @@ impl ThemeDensitySelector {
 
 #[doc(hidden)]
 pub struct PwtThemeDensitySelector {
-    density: String,
+    density: ThemeDensity,
     items: Rc<Vec<AttrValue>>,
 }
 
 pub enum Msg {
-    SetThemeDensity(String),
+    SetThemeDensity(ThemeDensity),
 }
 
 fn get_document_root() -> Option<web_sys::Element> {
@@ -54,52 +55,9 @@ fn get_document_root() -> Option<web_sys::Element> {
     document.document_element()
 }
 
-fn get_density() -> Option<&'static str> {
-    let root = match get_document_root() {
-        Some(root) => root,
-        None => return None,
-    };
-
-    let class_list = root.class_list();
-
-    if class_list.contains("pwt-density-high") {
-        return Some("High");
-    }
-    if class_list.contains("pwt-density-medium") {
-        return Some("Medium");
-    }
-    if class_list.contains("pwt-density-touch") {
-        return Some("Touch");
-    }
-
-    let window = match web_sys::window() {
-        Some(window) => window,
-        None => return None,
-    };
-
-    let style = match window.get_computed_style(&root) {
-        Ok(Some(style)) => style,
-        _ => return None,
-    };
-
-    let spacer = match style.get_property_value("--pwt-spacer-base-width") {
-        Ok(spacer) => spacer,
-        _ => return None,
-    };
-
-    log::info!("SPACER WIDTH {spacer}");
-
-    match spacer.as_str() {
-        "3px" => Some("High"),
-        "5px" => Some("Medium"),
-        "10px" => Some("Touch"),
-        _ => None,
-    }
-}
-
 impl PwtThemeDensitySelector {
+    fn set_density(&self, density: ThemeDensity) {
 
-    fn set_density(&self, density: String) {
         let root = match get_document_root() {
             Some(root) => root,
             None => return,
@@ -112,10 +70,11 @@ impl PwtThemeDensitySelector {
             "pwt-density-medium",
             "pwt-density-touch",
         );
-        let _ = match density.as_str() {
-            "High" => class_list.add_1("pwt-density-high"),
-            "Touch" => class_list.add_1("pwt-density-touch"),
-            _ => class_list.add_1("pwt-density-medium"),
+
+        let _ = match density {
+            ThemeDensity::High => class_list.add_1("pwt-density-high"),
+            ThemeDensity::Touch => class_list.add_1("pwt-density-touch"),
+            ThemeDensity::Medium => class_list.add_1("pwt-density-medium"),
         };
     }
 }
@@ -125,12 +84,13 @@ impl Component for PwtThemeDensitySelector {
     type Properties = ThemeDensitySelector;
 
     fn create(_ctx: &Context<Self>) -> Self {
+        let theme = Theme::load();
         Self {
-            density: get_density().unwrap_or("Medium").into(),
+            density: theme.density,
             items: Rc::new(vec![
-                AttrValue::Static("High"),
-                AttrValue::Static("Medium"),
-                AttrValue::Static("Touch"),
+                AttrValue::from(ThemeDensity::High.to_string()),
+                AttrValue::from(ThemeDensity::Medium.to_string()),
+                AttrValue::from(ThemeDensity::Touch.to_string()),
             ]),
         }
     }
@@ -138,8 +98,10 @@ impl Component for PwtThemeDensitySelector {
     fn update(&mut self, _ctx: &Context<Self>, msg: Self::Message) -> bool {
         match msg {
             Msg::SetThemeDensity(density) => {
-                //log::info!("SET DENSITY {density}");
-                self.set_density(density);
+                if let Ok(density) = ThemeDensity::try_from(density) {
+                    let _ = Theme::store_theme_density(density);
+                    self.set_density(density);
+                }
                 true
             }
         }
@@ -150,10 +112,19 @@ impl Component for PwtThemeDensitySelector {
 
         Combobox::new()
             .class(props.class.clone())
-            .default(self.density.clone())
+            .default(self.density.to_string())
             .items(self.items.clone())
-            .on_change(ctx.link().callback(Msg::SetThemeDensity))
+            .on_change(ctx.link().callback(|density: String| {
+                let density = ThemeDensity::try_from(density.as_str()).unwrap_or_default();
+                Msg::SetThemeDensity(density)
+            }))
             .into()
+    }
+
+    fn rendered(&mut self, ctx: &Context<Self>, first_render: bool) {
+        if first_render {
+            ctx.link().send_message(Msg::SetThemeDensity(self.density));
+        }
     }
 }
 

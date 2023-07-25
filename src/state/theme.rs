@@ -1,5 +1,5 @@
-use std::rc::Rc;
 use std::cell::RefCell;
+use std::rc::Rc;
 
 use anyhow::{bail, Error};
 
@@ -11,10 +11,10 @@ use yew::prelude::*;
 
 use crate::state::local_storage;
 
-
 /// Theme mode - dark, light or auto (use system settings).
-#[derive(PartialEq, Debug, Clone, Copy)]
+#[derive(PartialEq, Debug, Default, Clone, Copy)]
 pub enum ThemeMode {
+    #[default]
     System,
     Dark,
     Light,
@@ -37,12 +37,46 @@ impl TryFrom<&str> for ThemeMode {
             "light" => ThemeMode::Light,
             "dark" => ThemeMode::Dark,
             "auto" => ThemeMode::System,
-            _ => bail!("'{}' is not a valid theme", value),
+            _ => bail!("'{}' is not a valid theme mode", value),
         })
     }
 }
 
-static mut AVAILABLE_THEMES: &'static [&'static str] = &[ "Material" ];
+/// Theme density
+#[derive(PartialEq, Debug, Default, Clone, Copy)]
+pub enum ThemeDensity {
+    /// High density theme.
+    High,
+    /// Normal spacing, suitable for desktop application.
+    #[default]
+    Medium,
+    /// Large spacing, suitable for touch devices.
+    Touch,
+}
+
+impl std::fmt::Display for ThemeDensity {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(match self {
+            ThemeDensity::High => "High",
+            ThemeDensity::Medium => "Medium",
+            ThemeDensity::Touch => "Touch",
+        })
+    }
+}
+
+impl TryFrom<&str> for ThemeDensity {
+    type Error = Error;
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        Ok(match value {
+            "High" => ThemeDensity::High,
+            "Medium" => ThemeDensity::Medium,
+            "Touch" => ThemeDensity::Touch,
+            _ => bail!("'{}' is not a valid theme density", value),
+        })
+    }
+}
+
+static mut AVAILABLE_THEMES: &'static [&'static str] = &["Material"];
 
 pub fn set_available_themes(themes: &'static [&'static str]) {
     unsafe {
@@ -51,13 +85,14 @@ pub fn set_available_themes(themes: &'static [&'static str]) {
 }
 
 pub fn get_available_themes() -> &'static [&'static str] {
-    unsafe {
-        AVAILABLE_THEMES
-    }
+    unsafe { AVAILABLE_THEMES }
 }
 
 fn get_default_theme_name() -> String {
-    get_available_themes().get(0).unwrap_or(&"Material").to_string()
+    get_available_themes()
+        .get(0)
+        .unwrap_or(&"Material")
+        .to_string()
 }
 
 /// Theme. Combines a theme name with a theme mode ([ThemeMode])
@@ -70,13 +105,15 @@ fn get_default_theme_name() -> String {
 #[derive(PartialEq, Debug, Clone)]
 pub struct Theme {
     pub mode: ThemeMode,
+    pub density: ThemeDensity,
     pub name: String,
 }
 
 impl Default for Theme {
     fn default() -> Self {
         Self {
-            mode: ThemeMode::System,
+            mode: ThemeMode::default(),
+            density: ThemeDensity::default(),
             name: String::from(get_default_theme_name()),
         }
     }
@@ -106,6 +143,12 @@ impl Theme {
             }
         }
 
+        if let Ok(Some(density)) = store.get_item("ThemeDensity") {
+            if let Ok(density) = ThemeDensity::try_from(density.as_str()) {
+                theme.density = density;
+            }
+        }
+
         if let Ok(Some(name)) = store.get_item("ThemeName") {
             theme.name = name;
         }
@@ -115,7 +158,7 @@ impl Theme {
 
     /// Load theme.
     ///
-    /// Theme names are restricted by the list of availabnle themes (see [set_available_themes]).
+    /// Theme names are restricted by the list of available themes (see [set_available_themes]).
     /// If the loaded value isn't in the list, we simply return the first
     /// value from the list.
     ///
@@ -141,7 +184,22 @@ impl Theme {
     pub fn store_theme_mode(mode: ThemeMode) -> Result<(), Error> {
         if let Some(store) = local_storage() {
             if let Err(_) = store.set_item("ThemeMode", &mode.to_string()) {
-                bail!("store: set_item failed");
+                bail!("store_them_mode: set_item failed");
+            }
+        } else {
+            bail!("no storage");
+        }
+
+        emit_theme_changed_event();
+
+        Ok(())
+    }
+
+    /// Store the theme density and emit the `pwt-theme-changed` event.
+    pub fn store_theme_density(density: ThemeDensity) -> Result<(), Error> {
+        if let Some(store) = local_storage() {
+            if let Err(_) = store.set_item("ThemeDensity", &density.to_string()) {
+                bail!("store_theme_density: set_item failed");
             }
         } else {
             bail!("no storage");
@@ -156,7 +214,7 @@ impl Theme {
     pub fn store_theme_name(name: &str) -> Result<(), Error> {
         if let Some(store) = local_storage() {
             if let Err(_) = store.set_item("ThemeName", name) {
-                bail!("store: set_item failed");
+                bail!("store_theme_name: set_item failed");
             }
         } else {
             bail!("no storage");
@@ -219,7 +277,6 @@ impl Drop for ThemeObserver {
 }
 
 impl ThemeObserver {
-
     /// Creates a new listener.
     pub fn new(on_theme_change: Callback<(Theme, bool)>) -> Self {
         let theme = Theme::load();
