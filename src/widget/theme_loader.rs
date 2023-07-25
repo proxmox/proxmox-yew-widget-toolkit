@@ -3,7 +3,7 @@ use std::rc::Rc;
 use yew::prelude::*;
 use yew::virtual_dom::{Key, VComp, VNode};
 
-use crate::state::{Theme, ThemeObserver};
+use crate::state::{Theme, ThemeDensity, ThemeObserver};
 
 #[derive(Properties, Clone, PartialEq)]
 pub struct ThemeLoader {
@@ -29,6 +29,41 @@ pub struct PwtThemeLoader {
     theme_observer: ThemeObserver,
 }
 
+fn get_document_root() -> Option<web_sys::Element> {
+    let window = match web_sys::window() {
+        Some(window) => window,
+        None => return None,
+    };
+
+    let document = match window.document() {
+        Some(document) => document,
+        None => return None,
+    };
+
+    document.document_element()
+}
+
+fn set_css_density(density: ThemeDensity) {
+    let root = match get_document_root() {
+        Some(root) => root,
+        None => return,
+    };
+
+    let class_list = root.class_list();
+
+    let _ = class_list.remove_3(
+        "pwt-density-high",
+        "pwt-density-medium",
+        "pwt-density-touch",
+    );
+
+    let _ = match density {
+        ThemeDensity::High => class_list.add_1("pwt-density-high"),
+        ThemeDensity::Touch => class_list.add_1("pwt-density-touch"),
+        ThemeDensity::Medium => class_list.add_1("pwt-density-medium"),
+    };
+}
+
 impl PwtThemeLoader {
     fn update_theme(&mut self, theme: Theme, dark_mode: bool, loaded: bool) -> bool {
         let new_css = theme
@@ -38,8 +73,12 @@ impl PwtThemeLoader {
         if self.theme_css != new_css && self.new_theme_css.is_none() {
             self.new_theme_css = Some(new_css);
             self.loadstate = LoadState::Loading;
-            true
-        } else if self.new_theme_css.is_some() && loaded {
+            return true;
+        }
+
+        set_css_density(theme.density);
+
+        if self.new_theme_css.is_some() && loaded {
             self.theme_css = self.new_theme_css.take().unwrap();
             self.loadstate = LoadState::Loaded;
             true
