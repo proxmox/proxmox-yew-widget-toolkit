@@ -47,9 +47,11 @@ impl Component for PwtThemeDensitySelector {
 
     fn create(_ctx: &Context<Self>) -> Self {
         let theme = Theme::load();
+
         Self {
             density: theme.density,
             items: Rc::new(vec![
+                AttrValue::from(ThemeDensity::Auto.to_string()),
                 AttrValue::from(ThemeDensity::High.to_string()),
                 AttrValue::from(ThemeDensity::Medium.to_string()),
                 AttrValue::from(ThemeDensity::Touch.to_string()),

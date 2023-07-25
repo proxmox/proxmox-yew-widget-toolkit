@@ -57,18 +57,17 @@ fn set_css_density(density: ThemeDensity) {
         "pwt-density-touch",
     );
 
-    let _ = match density {
-        ThemeDensity::High => class_list.add_1("pwt-density-high"),
-        ThemeDensity::Touch => class_list.add_1("pwt-density-touch"),
-        ThemeDensity::Medium => class_list.add_1("pwt-density-medium"),
+    match density {
+        ThemeDensity::High => { let _ = class_list.add_1("pwt-density-high"); },
+        ThemeDensity::Touch => { let _ = class_list.add_1("pwt-density-touch"); },
+        ThemeDensity::Medium => { let _ = class_list.add_1("pwt-density-medium"); },
+        ThemeDensity::Auto => { /* do nothing */},
     };
 }
 
 impl PwtThemeLoader {
     fn update_theme(&mut self, theme: Theme, dark_mode: bool, loaded: bool) -> bool {
-        let new_css = theme
-            .get_css_filename(dark_mode)
-            .to_string();
+        let new_css = theme.get_css_filename(dark_mode).to_string();
 
         if self.theme_css != new_css && self.new_theme_css.is_none() {
             self.new_theme_css = Some(new_css);
@@ -101,12 +100,10 @@ impl Component for PwtThemeLoader {
     type Properties = ThemeLoader;
 
     fn create(ctx: &Context<Self>) -> Self {
-        let theme_observer = ThemeObserver::new(
-            ctx.link().callback(Msg::ThemeChanged)
-        );
+        let theme_observer = ThemeObserver::new(ctx.link().callback(Msg::ThemeChanged));
 
         let theme = theme_observer.theme();
-        let dark_mode =  theme_observer.dark_mode();
+        let dark_mode = theme_observer.dark_mode();
 
         Self {
             theme_observer,
@@ -118,16 +115,12 @@ impl Component for PwtThemeLoader {
 
     fn update(&mut self, _ctx: &Context<Self>, msg: Self::Message) -> bool {
         match msg {
-            Msg::Loaded => {
-                self.update_theme(
-                    self.theme_observer.theme(),
-                    self.theme_observer.dark_mode(),
-                    true,
-                )
-            }
-            Msg::ThemeChanged((theme, dark_mode)) => {
-                self.update_theme(theme, dark_mode, false)
-            }
+            Msg::Loaded => self.update_theme(
+                self.theme_observer.theme(),
+                self.theme_observer.dark_mode(),
+                true,
+            ),
+            Msg::ThemeChanged((theme, dark_mode)) => self.update_theme(theme, dark_mode, false),
         }
     }
 

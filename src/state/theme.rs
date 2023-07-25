@@ -45,10 +45,12 @@ impl TryFrom<&str> for ThemeMode {
 /// Theme density
 #[derive(PartialEq, Debug, Default, Clone, Copy)]
 pub enum ThemeDensity {
+    /// Use defaults from CSS.
+    #[default]
+    Auto,
     /// High density theme.
     High,
     /// Normal spacing, suitable for desktop application.
-    #[default]
     Medium,
     /// Large spacing, suitable for touch devices.
     Touch,
@@ -60,6 +62,7 @@ impl std::fmt::Display for ThemeDensity {
             ThemeDensity::High => "High",
             ThemeDensity::Medium => "Medium",
             ThemeDensity::Touch => "Touch",
+            ThemeDensity::Auto => "Auto",
         })
     }
 }
@@ -71,6 +74,7 @@ impl TryFrom<&str> for ThemeDensity {
             "High" => ThemeDensity::High,
             "Medium" => ThemeDensity::Medium,
             "Touch" => ThemeDensity::Touch,
+            "" | "Auto" => ThemeDensity::Auto,
             _ => bail!("'{}' is not a valid theme density", value),
         })
     }
@@ -113,7 +117,7 @@ impl Default for Theme {
     fn default() -> Self {
         Self {
             mode: ThemeMode::default(),
-            density: ThemeDensity::default(),
+            density: ThemeDensity::Auto, // use default from css
             name: String::from(get_default_theme_name()),
         }
     }
