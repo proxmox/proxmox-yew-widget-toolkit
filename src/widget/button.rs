@@ -258,7 +258,7 @@ impl Component for PwtButton {
             );
             Container::new()
                 .class("pwt-button-ripple")
-                .class(self.ripple_pos.is_some().then(|| "animate"))
+                .class((self.ripple_pos.is_some() && !props.disabled).then(|| "animate"))
                 .attribute("style", style)
                 .onanimationend(ctx.link().callback(|_| Msg::AnimationEnd))
                 .into()
