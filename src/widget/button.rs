@@ -2,9 +2,13 @@ use std::borrow::Cow;
 
 use web_sys::HtmlElement;
 
+use yew::html::IntoPropValue;
 use yew::prelude::*;
 use yew::virtual_dom::{ApplyAttributeAs, Listeners, VList, VTag};
-use yew::html::IntoPropValue;
+
+use crate::props::{EventSubscriber, WidgetBuilder};
+use crate::widget::dom::IntoHtmlElement;
+use crate::widget::Container;
 
 use pwt_macros::widget;
 
@@ -131,15 +135,35 @@ impl Button {
     }
 }
 
+pub enum Msg {
+    ShowRippleAnimation(i32, i32, i32),
+    AnimationEnd,
+}
+
 #[doc(hidden)]
-pub struct PwtButton;
+pub struct PwtButton {
+    ripple_pos: Option<(i32, i32, i32)>,
+}
 
 impl Component for PwtButton {
-    type Message = ();
+    type Message = Msg;
     type Properties = Button;
 
     fn create(_ctx: &Context<Self>) -> Self {
-        Self {}
+        Self { ripple_pos: None }
+    }
+
+    fn update(&mut self, _ctx: &Context<Self>, msg: Self::Message) -> bool {
+        match msg {
+            Msg::ShowRippleAnimation(x, y, radius) => {
+                self.ripple_pos = Some((x, y, radius));
+                true
+            }
+            Msg::AnimationEnd => {
+                self.ripple_pos = None;
+                true
+            }
+        }
     }
 
     fn rendered(&mut self, ctx: &Context<Self>, first_render: bool) {
@@ -161,16 +185,28 @@ impl Component for PwtButton {
         let attr_map = attributes.get_mut_index_map();
 
         if props.disabled {
-            attr_map.insert(AttrValue::Static("disabled"), (AttrValue::Static(""), ApplyAttributeAs::Attribute));
+            attr_map.insert(
+                AttrValue::Static("disabled"),
+                (AttrValue::Static(""), ApplyAttributeAs::Attribute),
+            );
         }
         if props.autofocus {
-            attr_map.insert(AttrValue::Static("autofocus"), (AttrValue::Static(""), ApplyAttributeAs::Attribute));
+            attr_map.insert(
+                AttrValue::Static("autofocus"),
+                (AttrValue::Static(""), ApplyAttributeAs::Attribute),
+            );
         }
         if let Some(ref aria_label) = props.aria_label {
-            attr_map.insert(AttrValue::Static("aria-label"), (aria_label.clone(), ApplyAttributeAs::Attribute));
+            attr_map.insert(
+                AttrValue::Static("aria-label"),
+                (aria_label.clone(), ApplyAttributeAs::Attribute),
+            );
         }
         if let Some(ref tabindex) = props.tabindex {
-            attr_map.insert(AttrValue::Static("tabindex"), (tabindex.to_string().into(), ApplyAttributeAs::Attribute));
+            attr_map.insert(
+                AttrValue::Static("tabindex"),
+                (tabindex.to_string().into(), ApplyAttributeAs::Attribute),
+            );
         }
 
         let mut children = Vec::new();
@@ -195,9 +231,41 @@ impl Component for PwtButton {
             children.push((&*text).into());
         }
 
-        let listeners = Listeners::Pending(
-            props.listeners.listeners.clone().into_boxed_slice()
-        );
+        if let Some((x, y, radius)) = self.ripple_pos {
+            children.push({
+                let style = format!(
+                    "--pwt-ripple-x: {x}px; --pwt-ripple-y: {y}px; --pwt-ripple-radius: {radius}px;"
+                );
+                Container::new()
+                    .class("pwt-button-ripple")
+                    .attribute("style", style)
+                    .onanimationend(ctx.link().callback(|_| Msg::AnimationEnd))
+                    .into()
+            });
+        }
+
+        let mut listeners = props.listeners.listeners.clone();
+        let onclick = Callback::from({
+            let link = ctx.link().clone();
+            let node_ref = props.std_props.node_ref.clone();
+            move |event: MouseEvent| {
+                if let Some(element) = node_ref.clone().into_html_element() {
+                    let client = element.get_bounding_client_rect();
+                    let x = event.client_x() as f64 - client.x();
+                    let y = event.client_y() as f64 - client.y();
+                    let width = client.width();
+                    let height = client.height();
+                    let radius = width.max(height);
+                    link.send_message(Msg::ShowRippleAnimation(x as i32, y as i32, radius as i32));
+                }
+            }
+        });
+
+        listeners.push(Some(::std::rc::Rc::new(yew::html::onmousedown::Wrapper::new(
+            onclick,
+        ))));
+
+        let listeners = Listeners::Pending(listeners.into_boxed_slice());
 
         VTag::__new_other(
             Cow::Borrowed("button"),
@@ -206,6 +274,7 @@ impl Component for PwtButton {
             attributes,
             listeners,
             VList::with_children(children, None),
-        ).into()
+        )
+        .into()
     }
 }
