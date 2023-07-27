@@ -247,18 +247,22 @@ impl Component for PwtButton {
             children.push((&*text).into());
         }
 
-        if let Some((x, y, radius)) = self.ripple_pos {
-            children.push({
-                let style = format!(
-                    "--pwt-ripple-x: {x}px; --pwt-ripple-y: {y}px; --pwt-ripple-radius: {radius}px;"
-                );
-                Container::new()
-                    .class("pwt-button-ripple")
-                    .attribute("style", style)
-                    .onanimationend(ctx.link().callback(|_| Msg::AnimationEnd))
-                    .into()
-            });
-        }
+        let (x, y, radius) = self.ripple_pos.unwrap_or((0, 0, 0));
+
+        // Note: We always add the pwt-button-ripple container, and start animation
+        // by setting the "animate" class. Else, onclick handler is not reliable
+        // triggered (dont know why).
+        children.push({
+            let style = format!(
+                "--pwt-ripple-x: {x}px; --pwt-ripple-y: {y}px; --pwt-ripple-radius: {radius}px;"
+            );
+            Container::new()
+                .class("pwt-button-ripple")
+                .class(self.ripple_pos.is_some().then(|| "animate"))
+                .attribute("style", style)
+                .onanimationend(ctx.link().callback(|_| Msg::AnimationEnd))
+                .into()
+        });
 
         let mut listeners = props.listeners.listeners.clone();
         listeners.push(Some(self.onpointerdown.clone()));
