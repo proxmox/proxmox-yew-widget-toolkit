@@ -1,7 +1,6 @@
 use std::borrow::Cow;
 use std::rc::Rc;
 
-use wasm_bindgen::JsCast;
 use web_sys::HtmlElement;
 
 use yew::html::IntoPropValue;
@@ -138,7 +137,7 @@ impl Button {
 }
 
 pub enum Msg {
-    ShowRippleAnimation(i32, i32, i32),
+    ShowRippleAnimation(PointerEvent),
     AnimationEnd,
 }
 
@@ -153,32 +152,27 @@ impl Component for PwtButton {
     type Properties = Button;
 
     fn create(ctx: &Context<Self>) -> Self {
-        let onpointerdown = Callback::from({
-            let link = ctx.link().clone();
-            let node_ref = ctx.props().std_props.node_ref.clone();
-            move |event: PointerEvent| {
-                if let Some(element) = node_ref.clone().into_html_element() {
-                    let client = element.get_bounding_client_rect();
-                    let x = event.client_x() as f64 - client.x();
-                    let y = event.client_y() as f64 - client.y();
-                    let width = client.width();
-                    let height = client.height();
-                    let radius = width.max(height);
-                    link.send_message(Msg::ShowRippleAnimation(x as i32, y as i32, radius as i32));
-                }
-            }
-        });
-
+        let onpointerdown = ctx.link().callback(Msg::ShowRippleAnimation);
         Self {
             ripple_pos: None,
             onpointerdown: Rc::new(yew::html::onpointerdown::Wrapper::new(onpointerdown)),
         }
     }
 
-    fn update(&mut self, _ctx: &Context<Self>, msg: Self::Message) -> bool {
+    fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
+        let props = ctx.props();
+
         match msg {
-            Msg::ShowRippleAnimation(x, y, radius) => {
-                self.ripple_pos = Some((x, y, radius));
+            Msg::ShowRippleAnimation(event) => {
+                if let Some(element) = props.std_props.node_ref.clone().into_html_element() {
+                    let client = element.get_bounding_client_rect();
+                    let x = event.client_x() as f64 - client.x();
+                    let y = event.client_y() as f64 - client.y();
+                    let width = client.width();
+                    let height = client.height();
+                    let radius = width.max(height);
+                    self.ripple_pos = Some((x as i32, y as i32, radius as i32));
+                }
                 true
             }
             Msg::AnimationEnd => {
