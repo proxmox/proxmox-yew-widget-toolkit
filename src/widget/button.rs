@@ -1,5 +1,7 @@
 use std::borrow::Cow;
+use std::rc::Rc;
 
+use wasm_bindgen::JsCast;
 use web_sys::HtmlElement;
 
 use yew::html::IntoPropValue;
@@ -143,14 +145,34 @@ pub enum Msg {
 #[doc(hidden)]
 pub struct PwtButton {
     ripple_pos: Option<(i32, i32, i32)>,
+    onpointerdown: Rc<yew::html::onpointerdown::Wrapper>,
 }
 
 impl Component for PwtButton {
     type Message = Msg;
     type Properties = Button;
 
-    fn create(_ctx: &Context<Self>) -> Self {
-        Self { ripple_pos: None }
+    fn create(ctx: &Context<Self>) -> Self {
+        let onpointerdown = Callback::from({
+            let link = ctx.link().clone();
+            let node_ref = ctx.props().std_props.node_ref.clone();
+            move |event: PointerEvent| {
+                if let Some(element) = node_ref.clone().into_html_element() {
+                    let client = element.get_bounding_client_rect();
+                    let x = event.client_x() as f64 - client.x();
+                    let y = event.client_y() as f64 - client.y();
+                    let width = client.width();
+                    let height = client.height();
+                    let radius = width.max(height);
+                    link.send_message(Msg::ShowRippleAnimation(x as i32, y as i32, radius as i32));
+                }
+            }
+        });
+
+        Self {
+            ripple_pos: None,
+            onpointerdown: Rc::new(yew::html::onpointerdown::Wrapper::new(onpointerdown)),
+        }
     }
 
     fn update(&mut self, _ctx: &Context<Self>, msg: Self::Message) -> bool {
@@ -245,25 +267,7 @@ impl Component for PwtButton {
         }
 
         let mut listeners = props.listeners.listeners.clone();
-        let onclick = Callback::from({
-            let link = ctx.link().clone();
-            let node_ref = props.std_props.node_ref.clone();
-            move |event: MouseEvent| {
-                if let Some(element) = node_ref.clone().into_html_element() {
-                    let client = element.get_bounding_client_rect();
-                    let x = event.client_x() as f64 - client.x();
-                    let y = event.client_y() as f64 - client.y();
-                    let width = client.width();
-                    let height = client.height();
-                    let radius = width.max(height);
-                    link.send_message(Msg::ShowRippleAnimation(x as i32, y as i32, radius as i32));
-                }
-            }
-        });
-
-        listeners.push(Some(::std::rc::Rc::new(yew::html::onmousedown::Wrapper::new(
-            onclick,
-        ))));
+        listeners.push(Some(self.onpointerdown.clone()));
 
         let listeners = Listeners::Pending(listeners.into_boxed_slice());
 
