@@ -1,24 +1,19 @@
-use std::rc::Rc;
-
 use gloo_timers::callback::Timeout;
 
 use yew::html::IntoPropValue;
-use yew::prelude::*;
-use yew::virtual_dom::{VComp, VNode};
+use yew::virtual_dom::VNode;
 
-use crate::props::ContainerBuilder;
+use crate::prelude::*;
 use crate::widget::align::{align_to, AlignOptions, GrowDirection, Point};
+use crate::widget::Container;
 
+use pwt_macros::widget;
+
+#[widget(pwt=crate, comp=crate::widget::PwtTooltip, @element, @container)]
 #[derive(Properties, PartialEq, Clone)]
 pub struct Tooltip {
     /// The tooltip content/message.
     pub tip: Option<VNode>,
-    /// Child widgets, where the tooltip pops up.
-    pub children: Vec<VNode>,
-}
-
-impl ContainerBuilder for Tooltip {
-    fn as_children_mut(&mut self) -> &mut Vec<VNode> { &mut self.children }
 }
 
 impl Tooltip {
@@ -48,7 +43,6 @@ pub enum Msg {
 
 #[doc(hidden)]
 pub struct PwtTooltip {
-    content_ref: NodeRef,
     tooltip_ref: NodeRef,
     align_options: Option<AlignOptions>,
     show: bool,
@@ -61,7 +55,6 @@ impl Component for PwtTooltip {
 
     fn create(_ctx: &Context<Self>) -> Self {
         Self {
-            content_ref: NodeRef::default(),
             tooltip_ref: NodeRef::default(),
             show: false,
             timeout: None,
@@ -91,7 +84,7 @@ impl Component for PwtTooltip {
     }
 
     fn view(&self, ctx: &Context<Self>) -> Html {
-        let props = ctx.props();
+        let props = ctx.props().clone();
 
         let onmouseenter = ctx.link().callback(|_| Msg::Show);
         let onmouseleave = ctx.link().callback(|_| Msg::Hide);
@@ -111,18 +104,31 @@ impl Component for PwtTooltip {
             }
         });
 
+        let content = yew::props! { Container {
+            listeners: props.listeners,
+            children: props.children,
+            std_props: props.std_props,
+        }}
+        .onmouseenter(onmouseenter)
+        .onmouseleave(onmouseleave)
+        .onfocus(onfocus)
+        .onblur(onblur)
+        .onkeydown(onkeydown);
+
         let data_show = show_tooltip.then(|| "");
         html! {
             <>
-                <div ref={self.content_ref.clone()} {onmouseenter} {onmouseleave} {onfocus} {onblur} {onkeydown}>{props.children.clone()}</div>
+                {content}
                 <div role="tooltip" aria-live="polite" class="tooltip" ref={self.tooltip_ref.clone()} data-show={data_show}>
                 if let Some(tip) = &props.tip { {tip.clone()} }
-            </div>
+                </div>
             </>
         }
     }
 
-    fn rendered(&mut self, _ctx: &Context<Self>, first_render: bool) {
+    fn rendered(&mut self, ctx: &Context<Self>, first_render: bool) {
+        let props = ctx.props();
+
         if first_render {
             self.align_options = Some(
                 AlignOptions::new(Point::BottomStart, Point::TopStart, GrowDirection::None)
@@ -136,17 +142,11 @@ impl Component for PwtTooltip {
                     .offset(4.0, 4.0),
             );
         }
-        if let Some(content_node) = self.content_ref.get() {
+
+        if let Some(content_node) = props.std_props.node_ref.get() {
             if let Some(tooltip_node) = self.tooltip_ref.get() {
                 let _ = align_to(content_node, tooltip_node, self.align_options.clone());
             }
         }
-    }
-}
-
-impl Into<VNode> for Tooltip {
-    fn into(self) -> VNode {
-        let comp = VComp::new::<PwtTooltip>(Rc::new(self), None);
-        VNode::from(comp)
     }
 }
