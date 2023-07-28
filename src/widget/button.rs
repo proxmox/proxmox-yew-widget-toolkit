@@ -155,6 +155,7 @@ impl Component for PwtButton {
 
         match msg {
             Msg::ShowRippleAnimation(event) => {
+                if props.disabled { return false; }
                 if let Some(element) = props.std_props.node_ref.clone().into_html_element() {
                     let client = element.get_bounding_client_rect();
                     let x = event.client_x() as f64 - client.x();
@@ -218,7 +219,7 @@ impl Component for PwtButton {
             );
             Container::new()
                 .class("pwt-button-ripple")
-                .class((self.ripple_pos.is_some() && !props.disabled).then(|| "animate"))
+                .class(self.ripple_pos.is_some().then(|| "animate"))
                 .attribute("style", style)
                 .onanimationend(ctx.link().callback(|_| Msg::AnimationEnd))
                 .into()
