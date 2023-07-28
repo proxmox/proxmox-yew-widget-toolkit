@@ -37,8 +37,11 @@ impl Tooltip {
 
 pub enum Msg {
     RealShow,
+    RealHide,
     Show,
     Hide,
+    Enter,
+    Leave,
 }
 
 #[doc(hidden)]
@@ -46,6 +49,7 @@ pub struct PwtTooltip {
     tooltip_ref: NodeRef,
     align_options: Option<AlignOptions>,
     show: bool,
+    hover_tooltip: bool,
     timeout: Option<Timeout>,
 }
 
@@ -57,6 +61,7 @@ impl Component for PwtTooltip {
         Self {
             tooltip_ref: NodeRef::default(),
             show: false,
+            hover_tooltip: false,
             timeout: None,
             align_options: None,
         }
@@ -64,8 +69,20 @@ impl Component for PwtTooltip {
 
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
         match msg {
+            Msg::Enter => {
+                self.hover_tooltip = true;
+            }
+            Msg::Leave => {
+                self.hover_tooltip = false;
+                ctx.link().send_message(Msg::Hide);
+            }
             Msg::RealShow => {
                 self.show = true;
+            }
+            Msg::RealHide => {
+                if !self.hover_tooltip {
+                    self.show = false;
+                }
             }
             Msg::Show => {
                 let link = ctx.link().clone();
@@ -74,10 +91,10 @@ impl Component for PwtTooltip {
                 }));
             }
             Msg::Hide => {
-                if let Some(timeout) = self.timeout.take() {
-                    timeout.cancel();
-                }
-                self.show = false;
+                let link = ctx.link().clone();
+                self.timeout = Some(Timeout::new(200, move || {
+                    link.send_message(Msg::RealHide);
+                }));
             }
         }
         true
@@ -106,15 +123,17 @@ impl Component for PwtTooltip {
                     }
                 }));
 
-        let data_show = show_tooltip.then(|| "");
-        html! {
-            <>
-                {content}
-                <div role="tooltip" aria-live="polite" class="tooltip" ref={self.tooltip_ref.clone()} data-show={data_show}>
-                if let Some(tip) = &props.tip { {tip.clone()} }
-                </div>
-            </>
-        }
+        let tip = Container::new()
+            .node_ref(self.tooltip_ref.clone())
+            .attribute("role", "tooltip")
+            .attribute("aria-live", "polite")
+            .attribute("data-show", show_tooltip.then(|| ""))
+            .class("tooltip")
+            .onmouseenter(ctx.link().callback(|_| Msg::Enter))
+            .onmouseleave(ctx.link().callback(|_| Msg::Leave))
+            .with_optional_child(props.tip.clone());
+
+        html! { <>{content}{tip}</> }
     }
 
     fn rendered(&mut self, ctx: &Context<Self>, first_render: bool) {
