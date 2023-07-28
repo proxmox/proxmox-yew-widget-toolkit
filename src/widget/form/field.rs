@@ -379,8 +379,7 @@ impl Component for PwtField {
             .class(if valid.is_ok() { "is-valid" } else { "is-invalid" })
             .with_child(input);
 
-        let mut tooltip = Tooltip::new()
-            .with_child(input_container);
+        let mut tooltip = Tooltip::new(input_container);
 
         if let Err(msg) = &valid {
             tooltip.set_tip(Some(html!{msg}))

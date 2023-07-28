@@ -365,8 +365,7 @@ impl Component for PwtDropdown {
                     }))
             );
 
-        let mut tooltip = Tooltip::new()
-            .with_child(dropdown);
+        let mut tooltip = Tooltip::new(dropdown);
 
         if !self.show {
             tooltip.set_tip(props.tip.clone());
