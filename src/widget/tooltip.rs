@@ -16,8 +16,9 @@ pub struct Tooltip {
 
     /// The tooltip content/message.
     pub tip: Option<VNode>,
+
     #[prop_or_default]
-    pub rich: bool,
+    rich: bool,
 }
 
 impl Tooltip {
@@ -26,26 +27,27 @@ impl Tooltip {
     }
 
     /// Builder style method to set the tooltip
-    pub fn tip(mut self, tip: impl IntoPropValue<Option<VNode>>) -> Self {
+    pub fn tip(mut self, tip: impl IntoPropValue<Option<AttrValue>>) -> Self {
         self.set_tip(tip);
         self
     }
 
     /// Method to set the tooltip
-    pub fn set_tip(&mut self, tip: impl IntoPropValue<Option<VNode>>) {
-        self.tip = tip.into_prop_value();
+    pub fn set_tip(&mut self, tip: impl IntoPropValue<Option<AttrValue>>) {
+        self.rich = false;
+        self.tip = tip.into_prop_value().map(|tip| html!{{tip}});
     }
 
     /// Builder style method to set the tooltip (rich style)
-    pub fn rich_tip(mut self, tip: impl IntoPropValue<Option<VNode>>) -> Self {
+    pub fn rich_tip(mut self, tip: impl Into<VNode>) -> Self {
         self.set_rich_tip(tip);
         self
     }
 
     /// Method to set the tooltip (rich style)
-    pub fn set_rich_tip(&mut self, tip: impl IntoPropValue<Option<VNode>>) {
+    pub fn set_rich_tip(&mut self, tip: impl Into<VNode>) {
         self.rich = true;
-        self.tip = tip.into_prop_value();
+        self.tip = Some(tip.into());
     }
 }
 

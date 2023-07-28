@@ -8,7 +8,7 @@ use wasm_bindgen::{JsCast, UnwrapThrowExt};
 
 use yew::prelude::*;
 use yew::html::{IntoPropValue, IntoEventCallback};
-use yew::virtual_dom::{Key, VNode};
+use yew::virtual_dom::Key;
 
 use crate::prelude::*;
 use crate::widget::{Container, Input, Tooltip};
@@ -60,7 +60,7 @@ pub struct Dropdown {
     pub picker: RenderDropdownPickerFn,
 
     /// Tooltip for the input
-    pub tip: Option<VNode>,
+    pub tip: Option<AttrValue>,
 
     /// Value change callback.
     pub on_change: Option<Callback<String>>,
@@ -119,13 +119,13 @@ impl Dropdown {
     }
 
     /// Builder style method to set the tooltip
-    pub fn tip(mut self, tip: impl IntoPropValue<Option<VNode>>) -> Self {
+    pub fn tip(mut self, tip: impl IntoPropValue<Option<AttrValue>>) -> Self {
         self.set_tip(tip);
         self
     }
 
     /// Method to set the tooltip
-    pub fn set_tip(&mut self, tip: impl IntoPropValue<Option<VNode>>) {
+    pub fn set_tip(&mut self, tip: impl IntoPropValue<Option<AttrValue>>) {
         self.tip = tip.into_prop_value();
     }
 }

@@ -382,7 +382,7 @@ impl Component for PwtField {
         let mut tooltip = Tooltip::new(input_container);
 
         if let Err(msg) = &valid {
-            tooltip.set_tip(Some(html!{msg}))
+            tooltip.set_tip(msg.clone())
         }
 
         tooltip.into()

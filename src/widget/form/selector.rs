@@ -415,7 +415,7 @@ impl<S: DataStore + 'static> Component for PwtSelector<S> {
         };
 
         let tip = match &valid {
-            Err(msg) => Some(html!{msg}),
+            Err(msg) => Some(msg.to_string()),
             Ok(_) => None,
         };
 
