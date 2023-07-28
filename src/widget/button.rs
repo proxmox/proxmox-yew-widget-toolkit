@@ -1,11 +1,7 @@
-use std::borrow::Cow;
-use std::rc::Rc;
-
 use web_sys::HtmlElement;
 
 use yew::html::IntoPropValue;
 use yew::prelude::*;
-use yew::virtual_dom::{ApplyAttributeAs, Listeners, VList, VTag};
 
 use crate::props::{EventSubscriber, WidgetBuilder};
 use crate::widget::dom::IntoHtmlElement;
@@ -144,19 +140,14 @@ pub enum Msg {
 #[doc(hidden)]
 pub struct PwtButton {
     ripple_pos: Option<(i32, i32, i32)>,
-    onpointerdown: Rc<yew::html::onpointerdown::Wrapper>,
 }
 
 impl Component for PwtButton {
     type Message = Msg;
     type Properties = Button;
 
-    fn create(ctx: &Context<Self>) -> Self {
-        let onpointerdown = ctx.link().callback(Msg::ShowRippleAnimation);
-        Self {
-            ripple_pos: None,
-            onpointerdown: Rc::new(yew::html::onpointerdown::Wrapper::new(onpointerdown)),
-        }
+    fn create(_ctx: &Context<Self>) -> Self {
+        Self { ripple_pos: None }
     }
 
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
@@ -193,37 +184,6 @@ impl Component for PwtButton {
 
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
-
-        let mut attributes = props.std_props.cumulate_attributes(Some(classes!(
-            "pwt-button",
-            if props.pressed { "pressed" } else { "" }
-        )));
-        let attr_map = attributes.get_mut_index_map();
-
-        if props.disabled {
-            attr_map.insert(
-                AttrValue::Static("disabled"),
-                (AttrValue::Static(""), ApplyAttributeAs::Attribute),
-            );
-        }
-        if props.autofocus {
-            attr_map.insert(
-                AttrValue::Static("autofocus"),
-                (AttrValue::Static(""), ApplyAttributeAs::Attribute),
-            );
-        }
-        if let Some(ref aria_label) = props.aria_label {
-            attr_map.insert(
-                AttrValue::Static("aria-label"),
-                (aria_label.clone(), ApplyAttributeAs::Attribute),
-            );
-        }
-        if let Some(ref tabindex) = props.tabindex {
-            attr_map.insert(
-                AttrValue::Static("tabindex"),
-                (tabindex.to_string().into(), ApplyAttributeAs::Attribute),
-            );
-        }
 
         let mut children = Vec::new();
 
@@ -264,19 +224,19 @@ impl Component for PwtButton {
                 .into()
         });
 
-        let mut listeners = props.listeners.listeners.clone();
-        listeners.push(Some(self.onpointerdown.clone()));
-
-        let listeners = Listeners::Pending(listeners.into_boxed_slice());
-
-        VTag::__new_other(
-            Cow::Borrowed("button"),
-            props.std_props.node_ref.clone(),
-            props.std_props.key.clone(),
-            attributes,
-            listeners,
-            VList::with_children(children, None),
-        )
+        yew::props! { Container {
+            listeners: props.listeners.clone(),
+            children,
+            std_props: props.std_props.clone(),
+        }}
+        .tag("button")
+        .class("pwt-button")
+        .class(props.pressed.then(|| "pressed"))
+        .attribute("disabled", props.disabled.then(|| ""))
+        .attribute("autofocus", props.autofocus.then(|| ""))
+        .attribute("aria-label", props.aria_label.clone())
+        .attribute("tabindex", props.tabindex.map(|i| i.to_string()))
+        .onpointerdown(ctx.link().callback(Msg::ShowRippleAnimation))
         .into()
     }
 }
