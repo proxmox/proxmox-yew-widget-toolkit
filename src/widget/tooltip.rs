@@ -14,6 +14,8 @@ use pwt_macros::widget;
 pub struct Tooltip {
     /// The tooltip content/message.
     pub tip: Option<VNode>,
+    #[prop_or_default]
+    pub rich: bool,
 }
 
 impl Tooltip {
@@ -31,6 +33,18 @@ impl Tooltip {
 
     /// Method to set the tooltip
     pub fn set_tip(&mut self, tip: impl IntoPropValue<Option<VNode>>) {
+        self.tip = tip.into_prop_value();
+    }
+
+    /// Builder style method to set the tooltip (rich style)
+    pub fn rich_tip(mut self, tip: impl IntoPropValue<Option<VNode>>) -> Self {
+        self.set_rich_tip(tip);
+        self
+    }
+
+    /// Method to set the tooltip (rich style)
+    pub fn set_rich_tip(&mut self, tip: impl IntoPropValue<Option<VNode>>) {
+        self.rich = true;
         self.tip = tip.into_prop_value();
     }
 }
@@ -128,7 +142,8 @@ impl Component for PwtTooltip {
             .attribute("role", "tooltip")
             .attribute("aria-live", "polite")
             .attribute("data-show", show_tooltip.then(|| ""))
-            .class("tooltip")
+            .class("pwt-tooltip")
+            .class(props.rich.then(|| "pwt-tooltip-rich"))
             .onmouseenter(ctx.link().callback(|_| Msg::Enter))
             .onmouseleave(ctx.link().callback(|_| Msg::Leave))
             .with_optional_child(props.tip.clone());
