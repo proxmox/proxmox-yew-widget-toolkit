@@ -6,12 +6,19 @@ use yew::html::IntoPropValue;
 use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 
+use crate::props::ContainerBuilder;
 use crate::widget::align::{align_to, AlignOptions, GrowDirection, Point};
 
 #[derive(Properties, PartialEq, Clone)]
 pub struct Tooltip {
+    /// The tooltip content/message.
     pub tip: Option<VNode>,
+    /// Child widgets, where the tooltip pops up.
     pub children: Vec<VNode>,
+}
+
+impl ContainerBuilder for Tooltip {
+    fn as_children_mut(&mut self) -> &mut Vec<VNode> { &mut self.children }
 }
 
 impl Tooltip {
@@ -30,15 +37,6 @@ impl Tooltip {
     /// Method to set the tooltip
     pub fn set_tip(&mut self, tip: impl IntoPropValue<Option<VNode>>) {
         self.tip = tip.into_prop_value();
-    }
-
-    pub fn with_child(mut self, child: impl Into<VNode>) -> Self {
-        self.add_child(child);
-        self
-    }
-
-    pub fn add_child(&mut self, child: impl Into<VNode>) {
-        self.children.push(child.into());
     }
 }
 
