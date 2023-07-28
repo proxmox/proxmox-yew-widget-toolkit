@@ -1,8 +1,8 @@
 use web_sys::HtmlElement;
 
 use yew::html::IntoPropValue;
-use yew::prelude::*;
 
+use crate::prelude::*;
 use crate::props::{EventSubscriber, WidgetBuilder};
 use crate::widget::dom::IntoHtmlElement;
 use crate::widget::Container;
@@ -224,19 +224,16 @@ impl Component for PwtButton {
                 .into()
         });
 
-        yew::props! { Container {
-            listeners: props.listeners.clone(),
-            children,
-            std_props: props.std_props.clone(),
-        }}
-        .tag("button")
-        .class("pwt-button")
-        .class(props.pressed.then(|| "pressed"))
-        .attribute("disabled", props.disabled.then(|| ""))
-        .attribute("autofocus", props.autofocus.then(|| ""))
-        .attribute("aria-label", props.aria_label.clone())
-        .attribute("tabindex", props.tabindex.map(|i| i.to_string()))
-        .onpointerdown(ctx.link().callback(Msg::ShowRippleAnimation))
-        .into()
+        Container::form_widget_props(props.std_props.clone(), Some(props.listeners.clone()))
+            .children(children)
+            .tag("button")
+            .class("pwt-button")
+            .class(props.pressed.then(|| "pressed"))
+            .attribute("disabled", props.disabled.then(|| ""))
+            .attribute("autofocus", props.autofocus.then(|| ""))
+            .attribute("aria-label", props.aria_label.clone())
+            .attribute("tabindex", props.tabindex.map(|i| i.to_string()))
+            .onpointerdown(ctx.link().callback(Msg::ShowRippleAnimation))
+            .into()
     }
 }

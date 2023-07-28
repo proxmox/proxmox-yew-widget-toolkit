@@ -84,7 +84,7 @@ impl Component for PwtTooltip {
     }
 
     fn view(&self, ctx: &Context<Self>) -> Html {
-        let props = ctx.props().clone();
+        let props = ctx.props();
 
         let onmouseenter = ctx.link().callback(|_| Msg::Show);
         let onmouseleave = ctx.link().callback(|_| Msg::Hide);
@@ -104,16 +104,14 @@ impl Component for PwtTooltip {
             }
         });
 
-        let content = yew::props! { Container {
-            listeners: props.listeners,
-            children: props.children,
-            std_props: props.std_props,
-        }}
-        .onmouseenter(onmouseenter)
-        .onmouseleave(onmouseleave)
-        .onfocus(onfocus)
-        .onblur(onblur)
-        .onkeydown(onkeydown);
+        let content =
+            Container::form_widget_props(props.std_props.clone(), Some(props.listeners.clone()))
+                .children(props.children.clone())
+                .onmouseenter(onmouseenter)
+                .onmouseleave(onmouseleave)
+                .onfocus(onfocus)
+                .onblur(onblur)
+                .onkeydown(onkeydown);
 
         let data_show = show_tooltip.then(|| "");
         html! {

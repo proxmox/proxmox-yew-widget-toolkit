@@ -3,6 +3,8 @@ use std::borrow::Cow;
 use yew::prelude::*;
 use yew::virtual_dom::VTag;
 
+use crate::props::{ListenersWrapper, WidgetStdProps};
+
 use pwt_macros::widget;
 
 /// Wrapper for Html container elements like `<div>`.
@@ -15,8 +17,14 @@ pub struct Container {
 
 impl Container {
     pub fn new() -> Self {
-        yew::props!{ Self {
-        }}
+        yew::props! { Self {} }
+    }
+
+    pub fn form_widget_props(
+        std_props: WidgetStdProps,
+        listeners: Option<ListenersWrapper>,
+    ) -> Self {
+        yew::props! { Self { std_props, listeners: listeners.unwrap_or_default() } }
     }
 
     pub fn tag(mut self, tag: impl Into<Cow<'static, str>>) -> Self {
@@ -31,6 +39,11 @@ impl Container {
 
 impl Into<VTag> for Container {
     fn into(self) -> VTag {
-        self.std_props.into_vtag(self.tag, None::<&str>, Some(self.listeners), Some(self.children))
+        self.std_props.into_vtag(
+            self.tag,
+            None::<&str>,
+            Some(self.listeners),
+            Some(self.children),
+        )
     }
 }
