@@ -86,32 +86,25 @@ impl Component for PwtTooltip {
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
 
-        let onmouseenter = ctx.link().callback(|_| Msg::Show);
-        let onmouseleave = ctx.link().callback(|_| Msg::Hide);
-
         let show_tooltip = self.show && ctx.props().tip.is_some();
-
-        let onfocus = ctx.link().callback(|_| Msg::Show);
-        let onblur = ctx.link().callback(|_| Msg::Hide);
-        let onkeydown = Callback::from({
-            let link = ctx.link().clone();
-            move |event: KeyboardEvent| {
-                if show_tooltip && event.key_code() == 27 {
-                    // ESC
-                    link.send_message(Msg::Hide);
-                    event.prevent_default();
-                }
-            }
-        });
 
         let content =
             Container::form_widget_props(props.std_props.clone(), Some(props.listeners.clone()))
                 .children(props.children.clone())
-                .onmouseenter(onmouseenter)
-                .onmouseleave(onmouseleave)
-                .onfocus(onfocus)
-                .onblur(onblur)
-                .onkeydown(onkeydown);
+                .onmouseenter(ctx.link().callback(|_| Msg::Show))
+                .onmouseleave(ctx.link().callback(|_| Msg::Hide))
+                .onfocus(ctx.link().callback(|_| Msg::Show))
+                .onblur(ctx.link().callback(|_| Msg::Hide))
+                .onkeydown(Callback::from({
+                    let link = ctx.link().clone();
+                    move |event: KeyboardEvent| {
+                        if show_tooltip && event.key_code() == 27 {
+                            // ESC
+                            link.send_message(Msg::Hide);
+                            event.prevent_default();
+                        }
+                    }
+                }));
 
         let data_show = show_tooltip.then(|| "");
         html! {
