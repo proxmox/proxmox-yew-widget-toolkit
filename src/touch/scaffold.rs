@@ -11,7 +11,7 @@ use super::NavigationBar;
 
 use pwt_macros::builder;
 
-/// Implements the basic Material Design visual layout structure.
+/// Implements the basic Material Design visual page layout structure.
 #[derive(Properties, Clone, PartialEq)]
 #[builder]
 pub struct Scaffold {
