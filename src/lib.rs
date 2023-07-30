@@ -156,6 +156,7 @@
 //! - [touch::PageView]: A scrollable list that works page by page.
 //! - [touch::PageStack]: Stack of Pages using animation when switching pages.
 //! - [touch::Scaffold]: Material Design visual page layout.
+//! - [touch::SideDialog]: Modal Dialog with slide in/out animations.
 //! - [touch::Slidable]: Slidable widget with directional slide actions that can be dismissed.
 //! - [touch::SnackBar]: Display iightweight messages with an optional action button.
 
