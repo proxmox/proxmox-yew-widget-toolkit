@@ -19,7 +19,7 @@ pub struct ApplicationBar {
 
     /// Leading widget placed before the title.
     ///
-    /// By default, we add a back button if the context provides a [PageContoller].
+    /// By default, we add a back button if the context provides a [PageController].
     pub leading: Option<Html>,
 
     /// Application title.

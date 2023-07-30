@@ -130,7 +130,7 @@ impl PageController {
 /// Internally, this stack is passed to a [PageStack] widget that provides
 /// animations when switching between pages.
 ///
-/// First, one usually defines a [Routable] enum to express routes using
+/// First, one usually defines a routable enum to express routes using
 /// static rust types. Then you define you render functions to map the
 /// routes to a page stack.
 ///
