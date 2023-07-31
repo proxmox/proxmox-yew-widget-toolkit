@@ -147,7 +147,7 @@ impl Component for PwtApplicationBar {
         Column::new()
             .attribute("style", "z-index: 1;") // make shadow visible
             .attribute("role", "banner")
-            .class("pwt-navbar")
+            .class("pwt-navigation-bar")
             .class("pwt-border-bottom")
             .class("pwt-shadow1")
             .with_child(row1)
