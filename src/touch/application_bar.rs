@@ -135,9 +135,7 @@ impl Component for PwtApplicationBar {
 
         let row1 = Row::new()
             .attribute("aria-label", props.title.clone())
-            .class("pwt-align-items-center")
-            .padding(2)
-            .gap(2)
+            .class("pwt-application-bar-row1")
             .with_optional_child(leading)
             .with_child(html! {
                 <span class="pwt-flex-fill pwt-font-headline-small pwt-text-truncate">{props.title.clone()}</span>
@@ -145,11 +143,9 @@ impl Component for PwtApplicationBar {
             .with_child(actions);
 
         Column::new()
-            .attribute("style", "z-index: 1;") // make shadow visible
+            .attribute("style", "z-index: 1;") // make shadow (if any) visible
             .attribute("role", "banner")
-            .class("pwt-navigation-bar")
-            .class("pwt-border-bottom")
-            .class("pwt-shadow1")
+            .class("pwt-application-bar")
             .with_child(row1)
             .with_optional_child(props.bottom.clone())
             .into()
