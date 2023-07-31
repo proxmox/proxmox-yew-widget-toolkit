@@ -199,12 +199,7 @@ pub(crate) use panic_wrapper::*;
 #[cfg(not(target_arch = "wasm32"))]
 mod panic_wrapper {
     use wasm_bindgen::JsValue;
-    pub fn create_popper(_content: web_sys::Node, _tip: web_sys::Node, _opts: &JsValue) -> JsValue {
-        unreachable!()
-    }
-    pub fn update_popper(_popper: &JsValue) {
-        unreachable!()
-    }
+
     pub fn show_modal_dialog(_dialog: web_sys::Node) {
         unreachable!()
     }
