@@ -168,6 +168,26 @@ impl Component for PwtTooltip {
                     )
                     .with_fallback_placement(Point::TopEnd, Point::TopStart, GrowDirection::None)
                     .with_fallback_placement(Point::TopStart, Point::TopEnd, GrowDirection::None)
+                    .with_fallback_placement(
+                        Point::BottomStart,
+                        Point::TopStart,
+                        GrowDirection::StartEnd,
+                    )
+                    .with_fallback_placement(
+                        Point::TopStart,
+                        Point::BottomStart,
+                        GrowDirection::StartEnd,
+                    )
+                    .with_fallback_placement(
+                        Point::TopEnd,
+                        Point::TopStart,
+                        GrowDirection::TopBottom,
+                    )
+                    .with_fallback_placement(
+                        Point::TopStart,
+                        Point::TopEnd,
+                        GrowDirection::TopBottom,
+                    )
                     .offset(4.0, 4.0),
             );
         }
