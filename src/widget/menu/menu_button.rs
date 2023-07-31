@@ -178,7 +178,7 @@ impl Component for PwtMenuButton {
             self.submenu_ref.clone(),
         );
 
-        false
+        true
     }
 
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
