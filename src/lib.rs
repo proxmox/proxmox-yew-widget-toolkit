@@ -187,10 +187,6 @@ use wasm_bindgen::{self, prelude::*};
 extern "C" {
     fn test_alert();
 
-    // Popper binding
-    fn create_popper(content: web_sys::Node, tip: web_sys::Node, opts: &JsValue) -> JsValue;
-    fn update_popper(popper: &JsValue);
-
     //Dialog bindings
     fn show_modal_dialog(dialog: web_sys::Node);
     fn close_dialog(dialog: web_sys::Node);
