@@ -198,8 +198,6 @@ extern "C" {
 pub(crate) use panic_wrapper::*;
 #[cfg(not(target_arch = "wasm32"))]
 mod panic_wrapper {
-    use wasm_bindgen::JsValue;
-
     pub fn show_modal_dialog(_dialog: web_sys::Node) {
         unreachable!()
     }
