@@ -127,6 +127,7 @@ impl InputPanel {
         let class = classes!(
             "pwt-grid-column-1",
             "pwt-white-space-nowrap",
+            "pwt-align-self-center",
             field.is_disabled().then(|| Some("pwt-label-disabled")),
         );
         self.add_child(html! {
