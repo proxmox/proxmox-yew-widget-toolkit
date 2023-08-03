@@ -119,11 +119,13 @@ impl<T: 'static> Store<T> {
     /// # Panics
     ///
     /// Panics if the store is already locked.
+    /// When the returned [StoreWriteGuard] is dropped, the store listeners
+    /// are notified. To prevent that use [StoreWriteGuard::skip_update]
     pub fn write(&self) -> StoreWriteGuard<T> {
         let state = self.inner.borrow_mut();
         StoreWriteGuard {
-            initial_version: state.version,
             state,
+            update: true,
         }
     }
 
@@ -169,9 +171,20 @@ impl<T: 'static> Store<T> {
 }
 
 /// A wrapper type for a mutably borrowed [Store]
+///
+/// Notifies store listeners when dropped, except when using [StoreWriteGuard::skip_update]
 pub struct StoreWriteGuard<'a, T: 'static> {
     state: RefMut<'a, StoreState<T>>,
-    initial_version: usize,
+    update: bool,
+}
+
+impl<T> StoreWriteGuard<'_, T> {
+    /// Consumes the guard but don't notifies the store listeners
+    /// Only use this when you did not modify the store data.
+    pub fn skip_update(mut self) {
+        self.update = false;
+        drop(self)
+    }
 }
 
 impl<T> Deref for StoreWriteGuard<'_, T> {
@@ -190,7 +203,7 @@ impl<'a, T> DerefMut for StoreWriteGuard<'a, T> {
 
 impl<'a, T: 'static> Drop for StoreWriteGuard<'a, T> {
     fn drop(&mut self) {
-        if self.state.version != self.initial_version {
+        if self.update {
             self.state.notify_listeners();
         }
     }
@@ -324,12 +337,9 @@ impl<T: Clone + PartialEq + 'static> DataStore for Store<T> {
 pub struct StoreState<T> {
     extract_key: ExtractKeyFn<T>,
 
-    version: usize,
-
     data: Vec<T>,
 
     filtered_data: Vec<usize>,
-    last_view_version: usize,
 
     sorter: Option<SorterFn<T>>,
     filter: Option<FilterFn<T>>,
@@ -355,11 +365,9 @@ impl<T: 'static> StoreState<T> {
 
     fn new(extract_key: ExtractKeyFn<T>) -> Self {
         Self {
-            version: 0,
             data: Vec::new(),
             extract_key,
             filtered_data: Vec::new(),
-            last_view_version: 0,
             sorter: None,
             filter: None,
             listeners: Slab::new(),
@@ -391,12 +399,10 @@ impl<T: 'static> StoreState<T> {
     }
 
     fn set_sorter(&mut self, sorter: impl IntoSorterFn<T>) {
-        self.version += 1;
         self.sorter = sorter.into_sorter_fn();
     }
 
     fn set_filter(&mut self, filter: impl IntoFilterFn<T>) {
-        self.version += 1;
         self.filter = filter.into_filter_fn();
     }
 
@@ -405,20 +411,14 @@ impl<T: 'static> StoreState<T> {
     }
 
     pub fn set_data(&mut self, data: Vec<T>) {
-        self.version += 1;
         self.data = data;
     }
 
     pub fn clear(&mut self) {
-        self.version += 1;
         self.data = Vec::new();
     }
 
     fn update_filtered_data(&mut self) {
-        if self.version == self.last_view_version {
-            return;
-        }
-
         self.filtered_data = self.data.iter().enumerate()
             .filter(|(_, record)| match &self.filter {
                 Some(filter) => filter.apply(record), // fixme: remove fiter record_num param
@@ -432,8 +432,6 @@ impl<T: 'static> StoreState<T> {
                 sorter.cmp(&self.data[*a], &self.data[*b])
             });
         }
-
-        self.last_view_version = self.version;
     }
 
     fn lookup_filtered_record_key(&self, cursor: usize) -> Option<Key> {
