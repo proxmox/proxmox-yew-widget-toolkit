@@ -188,18 +188,19 @@ impl Component for PwtButton {
 
         let mut children = Vec::new();
 
+        let suppress_onclick: Option<Callback<MouseEvent>> = match props.disabled {
+            true => Some(Callback::from(|event: MouseEvent| {
+                event.prevent_default();
+                event.stop_propagation();
+            })),
+            false => None,
+        };
+
         if let Some(icon_class) = &props.icon_class {
             if !icon_class.is_empty() {
                 // Chromium fires onclick from nested elements, so we need to suppress that manually here
-                let onclick: Option<Callback<MouseEvent>> = match props.disabled {
-                    true => Some(Callback::from(|event: MouseEvent| {
-                        event.prevent_default();
-                        event.stop_propagation();
-                    })),
-                    false => None,
-                };
                 children.push(html!{
-                    <span class="pwt-font-label-large"><i {onclick} role="none" aria-hidden="true" class={icon_class.clone()}></i></span>
+                    <span class="pwt-font-label-large" onclick={suppress_onclick.clone()}><i role="none" aria-hidden="true" class={icon_class.clone()}></i></span>
                 });
             }
         }
@@ -222,6 +223,8 @@ impl Component for PwtButton {
                 .class(self.ripple_pos.is_some().then(|| "animate"))
                 .attribute("style", style)
                 .onanimationend(ctx.link().callback(|_| Msg::AnimationEnd))
+                 // Chromium fires onclick from nested elements, so we need to suppress that manually here
+                .onclick(suppress_onclick)
                 .into()
         });
 
