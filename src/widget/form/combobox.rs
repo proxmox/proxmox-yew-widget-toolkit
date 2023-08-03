@@ -186,6 +186,17 @@ impl Component for PwtCombobox {
         }
     }
 
+    fn changed(&mut self, ctx: &Context<Self>, old_props: &Self::Properties) -> bool {
+        let props = ctx.props();
+        if props.items != old_props.items  {
+            if !props.items.is_empty() {
+                self.store.set_data(props.items.as_ref().clone());
+            } else {
+                self.store.clear();
+            }
+        }
+        true
+    }
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
         let link = ctx.link().clone();
