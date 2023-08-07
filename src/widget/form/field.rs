@@ -15,6 +15,13 @@ use super::{FieldState, FieldStateMsg, IntoValidateFn, ValidateFn};
 
 use pwt_macros::widget;
 
+#[derive(Clone, Copy, PartialEq)]
+enum PasswordState {
+    NotAPassword,
+    Revealed,
+    Hidden,
+}
+
 /// Html input field.
 #[widget(pwt=crate, comp=PwtField, @input, @element)]
 #[derive(Clone, PartialEq, Properties)]
@@ -70,6 +77,13 @@ pub struct Field {
     ///
     /// This callback is emited when the user types in new data.
     pub on_input: Option<Callback<String>>,
+
+    /// Show peek icon
+    ///
+    /// Whether to show a peek icon to reveal passwords. This won't have any
+    /// effect if the input type of the field is not `password`.
+    #[prop_or(true)]
+    pub show_peek_icon: bool,
 }
 
 impl Field {
@@ -196,11 +210,19 @@ impl Field {
         self.on_input = cb.into_event_callback();
         self
     }
+
+    /// Builder style method to set wether to show a peek icon for passwords
+    pub fn show_peek_icon(mut self, show_peek_icon: bool) -> Self {
+        self.show_peek_icon = show_peek_icon;
+        self
+    }
 }
 
 pub enum Msg {
     Update(String),
     StateUpdate(FieldStateMsg),
+    RevealPassword,
+    HidePassword,
 }
 
 fn create_field_validation_cb(props: Field) -> ValidateFn<Value> {
@@ -249,6 +271,7 @@ fn create_field_validation_cb(props: Field) -> ValidateFn<Value> {
 
 #[doc(hidden)]
 pub struct PwtField {
+    password_state: PasswordState,
     state: FieldState,
     input_ref: NodeRef,
 }
@@ -292,9 +315,15 @@ impl Component for PwtField {
         let value = props.default.as_deref().unwrap_or("").to_string();
         let default = props.default.as_deref().unwrap_or("").to_string();
 
+        let password_state = if props.input_type == "password" {
+            PasswordState::Hidden
+        } else {
+            PasswordState::NotAPassword
+        };
         let mut me = Self {
             state,
             input_ref: NodeRef::default(),
+            password_state,
         };
 
         if let Some(name) = &props.input_props.name {
@@ -326,6 +355,14 @@ impl Component for PwtField {
                 }
                 true
             }
+            Msg::RevealPassword => {
+                self.password_state = PasswordState::Revealed;
+                true
+            }
+            Msg::HidePassword => {
+                self.password_state = PasswordState::Hidden;
+                true
+            }
         }
     }
 
@@ -354,6 +391,11 @@ impl Component for PwtField {
         let (value, valid) = self.state.get_field_data();
         let value = value_to_text(value);
 
+        let input_type = match self.password_state {
+            PasswordState::Hidden => AttrValue::Static("password"),
+            PasswordState::Revealed => AttrValue::Static("text"),
+            PasswordState::NotAPassword => props.input_type.clone(),
+        };
         let oninput = ctx.link().callback(move |event: InputEvent| {
             let input: HtmlInputElement = event.target_unchecked_into();
             Msg::Update(input.value())
@@ -363,7 +405,7 @@ impl Component for PwtField {
             .node_ref(self.input_ref.clone())
             .with_input_props(&props.input_props)
             .class("pwt-flex-fill")
-            .attribute("type", props.input_type.clone())
+            .attribute("type", input_type)
             .attribute("value", value)
             .attribute("min", props.min.map(|v| v.to_string()))
             .attribute("max", props.max.map(|v| v.to_string()))
@@ -371,13 +413,34 @@ impl Component for PwtField {
             .oninput(oninput)
             .into();
 
+        let peek_icon = if self.password_state != PasswordState::NotAPassword && props.show_peek_icon {
+            let is_hidden = matches!(self.password_state, PasswordState::Hidden);
+            let onclick = ctx.link().callback(move |_| {
+                if is_hidden {
+                    Msg::RevealPassword
+                } else {
+                    Msg::HidePassword
+                }
+            });
+            // TODO: Localize the tooltip_text with gettext.
+            let (icon_class, tooltip_text) = if is_hidden {
+                ("fa fa-eye", "Show Text")
+            } else {
+                ("fa fa-eye-slash", "Hide Text")
+            };
+            let peek_icon = html! { <i class={icon_class} onclick={onclick}/> };
+            Some(Tooltip::new(peek_icon).tip(tooltip_text))
+        } else {
+            None
+        };
         let input_container = Container::new()
             .with_std_props(&props.std_props)
             .class("pwt-input")
             .class(format!("pwt-input-type-{}", props.input_type))
             .class("pwt-w-100")
             .class(if valid.is_ok() { "is-valid" } else { "is-invalid" })
-            .with_child(input);
+            .with_child(input)
+            .with_optional_child(peek_icon);
 
         let mut tooltip = Tooltip::new(input_container);
 
