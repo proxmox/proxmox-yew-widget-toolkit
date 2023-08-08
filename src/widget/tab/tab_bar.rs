@@ -299,40 +299,51 @@ impl Component for PwtTabBar {
                     false
                 };
 
-                let nav_class = if is_active {
-                    "pwt-nav-link active"
-                } else {
-                    "pwt-nav-link"
-                };
+                let disabled = panel.disabled;
 
-                let onclick = ctx.link().callback({
-                    let key = panel.key.clone();
-                    let on_activate = panel.on_activate.clone();
-                    move |_| {
-                        if let Some(on_activate) = &on_activate {
-                            on_activate.emit(());
-                        }
-                        Msg::Select(key.clone(), true)
-                    }
-                });
-                let onkeyup = Callback::from({
-                    let link = ctx.link().clone();
-                    let key = panel.key.clone();
-                    let on_activate = panel.on_activate.clone();
-                    move |event: KeyboardEvent| {
-                        if event.key_code() == 32 {
+                let nav_class = classes!(
+                    "pwt-nav-link",
+                    is_active.then_some("active"),
+                    disabled.then_some("disabled")
+                );
+
+                let onclick = if disabled {
+                    None
+                } else {
+                    Some(ctx.link().callback({
+                        let key = panel.key.clone();
+                        let on_activate = panel.on_activate.clone();
+                        move |_| {
                             if let Some(on_activate) = &on_activate {
                                 on_activate.emit(());
                             }
-                            link.send_message(Msg::Select(key.clone(), true));
+                            Msg::Select(key.clone(), true)
                         }
-                    }
-                });
+                    }))
+                };
+                let onkeyup = if disabled {
+                    None
+                } else {
+                    Some(Callback::from({
+                        let link = ctx.link().clone();
+                        let key = panel.key.clone();
+                        let on_activate = panel.on_activate.clone();
+                        move |event: KeyboardEvent| {
+                            if event.key_code() == 32 {
+                                if let Some(on_activate) = &on_activate {
+                                    on_activate.emit(());
+                                }
+                                link.send_message(Msg::Select(key.clone(), true));
+                            }
+                        }
+                    }))
+                };
 
                 let tabindex = if is_active { "0" } else { "-1" };
+                let aria_disabled = if disabled { "true" } else { "false" };
 
                 html! {
-                    <a {onclick} {onkeyup} class={nav_class} {tabindex}>
+                    <a aria-disabled={aria_disabled} {onclick} {onkeyup} class={nav_class} {tabindex}>
                         if let Some(class) = &panel.icon_class {
                             <span class={class.to_string()} aria-hidden="true"/>
                         }
@@ -351,13 +362,11 @@ impl Component for PwtTabBar {
             .class(props.class.clone())
             .with_child(pills)
             .onkeydown(move |event: KeyboardEvent| {
-                match event.key_code() {
-                    39 => {
-                        // left
+                match event.code().as_str() {
+                    "ArrowRight" => {
                         roving_tabindex_next(&pills_ref, rtl, false);
                     }
-                    37 => {
-                        // right
+                    "ArrowLeft" => {
                         roving_tabindex_next(&pills_ref, !rtl, false);
                     }
                     _ => return,

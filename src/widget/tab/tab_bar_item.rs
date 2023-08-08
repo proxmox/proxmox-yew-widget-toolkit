@@ -1,6 +1,6 @@
 use yew::html::{IntoEventCallback, IntoPropValue};
 
-use yew::virtual_dom::{VNode, Key};
+use yew::virtual_dom::{Key, VNode};
 
 use yew::prelude::*;
 
@@ -36,12 +36,16 @@ pub struct TabBarItem {
     /// Emitted when the button is tapped, clicked or activated by keyboard.
     #[builder_cb(IntoEventCallback, into_event_callback, ())]
     pub on_activate: Option<Callback<()>>,
+
+    /// Sets disabled state
+    #[builder]
+    pub disabled: bool,
 }
 
 impl TabBarItem {
     /// Create a new instance.
     pub fn new() -> Self {
-        yew::props!(Self {})
+        yew::props!(Self { disabled: false })
     }
 
     /// Builder style method to set the yew `key` property
