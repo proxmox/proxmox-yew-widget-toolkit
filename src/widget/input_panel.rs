@@ -89,6 +89,29 @@ impl InputPanel {
         });
     }
 
+    /// Builder style method to add a custom child in the first column
+    pub fn with_custom_child(mut self, child: impl Into<yew::virtual_dom::VNode>) -> Self {
+        self.add_custom_child(child);
+        self
+    }
+
+    /// Adds custom child in the first column
+    pub fn add_custom_child(&mut self, child: impl Into<yew::virtual_dom::VNode>) {
+        self.left_count += 1;
+
+        let style = format!("grid-row: {}; grid-column-end: span 2", self.left_count);
+
+        let class = classes!(
+            "pwt-grid-column-1",
+            "pwt-white-space-nowrap",
+            "pwt-align-self-center",
+        );
+
+        self.add_child(html! {
+            <div {class} {style}>{child.into()}</div>
+        });
+    }
+
     /// Builder style method to add a field with label at the left column.
     pub fn with_field(
         mut self,
