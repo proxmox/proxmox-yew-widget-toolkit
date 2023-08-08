@@ -1,8 +1,8 @@
 use std::borrow::Cow;
 
+use yew::html::IntoPropValue;
 use yew::prelude::*;
 use yew::virtual_dom::{Listeners, VList, VTag};
-use yew::html::IntoPropValue;
 
 use pwt_macros::widget;
 
@@ -32,7 +32,6 @@ pub struct InputPanel {
 }
 
 impl InputPanel {
-
     /// Creates a new instance.
     pub fn new() -> Self {
         yew::props!(Self {})
@@ -77,12 +76,15 @@ impl InputPanel {
         let visible = if advanced { self.show_advanced } else { true };
 
         let style = if visible {
-            format!("grid-row: {}; grid-column-start: 1; grid-column-end: -1;", self.left_count)
+            format!(
+                "grid-row: {}; grid-column-start: 1; grid-column-end: -1;",
+                self.left_count
+            )
         } else {
             format!("grid-row: {}; display: none;", self.left_count)
         };
 
-        self.add_child(html!{
+        self.add_child(html! {
             <hr class="pwt-w-100" {style}/>
         });
     }
@@ -138,7 +140,7 @@ impl InputPanel {
 
         let field = field.label_id(label_id);
 
-        self.add_child(html!{
+        self.add_child(html! {
             <div {style}>{field.into()}</div>
         });
     }
@@ -183,7 +185,7 @@ impl InputPanel {
             </label>
         });
 
-        self.add_child(html!{
+        self.add_child(html! {
             <div {style}>{field.into()}</div>
         });
     }
@@ -234,7 +236,7 @@ impl InputPanel {
         });
 
         // fixme: label_id?
-        self.add_child(html!{
+        self.add_child(html! {
             <div class="pwt-fill-grid-row" {style}>{field.into()}</div>
         });
     }
@@ -254,9 +256,7 @@ impl Into<VTag> for InputPanel {
 
         let attributes = self.std_props.cumulate_attributes(None::<&str>);
 
-        let listeners = Listeners::Pending(
-            self.listeners.listeners.into_boxed_slice()
-        );
+        let listeners = Listeners::Pending(self.listeners.listeners.into_boxed_slice());
 
         let children = VList::with_children(self.children, None);
 
