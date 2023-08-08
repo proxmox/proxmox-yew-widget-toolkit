@@ -77,6 +77,9 @@ pub struct TabPanel {
     #[prop_or_default]
     #[builder(IntoPropValue, into_prop_value)]
     pub scroll_mode: Option<MiniScrollMode>,
+
+    #[builder(IntoPropValue, into_prop_value)]
+    pub selection: Option<Selection>,
 }
 
 impl TabPanel {
@@ -185,10 +188,12 @@ impl Component for PwtTabPanel {
     type Message = ();
     type Properties = TabPanel;
 
-    fn create(_ctx: &Context<Self>) -> Self {
-        Self {
-            selection: Selection::new(),
-        }
+    fn create(ctx: &Context<Self>) -> Self {
+        let selection = match ctx.props().selection.clone() {
+            Some(selection) => selection,
+            None => Selection::new(),
+        };
+        Self { selection }
     }
 
     fn view(&self, ctx: &Context<Self>) -> Html {
