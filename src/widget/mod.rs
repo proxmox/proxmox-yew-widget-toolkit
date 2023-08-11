@@ -83,7 +83,7 @@ mod segmented_button;
 pub use segmented_button::{PwtSegmentedButton, SegmentedButton};
 
 mod size_observer;
-pub use size_observer::SizeObserver;
+pub use size_observer::{IntoSizeCallback, SizeObserver};
 
 mod tab;
 pub use tab::*;

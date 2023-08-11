@@ -516,7 +516,7 @@ impl AutoFloatingPlacement {
             .into_html_element()
             .ok_or_else(|| js_sys::Error::new("element is not an HtmlElement"))?;
 
-        let size_observer = SizeObserver::new(element.as_ref(), move |_| {
+        let size_observer = SizeObserver::new(element.as_ref(), move |(_, _)| {
             if let Err(err) = align_to(
                 observer_base.clone(),
                 observer_element.clone(),

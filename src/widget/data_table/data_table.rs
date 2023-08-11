@@ -1647,7 +1647,7 @@ impl<S: DataStore + 'static> Component for PwtDataTable<S> {
             if let Some(el) = self.scroll_ref.cast::<web_sys::Element>() {
                 let link = ctx.link().clone();
                 let size_observer =
-                    SizeObserver::with_client_rect(&el, move |(width, height, client_width, _)| {
+                    SizeObserver::new(&el, move |(width, height, client_width, _)| {
                         link.send_message(Msg::ViewportResize(width, height, width - client_width));
                     });
                 self.viewport_size_observer = Some(size_observer);
