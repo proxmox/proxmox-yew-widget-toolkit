@@ -5,9 +5,10 @@ use yew::virtual_dom::{Key, VComp, VNode};
 
 use crate::prelude::*;
 use crate::state::{NavigationContext, NavigationContextExt, Selection};
-use crate::widget::dom::element_direction_rtl;
+use crate::web_sys_ext::{ResizeObserverBoxOptions, ResizeObserverOptions};
+use crate::widget::dom::{element_direction_rtl, IntoHtmlElement};
 use crate::widget::focus::roving_tabindex_next;
-use crate::widget::Container;
+use crate::widget::{Container, SizeObserver};
 
 use super::TabBarItem;
 
@@ -60,6 +61,23 @@ pub struct TabBar {
     #[builder]
     #[prop_or_default]
     router: bool,
+
+    /// The [TabBarStyle]
+    #[builder]
+    #[prop_or_default]
+    pub style: TabBarStyle,
+}
+
+/// Tab Bar Variants
+#[derive(PartialEq, Eq, Default, Clone, Copy)]
+pub enum TabBarStyle {
+    /// Pill/Button style tabs
+    #[default]
+    Pills,
+    /// Material 3 Primary style tabs
+    MaterialPrimary,
+    /// Material 3 Secondary style tabs
+    MaterialSecondary,
 }
 
 impl TabBar {
@@ -134,6 +152,7 @@ pub enum Msg {
     FocusIn,
     Select(Option<Key>, bool),
     SelectionChange(Selection),
+    UpdateIndicator,
 }
 
 #[doc(hidden)]
@@ -142,6 +161,10 @@ pub struct PwtTabBar {
     rtl: Option<bool>,
     _nav_ctx_handle: Option<ContextHandle<NavigationContext>>,
     selection: Selection,
+    indicator_ref: NodeRef,
+    active_ref: NodeRef,
+    size_ref: NodeRef,
+    active_size_observer: Option<SizeObserver>,
 }
 
 fn get_active_or_default(props: &TabBar, active: &Option<Key>) -> Option<Key> {
@@ -215,6 +238,10 @@ impl Component for PwtTabBar {
             selection,
             rtl: None,
             _nav_ctx_handle,
+            indicator_ref: NodeRef::default(),
+            active_ref: NodeRef::default(),
+            size_ref: NodeRef::default(),
+            active_size_observer: None,
         }
     }
 
@@ -273,6 +300,39 @@ impl Component for PwtTabBar {
 
                 true
             }
+            Msg::UpdateIndicator => {
+                let use_full_width = match ctx.props().style {
+                    TabBarStyle::Pills => {
+                        return false;
+                    }
+                    TabBarStyle::MaterialPrimary => false,
+                    TabBarStyle::MaterialSecondary => true,
+                };
+                let indicator = self.indicator_ref.clone().into_html_element();
+                let active_el = self.active_ref.clone().into_html_element();
+                let size_el = self.size_ref.clone().into_html_element();
+                if let (Some(indicator), Some(active), Some(size)) = (indicator, active_el, size_el)
+                {
+                    let style = indicator.style();
+                    if let Some(parent) = active.parent_element() {
+                        let parent_rect = parent.get_bounding_client_rect();
+                        let (left, width) = if use_full_width {
+                            let rect = active.get_bounding_client_rect();
+                            let left = rect.left() - parent_rect.left();
+                            (left, rect.width())
+                        } else {
+                            let rect = size.get_bounding_client_rect();
+                            let left = rect.left() - parent_rect.left();
+                            (left, rect.width())
+                        };
+                        // ignore errors
+                        let _ = style.set_property("left", &format!("{}px", left));
+                        let _ = style.remove_property("display");
+                        let _ = style.set_property("width", &format!("{}px", width));
+                    }
+                }
+                false
+            }
         }
     }
 
@@ -289,14 +349,20 @@ impl Component for PwtTabBar {
 
         let active = get_active_or_default(props, &self.active);
 
-        let pills = props
+        let tabs = props
             .tabs
-            .iter()
-            .map(|panel| {
+            .iter().enumerate()
+            .map(|(i, panel)| {
                 let is_active = if let Some(active) = &active {
                     panel.key.as_ref() == Some(active)
                 } else {
                     false
+                };
+
+                let (active_ref, size_ref) = if is_active {
+                    (self.active_ref.clone(), self.size_ref.clone())
+                } else {
+                    (NodeRef::default(), NodeRef::default())
                 };
 
                 let disabled = panel.disabled;
@@ -341,33 +407,51 @@ impl Component for PwtTabBar {
 
                 let tabindex = if is_active { "0" } else { "-1" };
                 let aria_disabled = if disabled { "true" } else { "false" };
+                let style = format!("grid-column: {};", i + 1);
+                    format!("grid-column: {};", i + 1);
 
                 html! {
-                    <a aria-disabled={aria_disabled} {onclick} {onkeyup} class={nav_class} {tabindex}>
+                    <a ref={active_ref} aria-disabled={aria_disabled} {style} {onclick} {onkeyup} class={nav_class} {tabindex}>
+                        <span ref={size_ref}>
                         if let Some(class) = &panel.icon_class {
                             <span class={class.to_string()} aria-hidden="true"/>
                         }
                         {panel.label.as_deref().unwrap_or("")}
+                        </span>
                     </a>
                 }
             })
             .collect::<Html>();
 
-        let pills_ref = props.node_ref.clone();
+        let tabs_ref = props.node_ref.clone();
         let rtl = self.rtl.unwrap_or(false);
 
+        let indicator_style = "display:none;";
+
+        let (variant_class, indicator_class) = match ctx.props().style {
+            TabBarStyle::Pills => ("pwt-nav-pills", classes!()),
+            TabBarStyle::MaterialPrimary => (
+                "pwt-tab-material",
+                classes!("pwt-tab-active-indicator", "primary"),
+            ),
+            TabBarStyle::MaterialSecondary => (
+                "pwt-tab-material",
+                classes!("pwt-tab-active-indicator", "secondary"),
+            ),
+        };
         Container::new()
             .node_ref(props.node_ref.clone())
-            .class("pwt-nav-pills")
+            .class(variant_class)
             .class(props.class.clone())
-            .with_child(pills)
+            .with_child(tabs)
+            .with_child(html! {<div ref={self.indicator_ref.clone()} class={indicator_class} style={indicator_style}></div>})
             .onkeydown(move |event: KeyboardEvent| {
                 match event.code().as_str() {
                     "ArrowRight" => {
-                        roving_tabindex_next(&pills_ref, rtl, false);
+                        roving_tabindex_next(&tabs_ref, rtl, false);
                     }
                     "ArrowLeft" => {
-                        roving_tabindex_next(&pills_ref, !rtl, false);
+                        roving_tabindex_next(&tabs_ref, !rtl, false);
                     }
                     _ => return,
                 }
@@ -375,6 +459,21 @@ impl Component for PwtTabBar {
             })
             .onfocusin(ctx.link().callback(|_| Msg::FocusIn))
             .into()
+    }
+
+    fn rendered(&mut self, ctx: &Context<Self>, _first_render: bool) {
+        let link = ctx.link().clone();
+        let element = self.active_ref.clone().into_html_element().unwrap();
+        let mut options = ResizeObserverOptions::new();
+        options.box_(ResizeObserverBoxOptions::BorderBox);
+        self.active_size_observer = Some(SizeObserver::new_with_options(
+            &element,
+            move |(_, _)| {
+                log::info!("in size observer?");
+                link.send_message(Msg::UpdateIndicator);
+            },
+            options,
+        ));
     }
 }
 

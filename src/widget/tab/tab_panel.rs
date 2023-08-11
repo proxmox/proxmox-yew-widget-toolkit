@@ -7,8 +7,8 @@ use yew::virtual_dom::{Key, VComp, VList, VNode};
 use crate::prelude::*;
 use crate::state::Selection;
 use crate::widget::{
-    Column, MiniScroll, MiniScrollMode, Row, SelectionView, SelectionViewRenderInfo, TabBar,
-    TabBarItem,
+    Column, MiniScroll, MiniScrollMode, SelectionView, SelectionViewRenderInfo, TabBar, TabBarItem,
+    TabBarStyle,
 };
 
 use pwt_macros::builder;
@@ -78,8 +78,14 @@ pub struct TabPanel {
     #[builder(IntoPropValue, into_prop_value)]
     pub scroll_mode: Option<MiniScrollMode>,
 
+    /// The [Selection] of the TabPanel. Makes it possible to control from outside
     #[builder(IntoPropValue, into_prop_value)]
     pub selection: Option<Selection>,
+
+    /// The [TabBarStyle]
+    #[prop_or_default]
+    #[builder]
+    pub tab_bar_style: TabBarStyle,
 }
 
 impl TabPanel {
@@ -199,7 +205,12 @@ impl Component for PwtTabPanel {
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
 
-        let mut bar: Html = props.bar.clone().selection(self.selection.clone()).into();
+        let mut bar: Html = props
+            .bar
+            .clone()
+            .selection(self.selection.clone())
+            .style(props.tab_bar_style)
+            .into();
 
         if let Some(scroll_mode) = props.scroll_mode {
             bar = MiniScroll::new(bar)
@@ -208,31 +219,27 @@ impl Component for PwtTabPanel {
                 .into();
         }
 
-        let content = props.view.clone().selection(self.selection.clone());
+        let material_style = props.tab_bar_style != TabBarStyle::Pills;
 
-        let header;
-
-        if props.title.is_some() {
+        let mut class = classes!((!material_style).then_some("pwt-panel-header"));
+        let (title, tools) = if props.title.is_some() {
             let title =
                 crate::widget::panel::create_panel_title(props.title.clone(), props.tools.clone())
-                    .class("pwt-pb-2");
-            header = html! {<div class="pwt-panel-header">{title}{bar}</div>};
+                    .class("pwt-pb-2")
+                    .class(material_style.then_some("pwt-panel-header"));
+            (Some(title), None)
         } else {
-            header = Row::new()
-                .class("pwt-panel-header pwt-align-items-center pwt-gap-2")
-                .with_child(bar)
-                .with_optional_child(
-                    (!props.tools.is_empty())
-                        .then(|| VList::with_children(props.tools.clone(), None)),
-                )
-                .into();
+            class = classes!("pwt-d-flex", "pwt-align-items-center", "pwt-gap-2", class);
+            let tools =
+                (!props.tools.is_empty()).then(|| VList::with_children(props.tools.clone(), None));
+            (None, tools)
         };
 
         Column::new()
             .class("pwt-panel")
             .class(props.class.clone())
-            .with_child(header)
-            .with_child(content)
+            .with_child(html! {<div {class}>{title}{bar}{tools}</div>})
+            .with_child(props.view.clone().selection(self.selection.clone()))
             .into()
     }
 }
