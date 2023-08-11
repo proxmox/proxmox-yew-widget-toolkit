@@ -469,7 +469,6 @@ impl Component for PwtTabBar {
         self.active_size_observer = Some(SizeObserver::new_with_options(
             &element,
             move |(_, _)| {
-                log::info!("in size observer?");
                 link.send_message(Msg::UpdateIndicator);
             },
             options,
