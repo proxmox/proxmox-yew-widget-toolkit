@@ -9,16 +9,20 @@ use yew::prelude::*;
 
 type ObserverClosure = Closure<dyn Fn(Vec<ResizeObserverEntry>)>;
 
+/// Wrapper around a ResizeObserver browser object, intended to create callbacks for size changes
+/// of an element
 pub struct SizeObserver {
     observer: ResizeObserver,
     // keep it alive
     _observer_closure: ObserverClosure,
 }
 
+/// Custom trait to automatically handle different types of callbacks
 pub trait IntoSizeCallback<T> {
     fn into_size_cb(self) -> SizeCallback;
 }
 
+/// Callback with width and height parameters
 impl<T> IntoSizeCallback<(f64, f64)> for T
 where
     T: Into<Callback<(f64, f64)>>,
@@ -28,6 +32,7 @@ where
     }
 }
 
+/// Callback with width, height, client_width and client_height parameters
 impl<T> IntoSizeCallback<(f64, f64, f64, f64)> for T
 where
     T: Into<Callback<(f64, f64, f64, f64)>>,
@@ -67,6 +72,7 @@ impl SizeObserver {
         )
     }
 
+    /// Create a new SizeObserver for the given element which calls the given callback
     pub fn new<X>(el: &Element, callback: impl IntoSizeCallback<X>) -> Self {
         let (observer, _observer_closure) = Self::create_observer(callback.into_size_cb());
         observer.observe(el);
@@ -77,6 +83,8 @@ impl SizeObserver {
         }
     }
 
+    /// Create a new SizeObserver for the given element which calls the given callback
+    /// allows to specify ResizeObserverOptions
     pub fn new_with_options<X>(
         el: &Element,
         callback: impl IntoSizeCallback<X>,
