@@ -12,7 +12,7 @@ use yew::prelude::*;
 use yew::virtual_dom::{Key, VComp, VNode};
 
 use crate::prelude::*;
-use crate::props::{CallbackMut, IntoEventCallbackMut, SorterFn, AsClassesMut};
+use crate::props::{AsClassesMut, CallbackMut, IntoEventCallbackMut, SorterFn};
 use crate::state::{DataStore, Selection, SelectionObserver};
 use crate::widget::{get_unique_element_id, Column, Container, SizeObserver};
 
@@ -189,12 +189,14 @@ pub struct DataTable<S: DataStore> {
 }
 
 impl<S: DataStore> AsClassesMut for DataTable<S> {
-    fn as_classes_mut(&mut self) -> &mut yew::Classes { &mut self.class }
+    fn as_classes_mut(&mut self) -> &mut yew::Classes {
+        &mut self.class
+    }
 }
 
 impl<S: DataStore> CssBorderBuilder for DataTable<S> {}
 impl<S: DataStore> CssPaddingBuilder for DataTable<S> {}
-impl <S: DataStore> CssMarginBuilder for DataTable<S> {}
+impl<S: DataStore> CssMarginBuilder for DataTable<S> {}
 
 static VIRTUAL_SCROLL_TRIGGER: usize = 30;
 
