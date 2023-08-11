@@ -22,6 +22,13 @@ extern "C" {
 
     # [wasm_bindgen (method , structural , js_class = "ResizeObserver" , js_name = observe)]
     pub fn observe(this: &ResizeObserver, target: &Element);
+
+    # [wasm_bindgen (method , structural , js_class = "ResizeObserver" , js_name = observe)]
+    pub fn observe_with_options(
+        this: &ResizeObserver,
+        target: &Element,
+        options: &ResizeObserverOptions,
+    );
 }
 
 #[wasm_bindgen]
@@ -37,3 +44,40 @@ extern "C" {
     pub fn content_rect(this: &ResizeObserverEntry) -> DomRectReadOnly;
 }
 
+#[wasm_bindgen]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ResizeObserverBoxOptions {
+    BorderBox = "border-box",
+    ContentBox = "content-box",
+    DevicePixelContentBox = "device-pixel-content-box",
+}
+
+#[wasm_bindgen]
+extern "C" {
+    # [wasm_bindgen (extends = :: js_sys :: Object , js_name = ResizeObserverOptions)]
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    pub type ResizeObserverOptions;
+}
+impl ResizeObserverOptions {
+    pub fn new() -> Self {
+        #[allow(unused_mut)]
+        let mut ret: Self = ::wasm_bindgen::JsCast::unchecked_into(::js_sys::Object::new());
+        ret
+    }
+    pub fn box_(&mut self, val: ResizeObserverBoxOptions) -> &mut Self {
+        use wasm_bindgen::JsValue;
+        let r = ::js_sys::Reflect::set(self.as_ref(), &JsValue::from("box"), &JsValue::from(val));
+        debug_assert!(
+            r.is_ok(),
+            "setting properties should never fail on our dictionary objects"
+        );
+        let _ = r;
+        self
+    }
+}
+
+impl Default for ResizeObserverOptions {
+    fn default() -> Self {
+        Self::new()
+    }
+}

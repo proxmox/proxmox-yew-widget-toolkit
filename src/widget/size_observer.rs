@@ -3,7 +3,7 @@ use wasm_bindgen::JsCast;
 use wasm_bindgen::UnwrapThrowExt;
 use web_sys::Element;
 
-use crate::web_sys_ext::{ResizeObserver, ResizeObserverEntry};
+use crate::web_sys_ext::{ResizeObserver, ResizeObserverEntry, ResizeObserverOptions};
 
 use yew::prelude::*;
 
@@ -70,6 +70,20 @@ impl SizeObserver {
     pub fn new<X>(el: &Element, callback: impl IntoSizeCallback<X>) -> Self {
         let (observer, _observer_closure) = Self::create_observer(callback.into_size_cb());
         observer.observe(el);
+
+        Self {
+            _observer_closure,
+            observer,
+        }
+    }
+
+    pub fn new_with_options<X>(
+        el: &Element,
+        callback: impl IntoSizeCallback<X>,
+        options: ResizeObserverOptions,
+    ) -> Self {
+        let (observer, _observer_closure) = Self::create_observer(callback.into_size_cb());
+        observer.observe_with_options(el, &options);
 
         Self {
             _observer_closure,
