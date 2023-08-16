@@ -1,11 +1,11 @@
 //! Common Property types and builder traits
 
-use std::rc::Rc;
 use std::ops::Deref;
+use std::rc::Rc;
 
+use yew::html::IntoPropValue;
 use yew::prelude::*;
 use yew::virtual_dom::Key;
-use yew::html::IntoPropValue;
 
 /// Trait which provides mutable access to the class property.
 pub trait AsClassesMut {
@@ -18,7 +18,6 @@ impl AsClassesMut for yew::Classes {
         self
     }
 }
-
 
 /// Trait to create optional Key.
 ///
@@ -58,15 +57,13 @@ macro_rules! key_impl_from_into_prop_value {
                 attr.map(|me| Key::from(me.deref()))
             }
         }
-
-    }
+    };
 }
 
 key_impl_from_into_prop_value!(&'static str);
 key_impl_from_into_prop_value!(Rc<str>);
 key_impl_from_into_prop_value!(AttrValue);
 key_impl_from_into_prop_value!(String);
-
 
 mod callback_mut;
 pub use callback_mut::{CallbackMut, CallbackMutScopeExt, IntoEventCallbackMut};
@@ -93,7 +90,7 @@ mod container_builder;
 pub use container_builder::ContainerBuilder;
 
 mod event_subscriber;
-pub use event_subscriber::{ListenersWrapper, EventSubscriber};
+pub use event_subscriber::{EventSubscriber, ListenersWrapper};
 
 mod border;
 pub use border::CssBorderBuilder;
@@ -105,10 +102,13 @@ mod padding;
 pub use padding::CssPaddingBuilder;
 
 mod render_function;
-pub use render_function::{RenderFn, IntoOptionalRenderFn, BuilderFn, IntoOptionalBuilderFn};
+pub use render_function::{
+    BuilderFn, IntoOptionalBuilderFn, IntoOptionalRenderFn, IntoOptionalTextRenderFn, RenderFn,
+    TextRenderFn,
+};
 
 mod sorter_function;
-pub use sorter_function::{SorterFn, IntoSorterFn};
+pub use sorter_function::{IntoSorterFn, SorterFn};
 
 mod filter_function;
 pub use filter_function::{FilterFn, IntoFilterFn};

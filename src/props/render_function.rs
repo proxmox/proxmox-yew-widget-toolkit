@@ -48,6 +48,50 @@ impl<T, F: 'static + Fn(&T) -> Html> IntoOptionalRenderFn<T> for F {
     }
 }
 
+/// A [TextRenderFn] function is a callback that transforms data into [String].
+///
+/// Wraps `Rc` around `Fn` so it can be passed as a prop.
+#[derive(Derivative)]
+#[derivative(Clone(bound=""), PartialEq(bound=""))]
+pub struct TextRenderFn<T>(
+    #[derivative(PartialEq(compare_with="Rc::ptr_eq"))]
+    Rc<dyn Fn(&T) -> String>
+);
+
+impl<T> TextRenderFn<T> {
+    /// Creates a new [TextRenderFn]
+    pub fn new(renderer: impl 'static + Fn(&T) -> String) -> Self {
+        Self(Rc::new(renderer))
+    }
+    /// Apply the render function
+    pub fn apply(&self, data: &T) -> String {
+        (self.0)(data)
+    }
+}
+
+impl<T, F: 'static + Fn(&T) -> String> From<F> for TextRenderFn<T> {
+    fn from(f: F) -> Self {
+        TextRenderFn::new(f)
+    }
+}
+
+/// Helper trait to create an optional [TextRenderFn] property.
+pub trait IntoOptionalTextRenderFn<T> {
+    fn into_optional_text_render_fn(self) -> Option<TextRenderFn<T>>;
+}
+
+impl<T> IntoOptionalTextRenderFn<T> for Option<TextRenderFn<T>> {
+    fn into_optional_text_render_fn(self) -> Option<TextRenderFn<T>> {
+        self
+    }
+}
+
+impl<T, F: 'static + Fn(&T) -> String> IntoOptionalTextRenderFn<T> for F {
+    fn into_optional_text_render_fn(self) -> Option<TextRenderFn<T>> {
+        Some(TextRenderFn::new(self))
+    }
+}
+
 /// A [BuilderFn] function is a callback that returns a generic type.
 ///
 /// Wraps `Rc` around `Fn` so it can be passed as a prop.
