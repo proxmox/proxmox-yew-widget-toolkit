@@ -618,24 +618,24 @@ impl Component for PwtMenu {
                         let link = ctx.link().clone();
                         move |event: KeyboardEvent| {
                             if menubar {
-                                match event.key_code() {
-                                    39 => link.send_message(Msg::Next),
-                                    37 => link.send_message(Msg::Previous),
-                                    13 | 40 | 32 => link.send_message(Msg::ShowSubmenu(true, true)),
-                                    38 => link.send_message(Msg::ShowSubmenu(false, true)),
-                                    27 => link.send_message(Msg::Collapse),
+                                match event.key().as_str() {
+                                    "ArrowRight" => link.send_message(Msg::Next),
+                                    "ArrowLeft" => link.send_message(Msg::Previous),
+                                    "Enter" | "ArrowDown" | " " => link.send_message(Msg::ShowSubmenu(true, true)),
+                                    "ArrowUp" => link.send_message(Msg::ShowSubmenu(false, true)),
+                                    "Escape" => link.send_message(Msg::Collapse),
                                     _ => return,
                                 }
                             } else {
-                                match event.key_code() {
-                                    40 => link.send_message(Msg::Next),
-                                    38 => link.send_message(Msg::Previous),
-                                    13 | 32 => {
+                                match event.key().as_str() {
+                                    "ArrowDown" => link.send_message(Msg::Next),
+                                    "ArrowUp" => link.send_message(Msg::Previous),
+                                    "Enter" | " " => {
                                         if has_submenu {
                                             link.send_message(Msg::ShowSubmenu(true, true));
                                         }
                                     }
-                                    39 => {
+                                    "ArrowRight" => {
                                         if !has_submenu {
                                             if let Some(menu_controller) = &menu_controller {
                                                 menu_controller.emit(MenuControllerMsg::Next);
@@ -644,7 +644,7 @@ impl Component for PwtMenu {
                                             link.send_message(Msg::ShowSubmenu(true, true));
                                         }
                                     }
-                                    37 => {
+                                    "ArrowLeft" => {
                                         link.send_message(Msg::ShowSubmenu(false, true));
                                         if menubar_child {
                                             if let Some(menu_controller) = &menu_controller {

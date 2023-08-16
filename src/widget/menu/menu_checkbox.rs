@@ -304,7 +304,7 @@ impl Component for PwtMenuCheckbox {
         let onkeydown = Callback::from({
             let link = ctx.link().clone();
             move |event: KeyboardEvent| {
-                if event.key_code() == 32 {
+                if event.key() == " " {
                     link.send_message(Msg::Toggle);
                 }
             }

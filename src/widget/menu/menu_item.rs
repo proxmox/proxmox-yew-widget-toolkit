@@ -272,8 +272,8 @@ impl Component for PwtMenuItem {
             .onkeydown({
                 let link = ctx.link().clone();
                 move |event: KeyboardEvent| {
-                    match event.key_code() {
-                        32 => if !has_submenu { link.send_message(Msg::Select) },
+                    match event.key().as_str() {
+                        " " => if !has_submenu { link.send_message(Msg::Select) },
                         _ => {},
                     }
                 }

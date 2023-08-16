@@ -300,8 +300,8 @@ impl Component for PwtResizableHeader {
             .onkeydown({
                 let link = ctx.link().clone();
                 move |event: KeyboardEvent| {
-                    match event.key_code() {
-                        40 => { // arrow down
+                    match event.key().as_str() {
+                        "ArrowDown" => {
                             event.stop_propagation();
                             link.send_message(Msg::ShowPicker);
                         }

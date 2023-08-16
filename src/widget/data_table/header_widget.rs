@@ -550,9 +550,9 @@ impl <T: 'static> Component for PwtHeaderWidget<T> {
             .onkeydown({
                 let link = ctx.link().clone();
                 move |event: KeyboardEvent| {
-                    match event.key_code() {
-                        39 => link.send_message(Msg::MoveCursor(true)),
-                        37 => link.send_message(Msg::MoveCursor(false)),
+                    match event.key().as_str() {
+                        "ArrowRight" => link.send_message(Msg::MoveCursor(true)),
+                        "ArrowLeft" => link.send_message(Msg::MoveCursor(false)),
                         _ => return,
                     }
                     event.prevent_default();

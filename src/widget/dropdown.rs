@@ -285,12 +285,12 @@ impl Component for PwtDropdown {
             let link = ctx.link().clone();
             let show = self.show;
             move |event: KeyboardEvent| {
-                match event.key_code() {
-                    27 => { // ESC
+                match event.key().as_str() {
+                    "Escape" => {
                         if !show { return; } // allow default (close dialog)
                         link.send_message(Msg::HidePicker);
                     }
-                    40 => { // Down
+                    "ArrowDown" => {
                         link.send_message(Msg::ShowPicker);
                     }
                      _ => return,

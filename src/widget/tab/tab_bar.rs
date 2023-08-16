@@ -395,7 +395,7 @@ impl Component for PwtTabBar {
                         let key = panel.key.clone();
                         let on_activate = panel.on_activate.clone();
                         move |event: KeyboardEvent| {
-                            if event.key_code() == 32 {
+                            if event.key() == " " {
                                 if let Some(on_activate) = &on_activate {
                                     on_activate.emit(());
                                 }

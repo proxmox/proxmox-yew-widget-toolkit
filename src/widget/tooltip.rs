@@ -133,8 +133,7 @@ impl Component for PwtTooltip {
                 .onkeydown(Callback::from({
                     let link = ctx.link().clone();
                     move |event: KeyboardEvent| {
-                        if show_tooltip && event.key_code() == 27 {
-                            // ESC
+                        if show_tooltip && event.key() == "Escape" {
                             link.send_message(Msg::Hide);
                             event.prevent_default();
                         }

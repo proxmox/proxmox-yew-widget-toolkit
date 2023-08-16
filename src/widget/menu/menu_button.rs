@@ -276,9 +276,9 @@ impl Component for PwtMenuButton {
             .onkeydown({
                 let link = ctx.link().clone();
                 move |event: KeyboardEvent| {
-                    match event.key_code() {
-                        27 => link.send_message(Msg::CloseMenu),
-                        40 => link.send_message(Msg::ShowMenu),
+                    match event.key().as_str() {
+                        "Escape" => link.send_message(Msg::CloseMenu),
+                        "ArrowDown" => link.send_message(Msg::ShowMenu),
                         _ => return,
                     }
                     event.stop_propagation();

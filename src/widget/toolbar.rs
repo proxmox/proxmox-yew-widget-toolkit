@@ -155,13 +155,11 @@ impl Component for PwtToolbar {
                 }
             })
             .onkeydown(move |event: KeyboardEvent| {
-                match event.key_code() {
-                    39 => {
-                        // left
+                match event.key().as_str() {
+                    "ArrowRight" => {
                         roving_tabindex_next(&inner_ref, rtl, true);
                     }
-                    37 => {
-                        // right
+                    "ArrowLeft" => {
                         roving_tabindex_next(&inner_ref, !rtl, true);
                     }
                     _ => return,
