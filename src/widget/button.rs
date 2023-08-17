@@ -7,13 +7,14 @@ use crate::props::{EventSubscriber, WidgetBuilder};
 use crate::widget::dom::IntoHtmlElement;
 use crate::widget::Container;
 
-use pwt_macros::widget;
+use pwt_macros::{builder, widget};
 
 /// Button.
 ///
 /// Buttons can be text only, icons with text, or icons only.
 #[widget(pwt=crate, comp=crate::widget::PwtButton, @element)]
 #[derive(Properties, PartialEq, Clone)]
+#[builder]
 pub struct Button {
     /// Button text.
     pub text: Option<AttrValue>,
@@ -38,6 +39,11 @@ pub struct Button {
     /// Draw button in pressed state (for use in Demo)
     #[prop_or_default]
     pub pressed: bool,
+
+    /// Whether to show an arrow at the end of the menu.
+    #[prop_or_default]
+    #[builder]
+    pub show_arrow: bool,
 }
 
 impl Button {
@@ -227,6 +233,12 @@ impl Component for PwtButton {
                 .onclick(suppress_onclick)
                 .into()
         });
+
+        if props.show_arrow {
+            children.push(html! {
+                <i role="none" aria-hidden="true" class="fa fa-caret-down"/>
+            });
+        }
 
         Container::form_widget_props(props.std_props.clone(), Some(props.listeners.clone()))
             .children(children)

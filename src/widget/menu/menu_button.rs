@@ -10,13 +10,14 @@ use crate::widget::{Button, Container};
 
 use super::{Menu, MenuControllerMsg, MenuPopper};
 
-use pwt_macros::widget;
+use pwt_macros::{builder, widget};
 
 /// A Button that opens a [Menu].
 ///
 /// See <https://www.w3.org/WAI/ARIA/apg/patterns/menu/>.
 #[widget(pwt=crate, comp=PwtMenuButton, @element)]
 #[derive(Clone, PartialEq, Properties)]
+#[builder]
 pub struct MenuButton {
     pub text: AttrValue,
     pub icon_class: Option<Classes>,
@@ -38,6 +39,11 @@ pub struct MenuButton {
 
     #[prop_or_default]
     pub disabled: bool,
+
+    /// Whether to show an arrow at the end of the menu.
+    #[prop_or_default]
+    #[builder]
+    pub show_arrow: bool,
 
     pub tabindex: Option<i32>,
 
@@ -254,6 +260,7 @@ impl Component for PwtMenuButton {
         submenu.add_optional_child(menu);
 
         let mut button = Button::new(&props.text)
+            .show_arrow(props.show_arrow)
             .attribute("role", "button")
             .attribute("aria-haspopup", "true")
             .attribute("aria-expanded", self.show_submenu.then(|| "true"))
