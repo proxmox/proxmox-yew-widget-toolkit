@@ -273,7 +273,7 @@ impl Component for PwtMenuItem {
                 let link = ctx.link().clone();
                 move |event: KeyboardEvent| {
                     match event.key().as_str() {
-                        " " => if !has_submenu { link.send_message(Msg::Select) },
+                        "Enter" | " " => if !has_submenu { link.send_message(Msg::Select) },
                         _ => {},
                     }
                 }
