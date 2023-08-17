@@ -263,9 +263,14 @@ impl Component for PwtMenuButton {
         button.std_props = props.std_props.clone();
         button.listeners = props.listeners.clone();
 
+        let show_submenu = self.show_submenu;
         let button = button.onclick(ctx.link().callback(move |event: MouseEvent| {
             event.stop_propagation();
-            Msg::ShowMenu
+            if show_submenu {
+                Msg::CloseMenu
+            } else {
+                Msg::ShowMenu
+            }
         }));
 
         Container::new()
