@@ -1,24 +1,22 @@
+use std::rc::Rc;
+
 use derivative::Derivative;
 
-use yew::prelude::*;
 use yew::html::IntoPropValue;
+use yew::prelude::*;
 
 use yew::virtual_dom::Key;
 
-use crate::props::{
-    SorterFn, IntoSorterFn, RenderFn,
-    CallbackMut, IntoEventCallbackMut,
-};
+use crate::props::{CallbackMut, IntoEventCallbackMut, IntoSorterFn, RenderFn, SorterFn};
 
 use super::{
-    DataTableKeyboardEvent, DataTableHeaderKeyboardEvent, DataTableMouseEvent,
-    DataTableCellRenderer, DataTableCellRenderArgs, DataTableHeaderRenderer,
+    DataTableCellRenderArgs, DataTableCellRenderer, DataTableHeaderKeyboardEvent,
+    DataTableHeaderRenderer, DataTableKeyboardEvent, DataTableMouseEvent,
 };
 
 /// DataTable column properties.
-#[derive(Properties)]
-#[derive(Derivative)]
-#[derivative(Clone(bound=""), PartialEq(bound=""))]
+#[derive(Properties, Derivative)]
+#[derivative(Clone(bound = ""), PartialEq(bound = ""))]
 pub struct DataTableColumn<T: 'static> {
     /// Width passed to CSS grid-template-columns.
     #[prop_or(AttrValue::Static("auto"))]
@@ -44,6 +42,7 @@ pub struct DataTableColumn<T: 'static> {
     /// - `Some(false)`: Descending
     /// - `None`: do not sort this columns
     pub sort_order: Option<bool>,
+
     /// Hide column
     #[prop_or_default]
     pub hidden: bool,
@@ -64,21 +63,20 @@ pub struct DataTableColumn<T: 'static> {
 }
 
 impl<T: 'static> DataTableColumn<T> {
-
     /// Creates a new instance.
     pub fn new(name: impl Into<AttrValue>) -> Self {
         yew::props!(Self {
             name: name.into(),
-            render_cell: DataTableCellRenderer::new(|_| html!{ "-" }),
+            render_cell: DataTableCellRenderer::new(|_| html! { "-" }),
         })
     }
 
     /// Genertates a column which shows a checkbox indication the
     /// selection status.
     pub fn selection_indicator() -> Self {
-        Self::new ("selection indicator")
-             .width("max-content")
-        //   .width("2.5em")
+        Self::new("selection indicator")
+            .width("max-content")
+            //   .width("2.5em")
             .resizable(false)
             .show_menu(false)
             .render_header(super::render_selection_header)
@@ -172,9 +170,7 @@ impl<T: 'static> DataTableColumn<T> {
     /// Builder style method to set the render function.
     pub fn render(self, render: impl Into<RenderFn<T>>) -> Self {
         let render = render.into();
-        self.render_cell(move |args: &mut DataTableCellRenderArgs<T>| {
-            render.apply(args.record)
-        })
+        self.render_cell(move |args: &mut DataTableCellRenderArgs<T>| render.apply(args.record))
     }
 
     /// Builder style method to set the cell render function.
@@ -241,14 +237,19 @@ impl<T: 'static> DataTableColumn<T> {
     }
 
     /// Builder style method to set the cell keydown callback.
-    pub fn on_cell_keydown(mut self, cb: impl IntoEventCallbackMut<DataTableKeyboardEvent>) -> Self {
+    pub fn on_cell_keydown(
+        mut self,
+        cb: impl IntoEventCallbackMut<DataTableKeyboardEvent>,
+    ) -> Self {
         self.on_cell_keydown = cb.into_event_cb_mut();
         self
-
     }
 
     /// Builder style method to set the header keydown callback.
-    pub fn on_header_keydown(mut self, cb: impl IntoEventCallbackMut<DataTableHeaderKeyboardEvent<T>>) -> Self {
+    pub fn on_header_keydown(
+        mut self,
+        cb: impl IntoEventCallbackMut<DataTableHeaderKeyboardEvent<T>>,
+    ) -> Self {
         self.on_header_keydown = cb.into_event_cb_mut();
         self
     }
