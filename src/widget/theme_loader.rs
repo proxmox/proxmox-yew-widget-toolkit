@@ -1,18 +1,25 @@
 use std::rc::Rc;
 
+use pwt_macros::builder;
 use yew::prelude::*;
 use yew::virtual_dom::{Key, VComp, VNode};
 
 use crate::state::{Theme, ThemeDensity, ThemeObserver};
 
 #[derive(Properties, Clone, PartialEq)]
+#[builder]
 pub struct ThemeLoader {
     body: VNode,
+
+    #[prop_or_default]
+    #[builder]
+    /// The directory prefix for the css files. (E.g. "/css/")
+    pub dir_prefix: AttrValue,
 }
 
 impl ThemeLoader {
     pub fn new(body: impl Into<VNode>) -> Self {
-        Self { body: body.into() }
+        yew::props!(Self { body: body.into() })
     }
 }
 
@@ -58,16 +65,22 @@ fn set_css_density(density: ThemeDensity) {
     );
 
     match density {
-        ThemeDensity::High => { let _ = class_list.add_1("pwt-density-high"); },
-        ThemeDensity::Touch => { let _ = class_list.add_1("pwt-density-touch"); },
-        ThemeDensity::Medium => { let _ = class_list.add_1("pwt-density-medium"); },
-        ThemeDensity::Auto => { /* do nothing */},
+        ThemeDensity::High => {
+            let _ = class_list.add_1("pwt-density-high");
+        }
+        ThemeDensity::Touch => {
+            let _ = class_list.add_1("pwt-density-touch");
+        }
+        ThemeDensity::Medium => {
+            let _ = class_list.add_1("pwt-density-medium");
+        }
+        ThemeDensity::Auto => { /* do nothing */ }
     };
 }
 
 impl PwtThemeLoader {
-    fn update_theme(&mut self, theme: Theme, dark_mode: bool, loaded: bool) -> bool {
-        let new_css = theme.get_css_filename(dark_mode).to_string();
+    fn update_theme(&mut self, theme: Theme, dark_mode: bool, loaded: bool, prefix: &str) -> bool {
+        let new_css = theme.get_css_filename(dark_mode, prefix).to_string();
 
         if self.theme_css != new_css && self.new_theme_css.is_none() {
             self.new_theme_css = Some(new_css);
@@ -105,22 +118,30 @@ impl Component for PwtThemeLoader {
         let theme = theme_observer.theme();
         let dark_mode = theme_observer.dark_mode();
 
+        let props = ctx.props();
+
         Self {
             theme_observer,
             loadstate: LoadState::Initial,
-            theme_css: theme.get_css_filename(dark_mode).to_string(),
+            theme_css: theme
+                .get_css_filename(dark_mode, props.dir_prefix.as_str())
+                .to_string(),
             new_theme_css: None,
         }
     }
 
-    fn update(&mut self, _ctx: &Context<Self>, msg: Self::Message) -> bool {
+    fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
+        let prefix = ctx.props().dir_prefix.as_str();
         match msg {
             Msg::Loaded => self.update_theme(
                 self.theme_observer.theme(),
                 self.theme_observer.dark_mode(),
                 true,
+                prefix,
             ),
-            Msg::ThemeChanged((theme, dark_mode)) => self.update_theme(theme, dark_mode, false),
+            Msg::ThemeChanged((theme, dark_mode)) => {
+                self.update_theme(theme, dark_mode, false, prefix)
+            }
         }
     }
 
