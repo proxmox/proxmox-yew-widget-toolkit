@@ -17,7 +17,7 @@ pub struct AlertDialog {
     /// Close window callback.
     pub on_close: Option<Callback<()>>,
     /// Enable/disable dragging
-    #[prop_or_default]
+    #[prop_or(true)]
     pub draggable: bool,
 }
 
