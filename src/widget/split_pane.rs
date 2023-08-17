@@ -447,8 +447,10 @@ impl Component for PwtSplitPane {
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
         let props = ctx.props();
 
-        if let Some(sizes) = self.query_sizes(props) {
-            self.sizes = sizes;
+        if !matches!(msg, Msg::FocusIn) {
+            if let Some(sizes) = self.query_sizes(props) {
+                self.sizes = sizes;
+            }
         }
 
         if self.rtl.is_none() {
