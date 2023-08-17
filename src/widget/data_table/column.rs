@@ -253,4 +253,32 @@ impl<T: 'static> DataTableColumn<T> {
         self.on_header_keydown = cb.into_event_cb_mut();
         self
     }
+
+    /// Builder style method to set a get_property_fn for renderer and sorter
+    /// the given fn must return a reference
+    pub fn get_property<E: Ord + std::fmt::Display>(
+        self,
+        get_property_fn: impl 'static + Fn(&T) -> &E,
+    ) -> Self {
+        let get_property_fn = Rc::new(get_property_fn);
+        self.sorter({
+            let get_property_fn = get_property_fn.clone();
+            move |itema: &T, itemb: &T| get_property_fn(itema).cmp(&get_property_fn(itemb))
+        })
+        .render(move |item: &T| html! {{get_property_fn(item)}})
+    }
+
+    /// Builder style method to set a get_property_fn for renderer and sorter
+    /// the given fn must return an owned type
+    pub fn get_property_owned<E: Ord + std::fmt::Display>(
+        self,
+        get_property_fn: impl 'static + Fn(&T) -> E,
+    ) -> Self {
+        let get_property_fn = Rc::new(get_property_fn);
+        self.sorter({
+            let get_property_fn = get_property_fn.clone();
+            move |itema: &T, itemb: &T| get_property_fn(itema).cmp(&get_property_fn(itemb))
+        })
+        .render(move |item: &T| html! {{get_property_fn(item)}})
+    }
 }
