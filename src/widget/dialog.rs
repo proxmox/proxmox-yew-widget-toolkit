@@ -379,7 +379,10 @@ impl Component for PwtDialog {
             panel.add_child(child.clone());
         }
 
-        let onpointerdown = link.callback(Msg::PointerDown);
+        let onpointerdown = link.callback(|event: PointerEvent| {
+            event.stop_propagation();
+            Msg::PointerDown(event)
+        });
 
         let resizable = props.resizable;
 
