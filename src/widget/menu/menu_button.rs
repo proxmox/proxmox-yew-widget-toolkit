@@ -271,9 +271,10 @@ impl Component for PwtMenuButton {
         button.listeners = props.listeners.clone();
 
         let show_submenu = self.show_submenu;
+        let autoshow_menu = props.autoshow_menu;
         let button = button.onclick(ctx.link().callback(move |event: MouseEvent| {
             event.stop_propagation();
-            if show_submenu {
+            if show_submenu && !autoshow_menu {
                 Msg::CloseMenu
             } else {
                 Msg::ShowMenu
