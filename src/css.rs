@@ -133,9 +133,9 @@ impl From<JustifyContent> for Classes {
             JustifyContent::Left => "pwt-justify-content-left".into(),
             JustifyContent::Right => "pwt-justify-content-right".into(),
             JustifyContent::Normal => "pwt-justify-content-normal".into(),
-            JustifyContent::SpaceBetween => "pwt-justify-content-between".into(),
-            JustifyContent::SpaceAround => "pwt-justify-content-around".into(),
-            JustifyContent::SpaceEvenly => "pwt-justify-content-evenly".into(),
+            JustifyContent::SpaceBetween => "pwt-justify-content-space-between".into(),
+            JustifyContent::SpaceAround => "pwt-justify-content-space-around".into(),
+            JustifyContent::SpaceEvenly => "pwt-justify-content-space-evenly".into(),
             JustifyContent::Stretch => "pwt-justify-content-stretch".into(),
         }
     }
