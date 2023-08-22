@@ -4,10 +4,7 @@ use yew::prelude::*;
 
 use crate::props::FieldStdProps;
 
-use super::{
-    FormContext, FormContextObserver, FieldHandle, FieldOptions,
-    ValidateFn,
-};
+use super::{FieldHandle, FieldOptions, FormContext, FormContextObserver, ValidateFn};
 
 /// Text field state handling.
 pub struct FieldState {
@@ -31,11 +28,10 @@ pub struct FieldState {
 /// Should be passed to [ FieldState::update_hook] from [Component::update].
 pub enum FieldStateMsg {
     FormCtxUpdate(FormContext), // FormContext object changed
-    FormCtxDataChange, // Data inside FormContext changed
+    FormCtxDataChange,          // Data inside FormContext changed
 }
 
 impl FieldState {
-
     /// Create a new instance.
     ///
     /// Setup form context interaction if the field has a name.
@@ -48,7 +44,6 @@ impl FieldState {
         on_change: Option<Callback<Value>>,
         real_validate: ValidateFn<Value>,
     ) -> FieldState {
-
         let on_form_ctx_change = Callback::from({
             let on_state_change = on_state_change.clone();
             move |form_ctx: FormContext| {
@@ -75,7 +70,6 @@ impl FieldState {
             on_change,
         };
 
-
         if props.name.is_some() {
             if let Some((form, handle)) = ctx.link().context::<FormContext>(on_form_ctx_change) {
                 state._form_ctx_handle = Some(handle);
@@ -97,14 +91,11 @@ impl FieldState {
     }
 
     /// Force value - for fields without name (no FormContext)
-    pub fn force_value(
-        &mut self,
-        value: impl Into<Value>,
-        valid: Option<Result<(), String>>,
-    ) {
+    pub fn force_value(&mut self, value: impl Into<Value>, valid: Option<Result<(), String>>) {
         let value = value.into();
         self.valid = valid.unwrap_or_else(|| {
-            self.real_validate.validate(&value)
+            self.real_validate
+                .validate(&value)
                 .map_err(|e| e.to_string())
         });
         self.value = value;
@@ -112,9 +103,10 @@ impl FieldState {
 
     /// Set the field value
     pub fn set_value(&mut self, value: impl Into<Value>) {
-
         self.value = value.into();
-        self.valid = self.real_validate.validate(&self.value)
+        self.valid = self
+            .real_validate
+            .validate(&self.value)
             .map_err(|e| e.to_string());
 
         if let Some(field_handle) = &mut self.field_handle {
@@ -135,7 +127,9 @@ impl FieldState {
 
     /// Trigger re-validation
     pub fn validate(&mut self) {
-        self.valid = self.real_validate.validate(&self.value)
+        self.valid = self
+            .real_validate
+            .validate(&self.value)
             .map_err(|e| e.to_string());
 
         if let Some(field_handle) = &mut self.field_handle {
@@ -173,6 +167,7 @@ impl FieldState {
             submit_empty: props.submit_empty,
             disabled: props.disabled,
             required: props.required,
+            value_type: props.value_type,
         };
 
         let field_handle = form_ctx.register_field(
@@ -188,16 +183,14 @@ impl FieldState {
         self.field_handle = Some(field_handle);
     }
 
-    pub fn update_field_options(
-        &mut self,
-        props: &FieldStdProps,
-    ) {
+    pub fn update_field_options(&mut self, props: &FieldStdProps) {
         if let Some(field_handle) = &mut self.field_handle {
             let options = FieldOptions {
                 submit: props.submit,
                 submit_empty: props.submit_empty,
                 disabled: props.disabled,
                 required: props.required,
+                value_type: props.value_type,
             };
             field_handle.update_field_options(options);
         }
@@ -213,7 +206,8 @@ impl FieldState {
     ) -> bool {
         match msg {
             FieldStateMsg::FormCtxUpdate(form_ctx) => {
-                self._form_ctx_observer = Some(form_ctx.add_listener(self.on_form_data_change.clone()));
+                self._form_ctx_observer =
+                    Some(form_ctx.add_listener(self.on_form_data_change.clone()));
                 self.form_ctx = Some(form_ctx);
                 self.register_field(props, self.value.clone(), default, radio_group, unique);
                 true
