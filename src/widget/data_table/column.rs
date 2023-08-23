@@ -270,6 +270,8 @@ impl<T: 'static> DataTableColumn<T> {
 
     /// Builder style method to set a get_property_fn for renderer and sorter
     /// the given fn must return an owned type
+    /// NOTE: on sort this will be called multiple times per entry, so use with caution for large
+    /// lists
     pub fn get_property_owned<E: Ord + std::fmt::Display>(
         self,
         get_property_fn: impl 'static + Fn(&T) -> E,
