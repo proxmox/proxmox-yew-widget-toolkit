@@ -1,19 +1,19 @@
 use anyhow::{bail, Error};
-use serde_json::Value;
 use derivative::Derivative;
+use serde_json::Value;
 
+use yew::html::{IntoEventCallback, IntoPropValue};
 use yew::prelude::*;
 use yew::virtual_dom::Key;
-use yew::html::{IntoEventCallback, IntoPropValue};
 
-#[cfg(feature="proxmox-schema")]
+#[cfg(feature = "proxmox-schema")]
 use proxmox_schema::Schema;
 
+use super::{FieldState, FieldStateMsg, IntoValidateFn, ValidateFn};
 use crate::prelude::*;
-use crate::props::{RenderFn, IntoLoadCallback, LoadCallback};
+use crate::props::{IntoLoadCallback, IntoOptionalRenderFn, LoadCallback, RenderFn};
 use crate::state::{DataStore, Selection};
 use crate::widget::{error_message, Dropdown};
-use super::{FieldState, FieldStateMsg, IntoValidateFn, ValidateFn};
 
 use pwt_macros::{builder, widget};
 
@@ -50,7 +50,7 @@ pub struct SelectorRenderArgs<S: DataStore> {
 /// reloads.
 #[widget(pwt=crate, comp=PwtSelector<S>, @input, @element)]
 #[derive(Derivative, Properties)]
-#[derivative(Clone(bound=""), PartialEq(bound=""))]
+#[derivative(Clone(bound = ""), PartialEq(bound = ""))]
 #[builder]
 pub struct Selector<S: DataStore + 'static> {
     store: S,
@@ -81,15 +81,17 @@ pub struct Selector<S: DataStore + 'static> {
     pub validate: Option<ValidateFn<(String, S)>>,
     /// Data loader callback.
     pub loader: Option<LoadCallback<S::Collection>>,
+
+    /// Display the output of this function instead of displaying values directly.
+    ///
+    /// Note: selectors using this feature are not editable (editable property is ignored)!
+    #[builder_cb(IntoOptionalRenderFn, into_optional_render_fn, AttrValue)]
+    pub render_value: Option<RenderFn<AttrValue>>,
 }
 
 impl<S: DataStore> Selector<S> {
-
     /// Creates a new instance
-    pub fn new(
-        store: S,
-        picker: impl Into<RenderFn<SelectorRenderArgs<S>>>,
-    ) -> Self {
+    pub fn new(store: S, picker: impl Into<RenderFn<SelectorRenderArgs<S>>>) -> Self {
         yew::props!(Self {
             store,
             picker: picker.into(),
@@ -97,31 +99,25 @@ impl<S: DataStore> Selector<S> {
     }
 
     /// Builder style method to set the validate callback
-    pub fn validate(
-        mut self,
-        validate: impl IntoValidateFn<(String, S)>,
-    ) -> Self {
+    pub fn validate(mut self, validate: impl IntoValidateFn<(String, S)>) -> Self {
         self.set_validate(validate);
         self
     }
 
     /// Method to set the validate callback
-    pub fn set_validate(
-        &mut self,
-        validate: impl IntoValidateFn<(String, S)>,
-    ) {
+    pub fn set_validate(&mut self, validate: impl IntoValidateFn<(String, S)>) {
         self.validate = validate.into_validate_fn();
     }
 
     /// Builder style method to set the validation schema
-    #[cfg(feature="proxmox-schema")]
+    #[cfg(feature = "proxmox-schema")]
     pub fn schema(mut self, schema: &'static Schema) -> Self {
         self.set_schema(schema);
         self
     }
 
     /// Method to set the validation schema
-    #[cfg(feature="proxmox-schema")]
+    #[cfg(feature = "proxmox-schema")]
     pub fn set_schema(&mut self, schema: &'static Schema) {
         self.validate = Some(ValidateFn::new(move |(value, _list): &(String, _)| {
             schema.parse_simple_value(&value)?;
@@ -141,7 +137,6 @@ impl<S: DataStore> Selector<S> {
     }
 }
 
-
 pub enum Msg<S: DataStore> {
     StateUpdate(FieldStateMsg),
     Select(String),
@@ -157,9 +152,7 @@ pub struct PwtSelector<S: DataStore> {
     _store_observer: S::Observer,
 }
 
-fn create_selector_validation_cb<S: DataStore + 'static>(
-    props: &Selector<S>,
-) -> ValidateFn<Value> {
+fn create_selector_validation_cb<S: DataStore + 'static>(props: &Selector<S>) -> ValidateFn<Value> {
     let store = props.store.clone();
     let required = props.input_props.required;
     let validate = props.validate.clone();
@@ -167,7 +160,8 @@ fn create_selector_validation_cb<S: DataStore + 'static>(
         let value = match value {
             Value::Null => String::new(),
             Value::String(v) => v.clone(),
-            _ => { // should not happen
+            _ => {
+                // should not happen
                 log::error!("PwtField: got wrong data type in validate!");
                 String::new()
             }
@@ -186,14 +180,13 @@ fn create_selector_validation_cb<S: DataStore + 'static>(
                 Some(cb) => cb.validate(&(value.into(), store.clone())),
                 None => Ok(()),
             }
-        } else  {
+        } else {
             bail!("no data loaded");
         }
     })
 }
 
 impl<S: DataStore + 'static> PwtSelector<S> {
-
     fn load(&self, ctx: &Context<Self>) {
         let props = ctx.props();
         let link = ctx.link().clone();
@@ -242,9 +235,9 @@ impl<S: DataStore + 'static> Component for PwtSelector<S> {
             selection.select(default.clone());
         }
 
-        let _store_observer = props.store.add_listener(ctx.link().callback(|_| {
-            Msg::DataChange
-        }));
+        let _store_observer = props
+            .store
+            .add_listener(ctx.link().callback(|_| Msg::DataChange));
 
         let mut me = Self {
             state,
@@ -254,7 +247,8 @@ impl<S: DataStore + 'static> Component for PwtSelector<S> {
         };
 
         if props.input_props.name.is_some() {
-            me.state.register_field(&props.input_props, default.clone(), default, false, false);
+            me.state
+                .register_field(&props.input_props, default.clone(), default, false, false);
         } else {
             me.state.force_value(default, None);
         }
@@ -269,10 +263,13 @@ impl<S: DataStore + 'static> Component for PwtSelector<S> {
         match msg {
             Msg::StateUpdate(state_msg) => {
                 let default = props.default.as_deref().unwrap_or("").to_string();
-                let changes = self.state.update_hook(&props.input_props, state_msg, default, false, false);
+                let changes =
+                    self.state
+                        .update_hook(&props.input_props, state_msg, default, false, false);
                 if changes {
                     let (value, _valid) = self.state.get_field_data();
-                    self.selection.select(Key::from(value.as_str().unwrap_or("")));
+                    self.selection
+                        .select(Key::from(value.as_str().unwrap_or("")));
                 }
                 changes
             }
@@ -297,11 +294,9 @@ impl<S: DataStore + 'static> Component for PwtSelector<S> {
                 let value = value.as_str().unwrap_or("");
                 if self.load_error.is_none() {
                     if value.is_empty() {
-
                         let mut default = props.default.clone();
 
                         if default.is_none() && props.autoselect {
-
                             if let Some((_pos, node)) = props.store.filtered_data().next() {
                                 default = Some(AttrValue::from(node.key().to_string()));
                             }
@@ -317,7 +312,9 @@ impl<S: DataStore + 'static> Component for PwtSelector<S> {
                 true
             }
             Msg::Select(value) => {
-                if props.input_props.disabled { return true; }
+                if props.input_props.disabled {
+                    return true;
+                }
                 self.state.set_value(value);
                 true
             }
@@ -334,9 +331,9 @@ impl<S: DataStore + 'static> Component for PwtSelector<S> {
         let mut reload = false;
 
         if props.store != old_props.store {
-            self._store_observer = props.store.add_listener(ctx.link().callback(|_| {
-                Msg::DataChange
-            }));
+            self._store_observer = props
+                .store
+                .add_listener(ctx.link().callback(|_| Msg::DataChange));
             reload = true;
         }
 
@@ -344,7 +341,9 @@ impl<S: DataStore + 'static> Component for PwtSelector<S> {
             reload = true;
         }
 
-        if reload { self.load(ctx); }
+        if reload {
+            self.load(ctx);
+        }
 
         true
     }
@@ -363,13 +362,12 @@ impl<S: DataStore + 'static> Component for PwtSelector<S> {
             let load_error = self.load_error.clone();
 
             move |on_select: &Callback<Key>| {
-
                 if let Some(load_error) = &load_error {
                     return error_message(&format!("Error: {}", load_error), "pwt-p-2");
                 }
 
                 if store.is_empty() {
-                    return html!{
+                    return html! {
                         <div class="pwt-p-2">{"List does not contain any items."}</div>
                     };
                 }
@@ -392,11 +390,15 @@ impl<S: DataStore + 'static> Component for PwtSelector<S> {
             .with_std_props(&props.std_props)
             .with_input_props(&props.input_props)
             .editable(props.editable)
-            .class(if valid.is_ok() { "is-valid" } else { "is-invalid" })
+            .class(if valid.is_ok() {
+                "is-valid"
+            } else {
+                "is-invalid"
+            })
             .on_change(ctx.link().callback(|key: String| Msg::Select(key)))
             .value(value)
+            .render_value(props.render_value.clone())
             .tip(tip)
             .into()
     }
-
 }
