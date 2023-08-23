@@ -13,7 +13,7 @@ use yew::virtual_dom::Key;
 use crate::prelude::*;
 use crate::widget::{Container, Input, Tooltip};
 
-use pwt_macros::widget;
+use pwt_macros::{builder, widget};
 
 use crate::widget::align::{AlignOptions, AutoFloatingPlacement, GrowDirection, Point};
 
@@ -51,25 +51,31 @@ impl<F: 'static + Fn(&Callback<Key>) -> Html> From<F> for RenderDropdownPickerFn
 /// submit_empty).
 #[widget(pwt=crate, comp=PwtDropdown, @input, @element)]
 #[derive(Clone, PartialEq, Properties)]
+#[builder]
 pub struct Dropdown {
     /// Make the input editable.
     #[prop_or_default]
+    #[builder]
     pub editable: bool,
 
     /// Function to generate the picker widget.
     pub picker: RenderDropdownPickerFn,
 
     /// Tooltip for the input
+    #[builder(IntoPropValue, into_prop_value)]
     pub tip: Option<AttrValue>,
 
     /// Value change callback.
+    #[builder_cb(IntoEventCallback, into_event_callback, String)]
     pub on_change: Option<Callback<String>>,
 
     /// Sets the input to the provided value.
+    #[builder(IntoPropValue, into_prop_value)]
     pub value: Option<String>,
 
     /// Sets the "aria-haspopup" property.
-    pub popup_type: Option<String>,
+    #[builder(IntoPropValue, into_prop_value)]
+    pub popup_type: Option<AttrValue>,
 }
 
 impl Dropdown {
@@ -77,56 +83,6 @@ impl Dropdown {
     // Create a new instance
     pub fn new(picker: impl Into<RenderDropdownPickerFn>) -> Self {
         yew::props!{ Self { picker: picker.into() } }
-    }
-
-    /// Builder style method to set the editable flag
-    pub fn editable(mut self, editable: bool) -> Self {
-        self.set_editable(editable);
-        self
-    }
-
-    /// Method to set the editable flag
-    pub fn set_editable(&mut self, editable: bool) {
-        self.editable = editable;
-    }
-
-    /// Builder style method to set the on_change callback
-    pub fn on_change(mut self, cb: impl IntoEventCallback<String>) -> Self {
-        self.on_change = cb.into_event_callback();
-        self
-    }
-
-    /// Builder style method to set the value
-    pub fn value(mut self, value: impl IntoPropValue<Option<String>>) -> Self {
-        self.set_value(value);
-        self
-    }
-
-    /// Method to set the value
-    pub fn set_value(&mut self, value: impl IntoPropValue<Option<String>>) {
-        self.value = value.into_prop_value();
-    }
-
-    /// Builder style method to set the popup_type
-    pub fn popup_type(mut self, popup_type: impl IntoPropValue<Option<String>>) -> Self {
-        self.set_popup_type(popup_type);
-        self
-    }
-
-    /// Method to set the popup_type
-    pub fn set_popup_type(&mut self, popup_type: impl IntoPropValue<Option<String>>) {
-        self.popup_type = popup_type.into_prop_value();
-    }
-
-    /// Builder style method to set the tooltip
-    pub fn tip(mut self, tip: impl IntoPropValue<Option<AttrValue>>) -> Self {
-        self.set_tip(tip);
-        self
-    }
-
-    /// Method to set the tooltip
-    pub fn set_tip(&mut self, tip: impl IntoPropValue<Option<AttrValue>>) {
-        self.tip = tip.into_prop_value();
     }
 }
 
