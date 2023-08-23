@@ -11,6 +11,7 @@ use yew::html::{IntoPropValue, IntoEventCallback};
 use yew::virtual_dom::Key;
 
 use crate::prelude::*;
+use crate::props::{IntoOptionalRenderFn, RenderFn};
 use crate::widget::{Container, Input, Tooltip};
 
 use pwt_macros::{builder, widget};
@@ -54,6 +55,8 @@ impl<F: 'static + Fn(&Callback<Key>) -> Html> From<F> for RenderDropdownPickerFn
 #[builder]
 pub struct Dropdown {
     /// Make the input editable.
+    ///
+    /// This will be forced to `false` if you pass a `render_value` callback.
     #[prop_or_default]
     #[builder]
     pub editable: bool,
@@ -76,6 +79,12 @@ pub struct Dropdown {
     /// Sets the "aria-haspopup" property.
     #[builder(IntoPropValue, into_prop_value)]
     pub popup_type: Option<AttrValue>,
+
+    /// Display the output of this function instead of value.
+    ///
+    /// Note: dropdowns using this feature are not editable (editable property is ignored)!
+    #[builder_cb(IntoOptionalRenderFn, into_optional_render_fn, AttrValue)]
+    pub render_value: Option<RenderFn<AttrValue>>,
 }
 
 impl Dropdown {
@@ -269,7 +278,43 @@ impl Component for PwtDropdown {
 
         let value = props.value.clone().unwrap_or_else(|| self.value.clone());
 
-        let input = Input::new()
+        let input: Html = if let Some(render_value) = &props.render_value {
+            let rendered_value = if let Some(placeholder) = &props.input_props.placeholder {
+                if value.is_empty() {
+                    placeholder.into()
+                } else {
+                    render_value.apply(&AttrValue::from(value.clone()))
+                }
+            } else {
+                render_value.apply(&AttrValue::from(value.clone()))
+            };
+
+            Container::new()
+                .node_ref(self.input_ref.clone())
+                .class("pwt-flex-fill")
+                .class("pwt-input-content")
+                .attribute("tabindex", props.input_props.tabindex.unwrap_or(0).to_string())
+                .attribute("role", "combobox")
+                .attribute("aria-expanded", if self.show { "true" } else { "false" })
+                .attribute("aria-controls", self.picker_id.clone())
+                .attribute("aria-haspopup", props.popup_type.clone())
+                .attribute("aria-required", props.input_props.required.then(|| ""))
+                .attribute("aria-label", props.input_props.aria_label.clone())
+                .attribute("aria-labelledby", props.input_props.label_id.clone())
+                .attribute("aria-live", "assertive")
+                .with_child(rendered_value)
+                .with_child(
+                    Input::new()
+                        .name(props.input_props.name.clone())
+                        .disabled(props.input_props.disabled)
+                        .required(props.input_props.required)
+                        .attribute("value", value)
+                        .attribute("type", "hidden")
+                )
+                .onkeydown(onkeydown)
+                .into()
+        } else {
+            Input::new()
             .node_ref(self.input_ref.clone())
             .with_input_props(&props.input_props)
             .class("pwt-flex-fill")
@@ -280,7 +325,9 @@ impl Component for PwtDropdown {
             .attribute("aria-controls", self.picker_id.clone())
             .attribute("aria-haspopup", props.popup_type.clone())
             .oninput(oninput)
-            .onkeydown(onkeydown);
+            .onkeydown(onkeydown)
+            .into()
+        };
 
         let trigger_cls = classes!{
             "fa",
