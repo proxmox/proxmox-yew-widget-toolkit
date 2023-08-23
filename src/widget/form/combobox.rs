@@ -8,25 +8,29 @@ use yew::html::{IntoEventCallback, IntoPropValue};
 use proxmox_schema::Schema;
 
 use crate::prelude::*;
+use crate::props::{IntoOptionalRenderFn, RenderFn};
 use crate::state::Store;
 use crate::widget::GridPicker;
 use crate::widget::data_table::{DataTable, DataTableColumn, DataTableHeader};
 
 use super::{Selector, SelectorRenderArgs, IntoValidateFn, ValidateFn};
 
-use pwt_macros::widget;
+use pwt_macros::{builder, widget};
 
 /// Combobox widget
 ///
 /// Allows to select text options.
 #[widget(pwt=crate, comp=PwtCombobox, @input, @element)]
 #[derive(Clone, PartialEq, Properties)]
+#[builder]
 pub struct Combobox {
     /// Default value.
+    #[builder(IntoPropValue, into_prop_value)]
     pub default: Option<AttrValue>,
 
     /// Make the input editable.
     #[prop_or_default]
+    #[builder]
     pub editable: bool,
 
     /// Item list.
@@ -34,6 +38,7 @@ pub struct Combobox {
     pub items: Rc<Vec<AttrValue>>,
 
     /// Change callback
+    #[builder_cb(IntoEventCallback, into_event_callback, String)]
     pub on_change: Option<Callback<String>>,
 
     /// Validation function.
@@ -42,7 +47,14 @@ pub struct Combobox {
     /// Show filter
     ///
     /// Defaul behavior is to show the filter for pickers with more than 10 items.
+    #[builder(IntoPropValue, into_prop_value)]
     pub show_filter: Option<bool>,
+
+    /// Display the output of this function instead of displaying values directly.
+    ///
+    /// Note: selectors using this feature are not editable (editable property is ignored)!
+    #[builder_cb(IntoOptionalRenderFn, into_optional_render_fn, AttrValue)]
+    pub render_value: Option<RenderFn<AttrValue>>,
 }
 
 impl Combobox {
@@ -50,28 +62,6 @@ impl Combobox {
     /// Create a new instance.
     pub fn new() -> Self {
         yew::props!(Self {})
-    }
-
-    /// Builder style method to set the default item.
-    pub fn default(mut self, default: impl IntoPropValue<Option<AttrValue>>) -> Self {
-        self.set_default(default);
-        self
-    }
-
-    /// Method to set the default item.
-    pub fn set_default(&mut self, default: impl IntoPropValue<Option<AttrValue>>) {
-        self.default = default.into_prop_value();
-    }
-
-    /// Builder style method to set the editable flag.
-    pub fn editable(mut self, editable: bool) -> Self {
-        self.set_editable(editable);
-        self
-    }
-
-    /// Method to set the editable flag.
-    pub fn set_editable(&mut self, editable: bool) {
-        self.editable = editable;
     }
 
     /// Builder style method to add an selectable item.
@@ -94,12 +84,6 @@ impl Combobox {
     /// Method to set items
     pub fn set_items(&mut self, items: Rc<Vec<AttrValue>>) {
         self.items = items;
-    }
-
-    /// Builder style method to set the on_change callback
-    pub fn on_change(mut self, cb: impl IntoEventCallback<String>) -> Self {
-        self.on_change = cb.into_event_callback();
-        self
     }
 
     /// Builder style method to set the validate callback
@@ -134,17 +118,6 @@ impl Combobox {
             Ok(())
         });
     }
-
-    /// Builder style method to set the show_filter flag.
-    pub fn show_filter(mut self, show_filter: impl IntoPropValue<Option<bool>>) -> Self {
-        self.set_show_filter(show_filter);
-        self
-    }
-
-    /// Method to set the show_filter flag.
-    pub fn set_show_filter(&mut self, show_filter: impl IntoPropValue<Option<bool>>) {
-        self.show_filter = show_filter.into_prop_value();
-    }
 }
 
 pub enum Msg {
@@ -154,15 +127,7 @@ pub enum Msg {
 #[doc(hidden)]
 pub struct PwtCombobox {
     store: Store<AttrValue>,
-}
-
-thread_local!{
-    static COLUMNS: Rc<Vec<DataTableHeader<AttrValue>>> = Rc::new(vec![
-        DataTableColumn::new("Value")
-            .show_menu(false)
-            .render(|value: &AttrValue| html!{value})
-            .into(),
-    ]);
+    columns: Rc<Vec<DataTableHeader<AttrValue>>>,
 }
 
 impl Component for PwtCombobox {
@@ -177,7 +142,17 @@ impl Component for PwtCombobox {
             store.set_data(props.items.as_ref().clone());
         }
 
-        Self { store }
+        let render_value = props.render_value.clone().unwrap_or_else(|| {
+            RenderFn::new(|value: &AttrValue| html!{value})
+        });
+        let columns = Rc::new(vec![
+            DataTableColumn::new("Value")
+                .show_menu(false)
+                .render(render_value)
+                .into(),
+        ]);
+
+        Self { store, columns }
     }
 
     fn update(&mut self, _ctx: &Context<Self>, msg: Self::Message) -> bool {
@@ -197,6 +172,7 @@ impl Component for PwtCombobox {
         }
         true
     }
+
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
         let link = ctx.link().clone();
@@ -205,15 +181,15 @@ impl Component for PwtCombobox {
             if self.store.data_len() > 10 { true } else { false }
         });
 
+        let columns = Rc::clone(&self.columns);
         let picker = move |args: &SelectorRenderArgs<Store<AttrValue>>| {
             // TODO use a simpler list widget without virtual scroll support?
-            let table = DataTable::new(COLUMNS.with(Rc::clone), args.store.clone())
+            let table = DataTable::new(columns.clone(), args.store.clone())
                 //.class("pwt-fit")
                 .show_header(false);
 
             let mut picker = GridPicker::new(table)
                 .selection(args.selection.clone())
-                .show_filter(show_filter)
                 .on_select(args.on_select.clone());
 
             if show_filter {
@@ -234,6 +210,7 @@ impl Component for PwtCombobox {
             .editable(props.editable)
             .default(&props.default)
             .validate(props.validate.clone())
+            .render_value(props.render_value.clone())
             .on_change({
                 let on_change = props.on_change.clone();
                 move |key: Key| {
