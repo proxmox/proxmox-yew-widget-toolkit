@@ -15,7 +15,7 @@ use crate::state::{DataStore, Selection};
 use crate::widget::{error_message, Dropdown};
 use super::{FieldState, FieldStateMsg, IntoValidateFn, ValidateFn};
 
-use pwt_macros::widget;
+use pwt_macros::{builder, widget};
 
 /// Parameters passed to the [Selector::picker] callback.
 pub struct SelectorRenderArgs<S: DataStore> {
@@ -51,22 +51,30 @@ pub struct SelectorRenderArgs<S: DataStore> {
 #[widget(pwt=crate, comp=PwtSelector<S>, @input, @element)]
 #[derive(Derivative, Properties)]
 #[derivative(Clone(bound=""), PartialEq(bound=""))]
+#[builder]
 pub struct Selector<S: DataStore + 'static> {
     store: S,
     /// The default value.
+    #[builder(IntoPropValue, into_prop_value)]
     pub default: Option<AttrValue>,
 
     /// Make the input editable.
     #[prop_or_default]
+    #[builder]
     pub editable: bool,
+
     /// Autoselect flag.
     ///
     /// If there is no default, automatically select the first loaded
     /// data item.
     #[prop_or_default]
+    #[builder]
     pub autoselect: bool,
+
     /// Change callback
+    #[builder_cb(IntoEventCallback, into_event_callback, Key)]
     pub on_change: Option<Callback<Key>>,
+
     /// Picker render function
     pub picker: RenderFn<SelectorRenderArgs<S>>,
     /// Validate callback.
@@ -86,39 +94,6 @@ impl<S: DataStore> Selector<S> {
             store,
             picker: picker.into(),
         })
-    }
-
-    /// Builder style method to set the default item.
-    pub fn default(mut self, default: impl IntoPropValue<Option<AttrValue>>) -> Self {
-        self.set_default(default);
-        self
-    }
-
-    /// Method to set the default item.
-    pub fn set_default(&mut self, default: impl IntoPropValue<Option<AttrValue>>) {
-        self.default = default.into_prop_value();
-    }
-
-    /// Builder style method to set the editable flag
-    pub fn editable(mut self, editable: bool) -> Self {
-        self.set_editable(editable);
-        self
-    }
-
-    /// Method to set the editable flag
-    pub fn set_editable(&mut self, editable: bool) {
-        self.editable = editable;
-    }
-
-    /// Builder style method to set the autoselect flag
-    pub fn autoselect(mut self, autoselect: bool) -> Self {
-        self.set_autoselect(autoselect);
-        self
-    }
-
-    /// Method to set the autoselect flag
-    pub fn set_autoselect(&mut self, autoselect: bool) {
-        self.autoselect = autoselect;
     }
 
     /// Builder style method to set the validate callback
@@ -152,12 +127,6 @@ impl<S: DataStore> Selector<S> {
             schema.parse_simple_value(&value)?;
             Ok(())
         }));
-    }
-
-    /// Builder style method to set the on_change callback
-    pub fn on_change(mut self, cb: impl IntoEventCallback<Key>) -> Self {
-        self.on_change = cb.into_event_callback();
-        self
     }
 
     /// Builder style method to set the load callback.
