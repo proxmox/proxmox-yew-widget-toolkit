@@ -17,7 +17,7 @@ mod combobox;
 pub use combobox::{Combobox, PwtCombobox};
 
 mod field_state;
-pub(crate) use field_state::{FieldState, FieldStateMsg};
+pub use field_state::{FieldState, FieldStateMsg};
 
 mod field;
 pub use field::{Field, PwtField};
