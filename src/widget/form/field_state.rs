@@ -167,7 +167,6 @@ impl FieldState {
             submit_empty: props.submit_empty,
             disabled: props.disabled,
             required: props.required,
-            value_type: props.value_type,
         };
 
         let field_handle = form_ctx.register_field(
@@ -190,7 +189,6 @@ impl FieldState {
                 submit_empty: props.submit_empty,
                 disabled: props.disabled,
                 required: props.required,
-                value_type: props.value_type,
             };
             field_handle.update_field_options(options);
         }
