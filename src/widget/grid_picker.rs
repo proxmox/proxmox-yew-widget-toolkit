@@ -13,12 +13,15 @@ use crate::state::{DataStore, Selection, SelectionObserver};
 use crate::widget::data_table::{DataTable, DataTableMouseEvent};
 use crate::widget::{Column, Input, Row};
 
+use pwt_macros::builder;
+
 /// Display a [DataTable] with optional text filter field.
 ///
 /// Allows you to select one or more items from a table. This is usually used
 /// to implement [Dropdown](crate::widget::Dropdown) pickers.
 #[derive(Derivative, Properties)]
 #[derivative(Clone(bound = ""), PartialEq(bound = ""))]
+#[builder]
 pub struct GridPicker<S: DataStore> {
     #[prop_or_default]
     node_ref: NodeRef,
@@ -28,9 +31,11 @@ pub struct GridPicker<S: DataStore> {
     table: DataTable<S>,
 
     /// Selection object.
+    #[builder(IntoPropValue, into_prop_value)]
     pub selection: Option<Selection>,
 
     /// Select callback.
+    #[builder_cb(IntoEventCallback, into_event_callback, Key)]
     pub on_select: Option<Callback<Key>>,
 
     /// Filter change event.
@@ -38,11 +43,13 @@ pub struct GridPicker<S: DataStore> {
     /// Filter change often change the number of displayed items, so
     /// the size of the widget is likely to change. This callback is
     /// useful to reposition the dropdown.
+    #[builder_cb(IntoEventCallback, into_event_callback, String)]
     pub on_filter_change: Option<Callback<String>>,
 
     /// Show filter
     ///
     /// Default behavior is to show the filter for pickers with more than 10 items.
+    #[builder(IntoPropValue, into_prop_value)]
     pub show_filter: Option<bool>,
 }
 
@@ -72,37 +79,6 @@ impl<S: DataStore> GridPicker<S> {
     /// Method to set the yew `key` property
     pub fn set_key(&mut self, key: impl IntoOptionalKey) {
         self.key = key.into_optional_key();
-    }
-
-    /// Builder style method to set the selection model.
-    pub fn selection(mut self, selection: impl IntoPropValue<Option<Selection>>) -> Self {
-        self.selection = selection.into_prop_value();
-        self
-    }
-
-    pub fn on_select(mut self, cb: impl IntoEventCallback<Key>) -> Self {
-        self.on_select = cb.into_event_callback();
-        self
-    }
-
-    pub fn on_filter_change(mut self, cb: impl IntoEventCallback<String>) -> Self {
-        self.set_on_filter_change(cb);
-        self
-    }
-
-    pub fn set_on_filter_change(&mut self, cb: impl IntoEventCallback<String>) {
-        self.on_filter_change = cb.into_event_callback();
-    }
-
-    /// Builder style method to set the show_filter flag.
-    pub fn show_filter(mut self, show_filter: impl IntoPropValue<Option<bool>>) -> Self {
-        self.set_show_filter(show_filter);
-        self
-    }
-
-    /// Method to set the show_filter flag.
-    pub fn set_show_filter(&mut self, show_filter: impl IntoPropValue<Option<bool>>) {
-        self.show_filter = show_filter.into_prop_value();
     }
 }
 
