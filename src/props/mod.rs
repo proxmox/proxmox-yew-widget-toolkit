@@ -111,4 +111,4 @@ mod sorter_function;
 pub use sorter_function::{IntoSorterFn, SorterFn};
 
 mod filter_function;
-pub use filter_function::{FilterFn, IntoFilterFn};
+pub use filter_function::{FilterFn, IntoFilterFn, TextFilterFn, IntoTextFilterFn};

@@ -1,19 +1,19 @@
 use std::rc::Rc;
 
-use yew::prelude::*;
-use yew::virtual_dom::Key;
 use yew::html::{IntoEventCallback, IntoPropValue};
+use yew::virtual_dom::Key;
+use yew::prelude::*;
 
-#[cfg(feature="proxmox-schema")]
+#[cfg(feature = "proxmox-schema")]
 use proxmox_schema::Schema;
 
 use crate::prelude::*;
-use crate::props::{IntoOptionalRenderFn, RenderFn};
+use crate::props::{TextFilterFn, IntoTextFilterFn, IntoOptionalRenderFn, RenderFn};
 use crate::state::Store;
-use crate::widget::GridPicker;
 use crate::widget::data_table::{DataTable, DataTableColumn, DataTableHeader};
+use crate::widget::GridPicker;
 
-use super::{Selector, SelectorRenderArgs, IntoValidateFn, ValidateFn};
+use super::{IntoValidateFn, Selector, SelectorRenderArgs, ValidateFn};
 
 use pwt_macros::{builder, widget};
 
@@ -50,15 +50,20 @@ pub struct Combobox {
     #[builder(IntoPropValue, into_prop_value)]
     pub show_filter: Option<bool>,
 
+    /// Custom filter function.
+    #[builder_cb(IntoTextFilterFn, into_text_filter_fn, AttrValue)]
+    pub filter: Option<TextFilterFn<AttrValue>>,
+
     /// Display the output of this function instead of displaying values directly.
     ///
     /// Note: selectors using this feature are not editable (editable property is ignored)!
+    ///
+    /// Also consider adding a custom filter function to filter on visible.
     #[builder_cb(IntoOptionalRenderFn, into_optional_render_fn, AttrValue)]
     pub render_value: Option<RenderFn<AttrValue>>,
 }
 
 impl Combobox {
-
     /// Create a new instance.
     pub fn new() -> Self {
         yew::props!(Self {})
@@ -87,31 +92,25 @@ impl Combobox {
     }
 
     /// Builder style method to set the validate callback
-    pub fn validate(
-        mut self,
-        validate: impl IntoValidateFn<(String, Store<AttrValue>)>,
-    ) -> Self {
+    pub fn validate(mut self, validate: impl IntoValidateFn<(String, Store<AttrValue>)>) -> Self {
         self.set_validate(validate);
         self
     }
 
     /// Method to set the validate callback
-    pub fn set_validate(
-        &mut self,
-        validate: impl IntoValidateFn<(String, Store<AttrValue>)>,
-    ) {
+    pub fn set_validate(&mut self, validate: impl IntoValidateFn<(String, Store<AttrValue>)>) {
         self.validate = validate.into_validate_fn();
     }
 
     /// Builder style method to set the validation schema
-    #[cfg(feature="proxmox-schema")]
+    #[cfg(feature = "proxmox-schema")]
     pub fn schema(mut self, schema: &'static Schema) -> Self {
         self.set_schema(schema);
         self
     }
 
     /// Method to set the validation schema
-    #[cfg(feature="proxmox-schema")]
+    #[cfg(feature = "proxmox-schema")]
     pub fn set_schema(&mut self, schema: &'static Schema) {
         self.set_validate(move |(value, _store): &(String, _)| {
             schema.parse_simple_value(value)?;
@@ -130,6 +129,7 @@ pub struct PwtCombobox {
     columns: Rc<Vec<DataTableHeader<AttrValue>>>,
 }
 
+
 impl Component for PwtCombobox {
     type Message = Msg;
     type Properties = Combobox;
@@ -142,17 +142,19 @@ impl Component for PwtCombobox {
             store.set_data(props.items.as_ref().clone());
         }
 
-        let render_value = props.render_value.clone().unwrap_or_else(|| {
-            RenderFn::new(|value: &AttrValue| html!{value})
-        });
-        let columns = Rc::new(vec![
-            DataTableColumn::new("Value")
-                .show_menu(false)
-                .render(render_value)
-                .into(),
-        ]);
+        let render_value = props
+            .render_value
+            .clone()
+            .unwrap_or_else(|| RenderFn::new(|value: &AttrValue| html! {value}));
+        let columns = Rc::new(vec![DataTableColumn::new("Value")
+            .show_menu(false)
+            .render(render_value)
+            .into()]);
 
-        Self { store, columns }
+        Self {
+            store,
+            columns,
+        }
     }
 
     fn update(&mut self, _ctx: &Context<Self>, msg: Self::Message) -> bool {
@@ -163,7 +165,7 @@ impl Component for PwtCombobox {
 
     fn changed(&mut self, ctx: &Context<Self>, old_props: &Self::Properties) -> bool {
         let props = ctx.props();
-        if props.items != old_props.items  {
+        if props.items != old_props.items {
             if !props.items.is_empty() {
                 self.store.set_data(props.items.as_ref().clone());
             } else {
@@ -178,8 +180,14 @@ impl Component for PwtCombobox {
         let link = ctx.link().clone();
 
         let show_filter = props.show_filter.unwrap_or_else(|| {
-            if self.store.data_len() > 10 { true } else { false }
+            if self.store.data_len() > 10 {
+                true
+            } else {
+                false
+            }
         });
+
+        let filter = props.filter.clone();
 
         let columns = Rc::clone(&self.columns);
         let picker = move |args: &SelectorRenderArgs<Store<AttrValue>>| {
@@ -190,6 +198,7 @@ impl Component for PwtCombobox {
 
             let mut picker = GridPicker::new(table)
                 .selection(args.selection.clone())
+                .filter(filter.clone())
                 .on_select(args.on_select.clone());
 
             if show_filter {

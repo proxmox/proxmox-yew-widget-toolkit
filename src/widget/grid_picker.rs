@@ -9,6 +9,7 @@ use yew::prelude::*;
 use yew::virtual_dom::{Key, VComp, VNode};
 
 use crate::prelude::*;
+use crate::props::{FilterFn, TextFilterFn, IntoTextFilterFn};
 use crate::state::{DataStore, Selection, SelectionObserver};
 use crate::widget::data_table::{DataTable, DataTableMouseEvent};
 use crate::widget::{Column, Input, Row};
@@ -51,6 +52,17 @@ pub struct GridPicker<S: DataStore> {
     /// Default behavior is to show the filter for pickers with more than 10 items.
     #[builder(IntoPropValue, into_prop_value)]
     pub show_filter: Option<bool>,
+
+    /// Custom filter function.
+    ///
+    /// The default filter function is:
+    /// ```
+    /// # fn filter(item: &str, query: &str) -> bool {
+    /// item.to_lowercase().contains(&query.to_lowercase())
+    /// # }
+    /// ```
+    #[builder_cb(IntoTextFilterFn, into_text_filter_fn, S::Record)]
+    pub filter: Option<TextFilterFn<S::Record>>,
 }
 
 impl<S: DataStore> GridPicker<S> {
@@ -105,10 +117,16 @@ impl<S: DataStore> PwtGridPicker<S> {
         if self.filter.is_empty() {
             self.store.set_filter(None);
         } else {
-            self.store.set_filter({
+            self.store.set_filter(if let Some(filter) = &props.filter {
+                let filter_function = filter.clone();
+                let query = self.filter.clone();
+                FilterFn::new(move |item| {
+                    filter_function.apply(item, &query)
+                })
+            } else {
                 let extract_key_fn = self.store.get_extract_key_fn();
                 let filter = self.filter.clone();
-                crate::props::FilterFn::new(move |item| {
+                FilterFn::new(move |item| {
                     let key = extract_key_fn.apply(item);
                     key.to_lowercase().contains(&filter.to_lowercase())
                 })
