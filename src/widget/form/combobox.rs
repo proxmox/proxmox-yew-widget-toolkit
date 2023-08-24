@@ -198,6 +198,7 @@ impl Component for PwtCombobox {
 
             let mut picker = GridPicker::new(table)
                 .selection(args.selection.clone())
+                .show_filter(show_filter)
                 .filter(filter.clone())
                 .on_select(args.on_select.clone());
 
