@@ -4,7 +4,10 @@ mod action_icon;
 pub use action_icon::{ActionIcon, PwtActionIcon};
 
 mod alert_dialog;
-pub use alert_dialog::{error_message, AlertDialog, PwtAlertDialog};
+pub use alert_dialog::{AlertDialog, PwtAlertDialog};
+
+mod message_box;
+pub use message_box::{MessageBox, MessageBoxButtons, PwtMessageBox};
 
 pub mod align;
 
@@ -120,4 +123,9 @@ static UNIQUE_ELEMENT_ID: AtomicUsize = AtomicUsize::new(0);
 pub fn get_unique_element_id() -> String {
     let id = UNIQUE_ELEMENT_ID.fetch_add(1, Ordering::SeqCst);
     format!("PwtElementId{}", id)
+}
+
+/// Creates a nicely formatted error message.
+pub fn error_message(text: &str, class: &str) -> yew::Html {
+    message_box::message(text, class, "fa-exclamation-triangle")
 }
