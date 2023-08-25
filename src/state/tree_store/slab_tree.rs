@@ -256,7 +256,7 @@ macro_rules! impl_slab_node_mut {
         /// - `leaf_node = true`: removes all children.
         /// - `leaf_node = false`: mark node as intermediate node.
         pub fn set_leaf_node(&mut self, leaf_node: bool) {
-            let mut entry = self.tree.get_mut(self.node_id).unwrap();
+            let entry = self.tree.get_mut(self.node_id).unwrap();
             if leaf_node {
                 if let Some(children) = &mut entry.children.take() {
                     for child_id in children {
@@ -272,7 +272,7 @@ macro_rules! impl_slab_node_mut {
 
         /// Remove all children.
         pub fn remove_all_children(&mut self) {
-            let mut entry = self.tree.get_mut(self.node_id).unwrap();
+            let entry = self.tree.get_mut(self.node_id).unwrap();
             if entry.children.is_none() {
                 return;
             }
