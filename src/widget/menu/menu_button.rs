@@ -261,7 +261,6 @@ impl Component for PwtMenuButton {
 
         let mut button = Button::new(&props.text)
             .show_arrow(props.show_arrow)
-            .attribute("role", "button")
             .attribute("aria-haspopup", "true")
             .attribute("aria-expanded", self.show_submenu.then(|| "true"))
             .tabindex(props.tabindex)
