@@ -360,7 +360,6 @@ impl <T: 'static> PwtHeaderWidget<T> {
             // Note: ARIA has no notation for group headers. We need
             // to hide them to get correct column order.
                 .attribute("role", "none")
-                .attribute("aria-hidden", "true")
                 .attribute("tabindex", props.focusable.then(|| tabindex))
                 .attribute("id", unique_id)
                 .class("pwt-datatable-group-header-item")
@@ -609,7 +608,7 @@ fn headers_to_menu<T>(
     hidden_cells: &[bool],
 ) {
     let indent: Html = (0..indent_level)
-        .map(|_| html!{ <span aria-hidden="" class="pwt-ps-4"/> })
+        .map(|_| html!{ <span role="none" class="pwt-ps-4"/> })
         .collect();
 
     for header in headers {

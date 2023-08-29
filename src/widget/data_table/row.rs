@@ -188,7 +188,7 @@ impl <T: Clone + PartialEq + 'static> Component for PwtDataTableRow<T> {
             row.add_child(td);
         }
 
-        row.add_child(html!{<td aria-hidden="true" style={minheight_cell_style.clone()}/>});
+        row.add_child(html! {<td role="none" style={minheight_cell_style.clone()}/>});
         row.into()
     }
 }

@@ -414,7 +414,7 @@ impl Component for PwtTabBar {
                     <a ref={active_ref} aria-disabled={aria_disabled} {style} {onclick} {onkeyup} class={nav_class} {tabindex}>
                         <span ref={size_ref}>
                         if let Some(class) = &panel.icon_class {
-                            <span class={class.to_string()} aria-hidden="true"/>
+                            <span class={class.to_string()} role="none"/>
                         }
                         {panel.label.as_deref().unwrap_or("")}
                         </span>

@@ -237,7 +237,7 @@ impl PwtNavigationDrawer {
             .with_optional_child(is_menu.then(|| {
                 Container::new()
                     .tag("i")
-                    .attribute("aria-hidden", "true")
+                    .attribute("role", "none")
                     .class("fa fa-caret-down")
                     .class("pwt-nav-menu-item-arrow")
                     .class(open.then_some("expanded"))

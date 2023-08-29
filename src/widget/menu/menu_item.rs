@@ -251,7 +251,7 @@ impl Component for PwtMenuItem {
                     "pwt-menu-item-icon"
                 };
                 let icon_class = classes!(icon_class.clone(), widget_class);
-                html!{<i role="none" aria-hidden="true" class={icon_class}/>}
+                html!{<i role="none" class={icon_class}/>}
             });
 
         let has_submenu = props.menu.is_some();
@@ -262,7 +262,7 @@ impl Component for PwtMenuItem {
                 "fa-caret-right",
                 if props.inside_menubar { "pwt-menubar-item-arrow" } else { "pwt-menu-item-arrow" },
             );
-            html!{<i role="none" aria-hidden="true" class={arrow_class}/>}
+            html!{<i role="none" class={arrow_class}/>}
         });
 
         Container::new()

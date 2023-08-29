@@ -62,7 +62,7 @@ impl Toolbar {
     /// Spacers separate elements by a simple vertical rule.
     pub fn add_spacer(&mut self) {
         self.add_child(
-            html! {<div aria-hidden="true" class="pwt-align-self-stretch pwt-vertical-rule"/>},
+            html! {<div role="none" class="pwt-align-self-stretch pwt-vertical-rule"/>},
         );
     }
 
@@ -76,7 +76,7 @@ impl Toolbar {
     ///
     /// Flex spacers are empty cells filling the remainig space.
     pub fn add_flex_spacer(&mut self) {
-        self.add_child(html! {<div aria-hidden="true" class="pwt-flex-fill"/>});
+        self.add_child(html! {<div role="none" class="pwt-flex-fill"/>});
     }
 }
 

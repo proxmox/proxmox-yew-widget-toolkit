@@ -206,7 +206,7 @@ impl Component for PwtButton {
             if !icon_class.is_empty() {
                 // Chromium fires onclick from nested elements, so we need to suppress that manually here
                 children.push(html!{
-                    <span class="pwt-font-label-large" onclick={suppress_onclick.clone()}><i role="none" aria-hidden="true" class={icon_class.clone()}></i></span>
+                    <span class="pwt-font-label-large" onclick={suppress_onclick.clone()}><i role="none" class={icon_class.clone()}></i></span>
                 });
             }
         }
@@ -235,9 +235,7 @@ impl Component for PwtButton {
         });
 
         if props.show_arrow {
-            children.push(html! {
-                <i role="none" aria-hidden="true" class="fa fa-caret-down"/>
-            });
+            children.push(html! {<i role="none" class="fa fa-caret-down"/>});
         }
 
         Container::form_widget_props(props.std_props.clone(), Some(props.listeners.clone()))

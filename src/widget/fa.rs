@@ -12,7 +12,7 @@ use yew::virtual_dom::{VComp, VNode};
 /// # Accessibility
 ///
 /// This widget hides the icon from the accessibility tree
-/// (`aria-hidden="true"`).
+/// (`role="none"`).
 ///
 /// If you are using the icon to convey meaning (rather than pure
 /// decoration), the Font Awesome web site suggests to provide a text
@@ -107,7 +107,7 @@ impl Fa {
 pub fn pwt_fa(props: &Fa) -> Html {
 
     html!{
-        <i class={props.class.clone()} aria-hidden="true"/>
+        <i class={props.class.clone()} role="none"/>
     }
 
 }

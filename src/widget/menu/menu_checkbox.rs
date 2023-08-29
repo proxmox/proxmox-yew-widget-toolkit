@@ -298,7 +298,7 @@ impl Component for PwtMenuCheckbox {
             },
             "pwt-menu-item-icon",
         );
-        let icon = html!{<i role="none" aria-hidden="true" class={icon_class}/>};
+        let icon = html! {<i role="none" class={icon_class}/>};
 
         let onclick = ctx.link().callback(|_| Msg::Toggle);
         let onkeydown = Callback::from({

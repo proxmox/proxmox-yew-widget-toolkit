@@ -90,7 +90,7 @@ pub fn render_tree_node<T>(
         Row::new()
             .class(crate::css::AlignItems::Baseline)
             .with_child(indent.clone())
-            .with_child(html!{<i aria-hidden="true" role="none" class={carret}/>})
+            .with_child(html!{<i role="none" class={carret}/>})
             .with_child(html!{<i {class}/>})
             .with_child(content)
             .into()
