@@ -7,49 +7,29 @@ use yew::virtual_dom::VNode;
 use crate::prelude::*;
 use crate::widget::{Container, Fa};
 
-use pwt_macros::widget;
+use pwt_macros::{builder, widget};
 
 /// Container which optionaly masks its content.
 #[widget(pwt=crate, comp=PwtMask, @element)]
 #[derive(Default, Debug, Clone, PartialEq, Properties)]
+#[builder]
 pub struct Mask {
     content: VNode,
 
      /// Flag to show/hide the mask
     #[prop_or_default]
+    #[builder]
     pub visible: bool,
 
     /// Mask text. Defaults to "Loading...".
-    #[prop_or_default]
-    pub text: AttrValue,
+    #[builder(IntoPropValue, into_prop_value)]
+    pub text: Option<AttrValue>,
 }
 
 impl Mask {
     /// Create a new instance.
     pub fn new(content: impl Into<VNode>) -> Self {
         yew::props!(Mask { content: content.into() })
-    }
-
-    /// Builder style method to set the `vibible` property
-    pub fn visible(mut self, visible: bool) -> Self {
-        self.set_visible(visible);
-        self
-    }
-
-    /// Method to set the `vibible` property
-    pub fn set_visible(&mut self, visible: bool) {
-        self.visible = visible;
-    }
-
-    /// Builder style method to set the `text` property
-    pub fn text(mut self, text: impl IntoPropValue<AttrValue>) -> Self {
-        self.set_text(text);
-        self
-    }
-
-    /// Method to set the `text` property
-    pub fn set_text(&mut self, text: impl IntoPropValue<AttrValue>) {
-        self.text = text.into_prop_value();
     }
 }
 
@@ -109,10 +89,9 @@ impl Component for PwtMask {
 
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
-        let text = if props.text.is_empty() {
-            "Loading..."
-        } else {
-            &props.text
+        let text = match props.text.as_deref() {
+            None => "Loading...",
+            Some(text) => text,
         };
 
         let mask = props.visible.then(|| {
