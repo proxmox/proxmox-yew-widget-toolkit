@@ -71,7 +71,6 @@ pub(crate) fn message(text: &str, class: &str, icon_class: impl Into<Classes>) -
         .padding(2)
         .class(class.to_owned())
         .class("pwt-align-items-center")
-        .attribute("style", "max-width:600px;")
         .with_child(html! {<span class={icon_class} role="none"/>})
         .with_child(html! {<p>{text}</p>})
         .into()
@@ -131,7 +130,7 @@ pub fn pwt_message_box(props: &MessageBox) -> Html {
     bbar.add_flex_spacer();
 
     Dialog::new(props.title.clone())
-        .style("min-width: 300px;")
+        .style("min-width: 300px; max-width:600px;")
         .draggable(props.draggable)
         .on_close(on_close)
         .with_child(message(&props.message, "", props.icon_class.clone()))
