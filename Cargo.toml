@@ -52,6 +52,7 @@ serde_json = "1.0"
 wasm-bindgen-futures = "0.4"
 url = "2.1"
 percent-encoding = "2.1"
+gettext = "0.4"
 
 pwt-macros = { version = "0.1", path = "pwt-macros" }
 
