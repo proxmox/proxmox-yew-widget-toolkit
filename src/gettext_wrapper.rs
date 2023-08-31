@@ -76,6 +76,35 @@ pub fn npgettext(msg_context: &str, msg_id: &str, msg_id_plural: &str, n: u64) -
         .to_string()
 }
 
+pub fn replace_param1(msg: impl AsRef<str>, p0: impl AsRef<str>) -> String {
+    let msg: &str = msg.as_ref();
+    let p0: &str = p0.as_ref();
+
+    msg.replace("{0}", p0)
+}
+
+pub fn replace_param2(msg: impl AsRef<str>, p0: impl AsRef<str>, p1: impl AsRef<str>) -> String {
+    let msg: &str = msg.as_ref();
+    let p0: &str = p0.as_ref();
+    let p1: &str = p1.as_ref();
+
+    let msg = msg.replace("{0}", p0);
+    let msg = msg.replace("{1}", p1);
+    msg
+}
+
+pub fn replace_param3(msg: impl AsRef<str>, p0: impl AsRef<str>, p1: impl AsRef<str>, p2: impl AsRef<str>) -> String {
+    let msg: &str = msg.as_ref();
+    let p0: &str = p0.as_ref();
+    let p1: &str = p1.as_ref();
+    let p2: &str = p2.as_ref();
+
+    let msg = msg.replace("{0}", p0);
+    let msg = msg.replace("{1}", p1);
+    let msg = msg.replace("{2}", p2);
+    msg
+}
+
 fn convert_js_error(js_err: ::wasm_bindgen::JsValue) -> String {
     if let Ok(error) = ::wasm_bindgen::JsCast::dyn_into::<js_sys::Error>(js_err) {
         format!("{}", error.message())
