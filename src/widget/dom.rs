@@ -60,3 +60,51 @@ pub fn element_direction_rtl<T: IntoHtmlElement>(node: T) -> Option<bool> {
 
     None
 }
+
+/// Returns if the system prefers dark mode
+pub fn get_system_prefer_dark_mode() -> bool {
+    let window = web_sys::window().unwrap();
+    if let Ok(Some(list)) = window.match_media("(prefers-color-scheme: dark)") {
+        list.matches()
+    } else {
+        false
+    }
+}
+
+
+/// Preload fetch data
+///
+/// https://developer.mozilla.org/en-US/docs/Web/HTML/Attributes/rel/preload
+pub fn preload_fetch(href: &str) {
+    let window = web_sys::window().unwrap();
+    let document = window.document().unwrap();
+
+    let link = document.create_element("link").unwrap();
+    link.set_attribute("rel", "preload");
+    link.set_attribute("href", href);
+    link.set_attribute("as", "fetch");
+    link.set_attribute("crossorigin", "");
+
+    let head = document.head().unwrap();
+    head.append_child(&link);
+}
+
+/// Preload CSS style
+///
+/// https://developer.mozilla.org/en-US/docs/Web/HTML/Attributes/rel/preload
+pub fn preload_style(href: &str) {
+    let window = web_sys::window().unwrap();
+    let document = window.document().unwrap();
+    let head = document.head().unwrap();
+
+    let link = document.create_element("link").unwrap();
+    link.set_attribute("rel", "preload");
+    link.set_attribute("href", href);
+    link.set_attribute("as", "style");
+    head.append_child(&link);
+
+    let link = document.create_element("link").unwrap();
+    link.set_attribute("rel", "stylesheet");
+    link.set_attribute("href", href);
+    head.append_child(&link);
+}

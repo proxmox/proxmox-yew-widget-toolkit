@@ -10,6 +10,7 @@ use web_sys::MediaQueryList;
 use yew::prelude::*;
 
 use crate::state::local_storage;
+use crate::widget::dom::get_system_prefer_dark_mode;
 
 /// Theme mode - dark, light or auto (use system settings).
 #[derive(PartialEq, Debug, Default, Clone, Copy)]
@@ -246,15 +247,6 @@ impl Theme {
             self.name.to_lowercase(),
             mode_str
         )
-    }
-}
-
-fn get_system_prefer_dark_mode() -> bool {
-    let window = web_sys::window().unwrap();
-    if let Ok(Some(list)) = window.match_media("(prefers-color-scheme: dark)") {
-        list.matches()
-    } else {
-        false
     }
 }
 
