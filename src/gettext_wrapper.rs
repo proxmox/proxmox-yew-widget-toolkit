@@ -19,7 +19,7 @@ pub fn init_i18n_from_blob(blob: Vec<u8>) -> Result<(), String> {
     Ok(())
 }
 
-pub fn init_i18n_from_url(url: &str, on_load: impl IntoEventCallback<()>) {
+pub fn init_i18n_from_url(url: &str, on_load: impl IntoEventCallback<String>) {
     let url = url.to_string();
     let on_load = on_load.into_event_callback();
     wasm_bindgen_futures::spawn_local(async move {
@@ -29,7 +29,7 @@ pub fn init_i18n_from_url(url: &str, on_load: impl IntoEventCallback<()>) {
             log::info!("I18N Catalog initialized");
         }
         if let Some(on_load) = &on_load {
-            on_load.emit(());
+            on_load.emit(url.clone());
         }
     });
 }
@@ -156,16 +156,37 @@ async fn fetch_catalog(url: &str) -> Result<(), String> {
 #[hook]
 pub fn use_catalog(url: &str) -> bool {
 
-    let redraw = use_state(|| 0);
+    #[derive(Clone, PartialEq)]
+    enum LoadState { Idle, Loading, LoadFinished(String) }
 
-    if *redraw == 0 {
-        let redraw = redraw.clone();
-        crate::init_i18n_from_url(url, move |_| {
-            redraw.set(1); // trigger redraw
-        });
+    use std::cell::RefCell;
+
+    thread_local!{
+        static LAST_URL: RefCell<String> = RefCell::new(String::new());
     }
 
-    *redraw == 1
+    let state = use_state(|| LoadState::Idle);
+
+    match &*state {
+        LoadState::Idle => {
+            let last_url = LAST_URL.with(|c| c.borrow().clone());
+            if &last_url != url {
+                state.set(LoadState::Loading);
+                let state = state.clone();
+                crate::init_i18n_from_url(&url, move |url| {
+                    state.set(LoadState::LoadFinished(url));
+                });
+            }
+        }
+        LoadState::Loading => { /* wait until loaded */ }
+        LoadState::LoadFinished(loaded_url) => {
+            let loaded_url = loaded_url.clone();
+            LAST_URL.with(move |c| *c.borrow_mut() = loaded_url);
+            state.set(LoadState::Idle);
+        }
+    }
+
+    !matches!(*state, LoadState::LoadFinished(_))
 }
 
 // fixme: use crate "tr" instead (once packaged for debian)
