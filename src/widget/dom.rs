@@ -102,9 +102,4 @@ pub fn preload_style(href: &str) {
     link.set_attribute("href", href);
     link.set_attribute("as", "style");
     head.append_child(&link);
-
-    let link = document.create_element("link").unwrap();
-    link.set_attribute("rel", "stylesheet");
-    link.set_attribute("href", href);
-    head.append_child(&link);
 }
