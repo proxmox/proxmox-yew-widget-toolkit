@@ -167,3 +167,20 @@ pub fn use_catalog(url: &str) -> bool {
 
     *redraw == 1
 }
+
+// fixme: use crate "tr" instead (once packaged for debian)
+#[macro_export]
+macro_rules! tr {
+    ($fmt:expr) => {{
+        gettext($fmt)
+    }};
+    ($fmt:expr, $p0:expr) => {{
+        replace_param1(gettext($fmt), $p0)
+    }};
+    ($fmt:expr, $p0:expr, $p1:expr) => {{
+        replace_param2(gettext($fmt), $p0, $p1)
+    }};
+    ($fmt:expr, $p0:expr, $p1:expr, $p2:expr ) => {{
+        replace_param3(gettext($fmt), $p0, $p1, $p2)
+    }};
+}
