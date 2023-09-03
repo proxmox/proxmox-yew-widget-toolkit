@@ -70,36 +70,3 @@ pub fn get_system_prefer_dark_mode() -> bool {
         false
     }
 }
-
-
-/// Preload fetch data
-///
-/// see <https://developer.mozilla.org/en-US/docs/Web/HTML/Attributes/rel/preload>
-pub fn preload_fetch(href: &str) {
-    let window = web_sys::window().unwrap();
-    let document = window.document().unwrap();
-
-    let link = document.create_element("link").unwrap();
-    link.set_attribute("rel", "preload");
-    link.set_attribute("href", href);
-    link.set_attribute("as", "fetch");
-    link.set_attribute("crossorigin", "");
-
-    let head = document.head().unwrap();
-    head.append_child(&link);
-}
-
-/// Preload CSS style
-///
-/// see <https://developer.mozilla.org/en-US/docs/Web/HTML/Attributes/rel/preload>
-pub fn preload_style(href: &str) {
-    let window = web_sys::window().unwrap();
-    let document = window.document().unwrap();
-    let head = document.head().unwrap();
-
-    let link = document.create_element("link").unwrap();
-    link.set_attribute("rel", "preload");
-    link.set_attribute("href", href);
-    link.set_attribute("as", "style");
-    head.append_child(&link);
-}
