@@ -20,6 +20,11 @@ use pwt_macros::builder;
 ///
 /// Allows you to select one or more items from a table. This is usually used
 /// to implement [Dropdown](crate::widget::Dropdown) pickers.
+///
+/// # Note
+///
+/// This widget overwrites the store filter, so the passed store can not
+/// use any filter function. A workaround is to filter data on load instead.
 #[derive(Derivative, Properties)]
 #[derivative(Clone(bound = ""), PartialEq(bound = ""))]
 #[builder]

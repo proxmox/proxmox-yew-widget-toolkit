@@ -74,7 +74,7 @@ pub fn get_system_prefer_dark_mode() -> bool {
 
 /// Preload fetch data
 ///
-/// https://developer.mozilla.org/en-US/docs/Web/HTML/Attributes/rel/preload
+/// see <https://developer.mozilla.org/en-US/docs/Web/HTML/Attributes/rel/preload>
 pub fn preload_fetch(href: &str) {
     let window = web_sys::window().unwrap();
     let document = window.document().unwrap();
@@ -91,7 +91,7 @@ pub fn preload_fetch(href: &str) {
 
 /// Preload CSS style
 ///
-/// https://developer.mozilla.org/en-US/docs/Web/HTML/Attributes/rel/preload
+/// see <https://developer.mozilla.org/en-US/docs/Web/HTML/Attributes/rel/preload>
 pub fn preload_style(href: &str) {
     let window = web_sys::window().unwrap();
     let document = window.document().unwrap();
