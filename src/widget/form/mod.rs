@@ -25,8 +25,10 @@ pub use field_state::{FieldState, FieldStateMsg};
 mod field_manager;
 pub use field_manager::{ManagedField, ManagedFieldContext, ManagedFieldLink, ManagedFieldMaster, ManagedFieldState};
 
-mod field;
-pub use field::{Field, PwtField};
+//mod field;
+//pub use field::{Field, PwtField};
+mod field2;
+pub use field2::Field;
 
 mod form;
 pub use form::{Form, PwtForm};
