@@ -22,8 +22,8 @@ pub use combobox::{Combobox, PwtCombobox};
 mod field_state;
 pub use field_state::{FieldState, FieldStateMsg};
 
-mod field_manager;
-pub use field_manager::{ManagedField, ManagedFieldContext, ManagedFieldLink, ManagedFieldMaster, ManagedFieldState};
+mod managed_field;
+pub use managed_field::{ManagedField, ManagedFieldContext, ManagedFieldLink, ManagedFieldMaster, ManagedFieldState};
 
 //mod field;
 //pub use field::{Field, PwtField};
