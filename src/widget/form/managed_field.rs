@@ -226,8 +226,10 @@ impl<MF: ManagedField + 'static> Component for ManagedFieldMaster<MF> {
         match msg {
             Msg::ForceValue(value, valid) => {
                 if let Some(name) = &props.as_input_props().name {
-                    log::error!("Field '{name}' is managed - unable to force value.");
-                    return false;
+                    if self.field_handle.is_some() {
+                        log::error!("Field '{name}' is managed - unable to force value.");
+                        return false;
+                    }
                 }
 
                 let valid = valid.unwrap_or_else(|| {
