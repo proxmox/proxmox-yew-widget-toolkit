@@ -254,7 +254,7 @@ impl<MF: ManagedField + 'static> Component for ManagedFieldMaster<MF> {
                 let valid = self
                     .comp_state
                     .validate
-                    .validate(&self.comp_state.value)
+                    .validate(&value)
                     .map_err(|e| e.to_string());
 
                 let value_changed = value != self.comp_state.value;

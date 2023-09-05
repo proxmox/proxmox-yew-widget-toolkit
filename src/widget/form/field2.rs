@@ -7,7 +7,10 @@ use yew::prelude::*;
 
 use pwt_macros::{builder, widget};
 
-use super::{IntoValidateFn, ManagedField, ManagedFieldContext, ManagedFieldMaster, ManagedFieldState, ValidateFn};
+use super::{
+    IntoValidateFn, ManagedField, ManagedFieldContext, ManagedFieldMaster, ManagedFieldState,
+    ValidateFn,
+};
 use crate::props::{ContainerBuilder, EventSubscriber, WidgetBuilder};
 use crate::widget::{Container, Input, Tooltip};
 
@@ -141,12 +144,12 @@ fn create_field_validation_cb(props: Field) -> ValidateFn<Value> {
         if props.input_type == "number" {
             let value_f64 = match value.parse::<f64>() {
                 Ok(v) => v,
-                Err(err) => return Err(Error::msg(tr!("unable to parse number: {}", err))),
+                Err(err) => return Err(Error::msg(tr!("unable to parse number: {0}", err))),
             };
             if let Some(min) = props.min {
                 if value_f64 < min {
                     return Err(Error::msg(tr!(
-                        "value must be greater than or equal to '{}'",
+                        "value must be greater than or equal to '{0}'",
                         min
                     )));
                 }
@@ -154,7 +157,7 @@ fn create_field_validation_cb(props: Field) -> ValidateFn<Value> {
             if let Some(max) = props.max {
                 if value_f64 > max {
                     return Err(Error::msg(tr!(
-                        "value must be less than or equal to '{}'",
+                        "value must be less than or equal to '{0}'",
                         max
                     )));
                 }
@@ -234,11 +237,7 @@ impl ManagedField for StandardField {
         }
     }
 
-    fn changed(
-        &mut self,
-        ctx: &ManagedFieldContext<Self>,
-        old_props: &Self::Properties,
-    ) -> bool {
+    fn changed(&mut self, ctx: &ManagedFieldContext<Self>, old_props: &Self::Properties) -> bool {
         let props = ctx.props();
         if props.value != old_props.value || props.valid != old_props.valid {
             if let Some(forced_value) = &props.value {
