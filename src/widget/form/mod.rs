@@ -7,8 +7,11 @@ pub use context::{
     FieldHandle, FieldOptions,
 };
 
-mod boolean;
-pub use boolean::{Boolean, PwtBoolean};
+//mod boolean;
+//pub use boolean::{Boolean, PwtBoolean};
+
+mod boolean2;
+pub use boolean2::Boolean;
 
 mod checkbox;
 pub use checkbox::{Checkbox, PwtCheckbox};
@@ -18,6 +21,9 @@ pub use combobox::{Combobox, PwtCombobox};
 
 mod field_state;
 pub use field_state::{FieldState, FieldStateMsg};
+
+mod field_manager;
+pub use field_manager::{ManagedField, ManagedFieldContext, ManagedFieldLink, ManagedFieldMaster, ManagedFieldState};
 
 mod field;
 pub use field::{Field, PwtField};
