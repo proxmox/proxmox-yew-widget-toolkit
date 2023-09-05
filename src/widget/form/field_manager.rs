@@ -118,7 +118,7 @@ pub enum Msg<M> {
 }
 
 pub struct ManagedFieldMaster<MF: ManagedField> {
-    state: MF,
+    slave: MF,
     comp_state: ManagedFieldState,
     form_ctx: Option<FormContext>,
     field_handle: Option<FieldHandle>,
@@ -176,20 +176,20 @@ impl<MF: ManagedField + 'static> ManagedFieldMaster<MF> {
         self.field_handle = Some(field_handle);
     }
 
-    fn slave_call<R>(&self, ctx: &Context<Self>, function: impl FnOnce(&MF, &ManagedFieldContext<MF>) -> R) -> R{
+    fn with_slave<R>(&self, ctx: &Context<Self>, function: impl FnOnce(&MF, &ManagedFieldContext<MF>) -> R) -> R{
         let sub_context = ManagedFieldContext {
             ctx,
             comp_state: &self.comp_state,
         };
-        function(&self.state, &sub_context)
+        function(&self.slave, &sub_context)
     }
 
-    fn slave_call_mut<R>(&mut self, ctx: &Context<Self>, function: impl FnOnce(&mut MF, &ManagedFieldContext<MF>) -> R) -> R{
+    fn with_slave_mut<R>(&mut self, ctx: &Context<Self>, function: impl FnOnce(&mut MF, &ManagedFieldContext<MF>) -> R) -> R{
         let sub_context = ManagedFieldContext {
             ctx,
             comp_state: &self.comp_state,
         };
-        function(&mut self.state, &sub_context)
+        function(&mut self.slave, &sub_context)
     }
 }
 
@@ -205,7 +205,7 @@ impl<MF: ManagedField + 'static> Component for ManagedFieldMaster<MF> {
             ctx,
             comp_state: &comp_state,
         };
-        let state = MF::create(&sub_context);
+        let slave = MF::create(&sub_context);
 
         let input_props = props.as_input_props();
 
@@ -225,7 +225,7 @@ impl<MF: ManagedField + 'static> Component for ManagedFieldMaster<MF> {
             }
         }
         let mut me = Self {
-            state,
+            slave,
             comp_state,
             _form_ctx_handle,
             _form_ctx_observer,
@@ -258,7 +258,7 @@ impl<MF: ManagedField + 'static> Component for ManagedFieldMaster<MF> {
                 self.comp_state.valid = valid;
 
                 if value_changed || valid_changed {
-                    self.slave_call_mut(ctx, |slave, sub_context| {
+                    self.with_slave_mut(ctx, |slave, sub_context| {
                         slave.value_changed(sub_context)
                     });
                 }
@@ -281,14 +281,14 @@ impl<MF: ManagedField + 'static> Component for ManagedFieldMaster<MF> {
                     field_handle.set_value(self.comp_state.value.clone());
                 }
                 if value_changed || valid_changed {
-                    self.slave_call_mut(ctx, |slave, sub_context| {
+                    self.with_slave_mut(ctx, |slave, sub_context| {
                         slave.value_changed(sub_context)
                     });
                 }
                 true
             }
             Msg::ChildMessage(child_msg) => {
-                self.slave_call_mut(ctx, move |slave, sub_context| {
+                self.with_slave_mut(ctx, move |slave, sub_context| {
                     slave.update(sub_context, child_msg)
                 })
             }
@@ -309,7 +309,7 @@ impl<MF: ManagedField + 'static> Component for ManagedFieldMaster<MF> {
                         self.comp_state.value = value;
                         self.comp_state.valid = valid;
 
-                        self.slave_call_mut(ctx, |slave, sub_context| {
+                        self.with_slave_mut(ctx, |slave, sub_context| {
                             slave.value_changed(sub_context)
                         });
                     }
@@ -343,7 +343,7 @@ impl<MF: ManagedField + 'static> Component for ManagedFieldMaster<MF> {
                 refresh1 = true;
             }
         }
-        let refresh2 = self.slave_call_mut(ctx, |slave, sub_context| {
+        let refresh2 = self.with_slave_mut(ctx, |slave, sub_context| {
             slave.changed(sub_context, old_props)
         });
 
@@ -351,13 +351,13 @@ impl<MF: ManagedField + 'static> Component for ManagedFieldMaster<MF> {
     }
 
     fn view(&self, ctx: &Context<Self>) -> Html {
-        self.slave_call(ctx, |slave, sub_context| {
+        self.with_slave(ctx, |slave, sub_context| {
             slave.view(sub_context)
         })
     }
 
     fn rendered(&mut self, ctx: &Context<Self>, first_render: bool) {
-        self.slave_call_mut(ctx, |slave, sub_context| {
+        self.with_slave_mut(ctx, |slave, sub_context| {
             slave.rendered(sub_context, first_render)
         });
     }
