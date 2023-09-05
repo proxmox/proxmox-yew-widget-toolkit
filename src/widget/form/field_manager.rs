@@ -175,6 +175,22 @@ impl<MF: ManagedField + 'static> ManagedFieldMaster<MF> {
         );
         self.field_handle = Some(field_handle);
     }
+
+    fn slave_call<R>(&self, ctx: &Context<Self>, function: impl FnOnce(&MF, &ManagedFieldContext<MF>) -> R) -> R{
+        let sub_context = ManagedFieldContext {
+            ctx,
+            comp_state: &self.comp_state,
+        };
+        function(&self.state, &sub_context)
+    }
+
+    fn slave_call_mut<R>(&mut self, ctx: &Context<Self>, function: impl FnOnce(&mut MF, &ManagedFieldContext<MF>) -> R) -> R{
+        let sub_context = ManagedFieldContext {
+            ctx,
+            comp_state: &self.comp_state,
+        };
+        function(&mut self.state, &sub_context)
+    }
 }
 
 impl<MF: ManagedField + 'static> Component for ManagedFieldMaster<MF> {
@@ -242,11 +258,9 @@ impl<MF: ManagedField + 'static> Component for ManagedFieldMaster<MF> {
                 self.comp_state.valid = valid;
 
                 if value_changed || valid_changed {
-                    let sub_context = ManagedFieldContext {
-                        ctx,
-                        comp_state: &self.comp_state,
-                    };
-                    self.state.value_changed(&sub_context);
+                    self.slave_call_mut(ctx, |slave, sub_context| {
+                        slave.value_changed(sub_context)
+                    });
                 }
                 true
             }
@@ -267,21 +281,16 @@ impl<MF: ManagedField + 'static> Component for ManagedFieldMaster<MF> {
                     field_handle.set_value(self.comp_state.value.clone());
                 }
                 if value_changed || valid_changed {
-                    let sub_context = ManagedFieldContext {
-                        ctx,
-                        comp_state: &self.comp_state,
-                    };
-                    self.state.value_changed(&sub_context);
+                    self.slave_call_mut(ctx, |slave, sub_context| {
+                        slave.value_changed(sub_context)
+                    });
                 }
                 true
             }
             Msg::ChildMessage(child_msg) => {
-                let sub_context = ManagedFieldContext {
-                    ctx,
-                    comp_state: &self.comp_state,
-                };
-                self.state.update(&sub_context, child_msg);
-                true
+                self.slave_call_mut(ctx, move |slave, sub_context| {
+                    slave.update(sub_context, child_msg)
+                })
             }
             Msg::FormCtxUpdate(form_ctx) => {
                 let on_form_data_change = ctx.link().callback(|_| Msg::FormCtxDataChange);
@@ -300,11 +309,9 @@ impl<MF: ManagedField + 'static> Component for ManagedFieldMaster<MF> {
                         self.comp_state.value = value;
                         self.comp_state.valid = valid;
 
-                        let sub_context = ManagedFieldContext {
-                            ctx,
-                            comp_state: &self.comp_state,
-                        };
-                        self.state.value_changed(&sub_context);
+                        self.slave_call_mut(ctx, |slave, sub_context| {
+                            slave.value_changed(sub_context)
+                        });
                     }
 
                     return value_changed || valid_changed;
@@ -316,6 +323,7 @@ impl<MF: ManagedField + 'static> Component for ManagedFieldMaster<MF> {
 
     fn changed(&mut self, ctx: &Context<Self>, old_props: &Self::Properties) -> bool {
         let props = ctx.props();
+        let mut refresh1 = false;
         if let Some(field_handle) = &mut self.field_handle {
             let props = props.as_input_props();
             let old_props = old_props.as_input_props();
@@ -332,28 +340,25 @@ impl<MF: ManagedField + 'static> Component for ManagedFieldMaster<MF> {
                     required: props.required,
                 };
                 field_handle.update_field_options(options);
+                refresh1 = true;
             }
         }
-        let sub_context = ManagedFieldContext {
-            ctx,
-            comp_state: &self.comp_state,
-        };
-        self.state.changed(&sub_context, old_props)
+        let refresh2 = self.slave_call_mut(ctx, |slave, sub_context| {
+            slave.changed(sub_context, old_props)
+        });
+
+        refresh1 || refresh2
     }
 
     fn view(&self, ctx: &Context<Self>) -> Html {
-        let sub_context = ManagedFieldContext {
-            ctx,
-            comp_state: &self.comp_state,
-        };
-        self.state.view(&sub_context)
+        self.slave_call(ctx, |slave, sub_context| {
+            slave.view(sub_context)
+        })
     }
 
     fn rendered(&mut self, ctx: &Context<Self>, first_render: bool) {
-        let sub_context = ManagedFieldContext {
-            ctx,
-            comp_state: &self.comp_state,
-        };
-        self.state.rendered(&sub_context, first_render);
+        self.slave_call_mut(ctx, |slave, sub_context| {
+            slave.rendered(sub_context, first_render)
+        });
     }
 }
