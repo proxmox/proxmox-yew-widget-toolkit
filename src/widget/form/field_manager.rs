@@ -72,7 +72,7 @@ impl<MF: ManagedField + Sized> ManagedFieldLink<MF> {
     }
 
     /// Set valus/valid for unmanaged fields
-    pub fn force_value(&self, value: impl Into<Value>, valid: Result<(), String>) {
+    pub fn force_value(&self, value: impl Into<Value>, valid: Option<Result<(), String>>) {
         let msg = Msg::ForceValue(value.into(), valid);
         self.link.send_message(msg);
     }
@@ -105,11 +105,13 @@ pub trait ManagedField: Sized {
     }
 
     fn view(&self, _ctx: &ManagedFieldContext<Self>) -> Html;
+
+    fn rendered(&mut self, _ctx: &ManagedFieldContext<Self>, _first_render: bool) {}
 }
 
 pub enum Msg<M> {
     UpdateValue(Value),
-    ForceValue(Value, Result<(), String>),
+    ForceValue(Value, Option<Result<(), String>>),
     ChildMessage(M),
     FormCtxUpdate(FormContext), // FormContext object changed
     FormCtxDataChange,          // Data inside FormContext changed
@@ -226,6 +228,13 @@ impl<MF: ManagedField + 'static> Component for ManagedFieldMaster<MF> {
                     log::error!("Field '{name}' is managed - unable to force value.");
                     return false;
                 }
+
+                let valid = valid.unwrap_or_else(|| {
+                    self.comp_state.validate
+                        .validate(&value)
+                        .map_err(|e| e.to_string())
+                });
+
                 let value_changed = value != self.comp_state.value;
                 let valid_changed = valid != self.comp_state.valid;
 
@@ -338,5 +347,13 @@ impl<MF: ManagedField + 'static> Component for ManagedFieldMaster<MF> {
             comp_state: &self.comp_state,
         };
         self.state.view(&sub_context)
+    }
+
+    fn rendered(&mut self, ctx: &Context<Self>, first_render: bool) {
+        let sub_context = ManagedFieldContext {
+            ctx,
+            comp_state: &self.comp_state,
+        };
+        self.state.rendered(&sub_context, first_render);
     }
 }

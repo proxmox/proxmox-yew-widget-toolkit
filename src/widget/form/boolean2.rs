@@ -26,6 +26,7 @@ pub struct Boolean {
     #[prop_or_default]
     #[builder]
     pub switch: bool,
+
     /// Change callback
     #[builder_cb(IntoEventCallback, into_event_callback, bool)]
     pub on_change: Option<Callback<bool>>,
@@ -94,6 +95,14 @@ impl ManagedField for BooleanField {
         if let Some(on_change) = &props.on_change {
             on_change.emit(checked);
         }
+    }
+
+    fn changed(&mut self, ctx: &super::ManagedFieldContext<Self>, _old_props: &Self::Properties) -> bool {
+        let props = ctx.props();
+        if let Some(checked) = props.checked {
+            ctx.link().force_value(checked, None)
+        }
+        true
     }
 
     fn view(&self, ctx: &super::ManagedFieldContext<Self>) -> Html {
