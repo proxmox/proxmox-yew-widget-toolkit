@@ -1,3 +1,4 @@
+use std::fmt::Display;
 use gettext::Catalog;
 
 use yew::prelude::*;
@@ -76,32 +77,32 @@ pub fn npgettext(msg_context: &str, msg_id: &str, msg_id_plural: &str, n: u64) -
         .to_string()
 }
 
-pub fn replace_param1(msg: impl AsRef<str>, p0: impl AsRef<str>) -> String {
-    let msg: &str = msg.as_ref();
-    let p0: &str = p0.as_ref();
+pub fn replace_param1(msg: impl Display, p0: impl Display) -> String {
+    let msg = msg.to_string();
+    let p0 = p0.to_string();
 
-    msg.replace("{0}", p0)
+    msg.replace("{0}", &p0)
 }
 
-pub fn replace_param2(msg: impl AsRef<str>, p0: impl AsRef<str>, p1: impl AsRef<str>) -> String {
-    let msg: &str = msg.as_ref();
-    let p0: &str = p0.as_ref();
-    let p1: &str = p1.as_ref();
+pub fn replace_param2(msg: impl Display, p0: impl Display, p1: impl Display) -> String {
+    let msg = msg.to_string();
+    let p0 = p0.to_string();
+    let p1 = p1.to_string();
 
-    let msg = msg.replace("{0}", p0);
-    let msg = msg.replace("{1}", p1);
+    let msg = msg.replace("{0}", &p0);
+    let msg = msg.replace("{1}", &p1);
     msg
 }
 
-pub fn replace_param3(msg: impl AsRef<str>, p0: impl AsRef<str>, p1: impl AsRef<str>, p2: impl AsRef<str>) -> String {
-    let msg: &str = msg.as_ref();
-    let p0: &str = p0.as_ref();
-    let p1: &str = p1.as_ref();
-    let p2: &str = p2.as_ref();
+pub fn replace_param3(msg: impl Display, p0: impl Display, p1: impl Display, p2: impl Display) -> String {
+    let msg = msg.to_string();
+    let p0 = p0.to_string();
+    let p1 = p1.to_string();
+    let p2 = p2.to_string();
 
-    let msg = msg.replace("{0}", p0);
-    let msg = msg.replace("{1}", p1);
-    let msg = msg.replace("{2}", p2);
+    let msg = msg.replace("{0}", &p0);
+    let msg = msg.replace("{1}", &p1);
+    let msg = msg.replace("{2}", &p2);
     msg
 }
 
@@ -193,15 +194,15 @@ pub fn use_catalog(url: &str) -> bool {
 #[macro_export]
 macro_rules! tr {
     ($fmt:expr) => {{
-        gettext($fmt)
+        crate::gettext_wrapper::gettext($fmt)
     }};
     ($fmt:expr, $p0:expr) => {{
-        replace_param1(gettext($fmt), $p0)
+        crate::gettext_wrapper::replace_param1(crate::gettext_wrapper::gettext($fmt), $p0)
     }};
     ($fmt:expr, $p0:expr, $p1:expr) => {{
-        replace_param2(gettext($fmt), $p0, $p1)
+        crate::gettext_wrapper::replace_param2(crate::gettext_wrapper::gettext($fmt), $p0, $p1)
     }};
     ($fmt:expr, $p0:expr, $p1:expr, $p2:expr ) => {{
-        replace_param3(gettext($fmt), $p0, $p1, $p2)
+        crate::gettext_wrapper::replace_param3(crate::gettext_wrapper::gettext($fmt), $p0, $p1, $p2)
     }};
 }
