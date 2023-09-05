@@ -65,11 +65,17 @@ impl<MF: ManagedField + Sized> ManagedFieldLink<MF> {
         })
     }
 
+    // Set value for managed fields
     pub fn update_value(&self, value: impl Into<Value>) {
         let msg = Msg::UpdateValue(value.into());
         self.link.send_message(msg);
     }
 
+    /// Set valus/valid for unmanaged fields
+    pub fn force_value(&self, value: impl Into<Value>, valid: Result<(), String>) {
+        let msg = Msg::ForceValue(value.into(), valid);
+        self.link.send_message(msg);
+    }
 }
 
 impl<MF: ManagedField + Sized> Clone for ManagedFieldLink<MF> {
@@ -103,6 +109,7 @@ pub trait ManagedField: Sized {
 
 pub enum Msg<M> {
     UpdateValue(Value),
+    ForceValue(Value, Result<(), String>),
     ChildMessage(M),
     FormCtxUpdate(FormContext), // FormContext object changed
     FormCtxDataChange,          // Data inside FormContext changed
@@ -212,10 +219,33 @@ impl<MF: ManagedField + 'static> Component for ManagedFieldMaster<MF> {
     }
 
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
+        let props = ctx.props();
         match msg {
+            Msg::ForceValue(value, valid) => {
+                if let Some(name) = &props.as_input_props().name {
+                    log::error!("Field '{name}' is managed - unable to force value.");
+                    return false;
+                }
+                let value_changed = value != self.comp_state.value;
+                let valid_changed = valid != self.comp_state.valid;
+
+                self.comp_state.value = value;
+                self.comp_state.valid = valid;
+
+                if value_changed || valid_changed {
+                    let sub_context = ManagedFieldContext {
+                        ctx,
+                        comp_state: &self.comp_state,
+                    };
+                    self.state.value_changed(&sub_context);
+                }
+                true
+            }
             Msg::UpdateValue(value) => {
                 let valid = self
-                    .comp_state.validate.validate(&self.comp_state.value)
+                    .comp_state
+                    .validate
+                    .validate(&self.comp_state.value)
                     .map_err(|e| e.to_string());
 
                 let value_changed = value != self.comp_state.value;
@@ -227,11 +257,11 @@ impl<MF: ManagedField + 'static> Component for ManagedFieldMaster<MF> {
                 if let Some(field_handle) = &mut self.field_handle {
                     field_handle.set_value(self.comp_state.value.clone());
                 }
-                let sub_context = ManagedFieldContext {
-                    ctx,
-                    comp_state: &self.comp_state,
-                };
                 if value_changed || valid_changed {
+                    let sub_context = ManagedFieldContext {
+                        ctx,
+                        comp_state: &self.comp_state,
+                    };
                     self.state.value_changed(&sub_context);
                 }
                 true
