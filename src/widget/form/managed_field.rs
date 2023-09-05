@@ -6,20 +6,41 @@ use yew::prelude::*;
 use super::{FieldHandle, FieldOptions, FormContext, FormContextObserver, ValidateFn};
 use crate::props::FieldBuilder;
 
+/// Managed field state.
+///
+/// The initial state is create in [ManagedField::setup]. Primary use
+/// of this struct is to access current field value, which is always
+/// kept in sync with the form context (see [ManagedFieldContext::state])
 pub struct ManagedFieldState {
     // local state, usage depends whether we have a name/form_ctx
     // None => store checked state locally
     // Some => use it to track/detect changes
+
+    /// The field value (kept in sync with the form context)
     pub value: Value,
+    /// Result of the last validation (updated on value changes)
     pub valid: Result<(), String>,
 
+    /// The validation function
     pub validate: ValidateFn<Value>,
-
+    /// Field default value
     pub default: Value,
+    /// Radio group flag. Set when the field is part of a radio group.
     pub radio_group: bool,
+    /// Do not allow multiple fields with the same name.
+    ///
+    /// Instead, use the same state for all of those fields.
     pub unique: bool,
 }
 
+/// Managed field context.
+///
+/// This is a small wrapper around Yew [Context], and gives you access
+/// to:
+///
+/// - the [ManagedFieldState] to get the field value and validity
+/// - the [ManagedFieldLink] to send messges to the update function.
+/// - the component properties.
 pub struct ManagedFieldContext<'a, MF: ManagedField + Sized + 'static> {
     ctx: &'a Context<ManagedFieldMaster<MF>>,
     comp_state: &'a ManagedFieldState,
@@ -53,11 +74,13 @@ pub struct ManagedFieldLink<MF: ManagedField + Sized + 'static> {
 }
 
 impl<MF: ManagedField + Sized> ManagedFieldLink<MF> {
+    /// Send messages to the update function.
     pub fn send_message(&self, msg: impl Into<MF::Message>) {
         let msg = msg.into();
         self.link.send_message(Msg::ChildMessage(msg));
     }
 
+    /// Create a callback which sends messages to the update function.
     pub fn callback<F, IN, M>(&self, function: F) -> Callback<IN>
     where
         M: Into<MF::Message>,
@@ -69,13 +92,19 @@ impl<MF: ManagedField + Sized> ManagedFieldLink<MF> {
         })
     }
 
-    // Set value for managed fields
+    /// Set value for managed fields.
+    ///
+    /// Updates the value and re-check validity. The connected [FormContext] is kept in sync.
     pub fn update_value(&self, value: impl Into<Value>) {
         let msg = Msg::UpdateValue(value.into());
         self.link.send_message(msg);
     }
 
     /// Set valus/valid for unmanaged fields
+    ///
+    /// # Note
+    ///
+    /// This is ignored if the field is managed by a FormContext.
     pub fn force_value(&self, value: impl Into<Value>, valid: Option<Result<(), String>>) {
         let msg = Msg::ForceValue(value.into(), valid);
         self.link.send_message(msg);
@@ -90,26 +119,51 @@ impl<MF: ManagedField + Sized> Clone for ManagedFieldLink<MF> {
     }
 }
 
+/// Trait to simplify implementing managed fields.
+///
+/// This trait is used by the [ManagedFieldMaster] component, which simplifies
+/// implementing managed fields by:
+///
+/// - automatically connect to the [FormContext] and register the field.
+/// - observe and handle [FormContext] changes.
+///
+/// The trait is similar to the Yew [Component] trait, with some extra functions.
+///
+/// The [ManagedFieldContext] give you access to:
+///
+/// - component properties: `ctx.props()`
+/// - managed state (field value, valid): `ctx.state()`
+/// - component link (clonable) to send messages: `ctx.link()`
+///
+/// There are special link function [update](ManagedFieldLink::update_value) or
+/// [force](ManagedFieldLink::force_value) field values:
 pub trait ManagedField: Sized {
     type Properties: Properties + FieldBuilder;
     type Message: 'static;
 
+    /// Returns the initial field setup.
     fn setup(props: &Self::Properties) -> ManagedFieldState;
 
+    /// Create the component state.
     fn create(ctx: &ManagedFieldContext<Self>) -> Self;
 
+    /// Process messages and update state.
     fn update(&mut self, _ctx: &ManagedFieldContext<Self>, _msg: Self::Message) -> bool {
         true
     }
 
+    /// This is called whenever the managed value (or validity) changes.
     fn value_changed(&mut self, _ctx: &ManagedFieldContext<Self>) {}
 
+    /// Called on component property changes.
     fn changed(&mut self, _ctx: &ManagedFieldContext<Self>, _old_props: &Self::Properties) -> bool {
         true
     }
 
+    /// Create the component view.
     fn view(&self, _ctx: &ManagedFieldContext<Self>) -> Html;
 
+    /// The component rendered method.
     fn rendered(&mut self, _ctx: &ManagedFieldContext<Self>, _first_render: bool) {}
 }
 
@@ -121,6 +175,7 @@ pub enum Msg<M> {
     FormCtxDataChange,          // Data inside FormContext changed
 }
 
+/// Component implementation for [ManagedField]s.
 pub struct ManagedFieldMaster<MF: ManagedField> {
     slave: MF,
     comp_state: ManagedFieldState,
