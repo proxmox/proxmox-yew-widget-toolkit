@@ -245,6 +245,13 @@ impl<MF: ManagedField + 'static> ManagedFieldMaster<MF> {
             options,
             self.comp_state.unique,
         );
+
+        // FormContext may already have field data (i.e for unique fields), so sync back
+        // data after field registration.
+        let (value, valid) =  field_handle.get_data();
+        self.comp_state.value = value;
+        self.comp_state.valid = valid;
+
         self.field_handle = Some(field_handle);
     }
 }
@@ -286,7 +293,9 @@ impl<MF: ManagedField + 'static> Component for ManagedFieldMaster<MF> {
             form_ctx,
             label_clicked_closure: None,
         };
+
         me.register_field(ctx);
+
         me
     }
 
