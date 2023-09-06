@@ -11,10 +11,10 @@ pub use context::{
 //pub use boolean::{Boolean, PwtBoolean};
 
 mod boolean2;
-pub use boolean2::Boolean;
+pub use boolean2::{Boolean, PwtBoolean};
 
-mod checkbox;
-pub use checkbox::{Checkbox, PwtCheckbox};
+mod checkbox2;
+pub use checkbox2::{Checkbox, PwtCheckbox};
 
 mod combobox;
 pub use combobox::{Combobox, PwtCombobox};
@@ -28,7 +28,7 @@ pub use managed_field::{ManagedField, ManagedFieldContext, ManagedFieldLink, Man
 //mod field;
 //pub use field::{Field, PwtField};
 mod field2;
-pub use field2::Field;
+pub use field2::{Field, PwtField};
 
 mod form;
 pub use form::{Form, PwtForm};

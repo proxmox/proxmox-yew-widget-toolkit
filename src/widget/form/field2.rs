@@ -16,6 +16,8 @@ use crate::widget::{Container, Input, Tooltip};
 
 use crate::tr;
 
+pub type PwtField = ManagedFieldMaster<StandardField>;
+
 /// Checkbox input element, which stores values as boolean
 #[widget(pwt=crate, comp=ManagedFieldMaster<StandardField>, @input, @element)]
 #[derive(Clone, PartialEq, Properties)]
@@ -171,7 +173,7 @@ fn create_field_validation_cb(props: Field) -> ValidateFn<Value> {
     })
 }
 
-enum Msg {
+pub enum Msg {
     Update(String),
     RevealPassword,
     HidePassword,
@@ -184,7 +186,8 @@ enum PasswordState {
     Hidden,
 }
 
-struct StandardField {
+#[doc(hidden)]
+pub struct StandardField {
     password_state: PasswordState,
     input_ref: NodeRef,
 }

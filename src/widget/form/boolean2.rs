@@ -9,6 +9,8 @@ use crate::props::{WidgetBuilder, ContainerBuilder, EventSubscriber};
 use crate::widget::Container;
 use super::{ManagedFieldMaster, ManagedField, ManagedFieldState, ValidateFn};
 
+pub type PwtBoolean = ManagedFieldMaster<BooleanField>;
+
 /// Checkbox input element, which stores values as boolean
 #[widget(pwt=crate, comp=ManagedFieldMaster<BooleanField>, @input, @element)]
 #[derive(Clone, PartialEq, Properties)]
@@ -40,11 +42,12 @@ impl Boolean {
         yew::props!(Self {})
     }
 }
-enum Msg {
+pub enum Msg {
     Toggle,
 }
 
-struct BooleanField {}
+#[doc(hidden)]
+pub struct BooleanField {}
 
 impl ManagedField for BooleanField {
     type Properties = Boolean;
