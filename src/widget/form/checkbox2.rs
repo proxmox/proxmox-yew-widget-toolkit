@@ -1,7 +1,5 @@
 use serde_json::Value;
 
-use wasm_bindgen::closure::Closure;
-use wasm_bindgen::JsCast;
 use yew::html::{IntoEventCallback, IntoPropValue};
 use yew::prelude::*;
 
@@ -64,9 +62,7 @@ pub enum Msg {
 }
 
 #[doc(hidden)]
-pub struct CheckboxField {
-    label_clicked_closure: Option<Closure<dyn Fn()>>,
-}
+pub struct CheckboxField {}
 
 impl ManagedField for CheckboxField {
     type Message = Msg;
@@ -109,7 +105,12 @@ impl ManagedField for CheckboxField {
     }
 
     fn create(_ctx: &ManagedFieldContext<Self>) -> Self {
-        Self { label_clicked_closure: None }
+        Self {}
+    }
+
+    fn label_clicked(&mut self, ctx: &ManagedFieldContext<Self>) -> bool {
+        ctx.link().send_message(Msg::Toggle);
+        false
     }
 
     fn update(&mut self, ctx: &ManagedFieldContext<Self>, msg: Self::Message) -> bool {
@@ -227,26 +228,6 @@ impl ManagedField for CheckboxField {
             if props.input_props.autofocus {
                 if let Some(el) = props.std_props.node_ref.cast::<web_sys::HtmlElement>() {
                     let _ = el.focus();
-                }
-            }
-
-            if let Some(label_id) = &props.input_props.label_id {
-                let window = web_sys::window().unwrap();
-                let document = window.document().unwrap();
-
-                let label_clicked_closure = Closure::wrap({
-                    let link = ctx.link().clone();
-                    Box::new(move || {
-                        link.send_message(Msg::Toggle);
-                    }) as Box<dyn Fn()>
-                });
-
-                if let Some(el) = document.get_element_by_id(&label_id) {
-                    let _ = el.add_event_listener_with_callback(
-                        "click",
-                        label_clicked_closure.as_ref().unchecked_ref(),
-                    );
-                    self.label_clicked_closure = Some(label_clicked_closure); // keep alive
                 }
             }
         }

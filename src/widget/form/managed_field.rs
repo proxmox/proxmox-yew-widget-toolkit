@@ -1,4 +1,5 @@
 use serde_json::Value;
+use wasm_bindgen::{JsCast, closure::Closure};
 
 use yew::html::Scope;
 use yew::prelude::*;
@@ -161,6 +162,9 @@ pub trait ManagedField: Sized {
     /// This is called whenever the managed value (or validity) changes.
     fn value_changed(&mut self, _ctx: &ManagedFieldContext<Self>) {}
 
+    /// This is called when the associated label is clicked.
+    fn label_clicked(&mut self, _ctx: &ManagedFieldContext<Self>) -> bool { false }
+
     /// Called on component property changes.
     fn changed(&mut self, _ctx: &ManagedFieldContext<Self>, _old_props: &Self::Properties) -> bool {
         true
@@ -178,6 +182,7 @@ pub enum Msg<M> {
     UpdateDefault(Value),
     ForceValue(Value, Option<Result<(), String>>),
     ChildMessage(M),
+    LabelClicked,                 // Associated label was clicked
     FormCtxUpdate(FormContext), // FormContext object changed
     FormCtxDataChange,          // Data inside FormContext changed
 }
@@ -190,6 +195,7 @@ pub struct ManagedFieldMaster<MF: ManagedField> {
     field_handle: Option<FieldHandle>,
     _form_ctx_handle: Option<ContextHandle<FormContext>>,
     _form_ctx_observer: Option<FormContextObserver>,
+    label_clicked_closure: Option<Closure<dyn Fn()>>,
 }
 
 impl<MF: ManagedField + 'static> ManagedFieldMaster<MF> {
@@ -278,6 +284,7 @@ impl<MF: ManagedField + 'static> Component for ManagedFieldMaster<MF> {
             _form_ctx_observer,
             field_handle: None,
             form_ctx,
+            label_clicked_closure: None,
         };
         me.register_field(ctx);
         me
@@ -371,6 +378,10 @@ impl<MF: ManagedField + 'static> Component for ManagedFieldMaster<MF> {
                 }
                 false
             }
+            Msg::LabelClicked => {
+                let sub_context = ManagedFieldContext::new(ctx, &self.comp_state);
+                self.slave.label_clicked(&sub_context)
+            }
         }
     }
 
@@ -408,6 +419,37 @@ impl<MF: ManagedField + 'static> Component for ManagedFieldMaster<MF> {
     }
 
     fn rendered(&mut self, ctx: &Context<Self>, first_render: bool) {
+        if first_render {
+            let props = ctx.props().as_input_props();
+            /* fixme:
+            if props.autofocus {
+                if let Some(el) = props.std_props.node_ref.cast::<web_sys::HtmlElement>() {
+                    let _ = el.focus();
+                }
+            }
+            */
+
+            if let Some(label_id) = &props.label_id {
+                let window = web_sys::window().unwrap();
+                let document = window.document().unwrap();
+
+                let label_clicked_closure = Closure::wrap({
+                    let link = ctx.link().clone();
+                    Box::new(move || {
+                        link.send_message(Msg::LabelClicked);
+                    }) as Box<dyn Fn()>
+                });
+
+                if let Some(el) = document.get_element_by_id(&label_id) {
+                    let _ = el.add_event_listener_with_callback(
+                        "click",
+                        label_clicked_closure.as_ref().unchecked_ref(),
+                    );
+                    self.label_clicked_closure = Some(label_clicked_closure); // keep alive
+                }
+            }
+        }
+
         let sub_context = ManagedFieldContext::new(ctx, &self.comp_state);
         self.slave.rendered(&sub_context, first_render);
     }

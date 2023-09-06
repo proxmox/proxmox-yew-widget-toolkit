@@ -7,7 +7,7 @@ use pwt_macros::{builder, widget};
 
 use crate::props::{WidgetBuilder, ContainerBuilder, EventSubscriber};
 use crate::widget::Container;
-use super::{ManagedFieldMaster, ManagedField, ManagedFieldState, ValidateFn};
+use super::{ManagedFieldMaster, ManagedFieldContext, ManagedField, ManagedFieldState, ValidateFn};
 
 pub type PwtBoolean = ManagedFieldMaster<BooleanField>;
 
@@ -76,11 +76,16 @@ impl ManagedField for BooleanField {
         }
     }
 
-    fn create(_ctx: &super::ManagedFieldContext<Self>) -> Self {
+    fn create(_ctx: &ManagedFieldContext<Self>) -> Self {
         Self { }
     }
 
-    fn update(&mut self, ctx: &super::ManagedFieldContext<Self>, msg: Self::Message) -> bool {
+    fn label_clicked(&mut self, ctx: &ManagedFieldContext<Self>) -> bool {
+        ctx.link().send_message(Msg::Toggle);
+        false
+    }
+
+    fn update(&mut self, ctx: &ManagedFieldContext<Self>, msg: Self::Message) -> bool {
         match msg {
             Msg::Toggle => {
                 let state = ctx.state();
@@ -91,7 +96,7 @@ impl ManagedField for BooleanField {
         }
     }
 
-    fn value_changed(&mut self, ctx: &super::ManagedFieldContext<Self>) {
+    fn value_changed(&mut self, ctx: &ManagedFieldContext<Self>) {
         let props = ctx.props();
         let state = ctx.state();
         let checked = state.value.as_bool().unwrap_or(false);
@@ -100,7 +105,7 @@ impl ManagedField for BooleanField {
         }
     }
 
-    fn changed(&mut self, ctx: &super::ManagedFieldContext<Self>, _old_props: &Self::Properties) -> bool {
+    fn changed(&mut self, ctx: &ManagedFieldContext<Self>, _old_props: &Self::Properties) -> bool {
         let props = ctx.props();
         if let Some(checked) = props.checked {
             ctx.link().force_value(checked, None)
@@ -108,7 +113,7 @@ impl ManagedField for BooleanField {
         true
     }
 
-    fn view(&self, ctx: &super::ManagedFieldContext<Self>) -> Html {
+    fn view(&self, ctx: &ManagedFieldContext<Self>) -> Html {
         let props = ctx.props();
         let link = ctx.link();
         let disabled = props.input_props.disabled;
