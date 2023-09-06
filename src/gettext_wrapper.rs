@@ -1,4 +1,3 @@
-use std::fmt::Display;
 use gettext::Catalog;
 
 use yew::prelude::*;
@@ -75,35 +74,6 @@ pub fn npgettext(msg_context: &str, msg_id: &str, msg_id_plural: &str, n: u64) -
     catalog
         .npgettext(msg_context, msg_id, msg_id_plural, n)
         .to_string()
-}
-
-pub fn replace_param1(msg: impl Display, p0: impl Display) -> String {
-    let msg = msg.to_string();
-    let p0 = p0.to_string();
-
-    msg.replace("{0}", &p0)
-}
-
-pub fn replace_param2(msg: impl Display, p0: impl Display, p1: impl Display) -> String {
-    let msg = msg.to_string();
-    let p0 = p0.to_string();
-    let p1 = p1.to_string();
-
-    let msg = msg.replace("{0}", &p0);
-    let msg = msg.replace("{1}", &p1);
-    msg
-}
-
-pub fn replace_param3(msg: impl Display, p0: impl Display, p1: impl Display, p2: impl Display) -> String {
-    let msg = msg.to_string();
-    let p0 = p0.to_string();
-    let p1 = p1.to_string();
-    let p2 = p2.to_string();
-
-    let msg = msg.replace("{0}", &p0);
-    let msg = msg.replace("{1}", &p1);
-    let msg = msg.replace("{2}", &p2);
-    msg
 }
 
 fn convert_js_error(js_err: ::wasm_bindgen::JsValue) -> String {
@@ -190,19 +160,139 @@ pub fn use_catalog(url: &str) -> bool {
     !matches!(*state, LoadState::LoadFinished(_))
 }
 
-// fixme: use crate "tr" instead (once packaged for debian)
+/// This is an implementation detail for replacing arguments in the gettext macros.
+/// Don't call this directly.
+#[allow(dead_code)]
+#[doc(hidden)]
+pub fn freeformat<T: std::fmt::Display>(msgstr: &str, pat: &str, arg: T) -> String {
+    match msgstr.split_once(pat) {
+        Some((pre, suf)) => format!("{}{}{}", pre, arg, suf),
+        None => {
+            debug_assert!(false, "There are more arguments than format directives");
+            msgstr.to_string()
+        }
+    }
+}
+
+/// This is an implementation detail for replacing arguments in the gettext macros.
+/// Don't call this directly.
+#[macro_export]
+#[doc(hidden)]
+macro_rules! rt_format {
+	( $msgstr:expr, $pat:expr, ) => {{
+        debug_assert!(
+            !$msgstr.contains("{}"),
+            "There are fewer arguments than format directives"
+        );
+		$msgstr
+	}};
+	( $msgstr:expr, $pat:expr, $arg:expr $(, $rest: expr)* ) => {{
+		$crate::rt_format!(
+            $crate::gettext_wrapper::freeformat(&$msgstr, $pat, $arg),
+            $pat,
+            $($rest),*
+        )
+	}};
+}
+
+/// Like [`gettext`], but allows for formatting.
+///
+/// It calls [`gettext`] on `msgid`, and then replaces each occurrence of `{}` with the next value
+/// out of `args`.
+///
+/// # Panics
+///
+/// If compiled with debug assertions enabled (as in "dev" profile),
+/// will panic if the number of arguments doesn't match the number of format directives.
+///
+/// [`gettext`]: gettext()
 #[macro_export]
 macro_rules! tr {
-    ($fmt:expr) => {{
-        $crate::gettext($fmt)
+    ( $msgid:expr $(,)? ) => {
+        $crate::gettext($msgid)
+    };
+    ( $msgid:expr, $($args:expr),+ $(,)? ) => {{
+        $crate::rt_format!(
+            $crate::gettext($msgid),
+            "{}",
+            $($args),+
+        )
     }};
-    ($fmt:expr, $p0:expr) => {{
-        $crate::replace_param1(crate::gettext($fmt), $p0)
+}
+
+/// Like [`ngettext`], but allows for formatting.
+///
+/// It calls [`ngettext`] on `msgid`, `msgid_plural`, and `n`, and then replaces each occurrence of
+/// `{}` with the next value out of `args`, and `{n}` with `n`.
+///
+/// # Panics
+///
+/// If compiled with debug assertions enabled (as in "dev" profile),
+/// will panic if the number of arguments doesn't match the number of format directives.
+#[macro_export]
+macro_rules! ngettext {
+    ( $msgid:expr, $msgid_plural:expr, $n:expr $(,)? ) => {{
+        let mut msgstr = $crate::ngettext($msgid, $msgid_plural, $n);
+        while msgstr.contains("{n}") {
+            msgstr = $crate::rt_format!(&msgstr, "{n}", $n);
+        }
+        msgstr
     }};
-    ($fmt:expr, $p0:expr, $p1:expr) => {{
-        $crate::replace_param2(crate::gettext($fmt), $p0, $p1)
+    ( $msgid:expr, $msgid_plural:expr, $n:expr, $($args:expr),+ $(,)? ) => {{
+        let mut msgstr = $crate::ngettext($msgid, $msgid_plural, $n);
+        while msgstr.contains("{n}") {
+            msgstr = $crate::rt_format!(&msgstr, "{n}", $n);
+        }
+        $crate::rt_format!(msgstr, "{}", $($args),+)
     }};
-    ($fmt:expr, $p0:expr, $p1:expr, $p2:expr ) => {{
-        $crate::replace_param3(crate::gettext($fmt), $p0, $p1, $p2)
+}
+
+/// Like [`pgettext`], but allows for formatting.
+///
+/// It calls [`pgettext`] on `msgctxt` and `msgid`, and then replaces each occurrence of `{}` with
+/// the next value out of `args`.
+///
+/// # Panics
+///
+/// If compiled with debug assertions enabled (as in "dev" profile),
+/// will panic if the number of arguments doesn't match the number of format directives.
+#[macro_export]
+macro_rules! pgettext {
+    ( $msgctxt:expr, $msgid:expr $(,)? ) => {
+        $crate::pgettext($msgctxt, $msgid)
+    };
+    ( $msgctxt:expr, $msgid:expr, $($args:expr),+ $(,)? ) => {{
+        $crate::rt_format!(
+            $crate::pgettext($msgctxt, $msgid),
+            "{}",
+            $($args),+
+        )
+    }};
+}
+
+/// Like [`npgettext`], but allows for formatting.
+///
+/// It calls [`npgettext`] on `msgctxt`, `msgid`, `msgid_plural`, and `n`, and then replaces each
+/// occurrence of `{}` with the next value out of `args`, and `{n}` with `n`.
+///
+/// # Panics
+///
+/// If compiled with debug assertions enabled (as in "dev" profile),
+/// will panic if the number of arguments doesn't match the number of format directives.
+#[macro_export]
+macro_rules! npgettext {
+    ( $msgctxt:expr, $msgid:expr, $msgid_plural:expr, $n:expr $(,)? ) => {{
+        let mut msgstr = $crate::npgettext($msgctxt, $msgid, $msgid_plural, $n);
+        while msgstr.contains("{n}") {
+            msgstr = $crate::rt_format!(&msgstr, "{n}", $n);
+        }
+        msgstr
+    }};
+    ( $msgctxt:expr, $msgid:expr, $msgid_plural:expr, $n:expr, $($args:expr),+ $(,)? ) => {{
+        let mut msgstr = $crate::npgettext($msgctxt, $msgid, $msgid_plural, $n);
+        while msgstr.contains("{n}") {
+            msgstr = $crate::rt_format!(&msgstr, "{n}", $n);
+        }
+        $crate::rt_format!(msgstr, "{}", $($args),+)
     }};
 }

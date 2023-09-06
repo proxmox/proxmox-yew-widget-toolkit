@@ -146,7 +146,7 @@ fn create_field_validation_cb(props: Field) -> ValidateFn<Value> {
         if props.input_type == "number" {
             let value_f64 = match value.parse::<f64>() {
                 Ok(v) => v,
-                Err(err) => return Err(Error::msg(tr!("unable to parse number: {0}", err))),
+                Err(err) => return Err(Error::msg(tr!("unable to parse number: {0}", &err))),
             };
             if let Some(min) = props.min {
                 if value_f64 < min {
