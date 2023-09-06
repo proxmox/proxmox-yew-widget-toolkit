@@ -43,6 +43,18 @@ hooks you still have to put the download directory into your path:
  export PATH="$HOME/.cache/trunk/sass-1.50.0:$PATH"
 
 
+I18N
+====
+
+We will use the "tr" crate for I18N. So all translatable strings are
+marked using the "tr!" macro.
+
+Extract gettext messages with the "xtr" binary, which is part of the
+"tr" crate.
+
+See example/demo for an usage example.
+
+
 Notes
 =====
 
