@@ -999,6 +999,10 @@ impl<S: DataStore + 'static> Component for PwtDataTable<S> {
         for header in props.headers.iter() {
             header.extract_column_list(&mut columns);
         }
+        let mut column_hidden = Vec::new();
+        for column in columns.iter() {
+            column_hidden.push(column.hidden);
+        }
 
         let cell_class = if props.cell_class.is_empty() {
             Classes::from("pwt-datatable-cell")
@@ -1032,7 +1036,7 @@ impl<S: DataStore + 'static> Component for PwtDataTable<S> {
             active_column: 0,
             columns: Rc::new(columns),
             column_widths: Vec::new(),
-            column_hidden: Rc::new(Vec::new()),
+            column_hidden: Rc::new(column_hidden),
             scroll_info: VirtualScrollInfo::default(),
             cell_class: Rc::new(cell_class),
             scroll_top: 0,
