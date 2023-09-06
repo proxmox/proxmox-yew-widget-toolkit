@@ -164,4 +164,15 @@ impl ManagedField for BooleanField {
                 .into()
         }
     }
+
+    fn rendered(&mut self, ctx: &ManagedFieldContext<Self>, first_render: bool) {
+        if first_render {
+            let props = ctx.props();
+            if props.input_props.autofocus {
+                if let Some(el) = props.std_props.node_ref.cast::<web_sys::HtmlElement>() {
+                    let _ = el.focus();
+                }
+            }
+        }
+    }
 }
