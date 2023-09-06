@@ -19,8 +19,8 @@ pub use checkbox2::{Checkbox, PwtCheckbox};
 mod combobox;
 pub use combobox::{Combobox, PwtCombobox};
 
-mod field_state;
-pub use field_state::{FieldState, FieldStateMsg};
+//mod field_state;
+//pub use field_state::{FieldState, FieldStateMsg};
 
 mod managed_field;
 pub use managed_field::{ManagedField, ManagedFieldContext, ManagedFieldLink, ManagedFieldMaster, ManagedFieldState};
