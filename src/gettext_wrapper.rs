@@ -194,15 +194,15 @@ pub fn use_catalog(url: &str) -> bool {
 #[macro_export]
 macro_rules! tr {
     ($fmt:expr) => {{
-        crate::gettext($fmt)
+        $crate::gettext($fmt)
     }};
     ($fmt:expr, $p0:expr) => {{
-        crate::replace_param1(crate::gettext($fmt), $p0)
+        $crate::replace_param1(crate::gettext($fmt), $p0)
     }};
     ($fmt:expr, $p0:expr, $p1:expr) => {{
-        crate::replace_param2(crate::gettext($fmt), $p0, $p1)
+        $crate::replace_param2(crate::gettext($fmt), $p0, $p1)
     }};
     ($fmt:expr, $p0:expr, $p1:expr, $p2:expr ) => {{
-        crate::replace_param3(crate::gettext($fmt), $p0, $p1, $p2)
+        $crate::replace_param3(crate::gettext($fmt), $p0, $p1, $p2)
     }};
 }
