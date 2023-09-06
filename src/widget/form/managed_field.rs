@@ -107,6 +107,11 @@ impl<MF: ManagedField + Sized> ManagedFieldLink<MF> {
         self.link.send_message(msg);
     }
 
+    /// Trigger re-validation
+    pub fn validate(&self) {
+        self.link.send_message(Msg::Validate);
+    }
+
     /// Set valus/valid for unmanaged fields
     ///
     /// # Note
@@ -182,6 +187,7 @@ pub enum Msg<M> {
     UpdateDefault(Value),
     ForceValue(Value, Option<Result<(), String>>),
     ChildMessage(M),
+    Validate,
     LabelClicked,                 // Associated label was clicked
     FormCtxUpdate(FormContext), // FormContext object changed
     FormCtxDataChange,          // Data inside FormContext changed
@@ -350,6 +356,26 @@ impl<MF: ManagedField + 'static> Component for ManagedFieldMaster<MF> {
                     self.slave.value_changed(&sub_context);
                 }
                 true
+            }
+            Msg::Validate => {
+                if let Some(field_handle) = &mut self.field_handle {
+                    field_handle.validate();
+                    false
+                } else {
+                    let valid = self
+                        .comp_state
+                        .validate
+                        .validate(&self.comp_state.value)
+                        .map_err(|e| e.to_string());
+
+                    let valid_changed = valid != self.comp_state.valid;
+                    self.comp_state.valid = valid;
+                    if valid_changed {
+                        let sub_context = ManagedFieldContext::new(ctx, &self.comp_state);
+                        self.slave.value_changed(&sub_context);
+                    }
+                    valid_changed
+                }
             }
             Msg::UpdateDefault(default) => {
                 self.comp_state.default = default.clone();

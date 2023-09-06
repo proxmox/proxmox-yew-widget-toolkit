@@ -253,7 +253,7 @@ impl<S: DataStore + 'static> ManagedField for SelectorField<S> {
                         self.load_error = None;
                         props.store.set_data(data);
                         let current_value = ctx.state().value.clone();
-                        ctx.link().update_value(current_value); // re-evaluate
+                        ctx.link().update_value(current_value);
                     }
                     Err(err) => {
                         props.store.clear();
@@ -262,6 +262,7 @@ impl<S: DataStore + 'static> ManagedField for SelectorField<S> {
                         self.load_error = Some(err.to_string());
                     }
                 }
+                ctx.link().validate(); // re-evaluate
                 true
             }
             Msg::DataChange => {
