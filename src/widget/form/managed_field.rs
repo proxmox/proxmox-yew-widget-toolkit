@@ -100,6 +100,12 @@ impl<MF: ManagedField + Sized> ManagedFieldLink<MF> {
         self.link.send_message(msg);
     }
 
+    /// Update default value.
+    pub fn update_default(&self, default: impl Into<Value>) {
+        let msg = Msg::UpdateDefault(default.into());
+        self.link.send_message(msg);
+    }
+
     /// Set valus/valid for unmanaged fields
     ///
     /// # Note
@@ -169,6 +175,7 @@ pub trait ManagedField: Sized {
 
 pub enum Msg<M> {
     UpdateValue(Value),
+    UpdateDefault(Value),
     ForceValue(Value, Option<Result<(), String>>),
     ChildMessage(M),
     FormCtxUpdate(FormContext), // FormContext object changed
@@ -325,6 +332,13 @@ impl<MF: ManagedField + 'static> Component for ManagedFieldMaster<MF> {
                 if value_changed || valid_changed {
                     let sub_context = ManagedFieldContext::new(ctx, &self.comp_state);
                     self.slave.value_changed(&sub_context);
+                }
+                true
+            }
+            Msg::UpdateDefault(default) => {
+                self.comp_state.default = default.clone();
+                if let Some(field_handle) = &mut self.field_handle {
+                    field_handle.set_default(default);
                 }
                 true
             }
