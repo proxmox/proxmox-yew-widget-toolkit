@@ -1,14 +1,16 @@
-use std::rc::Rc;
 use serde_json::Value;
+use std::rc::Rc;
 
+use yew::html::{IntoEventCallback, IntoPropValue};
 use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
-use yew::html::{IntoEventCallback, IntoPropValue};
 
 use crate::prelude::*;
 use crate::props::FieldStdProps;
+use crate::widget::form::{
+    ManagedField, ManagedFieldContext, ManagedFieldMaster, ManagedFieldState, ValidateFn,
+};
 use crate::widget::Container;
-use crate::widget::form::{ManagedField, ManagedFieldContext, ManagedFieldMaster, ManagedFieldState, ValidateFn};
 
 use super::{MenuControllerMsg, MenuEvent};
 
@@ -64,7 +66,7 @@ pub struct MenuCheckbox {
 }
 
 impl FieldBuilder for MenuCheckbox {
-    fn as_input_props_mut(&mut self) -> &mut FieldStdProps  {
+    fn as_input_props_mut(&mut self) -> &mut FieldStdProps {
         &mut self.input_props
     }
     fn as_input_props(&self) -> &FieldStdProps {
@@ -73,12 +75,9 @@ impl FieldBuilder for MenuCheckbox {
 }
 
 impl MenuCheckbox {
-
     /// Create a new menu button
     pub fn new(text: impl Into<Html>) -> Self {
-        yew::props!(Self {
-            text: text.into()
-        })
+        yew::props!(Self { text: text.into() })
     }
 
     /// Create a new radio button
@@ -143,7 +142,7 @@ impl ManagedField for MenuCheckboxField {
         let mut event = MenuEvent::new();
         event.checked = checked;
         if let Some(on_change) = &props.on_change {
-             on_change.emit(event);
+            on_change.emit(event);
         }
     }
 
@@ -156,7 +155,9 @@ impl ManagedField for MenuCheckboxField {
         let state = ctx.state();
         match msg {
             Msg::Toggle => {
-                if props.input_props.disabled { return false; }
+                if props.input_props.disabled {
+                    return false;
+                }
 
                 let on_value = props.value.as_deref().unwrap_or("on").to_string();
                 let value = state.value.clone();
@@ -219,9 +220,17 @@ impl ManagedField for MenuCheckboxField {
             "fa",
             "fa-fw",
             if props.radio_group {
-                if checked { "fa-check-circle-o" } else { "fa-circle-o" }
+                if checked {
+                    "fa-check-circle-o"
+                } else {
+                    "fa-circle-o"
+                }
             } else {
-                if checked { "fa-check-square-o" } else { "fa-square-o" }
+                if checked {
+                    "fa-check-square-o"
+                } else {
+                    "fa-square-o"
+                }
             },
             "pwt-menu-item-icon",
         );
@@ -241,14 +250,21 @@ impl ManagedField for MenuCheckboxField {
             .class("pwt-menu-item")
             .attribute("tabindex", (!disabled).then(|| "-1"))
             .attribute("disabled", disabled.then(|| ""))
-            .attribute("role", if props.radio_group { "menuitemradio" } else { "menuitemcheckbox" })
+            .attribute(
+                "role",
+                if props.radio_group {
+                    "menuitemradio"
+                } else {
+                    "menuitemcheckbox"
+                },
+            )
             .attribute("aria-checked", checked.then(|| "true"))
             .onclick(onclick)
             .onkeydown(onkeydown)
             .with_child(icon)
-            .with_child(html!{<i class="pwt-menu-item-indent">{props.text.clone()}</i>})
+            .with_child(html! {<i class="pwt-menu-item-indent">{props.text.clone()}</i>})
             .into()
-     }
+    }
 }
 
 impl Into<VNode> for MenuCheckbox {
