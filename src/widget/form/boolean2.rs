@@ -32,7 +32,16 @@ pub struct Boolean {
     /// Change callback
     #[builder_cb(IntoEventCallback, into_event_callback, bool)]
     pub on_change: Option<Callback<bool>>,
-    //fixme: on_input()
+
+    /// Input callback.
+    ///
+    /// Called on user interaction:
+    ///
+    /// - Click on the checkbox.
+    /// - Click on the associated input label.
+    /// - Activation by keyboard (space press).
+    #[builder_cb(IntoEventCallback, into_event_callback, bool)]
+    pub on_input: Option<Callback<bool>>,
 }
 
 impl Boolean {
@@ -86,11 +95,18 @@ impl ManagedField for BooleanField {
     }
 
     fn update(&mut self, ctx: &ManagedFieldContext<Self>, msg: Self::Message) -> bool {
+        let props = ctx.props();
+        let state = ctx.state();
         match msg {
             Msg::Toggle => {
-                let state = ctx.state();
-                let checked = state.value.as_bool().unwrap_or(false);
-                ctx.link().update_value(!checked);
+                 let checked = state.value.as_bool().unwrap_or(false);
+                let new_checked = !checked;
+                ctx.link().update_value(new_checked);
+
+                if let Some(on_input) = &props.on_input {
+                    on_input.emit(new_checked);
+                }
+
                 false
             }
         }
