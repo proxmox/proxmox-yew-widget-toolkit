@@ -39,10 +39,19 @@ pub struct Checkbox {
     #[builder]
     pub switch: bool,
 
-    /// Change callback
+    /// Change callback.
     #[builder_cb(IntoEventCallback, into_event_callback, String)]
     pub on_change: Option<Callback<String>>,
-    //fixme: on_input()
+
+    /// Input callback.
+    ///
+    /// Called on user interaction:
+    ///
+    /// - Click on the checkbox.
+    /// - Click on the associated input label.
+    /// - Activation by keyboard (space press).
+    #[builder_cb(IntoEventCallback, into_event_callback, String)]
+    pub on_input: Option<Callback<String>>,
 }
 
 impl Checkbox {
@@ -135,11 +144,15 @@ impl ManagedField for CheckboxField {
                     on_value
                 };
 
-                ctx.link().update_value(new_value);
-                //fixme
-                //if let Some(on_input) = &props.on_input {
-                //  on_input.emit(value);
-                //}
+                let changes = value != new_value;
+
+                if changes {
+                    ctx.link().update_value(new_value.clone());
+
+                    if let Some(on_input) = &props.on_input {
+                         on_input.emit(new_value);
+                    }
+                }
                 true
             }
         }
