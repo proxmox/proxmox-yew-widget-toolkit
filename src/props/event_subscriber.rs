@@ -58,6 +58,12 @@ pub trait EventSubscriber: Into<VNode> {
     /// Mutable access to the [ListenersWrapper].
     fn as_listeners_mut(&mut self) -> &mut ListenersWrapper;
 
+    /// Set all Listeners - usefull to copy the whole set of listeners.
+    fn listeners(mut self, list: &ListenersWrapper) -> Self  {
+        *self.as_listeners_mut() = list.clone();
+        self
+    }
+
     handler!(onauxclick, MouseEvent);
     handler!(onclick, MouseEvent);
     handler!(oncontextmenu, MouseEvent);

@@ -338,6 +338,7 @@ impl ManagedField for StandardField {
             };
         let input_container = Container::new()
             .with_std_props(&props.std_props)
+            .listeners(&props.listeners)
             .class("pwt-input")
             .class(format!("pwt-input-type-{}", props.input_type))
             .class("pwt-w-100")

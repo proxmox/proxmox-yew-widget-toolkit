@@ -199,6 +199,7 @@ impl ManagedField for CheckboxField {
 
         let checkbox = Container::new()
             .with_std_props(&props.std_props)
+            .listeners(&props.listeners)
             .class(layout_class)
             .class(checked.then(|| "checked"))
             .class(disabled.then(|| "disabled"))

@@ -50,7 +50,7 @@ pub type PwtSelector<S> = ManagedFieldMaster<SelectorField<S>>;
 ///
 /// Please use a trackable [LoadCallback] to avoid unnecessary
 /// reloads.
-#[widget(pwt=crate, comp=ManagedFieldMaster<SelectorField<S>>, @input, @element)]
+#[widget(pwt=crate, comp=ManagedFieldMaster<SelectorField<S>>, @input)]
 #[derive(Derivative, Properties)]
 #[derivative(Clone(bound = ""), PartialEq(bound = ""))]
 #[builder]

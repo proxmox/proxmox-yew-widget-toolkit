@@ -20,7 +20,7 @@ use pwt_macros::{builder, widget};
 /// Combobox widget
 ///
 /// Allows to select text options.
-#[widget(pwt=crate, comp=PwtCombobox, @input, @element)]
+#[widget(pwt=crate, comp=PwtCombobox, @input)]
 #[derive(Clone, PartialEq, Properties)]
 #[builder]
 pub struct Combobox {

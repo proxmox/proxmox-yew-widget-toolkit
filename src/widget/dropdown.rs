@@ -291,6 +291,7 @@ impl Component for PwtDropdown {
 
             Container::new()
                 .node_ref(self.input_ref.clone())
+                .listeners(&props.listeners)
                 .class("pwt-flex-fill")
                 .class("pwt-input-content")
                 .attribute("tabindex", props.input_props.tabindex.unwrap_or(0).to_string())
@@ -317,6 +318,7 @@ impl Component for PwtDropdown {
             Input::new()
             .node_ref(self.input_ref.clone())
             .with_input_props(&props.input_props)
+            .listeners(&props.listeners)
             .class("pwt-flex-fill")
             .attribute("value", value)
             .attribute("type", "text")
