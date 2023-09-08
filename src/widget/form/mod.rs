@@ -33,6 +33,9 @@ pub use field2::{Field, PwtField};
 mod form;
 pub use form::{Form, PwtForm};
 
+mod number;
+pub use number::{Number, PwtNumber};
+
 mod reset_button;
 pub use reset_button::{ResetButton, PwtResetButton};
 

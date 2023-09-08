@@ -36,14 +36,26 @@ pub struct FieldOptions {
 
 #[derive(Debug, PartialEq)]
 struct FieldRegistration {
+    // Field name.
     pub name: AttrValue,
+    /// The validation function
     pub validate: Option<ValidateFn<Value>>,
+    /// Radio group flag. Set this when the field is part of a radio group.
     pub radio_group: bool,
+    /// Do not allow multiple fields with the same name.
+    ///
+    /// Instead, use the same state for all of those fields.
     pub unique: bool,
+    /// Standard field options from [FieldStdProps](crate::props::FieldStdProps).
     pub options: FieldOptions,
+    /// Field value
     pub value: Value,
+    /// Field default value.
     pub default: Value,
+    /// Validation result.
     pub valid: Result<(), String>,
+    /// Optional conversion hook called by [FormContext::get_submit_data]
+    pub submit_converter: Option<Callback<Value, Value>>,
 }
 
 /// Shared form data ([Rc]<[RefCell]<[FormContextState]>>)
@@ -233,9 +245,10 @@ impl FormContext {
         validate: Option<ValidateFn<Value>>,
         options: FieldOptions,
         unique: bool,
+        submit_converter: Option<Callback<Value, Value>>,
     ) -> FieldHandle {
         let key = self.inner.borrow_mut()
-            .register_field(name, value, default, radio_group, validate, options, unique);
+            .register_field(name, value, default, radio_group, validate, options, unique, submit_converter);
 
         FieldHandle { key, form_ctx: self.clone() }
     }
@@ -264,6 +277,8 @@ impl FormContext {
     /// Returns a JSON object with the values of all registered fields
     /// that have [FieldOptions::submit] set. Empty strings are
     /// included when [FieldOptions::submit_empty] is set.
+    ///
+    /// Note: Data from invalid fields is excluded.
     pub fn get_submit_data(&self) -> Value {
         self.read().get_submit_data()
     }
@@ -361,6 +376,7 @@ impl FormContextState {
         validate: Option<ValidateFn<Value>>,
         options: FieldOptions,
         unique: bool,
+        submit_converter: Option<Callback<Value, Value>>,
     ) -> usize {
         let name = name.into_prop_value();
 
@@ -381,6 +397,7 @@ impl FormContextState {
             value,
             default: default.clone(),
             valid,
+            submit_converter,
         };
 
         let slab_key;
@@ -750,17 +767,17 @@ impl FormContextState {
             if field_keys.len() == 1 {
                 let key = field_keys[0];
                 let field = &self.fields[key];
-                if field.options.submit {
-                    let value = field.value.clone();
-                    match value {
-                        Value::String(v) => {
-                            if !v.is_empty() || field.options.submit_empty {
-                                data[name.deref()] = Value::String(v);
-                            }
-                        }
-                        // Bool/Number/Array/Object/Null
-                        v => data[name.deref()] = v,
+                if field.valid.is_ok() && field.options.submit {
+
+                    let mut value = field.value.clone();
+                    if let Value::String(text) = &value {
+                        if text.is_empty() && !field.options.submit_empty { continue; }
                     }
+
+                    if let Some(submit_converter) = &field.submit_converter {
+                        value = submit_converter.emit(value);
+                    }
+                    data[name.deref()] = value;
                 }
                 continue;
             }
@@ -769,17 +786,15 @@ impl FormContextState {
                 let mut list = Vec::new();
                 for key in field_keys {
                     let field = &self.fields[key];
-                    if field.options.submit {
-                        let value = field.value.clone();
-                        match value {
-                            Value::String(v) => {
-                                if !v.is_empty() || field.options.submit_empty {
-                                    list.push(Value::String(v));
-                                }
-                            }
-                            // Bool/Number/Array/Object/Null
-                            v => list.push(v),
+                    if field.valid.is_ok() && field.options.submit {
+                        let mut value = field.value.clone();
+                        if let Value::String(text) = &value {
+                            if text.is_empty() && !field.options.submit_empty { continue; }
                         }
+                        if let Some(submit_converter) = &field.submit_converter {
+                            value = submit_converter.emit(value);
+                        }
+                        list.push(value);
                     }
                 }
                 if !list.is_empty() {

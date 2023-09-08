@@ -19,19 +19,26 @@ pub struct ManagedFieldState {
 
     /// The field value (kept in sync with the form context)
     pub value: Value,
+
     /// Result of the last validation (updated on value changes)
     pub valid: Result<(), String>,
 
     /// The validation function
     pub validate: ValidateFn<Value>,
+
     /// Field default value
     pub default: Value,
+
     /// Radio group flag. Set when the field is part of a radio group.
     pub radio_group: bool,
+
     /// Do not allow multiple fields with the same name.
     ///
     /// Instead, use the same state for all of those fields.
     pub unique: bool,
+
+    /// Optional conversion called by [FormContext::get_submit_data]
+    pub submit_converter: Option<Callback<Value, Value>>,
 }
 
 /// Managed field context.
@@ -250,6 +257,7 @@ impl<MF: ManagedField + 'static> ManagedFieldMaster<MF> {
             Some(self.comp_state.validate.clone()),
             options,
             self.comp_state.unique,
+            self.comp_state.submit_converter.clone(),
         );
 
         // FormContext may already have field data (i.e for unique fields), so sync back

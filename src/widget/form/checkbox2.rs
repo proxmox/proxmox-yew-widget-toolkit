@@ -101,6 +101,7 @@ impl ManagedField for CheckboxField {
             default: default.into(),
             radio_group: props.radio_group,
             unique: false,
+            submit_converter: None,
         }
     }
 

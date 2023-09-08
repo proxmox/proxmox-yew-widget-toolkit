@@ -129,6 +129,7 @@ impl ManagedField for MenuCheckboxField {
             default: default.into(),
             radio_group: props.radio_group,
             unique: true,
+            submit_converter: None,
         }
     }
 

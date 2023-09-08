@@ -205,6 +205,7 @@ impl<S: DataStore + 'static> ManagedField for SelectorField<S> {
             default,
             radio_group: false,
             unique: false,
+            submit_converter: None,
         }
     }
 
