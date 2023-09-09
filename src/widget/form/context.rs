@@ -776,6 +776,9 @@ impl FormContextState {
 
                     if let Some(submit_converter) = &field.submit_converter {
                         value = submit_converter.emit(value);
+                        if let Value::String(text) = &value {
+                            if text.is_empty() && !field.options.submit_empty { continue; }
+                        }
                     }
                     data[name.deref()] = value;
                 }
@@ -793,6 +796,9 @@ impl FormContextState {
                         }
                         if let Some(submit_converter) = &field.submit_converter {
                             value = submit_converter.emit(value);
+                            if let Value::String(text) = &value {
+                                if text.is_empty() && !field.options.submit_empty { continue; }
+                            }
                         }
                         list.push(value);
                     }
