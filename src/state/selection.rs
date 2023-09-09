@@ -330,8 +330,11 @@ impl SelectionState {
     }
 
     pub fn bulk_select(&mut self, map: HashSet<Key>) {
+        debug_assert!(self.multiselect, "bulk select no allowed");
         match self.multiselect {
-            false => panic!("bulk_select not allowed"),
+            false => {
+                log::error!("bulk_select not allowed");
+            }
             true => {
                 self.version += 1;
                 self.selection_map = map;
