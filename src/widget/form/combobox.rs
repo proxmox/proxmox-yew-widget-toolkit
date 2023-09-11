@@ -20,6 +20,15 @@ use pwt_macros::{builder, widget};
 /// Combobox widget
 ///
 /// Allows to select text options.
+///
+/// # Note: No multiselect
+///
+/// Comboboxes with multi select suffers from severe usability problems, because
+/// there is not enough room to display the selected values when the combobox
+/// is collapsed. Therefore, we have not implemented the multiselect mode.
+///
+/// Please consider using a flat grid instead. If there are few choices,
+/// a segmented button may also be an option.
 #[widget(pwt=crate, comp=PwtCombobox, @input)]
 #[derive(Clone, PartialEq, Properties)]
 #[builder]
