@@ -57,7 +57,7 @@ pub fn pgettext(msg_context: &str, msg_id: &str) -> String {
 pub fn ngettext(msg_id: &str, msg_id_plural: &str, n: u64) -> String {
     let catalog = unsafe {
         match CATALOG.as_ref() {
-            None => return msg_id.to_string(),
+            None => return if n == 1 { msg_id.to_string() } else { msg_id_plural.to_string() },
             Some(catalog) => catalog,
         }
     };
@@ -67,7 +67,7 @@ pub fn ngettext(msg_id: &str, msg_id_plural: &str, n: u64) -> String {
 pub fn npgettext(msg_context: &str, msg_id: &str, msg_id_plural: &str, n: u64) -> String {
     let catalog = unsafe {
         match CATALOG.as_ref() {
-            None => return msg_id.to_string(),
+            None => return if n == 1 { msg_id.to_string() } else { msg_id_plural.to_string() },
             Some(catalog) => catalog,
         }
     };

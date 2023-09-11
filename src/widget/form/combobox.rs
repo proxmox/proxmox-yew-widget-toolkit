@@ -23,7 +23,7 @@ use pwt_macros::{builder, widget};
 ///
 /// # Note: No multiselect
 ///
-/// Comboboxes with multi select suffers from severe usability problems, because
+/// Comboboxes with multi-select suffers from severe usability problems, because
 /// there is not enough room to display the selected values when the combobox
 /// is collapsed. Therefore, we have not implemented the multiselect mode.
 ///
