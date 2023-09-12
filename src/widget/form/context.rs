@@ -770,15 +770,10 @@ impl FormContextState {
                 if field.valid.is_ok() && field.options.submit {
 
                     let mut value = field.value.clone();
-                    if let Value::String(text) = &value {
-                        if text.is_empty() && !field.options.submit_empty { continue; }
-                    }
-
+                    if value_is_empty(&value) { continue; }
                     if let Some(submit_converter) = &field.submit_converter {
                         value = submit_converter.emit(value);
-                        if let Value::String(text) = &value {
-                            if text.is_empty() && !field.options.submit_empty { continue; }
-                        }
+                        if value_is_empty(&value) { continue; }
                     }
                     data[name.deref()] = value;
                 }
@@ -791,14 +786,10 @@ impl FormContextState {
                     let field = &self.fields[key];
                     if field.valid.is_ok() && field.options.submit {
                         let mut value = field.value.clone();
-                        if let Value::String(text) = &value {
-                            if text.is_empty() && !field.options.submit_empty { continue; }
-                        }
+                        if value_is_empty(&value) { continue; }
                         if let Some(submit_converter) = &field.submit_converter {
                             value = submit_converter.emit(value);
-                            if let Value::String(text) = &value {
-                                if text.is_empty() && !field.options.submit_empty { continue; }
-                            }
+                            if value_is_empty(&value) { continue; }
                         }
                         list.push(value);
                     }
@@ -810,5 +801,15 @@ impl FormContextState {
         }
 
         data
+    }
+}
+
+fn value_is_empty(value: &Value) -> bool {
+    match value {
+        Value::Null => true,
+        Value::String(s) => s.is_empty(),
+        Value::Array(a) => a.is_empty(),
+        Value::Object(o) => o.is_empty(),
+        _ => false,
     }
 }
