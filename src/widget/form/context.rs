@@ -605,6 +605,16 @@ impl FormContextState {
         false
     }
 
+    pub fn dirty_count(&self) -> usize {
+        let mut count = 0;
+        for (_key, field) in self.fields.iter() {
+            if field.value != field.default {
+                count += 1;
+            }
+        }
+        count
+    }
+
     /// Reset all form fields to their default value.
     pub fn reset_form(&mut self) {
         let mut changes = false;
