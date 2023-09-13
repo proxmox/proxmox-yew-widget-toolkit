@@ -3,6 +3,21 @@ use std::ops::Deref;
 
 use crate::state::local_storage;
 
+/// Helper to store data persitently using window local [Storage](web_sys::Storage)
+///
+/// Usage:
+///
+/// ```
+/// # fn test() {
+/// use pwt::state::PersistentState;
+///
+/// let mut state = PersistentState::<bool>::new("my-storage-key-name");
+///
+/// let cunnent_value: bool = *state; // acess value with Deref
+///
+/// state.update(true); // update the value
+/// # }
+/// ```
 pub struct PersistentState<T> {
     name: String,
     data: T,
@@ -17,6 +32,9 @@ impl<T> Deref for PersistentState<T> {
 }
 
 impl<T: Default + Serialize + DeserializeOwned> PersistentState<T> {
+    /// Create a new instance, using 'name' as storage key.
+    ///
+    /// This automatically loads data from the storage.
     pub fn new(name: &str) -> Self {
         let mut me = Self {
             name: name.into(),
@@ -26,7 +44,7 @@ impl<T: Default + Serialize + DeserializeOwned> PersistentState<T> {
         me
     }
 
-    pub fn load(&mut self) {
+    fn load(&mut self) {
         let store = match local_storage() {
             Some(store) => store,
             None => {
@@ -45,7 +63,7 @@ impl<T: Default + Serialize + DeserializeOwned> PersistentState<T> {
         }
     }
 
-    pub fn store(&self) {
+    fn store(&self) {
         let store = match local_storage() {
             Some(store) => store,
             None => {
@@ -68,6 +86,7 @@ impl<T: Default + Serialize + DeserializeOwned> PersistentState<T> {
         }
     }
 
+    /// Update data and write the new value back to the storage.
     pub fn update(&mut self, data: T) {
         self.data = data;
         self.store();
