@@ -101,6 +101,12 @@ pub trait IntoOptionalDataTableRowRenderCallback<T> {
     fn into_optional_row_render_cb(self) -> Option<DataTableRowRenderCallback<T>>;
 }
 
+impl<T> IntoOptionalDataTableRowRenderCallback<T> for DataTableRowRenderCallback<T> {
+    fn into_optional_row_render_cb(self) -> Option<DataTableRowRenderCallback<T>> {
+        Some(self)
+    }
+}
+
 impl<T> IntoOptionalDataTableRowRenderCallback<T> for Option<DataTableRowRenderCallback<T>> {
     fn into_optional_row_render_cb(self) -> Option<DataTableRowRenderCallback<T>> {
         self
