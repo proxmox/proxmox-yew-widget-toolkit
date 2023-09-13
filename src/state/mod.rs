@@ -13,6 +13,9 @@ pub use navigation_container::{
     NavigationContainer, NavigationContext, NavigationContextExt, PwtNavigationContainer,
 };
 
+mod persistent_state;
+pub use persistent_state::PersistentState;
+
 mod selection;
 pub use selection::{use_selection, Selection, SelectionObserver};
 
