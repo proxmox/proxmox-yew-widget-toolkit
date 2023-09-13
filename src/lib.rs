@@ -186,6 +186,17 @@ pub use gettext_wrapper::{
 #[doc(hidden)]
 pub mod web_sys_ext;
 
+use anyhow::{format_err, Error};
+
+/// Convert JS errors to [Error]
+pub fn convert_js_error(js_err: ::wasm_bindgen::JsValue) -> Error {
+    if let Ok(error) = ::wasm_bindgen::JsCast::dyn_into::<js_sys::Error>(js_err) {
+        format_err!("{}", error.message())
+    } else {
+        format_err!("unknown js error: error is no ERROR object")
+    }
+}
+
 // Bindgen javascript code from js-helper-module.js
 use wasm_bindgen::{self, prelude::*};
 #[wasm_bindgen(module = "/js-helper-module.js")]
