@@ -35,6 +35,11 @@ impl<T: Default + Serialize + DeserializeOwned> PersistentState<T> {
     /// Create a new instance, using 'name' as storage key.
     ///
     /// This automatically loads data from the storage.
+    ///
+    /// # Note
+    ///
+    /// Any errors are logged and ignored. Returns the default value
+    /// in case of errors.
     pub fn new(name: &str) -> Self {
         let mut me = Self {
             name: name.into(),
@@ -87,6 +92,10 @@ impl<T: Default + Serialize + DeserializeOwned> PersistentState<T> {
     }
 
     /// Update data and write the new value back to the storage.
+    ///
+    /// # Note
+    ///
+    /// Any errors are logged and ignored.
     pub fn update(&mut self, data: T) {
         self.data = data;
         self.store();
