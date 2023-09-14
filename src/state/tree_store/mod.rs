@@ -177,27 +177,48 @@ impl<T: 'static> TreeStore<T> {
         tree.lookup_filtered_record_key(cursor)
     }
 
-    fn filtered_record_pos(&self, key: &Key) -> Option<usize> {
+    pub fn filtered_record_pos(&self, key: &Key) -> Option<usize> {
         let mut tree = self.inner.borrow_mut();
         tree.update_filtered_data();
         tree.filtered_record_pos(key)
     }
 
-    fn filtered_data_len(&self) -> usize {
+    pub fn filtered_data_len(&self) -> usize {
         let mut tree = self.inner.borrow_mut();
         tree.update_filtered_data();
         tree.filtered_data_len()
     }
 
-    fn set_data(&self, data: SlabTree<T>) {
+    pub fn filtered_data<'a>(&'a self) -> Box<dyn Iterator<Item=(usize, Box<dyn DataNode<T> + 'a>)> + 'a> {
+        self.inner.borrow_mut().update_filtered_data();
+        Box::new(TreeStoreIterator {
+            range: None,
+            pos: 0,
+            tree: self.inner.borrow(),
+        })
+    }
+
+    pub fn filtered_data_range<'a>(
+        &'a self,
+        range: Range<usize>,
+    ) -> Box<dyn Iterator<Item=(usize, Box<dyn DataNode<T> + 'a>)> + 'a> {
+        self.inner.borrow_mut().update_filtered_data();
+        Box::new(TreeStoreIterator {
+            pos: range.start,
+            range: Some(range),
+            tree: self.inner.borrow(),
+        })
+    }
+
+    pub fn set_data(&self, data: SlabTree<T>) {
         self.write().set_root_tree(data);
     }
 
-    fn clear(&self) {
+    pub fn clear(&self) {
         self.write().clear();
     }
 
-    fn data_len(&self) -> usize {
+    pub fn data_len(&self) -> usize {
         self.inner.borrow().tree.slab.len()
     }
 }
@@ -255,24 +276,14 @@ impl<T: Clone + PartialEq + 'static> DataStore for TreeStore<T> {
     }
 
     fn filtered_data<'a>(&'a self) -> Box<dyn Iterator<Item=(usize, Box<dyn DataNode<T> + 'a>)> + 'a> {
-        self.inner.borrow_mut().update_filtered_data();
-        Box::new(TreeStoreIterator {
-            range: None,
-            pos: 0,
-            tree: self.inner.borrow(),
-        })
+        self.filtered_data()
     }
 
     fn filtered_data_range<'a>(
         &'a self,
         range: Range<usize>,
     ) -> Box<dyn Iterator<Item=(usize, Box<dyn DataNode<T> + 'a>)> + 'a> {
-        self.inner.borrow_mut().update_filtered_data();
-        Box::new(TreeStoreIterator {
-            pos: range.start,
-            range: Some(range),
-            tree: self.inner.borrow(),
-        })
+        self.filtered_data_range(range)
     }
 }
 

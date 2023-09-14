@@ -167,6 +167,45 @@ impl<T: 'static> Store<T> {
 
     pub fn data_len(&self) -> usize {
         self.inner.borrow().data.len()
+    }    fn lookup_filtered_record_key(&self, cursor: usize) -> Option<Key> {
+        let mut state = self.inner.borrow_mut();
+        state.update_filtered_data();
+        state.lookup_filtered_record_key(cursor)
+    }
+
+    pub fn filtered_record_pos(&self, key: &Key) -> Option<usize> {
+        let mut state = self.inner.borrow_mut();
+        state.update_filtered_data();
+        state.filtered_record_pos(key)
+    }
+
+    pub fn filtered_data_len(&self) -> usize {
+        let mut state = self.inner.borrow_mut();
+        state.update_filtered_data();
+        state.filtered_data_len()
+    }
+
+    pub fn filtered_data<'a>(
+        &'a self,
+    ) -> Box<dyn Iterator<Item=(usize, Box<dyn DataNode<T> + 'a>)> + 'a> {
+        self.inner.borrow_mut().update_filtered_data();
+        Box::new(StoreIterator {
+            range: None,
+            pos: 0,
+            state: self.inner.borrow(),
+         })
+    }
+
+    pub fn filtered_data_range<'a>(
+        &'a self,
+        range: Range<usize>,
+    ) -> Box<dyn Iterator<Item=(usize, Box<dyn DataNode<T> + 'a>)> + 'a> {
+        self.inner.borrow_mut().update_filtered_data();
+        Box::new(StoreIterator {
+            pos: range.start,
+            range: Some(range),
+            state: self.inner.borrow(),
+        })
     }
 }
 
@@ -288,44 +327,26 @@ impl<T: Clone + PartialEq + 'static> DataStore for Store<T> {
     }
 
     fn lookup_filtered_record_key(&self, cursor: usize) -> Option<Key> {
-        let mut state = self.inner.borrow_mut();
-        state.update_filtered_data();
-        state.lookup_filtered_record_key(cursor)
+        self.lookup_filtered_record_key(cursor)
     }
 
     fn filtered_record_pos(&self, key: &Key) -> Option<usize> {
-        let mut state = self.inner.borrow_mut();
-        state.update_filtered_data();
-        state.filtered_record_pos(key)
+        self.filtered_record_pos(key)
     }
 
     fn filtered_data_len(&self) -> usize {
-        let mut state = self.inner.borrow_mut();
-        state.update_filtered_data();
-        state.filtered_data_len()
+        self.filtered_data_len()
     }
 
-    fn filtered_data<'a>(
-        &'a self,
-    ) -> Box<dyn Iterator<Item=(usize, Box<dyn DataNode<T> + 'a>)> + 'a> {
-        self.inner.borrow_mut().update_filtered_data();
-        Box::new(StoreIterator {
-            range: None,
-            pos: 0,
-            state: self.inner.borrow(),
-         })
+    fn filtered_data<'a>(&'a self) -> Box<dyn Iterator<Item=(usize, Box<dyn DataNode<T> + 'a>)> + 'a> {
+        self.filtered_data()
     }
 
     fn filtered_data_range<'a>(
         &'a self,
         range: Range<usize>,
     ) -> Box<dyn Iterator<Item=(usize, Box<dyn DataNode<T> + 'a>)> + 'a> {
-        self.inner.borrow_mut().update_filtered_data();
-        Box::new(StoreIterator {
-            pos: range.start,
-            range: Some(range),
-            state: self.inner.borrow(),
-        })
+        self.filtered_data_range(range)
     }
 }
 
