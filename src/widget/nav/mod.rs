@@ -98,6 +98,30 @@ impl Menu {
         self
     }
 
+    /// Builder style method for [add_section_header]
+    pub fn with_section_header(mut self, text: impl Into<AttrValue>) -> Self {
+        self.add_section_header(text);
+        self
+    }
+
+    /// Adds a special section header to seperate several sections in a menu
+    pub fn add_section_header(&mut self, text: impl Into<AttrValue>) {
+        self.add_component(
+            html! {<div class="pwt-nav-section pwt-border-bottom">{text.into()}</div>},
+        );
+    }
+
+    /// Builder style method for [add_spacer]
+    pub fn with_spacer(mut self) -> Self {
+        self.add_spacer();
+        self
+    }
+
+    /// Adds a spacer element
+    pub fn add_spacer(&mut self) {
+        self.add_component(html! {<div class="pwt-p-2"></div>})
+    }
+
     pub fn add_component(&mut self, component: impl Into<VNode>) {
         self.children.push(MenuEntry::Component(component.into()))
     }
