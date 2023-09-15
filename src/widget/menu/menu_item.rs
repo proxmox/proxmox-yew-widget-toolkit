@@ -270,6 +270,7 @@ impl Component for PwtMenuItem {
             html! {<i role="none" class={arrow_class}/>}
         });
 
+        let disabled = props.disabled;
         Container::new()
             .node_ref(self.content_ref.clone())
             .class(if props.inside_menubar {
@@ -277,11 +278,8 @@ impl Component for PwtMenuItem {
             } else {
                 "pwt-menu-item"
             })
-            .attribute(
-                "tabindex",
-                (!(props.disabled || props.focusable)).then(|| "-1"),
-            )
-            .attribute("disabled", props.disabled.then(|| ""))
+            .attribute("tabindex", (!props.focusable).then(|| "-1"))
+            .attribute("aria-disabled", props.disabled.then(|| "true"))
             .attribute("role", "menuitem")
             .attribute("aria-haspopup", has_submenu.then(|| "true"))
             .attribute(
@@ -292,7 +290,7 @@ impl Component for PwtMenuItem {
             .with_child(html! {<span class="pwt-flex-fill">{props.text.clone()}</span>})
             .with_optional_child(arrow)
             .with_optional_child(submenu)
-            .onkeydown({
+            .onkeydown((!disabled).then_some({
                 let link = ctx.link().clone();
                 move |event: KeyboardEvent| match event.key().as_str() {
                     "Enter" | " " => {
@@ -304,15 +302,15 @@ impl Component for PwtMenuItem {
                     }
                     _ => {}
                 }
-            })
-            .onclick({
+            }))
+            .onclick((!disabled).then_some({
                 let link = ctx.link().clone();
                 move |_| {
                     if !has_submenu {
                         link.send_message(Msg::Select)
                     };
                 }
-            })
+            }))
             .into()
     }
 

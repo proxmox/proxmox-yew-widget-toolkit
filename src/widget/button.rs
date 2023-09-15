@@ -243,7 +243,7 @@ impl Component for PwtButton {
             .tag("button")
             .class("pwt-button")
             .class(props.pressed.then(|| "pressed"))
-            .attribute("disabled", props.disabled.then(|| ""))
+            .attribute("aria-disabled", props.disabled.then(|| "true"))
             .attribute("autofocus", props.autofocus.then(|| ""))
             .attribute("aria-label", props.aria_label.clone())
             .attribute("tabindex", props.tabindex.map(|i| i.to_string()))

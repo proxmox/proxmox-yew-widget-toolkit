@@ -304,16 +304,18 @@ impl ManagedField for StandardField {
             Msg::Update(input.value())
         });
 
+        let disabled = props.input_props.disabled;
         let input: Html = Input::new()
             .node_ref(self.input_ref.clone())
             .with_input_props(&props.input_props)
             .class("pwt-flex-fill")
             .attribute("type", input_type)
+            .attribute("readonly", disabled.then_some(""))
             .attribute("value", value)
             .attribute("min", props.min.map(|v| v.to_string()))
             .attribute("max", props.max.map(|v| v.to_string()))
             .attribute("step", props.step.map(|v| v.to_string()))
-            .oninput(oninput)
+            .oninput(disabled.then_some(oninput))
             .into();
 
         let peek_icon =
@@ -342,6 +344,7 @@ impl ManagedField for StandardField {
             .listeners(&props.listeners)
             .class("pwt-input")
             .class(format!("pwt-input-type-{}", props.input_type))
+            .class(disabled.then_some("disabled"))
             .class("pwt-w-100")
             .class(if valid.is_ok() {
                 "is-valid"

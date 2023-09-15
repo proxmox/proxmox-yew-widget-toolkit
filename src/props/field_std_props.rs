@@ -61,7 +61,10 @@ impl FieldStdProps {
         attr_map: &mut IndexMap<AttrValue, (AttrValue, ApplyAttributeAs)>,
     ) {
         if self.disabled {
-            attr_map.insert(AttrValue::Static("disabled"), (AttrValue::Static(""), ApplyAttributeAs::Attribute));
+            attr_map.insert(
+                AttrValue::Static("aria-disabled"),
+                (AttrValue::Static("true"), ApplyAttributeAs::Attribute),
+            );
         }
 
         if self.required {

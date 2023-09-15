@@ -250,7 +250,7 @@ impl ManagedField for MenuCheckboxField {
         Container::new()
             .class("pwt-menu-item")
             .attribute("tabindex", (!disabled).then(|| "-1"))
-            .attribute("disabled", disabled.then(|| ""))
+            .attribute("aria-disabled", disabled.then(|| "true"))
             .attribute(
                 "role",
                 if props.radio_group {
