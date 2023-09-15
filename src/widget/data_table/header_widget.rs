@@ -6,23 +6,22 @@ use indexmap::IndexMap;
 use gloo_timers::callback::Timeout;
 use wasm_bindgen::JsCast;
 
+use yew::html::Scope;
 use yew::prelude::*;
 use yew::virtual_dom::{Key, VComp, VNode};
-use yew::html::Scope;
 
 use crate::prelude::*;
+use crate::widget::menu::{Menu, MenuCheckbox, MenuEvent, MenuItem};
 use crate::widget::{get_unique_element_id, Container, Fa};
-use crate::widget::menu::{Menu, MenuEvent, MenuItem, MenuCheckbox};
 
 use super::{
-    IndexedHeader, IndexedHeaderSingle, IndexedHeaderGroup,
-    HeaderState, ResizableHeader, HeaderMsg, DataTableHeaderRenderArgs,
-    RowSelectionStatus, DataTableHeaderTableLink, DataTableHeaderKeyboardEvent,
+    DataTableHeaderKeyboardEvent, DataTableHeaderRenderArgs, DataTableHeaderTableLink, HeaderMsg,
+    HeaderState, IndexedHeader, IndexedHeaderGroup, IndexedHeaderSingle, ResizableHeader,
+    RowSelectionStatus,
 };
 
-#[derive(Properties)]
-#[derive(Derivative)]
-#[derivative(Clone(bound=""), PartialEq(bound=""))]
+#[derive(Properties, Derivative)]
+#[derivative(Clone(bound = ""), PartialEq(bound = ""))]
 #[doc(hidden)] // only used inside this crate
 pub struct HeaderWidget<T: 'static> {
     pub node_ref: Option<NodeRef>,
@@ -135,13 +134,14 @@ pub struct PwtHeaderWidget<T: 'static> {
     timeout: Option<Timeout>,
 }
 
-impl <T: 'static> PwtHeaderWidget<T> {
-
+impl<T: 'static> PwtHeaderWidget<T> {
     fn compute_grid_style(&self, ctx: &Context<Self>) -> String {
-
-        let mut grid_style = String::from("user-select: none; display:grid; grid-template-columns:");
+        let mut grid_style =
+            String::from("user-select: none; display:grid; grid-template-columns:");
         for (col_idx, cell) in self.state.columns().iter().enumerate() {
-            if self.state.get_column_hidden(col_idx) { continue; }
+            if self.state.get_column_hidden(col_idx) {
+                continue;
+            }
             if let Some(width) = self.state.get_width(col_idx) {
                 grid_style.push_str(&format!("{}px", width));
             } else {
@@ -170,18 +170,33 @@ impl <T: 'static> PwtHeaderWidget<T> {
         let mut span = 0;
 
         for child in list {
-
             let cell_idx = child.cell_idx();
             let hidden = self.state.get_cell_hidden(cell_idx);
-            if hidden { continue; }
+            if hidden {
+                continue;
+            }
 
             match child {
                 IndexedHeader::Single(column) => {
-                    self.column_to_header_row(column, props, link, start_row, start_col + span, header_row);
+                    self.column_to_header_row(
+                        column,
+                        props,
+                        link,
+                        start_row,
+                        start_col + span,
+                        header_row,
+                    );
                     span += 1;
                 }
                 IndexedHeader::Group(group) => {
-                    let cols = self.group_to_header_row(group, props, link, start_row, start_col + span, header_row);
+                    let cols = self.group_to_header_row(
+                        group,
+                        props,
+                        link,
+                        start_row,
+                        start_col + span,
+                        header_row,
+                    );
                     span += cols;
                 }
             }
@@ -205,7 +220,10 @@ impl <T: 'static> PwtHeaderWidget<T> {
     ) {
         let column_idx = cell.start_col;
         let cell_idx = cell.cell_idx;
-        let active = self.cursor.map(|cursor| cursor == cell_idx).unwrap_or(false);
+        let active = self
+            .cursor
+            .map(|cursor| cursor == cell_idx)
+            .unwrap_or(false);
         let tabindex = if active || (self.cursor.is_none() && (cell_idx == 0)) {
             AttrValue::Static("0")
         } else {
@@ -230,10 +248,10 @@ impl <T: 'static> PwtHeaderWidget<T> {
                     Fa::new("long-arrow-down").class("pwt-pe-1").into()
                 }
             }
-            None =>  html!{},
+            None => html! {},
         };
 
-        let aria_sort =  match sort_order {
+        let aria_sort = match sort_order {
             Some(true) => "ascending",
             Some(false) => "descending",
             None => "none",
@@ -241,10 +259,9 @@ impl <T: 'static> PwtHeaderWidget<T> {
 
         // reserve some space for the sort icon
         let sort_space = match sort_order {
-            None => html!{"\u{00a0}\u{00a0}"},
-            Some(_) => html!{},
+            None => html! {"\u{00a0}\u{00a0}"},
+            Some(_) => html! {},
         };
-
 
         let mut attributes = IndexMap::new();
         let mut header_class = props.header_class.clone();
@@ -253,7 +270,9 @@ impl <T: 'static> PwtHeaderWidget<T> {
                 let mut args = DataTableHeaderRenderArgs {
                     column_index: column_idx,
                     selection_status: props.selection_status,
-                    link: DataTableHeaderTableLink { on_message: props.on_message.clone() },
+                    link: DataTableHeaderTableLink {
+                        on_message: props.on_message.clone(),
+                    },
                     attributes,
                     class: header_class.clone(),
                 };
@@ -262,7 +281,7 @@ impl <T: 'static> PwtHeaderWidget<T> {
                 attributes = args.attributes;
                 content
             }
-            None => html!{<>{sort_icon}{&cell.column.name}{sort_space}</>},
+            None => html! {<>{sort_icon}{&cell.column.name}{sort_space}</>},
         };
 
         if props.focusable {
@@ -278,7 +297,11 @@ impl <T: 'static> PwtHeaderWidget<T> {
                 .attribute("aria-sort", aria_sort)
                 .attribute(
                     "style",
-                    format!("grid-row: {} / 10;grid-column-start: {}", start_row + 1, start_col + 1)
+                    format!(
+                        "grid-row: {} / 10;grid-column-start: {}",
+                        start_row + 1,
+                        start_col + 1
+                    ),
                 )
                 .with_child(
                     ResizableHeader::new()
@@ -289,22 +312,30 @@ impl <T: 'static> PwtHeaderWidget<T> {
                         .content(header_content)
                         .resizable(cell.column.resizable)
                         .show_menu(cell.column.show_menu)
-                        .on_resize(link.callback(move |width: f64| Msg::ResizeColumn(column_idx, width.max(0.0))))
+                        .on_resize(link.callback(move |width: f64| {
+                            Msg::ResizeColumn(column_idx, width.max(0.0))
+                        }))
                         .on_size_reset(link.callback(move |_| Msg::ColumnSizeReset(column_idx)))
-                        .on_size_change(link.callback(move |w| Msg::ColumnSizeChange(column_idx, w)))
+                        .on_size_change(
+                            link.callback(move |w| Msg::ColumnSizeChange(column_idx, w)),
+                        )
                         .menu_builder({
                             let headers = Rc::clone(&props.headers);
                             let link = link.clone();
                             let hidden_cells = self.state.hidden_cells();
                             move || build_header_menu(&headers, &link, cell_idx, &hidden_cells)
-                        })
+                        }),
                 )
                 .onfocusin(link.callback(move |_| Msg::FocusCell(cell_idx)))
                 .onclick({
                     let link = link.clone();
                     move |event: MouseEvent| {
                         if sortable {
-                            link.send_message(Msg::ColumnSortChange(cell_idx, event.ctrl_key(), None));
+                            link.send_message(Msg::ColumnSortChange(
+                                cell_idx,
+                                event.ctrl_key(),
+                                None,
+                            ));
                         }
                     }
                 })
@@ -314,7 +345,7 @@ impl <T: 'static> PwtHeaderWidget<T> {
                     let on_message = props.on_message.clone();
                     move |event: KeyboardEvent| {
                         if let Some(on_header_keydown) = &on_header_keydown {
-                            let mut arg =  DataTableHeaderKeyboardEvent {
+                            let mut arg = DataTableHeaderKeyboardEvent {
                                 inner: event.clone(),
                                 stop_propagation: false,
                                 on_message: on_message.clone(),
@@ -325,12 +356,16 @@ impl <T: 'static> PwtHeaderWidget<T> {
                             }
                         }
                         if sortable && event.key().as_str() == "Enter" {
-                            link.send_message(Msg::ColumnSortChange(cell_idx, event.ctrl_key(), None));
+                            link.send_message(Msg::ColumnSortChange(
+                                cell_idx,
+                                event.ctrl_key(),
+                                None,
+                            ));
                             event.prevent_default();
                         }
                     }
                 })
-                .into()
+                .into(),
         );
     }
 
@@ -344,33 +379,46 @@ impl <T: 'static> PwtHeaderWidget<T> {
         header_row: &mut Vec<Html>,
     ) -> usize {
         let cell_idx = group.cell_idx;
-        let active = self.cursor.map(|cursor| cursor == cell_idx).unwrap_or(false);
-        let tabindex = if active || (self.cursor.is_none() && (cell_idx == 0)) { "0" } else { "-1" };
+        let active = self
+            .cursor
+            .map(|cursor| cursor == cell_idx)
+            .unwrap_or(false);
+        let tabindex = if active || (self.cursor.is_none() && (cell_idx == 0)) {
+            "0"
+        } else {
+            "-1"
+        };
         let unique_id = self.unique_cell_id(cell_idx);
 
         let mut child_rows = Vec::new();
 
-        let span = self.header_list_to_row(&group.children, props, link, start_row + 1, start_col, &mut child_rows);
+        let span = self.header_list_to_row(
+            &group.children,
+            props,
+            link,
+            start_row + 1,
+            start_col,
+            &mut child_rows,
+        );
         let span = span.max(1); // at least one column for the group header
 
         header_row.push(
             Container::new()
                 .tag("th")
                 .key(Key::from(cell_idx))
-            // Note: ARIA has no notation for group headers. We need
-            // to hide them to get correct column order.
+                // Note: ARIA has no notation for group headers. We need
+                // to hide them to get correct column order.
                 .attribute("role", "none")
                 .attribute("tabindex", props.focusable.then(|| tabindex))
                 .attribute("id", unique_id)
                 .class("pwt-datatable-group-header-item")
                 .class(props.header_class.clone())
-                .attribute("style", format!(
-                    "grid-column: {} / span {}",
-                    start_col + 1,
-                    span,
-                ))
+                .attribute(
+                    "style",
+                    format!("grid-column: {} / span {}", start_col + 1, span,),
+                )
                 .with_child(group.name.clone())
-                .into()
+                .into(),
         );
 
         header_row.extend(child_rows);
@@ -415,7 +463,7 @@ impl <T: 'static> PwtHeaderWidget<T> {
     }
 }
 
-impl <T: 'static> Component for PwtHeaderWidget<T> {
+impl<T: 'static> Component for PwtHeaderWidget<T> {
     type Message = Msg;
     type Properties = HeaderWidget<T>;
 
@@ -429,7 +477,11 @@ impl <T: 'static> Component for PwtHeaderWidget<T> {
 
         let mut observed_widths = Vec::new();
         for (col_idx, _cell) in state.columns().iter().enumerate() {
-            observed_widths.push(if state.get_column_hidden(col_idx) { Some(0.0) } else { None });
+            observed_widths.push(if state.get_column_hidden(col_idx) {
+                Some(0.0)
+            } else {
+                None
+            });
         }
 
         Self {
@@ -449,7 +501,8 @@ impl <T: 'static> Component for PwtHeaderWidget<T> {
                 self.state.set_width(col_idx, Some(width.max(50.0)));
 
                 // Set flex columns on the left to fixed size to avoid unexpected effects.
-                self.state.copy_observed_widths(col_idx, &self.observed_widths);
+                self.state
+                    .copy_observed_widths(col_idx, &self.observed_widths);
 
                 true
             }
@@ -458,10 +511,13 @@ impl <T: 'static> Component for PwtHeaderWidget<T> {
                 true
             }
             Msg::ColumnSizeChange(col_num, width) => {
-                self.observed_widths.resize((col_num + 1).max(self.observed_widths.len()), None);
+                self.observed_widths
+                    .resize((col_num + 1).max(self.observed_widths.len()), None);
                 self.observed_widths[col_num] = Some(width);
 
-                let observed_widths: Vec<f64> = self.observed_widths.iter()
+                let observed_widths: Vec<f64> = self
+                    .observed_widths
+                    .iter()
                     .filter_map(|w| w.clone())
                     .collect();
 
@@ -486,7 +542,9 @@ impl <T: 'static> Component for PwtHeaderWidget<T> {
             }
             Msg::HideClick(cell_idx, visible) => {
                 self.state.set_hidden(cell_idx, !visible);
-                props.on_message.emit(HeaderMsg::ColumnHiddenChange(self.state.hidden_columns()));
+                props
+                    .on_message
+                    .emit(HeaderMsg::ColumnHiddenChange(self.state.hidden_columns()));
                 true
             }
             Msg::FocusCell(cell_idx) => {
@@ -500,8 +558,20 @@ impl <T: 'static> Component for PwtHeaderWidget<T> {
                     None => return false,
                 };
                 self.cursor = Some(match direction {
-                    false => if cursor > 0 { cursor - 1 }  else { last },
-                    true => if (cursor + 1) <= last { cursor + 1 } else { 0 },
+                    false => {
+                        if cursor > 0 {
+                            cursor - 1
+                        } else {
+                            last
+                        }
+                    }
+                    true => {
+                        if (cursor + 1) <= last {
+                            cursor + 1
+                        } else {
+                            0
+                        }
+                    }
                 });
                 self.focus_active_cell();
                 true
@@ -561,14 +631,12 @@ impl <T: 'static> Component for PwtHeaderWidget<T> {
     }
 }
 
-
 fn build_header_menu<T>(
     headers: &[IndexedHeader<T>],
     link: &Scope<PwtHeaderWidget<T>>,
     cell_idx: usize,
     hidden_cells: &[bool],
 ) -> Menu {
-
     let mut columns_menu = Menu::new();
     headers_to_menu(&mut columns_menu, 0, headers, link, &mut 0, hidden_cells);
 
@@ -584,19 +652,20 @@ fn build_header_menu<T>(
             MenuItem::new("Sort Ascending")
                 .icon_class("fa fa-long-arrow-up")
                 .disabled(!sortable)
-                .on_select(link.callback(move |_| Msg::ColumnSortChange(cell_idx, false, Some(true))))
-            )
+                .on_select(
+                    link.callback(move |_| Msg::ColumnSortChange(cell_idx, false, Some(true))),
+                ),
+        )
         .with_item(
             MenuItem::new("Sort Descending")
                 .icon_class("fa fa-long-arrow-down")
                 .disabled(!sortable)
-                .on_select(link.callback(move |_| Msg::ColumnSortChange(cell_idx, false, Some(false))))
+                .on_select(
+                    link.callback(move |_| Msg::ColumnSortChange(cell_idx, false, Some(false))),
+                ),
         )
         .with_separator()
-        .with_item(
-            MenuItem::new("Columns")
-                .menu(columns_menu)
-        )
+        .with_item(MenuItem::new("Columns").menu(columns_menu))
 }
 
 fn headers_to_menu<T>(
@@ -608,7 +677,7 @@ fn headers_to_menu<T>(
     hidden_cells: &[bool],
 ) {
     let indent: Html = (0..indent_level)
-        .map(|_| html!{ <span role="none" class="pwt-ps-4"/> })
+        .map(|_| html! { <span role="none" class="pwt-ps-4"/> })
         .collect();
 
     for header in headers {
@@ -622,23 +691,30 @@ fn headers_to_menu<T>(
 
         match header {
             IndexedHeader::Single(cell) => {
-                let label = html!{<>{indent.clone()}{cell.column.name.clone()}</>};
+                let label = html! {<>{indent.clone()}{cell.column.name.clone()}</>};
                 menu.add_item(
                     MenuCheckbox::new(label)
                         .checked(!hidden_cells[*cell_idx])
-                        .on_click(on_click)
+                        .on_click(on_click),
                 );
                 *cell_idx += 1;
             }
             IndexedHeader::Group(group) => {
-                let label = html!{<>{indent.clone()}{group.name.clone()}</>};
+                let label = html! {<>{indent.clone()}{group.name.clone()}</>};
                 menu.add_item(
                     MenuCheckbox::new(label)
                         .checked(!hidden_cells[*cell_idx])
-                        .on_click(on_click)
+                        .on_click(on_click),
                 );
                 *cell_idx += 1;
-                headers_to_menu(menu, indent_level + 1, &group.children, link, cell_idx, hidden_cells);
+                headers_to_menu(
+                    menu,
+                    indent_level + 1,
+                    &group.children,
+                    link,
+                    cell_idx,
+                    hidden_cells,
+                );
             }
         }
     }
