@@ -2,18 +2,19 @@ use std::rc::Rc;
 
 use gloo_events::EventListener;
 use gloo_timers::callback::Timeout;
-use wasm_bindgen::{JsCast, UnwrapThrowExt};
 use indexmap::IndexMap;
+use wasm_bindgen::{JsCast, UnwrapThrowExt};
 
+use yew::html::{IntoEventCallback, IntoPropValue};
 use yew::prelude::*;
 use yew::virtual_dom::{Key, VComp, VNode};
-use yew::html::{IntoEventCallback, IntoPropValue};
 
+use crate::css::ColorScheme;
 use crate::prelude::*;
 use crate::props::{BuilderFn, IntoOptionalBuilderFn};
-use crate::widget::{Row, Container, SizeObserver};
-use crate::widget::menu::{Menu, MenuButton};
 use crate::widget::dom::element_direction_rtl;
+use crate::widget::menu::{Menu, MenuButton};
+use crate::widget::{Container, Row, SizeObserver};
 
 // Note about node_ref property: make it optional, and generate an
 // unique one in Component::create(). That way we can clone Properies without
@@ -53,7 +54,6 @@ pub struct ResizableHeader {
 }
 
 impl ResizableHeader {
-
     /// Create a new instance.
     pub fn new() -> Self {
         yew::props!(Self {})
@@ -64,7 +64,6 @@ impl ResizableHeader {
         self.id = id.into_prop_value();
         self
     }
-
 
     /// Builder style method to add a html class
     pub fn class(mut self, class: impl Into<Classes>) -> Self {
@@ -177,7 +176,7 @@ impl PwtResizableHeader {
 
 impl Component for PwtResizableHeader {
     type Message = Msg;
-    type Properties =  ResizableHeader;
+    type Properties = ResizableHeader;
 
     fn create(ctx: &Context<Self>) -> Self {
         let props = ctx.props();
@@ -209,7 +208,7 @@ impl Component for PwtResizableHeader {
                     let rect = el.get_bounding_client_rect();
                     let rtl = self.rtl.unwrap_or(false);
                     let new_width = if rtl {
-                         rect.right() - (x as f64)
+                        rect.right() - (x as f64)
                     } else {
                         (x as f64) - rect.x()
                     };
@@ -228,7 +227,6 @@ impl Component for PwtResizableHeader {
                 false
             }
             Msg::StartResize => {
-
                 self.rtl = element_direction_rtl(&self.node_ref);
 
                 let window = web_sys::window().unwrap();
@@ -237,19 +235,13 @@ impl Component for PwtResizableHeader {
                     let event = e.dyn_ref::<web_sys::MouseEvent>().unwrap_throw();
                     Msg::MouseMove(event.client_x())
                 });
-                let mousemove_listener = EventListener::new(
-                    &window,
-                    "mousemove",
-                    move |e| onmousemove.emit(e.clone()),
-                );
+                let mousemove_listener =
+                    EventListener::new(&window, "mousemove", move |e| onmousemove.emit(e.clone()));
                 self.mousemove_listener = Some(mousemove_listener);
 
                 let onmouseup = link.callback(|_: Event| Msg::StopResize);
-                let mouseup_listener = EventListener::new(
-                    &window,
-                    "mouseup",
-                    move |e| onmouseup.emit(e.clone()),
-                );
+                let mouseup_listener =
+                    EventListener::new(&window, "mouseup", move |e| onmouseup.emit(e.clone()));
                 self.mouseup_listener = Some(mouseup_listener);
 
                 false
@@ -299,29 +291,26 @@ impl Component for PwtResizableHeader {
             .onfocusout(ctx.link().callback(|_| Msg::FocusChange(false)))
             .onkeydown({
                 let link = ctx.link().clone();
-                move |event: KeyboardEvent| {
-                    match event.key().as_str() {
-                        "ArrowDown" => {
-                            event.stop_propagation();
-                            link.send_message(Msg::ShowPicker);
-                        }
-                        _ => {}
+                move |event: KeyboardEvent| match event.key().as_str() {
+                    "ArrowDown" => {
+                        event.stop_propagation();
+                        link.send_message(Msg::ShowPicker);
                     }
+                    _ => {}
                 }
             })
             .with_child(
                 Container::new()
                     .attribute("role", "none")
                     .class("pwt-datatable-header-content")
-                    .with_optional_child(props.content.clone())
+                    .with_optional_child(props.content.clone()),
             );
 
         for (name, value) in &props.attributes {
             row.set_attribute(name.clone(), value);
         }
 
-        let mut anchor = Container::new()
-            .class("pwt-datatable-header-anchor");
+        let mut anchor = Container::new().class("pwt-datatable-header-anchor");
 
         if props.show_menu {
             anchor.add_child(
@@ -334,7 +323,7 @@ impl Component for PwtResizableHeader {
                     .icon_class("fa fa-lg fa-caret-down")
                     .ondblclick(|event: MouseEvent| event.stop_propagation())
                     .menu_builder(props.menu_builder.clone())
-                    .on_close(ctx.link().callback(|_| Msg::HidePicker))
+                    .on_close(ctx.link().callback(|_| Msg::HidePicker)),
             );
         }
 
@@ -352,7 +341,7 @@ impl Component for PwtResizableHeader {
                                 on_size_reset.emit(());
                             }
                         }
-                    })
+                    }),
             );
         }
 
@@ -384,5 +373,4 @@ impl Into<VNode> for ResizableHeader {
         let comp = VComp::new::<PwtResizableHeader>(Rc::new(self), key);
         VNode::from(comp)
     }
-
 }
