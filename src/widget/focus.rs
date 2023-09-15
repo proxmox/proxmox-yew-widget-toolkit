@@ -115,50 +115,39 @@ pub fn roving_tabindex_next(node_ref: &NodeRef, backwards: bool, roving: bool) {
 /// children.
 pub fn roving_tabindex_next_el(el: web_sys::HtmlElement, backwards: bool, roving: bool) {
     let list = roving_tabindex_members(&el);
-    let enabled_list: Vec<web_sys::HtmlElement> = list
-        .iter()
-        .filter(|e| !e.matches(":disabled").unwrap_or(true))
-        .map(|e| e.clone())
-        .collect();
 
-    if enabled_list.len() == 0 {
+    if list.is_empty() {
         return;
     }
 
-    let window = web_sys::window().unwrap();
-    let document = window.document().unwrap();
+    fn get_active_index(list: &[web_sys::HtmlElement]) -> i32 {
+        let window = web_sys::window().unwrap();
+        let document = window.document().unwrap();
+        let active_el = document.active_element();
+        let active_node: Option<&web_sys::Node> = active_el.as_deref();
 
-    let active_el = document.active_element();
-    let active_node: Option<&web_sys::Node> = active_el.as_ref().map(|el| el.deref());
-
-    let mut index = -1;
-    for (i, node) in enabled_list.iter().enumerate() {
-        if node.contains(active_node) {
-            index = i as i32;
+        let mut index = 0;
+        for (i, node) in list.iter().enumerate() {
+            if node.contains(active_node) {
+                index = i as i32;
+            }
         }
+        index
     }
 
-    let next = if index < 0 {
-        if backwards {
-            enabled_list.len() as i32 - 1
-        } else {
-            0
+    let index = get_active_index(&list);
+
+    fn calculate_next(mut index: i32, backwards: bool, len: i32) -> i32 {
+        index += if backwards { -1 } else { 1 };
+        if index < 0 {
+            index = len - 1;
+        } else if index >= len {
+            index = 0;
         }
-    } else {
-        if backwards {
-            if index == 0 {
-                enabled_list.len() as i32 - 1
-            } else {
-                index - 1
-            }
-        } else {
-            if (index + 1) >= enabled_list.len() as i32 {
-                0
-            } else {
-                index as i32 + 1
-            }
-        }
-    };
+        index
+    }
+
+    let mut next = calculate_next(index, backwards, list.len() as i32);
 
     if roving {
         for node in list.iter() {
@@ -166,10 +155,16 @@ pub fn roving_tabindex_next_el(el: web_sys::HtmlElement, backwards: bool, roving
         }
     }
 
-    let next_element = &enabled_list[next as usize];
-    let _ = next_element.focus();
-    if roving {
-        next_element.set_tab_index(0);
+    while next != index {
+        let next_element = &list[next as usize];
+        let _ = next_element.focus();
+        if get_active_index(&list) == next {
+            if roving {
+                next_element.set_tab_index(0);
+            }
+            break;
+        }
+        next = calculate_next(next, backwards, list.len() as i32);
     }
 }
 
