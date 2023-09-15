@@ -163,6 +163,7 @@ impl PwtNavigationDrawer {
         active: &str,
         indent_level: usize,
         open: bool, // submenu open ?
+        hidden: bool,
     ) -> Html {
         let is_active = Some(active) == item.key.as_deref();
         let is_menu = item.submenu.is_some();
@@ -215,10 +216,12 @@ impl PwtNavigationDrawer {
             .tag("a")
             .attribute("role", "link")
             .attribute("aria-expanded", aria_expanded)
-            //.attribute("disabled", (!visible).then(|| "true"))
-            .attribute("tabindex", if is_active { "0" } else { "-1" })
+            .attribute(
+                "tabindex",
+                (!hidden).then_some(if is_active { "0" } else { "-1" }),
+            )
             .class("pwt-nav-link")
-            //.class((!visible).then(|| "pwt-d-none"))
+            .class(hidden.then_some("pwt-d-none"))
             .class(crate::css::AlignItems::Baseline)
             .class(is_active.then_some("active"))
             .onclick(onclick)
@@ -254,6 +257,7 @@ impl PwtNavigationDrawer {
         menu: &mut Column,
         active: &str,
         level: usize,
+        hidden: bool,
     ) {
         match item {
             MenuEntry::Item(child) => {
@@ -262,13 +266,11 @@ impl PwtNavigationDrawer {
                     None => false,
                 };
 
-                menu.add_child(self.render_single_item(ctx, child, active, level, open));
+                menu.add_child(self.render_single_item(ctx, child, active, level, open, hidden));
 
                 if let Some(submenu) = &child.submenu {
-                    if open {
-                        for sub in submenu.children.iter() {
-                            self.render_menu_entry(ctx, sub, menu, active, level + 1)
-                        }
+                    for sub in submenu.children.iter() {
+                        self.render_menu_entry(ctx, sub, menu, active, level + 1, !open)
                     }
                 }
             }
@@ -574,7 +576,7 @@ impl Component for PwtNavigationDrawer {
         let active = active.as_deref().unwrap_or("");
 
         for item in props.menu.children.iter() {
-            self.render_menu_entry(ctx, item, &mut column, active, 0);
+            self.render_menu_entry(ctx, item, &mut column, active, 0, false);
         }
 
         column.into()
