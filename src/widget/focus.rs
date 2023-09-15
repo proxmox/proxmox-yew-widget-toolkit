@@ -37,7 +37,9 @@ pub fn focus_next(node_ref: &NodeRef, backwards: bool) {
 pub fn focus_next_el(el: web_sys::HtmlElement, backwards: bool) {
     if let Ok(list) = el.query_selector_all(FOCUSABLE_SELECTOR) {
         let list = js_sys::Array::from(&list);
-        if list.length() == 0 { return; }
+        if list.length() == 0 {
+            return;
+        }
 
         let window = web_sys::window().unwrap();
         let document = window.document().unwrap();
@@ -50,21 +52,25 @@ pub fn focus_next_el(el: web_sys::HtmlElement, backwards: bool) {
         //log::info!("focus_next: got {} focusable elements, index {}", list.length(), index);
 
         let next = if index < 0 {
-            if backwards { list.length() as i32 - 1 } else { 0 }
+            if backwards {
+                list.length() as i32 - 1
+            } else {
+                0
+            }
         } else {
             if backwards {
-	        if index == 0 {
-		    list.length() as i32 - 1
-	        } else {
-		    index - 1
-	        }
-	    } else {
-	        if (index + 1) >= list.length() as i32 {
-		    0
-	        } else {
+                if index == 0 {
+                    list.length() as i32 - 1
+                } else {
+                    index - 1
+                }
+            } else {
+                if (index + 1) >= list.length() as i32 {
+                    0
+                } else {
                     index as i32 + 1
                 }
-	    }
+            }
         };
 
         if let Ok(next_element) = list.get(next as u32).dyn_into::<web_sys::HtmlElement>() {
@@ -109,12 +115,15 @@ pub fn roving_tabindex_next(node_ref: &NodeRef, backwards: bool, roving: bool) {
 /// children.
 pub fn roving_tabindex_next_el(el: web_sys::HtmlElement, backwards: bool, roving: bool) {
     let list = roving_tabindex_members(&el);
-    let enabled_list: Vec<web_sys::HtmlElement> = list.iter()
+    let enabled_list: Vec<web_sys::HtmlElement> = list
+        .iter()
         .filter(|e| !e.matches(":disabled").unwrap_or(true))
         .map(|e| e.clone())
         .collect();
 
-    if enabled_list.len() == 0 { return; }
+    if enabled_list.len() == 0 {
+        return;
+    }
 
     let window = web_sys::window().unwrap();
     let document = window.document().unwrap();
@@ -130,21 +139,25 @@ pub fn roving_tabindex_next_el(el: web_sys::HtmlElement, backwards: bool, roving
     }
 
     let next = if index < 0 {
-        if backwards { enabled_list.len() as i32 - 1 } else { 0 }
+        if backwards {
+            enabled_list.len() as i32 - 1
+        } else {
+            0
+        }
     } else {
         if backwards {
-	    if index == 0 {
-		enabled_list.len() as i32 - 1
-	    } else {
-		index - 1
-	    }
-	} else {
-	    if (index + 1) >= enabled_list.len() as i32 {
-		0
-	    } else {
+            if index == 0 {
+                enabled_list.len() as i32 - 1
+            } else {
+                index - 1
+            }
+        } else {
+            if (index + 1) >= enabled_list.len() as i32 {
+                0
+            } else {
                 index as i32 + 1
             }
-	}
+        }
     };
 
     if roving {
@@ -168,7 +181,9 @@ pub fn roving_tabindex_next_el(el: web_sys::HtmlElement, backwards: bool, roving
 pub fn focus_inside_el(el: web_sys::HtmlElement) -> bool {
     if let Ok(list) = el.query_selector_all(FOCUSABLE_SELECTOR) {
         let list = js_sys::Array::from(&list);
-        if list.length() == 0 { return false; }
+        if list.length() == 0 {
+            return false;
+        }
 
         let window = web_sys::window().unwrap();
         let document = window.document().unwrap();
@@ -192,10 +207,11 @@ pub fn update_roving_tabindex(node_ref: &NodeRef) {
 
 /// Update roving tabindex after focus change.
 pub fn update_roving_tabindex_el(el: web_sys::HtmlElement) {
-
     if let Ok(child_list) = el.query_selector_all(":scope > *") {
         let child_list = js_sys::Array::from(&child_list);
-        if child_list.length() == 0 { return; }
+        if child_list.length() == 0 {
+            return;
+        }
 
         let window = web_sys::window().unwrap();
         let document = window.document().unwrap();
@@ -205,7 +221,10 @@ pub fn update_roving_tabindex_el(el: web_sys::HtmlElement) {
 
         let mut index = 0;
         for i in 0..child_list.length() {
-            let node = child_list.get(i).dyn_into::<web_sys::HtmlElement>().unwrap();
+            let node = child_list
+                .get(i)
+                .dyn_into::<web_sys::HtmlElement>()
+                .unwrap();
             if node.contains(active_node) {
                 index = i;
             }
@@ -214,7 +233,10 @@ pub fn update_roving_tabindex_el(el: web_sys::HtmlElement) {
         //log::info!("update_roving_tabindex: got {} focusable elements, index {}", child_list.length(), index);
 
         for i in 0..child_list.length() {
-            let node = child_list.get(i).dyn_into::<web_sys::HtmlElement>().unwrap();
+            let node = child_list
+                .get(i)
+                .dyn_into::<web_sys::HtmlElement>()
+                .unwrap();
 
             if element_is_focusable(&node) {
                 if i == index {
@@ -252,7 +274,10 @@ pub fn roving_tabindex_members(el: &web_sys::HtmlElement) -> Vec<web_sys::HtmlEl
     if let Ok(child_list) = el.query_selector_all(":scope > *") {
         let child_list = js_sys::Array::from(&child_list);
         for i in 0..child_list.length() {
-            let node = child_list.get(i).dyn_into::<web_sys::HtmlElement>().unwrap();
+            let node = child_list
+                .get(i)
+                .dyn_into::<web_sys::HtmlElement>()
+                .unwrap();
             if element_is_focusable(&node) {
                 members.push(node);
             } else if let Ok(Some(child)) = node.query_selector(FOCUSABLE_SELECTOR_ALL) {
@@ -280,7 +305,9 @@ pub fn init_roving_tabindex(node_ref: &NodeRef) {
 pub fn init_roving_tabindex_el(el: web_sys::HtmlElement, take_focus: bool) {
     let list = roving_tabindex_members(&el);
 
-    if list.len() == 0 { return; }
+    if list.len() == 0 {
+        return;
+    }
 
     //log::info!("init_roving_tabindex: got {} focusable elements", list.length());
 
