@@ -315,7 +315,7 @@ impl ManagedField for StandardField {
             .attribute("min", props.min.map(|v| v.to_string()))
             .attribute("max", props.max.map(|v| v.to_string()))
             .attribute("step", props.step.map(|v| v.to_string()))
-            .oninput(disabled.then_some(oninput))
+            .oninput((!disabled).then_some(oninput))
             .into();
 
         let peek_icon =
