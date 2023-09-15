@@ -407,7 +407,8 @@ where
     style.set_property("max-width", &format!("calc(100vw - {padding}px)"))?;
 
     if options.align_width {
-        style.set_property("min-width", &format!("{}px", base.client_width()))?;
+        let width = base.get_bounding_client_rect().width();
+        style.set_property("min-width", &format!("{}px", width))?;
     }
 
     let num_placements = options.placements.len();
