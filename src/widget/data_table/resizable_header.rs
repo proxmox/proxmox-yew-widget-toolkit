@@ -319,6 +319,7 @@ impl Component for PwtResizableHeader {
                     .tabindex(-1)
                     .autoshow_menu(true)
                     .class("pwt-datatable-header-menu-trigger pwt-button-text")
+                    .class(ColorScheme::Primary)
                     .class((self.has_focus || self.show_picker).then(|| "focused"))
                     .icon_class("fa fa-lg fa-caret-down")
                     .ondblclick(|event: MouseEvent| event.stop_propagation())
