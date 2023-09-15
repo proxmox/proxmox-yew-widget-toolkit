@@ -1,13 +1,13 @@
 use std::rc::Rc;
 
+use yew::html::{IntoEventCallback, IntoPropValue};
 use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
-use yew::html::{IntoEventCallback, IntoPropValue};
 
 use crate::prelude::*;
 use crate::widget::Container;
 
-use super::{Menu, MenuPopper, MenuEvent, MenuControllerMsg};
+use super::{Menu, MenuControllerMsg, MenuEvent, MenuPopper};
 
 /// Menu item widget with optional icon and optional submenu.
 #[derive(Clone, PartialEq, Properties)]
@@ -54,15 +54,12 @@ pub struct MenuItem {
     ///
     /// Emited when the user activates the entry.
     pub on_select: Option<Callback<MenuEvent>>,
-
 }
 
 impl MenuItem {
     /// Create a new menu item.
     pub fn new(text: impl Into<Html>) -> Self {
-        yew::props!(Self {
-            text: text.into()
-        })
+        yew::props!(Self { text: text.into() })
     }
 
     /// Builder style method to set the disabled flag
@@ -183,7 +180,11 @@ impl Component for PwtMenuItem {
 
         let content_ref = NodeRef::default();
         let submenu_ref = NodeRef::default();
-        let popper = MenuPopper::new(content_ref.clone(), submenu_ref.clone(), props.inside_menubar);
+        let popper = MenuPopper::new(
+            content_ref.clone(),
+            submenu_ref.clone(),
+            props.inside_menubar,
+        );
 
         Self {
             content_ref,
@@ -247,11 +248,11 @@ impl Component for PwtMenuItem {
             .map(|icon_class| {
                 let widget_class = if props.inside_menubar {
                     "pwt-menubar-item-icon"
-                }  else {
+                } else {
                     "pwt-menu-item-icon"
                 };
                 let icon_class = classes!(icon_class.clone(), widget_class);
-                html!{<i role="none" class={icon_class}/>}
+                html! {<i role="none" class={icon_class}/>}
             });
 
         let has_submenu = props.menu.is_some();
@@ -260,40 +261,56 @@ impl Component for PwtMenuItem {
             let arrow_class = classes!(
                 "fa",
                 "fa-caret-right",
-                if props.inside_menubar { "pwt-menubar-item-arrow" } else { "pwt-menu-item-arrow" },
+                if props.inside_menubar {
+                    "pwt-menubar-item-arrow"
+                } else {
+                    "pwt-menu-item-arrow"
+                },
             );
-            html!{<i role="none" class={arrow_class}/>}
+            html! {<i role="none" class={arrow_class}/>}
         });
 
         Container::new()
             .node_ref(self.content_ref.clone())
-            .class(if props.inside_menubar { "pwt-menubar-item" } else { "pwt-menu-item" })
-            .attribute("tabindex", (!(props.disabled || props.focusable)).then(|| "-1"))
+            .class(if props.inside_menubar {
+                "pwt-menubar-item"
+            } else {
+                "pwt-menu-item"
+            })
+            .attribute(
+                "tabindex",
+                (!(props.disabled || props.focusable)).then(|| "-1"),
+            )
             .attribute("disabled", props.disabled.then(|| ""))
             .attribute("role", "menuitem")
             .attribute("aria-haspopup", has_submenu.then(|| "true"))
-            .attribute("aria-expanded", has_submenu.then(|| if show_submenu { "true" } else { "false" }))
+            .attribute(
+                "aria-expanded",
+                has_submenu.then(|| if show_submenu { "true" } else { "false" }),
+            )
             .with_optional_child(icon)
-            .with_child(html!{<span class="pwt-flex-fill">{props.text.clone()}</span>})
+            .with_child(html! {<span class="pwt-flex-fill">{props.text.clone()}</span>})
             .with_optional_child(arrow)
             .with_optional_child(submenu)
             .onkeydown({
                 let link = ctx.link().clone();
-                move |event: KeyboardEvent| {
-                    match event.key().as_str() {
-                        "Enter" | " " => if !has_submenu {
+                move |event: KeyboardEvent| match event.key().as_str() {
+                    "Enter" | " " => {
+                        if !has_submenu {
                             event.stop_propagation();
                             event.prevent_default();
                             link.send_message(Msg::Select)
-                        },
-                        _ => {},
+                        }
                     }
+                    _ => {}
                 }
             })
             .onclick({
                 let link = ctx.link().clone();
                 move |_| {
-                    if !has_submenu { link.send_message(Msg::Select) };
+                    if !has_submenu {
+                        link.send_message(Msg::Select)
+                    };
                 }
             })
             .into()
@@ -301,7 +318,9 @@ impl Component for PwtMenuItem {
 
     fn rendered(&mut self, ctx: &Context<Self>, _first_render: bool) {
         let props = ctx.props();
-        if props.menu.is_none() { return; }
+        if props.menu.is_none() {
+            return;
+        }
         self.popper.update();
     }
 }
