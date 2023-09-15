@@ -307,6 +307,7 @@ impl<T: 'static> PwtHeaderWidget<T> {
                     ResizableHeader::new()
                         .id(unique_id)
                         .class(header_class.clone())
+                        .class(sort_order.map(|_| "sorted"))
                         .class("pwt-w-100 pwt-h-100")
                         .attributes(attributes)
                         .content(header_content)
