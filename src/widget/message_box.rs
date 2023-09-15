@@ -59,20 +59,16 @@ impl MessageBox {
 }
 
 pub(crate) fn message(text: &str, class: &str, icon_class: impl Into<Classes>) -> Html {
-    let icon_class = classes!(
-        "pwt-message-sign",
-        "fa-lg",
-        "fa",
-        "fa-align-center",
-        icon_class,
-    );
+    let icon_class = classes!("fa-lg", "fa", "fa-align-center", icon_class,);
 
     Row::new()
         .padding(2)
         .class(class.to_owned())
         .class("pwt-align-items-center")
-        .with_child(html! {<span class={icon_class} role="none"/>})
-        .with_child(html! {<p>{text}</p>})
+        .with_child(
+            html! {<span class={"pwt-message-sign"} role="none"><i class={icon_class}/></span>},
+        )
+        .with_child(html! {<p style={"overflow-wrap: anywhere;"}>{text}</p>})
         .into()
 }
 
