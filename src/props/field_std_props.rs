@@ -44,7 +44,9 @@ pub struct FieldStdProps {
 }
 
 impl Default for FieldStdProps {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl FieldStdProps {
@@ -54,33 +56,54 @@ impl FieldStdProps {
     }
 
     /// Write all attributes into a map.
-    pub fn cumulate_attributes(&self, attr_map: &mut IndexMap<AttrValue, (AttrValue, ApplyAttributeAs)>) {
+    pub fn cumulate_attributes(
+        &self,
+        attr_map: &mut IndexMap<AttrValue, (AttrValue, ApplyAttributeAs)>,
+    ) {
         if self.disabled {
             attr_map.insert(AttrValue::Static("disabled"), (AttrValue::Static(""), ApplyAttributeAs::Attribute));
         }
 
-         if self.required {
-            attr_map.insert(AttrValue::Static("required"), (AttrValue::Static(""), ApplyAttributeAs::Attribute));
+        if self.required {
+            attr_map.insert(
+                AttrValue::Static("required"),
+                (AttrValue::Static(""), ApplyAttributeAs::Attribute),
+            );
         }
 
         if self.autofocus {
-            attr_map.insert(AttrValue::Static("autofocus"), (AttrValue::Static(""), ApplyAttributeAs::Attribute));
+            attr_map.insert(
+                AttrValue::Static("autofocus"),
+                (AttrValue::Static(""), ApplyAttributeAs::Attribute),
+            );
         }
 
         if let Some(ref aria_label) = self.aria_label {
-            attr_map.insert(AttrValue::Static("aria-label"), (aria_label.clone(), ApplyAttributeAs::Attribute));
+            attr_map.insert(
+                AttrValue::Static("aria-label"),
+                (aria_label.clone(), ApplyAttributeAs::Attribute),
+            );
         }
 
         if let Some(ref label_id) = self.label_id {
-            attr_map.insert(AttrValue::Static("aria-labelledby"), (label_id.clone(), ApplyAttributeAs::Attribute));
+            attr_map.insert(
+                AttrValue::Static("aria-labelledby"),
+                (label_id.clone(), ApplyAttributeAs::Attribute),
+            );
         }
 
         if let Some(ref tabindex) = self.tabindex {
-            attr_map.insert(AttrValue::Static("tabindex"), (tabindex.to_string().into(), ApplyAttributeAs::Attribute));
+            attr_map.insert(
+                AttrValue::Static("tabindex"),
+                (tabindex.to_string().into(), ApplyAttributeAs::Attribute),
+            );
         }
 
         if let Some(ref placeholder) = self.placeholder {
-            attr_map.insert(AttrValue::Static("placeholder"), (placeholder.clone(), ApplyAttributeAs::Attribute));
+            attr_map.insert(
+                AttrValue::Static("placeholder"),
+                (placeholder.clone(), ApplyAttributeAs::Attribute),
+            );
         }
     }
 }
