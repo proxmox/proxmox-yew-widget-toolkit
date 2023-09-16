@@ -36,6 +36,12 @@ pub trait IntoOptionalRenderFn<T> {
     fn into_optional_render_fn(self) -> Option<RenderFn<T>>;
 }
 
+impl<T> IntoOptionalRenderFn<T> for RenderFn<T> {
+    fn into_optional_render_fn(self) -> Option<RenderFn<T>> {
+        Some(self)
+    }
+}
+
 impl<T> IntoOptionalRenderFn<T> for Option<RenderFn<T>> {
     fn into_optional_render_fn(self) -> Option<RenderFn<T>> {
         self
