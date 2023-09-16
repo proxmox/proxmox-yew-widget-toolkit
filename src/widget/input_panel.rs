@@ -164,7 +164,7 @@ impl InputPanel {
         let field = field.label_id(label_id);
 
         self.add_child(html! {
-            <div {style}>{field.into()}</div>
+            <div class="pwt-grid-column-2" {style}>{field.into()}</div>
         });
     }
 
@@ -199,7 +199,7 @@ impl InputPanel {
         let class = classes!(
             "pwt-grid-column-3",
             "pwt-white-space-nowrap",
-            "pwt-text-end",
+            "pwt-text-align-end",
             field.is_disabled().then(|| Some("pwt-label-disabled")),
         );
         self.add_child(html! {
@@ -209,7 +209,7 @@ impl InputPanel {
         });
 
         self.add_child(html! {
-            <div {style}>{field.into()}</div>
+            <div class="pwt-grid-column-4" {style}>{field.into()}</div>
         });
     }
 
