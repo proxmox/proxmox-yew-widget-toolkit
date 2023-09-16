@@ -178,6 +178,16 @@ impl InputPanel {
         self
     }
 
+    /// Builder style method to add a right column field in the advanced section.
+    pub fn with_right_advanced_field(
+        mut self,
+        label: impl IntoPropValue<AttrValue>,
+        field: impl FieldBuilder,
+    ) -> Self {
+        self.add_right_field(false, label, field);
+        self
+    }
+
     /// Method to add a field with label at the right column.
     pub fn add_right_field(
         &mut self,
@@ -220,6 +230,16 @@ impl InputPanel {
         field: impl FieldBuilder,
     ) -> Self {
         self.add_large_field(false, label, field);
+        self
+    }
+
+    /// Builder style method to add a large field in the advanced section
+    pub fn with_large_advanced_field(
+        mut self,
+        label: impl IntoPropValue<AttrValue>,
+        field: impl FieldBuilder,
+    ) -> Self {
+        self.add_large_field(true, label, field);
         self
     }
 
