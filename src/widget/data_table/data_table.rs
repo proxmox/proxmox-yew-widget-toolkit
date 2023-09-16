@@ -1786,11 +1786,7 @@ fn dom_find_record_num(event: &MouseEvent, unique_id: &str) -> Option<(Key, Opti
                                 }
                             }
                         }
-
-                        if n_str.len() > 0 {
-                            return Some((Key::from(n_str), column_num));
-                        }
-                        break; // stop on errors
+                        return Some((Key::from(n_str), column_num));
                     }
                 }
                 cur_el = el.parent_element().map(|el| el.dyn_into().unwrap());
