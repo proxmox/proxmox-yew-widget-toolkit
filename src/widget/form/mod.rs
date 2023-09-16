@@ -13,6 +13,9 @@ pub use context::{
 mod boolean2;
 pub use boolean2::{Boolean, PwtBoolean};
 
+mod tristate_boolean;
+pub use tristate_boolean::{Tristate, TristateBoolean, PwtTristateBoolean};
+
 mod checkbox2;
 pub use checkbox2::{Checkbox, PwtCheckbox};
 
