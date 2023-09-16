@@ -127,6 +127,7 @@ pub enum Msg<S: DataStore> {
     Select(String),
     DataChange,
     LoadResult(Result<S::Collection, Error>),
+    DeleteKey,
 }
 
 #[doc(hidden)]
@@ -248,12 +249,18 @@ impl<S: DataStore + 'static> ManagedField for SelectorField<S> {
     fn update(&mut self, ctx: &ManagedFieldContext<Self>, msg: Self::Message) -> bool {
         let props = ctx.props();
         match msg {
+            Msg::DeleteKey => {
+                if !props.editable {
+                    ctx.link().update_value(String::new());
+                }
+                false
+            }
             Msg::LoadResult(res) => {
                 match res {
                     Ok(data) => {
                         self.load_error = None;
                         props.store.set_data(data);
-                   }
+                    }
                     Err(err) => {
                         props.store.clear();
                         let default = props.default.as_deref().unwrap_or("").to_string();
@@ -357,6 +364,14 @@ impl<S: DataStore + 'static> ManagedField for SelectorField<S> {
             Ok(_) => None,
         };
 
+        let onkeydown = Callback::from({
+            let link = ctx.link().clone();
+            move |event: KeyboardEvent| match event.key().as_str() {
+                "Delete" => link.send_message(Msg::DeleteKey),
+                _ => {}
+            }
+        });
+
         Dropdown::new(picker)
             .with_std_props(&props.std_props)
             .with_input_props(&props.input_props)
@@ -366,6 +381,7 @@ impl<S: DataStore + 'static> ManagedField for SelectorField<S> {
             } else {
                 "is-invalid"
             })
+            .onkeydown(onkeydown)
             .on_change(ctx.link().callback(|key: String| Msg::Select(key)))
             .value(value)
             .render_value(props.render_value.clone())
