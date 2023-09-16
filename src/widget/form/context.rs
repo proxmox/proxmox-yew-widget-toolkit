@@ -777,13 +777,14 @@ impl FormContextState {
             if field_keys.len() == 1 {
                 let key = field_keys[0];
                 let field = &self.fields[key];
+                let submit_empty = field.options.submit_empty;
                 if field.valid.is_ok() && field.options.submit {
 
                     let mut value = field.value.clone();
-                    if value_is_empty(&value) { continue; }
+                    if !submit_empty && value_is_empty(&value) { continue; }
                     if let Some(submit_converter) = &field.submit_converter {
                         value = submit_converter.emit(value);
-                        if value_is_empty(&value) { continue; }
+                        if !submit_empty &value_is_empty(&value) { continue; }
                     }
                     data[name.deref()] = value;
                 }
@@ -794,12 +795,13 @@ impl FormContextState {
                 let mut list = Vec::new();
                 for key in field_keys {
                     let field = &self.fields[key];
+                    let submit_empty = field.options.submit_empty;
                     if field.valid.is_ok() && field.options.submit {
                         let mut value = field.value.clone();
-                        if value_is_empty(&value) { continue; }
+                        if !submit_empty && value_is_empty(&value) { continue; }
                         if let Some(submit_converter) = &field.submit_converter {
                             value = submit_converter.emit(value);
-                            if value_is_empty(&value) { continue; }
+                            if !submit_empty && value_is_empty(&value) { continue; }
                         }
                         list.push(value);
                     }
