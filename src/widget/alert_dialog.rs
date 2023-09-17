@@ -12,7 +12,7 @@ pub struct AlertDialog {
     /// Optional dialog title - defaults to "Alert".
     pub title: Option<AttrValue>,
     /// The error message.
-    pub message: String,
+    pub message: Html,
     /// Close window callback.
     pub on_close: Option<Callback<()>>,
     /// Enable/disable dragging
@@ -22,7 +22,7 @@ pub struct AlertDialog {
 
 impl AlertDialog {
     /// Create a new instance.
-    pub fn new(message: impl Into<String>) -> Self {
+    pub fn new(message: impl Into<Html>) -> Self {
         yew::props!(AlertDialog {
             message: message.into()
         })
@@ -71,7 +71,7 @@ pub fn pwt_alert_dialog(props: &AlertDialog) -> Html {
 
     let title = props.title.as_deref().unwrap_or("Alert").to_string();
 
-    MessageBox::new(title, props.message.to_owned())
+    MessageBox::new(title, props.message.clone())
         .icon_class("fa-exclamation-triangle")
         .on_close(onclick)
         .into()
