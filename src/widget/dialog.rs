@@ -3,7 +3,8 @@ use std::rc::Rc;
 
 use gloo_events::EventListener;
 use gloo_timers::callback::Timeout;
-use wasm_bindgen::JsCast;
+use wasm_bindgen::prelude::Closure;
+use wasm_bindgen::{JsCast, UnwrapThrowExt};
 use web_sys::{window, HtmlElement};
 
 use yew::html::IntoEventCallback;
@@ -46,6 +47,13 @@ pub struct Dialog {
     /// Adds a resizer on each edge and corner
     #[prop_or_default]
     pub resizable: bool,
+
+    /// Determines if the dialog should be auto centered
+    ///
+    /// It will be centered on every window resize
+    /// This is enabled by default
+    #[prop_or(true)]
+    pub auto_center: bool,
 }
 
 impl ContainerBuilder for Dialog {
@@ -129,12 +137,27 @@ pub struct PwtDialog {
     dragging_state: DragState,
     last_active: Option<web_sys::HtmlElement>, // last focused element
     resizer_state: HashMap<Point, DragState>,
+    center_function: Option<Closure<dyn FnMut()>>,
 }
 
 impl PwtDialog {
     fn restore_focus(&mut self) {
         if let Some(el) = self.last_active.take() {
             let _ = el.focus();
+        }
+    }
+}
+
+impl Drop for PwtDialog {
+    fn drop(&mut self) {
+        if let Some(center_function) = self.center_function.take() {
+            let window = web_sys::window().unwrap();
+            window
+                .remove_event_listener_with_callback(
+                    "resize",
+                    center_function.as_ref().unchecked_ref(),
+                )
+                .unwrap_throw();
         }
     }
 }
@@ -152,11 +175,28 @@ impl Component for PwtDialog {
             .active_element()
             .and_then(|el| el.dyn_into::<HtmlElement>().ok());
 
+        let link = ctx.link().clone();
+        let center_function = ctx.props().auto_center.then_some({
+            let center_function = Closure::new(move || {
+                link.send_message(Msg::Center);
+            });
+
+            window
+                .add_event_listener_with_callback(
+                    "resize",
+                    center_function.as_ref().unchecked_ref(),
+                )
+                .unwrap_throw();
+
+            center_function
+        });
+
         Self {
             open: false,
             dragging_state: DragState::Idle,
             resizer_state: HashMap::new(),
             last_active,
+            center_function,
         }
     }
 
