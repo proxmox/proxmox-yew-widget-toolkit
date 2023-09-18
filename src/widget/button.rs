@@ -240,7 +240,9 @@ impl Component for PwtButton {
             children.push(html! {<i role="none" class="fa fa-caret-down"/>});
         }
 
-        Container::form_widget_props(props.std_props.clone(), Some(props.listeners.clone()))
+        let listeners = (!props.disabled).then_some(props.listeners.clone());
+
+        Container::form_widget_props(props.std_props.clone(), listeners)
             .children(children)
             .tag("button")
             .class("pwt-button")
