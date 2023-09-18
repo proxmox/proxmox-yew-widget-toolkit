@@ -874,42 +874,40 @@ impl<S: DataStore> PwtDataTable<S> {
             }
         }
 
-        if !self.column_widths.is_empty() {
-            for (filtered_pos, item) in props.store.filtered_data_range(start..end) {
-                let record_key = props.store.extract_key(&*item.record());
+        for (filtered_pos, item) in props.store.filtered_data_range(start..end) {
+            let record_key = props.store.extract_key(&*item.record());
 
-                let mut selected = false;
-                if let Some(selection) = &props.selection {
-                    selected = selection.contains(&record_key);
-                }
-
-                let active = cursor
-                    .map(|cursor| cursor == filtered_pos)
-                    // if no cursor, mark first row active
-                    .unwrap_or(filtered_pos == start);
-
-                let row = DataTableRow {
-                    selection: props.selection.clone(),
-                    unique_table_id: self.unique_id.clone(),
-                    record: item.record().clone(),
-                    record_key,
-                    row_num: filtered_pos,
-                    columns: self.columns.clone(),
-                    column_hidden: self.column_hidden.clone(),
-                    min_row_height: props.min_row_height,
-                    vertical_align: props.vertical_align.clone(),
-                    cell_class: self.cell_class.clone(),
-                    row_render_callback: props.row_render_callback.clone(),
-                    selected,
-                    active_cell: active.then(|| self.active_column),
-                    has_focus: active && self.has_focus,
-                    is_expanded: item.expanded(),
-                    is_leaf: item.is_leaf(),
-                    level: item.level(),
-                };
-
-                table.add_child(row);
+            let mut selected = false;
+            if let Some(selection) = &props.selection {
+                selected = selection.contains(&record_key);
             }
+
+            let active = cursor
+                .map(|cursor| cursor == filtered_pos)
+                // if no cursor, mark first row active
+                .unwrap_or(filtered_pos == start);
+
+            let row = DataTableRow {
+                selection: props.selection.clone(),
+                unique_table_id: self.unique_id.clone(),
+                record: item.record().clone(),
+                record_key,
+                row_num: filtered_pos,
+                columns: self.columns.clone(),
+                column_hidden: self.column_hidden.clone(),
+                min_row_height: props.min_row_height,
+                vertical_align: props.vertical_align.clone(),
+                cell_class: self.cell_class.clone(),
+                row_render_callback: props.row_render_callback.clone(),
+                selected,
+                active_cell: active.then(|| self.active_column),
+                has_focus: active && self.has_focus,
+                is_expanded: item.expanded(),
+                is_leaf: item.is_leaf(),
+                level: item.level(),
+            };
+
+            table.add_child(row);
         }
 
         table.into()
