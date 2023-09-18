@@ -2,11 +2,17 @@ use std::borrow::Cow;
 
 use yew::html::IntoPropValue;
 use yew::prelude::*;
-use yew::virtual_dom::{Listeners, VList, VTag};
+use yew::virtual_dom::{Key, Listeners, VList, VTag};
 
 use pwt_macros::widget;
 
 use crate::prelude::*;
+
+enum Position {
+    Left,
+    Right,
+    Large,
+}
 
 /// Layout widget for forms with one or two columns.
 ///
@@ -84,8 +90,14 @@ impl InputPanel {
             format!("grid-row: {}; display: none;", self.left_count)
         };
 
+        let key = format!(
+            "sp_{}_{}",
+            self.left_count,
+            if advanced { "1" } else { "0" }
+        );
+
         self.add_child(html! {
-            <hr class="pwt-w-100" {style}/>
+            <hr {key} class="pwt-w-100" {style}/>
         });
     }
 
@@ -106,9 +118,89 @@ impl InputPanel {
             "pwt-white-space-nowrap",
             "pwt-align-self-center",
         );
+        let child = child.into();
+        let key = match child.key() {
+            Some(key) => key.clone(),
+            None => {
+                log::warn!("could not extract key from custom child");
+                yew::virtual_dom::Key::from(format!("cl_{}", self.left_count))
+            }
+        };
 
         self.add_child(html! {
-            <div {class} {style}>{child.into()}</div>
+            <div {class} {key} {style}>{child}</div>
+        });
+    }
+
+    fn add_field_impl(
+        &mut self,
+        column: Position,
+        advanced: bool,
+        label: impl IntoPropValue<AttrValue>,
+        field: impl FieldBuilder,
+    ) {
+        let (label_column, row, field_class) = match column {
+            Position::Left => {
+                self.left_count += 1;
+                (1, self.left_count, "pwt-grid-column-2")
+            }
+            Position::Right => {
+                self.two_column = true;
+                self.right_count += 1;
+                (3, self.right_count, "pwt-grid-column-4")
+            }
+            Position::Large => {
+                self.two_column = true;
+
+                let max = self.left_count.max(self.right_count);
+                self.left_count = max + 1;
+                self.right_count = max + 1;
+
+                (1, self.left_count, "pwt-fill-grid-row")
+            }
+        };
+
+        let visible = if advanced { self.show_advanced } else { true };
+
+        let style = if visible {
+            format!("grid-row: {};", row)
+        } else {
+            format!("grid-row: {}; display: none;", row)
+        };
+
+        let label_id = crate::widget::get_unique_element_id();
+        let class = classes!(
+            format!("pwt-grid-column-{}", label_column),
+            "pwt-white-space-nowrap",
+            "pwt-align-self-center",
+            field.is_disabled().then_some("pwt-label-disabled"),
+        );
+
+        let label = label.into_prop_value();
+        let key = Key::from(format!("label_{label}"));
+
+        self.add_child(html! {
+            <label {key} id={label_id.clone()} {class} style={style.clone()}>
+                {label}
+            </label>
+        });
+
+        let name = field.as_input_props().name.clone();
+        let field = field.label_id(label_id).into();
+        let key = match field.key() {
+            Some(key) => key.clone(),
+            None => match name {
+                Some(name) => Key::from(name.to_string()),
+                None => {
+                    log::warn!("could not extract key from field");
+                    Key::from(format!("f_{}_{}_{}", label_column, row, advanced))
+                }
+            },
+        };
+
+        let class = classes!(field_class, "pwt-align-self-center");
+        self.add_child(html! {
+            <div {key} {class} {style}>{field}</div>
         });
     }
 
@@ -138,34 +230,7 @@ impl InputPanel {
         label: impl IntoPropValue<AttrValue>,
         field: impl FieldBuilder,
     ) {
-        self.left_count += 1;
-
-        let visible = if advanced { self.show_advanced } else { true };
-
-        let style = if visible {
-            format!("grid-row: {};", self.left_count)
-        } else {
-            format!("grid-row: {}; display: none;", self.left_count)
-        };
-
-        let label_id = crate::widget::get_unique_element_id();
-        let class = classes!(
-            "pwt-grid-column-1",
-            "pwt-white-space-nowrap",
-            "pwt-align-self-center",
-            field.is_disabled().then(|| Some("pwt-label-disabled")),
-        );
-        self.add_child(html! {
-            <label id={label_id.clone()} {class} style={style.clone()}>
-                {label.into_prop_value()}
-            </label>
-        });
-
-        let field = field.label_id(label_id);
-
-        self.add_child(html! {
-            <div class="pwt-grid-column-2" {style}>{field.into()}</div>
-        });
+        self.add_field_impl(Position::Left, advanced, label, field)
     }
 
     /// Builder style method to add a field with label at the right column.
@@ -184,7 +249,7 @@ impl InputPanel {
         label: impl IntoPropValue<AttrValue>,
         field: impl FieldBuilder,
     ) -> Self {
-        self.add_right_field(false, label, field);
+        self.add_right_field(true, label, field);
         self
     }
 
@@ -195,32 +260,7 @@ impl InputPanel {
         label: impl IntoPropValue<AttrValue>,
         field: impl FieldBuilder,
     ) {
-        self.two_column = true;
-        self.right_count += 1;
-
-        let visible = if advanced { self.show_advanced } else { true };
-
-        let style = if visible {
-            format!("grid-row: {};", self.right_count)
-        } else {
-            format!("grid-row: {}; display: none;", self.right_count)
-        };
-
-        let class = classes!(
-            "pwt-grid-column-3",
-            "pwt-white-space-nowrap",
-            "pwt-text-align-end",
-            field.is_disabled().then(|| Some("pwt-label-disabled")),
-        );
-        self.add_child(html! {
-            <label {class} style={style.clone()}>
-                {label.into_prop_value()}
-            </label>
-        });
-
-        self.add_child(html! {
-            <div class="pwt-grid-column-4" {style}>{field.into()}</div>
-        });
+        self.add_field_impl(Position::Right, advanced, label, field)
     }
 
     /// Builder style method to add a large field spanning both columns.
@@ -250,38 +290,13 @@ impl InputPanel {
         label: impl IntoPropValue<AttrValue>,
         field: impl FieldBuilder,
     ) {
-        self.two_column = true;
+        self.add_field_impl(Position::Large, advanced, label, field)
+    }
+}
 
-        if self.right_count <= self.left_count {
-            self.right_count = self.left_count;
-        } else {
-            self.left_count = self.right_count;
-        }
-
-        self.left_count += 1;
-        self.right_count += 1;
-
-        let visible = if advanced { self.show_advanced } else { true };
-
-        let style = if visible {
-            format!("grid-row: {};", self.left_count)
-        } else {
-            format!("grid-row: {}; display: none;", self.left_count)
-        };
-
-        let class = classes!(
-            "pwt-grid-column-1",
-            "pwt-white-space-nowrap",
-            field.is_disabled().then(|| Some("pwt-label-disabled")),
-        );
-        self.add_child(html! {
-            <label {class} style={style.clone()}>{label.into_prop_value()}</label>
-        });
-
-        // fixme: label_id?
-        self.add_child(html! {
-            <div class="pwt-fill-grid-row" {style}>{field.into()}</div>
-        });
+impl Default for InputPanel {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
