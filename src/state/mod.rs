@@ -33,6 +33,9 @@ pub use tree_store::*;
 mod theme;
 pub use theme::{get_available_themes, set_available_themes, Theme, ThemeDensity, ThemeMode, ThemeObserver};
 
+mod language;
+pub use language::{Language, LanguageObserver};
+
 /// Helper function to get the window session [Storage](web_sys::Storage)
 pub fn session_storage() -> Option<web_sys::Storage> {
     let window = match web_sys::window() {
