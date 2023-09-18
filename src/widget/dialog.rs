@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::rc::Rc;
 
 use gloo_events::EventListener;
+use gloo_timers::callback::Timeout;
 use wasm_bindgen::JsCast;
 use web_sys::{window, HtmlElement};
 
@@ -10,9 +11,9 @@ use yew::prelude::*;
 use yew::virtual_dom::{Key, VComp, VNode};
 
 use crate::prelude::*;
-use crate::widget::align::{align_to_xy, Point};
+use crate::widget::align::{align_to_viewport, align_to_xy, Point};
 use crate::widget::dom::IntoHtmlElement;
-use crate::widget::{Panel, ActionIcon};
+use crate::widget::{ActionIcon, Panel};
 
 /// Modal Dialog.
 ///
@@ -114,6 +115,7 @@ pub enum Msg {
     ResizeStart(Point, PointerEvent),
     ResizeMove(Point, PointerEvent),
     ResizeUp(Point, i32),
+    Center,
 }
 
 enum DragState {
@@ -335,6 +337,13 @@ impl Component for PwtDialog {
                 }
                 _ => {}
             },
+            Msg::Center => {
+                if let Err(err) =
+                    align_to_viewport(props.node_ref.clone(), Point::Center, Point::Center)
+                {
+                    log::error!("err: {}", err.to_string());
+                }
+            }
         }
         false
     }
@@ -413,6 +422,16 @@ impl Component for PwtDialog {
             }
             {panel}
             </dialog>
+        }
+    }
+
+    fn rendered(&mut self, ctx: &Context<Self>, first_render: bool) {
+        if first_render {
+            let link = ctx.link().clone();
+            // send the first center message in a timeout, so the browser has time to get
+            // the sizes right first. The new position should be identical with
+            // the automatic one, so this should not be visible anyway.
+            Timeout::new(50, move || link.send_message(Msg::Center)).forget();
         }
     }
 }
