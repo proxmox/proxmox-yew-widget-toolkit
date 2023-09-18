@@ -161,7 +161,9 @@ impl Component for PwtButton {
 
         match msg {
             Msg::ShowRippleAnimation(event) => {
-                if props.disabled { return false; }
+                if props.disabled {
+                    return false;
+                }
                 if let Some(element) = props.std_props.node_ref.clone().into_html_element() {
                     let client = element.get_bounding_client_rect();
                     let x = event.client_x() as f64 - client.x();
@@ -229,7 +231,7 @@ impl Component for PwtButton {
                 .class(self.ripple_pos.is_some().then(|| "animate"))
                 .attribute("style", style)
                 .onanimationend(ctx.link().callback(|_| Msg::AnimationEnd))
-                 // Chromium fires onclick from nested elements, so we need to suppress that manually here
+                // Chromium fires onclick from nested elements, so we need to suppress that manually here
                 .onclick(suppress_onclick)
                 .into()
         });
