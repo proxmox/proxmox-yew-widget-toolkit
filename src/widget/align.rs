@@ -220,6 +220,20 @@ impl Rect {
         self.y += y;
         self.y_end += y;
     }
+
+    fn get_position(&self, point: Point) -> (f64, f64) {
+        let x = match &point {
+            Point::TopStart | Point::Start | Point::BottomStart => self.x,
+            Point::Top | Point::Center | Point::Bottom => (self.x + self.x_end) / 2.0,
+            Point::TopEnd | Point::End | Point::BottomEnd => self.x_end,
+        };
+        let y = match &point {
+            Point::TopStart | Point::Top | Point::TopEnd => self.y,
+            Point::Start | Point::Center | Point::End => (self.y + self.y_end) / 2.0,
+            Point::BottomStart | Point::Bottom | Point::BottomEnd => self.y_end,
+        };
+        (x, y)
+    }
 }
 
 fn get_offset(element: &HtmlElement, point: Point, mut base: (f64, f64)) -> (f64, f64) {
@@ -483,6 +497,43 @@ where
             "translate({}px, {}px)",
             coordinates.0 - offset.0,
             coordinates.1 - offset.1
+        ),
+    )?;
+
+    Ok(())
+}
+
+/// Aligns the given `target` point of `element` to the `base` Point of the window
+pub fn align_to_viewport<N: IntoHtmlElement>(
+    element: N,
+    base: Point,
+    target: Point,
+) -> Result<(), Error> {
+    let element = element
+        .into_html_element()
+        .ok_or_else(|| js_sys::Error::new("element is not an HtmlElement"))?;
+
+    let style = element.style();
+    style.set_property("position", "fixed")?;
+    style.set_property("inset", "0px auto auto 0px")?;
+
+    let offset = get_offset(&element, target, (0.0, 0.0));
+    let window = window().unwrap();
+    let viewport_rect = Rect {
+        x: 0.0,
+        y: 0.0,
+        x_end: window.inner_width().unwrap().as_f64().unwrap(),
+        y_end: window.inner_height().unwrap().as_f64().unwrap(),
+    };
+
+    let vp_coordinates = viewport_rect.get_position(base);
+
+    style.set_property(
+        "transform",
+        &format!(
+            "translate({}px, {}px)",
+            vp_coordinates.0 - offset.0,
+            vp_coordinates.1 - offset.1
         ),
     )?;
 
