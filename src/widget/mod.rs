@@ -19,6 +19,9 @@ pub mod canvas;
 mod card;
 pub use card::Card;
 
+mod catalog_loader;
+pub use catalog_loader::{CatalogLoader, PwtCatalogLoader};
+
 mod column;
 pub use column::Column;
 

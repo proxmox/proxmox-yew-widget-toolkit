@@ -18,7 +18,7 @@ fn get_state() -> SharedState<PersistentState<String>> {
 /// Persistent store for language setting.
 ///
 /// This struct implements methods to load and store the current language
-/// settings in the local browser store.
+/// settings (ISO 639-1 language code) in the local browser store.
 ///
 /// Please use [LanguageObserver] to track changes.
 pub struct Language;
