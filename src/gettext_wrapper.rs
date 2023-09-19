@@ -1,6 +1,5 @@
 use gettext::Catalog;
 
-use yew::prelude::*;
 use yew::html::IntoEventCallback;
 
 static mut CATALOG: Option<Catalog> = None;
@@ -119,46 +118,6 @@ async fn fetch_catalog(url: &str) -> Result<(), String> {
     init_i18n_from_blob(body)?;
 
     Ok(())
-}
-
-
-/// Hook to download a catalog and initialize I18N with functional components.
-///
-/// This hook returns when the catalog is loaded.
-#[hook]
-pub fn use_catalog(url: &str) -> bool {
-
-    #[derive(Clone, PartialEq)]
-    enum LoadState { Idle, Loading, LoadFinished(String) }
-
-    use std::cell::RefCell;
-
-    thread_local!{
-        static LAST_URL: RefCell<String> = RefCell::new(String::new());
-    }
-
-    let state = use_state(|| LoadState::Idle);
-
-    match &*state {
-        LoadState::Idle => {
-            let last_url = LAST_URL.with(|c| c.borrow().clone());
-            if &last_url != url {
-                state.set(LoadState::Loading);
-                let state = state.clone();
-                crate::init_i18n_from_url(&url, move |url| {
-                    state.set(LoadState::LoadFinished(url));
-                });
-            }
-        }
-        LoadState::Loading => { /* wait until loaded */ }
-        LoadState::LoadFinished(loaded_url) => {
-            let loaded_url = loaded_url.clone();
-            LAST_URL.with(move |c| *c.borrow_mut() = loaded_url);
-            state.set(LoadState::Idle);
-        }
-    }
-
-    !matches!(*state, LoadState::LoadFinished(_))
 }
 
 /// This is an implementation detail for replacing arguments in the gettext macros.

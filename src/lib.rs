@@ -180,7 +180,6 @@ pub mod widget;
 pub mod gettext_wrapper;
 pub use gettext_wrapper::{
     gettext, init_i18n, init_i18n_from_blob, init_i18n_from_url, ngettext, npgettext, pgettext,
-    use_catalog,
 };
 
 #[doc(hidden)]
