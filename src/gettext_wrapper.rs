@@ -25,6 +25,7 @@ pub fn init_i18n_from_url(url: &str, on_load: impl IntoEventCallback<String>) {
     wasm_bindgen_futures::spawn_local(async move {
         if let Err(err) = fetch_catalog(&url).await {
             log::error!("Catalog load error: {err}");
+            init_i18n(Catalog::empty());
         } else {
             log::info!("I18N Catalog initialized");
         }
