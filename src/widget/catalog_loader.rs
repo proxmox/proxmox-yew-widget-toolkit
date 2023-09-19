@@ -5,6 +5,7 @@ use yew::virtual_dom::{VComp, VNode};
 
 use crate::prelude::*;
 use crate::state::{Language, LanguageObserver};
+use crate::props::{IntoOptionalTextRenderFn, TextRenderFn};
 
 use pwt_macros::builder;
 
@@ -31,7 +32,8 @@ pub struct CatalogLoader {
     /// # fn test () -> Callback<String, String> {
     ///  Callback::from(|lang: String| format!("catalog-{}.mo", lang))
     /// # }
-    pub url_builder: Option<Callback<String, String>>,
+    #[builder_cb(IntoOptionalTextRenderFn, into_optional_text_render_fn, String)]
+    pub url_builder: Option<TextRenderFn<String>>,
 }
 
 impl CatalogLoader {
@@ -42,7 +44,7 @@ impl CatalogLoader {
     fn lang_to_url(&self, lang: impl Into<String>) -> String {
         let lang = lang.into();
         if let Some(url_builder) = &self.url_builder {
-            url_builder.emit(lang)
+            url_builder.apply(&lang)
         } else {
             format!("catalog-{}.mo", lang)
         }

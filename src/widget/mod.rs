@@ -28,6 +28,9 @@ pub use column::Column;
 mod container;
 pub use container::Container;
 
+mod desktop_app;
+pub use desktop_app::{DesktopApp, PwtDesktopApp};
+
 mod dropdown;
 pub use dropdown::{Dropdown, PwtDropdown, RenderDropdownPickerFn};
 
