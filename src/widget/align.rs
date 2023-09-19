@@ -376,6 +376,18 @@ fn get_containing_block(element: &HtmlElement) -> Option<HtmlElement> {
     None
 }
 
+fn set_position_style(
+    style: &web_sys::CssStyleDeclaration,
+    _element: HtmlElement,
+    pos: (f64, f64),
+) -> Result<(), Error> {
+    style.set_property(
+        "inset",
+        &format!("{}px auto auto {}px", pos.1.round(), pos.0.round()),
+    )?;
+    Ok(())
+}
+
 /// Aligns `element` to `base`.
 ///
 /// The possible options are described in [`AlignOptions`].
@@ -466,10 +478,7 @@ where
         );
     }
 
-    style.set_property(
-        "transform",
-        &format!("translate({}px, {}px)", rect.x.round(), rect.y.round()),
-    )?;
+    set_position_style(&style, element, (rect.x, rect.y))?;
 
     Ok(())
 }
@@ -491,13 +500,10 @@ where
 
     let offset = get_offset(&element, point, (0.0, 0.0));
 
-    style.set_property(
-        "transform",
-        &format!(
-            "translate({}px, {}px)",
-            coordinates.0 - offset.0,
-            coordinates.1 - offset.1
-        ),
+    set_position_style(
+        &style,
+        element,
+        (coordinates.0 - offset.0, coordinates.1 - offset.1),
     )?;
 
     Ok(())
@@ -528,13 +534,10 @@ pub fn align_to_viewport<N: IntoHtmlElement>(
 
     let vp_coordinates = viewport_rect.get_position(base);
 
-    style.set_property(
-        "transform",
-        &format!(
-            "translate({}px, {}px)",
-            vp_coordinates.0 - offset.0,
-            vp_coordinates.1 - offset.1
-        ),
+    set_position_style(
+        &style,
+        element,
+        (vp_coordinates.0 - offset.0, vp_coordinates.1 - offset.1),
     )?;
 
     Ok(())
