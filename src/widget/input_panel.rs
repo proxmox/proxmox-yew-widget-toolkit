@@ -115,7 +115,6 @@ impl InputPanel {
 
         let class = classes!(
             "pwt-grid-column-1",
-            "pwt-white-space-nowrap",
             "pwt-align-self-center",
         );
         let child = child.into();
@@ -171,7 +170,6 @@ impl InputPanel {
         let label_id = crate::widget::get_unique_element_id();
         let class = classes!(
             format!("pwt-grid-column-{}", label_column),
-            "pwt-white-space-nowrap",
             "pwt-align-self-center",
             field.is_disabled().then_some("pwt-label-disabled"),
         );
