@@ -46,6 +46,9 @@ pub use input::Input;
 mod input_panel;
 pub use input_panel::InputPanel;
 
+mod language_selector;
+pub use language_selector::{LanguageSelector, ProxmoxLanguageSelector};
+
 mod mask;
 pub use mask::{Mask, PwtMask};
 
