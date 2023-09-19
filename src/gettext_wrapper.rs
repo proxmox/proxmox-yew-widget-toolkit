@@ -44,6 +44,11 @@ pub fn gettext(msg_id: &str) -> String {
     catalog.gettext(msg_id).to_string()
 }
 
+/// Mark a string as translatable, but do not actually translate.
+pub fn gettext_noop(msg_id: &str) -> &str {
+    msg_id
+}
+
 pub fn pgettext(msg_context: &str, msg_id: &str) -> String {
     let catalog = unsafe {
         match CATALOG.as_ref() {

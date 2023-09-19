@@ -1,43 +1,16 @@
 use std::rc::Rc;
 
-use crate::props::ExtractPrimaryKey;
 use crate::state::{Selection, Store};
 use yew::html::IntoEventCallback;
 use yew::virtual_dom::{Key, VComp, VNode};
 
 use crate::prelude::*;
-use crate::state::Language;
+use crate::state::{get_available_languages, Language, LanguageInfo};
 use crate::widget::data_table::{DataTable, DataTableColumn, DataTableHeader};
 use crate::widget::{Dropdown, GridPicker};
 
 use pwt_macros::builder;
 
-#[derive(Clone, PartialEq)]
-struct LanguageInfo {
-    lang: String,            // id (de, en, ...)
-    text: String,            // Language name (native).
-    translated_text: String, // Translated language name.
-}
-
-impl LanguageInfo {
-    fn new(
-        lang: impl Into<String>,
-        text: impl Into<String>,
-        tr: impl Into<String>,
-    ) -> LanguageInfo {
-        LanguageInfo {
-            lang: lang.into(),
-            text: text.into(),
-            translated_text: tr.into(),
-        }
-    }
-}
-
-impl ExtractPrimaryKey for LanguageInfo {
-    fn extract_key(&self) -> yew::virtual_dom::Key {
-        Key::from(self.lang.clone())
-    }
-}
 
 /// Language Selector
 ///
@@ -45,20 +18,30 @@ impl ExtractPrimaryKey for LanguageInfo {
 ///
 /// The selected language is stored using the global [Language] state, so
 /// that the [CatalogLoader] automatically loads the new catalog.
+///
+/// Please initialize the list of available languages on application startup:
+///
+/// ```
+/// use pwt::prelude::*;
+/// use pwt::state::{set_available_languages, LanguageInfo};
+/// # fn init() {
+/// set_available_languages(vec![
+///     LanguageInfo::new("de", "Deutsch", gettext_noop("German")),
+///     LanguageInfo::new("en", "English", gettext_noop("English")),
+/// ]);
+/// # }
+/// ```
 #[derive(Clone, PartialEq, Properties)]
 #[builder]
 pub struct LanguageSelector {
     /// On change callback.
     #[builder_cb(IntoEventCallback, into_event_callback, String)]
     on_change: Option<Callback<String>>,
-
-    /// List ofg selectable language codes (ISO 639-1), i.e. ["en, "de"].
-    languages: Rc<Vec<String>>,
 }
 
 impl LanguageSelector {
-    pub fn new(languages: Rc<Vec<String>>) -> Self {
-        yew::props!(Self { languages })
+    pub fn new() -> Self {
+        yew::props!(Self {})
     }
 }
 
@@ -72,30 +55,30 @@ pub struct ProxmoxLanguageSelector {
 fn language_list(languages: &[String]) -> Vec<LanguageInfo> {
     // todo: add more languages
     let list = vec![
-        LanguageInfo::new("ar", "العربية", tr!("Arabic")),
-        LanguageInfo::new("ca", "Català", tr!("Catalan")),
-        LanguageInfo::new("da", "Dansk", tr!("Danish")),
-        LanguageInfo::new("de", "Deutsch", tr!("German")),
-        LanguageInfo::new("en", "English", tr!("English")),
-        LanguageInfo::new("es", "Español", tr!("Spanish")),
-        LanguageInfo::new("eu", "Euskera (Basque)", tr!("Euskera (Basque)")),
-        LanguageInfo::new("fa", "فارسی", tr!("Persian (Farsi)")),
-        LanguageInfo::new("fr", "Français", tr!("French")),
-        LanguageInfo::new("he", "עברית", tr!("Hebrew")),
-        LanguageInfo::new("it", "Italiano", tr!("Italian")),
-        LanguageInfo::new("ja", "日本語", tr!("Japanese")),
-        LanguageInfo::new("kr", "한국어", tr!("Korean")),
-        LanguageInfo::new("nb", "Bokmål", tr!("Norwegian (Bokmal)")),
-        LanguageInfo::new("nl", "Nederlands", tr!("Dutch")),
-        LanguageInfo::new("nn", "Nynorsk", tr!("Norwegian (Nynorsk)")),
-        LanguageInfo::new("pl", "Polski", tr!("Polish")),
-        LanguageInfo::new("pt_BR", "Português Brasileiro", tr!("Portuguese (Brazil)")),
-        LanguageInfo::new("ru", "Русский", tr!("Russian")),
-        LanguageInfo::new("sl", "Slovenščina", tr!("Slovenian")),
-        LanguageInfo::new("sv", "Svenska", tr!("Swedish")),
-        LanguageInfo::new("tr", "Türkçe", tr!("Turkish")),
-        LanguageInfo::new("zh_CN", "中文（简体）", tr!("Chinese (Simplified)")),
-        LanguageInfo::new("zh_TW", "中文（繁體）", tr!("Chinese (Traditional)")),
+        LanguageInfo::new("ar", "العربية", gettext_noop("Arabic")),
+        LanguageInfo::new("ca", "Català", gettext_noop("Catalan")),
+        LanguageInfo::new("da", "Dansk", gettext_noop("Danish")),
+        LanguageInfo::new("de", "Deutsch", gettext_noop("German")),
+        LanguageInfo::new("en", "English", gettext_noop("English")),
+        LanguageInfo::new("es", "Español", gettext_noop("Spanish")),
+        LanguageInfo::new("eu", "Euskera (Basque)", gettext_noop("Euskera (Basque)")),
+        LanguageInfo::new("fa", "فارسی", gettext_noop("Persian (Farsi)")),
+        LanguageInfo::new("fr", "Français", gettext_noop("French")),
+        LanguageInfo::new("he", "עברית", gettext_noop("Hebrew")),
+        LanguageInfo::new("it", "Italiano", gettext_noop("Italian")),
+        LanguageInfo::new("ja", "日本語", gettext_noop("Japanese")),
+        LanguageInfo::new("kr", "한국어", gettext_noop("Korean")),
+        LanguageInfo::new("nb", "Bokmål", gettext_noop("Norwegian (Bokmal)")),
+        LanguageInfo::new("nl", "Nederlands", gettext_noop("Dutch")),
+        LanguageInfo::new("nn", "Nynorsk", gettext_noop("Norwegian (Nynorsk)")),
+        LanguageInfo::new("pl", "Polski", gettext_noop("Polish")),
+        LanguageInfo::new("pt_BR", "Português Brasileiro", gettext_noop("Portuguese (Brazil)")),
+        LanguageInfo::new("ru", "Русский", gettext_noop("Russian")),
+        LanguageInfo::new("sl", "Slovenščina", gettext_noop("Slovenian")),
+        LanguageInfo::new("sv", "Svenska", gettext_noop("Swedish")),
+        LanguageInfo::new("tr", "Türkçe", gettext_noop("Turkish")),
+        LanguageInfo::new("zh_CN", "中文（简体）", gettext_noop("Chinese (Simplified)")),
+        LanguageInfo::new("zh_TW", "中文（繁體）", gettext_noop("Chinese (Traditional)")),
     ];
 
     let list = list.into_iter().filter(|item| languages.contains(&item.lang)).collect();
@@ -111,20 +94,21 @@ impl Component for ProxmoxLanguageSelector {
     type Message = Msg;
     type Properties = LanguageSelector;
 
-    fn create(ctx: &Context<Self>) -> Self {
-        let props = ctx.props();
+    fn create(_ctx: &Context<Self>) -> Self {
         let store = Store::new();
-        store.set_data(language_list(&props.languages));
-        let selection = Selection::new();
+        let languages = get_available_languages();
 
         let mut lang = Language::load();
         if lang.is_empty() {
-            if props.languages.contains(&String::from("en")) {
+            if languages.iter().find(|info| info.lang == "en").is_some() {
                 lang = "en".into();
-            } else if let Some(first) = props.languages.first() {
-                lang = first.into();
+            } else if let Some(first) = languages.first().map(|info| info.lang.clone()) {
+                lang = first;
             }
         }
+
+        store.set_data(languages);
+        let selection = Selection::new();
 
         selection.select(Key::from(lang.clone()));
 

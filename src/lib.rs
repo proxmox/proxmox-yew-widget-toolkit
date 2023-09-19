@@ -179,7 +179,8 @@ pub mod widget;
 
 pub mod gettext_wrapper;
 pub use gettext_wrapper::{
-    gettext, init_i18n, init_i18n_from_blob, init_i18n_from_url, ngettext, npgettext, pgettext,
+    gettext, gettext_noop, init_i18n, init_i18n_from_blob, init_i18n_from_url, ngettext, npgettext,
+    pgettext,
 };
 
 #[doc(hidden)]
@@ -259,6 +260,6 @@ pub mod prelude {
     pub use crate::props::IntoOptionalKey;
     pub use crate::props::WidgetBuilder;
 
-    pub use crate::{gettext, ngettext, npgettext, pgettext};
     pub use crate::tr;
+    pub use crate::{gettext, gettext_noop, ngettext, npgettext, pgettext};
 }

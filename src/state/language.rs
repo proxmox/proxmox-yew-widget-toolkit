@@ -1,6 +1,57 @@
 use yew::Callback;
+use yew::virtual_dom::Key;
+
+use crate::gettext;
+use crate::props::ExtractPrimaryKey;
 
 use super::{PersistentState, SharedState, SharedStateObserver};
+
+#[derive(Clone, PartialEq)]
+pub struct LanguageInfo {
+    pub lang: String,            // id (de, en, ...)
+    pub text: String,            // Language name (native).
+    pub english_text: String,    // English language name.
+    pub translated_text: String, // Translated language name.
+}
+
+impl LanguageInfo {
+    pub fn new(
+        lang: impl Into<String>,
+        text: impl Into<String>,
+        english_text: impl Into<String>,
+    ) -> LanguageInfo {
+        let english_text = english_text.into();
+        LanguageInfo {
+            lang: lang.into(),
+            text: text.into(),
+            translated_text: gettext(&english_text),
+            english_text,
+        }
+    }
+}
+
+impl ExtractPrimaryKey for LanguageInfo {
+    fn extract_key(&self) -> yew::virtual_dom::Key {
+        Key::from(self.lang.clone())
+    }
+}
+
+static mut AVAILABLE_LANGUAGES: Vec<LanguageInfo> = Vec::new();
+
+pub fn set_available_languages(list: Vec<LanguageInfo>) {
+    unsafe { AVAILABLE_LANGUAGES = list; }
+}
+
+pub fn get_available_languages() -> Vec<LanguageInfo> {
+    let list = unsafe { AVAILABLE_LANGUAGES.clone() };
+
+    let list = list.into_iter().map(|mut info| {
+        info.translated_text = gettext(&info.english_text);
+        info
+    }).collect();
+
+    list
+}
 
 static mut LANGUAGE: Option<SharedState<PersistentState<String>>> = None;
 
