@@ -11,7 +11,6 @@ use crate::widget::{Dropdown, GridPicker};
 
 use pwt_macros::builder;
 
-
 /// Language Selector
 ///
 /// Combobox like selector to choose from a list of available languages.
@@ -38,11 +37,26 @@ pub struct LanguageSelector {
     /// On change callback.
     #[builder_cb(IntoEventCallback, into_event_callback, String)]
     on_change: Option<Callback<String>>,
+
+    /// CSS class.
+    #[prop_or_default]
+    pub class: Classes,
 }
 
 impl LanguageSelector {
     pub fn new() -> Self {
         yew::props!(Self {})
+    }
+
+    /// Builder style method to add a html class
+    pub fn class(mut self, class: impl Into<Classes>) -> Self {
+        self.add_class(class);
+        self
+    }
+
+    /// Method to add a html class.
+    pub fn add_class(&mut self, class: impl Into<Classes>) {
+        self.class.push(class);
     }
 }
 
@@ -79,7 +93,11 @@ impl Component for ProxmoxLanguageSelector {
 
         selection.select(Key::from(lang.clone()));
 
-        Self { store, selection, lang }
+        Self {
+            store,
+            selection,
+            lang,
+        }
     }
 
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
@@ -98,6 +116,7 @@ impl Component for ProxmoxLanguageSelector {
     }
 
     fn view(&self, ctx: &Context<Self>) -> Html {
+        let props = ctx.props();
 
         let picker = {
             let store = self.store.clone();
@@ -118,6 +137,7 @@ impl Component for ProxmoxLanguageSelector {
         let store = self.store.clone();
 
         Dropdown::new(picker)
+            .class(props.class.clone())
             .value(self.lang.clone())
             .on_change(ctx.link().callback(Msg::Select))
             .render_value(move |id: &AttrValue| {
