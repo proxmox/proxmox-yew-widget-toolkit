@@ -168,6 +168,7 @@ impl InputPanel {
         let class = classes!(
             format!("pwt-grid-column-{}", label_column),
             "pwt-align-self-center",
+            matches!(column, Position::Right).then_some("pwt-text-align-end"),
             field.is_disabled().then_some("pwt-label-disabled"),
         );
 
