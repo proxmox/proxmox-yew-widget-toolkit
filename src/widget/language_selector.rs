@@ -16,9 +16,6 @@ use pwt_macros::builder;
 ///
 /// Combobox like selector to choose from a list of available languages.
 ///
-/// The selected language is stored using the global [Language] state, so
-/// that the [CatalogLoader] automatically loads the new catalog.
-///
 /// Please initialize the list of available languages on application startup:
 ///
 /// ```
@@ -31,6 +28,10 @@ use pwt_macros::builder;
 /// ]);
 /// # }
 /// ```
+///
+/// If you do not specilfy an `on_change` callback, the selected language is directly
+/// stored using the global [Language] state, so that the [CatalogLoader] automatically
+/// loads the new catalog and redraw the whole page (you loose the page state).
 #[derive(Clone, PartialEq, Properties)]
 #[builder]
 pub struct LanguageSelector {
@@ -86,9 +87,10 @@ impl Component for ProxmoxLanguageSelector {
         match msg {
             Msg::Select(lang) => {
                 self.lang = lang.clone();
-                Language::store(lang.clone());
                 if let Some(on_change) = &props.on_change {
                     on_change.emit(lang);
+                } else {
+                    Language::store(lang);
                 }
                 true
             }
