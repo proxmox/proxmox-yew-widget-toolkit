@@ -113,10 +113,7 @@ impl InputPanel {
 
         let style = format!("grid-row: {}; grid-column-end: span 2", self.left_count);
 
-        let class = classes!(
-            "pwt-grid-column-1",
-            "pwt-align-self-center",
-        );
+        let class = classes!("pwt-grid-column-1", "pwt-align-self-center",);
         let child = child.into();
         let key = match child.key() {
             Some(key) => key.clone(),
