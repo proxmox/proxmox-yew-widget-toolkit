@@ -340,7 +340,6 @@ impl Component for PwtDropdown {
         };
 
         let select = Container::new()
-            .with_std_props(&props.std_props)
             // overwrite node_ref, becaus AutoFloatingPlacement needs stable ref
             .node_ref(self.dropdown_ref.clone())
             .class("pwt-input")
@@ -370,7 +369,8 @@ impl Component for PwtDropdown {
                     }))
             );
 
-        let mut tooltip = Tooltip::new(dropdown);
+        let mut tooltip = Tooltip::new(dropdown)
+            .with_std_props(&props.std_props);
 
         if !self.show {
             tooltip.set_tip(props.tip.clone());
