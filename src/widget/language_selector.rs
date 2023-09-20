@@ -52,40 +52,6 @@ pub struct ProxmoxLanguageSelector {
     lang: String,
 }
 
-fn language_list(languages: &[String]) -> Vec<LanguageInfo> {
-    // todo: add more languages
-    let list = vec![
-        LanguageInfo::new("ar", "العربية", gettext_noop("Arabic")),
-        LanguageInfo::new("ca", "Català", gettext_noop("Catalan")),
-        LanguageInfo::new("da", "Dansk", gettext_noop("Danish")),
-        LanguageInfo::new("de", "Deutsch", gettext_noop("German")),
-        LanguageInfo::new("en", "English", gettext_noop("English")),
-        LanguageInfo::new("es", "Español", gettext_noop("Spanish")),
-        LanguageInfo::new("eu", "Euskera (Basque)", gettext_noop("Euskera (Basque)")),
-        LanguageInfo::new("fa", "فارسی", gettext_noop("Persian (Farsi)")),
-        LanguageInfo::new("fr", "Français", gettext_noop("French")),
-        LanguageInfo::new("he", "עברית", gettext_noop("Hebrew")),
-        LanguageInfo::new("it", "Italiano", gettext_noop("Italian")),
-        LanguageInfo::new("ja", "日本語", gettext_noop("Japanese")),
-        LanguageInfo::new("kr", "한국어", gettext_noop("Korean")),
-        LanguageInfo::new("nb", "Bokmål", gettext_noop("Norwegian (Bokmal)")),
-        LanguageInfo::new("nl", "Nederlands", gettext_noop("Dutch")),
-        LanguageInfo::new("nn", "Nynorsk", gettext_noop("Norwegian (Nynorsk)")),
-        LanguageInfo::new("pl", "Polski", gettext_noop("Polish")),
-        LanguageInfo::new("pt_BR", "Português Brasileiro", gettext_noop("Portuguese (Brazil)")),
-        LanguageInfo::new("ru", "Русский", gettext_noop("Russian")),
-        LanguageInfo::new("sl", "Slovenščina", gettext_noop("Slovenian")),
-        LanguageInfo::new("sv", "Svenska", gettext_noop("Swedish")),
-        LanguageInfo::new("tr", "Türkçe", gettext_noop("Turkish")),
-        LanguageInfo::new("zh_CN", "中文（简体）", gettext_noop("Chinese (Simplified)")),
-        LanguageInfo::new("zh_TW", "中文（繁體）", gettext_noop("Chinese (Traditional)")),
-    ];
-
-    let list = list.into_iter().filter(|item| languages.contains(&item.lang)).collect();
-
-    list
-}
-
 pub enum Msg {
     Select(String),
 }
