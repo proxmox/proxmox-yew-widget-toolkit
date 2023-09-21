@@ -11,7 +11,9 @@ use crate::props::{ContainerBuilder, WidgetBuilder};
 use crate::state::Selection;
 use crate::widget::Container;
 
-use super::{DataTableColumn, DataTableCellRenderArgs, DataTableRowRenderCallback, DataTableRowRenderArgs};
+use super::{
+    DataTableCellRenderArgs, DataTableColumn, DataTableRowRenderArgs, DataTableRowRenderCallback,
+};
 
 /// DataTable row properties.
 ///
@@ -26,9 +28,9 @@ pub(crate) struct DataTableRow<T: Clone + PartialEq + 'static> {
     pub record_key: Key,
     pub row_num: usize,
     // List of currently visible columns
-    #[derivative(PartialEq(compare_with="Rc::ptr_eq"))]
+    #[derivative(PartialEq(compare_with = "Rc::ptr_eq"))]
     pub columns: Rc<Vec<DataTableColumn<T>>>,
-    #[derivative(PartialEq(compare_with="Rc::ptr_eq"))]
+    #[derivative(PartialEq(compare_with = "Rc::ptr_eq"))]
     pub column_hidden: Rc<Vec<bool>>,
     pub min_row_height: usize,
     pub vertical_align: Option<AttrValue>,
@@ -48,14 +50,12 @@ pub(crate) struct DataTableRow<T: Clone + PartialEq + 'static> {
     pub level: usize,
 }
 
-
 #[doc(hidden)]
 pub(crate) struct PwtDataTableRow<T: Clone + PartialEq + 'static> {
     _phantom: PhantomData<T>,
 }
 
-
-impl <T: Clone + PartialEq + 'static> Component for PwtDataTableRow<T> {
+impl<T: Clone + PartialEq + 'static> Component for PwtDataTableRow<T> {
     type Message = ();
     type Properties = DataTableRow<T>;
 
@@ -73,17 +73,24 @@ impl <T: Clone + PartialEq + 'static> Component for PwtDataTableRow<T> {
         let aria_expanded = if props.is_leaf {
             None
         } else {
-            if props.is_expanded { Some("true") } else { Some("false") }
+            if props.is_expanded {
+                Some("true")
+            } else {
+                Some("false")
+            }
         };
 
         let mut row = Container::new()
             .tag("tr")
             .key(props.record_key.clone())
             .attribute("role", "row")
-             // aria-rowindex does not work, no firefox support?
+            // aria-rowindex does not work, no firefox support?
             .attribute("aria-rowindex", (props.row_num + 1).to_string())
             .attribute("aria-expanded", aria_expanded)
-            .attribute("aria-selected", if props.selected { "true" } else { "false" } )
+            .attribute(
+                "aria-selected",
+                if props.selected { "true" } else { "false" },
+            )
             .attribute("id", item_id)
             .class((props.active_cell.is_some() && props.has_focus).then(|| "row-cursor"))
             .class(props.selected.then(|| "selected")); // fixme: remove
@@ -111,9 +118,8 @@ impl <T: Clone + PartialEq + 'static> Component for PwtDataTableRow<T> {
 
         // Make sure our rows have a minimum height
         // Note: setting min-height on <tr> or <td> does not work
-        let minheight_cell_style = AttrValue::Rc(
-            format!("vertical-align:top;height: {}px;", props.min_row_height).into()
-        );
+        let minheight_cell_style =
+            AttrValue::Rc(format!("vertical-align:top;height: {}px;", props.min_row_height).into());
 
         let mut col_index = 0;
         let mut column_num = 0;
@@ -168,13 +174,15 @@ impl <T: Clone + PartialEq + 'static> Component for PwtDataTableRow<T> {
                 .attribute("role", "gridcell")
                 .attribute("data-column-num", column_num.to_string())
                 .attribute("tabindex", if cell_active { "0" } else { "-1" })
-                .with_child(html!{<div role="none">{cell}</div>});
+                .with_child(html! {<div role="none">{cell}</div>});
 
             let mut colspan = 1;
 
             if let Some(colspan_str) = args.attributes.get("colspan") {
                 if let Ok(n) = (*colspan_str).parse::<usize>() {
-                    if n > 0 { colspan = n }
+                    if n > 0 {
+                        colspan = n
+                    }
                 }
             }
 
