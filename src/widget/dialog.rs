@@ -7,7 +7,7 @@ use wasm_bindgen::prelude::Closure;
 use wasm_bindgen::{JsCast, UnwrapThrowExt};
 use web_sys::{window, HtmlElement};
 
-use yew::html::IntoEventCallback;
+use yew::html::{IntoEventCallback, IntoPropValue};
 use yew::prelude::*;
 use yew::virtual_dom::{Key, VComp, VNode};
 
@@ -16,11 +16,14 @@ use crate::widget::align::{align_to_viewport, align_to_xy, Point};
 use crate::widget::dom::IntoHtmlElement;
 use crate::widget::{ActionIcon, Panel};
 
+use pwt_macros::builder;
+
 /// Modal Dialog.
 ///
 /// This widget is implemented using the relatively new Html `<dialog>`
 /// tag in order to get correct focus handling.
 #[derive(Properties, Clone, PartialEq)]
+#[builder]
 pub struct Dialog {
     #[prop_or_default]
     node_ref: NodeRef,
@@ -29,23 +32,30 @@ pub struct Dialog {
     pub key: Option<Key>,
 
     pub title: AttrValue,
+
+    /// Dialog close callback.
+    #[builder_cb(IntoEventCallback, into_event_callback, ())]
     pub on_close: Option<Callback<()>>,
 
     #[prop_or_default]
     pub children: Vec<VNode>,
 
+    /// CSS style for the dialog window.
+    #[builder(IntoPropValue, into_prop_value)]
     pub style: Option<AttrValue>,
 
     /// Determines if the dialog can be moved
     ///
     /// Makes it draggable by the title bar (exclusive the title text/tools)
     #[prop_or(true)]
+    #[builder]
     pub draggable: bool,
 
     /// Determines if the dialog can be resized
     ///
     /// Adds a resizer on each edge and corner
     #[prop_or_default]
+    #[builder]
     pub resizable: bool,
 
     /// Determines if the dialog should be auto centered
@@ -53,6 +63,7 @@ pub struct Dialog {
     /// It will be centered on every window resize
     /// This is enabled by default
     #[prop_or(true)]
+    #[builder]
     pub auto_center: bool,
 }
 
@@ -76,41 +87,13 @@ impl Dialog {
     }
 
     /// Builder style method to set the yew `key` property
-    pub fn key(mut self, key: impl Into<Key>) -> Self {
-        self.key = Some(key.into());
-        self
-    }
-
-    pub fn style(mut self, style: impl Into<AttrValue>) -> Self {
-        self.style = Some(style.into());
-        self
-    }
-
-    pub fn on_close(mut self, cb: impl IntoEventCallback<()>) -> Self {
-        self.on_close = cb.into_event_callback();
+    pub fn key(mut self, key: impl IntoOptionalKey) -> Self {
+        self.key = key.into_optional_key();
         self
     }
 
     pub fn html(self) -> VNode {
         self.into()
-    }
-
-    pub fn draggable(mut self, draggable: bool) -> Self {
-        self.set_draggable(draggable);
-        self
-    }
-
-    pub fn set_draggable(&mut self, draggable: bool) {
-        self.draggable = draggable;
-    }
-
-    pub fn resizable(mut self, resizable: bool) -> Self {
-        self.set_resizable(resizable);
-        self
-    }
-
-    pub fn set_resizable(&mut self, resizable: bool) {
-        self.resizable = resizable;
     }
 }
 
