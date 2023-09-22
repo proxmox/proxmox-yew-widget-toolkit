@@ -433,6 +433,7 @@ impl Component for PwtDialog {
 
         html! {
             <dialog {onpointerdown} class={classes} aria-label={props.title.clone()} ref={props.node_ref.clone()} {oncancel} style={props.style.clone()}>
+            {panel}
             if resizable {
                 <div onpointerdown={west_down} class="dialog-resize-handle west"></div>
                 <div onpointerdown={east_down} class="dialog-resize-handle east"></div>
@@ -443,7 +444,6 @@ impl Component for PwtDialog {
                 <div onpointerdown={southeast_down} class="dialog-resize-handle south-east"></div>
                 <div onpointerdown={southwest_down} class="dialog-resize-handle south-west"></div>
             }
-            {panel}
             </dialog>
         }
     }
