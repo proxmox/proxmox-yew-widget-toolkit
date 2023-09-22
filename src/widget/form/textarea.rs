@@ -215,6 +215,7 @@ impl ManagedField for TextAreaField {
             } else {
                 "is-invalid"
             },
+            disabled.then_some("disabled"),
         );
 
         let mut attributes = props.std_props.cumulate_attributes(Some(classes));
