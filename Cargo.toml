@@ -2,30 +2,28 @@
 name = "pwt"
 version = "0.2.0"
 edition = "2021"
-authors = [
-  "Dietmar Maurer <dietmar@proxmox.com>",
-]
+authors = ["Dietmar Maurer <dietmar@proxmox.com>"]
 license = "MIT OR Apache-2.0"
 description = "Widgets for yew."
 keywords = ["web", "webasm", "javascript"]
-readme="README.md"
+readme = "README.md"
 
-exclude = [ "debian" ]
+exclude = ["debian"]
 
 [workspace]
-exclude = [ "build" ]
+exclude = ["build"]
 members = [
-    "pwt-macros",
+  "pwt-macros",
 
-    # Examples
+  # Examples
 
-    "examples/counter",
-    "examples/demo",
-    "examples/form",
-    "examples/loader",
-    "examples/mobile",
-    "examples/mobile2",
-    "examples/themes",
+  "examples/counter",
+  "examples/demo",
+  "examples/form",
+  "examples/loader",
+  "examples/mobile",
+  "examples/mobile2",
+  "examples/themes",
 ]
 
 [dependencies]
@@ -34,9 +32,32 @@ derivative = "2.2.0"
 # If you need to use the development version of Yew
 # yew = { git = "https://github.com/yewstack/yew/", features = ["csr"] }
 # yew-router = { git = "https://github.com/yewstack/yew/" }
-yew = { version = "0.20",  features = ["csr"] }
+yew = { version = "0.20", features = ["csr"] }
 yew-router = { version = "0.17" }
-web-sys = { version = "0.3", features = ["DomRect", "DomStringMap", "DomTokenList", "Element", "HtmlCollection", 'Headers', "NodeList", "Storage", 'Request', 'RequestInit', 'RequestCredentials', 'RequestMode', 'Response', 'Window', "MediaQueryList", "CssStyleDeclaration", "ScrollToOptions", "ScrollIntoViewOptions", "ScrollLogicalPosition", "IntersectionObserver", "IntersectionObserverEntry", "KeyboardEventInit"] }
+web-sys = { version = "0.3", features = [
+  "DomRect",
+  "DomStringMap",
+  "DomTokenList",
+  "Element",
+  "HtmlCollection",
+  'Headers',
+  "NodeList",
+  "Storage",
+  'Request',
+  'RequestInit',
+  'RequestCredentials',
+  'RequestMode',
+  'Response',
+  'Window',
+  "MediaQueryList",
+  "CssStyleDeclaration",
+  "ScrollToOptions",
+  "ScrollIntoViewOptions",
+  "ScrollLogicalPosition",
+  "IntersectionObserver",
+  "IntersectionObserverEntry",
+  "KeyboardEventInit",
+] }
 js-sys = "0.3"
 log = "0.4.6"
 indexmap = { version = "1", features = ["std"] }

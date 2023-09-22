@@ -51,6 +51,9 @@ pub use submit_callback::{SubmitCallback, IntoSubmitCallback};
 mod submit_button;
 pub use submit_button::{SubmitButton, PwtSubmitButton};
 
+mod textarea;
+pub use textarea::{TextArea, PwtTextArea};
+
 mod validate;
 pub use validate::{IntoValidateFn, ValidateFn};
 
