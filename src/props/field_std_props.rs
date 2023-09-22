@@ -65,6 +65,10 @@ impl FieldStdProps {
                 AttrValue::Static("aria-disabled"),
                 (AttrValue::Static("true"), ApplyAttributeAs::Attribute),
             );
+            attr_map.insert(
+                AttrValue::Static("readonly"),
+                (AttrValue::Static("true"), ApplyAttributeAs::Attribute),
+            );
         }
 
         if self.required {
