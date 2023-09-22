@@ -119,7 +119,7 @@ pub(crate) fn render_tree_node_impl<T>(
 
 /// Column render function generating the row number.
 pub fn render_row_number<T>(args: &mut DataTableCellRenderArgs<T>) -> Html {
-    html!{format!("{}", args.row_index())}
+    html! {format!("{}", args.row_index())}
 }
 
 /// Column render function generating an selection indicator (checkbox).
@@ -128,7 +128,11 @@ pub fn render_selection_indicator<T>(args: &mut DataTableCellRenderArgs<T>) -> H
         "pwt-no-outline",
         "fa",
         "fa-fw",
-        if args.is_selected() { "fa-check-square-o" } else { "fa-square-o" }
+        if args.is_selected() {
+            "fa-check-square-o"
+        } else {
+            "fa-square-o"
+        }
     );
 
     let aria_checked = if args.is_selected() { "true" } else { "false" };
@@ -143,7 +147,7 @@ pub fn render_selection_indicator<T>(args: &mut DataTableCellRenderArgs<T>) -> H
         }
     });
 
-    html!{
+    html! {
         <i {class} {onclick} role="checkbox" aria-checked={aria_checked} aria-label="select"/>
     }
 }
@@ -174,7 +178,7 @@ pub fn render_selection_header<T>(args: &mut DataTableHeaderRenderArgs<T>) -> Ht
         link.send_toggle_select_all();
     });
 
-    html!{
+    html! {
         <i {class} {onclick} role="checkbox" aria-checked={aria_checked} aria-label="select all"/>
     }
 }
