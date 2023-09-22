@@ -1,7 +1,7 @@
 //! Flexible data table/tree widget.
 
 mod events;
-pub use events::{DataTableKeyboardEvent, DataTableHeaderKeyboardEvent, DataTableMouseEvent};
+pub use events::{DataTableHeaderKeyboardEvent, DataTableKeyboardEvent, DataTableMouseEvent};
 
 mod header_state;
 pub(crate) use header_state::HeaderState;
@@ -10,26 +10,26 @@ mod resizable_header;
 pub(crate) use resizable_header::ResizableHeader;
 
 mod header_group;
-pub use header_group::{DataTableHeader, DataTableHeaderGroup};
 pub(crate) use header_group::{
-    create_indexed_header_list, IndexedHeader, IndexedHeaderSingle,
-    IndexedHeaderGroup,
+    create_indexed_header_list, IndexedHeader, IndexedHeaderGroup, IndexedHeaderSingle,
 };
+pub use header_group::{DataTableHeader, DataTableHeaderGroup};
 
 mod row_render_callback;
 pub use row_render_callback::{
-    DataTableRowRenderCallback, DataTableRowRenderArgs,
-    IntoOptionalDataTableRowRenderCallback,
+    DataTableRowRenderArgs, DataTableRowRenderCallback, IntoOptionalDataTableRowRenderCallback,
 };
 
 mod row;
 pub(crate) use row::DataTableRow;
 
 mod cell_render_callback;
-pub use cell_render_callback::{DataTableCellRenderer, DataTableCellRenderArgs};
+pub use cell_render_callback::{DataTableCellRenderArgs, DataTableCellRenderer};
 
 mod header_render_callback;
-pub use header_render_callback::{DataTableHeaderRenderer, DataTableHeaderRenderArgs, DataTableHeaderTableLink};
+pub use header_render_callback::{
+    DataTableHeaderRenderArgs, DataTableHeaderRenderer, DataTableHeaderTableLink,
+};
 
 mod column;
 pub use column::DataTableColumn;
@@ -37,15 +37,17 @@ pub use column::DataTableColumn;
 mod header_widget;
 pub(crate) use header_widget::HeaderWidget;
 
+#[allow(clippy::module_inception)]
 mod data_table;
-pub use data_table::{DataTable, PwtDataTable, RowSelectionStatus};
 pub(crate) use data_table::HeaderMsg;
+pub use data_table::{DataTable, PwtDataTable, RowSelectionStatus};
 
 use yew::prelude::*;
 use yew::virtual_dom::VList;
 
-use crate::props::{WidgetBuilder, ContainerBuilder};
 use super::Row;
+use crate::props::{ContainerBuilder, WidgetBuilder};
+use crate::state::TreeStore;
 
 /// Helper function to render tree nodes.
 ///
@@ -58,43 +60,61 @@ use super::Row;
 /// The passed render function gets the record as parameter and should
 /// return a tuple containing the optional icon class and the node
 /// text.
-pub fn render_tree_node<T>(
+///
+/// This function is deprecated, please use the normal `render` function of a
+/// [DataTableColumn] and provide a TreeStore to the column.
+#[deprecated]
+pub fn render_tree_node<T: 'static>(
     args: &mut DataTableCellRenderArgs<T>,
     render: impl Fn(&T) -> (Option<String>, String),
 ) -> Html {
-    let record = args.record;
-    let (class, content) = render(record);
+    let (class, text) = render(args.record);
     let class = class.unwrap_or(String::new());
 
+    let content = html! {<><i {class}/>{text}</>};
+
+    render_tree_node_impl(args, content, None)
+}
+
+pub(crate) fn render_tree_node_impl<T>(
+    args: &mut DataTableCellRenderArgs<T>,
+    content: Html,
+    tree_store: Option<TreeStore<T>>,
+) -> Html {
     let mut list: VList = VList::new();
     for _ in 0..args.level() {
-        list.push(html!{ <span class="pwt-ps-4"/> });
+        list.push(html! { <span class="pwt-ps-4"/> });
     }
 
     let indent: Html = list.into();
 
-    let leaf = args.is_leaf();
-    if leaf {
-        Row::new()
-            .class(crate::css::AlignItems::Baseline)
-            .with_child(indent.clone())
-            .with_child(html!{<i {class}/>})
-            .with_child(content)
-            .into()
+    let expander = if args.is_leaf() {
+        html! {<i role="none" class="fa fa-fw pwt-pe-1"/>}
     } else {
-        let carret = match args.is_expanded() {
-            true => "pwt-menu-item-arrow fa fa-fw fa-caret-down pwt-pe-1",
-            false => "pwt-menu-item-arrow fa fa-fw fa-caret-right pwt-pe-1",
+        let caret = match args.is_expanded() {
+            true => "pwt-tree-expander fa fa-fw fa-caret-down pwt-pe-1",
+            false => "pwt-tree-expander fa fa-fw fa-caret-right pwt-pe-1",
         };
 
-        Row::new()
-            .class(crate::css::AlignItems::Baseline)
-            .with_child(indent.clone())
-            .with_child(html!{<i role="none" class={carret}/>})
-            .with_child(html!{<i {class}/>})
-            .with_child(content)
-            .into()
-    }
+        let onclick = {
+            let key = args.record_key.clone();
+            let tree_store = tree_store;
+            move |_| {
+                if let Some(store) = &tree_store {
+                    if let Some(mut node) = store.write().lookup_node_mut(&key) {
+                        node.set_expanded(!node.expanded());
+                    }
+                }
+            }
+        };
+        html! {<i role="none" class={caret} {onclick}/>}
+    };
+    Row::new()
+        .class(crate::css::AlignItems::Baseline)
+        .with_child(indent)
+        .with_child(expander)
+        .with_child(content)
+        .into()
 }
 
 /// Column render function generating the row number.

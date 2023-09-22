@@ -160,7 +160,7 @@ impl<T: Clone + PartialEq + 'static> Component for PwtDataTableRow<T> {
                 level: props.level,
             };
 
-            let cell = column.render_cell.apply(&mut args);
+            let cell = column.apply_render(&mut args);
 
             if let Some(style) = args.attributes.remove("style") {
                 item_style.push_str(&style);

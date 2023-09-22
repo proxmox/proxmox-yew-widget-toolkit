@@ -8,6 +8,7 @@ use yew::prelude::*;
 use yew::virtual_dom::Key;
 
 use crate::props::{CallbackMut, IntoEventCallbackMut, IntoSorterFn, RenderFn, SorterFn};
+use crate::state::TreeStore;
 
 use super::{
     DataTableCellRenderArgs, DataTableCellRenderer, DataTableHeaderKeyboardEvent,
@@ -28,8 +29,9 @@ pub struct DataTableColumn<T: 'static> {
     /// Horizontal table cell justification (start, end, left, center, right, justify).
     #[prop_or(AttrValue::Static("start"))]
     pub justify: AttrValue,
-    /// Render function (returns cell content)
-    pub render_cell: DataTableCellRenderer<T>,
+
+    // only internal, use `apply_render` instead
+    render_cell: DataTableCellRenderer<T>,
     /// Rendert function for Header content. If set, this is used instead of `name`.
     pub render_header: Option<DataTableHeaderRenderer<T>>,
     /// Sorter function.
@@ -60,6 +62,8 @@ pub struct DataTableColumn<T: 'static> {
     pub on_cell_keydown: Option<CallbackMut<DataTableKeyboardEvent>>,
 
     pub on_header_keydown: Option<CallbackMut<DataTableHeaderKeyboardEvent<T>>>,
+
+    pub tree_store: Option<TreeStore<T>>,
 }
 
 impl<T: 'static> DataTableColumn<T> {
@@ -242,6 +246,11 @@ impl<T: 'static> DataTableColumn<T> {
         cb: impl IntoEventCallbackMut<DataTableKeyboardEvent>,
     ) -> Self {
         self.on_cell_keydown = cb.into_event_cb_mut();
+
+        if self.tree_store.is_some() {
+            self.tree_store = self.tree_store.take();
+        }
+
         self
     }
 
@@ -282,5 +291,46 @@ impl<T: 'static> DataTableColumn<T> {
             move |itema: &T, itemb: &T| get_property_fn(itema).cmp(&get_property_fn(itemb))
         })
         .render(move |item: &T| html! {{get_property_fn(item)}})
+    }
+
+    /// Builder style method for [`Self::set_tree_column`]
+    pub fn tree_column(mut self, store: Option<TreeStore<T>>) -> Self {
+        self.set_tree_column(store);
+        self
+    }
+
+    /// Makes the column into a tree column by providing a TreeStore
+    ///
+    /// this automatically sets up the tree rendering and the expanding and
+    /// collapsing handlers
+    pub fn set_tree_column(&mut self, store: Option<TreeStore<T>>) {
+        self.tree_store = store.clone();
+
+        let on_cell_keydown = self.on_cell_keydown.take();
+        self.on_cell_keydown = Some(CallbackMut::from(
+            move |event: &mut DataTableKeyboardEvent| {
+                if event.key() == " " {
+                    if let Some(store) = &store {
+                        if let Some(mut node) = store.write().lookup_node_mut(&event.record_key) {
+                            node.set_expanded(!node.expanded());
+                        }
+                    }
+                }
+
+                if let Some(on_cell_keydown) = &on_cell_keydown {
+                    on_cell_keydown.emit(event);
+                }
+            },
+        ));
+    }
+
+    /// Renders and returns the cell content
+    pub fn apply_render(&self, args: &mut DataTableCellRenderArgs<T>) -> Html {
+        if let Some(store) = &self.tree_store {
+            let content = self.render_cell.apply(args);
+            super::render_tree_node_impl(args, content, Some(store.clone()))
+        } else {
+            self.render_cell.apply(args)
+        }
     }
 }
