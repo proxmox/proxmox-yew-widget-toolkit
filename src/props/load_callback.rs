@@ -87,6 +87,28 @@ impl<T> PartialEq for LoadCallback<T> {
     }
 }
 
+impl<T: 'static + DeserializeOwned> From<&str> for LoadCallback<T> {
+    fn from(url: &str) -> Self {
+        url.to_owned().into()
+    }
+}
+
+impl<T: 'static + DeserializeOwned> From<AttrValue> for LoadCallback<T> {
+    fn from(url: AttrValue) -> Self {
+        url.into()
+    }
+}
+
+impl<T: 'static, F, R> From<F> for LoadCallback<T>
+where
+    F: 'static + Fn() -> R,
+    R: 'static + Future<Output = Result<T, Error>>,
+{
+    fn from(callback: F) -> Self {
+        LoadCallback::new(callback)
+    }
+}
+
 impl<T: 'static + DeserializeOwned> From<String> for LoadCallback<T> {
     fn from(url: String) -> Self {
         LoadCallback::new({
@@ -126,59 +148,15 @@ pub trait IntoLoadCallback<T> {
     fn into_load_callback(self) -> Option<LoadCallback<T>>;
 }
 
-impl<T> IntoLoadCallback<T> for LoadCallback<T> {
-    fn into_load_callback(self) -> Option<LoadCallback<T>> {
-        Some(self)
-    }
-}
-
-impl<T> IntoLoadCallback<T> for Option<LoadCallback<T>> {
-    fn into_load_callback(self) -> Option<LoadCallback<T>> {
-        self
-    }
-}
-
-impl<T, F, R> IntoLoadCallback<T> for F
-where
-    F: 'static + Fn() -> R,
-    R: 'static + Future<Output = Result<T, Error>>,
-{
-    fn into_load_callback(self) -> Option<LoadCallback<T>> {
-        Some(LoadCallback::new(self))
-    }
-}
-
-impl<T: 'static + DeserializeOwned> IntoLoadCallback<T> for &str {
-    fn into_load_callback(self) -> Option<LoadCallback<T>> {
-        let url = self.to_owned();
-        url.into_load_callback()
-    }
-}
-
-impl<T: 'static + DeserializeOwned> IntoLoadCallback<T> for String {
+impl<T, I: Into<LoadCallback<T>>> IntoLoadCallback<T> for I {
     fn into_load_callback(self) -> Option<LoadCallback<T>> {
         Some(self.into())
     }
 }
 
-impl<T: 'static + DeserializeOwned> IntoLoadCallback<T> for Option<String> {
+impl<T, I: Into<LoadCallback<T>>> IntoLoadCallback<T> for Option<I> {
     fn into_load_callback(self) -> Option<LoadCallback<T>> {
-        if let Some(url) = self {
-            url.into_load_callback()
-        } else {
-            None
-        }
-    }
-}
-
-impl<T: 'static, F, R, P> IntoLoadCallback<T> for (F, P)
-where
-    P: Into<AttrValue>,
-    F: 'static + Fn(AttrValue) -> R,
-    R: 'static + Future<Output = Result<T, Error>>,
-{
-    fn into_load_callback(self) -> Option<LoadCallback<T>> {
-        Some((self.0, self.1.into()).into())
+        self.map(|callback| callback.into())
     }
 }
 
