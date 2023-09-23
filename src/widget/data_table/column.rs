@@ -294,7 +294,7 @@ impl<T: 'static> DataTableColumn<T> {
     }
 
     /// Builder style method for [`Self::set_tree_column`]
-    pub fn tree_column(mut self, store: Option<TreeStore<T>>) -> Self {
+    pub fn tree_column(mut self, store: impl IntoPropValue<Option<TreeStore<T>>>) -> Self {
         self.set_tree_column(store);
         self
     }
@@ -303,7 +303,8 @@ impl<T: 'static> DataTableColumn<T> {
     ///
     /// this automatically sets up the tree rendering and the expanding and
     /// collapsing handlers
-    pub fn set_tree_column(&mut self, store: Option<TreeStore<T>>) {
+    pub fn set_tree_column(&mut self, store: impl IntoPropValue<Option<TreeStore<T>>>) {
+        let store = store.into_prop_value();
         self.tree_store = store.clone();
 
         let on_cell_keydown = self.on_cell_keydown.take();
