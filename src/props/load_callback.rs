@@ -95,7 +95,7 @@ impl<T: 'static + DeserializeOwned> From<&str> for LoadCallback<T> {
 
 impl<T: 'static + DeserializeOwned> From<AttrValue> for LoadCallback<T> {
     fn from(url: AttrValue) -> Self {
-        url.into()
+        url.to_string().into()
     }
 }
 
