@@ -102,19 +102,19 @@ pub fn pwt_message_box(props: &MessageBox) -> Html {
 
     let buttons = match &props.buttons {
         MessageBoxButtons::Single(ref text) => {
-            let text = text.as_deref().unwrap_or("Continue").to_string();
+            let text = text.as_deref().map(String::from).unwrap_or(tr!("Continue"));
             vec![Button::new(text).onclick(onclick_success)]
         }
         MessageBoxButtons::YesNo => {
             vec![
-                Button::new("Yes").onclick(onclick_success),
-                Button::new("No").onclick(onclick_failure),
+                Button::new(tr!("Yes")).onclick(onclick_success),
+                Button::new(tr!("No")).onclick(onclick_failure),
             ]
         }
         MessageBoxButtons::CancelOk => {
             vec![
-                Button::new("Cancel").onclick(onclick_failure),
-                Button::new("Ok").onclick(onclick_success),
+                Button::new(tr!("Cancel")).onclick(onclick_failure),
+                Button::new(tr!("Ok")).onclick(onclick_success),
             ]
         }
     };
