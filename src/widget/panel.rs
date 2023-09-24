@@ -27,7 +27,7 @@ impl Panel {
 
     /// Creates a new instance.
     pub fn new() -> Self {
-        Self::default().border(true)
+        Self::default()
     }
 
     /// Builder style method to set the title text.
