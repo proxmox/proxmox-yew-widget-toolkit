@@ -97,7 +97,7 @@ impl InputPanel {
         );
 
         self.add_child(html! {
-            <hr {key} class="pwt-w-100" {style}/>
+            <hr {key} class="pwt-w-100 pwt-my-2" {style}/>
         });
     }
 
