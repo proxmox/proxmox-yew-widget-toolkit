@@ -376,21 +376,24 @@ fn get_containing_block(element: &HtmlElement) -> Option<HtmlElement> {
     None
 }
 
+// use transform to not affect layouting the inner content of the aligned element
 fn set_position_style(
     style: &web_sys::CssStyleDeclaration,
     _element: HtmlElement,
     pos: (f64, f64),
 ) -> Result<(), Error> {
     style.set_property(
-        "inset",
-        &format!("{}px auto auto {}px", pos.1.round(), pos.0.round()),
+        "transform",
+        &format!("translate({}px, {}px)", pos.0.round(), pos.1.round()),
     )?;
     Ok(())
 }
 
 /// Aligns `element` to `base`.
 ///
-/// The possible options are described in [`AlignOptions`].
+/// The possible options are described in [`AlignOptions`]. Note that if nested elements need
+/// aligning (for examples tooltips inside dialogs), make sure to allow visible overflow on the
+/// aligned elements, otherwise there may be issues with scrollbars
 pub fn align_to<B, N>(base: B, element: N, options: Option<AlignOptions>) -> Result<(), Error>
 where
     B: IntoHtmlElement,

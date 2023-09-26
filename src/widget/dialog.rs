@@ -432,18 +432,20 @@ impl Component for PwtDialog {
         let classes = classes!("pwt-dialog", is_dragging.then_some("pwt-user-select-none"));
 
         html! {
-            <dialog {onpointerdown} class={classes} aria-label={props.title.clone()} ref={props.node_ref.clone()} {oncancel} style={props.style.clone()}>
-            {panel}
-            if resizable {
-                <div onpointerdown={west_down} class="dialog-resize-handle west"></div>
-                <div onpointerdown={east_down} class="dialog-resize-handle east"></div>
-                <div onpointerdown={north_down} class="dialog-resize-handle north"></div>
-                <div onpointerdown={south_down} class="dialog-resize-handle south"></div>
-                <div onpointerdown={northeast_down} class="dialog-resize-handle north-east"></div>
-                <div onpointerdown={northwest_down} class="dialog-resize-handle north-west"></div>
-                <div onpointerdown={southeast_down} class="dialog-resize-handle south-east"></div>
-                <div onpointerdown={southwest_down} class="dialog-resize-handle south-west"></div>
-            }
+            <dialog class={"pwt-outer-dialog"} {onpointerdown} aria-label={props.title.clone()} ref={props.node_ref.clone()} {oncancel} >
+                <div class={classes} style={props.style.clone()} >
+                {panel}
+                if resizable {
+                    <div onpointerdown={west_down} class="dialog-resize-handle west"></div>
+                    <div onpointerdown={east_down} class="dialog-resize-handle east"></div>
+                    <div onpointerdown={north_down} class="dialog-resize-handle north"></div>
+                    <div onpointerdown={south_down} class="dialog-resize-handle south"></div>
+                    <div onpointerdown={northeast_down} class="dialog-resize-handle north-east"></div>
+                    <div onpointerdown={northwest_down} class="dialog-resize-handle north-west"></div>
+                    <div onpointerdown={southeast_down} class="dialog-resize-handle south-east"></div>
+                    <div onpointerdown={southwest_down} class="dialog-resize-handle south-west"></div>
+                }
+                </div>
             </dialog>
         }
     }
