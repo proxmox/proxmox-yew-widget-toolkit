@@ -5,7 +5,7 @@ use yew::html::IntoPropValue;
 use yew::virtual_dom::VNode;
 
 use crate::prelude::*;
-use crate::widget::{Container, Fa};
+use crate::widget::Container;
 
 use pwt_macros::{builder, widget};
 
@@ -100,7 +100,7 @@ impl Component for PwtMask {
             Container::new().class("pwt-load-mask").with_child(
                 Container::new()
                     .class("pwt-load-mask-inner")
-                    .with_child(Fa::new("spinner").pulse())
+                    .with_child(html! {<i class={"pwt-loading-icon"} />})
                     .with_child(text),
             )
         });
