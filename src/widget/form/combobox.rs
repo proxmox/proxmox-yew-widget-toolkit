@@ -1,14 +1,14 @@
 use std::rc::Rc;
 
 use yew::html::{IntoEventCallback, IntoPropValue};
-use yew::virtual_dom::Key;
 use yew::prelude::*;
+use yew::virtual_dom::Key;
 
 #[cfg(feature = "proxmox-schema")]
 use proxmox_schema::Schema;
 
 use crate::prelude::*;
-use crate::props::{TextFilterFn, IntoTextFilterFn, IntoOptionalRenderFn, RenderFn};
+use crate::props::{IntoOptionalRenderFn, IntoTextFilterFn, RenderFn, TextFilterFn};
 use crate::state::Store;
 use crate::widget::data_table::{DataTable, DataTableColumn, DataTableHeader};
 use crate::widget::GridPicker;
@@ -138,7 +138,6 @@ pub struct PwtCombobox {
     columns: Rc<Vec<DataTableHeader<AttrValue>>>,
 }
 
-
 impl Component for PwtCombobox {
     type Message = Msg;
     type Properties = Combobox;
@@ -160,10 +159,7 @@ impl Component for PwtCombobox {
             .render(render_value)
             .into()]);
 
-        Self {
-            store,
-            columns,
-        }
+        Self { store, columns }
     }
 
     fn update(&mut self, _ctx: &Context<Self>, msg: Self::Message) -> bool {
