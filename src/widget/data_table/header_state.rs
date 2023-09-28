@@ -24,6 +24,8 @@ pub struct HeaderState<T: 'static> {
     cell_state: Vec<CellState>,
     // map col_idx => DataTableColumn
     columns: Vec<Rc<IndexedHeaderSingle<T>>>,
+    // list of columns to sort
+    sort_order: Vec<usize>,
 }
 
 impl<T: 'static> HeaderState<T> {
@@ -64,6 +66,7 @@ impl<T: 'static> HeaderState<T> {
             columns,
             cell_map,
             cell_state,
+            sort_order: Vec::new(),
         }
     }
 
@@ -91,6 +94,8 @@ impl<T: 'static> HeaderState<T> {
             cell.sort_order = None;
         }
         self.cell_state[cell_idx].sort_order = Some(order);
+        self.sort_order.clear();
+        self.sort_order.push(cell_idx);
     }
 
     /// Add sorter or reverse direction if exists
@@ -99,6 +104,7 @@ impl<T: 'static> HeaderState<T> {
             Some(order) => !order,
             None => true,
         });
+        self.sort_order.push(cell_idx);
         self.cell_state[cell_idx].sort_order = Some(order);
     }
 
@@ -190,11 +196,14 @@ impl<T: 'static> HeaderState<T> {
 
     pub fn create_combined_sorter_fn(&self) -> SorterFn<T> {
         let sorters: Vec<(SorterFn<T>, bool)> = self
-            .columns
+            .sort_order
             .iter()
-            .filter_map(|cell| {
-                let cell_idx = cell.cell_idx;
-                let order = match self.get_column_sorter(cell_idx) {
+            .filter_map(|cell_idx| {
+                let cell = match self.columns.iter().find(|c| c.cell_idx == *cell_idx) {
+                    Some(cell) => cell,
+                    None => return None,
+                };
+                let order = match self.get_column_sorter(*cell_idx) {
                     Some(order) => order,
                     None => return None,
                 };
