@@ -1,5 +1,5 @@
-use std::rc::Rc;
 use std::cmp::Ordering;
+use std::rc::Rc;
 
 use crate::props::SorterFn;
 
@@ -28,7 +28,6 @@ pub struct HeaderState<T: 'static> {
 
 impl<T: 'static> HeaderState<T> {
     pub fn new(headers: Rc<Vec<IndexedHeader<T>>>) -> Self {
-
         let mut cell_map = Vec::new();
         for header in headers.iter() {
             header.extract_cell_list(&mut cell_map);
@@ -45,7 +44,7 @@ impl<T: 'static> HeaderState<T> {
                     });
                 }
                 IndexedHeader::Group(group) => {
-                   cell_state.push(CellState {
+                    cell_state.push(CellState {
                         width: None,
                         hidden: group.hidden,
                         sort_order: None,
@@ -84,23 +83,21 @@ impl<T: 'static> HeaderState<T> {
 
     /// Set sorter on single column, or reverse direction if exists
     pub fn set_column_sorter(&mut self, cell_idx: usize, order: Option<bool>) {
-        let order = order.unwrap_or_else(|| {
-            match self.cell_state[cell_idx].sort_order {
-                Some(order) => !order,
-                None => true,
-            }
+        let order = order.unwrap_or_else(|| match self.cell_state[cell_idx].sort_order {
+            Some(order) => !order,
+            None => true,
         });
-        for cell in self.cell_state.iter_mut() { cell.sort_order = None; }
+        for cell in self.cell_state.iter_mut() {
+            cell.sort_order = None;
+        }
         self.cell_state[cell_idx].sort_order = Some(order);
     }
 
     /// Add sorter or reverse direction if exists
     pub fn add_column_sorter(&mut self, cell_idx: usize, order: Option<bool>) {
-       let order = order.unwrap_or_else(|| {
-            match self.cell_state[cell_idx].sort_order {
-                Some(order) => !order,
-                None => true,
-            }
+        let order = order.unwrap_or_else(|| match self.cell_state[cell_idx].sort_order {
+            Some(order) => !order,
+            None => true,
         });
         self.cell_state[cell_idx].sort_order = Some(order);
     }
@@ -113,10 +110,16 @@ impl<T: 'static> HeaderState<T> {
 
         let group = match &self.cell_map[cell_idx] {
             IndexedHeader::Group(group) => group,
-            IndexedHeader::Single(_) => { return; /* should not happen at all */ }
+            IndexedHeader::Single(_) => {
+                return; /* should not happen at all */
+            }
         };
 
-        let visible = group.children.iter().find(|cell| !self.get_cell_hidden(cell.cell_idx())).is_some();
+        let visible = group
+            .children
+            .iter()
+            .find(|cell| !self.get_cell_hidden(cell.cell_idx()))
+            .is_some();
         self.cell_state[cell_idx].hidden = !visible;
         self.bubble_up_hidden(group.parent);
     }
@@ -149,16 +152,15 @@ impl<T: 'static> HeaderState<T> {
 
     // Hidden status for colums (Used by the table renderer)
     pub fn hidden_columns(&self) -> Vec<bool> {
-        self.columns.iter()
+        self.columns
+            .iter()
             .map(|cell| self.get_cell_hidden(cell.cell_idx))
             .collect()
     }
 
     // Hidden status for all cells (Used by the header menu)
     pub fn hidden_cells(&self) -> Vec<bool> {
-        self.cell_state.iter()
-            .map(|state| state.hidden)
-            .collect()
+        self.cell_state.iter().map(|state| state.hidden).collect()
     }
 
     pub fn cell_count(&self) -> usize {
@@ -187,8 +189,8 @@ impl<T: 'static> HeaderState<T> {
     }
 
     pub fn create_combined_sorter_fn(&self) -> SorterFn<T> {
-
-         let sorters: Vec<(SorterFn<T>, bool)> = self.columns
+        let sorters: Vec<(SorterFn<T>, bool)> = self
+            .columns
             .iter()
             .filter_map(|cell| {
                 let cell_idx = cell.cell_idx;
@@ -197,7 +199,10 @@ impl<T: 'static> HeaderState<T> {
                     None => return None,
                 };
 
-                cell.column.sorter.as_ref().map(|sorter| (sorter.clone(), order))
+                cell.column
+                    .sorter
+                    .as_ref()
+                    .map(|sorter| (sorter.clone(), order))
             })
             .collect();
 
@@ -208,7 +213,7 @@ impl<T: 'static> HeaderState<T> {
                 } else {
                     sort_fn.cmp(b, a)
                 } {
-                    Ordering::Equal => { /* continue */ },
+                    Ordering::Equal => { /* continue */ }
                     other => return other,
                 }
             }
