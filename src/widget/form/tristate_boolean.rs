@@ -243,6 +243,8 @@ impl ManagedField for PwtTristateBoolean {
                 // TODO use a simpler list widget without virtual scroll support?
                 let table = DataTable::new(columns.clone(), store.clone())
                     //.class("pwt-fit")
+                    .borderless(true)
+                    .striped(false)
                     .show_header(false);
 
                 GridPicker::new(table)
