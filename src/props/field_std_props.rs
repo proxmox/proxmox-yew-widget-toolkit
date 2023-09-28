@@ -41,6 +41,9 @@ pub struct FieldStdProps {
     /// empty.
     #[prop_or_default]
     pub submit_empty: bool,
+
+    #[prop_or_default]
+    pub icons: Vec<(AttrValue, bool)>,
 }
 
 impl Default for FieldStdProps {

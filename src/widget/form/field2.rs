@@ -339,7 +339,7 @@ impl ManagedField for StandardField {
             } else {
                 None
             };
-        let input_container = Container::new()
+        let mut input_container = Container::new()
             .with_std_props(&props.std_props)
             .listeners(&props.listeners)
             .class("pwt-input")
@@ -350,9 +350,26 @@ impl ManagedField for StandardField {
                 "is-valid"
             } else {
                 "is-invalid"
-            })
-            .with_child(input)
-            .with_optional_child(peek_icon);
+            });
+
+        for (class, right) in &props.input_props.icons {
+            if !right {
+                let class = class.to_string();
+                let outer_class = "pwt-flex-fill-first-child pwt-d-flex pwt-align-self-center";
+                input_container.add_child(html! {<div class={outer_class}><i {class} /></div>});
+            }
+        }
+
+        input_container.add_child(input);
+
+        for (class, right) in &props.input_props.icons {
+            if *right {
+                let class = class.to_string();
+                let outer_class = "pwt-flex-fill-first-child pwt-d-flex pwt-align-self-center";
+                input_container.add_child(html! {<div class={outer_class}><i {class} /></div>});
+            }
+        }
+        input_container.add_optional_child(peek_icon);
 
         let mut tooltip = Tooltip::new(input_container);
 

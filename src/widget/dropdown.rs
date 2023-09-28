@@ -350,14 +350,32 @@ impl Component for PwtDropdown {
             disabled.then(|| "disabled"),
         };
 
-        let select = Container::new()
+        let mut select = Container::new()
             // overwrite node_ref, becaus AutoFloatingPlacement needs stable ref
             .node_ref(self.dropdown_ref.clone())
             .class("pwt-input")
             .class("pwt-w-100")
-            .with_child(input)
-            .with_child(html! {<i onclick={trigger_onclick} class={trigger_cls}></i>})
             .onclick(onclick);
+
+        for (class, right) in &props.input_props.icons {
+            if !right {
+                let class = class.to_string();
+                let outer_class = "pwt-flex-fill-first-child pwt-d-flex pwt-align-self-center";
+                select.add_child(html! {<div class={outer_class}><i {class} /></div>});
+            }
+        }
+
+        select.add_child(input);
+
+        for (class, right) in &props.input_props.icons {
+            if *right {
+                let class = class.to_string();
+                let outer_class = "pwt-flex-fill-first-child pwt-d-flex pwt-align-self-center";
+                select.add_child(html! {<div class={outer_class}><i {class} /></div>});
+            }
+        }
+
+        select.add_child(html! {<i onclick={trigger_onclick} class={trigger_cls}></i>});
 
         let dropdown = Container::new().with_child(select).with_child(
             Container::new()
