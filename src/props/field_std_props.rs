@@ -42,6 +42,7 @@ pub struct FieldStdProps {
     #[prop_or_default]
     pub submit_empty: bool,
 
+    /// Icons to show on the left (false) or right(true) side of the input
     #[prop_or_default]
     pub icons: Vec<(AttrValue, bool)>,
 }
