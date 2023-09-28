@@ -119,7 +119,7 @@ impl Menu {
 
     /// Adds a spacer element
     pub fn add_spacer(&mut self) {
-        self.add_component(html! {<div class="pwt-p-2"></div>})
+        self.add_component(html! {<div class="pwt-p-1"></div>})
     }
 
     pub fn add_component(&mut self, component: impl Into<VNode>) {
