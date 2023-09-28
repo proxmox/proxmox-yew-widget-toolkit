@@ -16,7 +16,7 @@ use pwt_macros::{builder, widget};
 pub struct Mask {
     content: VNode,
 
-     /// Flag to show/hide the mask
+    /// Flag to show/hide the mask
     #[prop_or_default]
     #[builder]
     pub visible: bool,
@@ -29,7 +29,9 @@ pub struct Mask {
 impl Mask {
     /// Create a new instance.
     pub fn new(content: impl Into<VNode>) -> Self {
-        yew::props!(Mask { content: content.into() })
+        yew::props!(Mask {
+            content: content.into()
+        })
     }
 }
 
@@ -95,14 +97,12 @@ impl Component for PwtMask {
         };
 
         let mask = props.visible.then(|| {
-            Container::new()
-                .class("pwt-load-mask")
-                .with_child(
-                    Container::new()
-                        .class("pwt-load-mask-inner")
-                        .with_child(Fa::new("spinner").pulse())
-                        .with_child(text)
-                )
+            Container::new().class("pwt-load-mask").with_child(
+                Container::new()
+                    .class("pwt-load-mask-inner")
+                    .with_child(Fa::new("spinner").pulse())
+                    .with_child(text),
+            )
         });
 
         yew::props!(Container {
