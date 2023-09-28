@@ -199,6 +199,9 @@ impl Component for PwtCombobox {
             // TODO use a simpler list widget without virtual scroll support?
             let table = DataTable::new(columns.clone(), args.store.clone())
                 //.class("pwt-fit")
+                .striped(false)
+                .borderless(true)
+                .bordered(false)
                 .show_header(false);
 
             let mut picker = GridPicker::new(table)
