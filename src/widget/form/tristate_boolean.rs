@@ -1,7 +1,7 @@
 use std::rc::Rc;
 
-use serde_json::Value;
 use anyhow::Error;
+use serde_json::Value;
 
 use yew::html::{IntoEventCallback, IntoPropValue};
 use yew::virtual_dom::Key;
@@ -69,11 +69,9 @@ pub struct PwtTristateBoolean {
 }
 
 fn create_field_validation_cb() -> ValidateFn<Value> {
-    ValidateFn::new(move |value: &Value| {
-        match value {
-            Value::Null | Value::Bool(_) => Ok(()),
-            _ => Err(Error::msg(tr!("Got wrong data type!"))),
-        }
+    ValidateFn::new(move |value: &Value| match value {
+        Value::Null | Value::Bool(_) => Ok(()),
+        _ => Err(Error::msg(tr!("Got wrong data type!"))),
     })
 }
 
@@ -113,8 +111,8 @@ impl ManagedField for PwtTristateBoolean {
             value = tristate_to_value(default);
         }
 
-       // if let Some(force_value) = &props.value {
-            // fixme: value = force_value.to_string();
+        // if let Some(force_value) = &props.value {
+        // fixme: value = force_value.to_string();
         //}
 
         let validate = create_field_validation_cb();
@@ -149,11 +147,20 @@ impl ManagedField for PwtTristateBoolean {
         let store = Store::with_extract_key(|item: &AttrValue| Key::from(item.as_str()));
         store.set_data(items);
 
-        let yes_text = props.yes_text.clone().map(|s| s.to_string())
+        let yes_text = props
+            .yes_text
+            .clone()
+            .map(|s| s.to_string())
             .unwrap_or(tr!("Yes"));
-        let no_text = props.no_text.clone().map(|s| s.to_string())
+        let no_text = props
+            .no_text
+            .clone()
+            .map(|s| s.to_string())
             .unwrap_or(tr!("No"));
-        let null_text = props.null_text.clone().map(|s| s.to_string())
+        let null_text = props
+            .null_text
+            .clone()
+            .map(|s| s.to_string())
             .unwrap_or(tr!("Default"));
 
         let render_value = RenderFn::new(move |value: &AttrValue| {
@@ -195,15 +202,15 @@ impl ManagedField for PwtTristateBoolean {
         }
 
         //self.selection.select(key.clone());
-
-
     }
 
     fn update(&mut self, ctx: &ManagedFieldContext<Self>, msg: Self::Message) -> bool {
         let props = ctx.props();
         match msg {
             Msg::Select(value) => {
-                if props.input_props.disabled { return false; }
+                if props.input_props.disabled {
+                    return false;
+                }
 
                 let value = match value.as_str() {
                     "yes" => Value::Bool(true),
