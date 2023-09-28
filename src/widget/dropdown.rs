@@ -2,12 +2,12 @@ use std::rc::Rc;
 
 use derivative::Derivative;
 
-use web_sys::HtmlInputElement;
 use gloo_events::EventListener;
 use wasm_bindgen::{JsCast, UnwrapThrowExt};
+use web_sys::HtmlInputElement;
 
+use yew::html::{IntoEventCallback, IntoPropValue};
 use yew::prelude::*;
-use yew::html::{IntoPropValue, IntoEventCallback};
 use yew::virtual_dom::Key;
 
 use crate::prelude::*;
@@ -22,8 +22,7 @@ use crate::widget::align::{AlignOptions, AutoFloatingPlacement, GrowDirection, P
 #[derive(Clone, Derivative)]
 #[derivative(PartialEq)]
 pub struct RenderDropdownPickerFn(
-    #[derivative(PartialEq(compare_with="Rc::ptr_eq"))]
-    Rc<dyn Fn(&Callback<Key>) -> Html>
+    #[derivative(PartialEq(compare_with = "Rc::ptr_eq"))] Rc<dyn Fn(&Callback<Key>) -> Html>,
 );
 
 impl RenderDropdownPickerFn {
@@ -88,10 +87,9 @@ pub struct Dropdown {
 }
 
 impl Dropdown {
-
     // Create a new instance
     pub fn new(picker: impl Into<RenderDropdownPickerFn>) -> Self {
-        yew::props!{ Self { picker: picker.into() } }
+        yew::props! { Self { picker: picker.into() } }
     }
 }
 
@@ -117,11 +115,10 @@ pub struct PwtDropdown {
     picker_ref: NodeRef,
     dropdown_ref: NodeRef,
     picker_id: String,
-    picker_placer: Option<AutoFloatingPlacement>
+    picker_placer: Option<AutoFloatingPlacement>,
 }
 
 impl PwtDropdown {
-
     // focus the input elelent (after closing the dropdown dialog)
     // just to be sure (Dialog should do this automatically)
     fn restore_focus(&mut self, props: &Dropdown) {
@@ -139,9 +136,9 @@ impl PwtDropdown {
                 Point::TopStart,
                 GrowDirection::TopBottom,
             )
-                .viewport_padding(5.0)
-                .offset(0.0, 1.0)
-                .align_width(true),
+            .viewport_padding(5.0)
+            .offset(0.0, 1.0)
+            .align_width(true),
         ) {
             Ok(placer) => Some(placer),
             Err(err) => {
@@ -188,9 +185,19 @@ impl Component for PwtDropdown {
                 true
             }
             Msg::TogglePicker => {
-                if props.input_props.disabled { return false; }
+                if props.input_props.disabled {
+                    return false;
+                }
                 //log::info!("TogglePicker");
-                yew::Component::update(self, ctx, if self.show { Msg::HidePicker } else {Msg::ShowPicker})
+                yew::Component::update(
+                    self,
+                    ctx,
+                    if self.show {
+                        Msg::HidePicker
+                    } else {
+                        Msg::ShowPicker
+                    },
+                )
             }
             Msg::HidePicker => {
                 // Note: close_dialog() is async, so we use the
@@ -252,13 +259,15 @@ impl Component for PwtDropdown {
             move |event: KeyboardEvent| {
                 match event.key().as_str() {
                     "Escape" => {
-                        if !show { return; } // allow default (close dialog)
+                        if !show {
+                            return;
+                        } // allow default (close dialog)
                         link.send_message(Msg::HidePicker);
                     }
                     "ArrowDown" => {
                         link.send_message(Msg::ShowPicker);
                     }
-                     _ => return,
+                    _ => return,
                 }
                 event.prevent_default();
             }
@@ -294,7 +303,10 @@ impl Component for PwtDropdown {
                 .listeners(&props.listeners)
                 .class("pwt-flex-fill")
                 .class("pwt-input-content")
-                .attribute("tabindex", props.input_props.tabindex.unwrap_or(0).to_string())
+                .attribute(
+                    "tabindex",
+                    props.input_props.tabindex.unwrap_or(0).to_string(),
+                )
                 .attribute("role", "combobox")
                 .attribute("aria-expanded", if self.show { "true" } else { "false" })
                 .attribute("aria-controls", self.picker_id.clone())
@@ -310,28 +322,28 @@ impl Component for PwtDropdown {
                         .disabled(props.input_props.disabled)
                         .required(props.input_props.required)
                         .attribute("value", value)
-                        .attribute("type", "hidden")
+                        .attribute("type", "hidden"),
                 )
                 .onkeydown(onkeydown)
                 .into()
         } else {
             Input::new()
-            .node_ref(self.input_ref.clone())
-            .with_input_props(&props.input_props)
-            .listeners(&props.listeners)
-            .class("pwt-flex-fill")
-            .attribute("value", value)
-            .attribute("type", "text")
-            .attribute("role", "combobox")
-            .attribute("aria-expanded", if self.show { "true" } else { "false" })
-            .attribute("aria-controls", self.picker_id.clone())
-            .attribute("aria-haspopup", props.popup_type.clone())
-            .oninput(oninput)
-            .onkeydown(onkeydown)
-            .into()
+                .node_ref(self.input_ref.clone())
+                .with_input_props(&props.input_props)
+                .listeners(&props.listeners)
+                .class("pwt-flex-fill")
+                .attribute("value", value)
+                .attribute("type", "text")
+                .attribute("role", "combobox")
+                .attribute("aria-expanded", if self.show { "true" } else { "false" })
+                .attribute("aria-controls", self.picker_id.clone())
+                .attribute("aria-haspopup", props.popup_type.clone())
+                .oninput(oninput)
+                .onkeydown(onkeydown)
+                .into()
         };
 
-        let trigger_cls = classes!{
+        let trigger_cls = classes! {
             "fa",
             "fa-caret-down",
             "pwt-dropdown-icon",
@@ -345,32 +357,27 @@ impl Component for PwtDropdown {
             .class("pwt-input")
             .class("pwt-w-100")
             .with_child(input)
-            .with_child(html!{<i onclick={trigger_onclick} class={trigger_cls}></i>})
+            .with_child(html! {<i onclick={trigger_onclick} class={trigger_cls}></i>})
             .onclick(onclick);
 
-        let dropdown = Container::new()
-            .with_child(select)
-            .with_child(
-                Container::new()
-                    .tag("dialog")
-                    .class("pwt-dialog")
-                    .class("pwt-dropdown")
-                    .attribute("id", self.picker_id.clone())
-                    .attribute("data-show", data_show)
-                    .node_ref(self.picker_ref.clone())
-                    .onclose(ctx.link().callback(|_| Msg::DialogClosed))
-                    .oncancel(ctx.link().callback(|event: Event| {
-                        event.stop_propagation();
-                        event.prevent_default();
-                        Msg::HidePicker
-                    }))
-                    .with_optional_child(self.show.then(|| {
-                        (props.picker.0)(&onselect)
-                    }))
-            );
+        let dropdown = Container::new().with_child(select).with_child(
+            Container::new()
+                .tag("dialog")
+                .class("pwt-dialog")
+                .class("pwt-dropdown")
+                .attribute("id", self.picker_id.clone())
+                .attribute("data-show", data_show)
+                .node_ref(self.picker_ref.clone())
+                .onclose(ctx.link().callback(|_| Msg::DialogClosed))
+                .oncancel(ctx.link().callback(|event: Event| {
+                    event.stop_propagation();
+                    event.prevent_default();
+                    Msg::HidePicker
+                }))
+                .with_optional_child(self.show.then(|| (props.picker.0)(&onselect))),
+        );
 
-        let mut tooltip = Tooltip::new(dropdown)
-            .with_std_props(&props.std_props);
+        let mut tooltip = Tooltip::new(dropdown).with_std_props(&props.std_props);
 
         if !self.show {
             tooltip.set_tip(props.tip.clone());
@@ -416,7 +423,11 @@ impl Component for PwtDropdown {
                         let y = e.client_y() as f64;
 
                         let rect = el.get_bounding_client_rect();
-                        if x > rect.left() && x < rect.right() && y > rect.top() && y < rect.bottom() {
+                        if x > rect.left()
+                            && x < rect.right()
+                            && y > rect.top()
+                            && y < rect.bottom()
+                        {
                             return;
                         }
 
@@ -457,7 +468,10 @@ impl Component for PwtDropdown {
 pub fn focus_selected_element(node_ref: &NodeRef) {
     if let Some(el) = node_ref.cast::<web_sys::Element>() {
         if let Ok(Some(selected_el)) = el.query_selector(".selected") {
-            let _ = selected_el.dyn_into::<web_sys::HtmlElement>().unwrap().focus();
+            let _ = selected_el
+                .dyn_into::<web_sys::HtmlElement>()
+                .unwrap()
+                .focus();
         }
     }
 }
