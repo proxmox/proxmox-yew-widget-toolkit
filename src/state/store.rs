@@ -1,17 +1,19 @@
-use std::rc::Rc;
-use std::cell::{Ref, RefMut, RefCell};
+use std::cell::{Ref, RefCell, RefMut};
 use std::ops::Range;
 use std::ops::{Deref, DerefMut};
+use std::rc::Rc;
 
 use derivative::Derivative;
 use slab::Slab;
 
+use yew::html::IntoEventCallback;
 use yew::prelude::*;
 use yew::virtual_dom::Key;
-use yew::html::IntoEventCallback;
 
-use crate::props::{FilterFn, IntoSorterFn, IntoFilterFn, SorterFn, ExtractKeyFn, ExtractPrimaryKey};
-use crate::state::{optional_rc_ptr_eq, DataStore, DataNode, DataNodeDerefGuard};
+use crate::props::{
+    ExtractKeyFn, ExtractPrimaryKey, FilterFn, IntoFilterFn, IntoSorterFn, SorterFn,
+};
+use crate::state::{optional_rc_ptr_eq, DataNode, DataNodeDerefGuard, DataStore};
 
 /// Hook to use a [Store] with functional components.
 ///
@@ -19,7 +21,6 @@ use crate::state::{optional_rc_ptr_eq, DataStore, DataNode, DataNodeDerefGuard};
 /// events which trigger a redraw.
 #[hook]
 pub fn use_store<F: FnOnce() -> Store<T>, T: 'static>(init_fn: F) -> Store<T> {
-
     let redraw = use_state(|| 0);
 
     let store = use_state(init_fn);
@@ -42,12 +43,12 @@ pub fn use_store<F: FnOnce() -> Store<T>, T: 'static>(init_fn: F) -> Store<T> {
 /// a simply `PartialEq` would always return true. Please register a
 /// listener to get notified about changes.
 #[derive(Derivative)]
-#[derivative(Clone(bound=""), PartialEq(bound=""))]
+#[derivative(Clone(bound = ""), PartialEq(bound = ""))]
 pub struct Store<T: 'static> {
     // Allow to store one StoreObserver here (for convenience)
-    #[derivative(PartialEq(compare_with="optional_rc_ptr_eq"))]
+    #[derivative(PartialEq(compare_with = "optional_rc_ptr_eq"))]
     on_change: Option<Rc<StoreObserver<T>>>,
-    #[derivative(PartialEq(compare_with="Rc::ptr_eq"))]
+    #[derivative(PartialEq(compare_with = "Rc::ptr_eq"))]
     inner: Rc<RefCell<StoreState<T>>>,
 }
 
@@ -65,7 +66,6 @@ impl<T: 'static> Drop for StoreObserver<T> {
 }
 
 impl<T: ExtractPrimaryKey + 'static> Store<T> {
-
     /// Creates a new instance for types implementing [ExtractPrimaryKey].
     ///
     /// Use [Self::with_extract_key] for types which does not
@@ -80,7 +80,6 @@ impl<T: ExtractPrimaryKey + 'static> Store<T> {
 }
 
 impl<T: 'static> Store<T> {
-
     /// Creates a new instance with the specifies extract key function.
     pub fn with_extract_key(extract_key: impl Into<ExtractKeyFn<T>>) -> Self {
         Self {
@@ -142,9 +141,11 @@ impl<T: 'static> Store<T> {
     /// This is usually called by [Self::on_change], which stores the
     /// observer inside the [Store] object.
     pub fn add_listener(&self, cb: impl Into<Callback<()>>) -> StoreObserver<T> {
-        let key = self.inner.borrow_mut()
-            .add_listener(cb.into());
-        StoreObserver { key, inner: self.inner.clone() }
+        let key = self.inner.borrow_mut().add_listener(cb.into());
+        StoreObserver {
+            key,
+            inner: self.inner.clone(),
+        }
     }
 
     /// Set the sorter function.
@@ -167,7 +168,8 @@ impl<T: 'static> Store<T> {
 
     pub fn data_len(&self) -> usize {
         self.inner.borrow().data.len()
-    }    fn lookup_filtered_record_key(&self, cursor: usize) -> Option<Key> {
+    }
+    fn lookup_filtered_record_key(&self, cursor: usize) -> Option<Key> {
         let mut state = self.inner.borrow_mut();
         state.update_filtered_data();
         state.lookup_filtered_record_key(cursor)
@@ -187,19 +189,19 @@ impl<T: 'static> Store<T> {
 
     pub fn filtered_data<'a>(
         &'a self,
-    ) -> Box<dyn Iterator<Item=(usize, Box<dyn DataNode<T> + 'a>)> + 'a> {
+    ) -> Box<dyn Iterator<Item = (usize, Box<dyn DataNode<T> + 'a>)> + 'a> {
         self.inner.borrow_mut().update_filtered_data();
         Box::new(StoreIterator {
             range: None,
             pos: 0,
             state: self.inner.borrow(),
-         })
+        })
     }
 
     pub fn filtered_data_range<'a>(
         &'a self,
         range: Range<usize>,
-    ) -> Box<dyn Iterator<Item=(usize, Box<dyn DataNode<T> + 'a>)> + 'a> {
+    ) -> Box<dyn Iterator<Item = (usize, Box<dyn DataNode<T> + 'a>)> + 'a> {
         self.inner.borrow_mut().update_filtered_data();
         Box::new(StoreIterator {
             pos: range.start,
@@ -262,7 +264,7 @@ impl<T> Deref for StoreReadGuard<'_, T> {
 }
 
 #[doc(hidden)]
-pub struct StoreNodeRef<'a, T>{
+pub struct StoreNodeRef<'a, T> {
     state: Ref<'a, StoreState<T>>,
     node_id: usize,
 }
@@ -273,11 +275,21 @@ impl<'a, T: 'static> DataNode<T> for StoreNodeRef<'a, T> {
         let guard: Box<dyn Deref<Target = T>> = Box::new(data);
         DataNodeDerefGuard { guard: guard }
     }
-    fn level(&self) -> usize { 0 }
-    fn is_leaf(&self) -> bool { true }
-    fn is_root(&self) -> bool { false }
-    fn expanded(&self) -> bool { false }
-    fn parent(&self) -> Option<Box<dyn DataNode<T> + '_>> { None }
+    fn level(&self) -> usize {
+        0
+    }
+    fn is_leaf(&self) -> bool {
+        true
+    }
+    fn is_root(&self) -> bool {
+        false
+    }
+    fn expanded(&self) -> bool {
+        false
+    }
+    fn parent(&self) -> Option<Box<dyn DataNode<T> + '_>> {
+        None
+    }
     fn key(&self) -> Key {
         let record = &self.state.data[self.node_id];
         self.state.extract_key(record)
@@ -301,9 +313,11 @@ impl<T: Clone + PartialEq + 'static> DataStore for Store<T> {
     }
 
     fn add_listener(&self, cb: impl Into<Callback<()>>) -> Self::Observer {
-        let key = self.inner.borrow_mut()
-            .add_listener(cb.into());
-        StoreObserver { key, inner: self.inner.clone() }
+        let key = self.inner.borrow_mut().add_listener(cb.into());
+        StoreObserver {
+            key,
+            inner: self.inner.clone(),
+        }
     }
 
     fn set_data(&self, data: Self::Collection) {
@@ -338,14 +352,16 @@ impl<T: Clone + PartialEq + 'static> DataStore for Store<T> {
         self.filtered_data_len()
     }
 
-    fn filtered_data<'a>(&'a self) -> Box<dyn Iterator<Item=(usize, Box<dyn DataNode<T> + 'a>)> + 'a> {
+    fn filtered_data<'a>(
+        &'a self,
+    ) -> Box<dyn Iterator<Item = (usize, Box<dyn DataNode<T> + 'a>)> + 'a> {
         self.filtered_data()
     }
 
     fn filtered_data_range<'a>(
         &'a self,
         range: Range<usize>,
-    ) -> Box<dyn Iterator<Item=(usize, Box<dyn DataNode<T> + 'a>)> + 'a> {
+    ) -> Box<dyn Iterator<Item = (usize, Box<dyn DataNode<T> + 'a>)> + 'a> {
         self.filtered_data_range(range)
     }
 }
@@ -383,7 +399,6 @@ impl<T> DerefMut for StoreState<T> {
 }
 
 impl<T: 'static> StoreState<T> {
-
     fn new(extract_key: ExtractKeyFn<T>) -> Self {
         Self {
             data: Vec::new(),
@@ -440,7 +455,10 @@ impl<T: 'static> StoreState<T> {
     }
 
     fn update_filtered_data(&mut self) {
-        self.filtered_data = self.data.iter().enumerate()
+        self.filtered_data = self
+            .data
+            .iter()
+            .enumerate()
             .filter(|(_, record)| match &self.filter {
                 Some(filter) => filter.apply(record), // fixme: remove fiter record_num param
                 None => true,
@@ -449,9 +467,8 @@ impl<T: 'static> StoreState<T> {
             .collect();
 
         if let Some(sorter) = &self.sorter {
-            self.filtered_data.sort_by(|a, b| {
-                sorter.cmp(&self.data[*a], &self.data[*b])
-            });
+            self.filtered_data
+                .sort_by(|a, b| sorter.cmp(&self.data[*a], &self.data[*b]));
         }
     }
 
@@ -470,7 +487,8 @@ impl<T: 'static> StoreState<T> {
     }
 
     fn filtered_record_pos(&self, key: &Key) -> Option<usize> {
-        self.filtered_data.iter()
+        self.filtered_data
+            .iter()
             .position(|n| key == &self.extract_key(&self.data[*n]))
     }
 
@@ -480,7 +498,9 @@ impl<T: 'static> StoreState<T> {
 
     /// Find a record position by its key.
     pub fn record_pos(&self, key: &Key) -> Option<usize> {
-        self.data.iter().position(|record| key == &self.extract_key(record))
+        self.data
+            .iter()
+            .position(|record| key == &self.extract_key(record))
     }
 
     /// Find a record by its key.
@@ -501,7 +521,10 @@ pub struct StoreIterator<'a, T> {
     range: Option<Range<usize>>,
 }
 
-impl <'a, T: 'static> Iterator for StoreIterator<'a, T> where Self: 'a {
+impl<'a, T: 'static> Iterator for StoreIterator<'a, T>
+where
+    Self: 'a,
+{
     type Item = (usize, Box<dyn DataNode<T> + 'a>);
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -519,7 +542,10 @@ impl <'a, T: 'static> Iterator for StoreIterator<'a, T> where Self: 'a {
         self.pos += 1;
 
         let node_id = self.state.filtered_data[pos];
-        let node = Box::new(StoreNodeRef { state: Ref::clone(&self.state), node_id });
+        let node = Box::new(StoreNodeRef {
+            state: Ref::clone(&self.state),
+            node_id,
+        });
 
         Some((pos, node))
     }
