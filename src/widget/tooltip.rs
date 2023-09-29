@@ -122,9 +122,11 @@ impl Component for PwtTooltip {
         let show_tooltip = self.show && ctx.props().tip.is_some();
 
         let content =
-            Container::form_widget_props(props.std_props.clone(), Some(props.listeners.clone()))
+            Container::new()
                 .class("pwt-flex-fill-first-child")
                 .class("pwt-d-flex")
+                .with_std_props(&props.std_props)
+                .listeners(&props.listeners)
                 .with_child(props.content.clone())
                 .onmouseenter(ctx.link().callback(|_| Msg::Show))
                 .onmouseleave(ctx.link().callback(|_| Msg::Hide))
