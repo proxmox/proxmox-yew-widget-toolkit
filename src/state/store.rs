@@ -245,6 +245,7 @@ impl<'a, T> DerefMut for StoreWriteGuard<'a, T> {
 impl<'a, T: 'static> Drop for StoreWriteGuard<'a, T> {
     fn drop(&mut self) {
         if self.update {
+            self.version += 1;
             self.state.notify_listeners();
         }
     }
@@ -374,9 +375,12 @@ impl<T: Clone + PartialEq + 'static> DataStore for Store<T> {
 pub struct StoreState<T> {
     extract_key: ExtractKeyFn<T>,
 
+    version: usize,
+
     data: Vec<T>,
 
     filtered_data: Vec<usize>,
+    last_view_version: usize,
 
     sorter: Option<SorterFn<T>>,
     filter: Option<FilterFn<T>>,
@@ -401,9 +405,11 @@ impl<T> DerefMut for StoreState<T> {
 impl<T: 'static> StoreState<T> {
     fn new(extract_key: ExtractKeyFn<T>) -> Self {
         Self {
+            version: 0,
             data: Vec::new(),
             extract_key,
             filtered_data: Vec::new(),
+            last_view_version: 0,
             sorter: None,
             filter: None,
             listeners: Slab::new(),
@@ -455,6 +461,10 @@ impl<T: 'static> StoreState<T> {
     }
 
     fn update_filtered_data(&mut self) {
+        if self.version == self.last_view_version {
+            return;
+        }
+
         self.filtered_data = self
             .data
             .iter()
@@ -470,6 +480,7 @@ impl<T: 'static> StoreState<T> {
             self.filtered_data
                 .sort_by(|a, b| sorter.cmp(&self.data[*a], &self.data[*b]));
         }
+        self.last_view_version = self.version;
     }
 
     fn lookup_filtered_record_key(&self, cursor: usize) -> Option<Key> {
