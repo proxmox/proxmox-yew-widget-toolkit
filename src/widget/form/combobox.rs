@@ -70,6 +70,11 @@ pub struct Combobox {
     /// Also consider adding a custom filter function to filter on visible.
     #[builder_cb(IntoOptionalRenderFn, into_optional_render_fn, AttrValue)]
     pub render_value: Option<RenderFn<AttrValue>>,
+
+    /// Icons to show on the left (false) or right(true) side of the input
+    #[prop_or_default]
+    #[builder]
+    pub icons: Vec<(AttrValue, bool)>,
 }
 
 impl Combobox {
@@ -125,6 +130,17 @@ impl Combobox {
             schema.parse_simple_value(value)?;
             Ok(())
         });
+    }
+
+    /// Builder style method to add an icon
+    pub fn with_icon(mut self, icon: impl IntoPropValue<AttrValue>, right: bool) -> Self {
+        self.add_icon(icon, right);
+        self
+    }
+
+    /// Method to add an icon
+    pub fn add_icon(&mut self, icon: impl IntoPropValue<AttrValue>, right: bool) {
+        self.icons.push((icon.into_prop_value(), right));
     }
 }
 
@@ -229,6 +245,7 @@ impl Component for PwtCombobox {
             .default(&props.default)
             .validate(props.validate.clone())
             .render_value(props.render_value.clone())
+            .icons(props.icons.clone())
             .on_change({
                 let on_change = props.on_change.clone();
                 move |key: Key| {

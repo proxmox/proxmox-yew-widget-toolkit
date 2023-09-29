@@ -84,12 +84,28 @@ pub struct Dropdown {
     /// Note: dropdowns using this feature are not editable (editable property is ignored)!
     #[builder_cb(IntoOptionalRenderFn, into_optional_render_fn, AttrValue)]
     pub render_value: Option<RenderFn<AttrValue>>,
+
+    /// Icons to show on the left (false) or right(true) side of the input
+    #[prop_or_default]
+    #[builder]
+    pub icons: Vec<(AttrValue, bool)>,
 }
 
 impl Dropdown {
     // Create a new instance
     pub fn new(picker: impl Into<RenderDropdownPickerFn>) -> Self {
         yew::props! { Self { picker: picker.into() } }
+    }
+
+    /// Builder style method to add an icon
+    pub fn with_icon(mut self, icon: impl IntoPropValue<AttrValue>, right: bool) -> Self {
+        self.add_icon(icon, right);
+        self
+    }
+
+    /// Method to add an icon
+    pub fn add_icon(&mut self, icon: impl IntoPropValue<AttrValue>, right: bool) {
+        self.icons.push((icon.into_prop_value(), right));
     }
 }
 
@@ -357,7 +373,7 @@ impl Component for PwtDropdown {
             .class("pwt-w-100")
             .onclick(onclick);
 
-        for (class, right) in &props.input_props.icons {
+        for (class, right) in &props.icons {
             if !right {
                 let class = class.to_string();
                 let outer_class = "pwt-flex-fill-first-child pwt-d-flex pwt-align-self-center";
@@ -367,7 +383,7 @@ impl Component for PwtDropdown {
 
         select.add_child(input);
 
-        for (class, right) in &props.input_props.icons {
+        for (class, right) in &props.icons {
             if *right {
                 let class = class.to_string();
                 let outer_class = "pwt-flex-fill-first-child pwt-d-flex pwt-align-self-center";

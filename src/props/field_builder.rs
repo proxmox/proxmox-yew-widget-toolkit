@@ -132,17 +132,4 @@ pub trait FieldBuilder: Into<VNode> {
     fn set_placeholder(&mut self, placeholder: impl IntoPropValue<Option<AttrValue>>) {
         self.as_input_props_mut().placeholder = placeholder.into_prop_value();
     }
-
-    /// Builder style method to add an icon
-    fn with_icon(mut self, icon: impl IntoPropValue<AttrValue>, right: bool) -> Self {
-        self.add_icon(icon, right);
-        self
-    }
-
-    /// Method to add an icon
-    fn add_icon(&mut self, icon: impl IntoPropValue<AttrValue>, right: bool) {
-        self.as_input_props_mut()
-            .icons
-            .push((icon.into_prop_value(), right));
-    }
 }
