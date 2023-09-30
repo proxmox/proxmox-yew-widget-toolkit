@@ -361,7 +361,6 @@ impl ManagedField for StandardField {
             .class("pwt-input")
             .class(format!("pwt-input-type-{}", props.input_type))
             .class(disabled.then_some("disabled"))
-            .class("pwt-w-100")
             .class(if valid.is_ok() {
                 "is-valid"
             } else {
