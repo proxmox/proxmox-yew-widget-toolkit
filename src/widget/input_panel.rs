@@ -4,7 +4,7 @@ use yew::html::IntoPropValue;
 use yew::prelude::*;
 use yew::virtual_dom::{Key, Listeners, VList, VTag};
 
-use pwt_macros::widget;
+use pwt_macros::{builder, widget};
 
 use crate::prelude::*;
 
@@ -19,6 +19,7 @@ enum Position {
 /// This container show input fields with labels at different regions
 /// (left, right, advanced).
 #[widget(pwt=crate, @element, @container)]
+#[builder]
 #[derive(Properties, PartialEq, Clone)]
 pub struct InputPanel {
     /// Spacing between fields
@@ -35,6 +36,16 @@ pub struct InputPanel {
     left_count: usize,
     #[prop_or_default]
     right_count: usize,
+
+    #[prop_or_default]
+    #[builder(IntoPropValue, into_prop_value)]
+    /// A custom label width in the grid column template.
+    pub label_width: Option<AttrValue>,
+
+    #[prop_or_default]
+    #[builder(IntoPropValue, into_prop_value)]
+    /// A custom field width in the grid column template
+    pub field_width: Option<AttrValue>,
 }
 
 impl InputPanel {
@@ -307,6 +318,34 @@ impl Into<VTag> for InputPanel {
         if self.gap > 0 {
             self.add_class(format!("pwt-gap-{}", self.gap));
         };
+
+        if self.label_width.is_some() || self.field_width.is_some() {
+            let mut column_template = format!(
+                "{} {}",
+                self.label_width.unwrap_or("minmax(130px, 0.65fr)".into()),
+                self.field_width.unwrap_or("minmax(200px, 1fr)".into())
+            );
+
+            if self.two_column {
+                column_template = format!("{} {}", column_template, column_template);
+            }
+
+            let style = self
+                .std_props
+                .attributes
+                .get_mut_index_map()
+                .remove(&AttrValue::Static("style"))
+                .map(|(style, _)| style)
+                .unwrap_or("".into());
+
+            self.std_props.attributes.get_mut_index_map().insert(
+                "style".into(),
+                (
+                    format!("grid-template-columns: {};{}", column_template, style).into(),
+                    yew::virtual_dom::ApplyAttributeAs::Attribute,
+                ),
+            );
+        }
 
         let attributes = self.std_props.cumulate_attributes(None::<&str>);
 
