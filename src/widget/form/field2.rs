@@ -344,14 +344,17 @@ impl ManagedField for StandardField {
                         Msg::HidePassword
                     }
                 });
-                // TODO: Localize the tooltip_text with gettext.
-                let (icon_class, tooltip_text) = if is_hidden {
-                    ("fa fa-eye", "Show Text")
+                let class = classes!(
+                    "fa",
+                    if is_hidden { "fa-eye" } else { "fa-eye-slash" },
+                    "pwt-pointer"
+                );
+                let tooltip_text = if is_hidden {
+                    tr!("Show Password")
                 } else {
-                    ("fa fa-eye-slash", "Hide Text")
+                    tr!("Hide Password")
                 };
-                let peek_icon = html! { <i class={icon_class} onclick={onclick}/> };
-                Some(Tooltip::new(peek_icon).tip(tooltip_text))
+                Some(Tooltip::new(html! { <i {class} {onclick}/> }).tip(tooltip_text))
             } else {
                 None
             };
