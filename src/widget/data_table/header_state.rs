@@ -36,9 +36,13 @@ impl<T: 'static> HeaderState<T> {
         }
 
         let mut cell_state = Vec::new();
+        let mut sort_order = Vec::new();
         for cell in cell_map.iter() {
             match cell {
                 IndexedHeader::Single(cell) => {
+                    if cell.column.sort_order.is_some() {
+                        sort_order.push(cell_state.len());
+                    }
                     cell_state.push(CellState {
                         width: None,
                         hidden: cell.column.hidden,
@@ -66,7 +70,7 @@ impl<T: 'static> HeaderState<T> {
             columns,
             cell_map,
             cell_state,
-            sort_order: Vec::new(),
+            sort_order,
         }
     }
 
