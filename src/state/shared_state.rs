@@ -126,6 +126,7 @@ impl<T> SharedState<T> {
             shared_state: cloned_self,
             //initial_version: state.version,
             borrowed_state,
+            notify: true,
         }
     }
 
@@ -145,6 +146,7 @@ impl<T> SharedState<T> {
 pub struct SharedStateWriteGuard<'a, T> {
     shared_state: SharedState<T>,
     borrowed_state: ManuallyDrop<RefMut<'a, SharedStateInner<T>>>,
+    pub notify: bool, // send notifications
     //initial_version: usize,
 }
 
@@ -167,7 +169,7 @@ impl<'a, T> Drop for SharedStateWriteGuard<'a, T> {
         //let changed = self.state.version != self.initial_version;
         let changed = true; // TODO: impl change detection?
         unsafe { ManuallyDrop::drop(&mut self.borrowed_state); } // drop ref before calling notify listeners
-        if changed { self.shared_state.notify_listeners(); }
+        if self.notify && changed { self.shared_state.notify_listeners(); }
     }
 }
 

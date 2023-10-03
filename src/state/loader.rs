@@ -53,7 +53,9 @@ impl<T: 'static> Loader<T> {
 
     /// Method to set the load callback.
     pub fn set_loader(&mut self, callback: impl IntoLoadCallback<T>) {
-        self.write().loader = callback.into_load_callback();
+        let mut me = self.write();
+        me.notify = false;
+        me.loader = callback.into_load_callback();
     }
 
     pub fn add_listener(
