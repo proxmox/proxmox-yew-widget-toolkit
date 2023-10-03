@@ -1,53 +1,48 @@
 use std::rc::Rc;
-use std::cell::RefCell;
 
 use anyhow::Error;
+use derivative::Derivative;
 
+use yew::html::IntoEventCallback;
 use yew::prelude::*;
-use yew::html::IntoPropValue;
 
 use crate::prelude::*;
-use crate::props::{LoadCallback, IntoLoadCallback};
+use crate::props::{IntoLoadCallback, LoadCallback};
+use crate::state::{SharedState, SharedStateObserver, SharedStateReadGuard, SharedStateWriteGuard};
 use crate::widget::{error_message, Button, Fa};
 
 /// Shared HTTP load state
 ///
 /// This struct stores the state (loading) and the result of the load.
 pub struct LoaderState<T> {
-    pub loading: u64,
+    loading: u64,
+    pub loader: Option<LoadCallback<T>>,
     pub data: Option<Result<Rc<T>, Error>>,
 }
 
 /// Share HTTP loaded data.
-pub struct Loader<T> {
-    state: Rc<RefCell<LoaderState<T>>>,
-    loader: Option<LoadCallback<T>>,
-    onchange: Callback<()>,
-}
-
-impl<T> Clone for Loader<T> {
-    fn clone(&self) -> Self {
-        Self {
-            state: Rc::clone(&self.state),
-            loader: self.loader.clone(),
-            onchange: self.onchange.clone(),
-        }
-    }
-}
+#[derive(Derivative)]
+#[derivative(Clone(bound=""), PartialEq(bound=""))]
+pub struct Loader<T>(SharedState<LoaderState<T>>);
 
 impl<T: 'static> Loader<T> {
-
-    pub fn new(onchange: impl Into<Callback<()>>) -> Self {
-        Self {
-            state: Rc::new(RefCell::new(
-                LoaderState {
-                    loading: 0,
-                    data: None,
-                }
-            )),
+    /// Create a new instance.
+    pub fn new() -> Self {
+        let state = LoaderState {
+            loading: 0,
+            data: None,
             loader: None,
-            onchange: onchange.into(),
-        }
+        };
+        Self(SharedState::new(state))
+    }
+
+    pub fn on_change(mut self, cb: impl IntoEventCallback<Loader<T>>) -> Self {
+        let me = self.clone();
+        match cb.into_event_callback() {
+            Some(cb) => self.0.set_on_change(move |_| cb.emit(me.clone())),
+            _ => self.0.set_on_change(None::<Callback<SharedState<LoaderState<T>>>>),
+        };
+        self
     }
 
     /// Builder style method to set the load callback.
@@ -58,89 +53,67 @@ impl<T: 'static> Loader<T> {
 
     /// Method to set the load callback.
     pub fn set_loader(&mut self, callback: impl IntoLoadCallback<T>) {
-        self.loader = callback.into_load_callback();
+        self.write().loader = callback.into_load_callback();
     }
 
-    pub fn data(mut self, data: impl IntoPropValue<Option<Rc<T>>>) -> Self {
-        self.set_data(data);
-        self
+    pub fn add_listener(
+        &self,
+        cb: impl Into<Callback<Loader<T>>>,
+    ) -> SharedStateObserver<LoaderState<T>> {
+        let me = self.clone();
+        let cb = cb.into();
+        self.0.add_listener(move |_| cb.emit(me.clone()))
     }
 
-    pub fn set_data(&mut self, data: impl IntoPropValue<Option<Rc<T>>>) {
-        let data = match data.into_prop_value() {
-            Some(data) => data,
-            None => return, // do nothing
-        };
-
-        let mut state = self.state.borrow_mut();
-        if let Some(Ok(old_data)) = &state.data {
-            if Rc::ptr_eq(&old_data, &data) {
-                return; // same data, do nothing
-            }
-        }
-        state.data = Some(Ok(data));
-        self.onchange.emit(());
+    pub fn read(&self) -> SharedStateReadGuard<LoaderState<T>> {
+        self.0.read()
+    }
+    pub fn write(&self) -> SharedStateWriteGuard<LoaderState<T>> {
+        self.0.write()
     }
 
     pub fn loading(&self) -> bool {
-        self.state.borrow().loading > 0
+        self.read().loading > 0
     }
 
     pub fn has_valid_data(&self) -> bool {
-        match self.state.borrow().data {
+        match self.read().data {
             Some(Ok(_)) => true,
             _ => false,
         }
     }
 
-    pub fn with_state<R>(&self, cb: impl Fn(&LoaderState<T>) -> R) -> R {
-        cb(&self.state.borrow())
-    }
-
-    pub fn render<R: Into<Html>>(
-        &self,
-        render: impl Fn(Rc<T>) -> R,
-    ) -> Html {
-        let state = &self.state.borrow();
-        match &state.data {
-            None => html!{
+    pub fn render<R: Into<Html>>(&self, render: impl Fn(Rc<T>) -> R) -> Html {
+        match &self.read().data {
+            None => html! {
                 <div class="pwt-text-center pwt-p-4">
                 {Fa::new("spinner").class("pwt-me-1").pulse()}
                 {"Loading..."}
                 </div>
             },
-            Some(Ok(ref data)) => {
-                render(Rc::clone(data)).into()
-            }
-            Some(Err(err)) => {
-                error_message(&format!("Error: {}", err), "pwt-p-2")
-            }
+            Some(Ok(ref data)) => render(Rc::clone(data)).into(),
+            Some(Err(err)) => error_message(&format!("Error: {}", err), "pwt-p-2"),
         }
     }
 
     pub fn load(&self) {
-        if let Some(loader) = self.loader.clone() {
+        let loader = match &self.read().loader {
+            Some(loader) => loader.clone(),
+            None => return, // do nothing
+        };
 
-            let state = self.state.clone();
-            let onchange = self.onchange.clone();
-
-            state.borrow_mut().loading += 1;
-            onchange.emit(());
-
-            wasm_bindgen_futures::spawn_local(async move {
-                let res = loader.apply().await;
-                let mut state = state.borrow_mut();
-                state.loading -= 1;
-                state.data = Some(res.map(|data| Rc::new(data)));
-                onchange.emit(());
-            });
-        }
+        self.write().loading += 1;
+        let me = self.clone();
+        wasm_bindgen_futures::spawn_local(async move {
+            let res = loader.apply().await;
+            let mut me = me.write();
+            me.loading -= 1;
+            me.data = Some(res.map(|data| Rc::new(data)));
+        });
     }
 
     pub fn reload_button(&self) -> Button {
         let loader = self.clone();
-        Button::refresh(self.loading())
-            .onclick(move |_| loader.load())
+        Button::refresh(self.loading()).onclick(move |_| loader.load())
     }
-
 }

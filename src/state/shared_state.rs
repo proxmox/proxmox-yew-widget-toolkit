@@ -83,11 +83,15 @@ impl<T> SharedState<T> {
     /// [SharedState] object, so each clone can hold a single on_change
     /// callback.
     pub fn on_change(mut self, cb: impl IntoEventCallback<SharedState<T>>) -> Self {
+        self.set_on_change(cb);
+        self
+    }
+
+    pub fn set_on_change(&mut self, cb: impl IntoEventCallback<SharedState<T>>) {
         self.on_change = match cb.into_event_callback() {
             Some(cb) => Some(Rc::new(self.add_listener(cb))),
             None => None,
         };
-        self
     }
 
     /// Method to add an shared state observer.
