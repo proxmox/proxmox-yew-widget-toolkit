@@ -1,13 +1,13 @@
 use proc_macro::TokenStream;
-use syn::{Attribute, Error, Fields, Result, Path, Ident, Token};
-use syn::spanned::Spanned;
-use syn::parse::{Parse, ParseStream};
-use syn::{parse_macro_input, DeriveInput, Data};
-use syn::ext::IdentExt;
 use quote::{format_ident, quote};
+use syn::ext::IdentExt;
+use syn::parse::{Parse, ParseStream};
+use syn::spanned::Spanned;
+use syn::{parse_macro_input, Data, DeriveInput};
+use syn::{Attribute, Error, Fields, Ident, Path, Result, Token};
 
 #[derive(Debug)]
-pub(crate)struct WidgetSetup {
+pub(crate) struct WidgetSetup {
     pwt_crate_name: Option<Ident>,
     component_name: Option<Path>,
     is_input: bool,
@@ -26,7 +26,9 @@ impl Parse for WidgetSetup {
         let mut is_svg = false;
 
         loop {
-            if input.is_empty() { break; }
+            if input.is_empty() {
+                break;
+            }
             let lookahead = input.lookahead1();
             if lookahead.peek(Token![@]) {
                 let _: Token![@] = input.parse()?;
@@ -43,10 +45,11 @@ impl Parse for WidgetSetup {
                     return Err(Error::new(mixin.span(), "no such widget mixin"));
                 }
 
-                if input.is_empty() { break; }
+                if input.is_empty() {
+                    break;
+                }
             } else if lookahead.peek(Token![!]) {
                 pwt_crate_name = Some(input.parse()?);
-
             } else {
                 let opt: Ident = input.parse()?;
                 let _: Token![=] = input.parse()?;
@@ -70,9 +73,13 @@ impl Parse for WidgetSetup {
                     }
                 }
             }
-            if input.is_empty() { break; }
+            if input.is_empty() {
+                break;
+            }
             let _: Token![,] = input.parse()?;
-            if input.is_empty() { break; }
+            if input.is_empty() {
+                break;
+            }
         }
 
         Ok(WidgetSetup {
@@ -87,7 +94,6 @@ impl Parse for WidgetSetup {
 }
 
 pub(crate) fn handle_widget_struct(setup: &WidgetSetup, input: TokenStream) -> TokenStream {
-
     let widget = parse_macro_input!(input as DeriveInput);
 
     derive_widget(setup, widget)
@@ -96,16 +102,19 @@ pub(crate) fn handle_widget_struct(setup: &WidgetSetup, input: TokenStream) -> T
 }
 
 fn has_property_derive(attrs: &Vec<Attribute>) -> bool {
-
     // SIGH!!
     for attr in attrs {
-        if attr.style != syn::AttrStyle::Outer { continue; }
+        if attr.style != syn::AttrStyle::Outer {
+            continue;
+        }
         if let Some(ident) = attr.path.get_ident() {
-            if ident != "derive" { continue; }
+            if ident != "derive" {
+                continue;
+            }
             if let Ok(syn::Meta::List(list)) = attr.parse_meta() {
                 for item in list.nested {
                     if let syn::NestedMeta::Meta(meta) = item {
-                        if let syn::Meta::Path(ref path) = meta  {
+                        if let syn::Meta::Path(ref path) = meta {
                             if let Some(ident) = path.get_ident() {
                                 if ident == "Properties" {
                                     return true;
@@ -122,8 +131,13 @@ fn has_property_derive(attrs: &Vec<Attribute>) -> bool {
 }
 
 fn derive_widget(setup: &WidgetSetup, widget: DeriveInput) -> Result<proc_macro2::TokenStream> {
-
-    let DeriveInput { attrs, vis, ident, generics, data } = widget;
+    let DeriveInput {
+        attrs,
+        vis,
+        ident,
+        generics,
+        data,
+    } = widget;
 
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
 
@@ -132,14 +146,15 @@ fn derive_widget(setup: &WidgetSetup, widget: DeriveInput) -> Result<proc_macro2
     let pwt: Ident = setup.pwt_crate_name.clone().unwrap_or(format_ident!("pwt"));
 
     let fields = match data {
-        Data::Struct(data) => {
-            match data.fields {
-                Fields::Named(fields) => fields,
-                _ => {
-                    return Err(Error::new(data.struct_token.span, "expected `struct` with named fields"));
-                }
+        Data::Struct(data) => match data.fields {
+            Fields::Named(fields) => fields,
+            _ => {
+                return Err(Error::new(
+                    data.struct_token.span,
+                    "expected `struct` with named fields",
+                ));
             }
-        }
+        },
         Data::Enum(data) => {
             return Err(Error::new(data.enum_token.span, "expected `struct`"));
         }
@@ -153,13 +168,13 @@ fn derive_widget(setup: &WidgetSetup, widget: DeriveInput) -> Result<proc_macro2
     let mut opt_fields: Vec<_> = Vec::new();
 
     let prop_or_default = if has_property_derive {
-        quote!{ #[prop_or_default] }
+        quote! { #[prop_or_default] }
     } else {
-        quote!{}
+        quote! {}
     };
 
     if setup.is_input {
-        opt_fields.push(quote!{
+        opt_fields.push(quote! {
             #[doc(hidden)]
             #prop_or_default
             pub input_props: #pwt::props::FieldStdProps,
@@ -167,7 +182,7 @@ fn derive_widget(setup: &WidgetSetup, widget: DeriveInput) -> Result<proc_macro2
     }
 
     if setup.is_container {
-        opt_fields.push(quote!{
+        opt_fields.push(quote! {
             #[doc(hidden)]
             #prop_or_default
             pub children: Vec<::yew::virtual_dom::VNode>,
@@ -175,14 +190,14 @@ fn derive_widget(setup: &WidgetSetup, widget: DeriveInput) -> Result<proc_macro2
     }
 
     if setup.is_element {
-        opt_fields.push(quote!{
+        opt_fields.push(quote! {
             #[doc(hidden)]
             #prop_or_default
             pub listeners: #pwt::props::ListenersWrapper,
         });
     }
 
-    let mut output = quote!{
+    let mut output = quote! {
         #(#attrs)*
         #vis struct #ident #generics {
 
@@ -196,8 +211,7 @@ fn derive_widget(setup: &WidgetSetup, widget: DeriveInput) -> Result<proc_macro2
         }
     };
 
-
-    output.extend(quote!{
+    output.extend(quote! {
         impl #impl_generics #pwt::props::WidgetBuilder for #ident #ty_generics #where_clause {
             fn as_std_props_mut(&mut self) -> &mut #pwt::props::WidgetStdProps {
                 &mut self.std_props
@@ -219,7 +233,7 @@ fn derive_widget(setup: &WidgetSetup, widget: DeriveInput) -> Result<proc_macro2
     }
 
     if setup.is_element {
-        output.extend(quote!{
+        output.extend(quote! {
             impl #impl_generics #pwt::props::EventSubscriber for #ident #ty_generics #where_clause {
                 fn as_listeners_mut(&mut self) -> &mut #pwt::props::ListenersWrapper {
                     &mut self.listeners
@@ -239,7 +253,7 @@ fn derive_widget(setup: &WidgetSetup, widget: DeriveInput) -> Result<proc_macro2
     }
 
     if setup.is_input {
-        output.extend(quote!{
+        output.extend(quote! {
             impl #impl_generics #pwt::props::FieldBuilder for #ident #ty_generics #where_clause {
                 fn as_input_props_mut(&mut self) -> &mut #pwt::props::FieldStdProps {
                     &mut self.input_props
