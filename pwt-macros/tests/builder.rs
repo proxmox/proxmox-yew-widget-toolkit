@@ -107,3 +107,9 @@ fn builder_test() {
     element.set_cb_with_option(|_: Option<i32>| ());
     assert_eq!(element.cb_with_option, Some(Callback::from(|_| ())));
 }
+
+#[test]
+fn compile_fail_tests() {
+    let t = trybuild::TestCases::new();
+    t.compile_fail("tests/builder/*.rs")
+}

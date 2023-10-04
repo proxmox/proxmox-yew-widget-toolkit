@@ -1,0 +1,19 @@
+error[E0308]: mismatched types
+ --> tests/builder/invalid_type.rs:5:27
+  |
+5 |     #[builder(Into, into, 0.0)]
+  |       -------             ^^^ expected `i32`, found floating-point number
+  |       |
+  |       arguments to this method are incorrect
+  |
+help: the return type of this call is `{float}` due to the type of the argument passed
+ --> tests/builder/invalid_type.rs:5:7
+  |
+5 |       #[builder(Into, into, 0.0)]
+  |         ^                   --- this argument influences the return type of `unwrap_or`
+  |  _______|
+  | |
+6 | |     wrong_type: i32,
+  | |______________^
+note: method defined here
+ --> /usr/src/rustc-1.70.0/library/core/src/option.rs:971:18

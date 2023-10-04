@@ -1,0 +1,5 @@
+error: expected default literal
+  --> tests/builder/wrong_macro.rs:12:55
+   |
+12 |     #[builder(IntoEventCallback, into_event_callback, i32)]
+   |                                                       ^^^

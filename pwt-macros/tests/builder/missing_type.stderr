@@ -1,0 +1,5 @@
+error: missing inner type
+  --> tests/builder/missing_type.rs:12:17
+   |
+12 |     #[builder_cb(IntoEventCallback, into_event_callback)]
+   |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

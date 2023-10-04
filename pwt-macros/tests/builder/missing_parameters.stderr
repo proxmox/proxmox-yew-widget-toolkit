@@ -1,0 +1,5 @@
+error: missing 'builder_cb' parameters, maybe you want to use 'builder'?
+  --> tests/builder/missing_parameters.rs:12:7
+   |
+12 |     #[builder_cb]
+   |       ^^^^^^^^^^

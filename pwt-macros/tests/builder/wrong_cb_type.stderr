@@ -1,0 +1,13 @@
+error[E0308]: mismatched types
+  --> tests/builder/wrong_cb_type.rs:12:7
+   |
+12 |       #[builder_cb(IntoEventCallback, into_event_callback, f32)]
+   |  _______^
+13 | |     cb: Option<Callback<i32>>,
+   | |      ^
+   | |      |
+   | |______expected `Option<Callback<i32>>`, found `Option<Callback<f32>>`
+   |        expected due to the type of this binding
+   |
+   = note: expected enum `Option<Callback<i32>>`
+              found enum `Option<Callback<f32>>`
