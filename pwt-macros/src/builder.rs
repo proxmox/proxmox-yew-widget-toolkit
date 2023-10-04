@@ -1,9 +1,10 @@
 use proc_macro::TokenStream;
-use quote::{format_ident, quote};
+use quote::{format_ident, quote, quote_spanned, ToTokens};
 
+use syn::spanned::Spanned;
 use syn::{parse::Parse, parse_macro_input, Data, DeriveInput, Token};
 
-use syn::{Error, Fields, Result};
+use syn::{parenthesized, Error, Fields, Result};
 
 pub(crate) fn handle_builder_struct(input: TokenStream) -> TokenStream {
     let builder = parse_macro_input!(input as DeriveInput);
@@ -18,6 +19,27 @@ enum BuilderType {
     Callback,
 }
 
+fn parse_comma(input: syn::parse::ParseStream) -> Result<()> {
+    if !parse_optional_comma(input)? {
+        return Err(Error::new(input.span(), "expected ','"));
+    }
+    Ok(())
+}
+
+fn parse_optional_comma(input: syn::parse::ParseStream) -> Result<bool> {
+    if input.is_empty() {
+        return Ok(false);
+    }
+    let lookahead = input.lookahead1();
+    if lookahead.peek(Token![,]) {
+        let _: Token![,] = input.parse().unwrap();
+    } else {
+        let err = lookahead.error();
+        return Err(Error::new(err.span(), "expected ','"));
+    }
+    Ok(true)
+}
+
 // options for normal fields with the #[builder] attribute
 struct FieldOptions {
     into_trait: syn::Type,
@@ -27,20 +49,28 @@ struct FieldOptions {
 
 impl Parse for FieldOptions {
     fn parse(input: syn::parse::ParseStream) -> Result<Self> {
-        let into_trait: syn::Type = input
+        let _: syn::Ident = input.parse()?;
+
+        let content;
+        parenthesized!(content in input);
+
+        let into_trait: syn::Type = content
             .parse()
             .map_err(|err| Error::new(input.span(), format!("expected Into trait: {err}")))?;
-        let _: Token![,] = input
+
+        parse_comma(&content)?;
+
+        let into_fn: syn::Ident = content
             .parse()
             .map_err(|err| Error::new(input.span(), format!("expected into function: {err}")))?;
-        let into_fn: syn::Ident = input
-            .parse()
-            .map_err(|err| Error::new(input.span(), format!("expected into function: {err}")))?;
-        let default_value = if input.is_empty() {
+        let default_value = if !parse_optional_comma(&content)? {
             None
         } else {
-            let _: Token![,] = input.parse()?;
-            Some(input.parse()?)
+            Some(
+                content
+                    .parse()
+                    .map_err(|err| Error::new(err.span(), "expected default literal"))?,
+            )
         };
 
         Ok(Self {
@@ -60,23 +90,25 @@ struct CallbackOptions {
 
 impl Parse for CallbackOptions {
     fn parse(input: syn::parse::ParseStream) -> Result<Self> {
-        let into_trait: syn::Type = input
+        let _: syn::Ident = input.parse()?;
+
+        let content;
+        parenthesized!(content in input);
+
+        let into_trait: syn::Type = content
             .parse()
-            .map_err(|err| Error::new(input.span(), format!("expected Into trait: {err}")))?;
-        let _: Token![,] = input
+            .map_err(|err| Error::new(err.span(), format!("expected Into trait: {err}")))?;
+
+        parse_comma(&content).map_err(|err| Error::new(err.span(), "missing into_fn"))?;
+
+        let into_fn: syn::Ident = content
             .parse()
-            .map_err(|err| Error::new(input.span(), format!("expected into function: {err}")))?;
-        let into_fn: syn::Ident = input
-            .parse()
-            .map_err(|err| Error::new(input.span(), format!("expected into function: {err}")))?;
-        let _: Token![,] = input.parse().map_err(|err| {
-            Error::new(input.span(), format!("expected inner callback type: {err}"))
-        })?;
-        let inner_type: syn::Type = input.parse().map_err(|err| {
-            Error::new(
-                input.span(),
-                format!("expected inner callback type function: {err}"),
-            )
+            .map_err(|err| Error::new(err.span(), format!("expected into function: {err}")))?;
+
+        parse_comma(&content).map_err(|err| Error::new(err.span(), "missing inner type"))?;
+
+        let inner_type: syn::Type = content.parse().map_err(|err| {
+            Error::new(err.span(), format!("expected inner callback type: {err}"))
         })?;
 
         Ok(Self {
@@ -171,23 +203,25 @@ fn derive_builder(builder: DeriveInput) -> Result<proc_macro2::TokenStream> {
             }
         };
 
+        let attr_span = attr.path().span();
+
         let (param_type, convert) = if let Ok(list) = attr.meta.require_list() {
-            let tokens = list.tokens.clone();
+            let tokens = list.to_token_stream();
             match builder_type {
                 BuilderType::Field => {
-                    let options = syn::parse2::<FieldOptions>(tokens)?;
+                    let options = syn::parse2::<FieldOptions>(tokens)?; //.map_err(|err| Error::new(span, err))?;
 
                     let into_fn = options.into_fn;
                     let into_trait = options.into_trait;
                     if let Some(default) = options.default_value {
                         (
-                            quote! {impl #into_trait<Option<#field_type>>},
-                            quote! {#field_ident.#into_fn().unwrap_or(#default)},
+                            quote_spanned! { attr_span => impl #into_trait<Option<#field_type>>},
+                            quote_spanned! { attr_span => #field_ident.#into_fn().unwrap_or(#default)},
                         )
                     } else {
                         (
-                            quote! {impl #into_trait<#field_type>},
-                            quote! {#field_ident.#into_fn()},
+                            quote_spanned! {attr_span => impl #into_trait<#field_type>},
+                            quote_spanned! {attr_span => #field_ident.#into_fn()},
                         )
                     }
                 }
@@ -197,16 +231,27 @@ fn derive_builder(builder: DeriveInput) -> Result<proc_macro2::TokenStream> {
                     let into_trait = options.into_trait;
                     let inner_type = options.inner_type;
                     (
-                        quote! {impl #into_trait<#inner_type>},
-                        quote! {#field_ident.#into_fn()},
+                        quote_spanned! { attr_span => impl #into_trait<#inner_type>},
+                        quote_spanned! { attr_span => #field_ident.#into_fn()},
                     )
                 }
             }
         } else {
-            (quote! { #field_type }, quote! { #field_ident})
+            match builder_type {
+                BuilderType::Field => (
+                    quote_spanned! { attr_span => #field_type },
+                    quote! { #field_ident},
+                ),
+                BuilderType::Callback => {
+                    return Err(Error::new(
+                        attr_span,
+                        "missing 'builder_cb' parameters, maybe you want to use 'builder'?",
+                    ))
+                }
+            }
         };
 
-        quotes.extend(quote! {
+        quotes.extend(quote_spanned! { attr_span =>
             #[doc = #setter_doc]
             pub fn #setter(&mut self, #field_ident: #param_type) {
                 self.#field_ident = #convert;
