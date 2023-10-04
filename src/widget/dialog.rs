@@ -31,7 +31,12 @@ pub struct Dialog {
     /// The yew component key.
     pub key: Option<Key>,
 
+    /// Dialog Title (also used as 'arial-label')
     pub title: AttrValue,
+
+    /// Title as Html
+    #[builder(IntoPropValue, into_prop_value)]
+    pub html_title: Option<Html>,
 
     /// Dialog close callback.
     #[builder_cb(IntoEventCallback, into_event_callback, ())]
@@ -395,7 +400,7 @@ impl Component for PwtDialog {
         let mut panel = Panel::new()
             .class("pwt-overflow-auto")
             .class("pwt-flex-fill")
-            .title(props.title.clone())
+            .title(props.html_title.clone().unwrap_or(html!{props.title.clone()}))
             .header_class(props.draggable.then_some("pwt-draggable"))
             .border(false);
 
