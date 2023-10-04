@@ -1,11 +1,11 @@
 use std::borrow::Cow;
 use yew::prelude::*;
 use yew::virtual_dom::{Listeners, VNode, VList, VTag};
-use yew::html::IntoPropValue;
 
 use pwt_macros::widget;
 
 use crate::prelude::*;
+use crate::props::IntoOptionalInlineHtml;
 use crate::widget::Row;
 
 /// Container with header and body.
@@ -16,7 +16,7 @@ use crate::widget::Row;
 #[derive(Default, Debug, Clone)]
 pub struct Panel {
     /// Optional header text.
-    pub title: Option<AttrValue>,
+    pub title: Option<Html>,
     /// Tools, displayed right aligned in the header.
     pub tools: Vec<VNode>,
     /// Optional header CSS class.
@@ -31,14 +31,14 @@ impl Panel {
     }
 
     /// Builder style method to set the title text.
-    pub fn title(mut self, title: impl IntoPropValue<Option<AttrValue>>) -> Self {
+    pub fn title(mut self, title: impl IntoOptionalInlineHtml) -> Self {
         self.set_title(title);
         self
     }
 
     /// Method to set the title text.
-    pub fn set_title(&mut self, title: impl IntoPropValue<Option<AttrValue>>) {
-        self.title = title.into_prop_value();
+    pub fn set_title(&mut self, title: impl IntoOptionalInlineHtml) {
+        self.title = title.into_optional_inline_html();
     }
 
     /// Builder style method to add a tool.
@@ -94,7 +94,7 @@ impl Into<VTag> for Panel {
     }
 }
 
-pub(crate) fn create_panel_title(title: Option<AttrValue>, tools: Vec<VNode>) -> Row {
+pub(crate) fn create_panel_title(title: Option<Html>, tools: Vec<VNode>) -> Row {
 
     let mut header = Row::new()
         .attribute("role", "group")

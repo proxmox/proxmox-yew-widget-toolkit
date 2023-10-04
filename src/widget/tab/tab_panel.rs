@@ -5,6 +5,7 @@ use yew::prelude::*;
 use yew::virtual_dom::{Key, VComp, VList, VNode};
 
 use crate::prelude::*;
+use crate::props::IntoOptionalInlineHtml;
 use crate::state::Selection;
 use crate::widget::{
     Column, MiniScroll, MiniScrollMode, SelectionView, SelectionViewRenderInfo, TabBar, TabBarItem,
@@ -62,8 +63,7 @@ pub struct TabPanel {
     pub bar: TabBar,
 
     /// Panel title text.
-    #[builder(IntoPropValue, into_prop_value)]
-    pub title: Option<AttrValue>,
+    pub title: Option<Html>,
 
     /// Tools, displayed right aligned in the header.
     #[prop_or_default]
@@ -95,6 +95,17 @@ impl TabPanel {
             .page_cache(true)
             .class("pwt-flex-fill pwt-overflow-auto");
         yew::props!(TabPanel { view })
+    }
+
+    /// Builder style method to set the title text.
+    pub fn title(mut self, title: impl IntoOptionalInlineHtml) -> Self {
+        self.set_title(title);
+        self
+    }
+
+    /// Method to set the title text.
+    pub fn set_title(&mut self, title: impl IntoOptionalInlineHtml) {
+        self.title = title.into_optional_inline_html();
     }
 
     /// Builder style method to add a tool

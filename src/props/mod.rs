@@ -7,6 +7,49 @@ use yew::html::IntoPropValue;
 use yew::prelude::*;
 use yew::virtual_dom::Key;
 
+
+/// Trait to generate inline Html.
+///
+/// We use this for properties lite panel titles, where you usually just want text.
+/// This adds the ability to add simple inline markup.
+pub trait IntoOptionalInlineHtml {
+    fn into_optional_inline_html(self) -> Option<Html>;
+}
+
+impl IntoOptionalInlineHtml for Html {
+    fn into_optional_inline_html(self) -> Option<Html> {
+        Some(self)
+    }
+}
+
+impl IntoOptionalInlineHtml for Option<Html> {
+    fn into_optional_inline_html(self) -> Option<Html> {
+        self
+    }
+}
+
+macro_rules! impl_into_inline_html {
+    ($t:ty) => {
+        impl IntoOptionalInlineHtml for $t {
+            fn into_optional_inline_html(self) -> Option<Html> {
+                Some(html!{self})
+            }
+        }
+
+        impl IntoOptionalInlineHtml for Option<$t> {
+            fn into_optional_inline_html(self) -> Option<Html> {
+                self.map(|me| html!{me})
+            }
+        }
+    };
+}
+
+impl_into_inline_html!(String);
+impl_into_inline_html!(&str);
+impl_into_inline_html!(AttrValue);
+
+
+
 /// Trait which provides mutable access to the class property.
 pub trait AsClassesMut {
     /// Mutable access to the class property.
