@@ -43,6 +43,7 @@ pub fn widget(attr: TokenStream, item: TokenStream) -> TokenStream {
 /// #[builder]
 /// struct Foo {
 ///     #[builder]
+///     /// this is some field
 ///     some_field: String,
 /// }
 /// ```
@@ -55,6 +56,8 @@ pub fn widget(attr: TokenStream, item: TokenStream) -> TokenStream {
 /// # }
 /// impl Foo {
 ///     /// Set `some_field`
+///     ///
+///     /// this is some field
 ///     pub fn set_some_field(&mut self, some_field: String) {
 ///         self.some_field = some_field;
 ///     }
@@ -77,6 +80,7 @@ pub fn widget(attr: TokenStream, item: TokenStream) -> TokenStream {
 /// #[builder]
 /// struct Foo {
 ///     #[builder(IntoPropValue, into_prop_value)]
+///     /// this is some field
 ///     some_field: f32,
 /// }
 /// ```
@@ -92,6 +96,8 @@ pub fn widget(attr: TokenStream, item: TokenStream) -> TokenStream {
 /// # }
 /// impl Foo {
 ///     /// Set `some_field`
+///     ///
+///     /// this is some field
 ///     pub fn set_some_field(&mut self, some_field: impl IntoPropValue<f32>) {
 ///         self.some_field = some_field.into_prop_value();
 ///     }
@@ -115,6 +121,7 @@ pub fn widget(attr: TokenStream, item: TokenStream) -> TokenStream {
 /// #[builder]
 /// struct Foo {
 ///     #[builder(IntoPropValue, into_prop_value, 0.0)]
+///     /// this is some field
 ///     some_field: f32,
 /// }
 /// ```
@@ -130,6 +137,8 @@ pub fn widget(attr: TokenStream, item: TokenStream) -> TokenStream {
 /// # }
 /// impl Foo {
 ///     /// Set `some_field`
+///     ///
+///     /// this is some field
 ///     pub fn set_some_field(&mut self, some_field: impl IntoPropValue<Option<f32>>) {
 ///         self.some_field = some_field.into_prop_value().unwrap_or(0.0);
 ///     }
@@ -155,6 +164,7 @@ pub fn widget(attr: TokenStream, item: TokenStream) -> TokenStream {
 /// #[builder]
 /// struct Foo {
 ///     #[builder_cb(IntoEventCallback, into_event_callback, Option<f32>)]
+///     /// this is some field
 ///     on_something: Option<Callback<Option<f32>>>,
 /// }
 /// ```
@@ -173,6 +183,8 @@ pub fn widget(attr: TokenStream, item: TokenStream) -> TokenStream {
 /// # }
 /// impl Foo {
 ///     /// Set `on_something`
+///     ///
+///     /// this is some field
 ///     pub fn set_on_something(&mut self, on_something: impl IntoEventCallback<f32>) {
 ///         self.on_something = on_something.into_event_callback();
 ///     }
