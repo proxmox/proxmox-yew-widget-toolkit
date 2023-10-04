@@ -101,33 +101,29 @@ pub(crate) fn handle_widget_struct(setup: &WidgetSetup, input: TokenStream) -> T
         .into()
 }
 
-fn has_property_derive(attrs: &Vec<Attribute>) -> bool {
+fn has_property_derive(attrs: &Vec<Attribute>) -> Result<bool> {
     // SIGH!!
     for attr in attrs {
         if attr.style != syn::AttrStyle::Outer {
             continue;
         }
-        if let Some(ident) = attr.path.get_ident() {
+        if let Some(ident) = attr.path().get_ident() {
             if ident != "derive" {
                 continue;
             }
-            if let Ok(syn::Meta::List(list)) = attr.parse_meta() {
-                for item in list.nested {
-                    if let syn::NestedMeta::Meta(meta) = item {
-                        if let syn::Meta::Path(ref path) = meta {
-                            if let Some(ident) = path.get_ident() {
-                                if ident == "Properties" {
-                                    return true;
-                                }
-                            }
-                        }
-                    }
+            let mut has_properties = false;
+            attr.parse_nested_meta(|nested| {
+                if nested.path.is_ident("Properties") {
+                    has_properties = true;
                 }
-            }
+                Ok(())
+            })?;
+
+            return Ok(has_properties);
         }
     }
 
-    false
+    Ok(false)
 }
 
 fn derive_widget(setup: &WidgetSetup, widget: DeriveInput) -> Result<proc_macro2::TokenStream> {
@@ -141,7 +137,7 @@ fn derive_widget(setup: &WidgetSetup, widget: DeriveInput) -> Result<proc_macro2
 
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
 
-    let has_property_derive = has_property_derive(&attrs);
+    let has_property_derive = has_property_derive(&attrs)?;
 
     let pwt: Ident = setup.pwt_crate_name.clone().unwrap_or(format_ident!("pwt"));
 

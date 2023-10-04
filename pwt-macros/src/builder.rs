@@ -122,12 +122,12 @@ fn derive_builder(builder: DeriveInput) -> Result<proc_macro2::TokenStream> {
     let mut builder = Vec::new();
     for field in fields.iter_mut() {
         for (i, attr) in field.attrs.iter_mut().enumerate() {
-            if attr.path.is_ident("builder") {
+            if attr.path().is_ident("builder") {
                 let attr = attr.clone();
                 builder.push((field.clone(), attr, BuilderType::Field));
                 field.attrs.remove(i);
                 break;
-            } else if attr.path.is_ident("builder_cb") {
+            } else if attr.path().is_ident("builder_cb") {
                 let attr = attr.clone();
                 builder.push((field.clone(), attr, BuilderType::Callback));
                 field.attrs.remove(i);
@@ -154,9 +154,11 @@ fn derive_builder(builder: DeriveInput) -> Result<proc_macro2::TokenStream> {
             _ => {
                 let mut doc = String::new();
                 for attr in field.attrs {
-                    if attr.path.is_ident("doc") {
-                        if let Ok(syn::Meta::NameValue(meta)) = attr.parse_meta() {
-                            if let syn::Lit::Str(text) = meta.lit {
+                    if attr.path().is_ident("doc") {
+                        if let Ok(syn::Expr::Lit(literal)) =
+                            attr.meta.require_name_value().map(|n| &n.value)
+                        {
+                            if let syn::Lit::Str(text) = &literal.lit {
                                 doc.push_str(&text.value());
                                 doc.push('\n');
                             }
@@ -169,45 +171,39 @@ fn derive_builder(builder: DeriveInput) -> Result<proc_macro2::TokenStream> {
             }
         };
 
-        let mut parameter_tokens = attr.tokens.clone().into_iter();
-        let (param_type, convert) = match parameter_tokens.next() {
-            Some(parameters) => {
-                let tokens = match parameters {
-                    proc_macro2::TokenTree::Group(group) => group.stream(),
-                    _ => panic!("invalid syntax"),
-                };
+        let (param_type, convert) = if let Ok(list) = attr.meta.require_list() {
+            let tokens = list.tokens.clone();
+            match builder_type {
+                BuilderType::Field => {
+                    let options = syn::parse2::<FieldOptions>(tokens)?;
 
-                match builder_type {
-                    BuilderType::Field => {
-                        let options = syn::parse2::<FieldOptions>(tokens)?;
-
-                        let into_fn = options.into_fn;
-                        let into_trait = options.into_trait;
-                        if let Some(default) = options.default_value {
-                            (
-                                quote! {impl #into_trait<Option<#field_type>>},
-                                quote! {#field_ident.#into_fn().unwrap_or(#default)},
-                            )
-                        } else {
-                            (
-                                quote! {impl #into_trait<#field_type>},
-                                quote! {#field_ident.#into_fn()},
-                            )
-                        }
-                    }
-                    BuilderType::Callback => {
-                        let options = syn::parse2::<CallbackOptions>(tokens)?;
-                        let into_fn = options.into_fn;
-                        let into_trait = options.into_trait;
-                        let inner_type = options.inner_type;
+                    let into_fn = options.into_fn;
+                    let into_trait = options.into_trait;
+                    if let Some(default) = options.default_value {
                         (
-                            quote! {impl #into_trait<#inner_type>},
+                            quote! {impl #into_trait<Option<#field_type>>},
+                            quote! {#field_ident.#into_fn().unwrap_or(#default)},
+                        )
+                    } else {
+                        (
+                            quote! {impl #into_trait<#field_type>},
                             quote! {#field_ident.#into_fn()},
                         )
                     }
                 }
+                BuilderType::Callback => {
+                    let options = syn::parse2::<CallbackOptions>(tokens)?;
+                    let into_fn = options.into_fn;
+                    let into_trait = options.into_trait;
+                    let inner_type = options.inner_type;
+                    (
+                        quote! {impl #into_trait<#inner_type>},
+                        quote! {#field_ident.#into_fn()},
+                    )
+                }
             }
-            None => (quote! { #field_type }, quote! { #field_ident}),
+        } else {
+            (quote! { #field_type }, quote! { #field_ident})
         };
 
         quotes.extend(quote! {
