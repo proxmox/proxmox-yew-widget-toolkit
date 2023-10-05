@@ -130,6 +130,7 @@ pub struct PwtDialog {
     last_active: Option<web_sys::HtmlElement>, // last focused element
     resizer_state: HashMap<Point, DragState>,
     center_function: Option<Closure<dyn FnMut()>>,
+    inner_ref: NodeRef,
 }
 
 impl PwtDialog {
@@ -189,6 +190,7 @@ impl Component for PwtDialog {
             resizer_state: HashMap::new(),
             last_active,
             center_function,
+            inner_ref: Default::default(),
         }
     }
 
@@ -281,7 +283,7 @@ impl Component for PwtDialog {
                     .link()
                     .callback(move |event: PointerEvent| Msg::ResizeUp(point, event.pointer_id()));
 
-                let offset = if let Some(element) = props.node_ref.clone().into_html_element() {
+                let offset = if let Some(element) = self.inner_ref.clone().into_html_element() {
                     let rect = element.get_bounding_client_rect();
                     let x = match point {
                         Point::TopStart | Point::Start | Point::BottomStart => {
@@ -324,40 +326,83 @@ impl Component for PwtDialog {
             }
             Msg::ResizeMove(point, event) => match self.resizer_state.get(&point) {
                 Some(DragState::Dragging(x, y, _, _, id)) if *id == event.pointer_id() => {
-                    if let Some(element) = props.node_ref.clone().into_html_element() {
+                    if let Some(element) = self.inner_ref.clone().into_html_element() {
                         let rect = element.get_bounding_client_rect();
+                        let old_width = rect.width();
+                        let old_height = rect.height();
+
+                        let viewport_height =
+                            window().unwrap().inner_height().unwrap().as_f64().unwrap();
+                        let viewport_width =
+                            window().unwrap().inner_width().unwrap().as_f64().unwrap();
+
+                        // restrict to viewport
+                        let client_x = (event.client_x() as f64).clamp(5.0, viewport_width - 5.0);
+                        let client_y = (event.client_y() as f64).clamp(5.0, viewport_height - 5.0);
+
                         let mut pos = (rect.x(), rect.y());
+
                         let new_width = match point {
                             Point::TopStart | Point::Start | Point::BottomStart => {
-                                pos.0 = event.client_x() as f64 - x;
-                                Some(rect.right() - event.client_x() as f64 + x)
+                                Some(rect.right() - client_x + x)
                             }
                             Point::TopEnd | Point::End | Point::BottomEnd => {
-                                Some(event.client_x() as f64 - pos.0 + x)
+                                Some(client_x - pos.0 + x)
                             }
                             _ => None,
                         };
+
                         let new_height = match point {
                             Point::TopStart | Point::Top | Point::TopEnd => {
-                                pos.1 = event.client_y() as f64 - y;
-                                Some(rect.bottom() - event.client_y() as f64 + y)
+                                Some(rect.bottom() - client_y + y)
                             }
                             Point::BottomStart | Point::Bottom | Point::BottomEnd => {
-                                Some(event.client_y() as f64 - pos.1 + y)
+                                Some(client_y - pos.1 + y)
                             }
                             _ => None,
                         };
-                        if let Some(width) = new_width {
-                            let _ = element.style().set_property("width", &format!("{width}px"));
+
+                        if let Some(val) = new_width {
+                            let _ = element.style().set_property("width", &format!("{val}px"));
                         }
-                        if let Some(height) = new_height {
-                            let _ = element
-                                .style()
-                                .set_property("height", &format!("{height}px"));
+
+                        if let Some(val) = new_height {
+                            let _ = element.style().set_property("height", &format!("{val}px"));
                         }
-                        if let Err(err) = align_to_xy(props.node_ref.clone(), pos, Point::TopStart)
-                        {
-                            log::error!("could not align dialog: {}", err.to_string())
+
+                        // we set the size, but the real size could have been limited by min/man
+                        // width/height etc. so get the real values, set them back to the style,
+                        // and reposition only if they have changed and we were resized
+                        // from top/left
+                        let rect = element.get_bounding_client_rect();
+                        let new_width = rect.width();
+                        let new_height = rect.height();
+
+                        let _ = element
+                            .style()
+                            .set_property("width", &format!("{new_width}px"));
+                        let _ = element
+                            .style()
+                            .set_property("height", &format!("{new_height}px"));
+
+                        pos.0 += match point {
+                            Point::TopStart | Point::Start | Point::BottomStart => {
+                                old_width - new_width
+                            }
+                            _ => 0.0,
+                        };
+
+                        pos.1 += match point {
+                            Point::TopStart | Point::Top | Point::TopEnd => old_height - new_height,
+                            _ => 0.0,
+                        };
+
+                        if pos.0 != rect.x() || pos.1 != rect.y() {
+                            if let Err(err) =
+                                align_to_xy(props.node_ref.clone(), pos, Point::TopStart)
+                            {
+                                log::error!("could not align dialog: {}", err.to_string())
+                            }
                         }
                     }
                 }
@@ -442,7 +487,7 @@ impl Component for PwtDialog {
 
         html! {
             <dialog class={"pwt-outer-dialog"} {onpointerdown} aria-label={props.title.clone()} ref={props.node_ref.clone()} {oncancel} >
-                <div class={classes} style={props.style.clone()} >
+                <div class={classes} style={props.style.clone()} ref={self.inner_ref.clone()}>
                 {panel}
                 if resizable {
                     <div onpointerdown={west_down} class="dialog-resize-handle west"></div>
