@@ -35,7 +35,7 @@ impl Into<VTag> for Card {
             self.std_props.key,
             attributes,
             listeners,
-            children,
+            children.into(),
         )
     }
 }

@@ -187,7 +187,7 @@ impl Component for PwtToolbar {
             props.std_props.key,
             attributes,
             listeners,
-            VList::with_children(vec![inner], None),
+            VList::with_children(vec![inner], None).into(),
         )
         .into()
     }

@@ -68,7 +68,7 @@ impl Into<VTag> for Column {
             self.std_props.key,
             attributes,
             listeners,
-            children,
+            children.into(),
         )
     }
 }

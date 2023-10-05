@@ -359,7 +359,7 @@ impl Into<VTag> for InputPanel {
             self.std_props.key,
             attributes,
             listeners,
-            children,
+            children.into(),
         )
     }
 }

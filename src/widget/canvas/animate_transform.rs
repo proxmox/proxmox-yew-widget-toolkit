@@ -170,7 +170,7 @@ impl Into<VTag> for AnimateTransform {
             None,
             self.attributes,
             Listeners::None,
-            VList::new(),
+            VList::new().into(),
         )
     }
 }

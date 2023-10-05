@@ -93,7 +93,7 @@ impl Component for PwtForm {
             None,
             attributes,
             listeners,
-            children,
+            children.into(),
         ));
 
         html!{

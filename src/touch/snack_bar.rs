@@ -125,7 +125,7 @@ impl Into<VTag> for SnackBar {
             self.std_props.key,
             attributes,
             listeners,
-            children,
+            children.into(),
         )
     }
 }

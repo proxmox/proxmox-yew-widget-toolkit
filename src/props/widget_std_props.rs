@@ -87,7 +87,7 @@ impl WidgetStdProps {
             self.key,
             attributes,
             listeners,
-            vlist,
+            vlist.into(),
         )
     }
 }

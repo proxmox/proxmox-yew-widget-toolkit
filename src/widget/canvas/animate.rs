@@ -105,7 +105,7 @@ impl Into<VTag> for Animate {
             None,
             self.attributes,
             Listeners::None,
-            VList::new(),
+            VList::new().into(),
         )
     }
 }

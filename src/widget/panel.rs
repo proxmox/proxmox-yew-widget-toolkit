@@ -89,7 +89,7 @@ impl Into<VTag> for Panel {
             self.std_props.key,
             attributes,
             listeners,
-            children,
+            children.into(),
         )
     }
 }

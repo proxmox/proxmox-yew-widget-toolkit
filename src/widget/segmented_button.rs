@@ -66,7 +66,7 @@ impl Component for PwtSegmentedButton {
             props.std_props.key.clone(),
             attributes,
             listeners,
-            VList::with_children(buttons, None),
+            VList::with_children(buttons, None).into(),
         )
         .into()
     }
