@@ -32,8 +32,8 @@ derivative = "2.2.0"
 # If you need to use the development version of Yew
 # yew = { git = "https://github.com/yewstack/yew/", features = ["csr"] }
 # yew-router = { git = "https://github.com/yewstack/yew/" }
-yew = { version = "0.20", features = ["csr"] }
-yew-router = { version = "0.17" }
+yew = { version = "0.21", features = ["csr"] }
+yew-router = { version = "0.18" }
 web-sys = { version = "0.3", features = [
   "DomRect",
   "DomStringMap",
@@ -63,11 +63,11 @@ log = "0.4.6"
 indexmap = { version = "1", features = ["std"] }
 slab = "0.4"
 wasm-bindgen = { version = "0.2" }
-serde-wasm-bindgen = "0.4"
+serde-wasm-bindgen = "0.5"
 wasm-logger = "0.2"
-gloo-events = "0.1"
-gloo-timers = "0.2"
-gloo-history = "0.1"
+gloo-events = "0.2"
+gloo-timers = "0.3"
+gloo-history = "0.2"
 serde = { version = "1.0", features = ["derive", "rc"] }
 serde_json = "1.0"
 wasm-bindgen-futures = "0.4"
