@@ -274,7 +274,7 @@ impl Component for PwtDialog {
                 _ => {}
             },
             Msg::ResizeStart(point, event) => {
-                let onmousemove = ctx
+                let onpointermove = ctx
                     .link()
                     .callback(move |event| Msg::ResizeMove(point, event));
                 let onpointerup = ctx
@@ -313,7 +313,7 @@ impl Component for PwtDialog {
                         offset.0,
                         offset.1,
                         EventListener::new(&window().unwrap(), "pointermove", move |event| {
-                            onmousemove.emit(event.clone().dyn_into().unwrap());
+                            onpointermove.emit(event.clone().dyn_into().unwrap());
                         }),
                         EventListener::new(&window().unwrap(), "pointerup", move |event| {
                             onpointerup.emit(event.clone().dyn_into().unwrap());
