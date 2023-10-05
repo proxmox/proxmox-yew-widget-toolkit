@@ -18,6 +18,7 @@ use super::SvgLength;
 #[widget(pwt=crate, @element, @svg)]
 #[derive(Properties, Clone, PartialEq)]
 pub struct Reference {
+    #[prop_or_default]
     children: Option<Vec<VNode>>,
 }
 

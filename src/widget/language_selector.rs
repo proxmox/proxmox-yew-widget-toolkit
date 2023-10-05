@@ -36,6 +36,7 @@ use pwt_macros::builder;
 pub struct LanguageSelector {
     /// On change callback.
     #[builder_cb(IntoEventCallback, into_event_callback, String)]
+    #[prop_or_default]
     on_change: Option<Callback<String>>,
 
     /// CSS class.

@@ -35,6 +35,7 @@ use pwt_macros::{builder, widget};
 pub struct Combobox {
     /// Default value.
     #[builder(IntoPropValue, into_prop_value)]
+    #[prop_or_default]
     pub default: Option<AttrValue>,
 
     /// Make the input editable.
@@ -48,19 +49,23 @@ pub struct Combobox {
 
     /// Change callback
     #[builder_cb(IntoEventCallback, into_event_callback, String)]
+    #[prop_or_default]
     pub on_change: Option<Callback<String>>,
 
     /// Validation function.
+    #[prop_or_default]
     pub validate: Option<ValidateFn<(String, Store<AttrValue>)>>,
 
     /// Show filter
     ///
     /// Defaul behavior is to show the filter for pickers with more than 10 items.
     #[builder(IntoPropValue, into_prop_value)]
+    #[prop_or_default]
     pub show_filter: Option<bool>,
 
     /// Custom filter function.
     #[builder_cb(IntoTextFilterFn, into_text_filter_fn, AttrValue)]
+    #[prop_or_default]
     pub filter: Option<TextFilterFn<AttrValue>>,
 
     /// Display the output of this function instead of displaying values directly.
@@ -69,6 +74,7 @@ pub struct Combobox {
     ///
     /// Also consider adding a custom filter function to filter on visible.
     #[builder_cb(IntoOptionalRenderFn, into_optional_render_fn, AttrValue)]
+    #[prop_or_default]
     pub render_value: Option<RenderFn<AttrValue>>,
 
     /// Icons to show on the left (false) or right(true) side of the input

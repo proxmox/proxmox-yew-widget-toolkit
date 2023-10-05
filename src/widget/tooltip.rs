@@ -15,6 +15,7 @@ pub struct Tooltip {
     content: VNode,
 
     /// The tooltip content/message.
+    #[prop_or_default]
     pub tip: Option<VNode>,
 
     #[prop_or_default]

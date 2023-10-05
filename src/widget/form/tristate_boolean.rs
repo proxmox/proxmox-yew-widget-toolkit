@@ -30,22 +30,27 @@ pub enum Tristate {
 pub struct TristateBoolean {
     /// Default value.
     #[builder(IntoPropValue, into_prop_value)]
+    #[prop_or_default]
     pub default: Option<Tristate>,
 
     /// Display text for [Tristate::Yes] (default is "Yes").
     #[builder(IntoPropValue, into_prop_value)]
+    #[prop_or_default]
     pub yes_text: Option<AttrValue>,
 
     /// Display text for [Tristate::No] (default is "No").
     #[builder(IntoPropValue, into_prop_value)]
+    #[prop_or_default]
     pub no_text: Option<AttrValue>,
 
     /// Display text for [Tristate::Null] (default is "Default").
     #[builder(IntoPropValue, into_prop_value)]
+    #[prop_or_default]
     pub null_text: Option<AttrValue>,
 
     /// Change callback
     #[builder_cb(IntoEventCallback, into_event_callback, Tristate)]
+    #[prop_or_default]
     pub on_change: Option<Callback<Tristate>>,
 }
 

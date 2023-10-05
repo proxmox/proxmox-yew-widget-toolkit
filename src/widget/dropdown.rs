@@ -65,24 +65,29 @@ pub struct Dropdown {
 
     /// Tooltip for the input
     #[builder(IntoPropValue, into_prop_value)]
+    #[prop_or_default]
     pub tip: Option<AttrValue>,
 
     /// Value change callback.
     #[builder_cb(IntoEventCallback, into_event_callback, String)]
+    #[prop_or_default]
     pub on_change: Option<Callback<String>>,
 
     /// Sets the input to the provided value.
     #[builder(IntoPropValue, into_prop_value)]
+    #[prop_or_default]
     pub value: Option<String>,
 
     /// Sets the "aria-haspopup" property.
     #[builder(IntoPropValue, into_prop_value)]
+    #[prop_or_default]
     pub popup_type: Option<AttrValue>,
 
     /// Display the output of this function instead of value.
     ///
     /// Note: dropdowns using this feature are not editable (editable property is ignored)!
     #[builder_cb(IntoOptionalRenderFn, into_optional_render_fn, AttrValue)]
+    #[prop_or_default]
     pub render_value: Option<RenderFn<AttrValue>>,
 
     /// Icons to show on the left (false) or right(true) side of the input

@@ -18,6 +18,7 @@ pub struct ActionIcon {
     pub node_ref: NodeRef,
 
     /// Yew `key` property
+    #[prop_or_default]
     pub key: Option<Key>,
 
     /// CSS class
@@ -25,12 +26,15 @@ pub struct ActionIcon {
     pub class: Classes,
 
     /// The CSS icon class
+    #[prop_or_default]
     pub icon_class: Option<Classes>,
 
     /// Html tabindex (defaults to -1)
+    #[prop_or_default]
     pub tabindex: Option<i32>,
 
     /// Aria label
+    #[prop_or_default]
     pub aria_label: Option<AttrValue>,
 
     /// Disable flag
@@ -38,6 +42,7 @@ pub struct ActionIcon {
     pub disabled: bool,
 
     /// Activate callback (click, enter, space)
+    #[prop_or_default]
     pub on_activate: Option<Callback<()>>,
 }
 

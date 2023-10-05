@@ -19,14 +19,17 @@ pub type PwtCheckbox = ManagedFieldMaster<CheckboxField>;
 pub struct Checkbox {
     /// Checkbox value (default is "on").
     #[builder(IntoPropValue, into_prop_value)]
+    #[prop_or_default]
     pub value: Option<AttrValue>,
 
     /// Force value (ignored by managed fields).
     #[builder(IntoPropValue, into_prop_value)]
+    #[prop_or_default]
     pub checked: Option<bool>,
 
     /// Default value.
     #[builder(IntoPropValue, into_prop_value)]
+    #[prop_or_default]
     pub default: Option<bool>,
 
     /// Radio group flag
@@ -41,6 +44,7 @@ pub struct Checkbox {
 
     /// Change callback.
     #[builder_cb(IntoEventCallback, into_event_callback, String)]
+    #[prop_or_default]
     pub on_change: Option<Callback<String>>,
 
     /// Input callback.
@@ -51,6 +55,7 @@ pub struct Checkbox {
     /// - Click on the associated input label.
     /// - Activation by keyboard (space press).
     #[builder_cb(IntoEventCallback, into_event_callback, String)]
+    #[prop_or_default]
     pub on_input: Option<Callback<String>>,
 }
 

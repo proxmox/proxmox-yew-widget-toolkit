@@ -106,6 +106,7 @@ pub struct DataTable<S: DataStore> {
     #[prop_or_default]
     node_ref: NodeRef,
     /// Yew key property.
+    #[prop_or_default]
     pub key: Option<Key>,
 
     /// CSS class of the container.
@@ -146,11 +147,13 @@ pub struct DataTable<S: DataStore> {
     ///
     /// Possible values are "baseline" (default), "top", "middle" and
     /// "bottom".
+    #[prop_or_default]
     pub vertical_align: Option<AttrValue>,
 
     /// Virtual Scroll
     ///
     /// Virtual scroll is enabled by default for tables with more than 30 rows.
+    #[prop_or_default]
     pub virtual_scroll: Option<bool>,
 
     /// Minimum row height (default 22)
@@ -162,6 +165,7 @@ pub struct DataTable<S: DataStore> {
     pub min_row_height: usize,
 
     /// Selection object.
+    #[prop_or_default]
     pub selection: Option<Selection>,
 
     /// Automatically select the focused row.
@@ -177,14 +181,18 @@ pub struct DataTable<S: DataStore> {
     pub header_focusable: bool,
 
     /// Row click callback
+    #[prop_or_default]
     pub on_row_click: Option<CallbackMut<DataTableMouseEvent>>,
 
     /// Row double click callback
+    #[prop_or_default]
     pub on_row_dblclick: Option<CallbackMut<DataTableMouseEvent>>,
 
     /// Row keydown callback
+    #[prop_or_default]
     pub on_row_keydown: Option<CallbackMut<DataTableKeyboardEvent>>,
 
+    #[prop_or_default]
     pub row_render_callback: Option<DataTableRowRenderCallback<S::Record>>,
 }
 

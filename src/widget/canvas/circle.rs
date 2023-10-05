@@ -13,11 +13,11 @@ use super::SvgLength;
 #[widget(pwt=crate, @element, @svg)]
 #[derive(Properties, Clone, PartialEq)]
 pub struct Circle {
+    #[prop_or_default]
     children: Option<Vec<VNode>>,
 }
 
 impl Circle {
-
     /// Create a new instance.
     pub fn new() -> Self {
         yew::props!(Self {})

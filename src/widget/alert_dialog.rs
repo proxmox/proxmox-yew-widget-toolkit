@@ -10,10 +10,12 @@ use crate::widget::MessageBox;
 #[derive(Clone, Properties, PartialEq)]
 pub struct AlertDialog {
     /// Optional dialog title - defaults to "Alert".
+    #[prop_or_default]
     pub title: Option<AttrValue>,
     /// The error message.
     pub message: Html,
     /// Close window callback.
+    #[prop_or_default]
     pub on_close: Option<Callback<()>>,
     /// Enable/disable dragging
     #[prop_or(true)]

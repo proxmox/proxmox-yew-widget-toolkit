@@ -22,6 +22,7 @@ pub struct CatalogLoader {
 
     /// Language (ISO 639-1 language code).
     #[builder(IntoPropValue, into_prop_value)]
+    #[prop_or_default]
     pub lang: Option<AttrValue>,
 
     /// Convert ISO 639-1 language code to server side URL
@@ -33,6 +34,7 @@ pub struct CatalogLoader {
     ///  Callback::from(|lang: String| format!("catalog-{}.mo", lang))
     /// # }
     #[builder_cb(IntoOptionalTextRenderFn, into_optional_text_render_fn, String)]
+    #[prop_or_default]
     pub url_builder: Option<TextRenderFn<String>>,
 }
 

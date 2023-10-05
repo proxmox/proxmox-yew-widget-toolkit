@@ -33,6 +33,7 @@ pub struct SelectionView {
     /// This object listens to selection changes and redraws the content
     /// whenever the selection changes. Setting a selection object is mandatory.
     #[builder(IntoPropValue, into_prop_value)]
+    #[prop_or_default]
     pub selection: Option<Selection>,
 
     /// Selection specific render functions.
@@ -43,6 +44,7 @@ pub struct SelectionView {
 
     /// The default render function.
     #[builder_cb(IntoOptionalRenderFn, into_optional_render_fn, SelectionViewRenderInfo)]
+    #[prop_or_default]
     pub renderer: Option<RenderFn<SelectionViewRenderInfo>>,
 
     /// Enable the page cache.

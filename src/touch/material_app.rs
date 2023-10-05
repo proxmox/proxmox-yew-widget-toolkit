@@ -176,14 +176,17 @@ impl PageController {
 #[builder]
 pub struct MaterialApp {
     /// The yew component key.
+    #[prop_or_default]
     pub key: Option<Key>,
 
     /// Optional Scaffold Controller.
     #[builder(IntoPropValue, into_prop_value)]
+    #[prop_or_default]
     pub snackbar_controller: Option<SnackBarController>,
 
     /// Optional snackbar bottom offset.
     #[builder(IntoPropValue, into_prop_value)]
+    #[prop_or_default]
     pub snackbar_bottom_offset: Option<u32>,
 
     /// Page render function.
@@ -191,10 +194,12 @@ pub struct MaterialApp {
 
     /// Basename passed to the [Router]
     #[builder(IntoPropValue, into_prop_value)]
+    #[prop_or_default]
     pub basename: Option<AttrValue>,
 
     /// History used for the [Router]
     #[builder(IntoPropValue, into_prop_value)]
+    #[prop_or_default]
     pub history: Option<AnyHistory>,
 }
 

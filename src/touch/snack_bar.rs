@@ -26,18 +26,22 @@ use pwt_macros::widget;
 pub struct SnackBar {
     /// The text message.
     #[builder(IntoPropValue, into_prop_value)]
+    #[prop_or_default]
     pub message: Option<AttrValue>,
 
     /// The label of the action button
     #[builder(IntoPropValue, into_prop_value)]
+    #[prop_or_default]
     pub action_label: Option<AttrValue>,
 
     /// Callback for action button.
     #[builder_cb(IntoEventCallback, into_event_callback, ())]
+    #[prop_or_default]
     pub on_action: Option<Callback<()>>,
 
     /// Callback for close button.
     #[builder_cb(IntoEventCallback, into_event_callback, ())]
+    #[prop_or_default]
     pub on_close: Option<Callback<()>>,
 
     /// Time in milliseconds the snack bar should be displayed (default is 4000).
@@ -46,6 +50,7 @@ pub struct SnackBar {
     ///
     /// This option is only used when you show the snackbar with [SnackBarManager](super::SnackBarManager).
     #[builder(IntoPropValue, into_prop_value)]
+    #[prop_or_default]
     pub duration: Option<u32>,
 
     #[prop_or_default]
@@ -58,6 +63,7 @@ pub struct SnackBar {
     ///
     /// if not set, [SnackBarManager](super::SnackBarManager) automatically assigns a new unique id.
     #[builder(IntoPropValue, into_prop_value)]
+    #[prop_or_default]
     pub id: Option<AttrValue>,
 }
 

@@ -25,6 +25,7 @@ pub struct DataTableColumn<T: 'static> {
     /// The name dispayed in the header (Also used as aria-label).
     pub name: AttrValue,
     /// Unique Column Key
+    #[prop_or_default]
     pub key: Option<Key>,
     /// Horizontal table cell justification (start, end, left, center, right, justify).
     #[prop_or(AttrValue::Static("start"))]
@@ -33,16 +34,19 @@ pub struct DataTableColumn<T: 'static> {
     // only internal, use `apply_render` instead
     render_cell: DataTableCellRenderer<T>,
     /// Rendert function for Header content. If set, this is used instead of `name`.
+    #[prop_or_default]
     pub render_header: Option<DataTableHeaderRenderer<T>>,
     /// Sorter function.
     ///
     /// Need to be set to enable column sorting.
+    #[prop_or_default]
     pub sorter: Option<SorterFn<T>>,
     /// Sort order
     ///
     /// - `Some(true)`: Ascending
     /// - `Some(false)`: Descending
     /// - `None`: do not sort this columns
+    #[prop_or_default]
     pub sort_order: Option<bool>,
 
     /// Hide column
@@ -57,12 +61,16 @@ pub struct DataTableColumn<T: 'static> {
     pub show_menu: bool,
 
     /// Cell click callback
+    #[prop_or_default]
     pub on_cell_click: Option<CallbackMut<DataTableMouseEvent>>,
     /// Cell keydown callback
+    #[prop_or_default]
     pub on_cell_keydown: Option<CallbackMut<DataTableKeyboardEvent>>,
 
+    #[prop_or_default]
     pub on_header_keydown: Option<CallbackMut<DataTableHeaderKeyboardEvent<T>>>,
 
+    #[prop_or_default]
     pub tree_store: Option<TreeStore<T>>,
 }
 

@@ -129,6 +129,7 @@ fn location_to_nav_ctx(loc: &Option<Location>) -> NavigationContext {
 /// If set, they can use a [NavigationContainer] to implement fully automatic routing.
 #[derive(Properties, PartialEq, Clone)]
 pub struct NavigationContainer {
+    #[prop_or_default]
     active: Option<AttrValue>,
     #[prop_or_default]
     pub children: Vec<VNode>,

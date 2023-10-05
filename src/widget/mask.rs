@@ -23,6 +23,7 @@ pub struct Mask {
 
     /// Mask text. Defaults to "Loading...".
     #[builder(IntoPropValue, into_prop_value)]
+    #[prop_or_default]
     pub text: Option<AttrValue>,
 }
 

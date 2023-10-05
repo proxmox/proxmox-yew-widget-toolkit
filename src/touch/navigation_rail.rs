@@ -28,9 +28,11 @@ use pwt_macros::builder;
 #[builder]
 pub struct NavigationRail {
     /// The yew component key.
+    #[prop_or_default]
     pub key: Option<Key>,
 
     /// Leading widget placed above the navigation group.
+    #[prop_or_default]
     pub leading: Option<Html>,
 
     #[builder]
@@ -44,13 +46,16 @@ pub struct NavigationRail {
     ///
     /// The optional selction object allows you to control and observe the state from outside.
     #[builder(IntoPropValue, into_prop_value)]
+    #[prop_or_default]
     pub selection: Option<Selection>,
 
     /// Selection callback.
     #[builder_cb(IntoEventCallback, into_event_callback, Option<Key>)]
+    #[prop_or_default]
     pub on_select: Option<Callback<Option<Key>>>,
 
     /// Default active key.
+    #[prop_or_default]
     pub default_active: Option<Key>,
 
     /// Enable router functionality.

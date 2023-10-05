@@ -17,6 +17,7 @@ use pwt_macros::widget;
 #[widget(pwt=crate, comp=PwtForm, @element, @container)]
 #[derive(Clone, PartialEq, Properties)]
 pub struct Form {
+    #[prop_or_default]
     pub form_context: Option<FormContext>,
 }
 

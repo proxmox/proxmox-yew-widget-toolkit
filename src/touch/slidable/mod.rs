@@ -29,14 +29,17 @@ pub struct Slidable {
     content: VNode,
 
     /// Widget displayed on the left side (below the slider).
+    #[prop_or_default]
     pub left_actions: Option<VNode>,
 
     /// Widget displayed on the right side (below the slider).
+    #[prop_or_default]
     pub right_actions: Option<VNode>,
 
     /// Dismiss callback.
     ///
     /// Without a callback, dismiss is disabled on slidables without actions.
+    #[prop_or_default]
     pub on_dismiss: Option<Callback<()>>,
 }
 

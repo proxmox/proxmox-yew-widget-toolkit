@@ -24,7 +24,9 @@ use super::{
 #[derivative(Clone(bound = ""), PartialEq(bound = ""))]
 #[doc(hidden)] // only used inside this crate
 pub struct HeaderWidget<T: 'static> {
+    #[prop_or_default]
     pub node_ref: Option<NodeRef>,
+    #[prop_or_default]
     pub key: Option<Key>,
 
     headers: Rc<Vec<IndexedHeader<T>>>,

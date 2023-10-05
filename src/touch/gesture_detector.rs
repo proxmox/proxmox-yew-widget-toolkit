@@ -69,8 +69,8 @@ impl Deref for GestureSwipeEvent {
 #[derive(Properties, Clone, PartialEq)]
 pub struct GestureDetector {
     /// The yew component key.
+    #[prop_or_default]
     pub key: Option<Key>,
-
 
     content: Html,
 
@@ -88,25 +88,31 @@ pub struct GestureDetector {
     /// Minimum swipe distance in pixel.
     #[prop_or(100.0)]
     pub swipe_min_distance: f64,
-    #[prop_or(0.5)]
     /// Maximum swipe duration in milliseconds.
+    #[prop_or(0.5)]
     pub swipe_max_duration: f64,
-    #[prop_or(200.0)]
     /// Mimimum swipe speed in pixel/second.
+    #[prop_or(200.0)]
     pub swipe_min_velocity: f64,
 
     /// Callback for tap events.
+    #[prop_or_default]
     pub on_tap: Option<Callback<PointerEvent>>,
     /// Callback for long-tap events.
+    #[prop_or_default]
     pub on_long_press: Option<Callback<()>>,
 
     /// Callback for drag-start events.
+    #[prop_or_default]
     pub on_drag_start: Option<Callback<GestureDragEvent>>,
     /// Callback for drag-start events.
+    #[prop_or_default]
     pub on_drag_update: Option<Callback<GestureDragEvent>>,
     /// Callback for drag-start events.
+    #[prop_or_default]
     pub on_drag_end: Option<Callback<GestureDragEvent>>,
 
+    #[prop_or_default]
     pub on_swipe: Option<Callback<GestureSwipeEvent>>,
 }
 

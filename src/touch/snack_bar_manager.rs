@@ -82,13 +82,16 @@ impl SnackBarController {
 #[builder]
 pub struct SnackBarManager {
     /// The yew component key.
+    #[prop_or_default]
     pub key: Option<Key>,
 
     /// Optional Scaffold Controller
     #[builder(IntoPropValue, into_prop_value)]
+    #[prop_or_default]
     pub controller: Option<SnackBarController>,
 
     #[builder(IntoPropValue, into_prop_value)]
+    #[prop_or_default]
     pub bottom_offset: Option<u32>,
 }
 

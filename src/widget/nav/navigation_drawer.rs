@@ -29,6 +29,7 @@ use super::{Menu, MenuEntry, MenuItem};
 #[builder]
 pub struct NavigationDrawer {
     /// The yew component key.
+    #[prop_or_default]
     pub key: Option<Key>,
 
     /// CSS Class
@@ -38,23 +39,28 @@ pub struct NavigationDrawer {
     menu: Menu,
 
     /// Menu header.
+    #[prop_or_default]
     pub header: Option<Html>,
 
     /// Selection object to store the currently selected tab key.
     ///
     /// The optional selction object allows you to control and observe the state from outside.
     #[builder(IntoPropValue, into_prop_value)]
+    #[prop_or_default]
     pub selection: Option<Selection>,
 
     /// Selection callback.
     #[builder_cb(IntoEventCallback, into_event_callback, Option<Key>)]
+    #[prop_or_default]
     pub on_select: Option<Callback<Option<Key>>>,
 
     /// Default active key.
+    #[prop_or_default]
     pub default_active: Option<Key>,
 
     /// ARIA label.
     #[builder(IntoPropValue, into_prop_value)]
+    #[prop_or_default]
     pub aria_label: Option<AttrValue>,
 
     /// Enable router functionality.

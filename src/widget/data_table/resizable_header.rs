@@ -23,18 +23,22 @@ use crate::widget::{Container, Row, SizeObserver};
 #[derive(Clone, PartialEq, Properties)]
 #[doc(hidden)] // only used inside this crate
 pub struct ResizableHeader {
+    #[prop_or_default]
     pub node_ref: Option<NodeRef>,
+    #[prop_or_default]
     pub key: Option<Key>,
 
     #[prop_or_default]
     pub class: Classes,
 
     /// Unique element ID
+    #[prop_or_default]
     pub id: Option<String>,
 
     #[prop_or_default]
     pub attributes: IndexMap<AttrValue, AttrValue>,
 
+    #[prop_or_default]
     pub content: Option<VNode>,
 
     /// Resizable flag.
@@ -45,11 +49,15 @@ pub struct ResizableHeader {
     #[prop_or(true)]
     pub show_menu: bool,
 
+    #[prop_or_default]
     pub on_resize: Option<Callback<f64>>,
+    #[prop_or_default]
     pub on_size_reset: Option<Callback<()>>,
+    #[prop_or_default]
     pub on_size_change: Option<Callback<f64>>,
 
     /// Function to generate the header menu.
+    #[prop_or_default]
     pub menu_builder: Option<BuilderFn<Menu>>,
 }
 

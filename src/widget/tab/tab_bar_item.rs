@@ -13,28 +13,34 @@ use pwt_macros::builder;
 #[builder]
 pub struct TabBarItem {
     /// The yew component key.
+    #[prop_or_default]
     pub key: Option<Key>,
 
     /// Icon (CSS class).
     #[builder(IntoPropValue, into_prop_value)]
+    #[prop_or_default]
     pub icon_class: Option<AttrValue>,
 
     /// Active Icon (CSS class).
     #[builder(IntoPropValue, into_prop_value)]
+    #[prop_or_default]
     pub active_icon_class: Option<AttrValue>,
 
     /// Optional button label.
     #[builder(IntoPropValue, into_prop_value)]
+    #[prop_or_default]
     pub label: Option<AttrValue>,
 
     /// Optional tooltip.
     #[builder(IntoPropValue, into_prop_value)]
+    #[prop_or_default]
     pub tip: Option<VNode>,
 
     /// Activation callback.
     ///
     /// Emitted when the button is tapped, clicked or activated by keyboard.
     #[builder_cb(IntoEventCallback, into_event_callback, ())]
+    #[prop_or_default]
     pub on_activate: Option<Callback<()>>,
 
     /// Sets disabled state

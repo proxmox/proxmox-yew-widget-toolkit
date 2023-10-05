@@ -16,19 +16,24 @@ use pwt_macros::builder;
 #[builder]
 pub struct Scaffold {
     /// The yew component key.
+    #[prop_or_default]
     pub key: Option<Key>,
 
     /// The top application bar.
+    #[prop_or_default]
     pub application_bar: Option<VNode>,
 
     /// The primary content displayed below the application bar.
+    #[prop_or_default]
     pub body: Option<VNode>,
 
     /// The bottom navigation bar.
     #[builder(IntoPropValue, into_prop_value)]
+    #[prop_or_default]
     pub navigation_bar: Option<NavigationBar>,
 
     /// Favorite action button.
+    #[prop_or_default]
     pub favorite_action_button: Option<VNode>,
 }
 

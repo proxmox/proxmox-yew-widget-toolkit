@@ -11,12 +11,14 @@ use crate::widget::Button;
 #[derive(Properties, Clone, PartialEq)]
 pub struct Fab {
     /// The yew component key.
+    #[prop_or_default]
     pub key: Option<Key>,
 
     /// Icon (CSS class).
     pub icon_class: Classes,
 
     /// Optional Button text (for small buttons)
+    #[prop_or_default]
     pub text: Option<AttrValue>,
 
     /// CSS class.
@@ -24,9 +26,11 @@ pub struct Fab {
     pub class: Classes,
 
     /// Style attribute (use this to set button position)
+    #[prop_or_default]
     pub style: Option<AttrValue>,
 
     /// Click callback
+    #[prop_or_default]
     pub on_click: Option<Callback<MouseEvent>>,
 }
 

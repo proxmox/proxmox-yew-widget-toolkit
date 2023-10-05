@@ -29,6 +29,7 @@ pub struct Dialog {
     node_ref: NodeRef,
 
     /// The yew component key.
+    #[prop_or_default]
     pub key: Option<Key>,
 
     /// Dialog Title (also used as 'arial-label')
@@ -36,10 +37,12 @@ pub struct Dialog {
 
     /// Title as Html
     #[builder(IntoPropValue, into_prop_value)]
+    #[prop_or_default]
     pub html_title: Option<Html>,
 
     /// Dialog close callback.
     #[builder_cb(IntoEventCallback, into_event_callback, ())]
+    #[prop_or_default]
     pub on_close: Option<Callback<()>>,
 
     #[prop_or_default]
@@ -47,6 +50,7 @@ pub struct Dialog {
 
     /// CSS style for the dialog window.
     #[builder(IntoPropValue, into_prop_value)]
+    #[prop_or_default]
     pub style: Option<AttrValue>,
 
     /// Determines if the dialog can be moved

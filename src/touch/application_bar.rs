@@ -15,15 +15,18 @@ use super::PageController;
 #[builder]
 pub struct ApplicationBar {
     /// The yew component key.
+    #[prop_or_default]
     pub key: Option<Key>,
 
     /// Leading widget placed before the title.
     ///
     /// By default, we add a back button if the context provides a [PageController].
+    #[prop_or_default]
     pub leading: Option<Html>,
 
     /// Application title.
     #[builder(IntoPropValue, into_prop_value)]
+    #[prop_or_default]
     pub title: Option<AttrValue>,
 
     #[prop_or_default]
@@ -31,6 +34,7 @@ pub struct ApplicationBar {
     pub actions: Vec<VNode>,
 
     /// Widget placed at the bottom, usually a [TabBar](crate::widget::TabBar).
+    #[prop_or_default]
     pub bottom: Option<Html>,
 }
 

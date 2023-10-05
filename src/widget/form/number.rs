@@ -192,14 +192,17 @@ unsigned_number_impl!(u8);
 pub struct Number<T: NumberTypeInfo> {
     /// Minimum value for number fields.
     #[builder(IntoPropValue, into_prop_value)]
+    #[prop_or_default]
     pub min: Option<T>,
 
     /// Maximum value for number fields.
     #[builder(IntoPropValue, into_prop_value)]
+    #[prop_or_default]
     pub max: Option<T>,
 
     /// Step value for number fields.
     #[builder(IntoPropValue, into_prop_value)]
+    #[prop_or_default]
     pub step: Option<T>,
 
     /// Force value.
@@ -207,6 +210,7 @@ pub struct Number<T: NumberTypeInfo> {
     /// To implement controlled components (for use without a FormContext).
     /// This is ignored if the field has a name.
     #[builder(IntoPropValue, into_prop_value)]
+    #[prop_or_default]
     pub value: Option<T>,
 
     /// Force validation result.
@@ -217,10 +221,12 @@ pub struct Number<T: NumberTypeInfo> {
     /// This is only used if you also force a value, and overwrites
     /// any result from the validation function (if any).
     #[builder(IntoPropValue, into_prop_value)]
+    #[prop_or_default]
     pub valid: Option<Result<(), String>>,
 
     /// Default value.
     #[builder(IntoPropValue, into_prop_value)]
+    #[prop_or_default]
     pub default: Option<T>,
 
     /// Validation function.
@@ -233,6 +239,7 @@ pub struct Number<T: NumberTypeInfo> {
     /// [FormContext::on_change](super::FormContext::on_change),
     /// then set the result with
     /// `form_ctx.write().set_field_valid(...)`.
+    #[prop_or_default]
     pub validate: Option<ValidateFn<T>>,
 
     /// Change callback
@@ -240,12 +247,14 @@ pub struct Number<T: NumberTypeInfo> {
     /// This callback is emited on any data change, i.e. if data
     /// inside the [FormContext](super::FormContext) changed.
     #[builder_cb(IntoEventCallback, into_event_callback, Option<Result<T, String>>)]
+    #[prop_or_default]
     pub on_change: Option<Callback<Option<Result<T, String>>>>,
 
     /// Input callback
     ///
     /// This callback is emited when the user types in new data.
     #[builder_cb(IntoEventCallback, into_event_callback, String)]
+    #[prop_or_default]
     pub on_input: Option<Callback<String>>,
 }
 

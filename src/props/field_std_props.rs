@@ -9,16 +9,21 @@ pub struct FieldStdProps {
     /// The field register itself with this `name` in the
     /// [FormContext](crate::widget::form::FormContext) (if
     /// any).
+    #[prop_or_default]
     pub name: Option<AttrValue>,
 
     /// Html element Id pointing the the field label.
+    #[prop_or_default]
     pub label_id: Option<AttrValue>,
 
     /// Html tabindex attriute
+    #[prop_or_default]
     pub tabindex: Option<i32>,
     /// ARIA label.
+    #[prop_or_default]
     pub aria_label: Option<AttrValue>,
     /// Input element placeholder attribute.
+    #[prop_or_default]
     pub placeholder: Option<AttrValue>,
 
     /// Input element autofocus attribute.

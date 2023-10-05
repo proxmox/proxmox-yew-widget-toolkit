@@ -18,8 +18,10 @@ pub struct MenuItem {
     /// items.
     pub text: Html,
     /// Menu icon displayed on the left side.
+    #[prop_or_default]
     pub icon_class: Option<Classes>,
     /// Optional submenu.
+    #[prop_or_default]
     pub menu: Option<Menu>,
 
     /// Disabled flag.
@@ -47,12 +49,15 @@ pub struct MenuItem {
     pub(crate) inside_menubar: bool,
 
     /// Submenu close event
+    #[prop_or_default]
     pub(crate) on_close: Option<Callback<()>>,
+    #[prop_or_default]
     pub(crate) menu_controller: Option<Callback<MenuControllerMsg>>,
 
     /// Select callback.
     ///
     /// Emited when the user activates the entry.
+    #[prop_or_default]
     pub on_select: Option<Callback<MenuEvent>>,
 }
 

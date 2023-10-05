@@ -17,15 +17,20 @@ use pwt_macros::{builder, widget};
 #[builder]
 pub struct Button {
     /// Button text.
+    #[prop_or_default]
     pub text: Option<AttrValue>,
     /// Icon (CSS class).
+    #[prop_or_default]
     pub icon_class: Option<Classes>,
 
     /// Html tabindex attribute.
+    #[prop_or_default]
     pub tabindex: Option<i32>,
     /// ARIA label.
+    #[prop_or_default]
     pub aria_label: Option<AttrValue>,
     /// Html placeholder attribute.
+    #[prop_or_default]
     pub placeholder: Option<AttrValue>,
 
     /// Html autofocus attribute.

@@ -30,12 +30,15 @@ pub enum FabMenuAlign {
 #[derive(Properties, Clone, PartialEq)]
 pub struct FabMenu {
     /// The yew component key.
+    #[prop_or_default]
     pub key: Option<Key>,
 
     /// Main button Icon (CSS class).
+    #[prop_or_default]
     pub main_icon_class: Option<Classes>,
 
     /// Main button CSS class.
+    #[prop_or_default]
     pub main_button_class: Option<Classes>,
 
     /// Menu popup direction

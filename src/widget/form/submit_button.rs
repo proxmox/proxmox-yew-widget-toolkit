@@ -19,6 +19,7 @@ pub struct SubmitButton {
     pub disabled: bool,
 
     /// Submit button press callback.
+    #[prop_or_default]
     pub on_submit: Option<Callback<FormContext>>,
 
     /// Button text (default "Submit").

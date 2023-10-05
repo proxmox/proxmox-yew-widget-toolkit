@@ -19,6 +19,7 @@ pub struct ResetButton {
     pub text: AttrValue,
 
     /// Reset button press callback.
+    #[prop_or_default]
     pub on_reset: Option<Callback<()>>,
 
     /// CSS class

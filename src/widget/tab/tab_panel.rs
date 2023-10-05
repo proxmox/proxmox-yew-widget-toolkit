@@ -53,6 +53,7 @@ use pwt_macros::builder;
 #[builder]
 pub struct TabPanel {
     /// The yew component key.
+    #[prop_or_default]
     pub key: Option<Key>,
 
     /// The content view
@@ -63,6 +64,7 @@ pub struct TabPanel {
     pub bar: TabBar,
 
     /// Panel title text.
+    #[prop_or_default]
     pub title: Option<Html>,
 
     /// Tools, displayed right aligned in the header.
@@ -80,6 +82,7 @@ pub struct TabPanel {
 
     /// The [Selection] of the TabPanel. Makes it possible to control from outside
     #[builder(IntoPropValue, into_prop_value)]
+    #[prop_or_default]
     pub selection: Option<Selection>,
 
     /// The [TabBarStyle]

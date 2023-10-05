@@ -14,6 +14,7 @@ use super::GestureSwipeEvent;
 #[derive(Properties, Clone, PartialEq)]
 pub struct PageView {
     /// The yew component key.
+    #[prop_or_default]
     pub key: Option<Key>,
 
     #[prop_or_default]
@@ -24,6 +25,7 @@ pub struct PageView {
     pub view_page: usize,
 
     /// This callback is called when the user swipes to the next/previous page.
+    #[prop_or_default]
     pub on_page_change: Option<Callback<usize>>,
 }
 

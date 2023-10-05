@@ -28,6 +28,7 @@ pub struct TextArea {
     /// To implement controlled components (for use without a FormContext).
     /// This is ignored if the field has a name.
     #[builder(IntoPropValue, into_prop_value)]
+    #[prop_or_default]
     pub value: Option<AttrValue>,
 
     /// Force validation result.
@@ -38,13 +39,16 @@ pub struct TextArea {
     /// This is only used if you also force a value, and overwrites
     /// any result from the validation function (if any).
     #[builder(IntoPropValue, into_prop_value)]
+    #[prop_or_default]
     pub valid: Option<Result<(), String>>,
 
     /// Default value.
     #[builder(IntoPropValue, into_prop_value)]
+    #[prop_or_default]
     pub default: Option<AttrValue>,
 
     /// Validation function.
+    #[prop_or_default]
     pub validate: Option<ValidateFn<String>>,
 
     /// Change callback
@@ -52,12 +56,14 @@ pub struct TextArea {
     /// This callback is emited on any data change, i.e. if data
     /// inside the [FormContext](super::FormContext) changed.
     #[builder_cb(IntoEventCallback, into_event_callback, String)]
+    #[prop_or_default]
     pub on_change: Option<Callback<String>>,
 
     /// Input callback
     ///
     /// This callback is emited when the user types in new data.
     #[builder_cb(IntoEventCallback, into_event_callback, String)]
+    #[prop_or_default]
     pub on_input: Option<Callback<String>>,
 }
 

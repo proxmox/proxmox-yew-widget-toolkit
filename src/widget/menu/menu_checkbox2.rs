@@ -27,6 +27,7 @@ pub struct MenuCheckbox {
 
     /// Checkbox value (default is "on").
     #[builder(IntoPropValue, into_prop_value)]
+    #[prop_or_default]
     pub value: Option<AttrValue>,
 
     /// Radio group flag
@@ -39,10 +40,12 @@ pub struct MenuCheckbox {
     /// To implement controlled components (for use without a FormContext).
     /// This is ignored if the field has a name.
     #[builder(IntoPropValue, into_prop_value)]
+    #[prop_or_default]
     pub checked: Option<bool>,
 
     /// Default value.
     #[builder(IntoPropValue, into_prop_value)]
+    #[prop_or_default]
     pub default: Option<bool>,
 
     /// Standard input element properties
@@ -53,6 +56,7 @@ pub struct MenuCheckbox {
     ///
     /// This callback is emited when the user clicks on the checkbox.
     #[builder_cb(IntoEventCallback, into_event_callback, MenuEvent)]
+    #[prop_or_default]
     pub on_click: Option<Callback<MenuEvent>>,
 
     /// Change callback
@@ -60,8 +64,10 @@ pub struct MenuCheckbox {
     /// This callback is emited on any data change, i.e. if data
     /// inside the [FormContext](crate::widget::form::FormContext) changed.
     #[builder_cb(IntoEventCallback, into_event_callback, MenuEvent)]
+    #[prop_or_default]
     pub on_change: Option<Callback<MenuEvent>>,
 
+    #[prop_or_default]
     pub(crate) menu_controller: Option<Callback<MenuControllerMsg>>,
 }
 

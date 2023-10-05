@@ -32,16 +32,19 @@ pub struct GridPicker<S: DataStore> {
     #[prop_or_default]
     node_ref: NodeRef,
     /// Yew key property.
+    #[prop_or_default]
     pub key: Option<Key>,
 
     table: DataTable<S>,
 
     /// Selection object.
     #[builder(IntoPropValue, into_prop_value)]
+    #[prop_or_default]
     pub selection: Option<Selection>,
 
     /// Select callback.
     #[builder_cb(IntoEventCallback, into_event_callback, Key)]
+    #[prop_or_default]
     pub on_select: Option<Callback<Key>>,
 
     /// Filter change event.
@@ -50,12 +53,14 @@ pub struct GridPicker<S: DataStore> {
     /// the size of the widget is likely to change. This callback is
     /// useful to reposition the dropdown.
     #[builder_cb(IntoEventCallback, into_event_callback, String)]
+    #[prop_or_default]
     pub on_filter_change: Option<Callback<String>>,
 
     /// Show filter
     ///
     /// Default behavior is to show the filter for pickers with more than 10 items.
     #[builder(IntoPropValue, into_prop_value)]
+    #[prop_or_default]
     pub show_filter: Option<bool>,
 
     /// Custom filter function.
@@ -67,6 +72,7 @@ pub struct GridPicker<S: DataStore> {
     /// # }
     /// ```
     #[builder_cb(IntoTextFilterFn, into_text_filter_fn, S::Record)]
+    #[prop_or_default]
     pub filter: Option<TextFilterFn<S::Record>>,
 }
 

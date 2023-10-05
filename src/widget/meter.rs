@@ -32,10 +32,12 @@ pub struct Meter {
 
     /// Define the low end range.
     #[builder(IntoPropValue, into_prop_value)]
+    #[prop_or_default]
     pub low: Option<f32>,
 
     /// Define the high end range.
     #[builder(IntoPropValue, into_prop_value)]
+    #[prop_or_default]
     pub high: Option<f32>,
 
     /// Optimal value.
@@ -46,6 +48,7 @@ pub struct Meter {
     /// preferred. The meter's bar color depends on whether the value
     /// is less than or equal to the optimum value.
     #[builder(IntoPropValue, into_prop_value)]
+    #[prop_or_default]
     pub optimum: Option<f32>,
 
     /// Current value (default 0).

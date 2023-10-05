@@ -63,13 +63,16 @@ pub struct SideDialog {
     node_ref: NodeRef,
 
     /// The yew component key.
+    #[prop_or_default]
     pub key: Option<Key>,
 
     /// Optional controller to trigger a dialog close.
     #[builder(IntoPropValue, into_prop_value)]
+    #[prop_or_default]
     pub controller: Option<SideDialogController>,
 
     #[builder_cb(IntoEventCallback, into_event_callback, ())]
+    #[prop_or_default]
     pub on_close: Option<Callback<()>>,
 
     #[prop_or_default]

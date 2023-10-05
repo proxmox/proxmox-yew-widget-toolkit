@@ -16,17 +16,20 @@ use super::{SlidableActionMouseEvent, SlidableController};
 #[derive(Properties, Clone, PartialEq)]
 pub struct SlidableAction {
     /// The yew component key.
+    #[prop_or_default]
     pub key: Option<Key>,
 
     /// The action label.
     pub label: AttrValue,
 
     /// An optional CSS icon class.
+    #[prop_or_default]
     pub icon_class: Option<Classes>,
 
     /// Click callback.
     ///
     /// Emited when the user clicks on the entry.
+    #[prop_or_default]
     pub on_click: Option<Callback<SlidableActionMouseEvent>>,
 }
 

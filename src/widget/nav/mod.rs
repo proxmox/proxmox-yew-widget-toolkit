@@ -15,6 +15,7 @@ pub struct MenuItem {
     ///
     /// This key is used to uniquely identify entries. Items without
     /// keys are not selectable.
+    #[prop_or_default]
     key: Option<Key>,
 
     /// The label (text).
@@ -22,10 +23,12 @@ pub struct MenuItem {
 
     /// Menu icon displayed on the left side.
     #[builder(IntoPropValue, into_prop_value)]
+    #[prop_or_default]
     icon_class: Option<AttrValue>,
 
     /// Optional submenu.
     #[builder(IntoPropValue, into_prop_value)]
+    #[prop_or_default]
     pub submenu: Option<Menu>,
 
     /// Selectable flag.
@@ -37,6 +40,7 @@ pub struct MenuItem {
     ///
     /// Emitted when the item is activated.
     #[builder_cb(IntoEventCallback, into_event_callback, ())]
+    #[prop_or_default]
     pub on_activate: Option<Callback<()>>,
 }
 

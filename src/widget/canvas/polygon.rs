@@ -13,6 +13,7 @@ use super::SvgLength;
 #[widget(pwt=crate, @element, @svg)]
 #[derive(Properties, Clone, PartialEq)]
 pub struct Polygon {
+    #[prop_or_default]
     children: Option<Vec<VNode>>,
 }
 

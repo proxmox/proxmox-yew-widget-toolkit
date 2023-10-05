@@ -58,6 +58,7 @@ pub struct Selector<S: DataStore + 'static> {
     store: S,
     /// The default value.
     #[builder(IntoPropValue, into_prop_value)]
+    #[prop_or_default]
     pub default: Option<AttrValue>,
 
     /// Make the input editable.
@@ -75,19 +76,23 @@ pub struct Selector<S: DataStore + 'static> {
 
     /// Change callback
     #[builder_cb(IntoEventCallback, into_event_callback, Key)]
+    #[prop_or_default]
     pub on_change: Option<Callback<Key>>,
 
     /// Picker render function
     pub picker: RenderFn<SelectorRenderArgs<S>>,
     /// Validate callback.
+    #[prop_or_default]
     pub validate: Option<ValidateFn<(String, S)>>,
     /// Data loader callback.
+    #[prop_or_default]
     pub loader: Option<LoadCallback<S::Collection>>,
 
     /// Display the output of this function instead of displaying values directly.
     ///
     /// Note: selectors using this feature are not editable (editable property is ignored)!
     #[builder_cb(IntoOptionalRenderFn, into_optional_render_fn, AttrValue)]
+    #[prop_or_default]
     pub render_value: Option<RenderFn<AttrValue>>,
 
     /// Icons to show on the left (false) or right(true) side of the input

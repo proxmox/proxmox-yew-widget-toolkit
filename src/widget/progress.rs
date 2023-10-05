@@ -20,6 +20,7 @@ pub struct Progress {
     /// the progress element requires. The max attribute, if present,
     /// must have a value greater than 0.
     #[builder(IntoPropValue, into_prop_value)]
+    #[prop_or_default]
     pub max: Option<f32>,
 
     /// Current value.
@@ -30,6 +31,7 @@ pub struct Progress {
     /// is indeterminate. This indicates that an activity is ongoing
     /// with no indication of how long it is expected to take.
     #[builder(IntoPropValue, into_prop_value)]
+    #[prop_or_default]
     pub value: Option<f32>,
 }
 

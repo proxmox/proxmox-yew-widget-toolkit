@@ -18,10 +18,12 @@ pub type PwtBoolean = ManagedFieldMaster<BooleanField>;
 pub struct Boolean {
     /// Force value (ignored by managed fields)
     #[builder(IntoPropValue, into_prop_value)]
+    #[prop_or_default]
     pub checked: Option<bool>,
 
     /// Default value.
     #[builder(IntoPropValue, into_prop_value)]
+    #[prop_or_default]
     pub default: Option<bool>,
 
     /// Use switch style layout.
@@ -31,6 +33,7 @@ pub struct Boolean {
 
     /// Change callback
     #[builder_cb(IntoEventCallback, into_event_callback, bool)]
+    #[prop_or_default]
     pub on_change: Option<Callback<bool>>,
 
     /// Input callback.
@@ -41,6 +44,7 @@ pub struct Boolean {
     /// - Click on the associated input label.
     /// - Activation by keyboard (space press).
     #[builder_cb(IntoEventCallback, into_event_callback, bool)]
+    #[prop_or_default]
     pub on_input: Option<Callback<bool>>,
 }
 

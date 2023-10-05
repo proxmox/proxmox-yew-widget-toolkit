@@ -32,6 +32,7 @@ pub struct TabBar {
     node_ref: NodeRef,
 
     /// The yew component key.
+    #[prop_or_default]
     pub key: Option<Key>,
 
     /// CSS class.
@@ -46,13 +47,16 @@ pub struct TabBar {
     ///
     /// The optional selction object allows you to control and observe the state from outside.
     #[builder(IntoPropValue, into_prop_value)]
+    #[prop_or_default]
     pub selection: Option<Selection>,
 
     /// Selection callback.
     #[builder_cb(IntoEventCallback, into_event_callback, Option<Key>)]
+    #[prop_or_default]
     pub on_select: Option<Callback<Option<Key>>>,
 
     /// Default active key.
+    #[prop_or_default]
     pub default_active: Option<Key>,
 
     /// Enable router functionality.

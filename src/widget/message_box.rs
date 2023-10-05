@@ -19,6 +19,7 @@ pub struct MessageBox {
     pub message: Html,
     /// Close window callback.
     #[builder_cb(Into, into, Option<Callback<bool>>)]
+    #[prop_or_default]
     pub on_close: Option<Callback<bool>>,
     /// Enable/disable dragging
     #[prop_or(true)]

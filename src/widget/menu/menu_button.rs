@@ -20,14 +20,17 @@ use pwt_macros::{builder, widget};
 #[builder]
 pub struct MenuButton {
     pub text: AttrValue,
+    #[prop_or_default]
     pub icon_class: Option<Classes>,
     /// Optional Submenu
+    #[prop_or_default]
     pub menu: Option<Menu>,
 
     /// Menu Builder
     ///
     /// To create menus dynamically. If specified, the 'menu' property
     /// is ignored.
+    #[prop_or_default]
     pub menu_builder: Option<BuilderFn<Menu>>,
 
     /// Automatically popup menu when receiving focus
@@ -45,9 +48,11 @@ pub struct MenuButton {
     #[builder]
     pub show_arrow: bool,
 
+    #[prop_or_default]
     pub tabindex: Option<i32>,
 
     // Fires on menu close
+    #[prop_or_default]
     pub on_close: Option<Callback<()>>,
 }
 

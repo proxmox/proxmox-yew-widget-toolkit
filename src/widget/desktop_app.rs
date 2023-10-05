@@ -27,18 +27,22 @@ pub struct DesktopApp {
     body: VNode,
 
     /// The yew component key.
+    #[prop_or_default]
     pub key: Option<Key>,
 
     /// Basename passed to the [Router]
     #[builder(IntoPropValue, into_prop_value)]
+    #[prop_or_default]
     pub basename: Option<AttrValue>,
 
     /// History used for the [Router]
     #[builder(IntoPropValue, into_prop_value)]
+    #[prop_or_default]
     pub history: Option<AnyHistory>,
 
     /// Convert ISO 639-1 language code to server side catalog URLs (see [CatalogLoader]).
     #[builder_cb(IntoOptionalTextRenderFn, into_optional_text_render_fn, String)]
+    #[prop_or_default]
     pub catalog_url_builder: Option<TextRenderFn<String>>,
 }
 
