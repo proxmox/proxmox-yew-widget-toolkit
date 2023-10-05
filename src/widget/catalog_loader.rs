@@ -3,9 +3,9 @@ use std::rc::Rc;
 use yew::html::IntoPropValue;
 use yew::virtual_dom::{VComp, VNode};
 
-use crate::prelude::*;
-use crate::state::{Language, LanguageObserver};
 use crate::props::{IntoOptionalTextRenderFn, TextRenderFn};
+use crate::state::{Language, LanguageObserver};
+use crate::{impl_to_html, prelude::*};
 
 use pwt_macros::builder;
 
@@ -165,3 +165,5 @@ impl Into<VNode> for CatalogLoader {
         VNode::from(comp)
     }
 }
+
+impl_to_html!(CatalogLoader);

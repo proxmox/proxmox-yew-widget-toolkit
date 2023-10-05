@@ -4,9 +4,10 @@ use yew::html::IntoEventCallback;
 use yew::prelude::*;
 use yew::virtual_dom::{Key, VComp, VNode};
 
+use crate::impl_to_html;
 use crate::props::{ContainerBuilder, WidgetBuilder};
-use crate::widget::Container;
 use crate::touch::GestureDetector;
+use crate::widget::Container;
 
 use super::GestureSwipeEvent;
 
@@ -152,3 +153,5 @@ impl Into<VNode> for PageView {
         VNode::from(comp)
     }
 }
+
+impl_to_html!(PageView);

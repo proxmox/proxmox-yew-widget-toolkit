@@ -1,5 +1,6 @@
 use std::rc::Rc;
 
+use crate::impl_to_html;
 use crate::props::ContainerBuilder;
 use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
@@ -228,6 +229,8 @@ impl Into<VNode> for NavigationContainer {
         VNode::from(comp)
     }
 }
+
+impl_to_html!(NavigationContainer);
 
 pub trait NavigationContextExt {
     /// Access the [NavigationContext] from the [ContextProvider].

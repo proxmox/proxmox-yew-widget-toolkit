@@ -4,6 +4,7 @@ use pwt_macros::builder;
 use yew::prelude::*;
 use yew::virtual_dom::{Key, VComp, VNode};
 
+use crate::impl_to_html;
 use crate::state::{Theme, ThemeDensity, ThemeObserver};
 
 #[derive(Properties, Clone, PartialEq)]
@@ -178,3 +179,5 @@ impl Into<VNode> for ThemeLoader {
         VNode::from(comp)
     }
 }
+
+impl_to_html!(ThemeLoader);

@@ -7,6 +7,7 @@ use yew::html::IntoEventCallback;
 use yew::prelude::*;
 use yew::virtual_dom::{Key, VComp, VNode};
 
+use crate::impl_to_html;
 use crate::props::{ContainerBuilder, EventSubscriber, WidgetBuilder};
 use crate::widget::Container;
 
@@ -574,6 +575,8 @@ impl Into<VNode> for GestureDetector {
         VNode::from(comp)
     }
 }
+
+impl_to_html!(GestureDetector);
 
 // -180...180
 fn compute_direction(x1: i32, y1: i32, x2: i32, y2: i32) -> f64 {

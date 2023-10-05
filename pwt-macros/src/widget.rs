@@ -284,6 +284,18 @@ fn derive_widget(setup: &WidgetSetup, widget: DeriveInput) -> Result<proc_macro2
         });
     }
 
+    output.extend(quote! {
+        impl #impl_generics ::yew::ToHtml for #ident #ty_generics #where_clause {
+            fn to_html(&self) -> ::yew::html::Html {
+                self.clone().into()
+            }
+
+            fn into_html(self) -> ::yew::html::Html {
+                self.into()
+            }
+        }
+    });
+
     //eprintln!("TEST {}", output);
     Ok(output)
 }

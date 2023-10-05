@@ -263,3 +263,18 @@ pub mod prelude {
     pub use crate::tr;
     pub use crate::{gettext, gettext_noop, ngettext, npgettext, pgettext};
 }
+
+#[macro_export]
+macro_rules! impl_to_html {
+    ($struct_name:ident) => {
+        impl ToHtml for $struct_name {
+            fn to_html(&self) -> Html {
+                self.clone().into()
+            }
+
+            fn into_html(self) -> Html {
+                self.into()
+            }
+        }
+    };
+}
