@@ -69,7 +69,7 @@ pub(crate) fn message(text: impl Into<Html>, class: &str, icon_class: impl Into<
         .with_child(
             html! {<span class={"pwt-message-sign"} role="none"><i class={icon_class}/></span>},
         )
-        .with_child(html! {<p style={"overflow-wrap: anywhere;"}>{text}</p>})
+        .with_child(html! {<p style={"overflow-wrap: anywhere;"}>{text.into()}</p>})
         .into()
 }
 
