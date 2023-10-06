@@ -9,6 +9,9 @@ use crate::state::{get_available_languages, Language, LanguageInfo};
 use crate::widget::data_table::{DataTable, DataTableColumn, DataTableHeader};
 use crate::widget::{Dropdown, GridPicker};
 
+#[cfg(doc)]
+use crate::widget::CatalogLoader;
+
 use pwt_macros::builder;
 
 /// Language Selector
