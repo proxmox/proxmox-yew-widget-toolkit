@@ -1,9 +1,23 @@
 // Simple runtime formatter for gettext messages
 //
 // Ideas found found in rust crate "tr" and "runtime_fmt"
+//
+// # Why not use the "runtime_fmt" crate.
+//
+// - uses unstable compiler features
+// - allows too flexible format specifiers (we do not want things {:.2} for gettext messages)
+//
+// # Why not use the "tr" crate.
+//
+// Catalog registration and message lookup is done use module_path!().
+// This basically create a namespace for each rust toplevel module, so we
+// would need to download/initialize multiple catalogs.
+//
+// - we want to use a single, global catalog.
+// - we also want gettext, ngettext, npgettext, pgettext macros.
 
 #[cfg(doc)]
-use crate::{tr, gettext, pgettext, ngettext, npgettext};
+use crate::{gettext, ngettext, npgettext, pgettext, tr};
 
 #[doc(hidden)]
 pub struct FormatArguments<'a> {
@@ -121,14 +135,20 @@ pub fn gettext_runtime_format_arguments_to_string(args: FormatArguments) -> Stri
                 if let Some(arg) = arg {
                     output.push_str(&arg.1.to_string());
                 } else {
-                    log::error!("gettext_runtime_format error - missing argument in \"{}\"", args.format);
+                    log::error!(
+                        "gettext_runtime_format error - missing argument in \"{}\"",
+                        args.format
+                    );
                     return args.format.to_string();
                 }
                 state = ParserState::Text;
             }
             ParserState::Argument => {
                 if !(c.is_ascii_alphanumeric() || c == '_') {
-                    log::error!("gettext_runtime_format error - illegal chars in argument name \"{}\"", args.format);
+                    log::error!(
+                        "gettext_runtime_format error - illegal chars in argument name \"{}\"",
+                        args.format
+                    );
                     return args.format.to_string();
                 }
                 if let Some(argument) = &mut argument {
@@ -148,22 +168,43 @@ mod tests {
     #[test]
     fn test_format() {
         assert_eq!(gettext_runtime_format!("Simple Text"), "Simple Text");
-        assert_eq!(gettext_runtime_format!("Quoted {{Braces}}"), "Quoted {Braces}");
+        assert_eq!(
+            gettext_runtime_format!("Quoted {{Braces}}"),
+            "Quoted {Braces}"
+        );
         assert_eq!(gettext_runtime_format!("ARG {}", "A0"), "ARG A0");
         assert_eq!(gettext_runtime_format!("ARG {0}", "A0"), "ARG A0");
         assert_eq!(gettext_runtime_format!("ARG {0}", 50), "ARG 50");
-        assert_eq!(gettext_runtime_format!("ARG {1} {0}", "A0", "A1"), "ARG A1 A0");
-        assert_eq!(gettext_runtime_format!("ARG {n} {0}", "A0", n = 5), "ARG 5 A0");
+        assert_eq!(
+            gettext_runtime_format!("ARG {1} {0}", "A0", "A1"),
+            "ARG A1 A0"
+        );
+        assert_eq!(
+            gettext_runtime_format!("ARG {n} {0}", "A0", n = 5),
+            "ARG 5 A0"
+        );
 
         // strange messages, but alowed
-        assert_eq!(gettext_runtime_format!("Strange brace } (not expected)"), "Strange brace } (not expected)");
+        assert_eq!(
+            gettext_runtime_format!("Strange brace } (not expected)"),
+            "Strange brace } (not expected)"
+        );
     }
 
     #[test]
     fn test_format_errors() {
         assert_eq!(gettext_runtime_format!("ARG {name}", name = "A0"), "ARG A0");
-        assert_eq!(gettext_runtime_format!("ARG {name-xxx}", "A0"), "ARG {name-xxx}");
-        assert_eq!(gettext_runtime_format!("ARG {non_existent}", "A0"), "ARG {non_existent}");
-        assert_eq!(gettext_runtime_format!("ARG {nam{e}", name = "A0"), "ARG {nam{e}");
+        assert_eq!(
+            gettext_runtime_format!("ARG {name-xxx}", "A0"),
+            "ARG {name-xxx}"
+        );
+        assert_eq!(
+            gettext_runtime_format!("ARG {non_existent}", "A0"),
+            "ARG {non_existent}"
+        );
+        assert_eq!(
+            gettext_runtime_format!("ARG {nam{e}", name = "A0"),
+            "ARG {nam{e}"
+        );
     }
 }
