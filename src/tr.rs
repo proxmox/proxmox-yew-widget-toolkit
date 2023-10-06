@@ -6,7 +6,7 @@ use crate::gettext_runtime_format;
 #[cfg(doc)]
 use crate::{gettext, pgettext, ngettext, npgettext};
 
-/// Macro to translate strings using gettext.
+/// Translate strings using gettext and format arguments using [gettext_runtime_format!].
 ///
 /// ```
 /// # use pwt::prelude::*;
@@ -72,6 +72,12 @@ use crate::{gettext, pgettext, ngettext, npgettext};
 /// To enable the translation, one must first call the [init_i18n](crate::init_i18n).
 /// To translate the strings, one can use the `xtr` utility to extract the string,
 /// and use the other GNU gettext tools to translate them.
+///
+/// # Note
+///
+/// The [tr!](crate::tr!) macro combines the functionality of [gettext!], [pgettext!],
+/// [ngettext!] and [npgettext!].
+
 #[macro_export]
 macro_rules! tr {
     ($msgid:tt, $($tail:tt)* ) => {
