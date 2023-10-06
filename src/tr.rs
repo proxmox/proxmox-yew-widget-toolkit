@@ -1,5 +1,11 @@
 // This is similarg to the "tr" macro from crate "tr", but uses the single global catalog
 
+#[cfg(doc)]
+use crate::gettext_runtime_format;
+
+#[cfg(doc)]
+use crate::gettext_wrapper::{gettext, pgettext, ngettext, npgettext};
+
 #[macro_export]
 macro_rules! tr {
     ($msgid:tt, $($tail:tt)* ) => {
@@ -32,11 +38,20 @@ macro_rules! tr {
     }};
 }
 
+/// Like [gettext()], but format arguments using [gettext_runtime_format!].
+#[macro_export]
+macro_rules! gettext {
+    ($msgid:tt, $($tail:tt)* ) => {
+        $crate::gettext_runtime_format!($crate::gettext_wrapper::gettext($msgid), $($tail)*)
+    };
+    ($msgid:tt) => {
+        $crate::gettext_runtime_format!($crate::gettext_wrapper::gettext($msgid))
+    };
+}
 
-/// Like [`ngettext`], but allows for formatting.
+/// Like [ngettext()], but format arguments using [gettext_runtime_format!].
 ///
-/// It calls [`ngettext`] on `msgid`, `msgid_plural`, and `n`, and then replaces each occurrence of
-/// `{}` with the next value out of `args`, and `{n}` with `n`.
+/// Note: You can use `{n}` to reference the passed count.
 #[macro_export]
 macro_rules! ngettext {
     ($msgid:tt , $plur:tt , $n:expr, $($tail:tt)* ) => {{
@@ -49,10 +64,7 @@ macro_rules! ngettext {
     }};
 }
 
-/// Like [`pgettext`], but allows for formatting.
-///
-/// It calls [`pgettext`] on `msgctxt` and `msgid`, and then replaces each occurrence of `{}` with
-/// the next value out of `args`.
+/// Like [pgettext()], but format arguments using [gettext_runtime_format!].
 #[macro_export]
 macro_rules! pgettext {
     ($msgid:tt, $msgctx:tt,  $($tail:tt)* ) => {
@@ -62,11 +74,9 @@ macro_rules! pgettext {
         $crate::gettext_runtime_format!($crate::gettext_wrapper::pgettext($msgctx, $msgid))
     };
 }
-
-/// Like [`npgettext`], but allows for formatting.
+/// Like [npgettext()], but format arguments using [gettext_runtime_format!].
 ///
-/// It calls [`npgettext`] on `msgctxt`, `msgid`, `msgid_plural`, and `n`, and then replaces each
-/// occurrence of `{}` with the next value out of `args`, and `{n}` with `n`.
+/// Note: You can use `{n}` to reference the passed count.
 #[macro_export]
 macro_rules! npgettext {
     ($msgctx:tt ,  $msgid:tt , $plur:tt , $n:expr, $($tail:tt)* ) => {{

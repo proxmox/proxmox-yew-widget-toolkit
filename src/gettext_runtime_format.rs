@@ -2,6 +2,9 @@
 //
 // Ideas found found in rust crate "tr" and "runtime_fmt"
 
+#[cfg(doc)]
+use crate::{tr, gettext, pgettext, ngettext, npgettext};
+
 #[doc(hidden)]
 pub struct FormatArguments<'a> {
     #[doc(hidden)]
@@ -10,7 +13,18 @@ pub struct FormatArguments<'a> {
     pub args: &'a [(&'static str, &'a dyn (::std::fmt::Display))],
 }
 
-/// gettext_runtime_format! macro.
+/// Core macro to format gettext messages (see [tr!], [gettext!], [pgettext!], [ngettext!], [npgettext!]).
+///
+/// The format string may reference arguments using the following syntax:
+///
+/// - "{}": use next argument (increments internal position counter).
+/// - "{\<nth\>}": use nth argument, i.e. "{0}" and "{1}".
+/// - "{\<name\>}": use named argument, i.e. "{n}".
+///
+/// # Note
+///
+/// Both [ngettext!] and [npgettext!] get an implicit last argument named 'n', so you can refer to the
+/// counter using "{n}".
 #[macro_export]
 macro_rules! gettext_runtime_format {
     ($format:expr) => {{
