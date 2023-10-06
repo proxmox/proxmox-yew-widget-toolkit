@@ -177,7 +177,7 @@ pub mod state;
 pub mod touch;
 pub mod widget;
 
-pub mod runtime_fmt;
+pub mod gettext_runtime_format;
 pub mod tr;
 
 pub mod gettext_wrapper;
