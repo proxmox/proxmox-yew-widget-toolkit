@@ -4,20 +4,21 @@ use yew::html::IntoEventCallback;
 
 static mut CATALOG: Option<Catalog> = None;
 
+/// Intitialize the global translation catalog.
 pub fn init_i18n(catalog: Catalog) {
     unsafe {
         CATALOG = Some(catalog);
     }
 }
 
+/// Intitialize the global translation catalog, using a binary blob.
 pub fn init_i18n_from_blob(blob: Vec<u8>) -> Result<(), String> {
     let catalog = Catalog::parse(&mut &blob[..]).map_err(|err| err.to_string())?;
-    unsafe {
-        CATALOG = Some(catalog);
-    }
+    init_i18n(catalog);
     Ok(())
 }
 
+/// Intitialize the global translation catalog by downloading data from url.
 pub fn init_i18n_from_url(url: &str, on_load: impl IntoEventCallback<String>) {
     let url = url.to_string();
     let on_load = on_load.into_event_callback();
@@ -34,6 +35,9 @@ pub fn init_i18n_from_url(url: &str, on_load: impl IntoEventCallback<String>) {
     });
 }
 
+/// Translate text string using global translation catalog.
+///
+/// Please use [gettext!](crate::gettext!) to format text with arguments.
 pub fn gettext(msg_id: &str) -> String {
     let catalog = unsafe {
         match CATALOG.as_ref() {
@@ -49,6 +53,9 @@ pub fn gettext_noop(msg_id: &str) -> &str {
     msg_id
 }
 
+/// Translate text string using global translation catalog (with context).
+///
+/// Please use [pgettext!](crate::pgettext!) to format text with arguments.
 pub fn pgettext(msg_context: &str, msg_id: &str) -> String {
     let catalog = unsafe {
         match CATALOG.as_ref() {
@@ -59,6 +66,9 @@ pub fn pgettext(msg_context: &str, msg_id: &str) -> String {
     catalog.pgettext(msg_context, msg_id).to_string()
 }
 
+/// Translate text string using global translation catalog (singular/plural).
+///
+/// Please use [ngettext!](crate::ngettext!) to format text with arguments.
 pub fn ngettext(msg_id: &str, msg_id_plural: &str, n: u64) -> String {
     let catalog = unsafe {
         match CATALOG.as_ref() {
@@ -69,6 +79,9 @@ pub fn ngettext(msg_id: &str, msg_id_plural: &str, n: u64) -> String {
     catalog.ngettext(msg_id, msg_id_plural, n).to_string()
 }
 
+/// Translate text string using global translation catalog (singular/plural with context).
+///
+/// Please use [npgettext!](crate::npgettext!) to format text with arguments.
 pub fn npgettext(msg_context: &str, msg_id: &str, msg_id_plural: &str, n: u64) -> String {
     let catalog = unsafe {
         match CATALOG.as_ref() {
