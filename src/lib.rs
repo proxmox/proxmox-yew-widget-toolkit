@@ -177,14 +177,16 @@ pub mod state;
 pub mod touch;
 pub mod widget;
 
+#[doc(hidden)]
 pub mod gettext_runtime_format;
-pub mod tr;
 
-pub mod gettext_wrapper;
+mod gettext_wrapper;
 pub use gettext_wrapper::{
     gettext, gettext_noop, init_i18n, init_i18n_from_blob, init_i18n_from_url, ngettext, npgettext,
     pgettext,
 };
+
+mod tr;
 
 #[doc(hidden)]
 pub mod web_sys_ext;

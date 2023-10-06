@@ -31,14 +31,14 @@ pub struct FormatArguments<'a> {
 ///
 /// The format string may reference arguments using the following syntax:
 ///
-/// - "{}": use next argument (increments internal position counter).
-/// - "{\<nth\>}": use nth argument, i.e. "{0}" and "{1}".
-/// - "{\<name\>}": use named argument, i.e. "{n}".
+/// - `{}` - use next argument (increments internal position counter).
+/// - `{<nth>}` - use nth argument, i.e. `{0}` and `{1}`.
+/// - `{<name>}` - use named arguments, i.e. `{n}`.
 ///
 /// # Note
 ///
-/// Both [ngettext!] and [npgettext!] get an implicit last argument named 'n', so you can refer to the
-/// counter using "{n}".
+/// Both [ngettext!] and [npgettext!] get an implicit last argument named `n`, so you can refer to the
+/// counter using `{n}`.
 #[macro_export]
 macro_rules! gettext_runtime_format {
     ($format:expr) => {{
