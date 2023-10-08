@@ -2,6 +2,8 @@
 
 use std::rc::Rc;
 
+use serde::{de::DeserializeOwned, Serialize};
+
 mod data_store;
 pub use data_store::{DataNode, DataNodeDerefGuard, DataStore};
 
@@ -88,6 +90,58 @@ pub fn local_storage() -> Option<web_sys::Storage> {
     };
 
     Some(store)
+}
+
+fn resolve_state_id(state_id: &str) -> Option<(&str, web_sys::Storage)> {
+    let (use_session_storage, state_id) = if let Some(state_id) = state_id.strip_prefix("*") {
+        (true, state_id)
+    } else {
+        (false, state_id)
+    };
+
+    let store = if use_session_storage {
+        match session_storage() {
+            Some(store) => store,
+            None => return None,
+        }
+    } else {
+        match local_storage() {
+            Some(store) => store,
+            None => return None,
+        }
+    };
+    Some((state_id, store))
+}
+
+pub fn delete_state(state_id: &str) {
+    if let Some((state_id, store)) = resolve_state_id(state_id) {
+        let _ = store.delete(state_id);
+    }
+}
+
+pub fn load_state<T: 'static + DeserializeOwned>(state_id: &str) -> Option<T> {
+    if let Some((state_id, store)) = resolve_state_id(state_id) {
+        if let Ok(Some(item_str)) = store.get_item(state_id) {
+            if let Ok(data) = serde_json::from_str(&item_str) {
+                return Some(data);
+            }
+        }
+    }
+    None
+}
+
+pub fn store_state<T: 'static + Serialize>(state_id: &str, data: &T) {
+    if let Some((state_id, store)) = resolve_state_id(state_id) {
+        let item_str = serde_json::to_string(data).unwrap();
+        match store.set_item(state_id, &item_str) {
+            Err(err) => log::error!(
+                "store persistent state {} failed: {}",
+                state_id,
+                crate::convert_js_error(err)
+            ),
+            Ok(_) => {}
+        }
+    }
 }
 
 /// Helper to compare optional [Rc]s using [Rc::ptr_eq].

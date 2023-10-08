@@ -9,7 +9,9 @@ use yew::prelude::*;
 
 use crate::prelude::*;
 use crate::props::{IntoLoadCallback, LoadCallback};
-use crate::state::{local_storage, SharedState, SharedStateObserver, SharedStateReadGuard, SharedStateWriteGuard};
+use crate::state::{
+    SharedState, SharedStateObserver, SharedStateReadGuard, SharedStateWriteGuard,
+};
 use crate::widget::{error_message, Button, Fa};
 
 /// Shared HTTP load state
@@ -28,14 +30,9 @@ impl<T: 'static + DeserializeOwned + Serialize> LoaderState<T> {
             Some(state_id) => state_id,
             None => return,
         };
-        let store = match local_storage() {
-            Some(store) => store,
-            None => return,
-        };
-        if let Ok(Some(item_str)) = store.get_item(state_id) {
-            if let Ok(data) = serde_json::from_str(&item_str) {
-                self.data = Some(Ok(Rc::new(data)));
-            }
+
+        if let Some(data) = super::load_state(state_id) {
+            self.data = Some(Ok(Rc::new(data)));
         }
     }
 
@@ -44,27 +41,15 @@ impl<T: 'static + DeserializeOwned + Serialize> LoaderState<T> {
             Some(state_id) => state_id,
             None => return,
         };
-        let store = match local_storage() {
-            Some(store) => store,
-            None => return,
-        };
+
         match &self.data {
             Some(Ok(data)) => {
-                let item_str = serde_json::to_string(data).unwrap();
-                match store.set_item(state_id, &item_str) {
-                     Err(err) => log::error!(
-                        "store loader state {} failed: {}",
-                        state_id,
-                        crate::convert_js_error(err)
-                    ),
-                    Ok(_) => {}
-                }
+                super::store_state(state_id, data);
             }
-            _ =>{
-                let _ = store.delete(state_id);
+            _ => {
+                super::delete_state(state_id);
             }
         }
-
     }
 }
 
@@ -100,7 +85,7 @@ impl<T: 'static + DeserializeOwned + Serialize> Loader<T> {
 
     /// Method to set the persistent state ID.
     pub fn set_state_id(&mut self, state_id: impl IntoPropValue<Option<AttrValue>>) {
-    let mut me = self.write();
+        let mut me = self.write();
         me.state_id = state_id.into_prop_value();
         me.load_from_cache();
     }
