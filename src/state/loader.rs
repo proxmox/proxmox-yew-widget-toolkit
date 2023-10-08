@@ -3,12 +3,13 @@ use std::rc::Rc;
 use anyhow::Error;
 use derivative::Derivative;
 
-use yew::html::IntoEventCallback;
+use serde::{de::DeserializeOwned, Serialize};
+use yew::html::{IntoEventCallback, IntoPropValue};
 use yew::prelude::*;
 
 use crate::prelude::*;
 use crate::props::{IntoLoadCallback, LoadCallback};
-use crate::state::{SharedState, SharedStateObserver, SharedStateReadGuard, SharedStateWriteGuard};
+use crate::state::{local_storage, SharedState, SharedStateObserver, SharedStateReadGuard, SharedStateWriteGuard};
 use crate::widget::{error_message, Button, Fa};
 
 /// Shared HTTP load state
@@ -16,31 +17,101 @@ use crate::widget::{error_message, Button, Fa};
 /// This struct stores the state (loading) and the result of the load.
 pub struct LoaderState<T> {
     loading: u64,
+    state_id: Option<AttrValue>,
     pub loader: Option<LoadCallback<T>>,
     pub data: Option<Result<Rc<T>, Error>>,
 }
 
-/// Share HTTP loaded data.
+impl<T: 'static + DeserializeOwned + Serialize> LoaderState<T> {
+    fn load_from_cache(&mut self) {
+        let state_id = match &self.state_id {
+            Some(state_id) => state_id,
+            None => return,
+        };
+        let store = match local_storage() {
+            Some(store) => store,
+            None => return,
+        };
+        if let Ok(Some(item_str)) = store.get_item(state_id) {
+            if let Ok(data) = serde_json::from_str(&item_str) {
+                self.data = Some(Ok(Rc::new(data)));
+            }
+        }
+    }
+
+    fn store_to_cache(&mut self) {
+        let state_id = match &self.state_id {
+            Some(state_id) => state_id,
+            None => return,
+        };
+        let store = match local_storage() {
+            Some(store) => store,
+            None => return,
+        };
+        match &self.data {
+            Some(Ok(data)) => {
+                let item_str = serde_json::to_string(data).unwrap();
+                match store.set_item(state_id, &item_str) {
+                     Err(err) => log::error!(
+                        "store loader state {} failed: {}",
+                        state_id,
+                        crate::convert_js_error(err)
+                    ),
+                    Ok(_) => {}
+                }
+            }
+            _ =>{
+                let _ = store.delete(state_id);
+            }
+        }
+
+    }
+}
+
+/// Helper to share async loaded data.
+///
+/// - clnonable, shared state with change notifications.
+/// - stores load result as `Option<Result<Rc<T>, Error>>`.
+/// - tracks load state `self.loading()`.
+/// - ability to cache result in local storage by setting `state_id`.
+/// - helper to simplify renderering `self.render`.
+///
 #[derive(Derivative)]
-#[derivative(Clone(bound=""), PartialEq(bound=""))]
+#[derivative(Clone(bound = ""), PartialEq(bound = ""))]
 pub struct Loader<T>(SharedState<LoaderState<T>>);
 
-impl<T: 'static> Loader<T> {
+impl<T: 'static + DeserializeOwned + Serialize> Loader<T> {
     /// Create a new instance.
     pub fn new() -> Self {
         let state = LoaderState {
             loading: 0,
+            state_id: None,
             data: None,
             loader: None,
         };
         Self(SharedState::new(state))
     }
 
+    /// Builder style method to set the persistent state ID.
+    pub fn state_id(mut self, state_id: impl IntoPropValue<Option<AttrValue>>) -> Self {
+        self.set_state_id(state_id);
+        self
+    }
+
+    /// Method to set the persistent state ID.
+    pub fn set_state_id(&mut self, state_id: impl IntoPropValue<Option<AttrValue>>) {
+    let mut me = self.write();
+        me.state_id = state_id.into_prop_value();
+        me.load_from_cache();
+    }
+
     pub fn on_change(mut self, cb: impl IntoEventCallback<Loader<T>>) -> Self {
         let me = self.clone();
         match cb.into_event_callback() {
             Some(cb) => self.0.set_on_change(move |_| cb.emit(me.clone())),
-            _ => self.0.set_on_change(None::<Callback<SharedState<LoaderState<T>>>>),
+            _ => self
+                .0
+                .set_on_change(None::<Callback<SharedState<LoaderState<T>>>>),
         };
         self
     }
@@ -111,6 +182,7 @@ impl<T: 'static> Loader<T> {
             let mut me = me.write();
             me.loading -= 1;
             me.data = Some(res.map(|data| Rc::new(data)));
+            me.store_to_cache();
         });
     }
 
