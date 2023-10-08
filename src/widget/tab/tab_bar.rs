@@ -4,7 +4,7 @@ use yew::html::{IntoEventCallback, IntoPropValue};
 use yew::virtual_dom::{Key, VComp, VNode};
 
 use crate::prelude::*;
-use crate::state::{NavigationContext, NavigationContextExt, Selection};
+use crate::state::{NavigationContext, NavigationContextExt, PersistentState, Selection};
 use crate::web_sys_ext::{ResizeObserverBoxOptions, ResizeObserverOptions};
 use crate::widget::dom::{element_direction_rtl, IntoHtmlElement};
 use crate::widget::focus::roving_tabindex_next;
@@ -42,6 +42,11 @@ pub struct TabBar {
     /// Tab bar items.
     #[prop_or_default]
     pub tabs: Vec<TabBarItem>,
+
+    /// Store current state (selected item).
+    #[prop_or_default]
+    #[builder(IntoPropValue, into_prop_value)]
+    pub state_id: Option<AttrValue>,
 
     /// Selection object to store the currently selected tab key.
     ///
@@ -162,6 +167,7 @@ pub enum Msg {
 #[doc(hidden)]
 pub struct PwtTabBar {
     active: Option<Key>,
+    active_cache: Option<PersistentState<String>>,
     rtl: Option<bool>,
     _nav_ctx_handle: Option<ContextHandle<NavigationContext>>,
     selection: Selection,
@@ -200,6 +206,19 @@ impl PwtTabBar {
 
         selection
     }
+
+    fn update_state_cache(&mut self) {
+        if let Some(active_cache) = &mut self.active_cache {
+            match self.active.as_deref() {
+                Some(active) => {
+                    active_cache.update(active.to_owned());
+                }
+                None => {
+                    active_cache.update(String::new());
+                }
+            }
+        }
+    }
 }
 
 impl Component for PwtTabBar {
@@ -209,6 +228,18 @@ impl Component for PwtTabBar {
     fn create(ctx: &Context<Self>) -> Self {
         let props = ctx.props();
         let mut active = props.get_default_active();
+
+        let active_cache = props
+            .state_id
+            .as_ref()
+            .map(|state_id| PersistentState::<String>::new(state_id));
+
+        if let Some(active_cache) = &active_cache {
+            let last_active: &str = &*active_cache;
+            if !last_active.is_empty() {
+                active = Some(Key::from(last_active));
+            }
+        }
 
         let mut _nav_ctx_handle = None;
 
@@ -228,7 +259,12 @@ impl Component for PwtTabBar {
                 //log::info!("INIT CTX {:?}", nav_ctx);
                 _nav_ctx_handle = Some(handle);
                 let path = nav_ctx.path();
-                active = get_active_or_default(props, &Some(Key::from(path)));
+
+                if !(active.is_some() && (path.is_empty() || path == "_")) {
+                    active = get_active_or_default(props, &Some(Key::from(path)));
+                } else if let Some(active) = active.as_deref() {
+                    ctx.link().push_relative_route(active);
+                }
             }
         }
 
@@ -239,6 +275,7 @@ impl Component for PwtTabBar {
         }
         Self {
             active,
+            active_cache,
             selection,
             rtl: None,
             _nav_ctx_handle,
@@ -266,6 +303,7 @@ impl Component for PwtTabBar {
                 }
 
                 self.active = key;
+                self.update_state_cache();
 
                 if let Some(key) = &self.active {
                     if props.router {
@@ -287,6 +325,7 @@ impl Component for PwtTabBar {
 
                 // set active to avoid Msg::SelectionChange
                 self.active = key.clone();
+                self.update_state_cache();
 
                 if let Some(key) = &key {
                     self.selection.select(key.clone());
@@ -467,16 +506,19 @@ impl Component for PwtTabBar {
 
     fn rendered(&mut self, ctx: &Context<Self>, _first_render: bool) {
         let link = ctx.link().clone();
-        let element = self.active_ref.clone().into_html_element().unwrap();
-        let mut options = ResizeObserverOptions::new();
-        options.box_(ResizeObserverBoxOptions::BorderBox);
-        self.active_size_observer = Some(SizeObserver::new_with_options(
-            &element,
-            move |(_, _)| {
-                link.send_message(Msg::UpdateIndicator);
-            },
-            options,
-        ));
+        if let Some(element) = self.active_ref.clone().into_html_element() {
+            let mut options = ResizeObserverOptions::new();
+            options.box_(ResizeObserverBoxOptions::BorderBox);
+            self.active_size_observer = Some(SizeObserver::new_with_options(
+                &element,
+                move |(_, _)| {
+                    link.send_message(Msg::UpdateIndicator);
+                },
+                options,
+            ));
+        } else {
+            self.active_size_observer = None;
+        }
     }
 }
 

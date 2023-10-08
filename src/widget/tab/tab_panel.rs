@@ -75,6 +75,11 @@ pub struct TabPanel {
     #[prop_or_default]
     pub class: Classes,
 
+    /// Store current state (selected item).
+    #[prop_or_default]
+    #[builder(IntoPropValue, into_prop_value)]
+    pub state_id: Option<AttrValue>,
+
     /// Use [MiniScroll] for [TabBar] to allow scrolling.
     #[prop_or_default]
     #[builder(IntoPropValue, into_prop_value)]
@@ -224,6 +229,7 @@ impl Component for PwtTabPanel {
             .clone()
             .selection(self.selection.clone())
             .style(props.tab_bar_style)
+            .state_id(props.state_id.clone())
             .into();
 
         if let Some(scroll_mode) = props.scroll_mode {
