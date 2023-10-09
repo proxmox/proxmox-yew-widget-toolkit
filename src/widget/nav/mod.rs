@@ -102,7 +102,7 @@ impl Menu {
         self
     }
 
-    /// Builder style method to add a special section header.
+    /// Builder style method for [add_section_header](Self::add_section_header)
     pub fn with_section_header(mut self, text: impl Into<AttrValue>) -> Self {
         self.add_section_header(text);
         self
@@ -115,7 +115,7 @@ impl Menu {
         );
     }
 
-    /// Builder style method to add a spacer element.
+    /// Builder style method for [add_spacer](Self::add_spacer)
     pub fn with_spacer(mut self) -> Self {
         self.add_spacer();
         self
