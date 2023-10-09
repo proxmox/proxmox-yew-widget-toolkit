@@ -7,6 +7,175 @@ use widget::*;
 mod builder;
 use builder::*;
 
+/// Widget Macro for reusing some properties of HTML elements and automatically
+/// implementing some useful traits.
+///
+/// With this, a struct will be decorated with some properties, depending on
+/// the types given.
+///
+/// # Default behaviour
+///
+/// By default  a `std_props` property of type `pwt::props::WidgetStdProps`
+/// will be added and the traits:
+///
+/// * `pwt::props::WidgetBuilder`
+/// * `pwt::props::AsClassesMut`
+/// * `pwt::props::CssMarginBuilder`
+/// * `pwt::props::CssPaddingBuilder`
+/// * `pwt::props::CssBorderBuilder`
+///
+/// will be implemented.
+///
+/// Also `Into<yew::Html>` as well as `yew::ToHtml` will be automatically
+/// implemented.
+///
+/// > Note: This requires that the struct implements `Clone`.
+///
+/// # Types
+///
+/// Then there are the following available types:
+/// * `input` -  this will add an `input_props` property of type `FieldStdProps` and
+/// implement `FieldBuilder` on it
+/// * `container` - this will add a `children` property of type `Vec<yew::Html>` and
+/// implement `ContainerBuilder`
+/// * `element` - this will add a `listeners` property of type `ListenersWrapper` and
+/// implement `EventSubscriber`
+/// * `svg` - this prevents the implemntation of `pwt::props::AsClassesMut` and the
+/// `Css*Builder` traits.
+///
+/// # Syntax
+///
+/// `#[widget(crate=foo, comp=bar, @element, @svg, ...)]`
+///
+/// * `crate=foo` is optional and designates where to find the `pwt` crate
+/// * `comp=bar` is also optional and describes the `Component` to use
+/// * The desired types are prefixed with `@` and simply appended as a comma seperated list
+///
+/// # Examples:
+///
+/// ```
+/// # // dummy crate here so we don't have a cyclic dependency
+/// # pub mod pwt {
+/// #     pub mod props {
+/// #         #[derive(Clone, PartialEq, Default)]
+/// #         pub struct WidgetStdProps {
+/// #             pub class: yew::Classes,
+/// #         }
+/// #         #[derive(Clone, PartialEq, Default)]
+/// #         pub struct ListenersWrapper;
+/// #         pub trait WidgetBuilder {
+/// #             fn as_std_props_mut(&mut self) -> &mut WidgetStdProps;
+/// #         }
+/// #         pub trait AsClassesMut {
+/// #             fn as_classes_mut(&mut self) -> &mut yew::Classes;
+/// #         }
+/// #         pub trait CssBorderBuilder {}
+/// #         pub trait CssMarginBuilder {}
+/// #         pub trait CssPaddingBuilder {}
+/// #         pub trait EventSubscriber: Sized {
+/// #             fn as_listeners_mut(&mut self) -> &mut ListenersWrapper;
+/// #             fn onclick(mut self, _cb: impl yew::html::IntoEventCallback<yew::MouseEvent>) -> Self {
+/// #                 self
+/// #             }
+/// #         }
+/// #     }
+/// # }
+/// use pwt_macros::widget;
+/// use pwt::props::EventSubscriber;
+/// use yew::prelude::*;
+///
+/// #[widget(@element)]
+/// #[derive(Clone, PartialEq, Properties)]
+/// struct Foo {
+///     // some fields go here
+/// }
+///
+/// impl Foo {
+///     fn new() -> Self {
+///         yew::props!( Self {} )
+///     }
+/// }
+///
+/// // implementing Into<VTag> necessary without comp
+/// # use yew::virtual_dom::VTag;
+/// impl From<Foo> for VTag {
+///     //...
+/// #     fn from(value: Foo) -> VTag {
+/// #         VTag::new("foo")
+/// #     }
+/// }
+///
+/// // now you can use the provided methods from e.g., EventSubscriber:
+/// let foo = Foo::new()
+///     .onclick(|event: MouseEvent| { /* do something in onclick */});
+/// ```
+///
+/// If the struct is implemented as `Properties` for a accompanying component
+/// you can do
+///
+/// ```
+/// # // dummy crate here so we don't have a cyclic dependency
+/// # pub mod pwt {
+/// #     pub mod props {
+/// #         #[derive(Clone, PartialEq, Default)]
+/// #         pub struct WidgetStdProps {
+/// #             pub class: yew::Classes,
+/// #             pub key: Option<yew::virtual_dom::Key>,
+/// #         }
+/// #         #[derive(Clone, PartialEq, Default)]
+/// #         pub struct ListenersWrapper;
+/// #         pub trait WidgetBuilder {
+/// #             fn as_std_props_mut(&mut self) -> &mut WidgetStdProps;
+/// #         }
+/// #         pub trait AsClassesMut {
+/// #             fn as_classes_mut(&mut self) -> &mut yew::Classes;
+/// #         }
+/// #         pub trait CssBorderBuilder {}
+/// #         pub trait CssMarginBuilder {}
+/// #         pub trait CssPaddingBuilder {}
+/// #         pub trait EventSubscriber: Sized {
+/// #             fn as_listeners_mut(&mut self) -> &mut ListenersWrapper;
+/// #         }
+/// #     }
+/// # }
+/// use pwt_macros::widget;
+/// use pwt::props::EventSubscriber;
+/// use yew::prelude::*;
+///
+/// #[widget(comp=Foo, @element)]
+/// #[derive(Clone, PartialEq, Properties)]
+/// struct FooProperties {
+///     // some fields go here
+/// }
+///
+/// impl FooProperties {
+///     fn new() -> Self {
+///         yew::props!( Self {} )
+///     }
+/// }
+///
+/// // no Into<VTag> implementing necessary here, it will use the Component for that
+///
+/// struct Foo {}
+///
+/// impl yew::Component for Foo {
+///     type Message = ();
+///     type Properties = FooProperties;
+///
+///     fn create(ctx: &Context<Self>) -> Self {
+///         // implement create
+/// #       let _ = ctx.props();
+/// #       Foo {}
+///     }
+///
+///     fn view(&self, ctx: &Context<Self>) -> Html {
+///         // implement view
+/// #       let _ = ctx.props();
+/// #       html!{}
+///     }
+/// }
+/// ```
+///
 #[proc_macro_attribute]
 pub fn widget(attr: TokenStream, item: TokenStream) -> TokenStream {
     //eprintln!("attr: \"{}\"", attr.to_string());

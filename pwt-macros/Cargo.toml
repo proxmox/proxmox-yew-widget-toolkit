@@ -16,3 +16,4 @@ quote = "1"
 
 [dev-dependencies]
 trybuild = "1"
+yew = "0.21"
