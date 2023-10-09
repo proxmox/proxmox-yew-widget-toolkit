@@ -198,7 +198,7 @@ fn derive_builder(builder: DeriveInput) -> Result<proc_macro2::TokenStream> {
                     }
                 }
                 let setter_doc = format!("Set {field_name}\n\n{doc}");
-                let builder_doc = format!("Builder style method for [`Self::{setter}`]");
+                let builder_doc = format!("Builder style method for [`{setter}`](Self::{setter})");
                 (builder_doc, setter_doc)
             }
         };
