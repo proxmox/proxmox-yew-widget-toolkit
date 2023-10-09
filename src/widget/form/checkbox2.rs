@@ -94,11 +94,9 @@ impl ManagedField for CheckboxField {
             None => default.clone(),
         };
 
-        let valid = Ok(());
-
         ManagedFieldState {
             value: value.into(),
-            valid, // fixme: remove
+            valid: Ok(()),
             default: default.into(),
             radio_group: props.radio_group,
             unique: false,

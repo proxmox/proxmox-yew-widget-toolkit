@@ -151,7 +151,7 @@ impl ManagedField for TextAreaField {
 
         ManagedFieldState {
             value: value,
-            valid: Ok(()), // fixme
+            valid: Ok(()),
             default,
             radio_group: false,
             unique: false,

@@ -126,7 +126,7 @@ impl ManagedField for MenuCheckboxField {
 
         ManagedFieldState {
             value: value.into(),
-            valid: Ok(()), //fixme
+            valid: Ok(()),
             default: default.into(),
             radio_group: props.radio_group,
             unique: true,

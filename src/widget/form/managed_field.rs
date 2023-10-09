@@ -162,6 +162,11 @@ pub trait ManagedField: Sized {
     }
 
     /// Returns the initial field setup.
+    ///
+    /// # Note
+    ///
+    /// The [ManagedFieldState::valid] property is ignored and
+    /// immediately overwritten by a call to the validation function.
     fn setup(props: &Self::Properties) -> ManagedFieldState;
 
     /// Create the component state.

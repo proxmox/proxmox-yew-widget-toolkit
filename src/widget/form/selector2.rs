@@ -218,7 +218,7 @@ impl<S: DataStore + 'static> ManagedField for SelectorField<S> {
 
         ManagedFieldState {
             value,
-            valid: Ok(()), //fixme
+            valid: Ok(()),
             default,
             radio_group: false,
             unique: false,
