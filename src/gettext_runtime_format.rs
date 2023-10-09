@@ -128,6 +128,9 @@ pub fn gettext_runtime_format_arguments_to_string(args: FormatArguments) -> Stri
                         args.args.iter().find(|arg| arg.0 == argument)
                     }
                 } else {
+                    if argument_index > 0 {
+                        log::error!("gettext_runtime_format error - multiple non-indexed, non-named arguments - order is implicit");
+                    }
                     let arg = args.args.get(argument_index);
                     argument_index += 1;
                     arg
@@ -205,6 +208,11 @@ mod tests {
         assert_eq!(
             gettext_runtime_format!("ARG {nam{e}", name = "A0"),
             "ARG {nam{e}"
+        );
+
+        assert_eq!(
+            gettext_runtime_format!("ARG {} {}", "A0", "A1"),
+            "ARG A0 A1",
         );
     }
 }
