@@ -120,11 +120,68 @@ impl InputPanel {
 
     /// Adds custom child in the first column
     pub fn add_custom_child(&mut self, child: impl Into<yew::virtual_dom::VNode>) {
-        self.left_count += 1;
+        self.add_custom_child_impl(Position::Left, false, child);
+    }
 
-        let style = format!("grid-row: {}; grid-column-end: span 2", self.left_count);
+    /// Builder style method to add a custom child in the second column
+    pub fn with_right_custom_child(mut self, child: impl Into<yew::virtual_dom::VNode>) -> Self {
+        self.add_right_custom_child(child);
+        self
+    }
 
-        let class = classes!("pwt-grid-column-1", "pwt-align-self-center",);
+    /// Adds custom child in the second column
+    pub fn add_right_custom_child(&mut self, child: impl Into<yew::virtual_dom::VNode>) {
+        self.add_custom_child_impl(Position::Right, false, child);
+    }
+
+    /// Builder style method to add a large custom child
+    pub fn with_large_custom_child(mut self, child: impl Into<yew::virtual_dom::VNode>) -> Self {
+        self.add_large_custom_child(child);
+        self
+    }
+
+    /// Adds large custom child
+    pub fn add_large_custom_child(&mut self, child: impl Into<yew::virtual_dom::VNode>) {
+        self.add_custom_child_impl(Position::Large, false, child);
+    }
+
+    fn add_custom_child_impl(
+        &mut self,
+        column: Position,
+        advanced: bool,
+        child: impl Into<yew::virtual_dom::VNode>,
+    ) {
+        let (row, start, span) = match column {
+            Position::Left => {
+                self.left_count += 1;
+                (self.left_count, 1, 3)
+            }
+            Position::Right => {
+                self.two_column = true;
+                self.right_count += 1;
+                (self.right_count, 3, -1)
+            }
+            Position::Large => {
+                self.two_column = true;
+
+                let max = self.left_count.max(self.right_count);
+                self.left_count = max + 1;
+                self.right_count = max + 1;
+
+                (self.left_count, 1, -1)
+            }
+        };
+
+        let style = if !advanced || self.show_advanced {
+            format!("grid-row: {}; grid-column: {}/{};", row, start, span)
+        } else {
+            format!(
+                "grid-row: {}; grid-column: {}/{}; display: none",
+                row, start, span
+            )
+        };
+
+        let class = classes!("pwt-align-self-center");
         let child = child.into();
         let key = match child.key() {
             Some(key) => key.clone(),
