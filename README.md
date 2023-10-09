@@ -37,7 +37,7 @@ directory to the PATH variable:
 
     export PATH="$HOME/dart-sass:$PATH"
 
-Note: In therory, Trunk downloads and use dart-sass automatically. To use it inside
+Note: In theory, Trunk downloads and use dart-sass automatically. To use it inside
 hooks you still have to put the download directory into your path:
 
     export PATH="$HOME/.cache/trunk/sass-1.50.0:$PATH"
