@@ -284,14 +284,16 @@ fn derive_widget(setup: &WidgetSetup, widget: DeriveInput) -> Result<proc_macro2
         });
     }
 
+    // We want to implement ToHtml for easy use, but that needs a copy/clone variant too, so
+    // we require Clone on the structs
     output.extend(quote! {
         impl #impl_generics ::yew::ToHtml for #ident #ty_generics #where_clause {
             fn to_html(&self) -> ::yew::html::Html {
-                self.clone().into()
+                ::std::clone::Clone::clone(self).into_html()
             }
 
             fn into_html(self) -> ::yew::html::Html {
-                self.into()
+                ::std::convert::Into::<::yew::html::Html>::into(self)
             }
         }
     });
