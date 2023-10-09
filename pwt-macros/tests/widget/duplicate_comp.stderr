@@ -1,0 +1,5 @@
+error: multiple component definitions
+  --> tests/widget/duplicate_comp.rs:34:36
+   |
+34 | #[widget(pwt=crate, comp=Foo, comp=Foo, @element)]
+   |                                    ^^^

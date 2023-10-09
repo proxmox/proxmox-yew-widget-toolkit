@@ -1,0 +1,5 @@
+error[E0433]: failed to resolve: use of undeclared crate or module `wrong`
+  --> tests/widget/wrong_crate.rs:34:14
+   |
+34 | #[widget(pwt=wrong, comp=Foo, @input, @element)]
+   |              ^^^^^ use of undeclared crate or module `wrong`

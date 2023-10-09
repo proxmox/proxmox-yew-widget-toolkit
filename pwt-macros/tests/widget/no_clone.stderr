@@ -1,0 +1,12 @@
+error[E0277]: the trait bound `Foo: Clone` is not satisfied
+  --> tests/widget/no_clone.rs:34:1
+   |
+34 | #[widget(pwt=crate, comp=FooComp, @input, @element)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `Clone` is not implemented for `Foo`
+   |
+   = note: this error originates in the attribute macro `widget` (in Nightly builds, run with -Z macro-backtrace for more info)
+help: consider annotating `Foo` with `#[derive(Clone)]`
+   |
+34 + #[derive(Clone)]
+35 | #[widget(pwt=crate, comp=FooComp, @input, @element)]
+   |

@@ -1,0 +1,5 @@
+error: no such widget mixin
+  --> tests/widget/wrong_type.rs:34:32
+   |
+34 | #[widget(pwt=crate, comp=Foo, @wrong)]
+   |                                ^^^^^

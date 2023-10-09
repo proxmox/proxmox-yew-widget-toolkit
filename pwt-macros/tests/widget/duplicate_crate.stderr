@@ -1,0 +1,5 @@
+error: multiple pwt name definitions
+  --> tests/widget/duplicate_crate.rs:34:25
+   |
+34 | #[widget(pwt=crate, pwt=crate2, comp=Foo, @element)]
+   |                         ^^^^^^
