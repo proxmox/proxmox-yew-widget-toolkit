@@ -1,5 +1,3 @@
-use serde_json::Value;
-
 use yew::html::{IntoEventCallback, IntoPropValue};
 use yew::prelude::*;
 
@@ -8,7 +6,7 @@ use pwt_macros::{builder, widget};
 use crate::props::{ContainerBuilder, EventSubscriber, WidgetBuilder};
 use crate::widget::Container;
 
-use super::{ManagedField, ManagedFieldContext, ManagedFieldMaster, ManagedFieldState, ValidateFn};
+use super::{ManagedField, ManagedFieldContext, ManagedFieldMaster, ManagedFieldState};
 
 pub type PwtCheckbox = ManagedFieldMaster<CheckboxField>;
 
@@ -97,12 +95,10 @@ impl ManagedField for CheckboxField {
         };
 
         let valid = Ok(());
-        let validate = ValidateFn::new(move |_value: &Value| Ok(()));
 
         ManagedFieldState {
             value: value.into(),
-            valid,
-            validate,
+            valid, // fixme: remove
             default: default.into(),
             radio_group: props.radio_group,
             unique: false,

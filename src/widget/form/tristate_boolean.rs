@@ -73,13 +73,6 @@ pub struct PwtTristateBoolean {
     render_value: RenderFn<AttrValue>,
 }
 
-fn create_field_validation_cb() -> ValidateFn<Value> {
-    ValidateFn::new(move |value: &Value| match value {
-        Value::Null | Value::Bool(_) => Ok(()),
-        _ => Err(Error::msg(tr!("Got wrong data type!"))),
-    })
-}
-
 fn tristate_to_value(tristate: Tristate) -> Value {
     match tristate {
         Tristate::Null => Value::Null,
@@ -109,6 +102,13 @@ impl ManagedField for PwtTristateBoolean {
     type Message = Msg;
     type Properties = TristateBoolean;
 
+    fn create_validation_fn(_props: &Self::Properties) -> ValidateFn<Value> {
+        ValidateFn::new(move |value: &Value| match value {
+            Value::Null | Value::Bool(_) => Ok(()),
+            _ => Err(Error::msg(tr!("Got wrong data type!"))),
+        })
+    }
+
     fn setup(props: &Self::Properties) -> ManagedFieldState {
         let mut value = Value::Null;
 
@@ -120,9 +120,7 @@ impl ManagedField for PwtTristateBoolean {
         // fixme: value = force_value.to_string();
         //}
 
-        let validate = create_field_validation_cb();
         let value: Value = value.clone().into();
-        let valid = validate.validate(&value).map_err(|err| err.to_string());
 
         let default = match props.default {
             None => Value::Null,
@@ -131,8 +129,7 @@ impl ManagedField for PwtTristateBoolean {
 
         ManagedFieldState {
             value: value,
-            valid,
-            validate,
+            valid: Ok(()), // fixme
             default,
             radio_group: false,
             unique: false,

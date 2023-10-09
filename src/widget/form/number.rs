@@ -276,52 +276,6 @@ impl<T: NumberTypeInfo> Number<T> {
     }
 }
 
-fn create_field_validation_cb<T: NumberTypeInfo>(props: Number<T>) -> ValidateFn<Value> {
-    ValidateFn::new(move |value: &Value| {
-        let is_empty = match value {
-            Value::Null => true,
-            Value::Number(_) => false,
-            Value::String(v) => v.is_empty(),
-            _ => return Err(Error::msg(tr!("Got wrong data type!"))),
-        };
-
-        if is_empty {
-            if props.input_props.required {
-                return Err(Error::msg(tr!("Field may not be empty.")));
-            } else {
-                return Ok(());
-            }
-        }
-
-        let number = match T::value_to_number(value) {
-            Ok(number) => number,
-            Err(err) => return Err(Error::msg(tr!("Parse number failed: {}", err.to_string()))),
-        };
-
-        if let Some(min) = props.min {
-            if number < min {
-                return Err(Error::msg(tr!(
-                    "value must be greater than or equal to '{0}'",
-                    min
-                )));
-            }
-        }
-        if let Some(max) = props.max {
-            if number > max {
-                return Err(Error::msg(tr!(
-                    "value must be less than or equal to '{0}'",
-                    max
-                )));
-            }
-        }
-
-        match &props.validate {
-            Some(cb) => cb.validate(&number),
-            None => Ok(()),
-        }
-    })
-}
-
 pub enum Msg {
     Update(String),
 }
@@ -351,6 +305,53 @@ impl<T: NumberTypeInfo> ManagedField for NumberField<T> {
     type Properties = Number<T>;
     type Message = Msg;
 
+    fn create_validation_fn(props: &Number<T>) -> ValidateFn<Value> {
+        let props = props.clone();
+        ValidateFn::new(move |value: &Value| {
+            let is_empty = match value {
+                Value::Null => true,
+                Value::Number(_) => false,
+                Value::String(v) => v.is_empty(),
+                _ => return Err(Error::msg(tr!("Got wrong data type!"))),
+            };
+
+            if is_empty {
+                if props.input_props.required {
+                    return Err(Error::msg(tr!("Field may not be empty.")));
+                } else {
+                    return Ok(());
+                }
+            }
+
+            let number = match T::value_to_number(value) {
+                Ok(number) => number,
+                Err(err) => return Err(Error::msg(tr!("Parse number failed: {}", err.to_string()))),
+            };
+
+            if let Some(min) = props.min {
+                if number < min {
+                    return Err(Error::msg(tr!(
+                        "value must be greater than or equal to '{0}'",
+                        min
+                    )));
+                }
+            }
+            if let Some(max) = props.max {
+                if number > max {
+                    return Err(Error::msg(tr!(
+                        "value must be less than or equal to '{0}'",
+                        max
+                    )));
+                }
+            }
+
+            match &props.validate {
+                Some(cb) => cb.validate(&number),
+                None => Ok(()),
+            }
+        })
+    }
+
     fn setup(props: &Self::Properties) -> ManagedFieldState {
         let mut value = String::new();
 
@@ -361,9 +362,7 @@ impl<T: NumberTypeInfo> ManagedField for NumberField<T> {
             value = force_value.to_string();
         }
 
-        let validate = create_field_validation_cb(props.clone());
         let value: Value = value.clone().into();
-        let valid = validate.validate(&value).map_err(|err| err.to_string());
 
         let default = match props.default {
             Some(default) => default.to_string().into(),
@@ -372,8 +371,7 @@ impl<T: NumberTypeInfo> ManagedField for NumberField<T> {
 
         ManagedFieldState {
             value: value,
-            valid,
-            validate,
+            valid: Ok(()), // fixme:
             default,
             radio_group: false,
             unique: false,

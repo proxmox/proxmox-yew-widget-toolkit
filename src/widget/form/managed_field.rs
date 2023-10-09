@@ -23,9 +23,6 @@ pub struct ManagedFieldState {
     /// Result of the last validation (updated on value changes)
     pub valid: Result<(), String>,
 
-    /// The validation function
-    pub validate: ValidateFn<Value>,
-
     /// Field default value
     pub default: Value,
 
@@ -160,6 +157,10 @@ pub trait ManagedField: Sized {
     type Properties: Properties + FieldBuilder;
     type Message: 'static;
 
+    fn create_validation_fn(_props: &Self::Properties) -> ValidateFn<Value> {
+        ValidateFn::new(|_| Ok(()))
+    }
+
     /// Returns the initial field setup.
     fn setup(props: &Self::Properties) -> ManagedFieldState;
 
@@ -209,6 +210,9 @@ pub struct ManagedFieldMaster<MF: ManagedField> {
     _form_ctx_handle: Option<ContextHandle<FormContext>>,
     _form_ctx_observer: Option<FormContextObserver>,
     label_clicked_closure: Option<Closure<dyn Fn()>>,
+
+    /// The validation function
+    validate: ValidateFn<Value>,
 }
 
 impl<MF: ManagedField + 'static> ManagedFieldMaster<MF> {
@@ -254,7 +258,7 @@ impl<MF: ManagedField + 'static> ManagedFieldMaster<MF> {
             self.comp_state.value.clone(),
             self.comp_state.default.clone(),
             self.comp_state.radio_group,
-            Some(self.comp_state.validate.clone()),
+            Some(self.validate.clone()),
             options,
             self.comp_state.unique,
             self.comp_state.submit_converter.clone(),
@@ -276,7 +280,11 @@ impl<MF: ManagedField + 'static> Component for ManagedFieldMaster<MF> {
 
     fn create(ctx: &Context<Self>) -> Self {
         let props = ctx.props();
-        let comp_state = MF::setup(props);
+
+        let validate = MF::create_validation_fn(props);
+
+        let mut comp_state = MF::setup(props);
+        comp_state.valid = validate.validate(&comp_state.value).map_err(|err| err.to_string());
 
         let sub_context = ManagedFieldContext::new(ctx, &comp_state);
         let slave = MF::create(&sub_context);
@@ -306,6 +314,7 @@ impl<MF: ManagedField + 'static> Component for ManagedFieldMaster<MF> {
             field_handle: None,
             form_ctx,
             label_clicked_closure: None,
+            validate,
         };
 
         me.register_field(ctx);
@@ -325,8 +334,7 @@ impl<MF: ManagedField + 'static> Component for ManagedFieldMaster<MF> {
                 }
 
                 let valid = valid.unwrap_or_else(|| {
-                    self.comp_state
-                        .validate
+                    self.validate
                         .validate(&value)
                         .map_err(|e| e.to_string())
                 });
@@ -345,7 +353,6 @@ impl<MF: ManagedField + 'static> Component for ManagedFieldMaster<MF> {
             }
             Msg::UpdateValue(value) => {
                 let valid = self
-                    .comp_state
                     .validate
                     .validate(&value)
                     .map_err(|e| e.to_string());
@@ -371,7 +378,6 @@ impl<MF: ManagedField + 'static> Component for ManagedFieldMaster<MF> {
                     false
                 } else {
                     let valid = self
-                        .comp_state
                         .validate
                         .validate(&self.comp_state.value)
                         .map_err(|e| e.to_string());
@@ -432,22 +438,29 @@ impl<MF: ManagedField + 'static> Component for ManagedFieldMaster<MF> {
         let props = ctx.props();
         let mut refresh1 = false;
         if let Some(field_handle) = &mut self.field_handle {
-            let props = props.as_input_props();
-            let old_props = old_props.as_input_props();
 
-            if props.submit != old_props.submit
-                || props.submit_empty != old_props.submit_empty
-                || props.disabled != old_props.disabled
-                || props.required != old_props.required
+           let input_props = props.as_input_props();
+            let old_input_props = old_props.as_input_props();
+
+            if input_props.submit != old_input_props.submit
+                || input_props.submit_empty != old_input_props.submit_empty
+                || input_props.disabled != old_input_props.disabled
+                || input_props.required != old_input_props.required
             {
                 let options = FieldOptions {
-                    submit: props.submit,
-                    submit_empty: props.submit_empty,
-                    disabled: props.disabled,
-                    required: props.required,
+                    submit: input_props.submit,
+                    submit_empty: input_props.submit_empty,
+                    disabled: input_props.disabled,
+                    required: input_props.required,
                 };
                 field_handle.update_field_options(options);
                 refresh1 = true;
+            }
+
+            let validate = MF::create_validation_fn(props);
+            if validate != self.validate {
+                refresh1 = true;
+                field_handle.update_validate(Some(validate));
             }
         }
         let sub_context = ManagedFieldContext::new(ctx, &self.comp_state);

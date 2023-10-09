@@ -85,33 +85,6 @@ impl TextArea {
     }
 }
 
-fn create_field_validation_cb(props: TextArea) -> ValidateFn<Value> {
-    ValidateFn::new(move |value: &Value| {
-        let value = match value {
-            Value::Null => String::new(),
-            Value::String(v) => v.clone(),
-            _ => {
-                // should not happen
-                log::error!("TextArea: got wrong data type in validate!");
-                String::new()
-            }
-        };
-
-        if value.is_empty() {
-            if props.input_props.required {
-                return Err(Error::msg(tr!("Field may not be empty.")));
-            } else {
-                return Ok(());
-            }
-        }
-
-        match &props.validate {
-            Some(cb) => cb.validate(&value),
-            None => Ok(()),
-        }
-    })
-}
-
 pub enum Msg {
     Update(String),
 }
@@ -133,6 +106,35 @@ impl ManagedField for TextAreaField {
     type Properties = TextArea;
     type Message = Msg;
 
+    fn create_validation_fn(props: &TextArea) -> ValidateFn<Value> {
+        let input_props = props.input_props.clone();
+        let validate = props.validate.clone();
+        ValidateFn::new(move |value: &Value| {
+            let value = match value {
+                Value::Null => String::new(),
+                Value::String(v) => v.clone(),
+                _ => {
+                    // should not happen
+                    log::error!("TextArea: got wrong data type in validate!");
+                    String::new()
+                }
+            };
+
+            if value.is_empty() {
+                if input_props.required {
+                    return Err(Error::msg(tr!("Field may not be empty.")));
+                } else {
+                    return Ok(());
+                }
+            }
+
+            match &validate {
+                Some(cb) => cb.validate(&value),
+                None => Ok(()),
+            }
+        })
+    }
+
     fn setup(props: &Self::Properties) -> ManagedFieldState {
         let mut value = String::new();
 
@@ -143,16 +145,13 @@ impl ManagedField for TextAreaField {
             value = force_value.to_string();
         }
 
-        let validate = create_field_validation_cb(props.clone());
         let value: Value = value.clone().into();
-        let valid = validate.validate(&value).map_err(|err| err.to_string());
 
         let default = props.default.as_deref().unwrap_or("").into();
 
         ManagedFieldState {
             value: value,
-            valid,
-            validate,
+            valid: Ok(()), // fixme
             default,
             radio_group: false,
             unique: false,

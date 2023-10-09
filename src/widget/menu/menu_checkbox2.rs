@@ -1,4 +1,3 @@
-use serde_json::Value;
 use std::rc::Rc;
 
 use yew::html::{IntoEventCallback, IntoPropValue};
@@ -8,7 +7,7 @@ use yew::virtual_dom::{VComp, VNode};
 use crate::prelude::*;
 use crate::props::FieldStdProps;
 use crate::widget::form::{
-    ManagedField, ManagedFieldContext, ManagedFieldMaster, ManagedFieldState, ValidateFn,
+    ManagedField, ManagedFieldContext, ManagedFieldMaster, ManagedFieldState
 };
 use crate::widget::Container;
 
@@ -125,13 +124,9 @@ impl ManagedField for MenuCheckboxField {
             None => default.clone(),
         };
 
-        let valid = Ok(());
-        let validate = ValidateFn::new(move |_value: &Value| Ok(()));
-
         ManagedFieldState {
             value: value.into(),
-            valid,
-            validate,
+            valid: Ok(()), //fixme
             default: default.into(),
             radio_group: props.radio_group,
             unique: true,

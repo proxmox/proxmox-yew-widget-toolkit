@@ -1,5 +1,3 @@
-use serde_json::Value;
-
 use yew::prelude::*;
 use yew::html::{IntoEventCallback, IntoPropValue};
 
@@ -7,7 +5,7 @@ use pwt_macros::{builder, widget};
 
 use crate::props::{WidgetBuilder, ContainerBuilder, EventSubscriber};
 use crate::widget::Container;
-use super::{ManagedFieldMaster, ManagedFieldContext, ManagedField, ManagedFieldState, ValidateFn};
+use super::{ManagedFieldMaster, ManagedFieldContext, ManagedField, ManagedFieldState};
 
 pub type PwtBoolean = ManagedFieldMaster<BooleanField>;
 
@@ -76,14 +74,11 @@ impl ManagedField for BooleanField {
         }
 
         let valid = Ok(());
-        let validate = ValidateFn::new(move |_value: &Value| {
-            Ok(())
-        });
 
         let default = props.default.unwrap_or(false).into();
 
         ManagedFieldState {
-            value: value.into(), valid, validate, default,
+            value: value.into(), valid, default,
             radio_group: false,
             unique: false,
             submit_converter: None,

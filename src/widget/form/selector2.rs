@@ -158,40 +158,6 @@ pub struct SelectorField<S: DataStore> {
     _store_observer: S::Observer,
 }
 
-fn create_selector_validation_cb<S: DataStore + 'static>(props: &Selector<S>) -> ValidateFn<Value> {
-    let store = props.store.clone();
-    let required = props.input_props.required;
-    let validate = props.validate.clone();
-    ValidateFn::new(move |value: &Value| {
-        let value = match value {
-            Value::Null => String::new(),
-            Value::String(v) => v.clone(),
-            _ => {
-                // should not happen
-                log::error!("PwtField: got wrong data type in validate!");
-                String::new()
-            }
-        };
-
-        if value.is_empty() {
-            if required {
-                bail!("Field may not be empty.");
-            } else {
-                return Ok(());
-            }
-        }
-
-        if !store.is_empty() {
-            match &validate {
-                Some(cb) => cb.validate(&(value.into(), store.clone())),
-                None => Ok(()),
-            }
-        } else {
-            bail!("no data loaded");
-        }
-    })
-}
-
 impl<S: DataStore + 'static> SelectorField<S> {
     fn load(&self, ctx: &ManagedFieldContext<Self>) {
         let props = ctx.props();
@@ -212,18 +178,47 @@ impl<S: DataStore + 'static> ManagedField for SelectorField<S> {
     type Message = Msg<S>;
     type Properties = Selector<S>;
 
-    fn setup(props: &Self::Properties) -> ManagedFieldState {
-        let validate = create_selector_validation_cb(props);
+    fn create_validation_fn(props: &Selector<S>) -> ValidateFn<Value> {
+        let store = props.store.clone();
+        let required = props.input_props.required;
+        let validate = props.validate.clone();
+        ValidateFn::new(move |value: &Value| {
+            let value = match value {
+                Value::Null => String::new(),
+                Value::String(v) => v.clone(),
+                _ => {
+                    // should not happen
+                    log::error!("PwtField: got wrong data type in validate!");
+                    String::new()
+                }
+            };
 
+            if value.is_empty() {
+                if required {
+                    bail!("Field may not be empty.");
+                } else {
+                    return Ok(());
+                }
+            }
+
+            if !store.is_empty() {
+                match &validate {
+                    Some(cb) => cb.validate(&(value.into(), store.clone())),
+                    None => Ok(()),
+                }
+            } else {
+                bail!("no data loaded");
+            }
+        })
+    }
+
+    fn setup(props: &Self::Properties) -> ManagedFieldState {
         let default: Value = props.default.as_deref().unwrap_or("").to_string().into();
         let value = default.clone();
 
-        let valid = validate.validate(&value).map_err(|err| err.to_string());
-
         ManagedFieldState {
             value,
-            valid,
-            validate,
+            valid: Ok(()), //fixme
             default,
             radio_group: false,
             unique: false,

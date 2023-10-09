@@ -159,6 +159,11 @@ impl FieldHandle {
         let key = self.key;
         self.write().validate_field_by_slab_key(key);
     }
+    /// Update validation function and trigger re-validation
+    pub fn update_validate(&mut self, validate: Option<ValidateFn<Value>>) {
+        let key = self.key;
+        self.write().update_field_validate_by_slab_key(key, validate);
+    }
 
     pub fn update_field_options(&mut self, options: FieldOptions) {
         let key = self.key;
@@ -666,6 +671,12 @@ impl FormContextState {
 
             }
         }
+    }
+
+    fn update_field_validate_by_slab_key(&mut self, slab_key: usize, validate: Option<ValidateFn<Value>>) {
+        let field = &mut self.fields[slab_key];
+        field.validate = validate;
+        self.validate_field_by_slab_key(slab_key);
     }
 
     pub fn validate_field(&mut self, name: impl IntoPropValue<AttrValue>) {
