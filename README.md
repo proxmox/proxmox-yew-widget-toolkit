@@ -18,29 +18,29 @@ Install
 
 1. Install WebAssembly target
 
- rustup target add wasm32-unknown-unknown
+    rustup target add wasm32-unknown-unknown
 
 2. Install Trunk
 
- cargo install trunk
+    cargo install trunk
 
 3. Install SASS (dart-sass is required)
 
 We recommend installing dart-sass from github:
 
- cd ~
- wget https://github.com/sass/dart-sass/releases/download/1.58.3/dart-sass-1.58.3-linux-x64.tar.gz
- tar xf dart-sass-1.58.3-linux-x64.tar.gz
+    cd ~
+    wget https://github.com/sass/dart-sass/releases/download/1.58.3/dart-sass-1.58.3-linux-x64.tar.gz
+    tar xf dart-sass-1.58.3-linux-x64.tar.gz
 
 This should extract the binary to `~/dart-sass/sass`. You need to add the `dart-sass`
 directory to the PATH variable:
 
- export PATH="$HOME/dart-sass:$PATH"
+    export PATH="$HOME/dart-sass:$PATH"
 
 Note: In therory, Trunk downloads and use dart-sass automatically. To use it inside
 hooks you still have to put the download directory into your path:
 
- export PATH="$HOME/.cache/trunk/sass-1.50.0:$PATH"
+    export PATH="$HOME/.cache/trunk/sass-1.50.0:$PATH"
 
 
 I18N
