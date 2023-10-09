@@ -3,7 +3,6 @@ use std::future::Future;
 use std::pin::Pin;
 
 use anyhow::Error;
-use serde_json::Value;
 use derivative::Derivative;
 
 use super::FormContext;
@@ -15,7 +14,7 @@ use super::FormContext;
 #[derivative(Clone, PartialEq)]
 pub struct SubmitCallback(
     #[derivative(PartialEq(compare_with="Rc::ptr_eq"))]
-    Rc<dyn Fn(FormContext) -> Pin<Box<dyn Future<Output=Result<Value, Error>>>>>
+    Rc<dyn Fn(FormContext) -> Pin<Box<dyn Future<Output=Result<(), Error>>>>>
 );
 
 impl SubmitCallback {
@@ -23,7 +22,7 @@ impl SubmitCallback {
     pub fn new<F, R>(callback: F) -> Self
     where
         F: 'static + Fn(FormContext) -> R,
-        R: 'static + Future<Output = Result<Value, Error>>,
+        R: 'static + Future<Output = Result<(), Error>>,
     {
         Self(Rc::new(move |state: FormContext| {
             let future = callback(state);
@@ -31,7 +30,7 @@ impl SubmitCallback {
         }))
     }
 
-    pub async fn apply(&self, form_ctx: FormContext) -> Result<Value, Error> {
+    pub async fn apply(&self, form_ctx: FormContext) -> Result<(), Error> {
         (self.0)(form_ctx).await
     }
 }
@@ -50,7 +49,7 @@ impl IntoSubmitCallback for Option<SubmitCallback> {
 impl<F, R> IntoSubmitCallback for F
 where
     F: 'static + Fn(FormContext) -> R,
-    R: 'static + Future<Output = Result<Value, Error>>
+    R: 'static + Future<Output = Result<(), Error>>
 {
     fn into_submit_callback(self) -> Option<SubmitCallback> {
         Some(SubmitCallback::new(self))
