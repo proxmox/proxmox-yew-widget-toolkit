@@ -296,7 +296,7 @@ impl Component for PwtMaterialApp {
     fn create(ctx: &Context<Self>) -> Self {
         let props = ctx.props();
 
-        static THEMES: &'static [&'static str] = &["Material"];
+        static THEMES: &[&str] = &["Material"];
         crate::state::set_available_themes(THEMES);
 
         let history = props

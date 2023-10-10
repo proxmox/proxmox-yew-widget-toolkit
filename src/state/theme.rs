@@ -81,7 +81,7 @@ impl TryFrom<&str> for ThemeDensity {
     }
 }
 
-static mut AVAILABLE_THEMES: &'static [&'static str] = &["Material"];
+static mut AVAILABLE_THEMES: &[&str] = &["Material"];
 
 pub fn set_available_themes(themes: &'static [&'static str]) {
     unsafe {

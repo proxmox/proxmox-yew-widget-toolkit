@@ -126,7 +126,7 @@ impl<'a, 'de, T: Deserialize<'de>> DeserializeSeed<'de> for ChildrenVisitor<'a, 
     }
 }
 
-static KNOWN_FIELDS: &[&'static str] = &["record", "expanded", "children"];
+static KNOWN_FIELDS: &[&str] = &["record", "expanded", "children"];
 
 impl<'a, 'de, T: Deserialize<'de>> Visitor<'de> for TreeNodeVisitor<'a, T> {
     type Value = usize;
