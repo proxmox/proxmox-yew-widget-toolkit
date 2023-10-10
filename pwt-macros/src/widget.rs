@@ -263,11 +263,11 @@ fn derive_widget(setup: &WidgetSetup, widget: DeriveInput) -> Result<proc_macro2
 
     if let Some(component_name) = &setup.component_name {
         output.extend(quote!{
-            impl #impl_generics Into<::yew::virtual_dom::VNode> for #ident #ty_generics #where_clause {
-                fn into(self) -> ::yew::virtual_dom::VNode {
-                    let key = self.std_props.key.clone();
+            impl #impl_generics From<#ident #ty_generics> for ::yew::virtual_dom::VNode #where_clause {
+                fn from(value: #ident #ty_generics) -> Self {
+                    let key = value.std_props.key.clone();
                     let comp = ::yew::virtual_dom::VComp::new::<#component_name>(
-                        ::std::rc::Rc::new(self), key,
+                        ::std::rc::Rc::new(value), key,
                     );
                     ::yew::virtual_dom::VNode::from(comp)
                 }
@@ -275,9 +275,9 @@ fn derive_widget(setup: &WidgetSetup, widget: DeriveInput) -> Result<proc_macro2
         });
     } else {
         output.extend(quote!{
-            impl #impl_generics Into<::yew::virtual_dom::VNode> for #ident #ty_generics #where_clause {
-                fn into(self) -> ::yew::virtual_dom::VNode {
-                    let vtag: ::yew::virtual_dom::VTag = self.into();
+            impl #impl_generics From<#ident #ty_generics> for ::yew::virtual_dom::VNode #where_clause {
+                fn from(value: #ident #ty_generics) -> Self {
+                    let vtag: ::yew::virtual_dom::VTag = value.into();
                     ::yew::virtual_dom::VNode::from(vtag)
                 }
             }
