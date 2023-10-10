@@ -391,6 +391,7 @@ impl Component for PwtTabBar {
         let props = ctx.props();
 
         let active = get_active_or_default(props, &self.active);
+        let mut any_active = false;
 
         let tabs = props
             .tabs
@@ -403,6 +404,7 @@ impl Component for PwtTabBar {
                 };
 
                 let (active_ref, size_ref) = if is_active {
+                    any_active = true;
                     (self.active_ref.clone(), self.size_ref.clone())
                 } else {
                     (NodeRef::default(), NodeRef::default())
@@ -469,8 +471,6 @@ impl Component for PwtTabBar {
         let tabs_ref = props.node_ref.clone();
         let rtl = self.rtl.unwrap_or(false);
 
-        let indicator_style = "display:none;";
-
         let (variant_class, indicator_class) = match ctx.props().style {
             TabBarStyle::Pills => ("pwt-nav-pills", classes!()),
             TabBarStyle::MaterialPrimary => (
@@ -482,12 +482,20 @@ impl Component for PwtTabBar {
                 classes!("pwt-tab-active-indicator", "secondary"),
             ),
         };
+
+        let indicator = any_active.then_some({
+            let indicator_ref = self.indicator_ref.clone();
+            let class = indicator_class;
+            let style = "display:none;";
+            html! {<div ref={indicator_ref} {class} {style}></div>}
+        });
+
         Container::new()
             .node_ref(props.node_ref.clone())
             .class(variant_class)
             .class(props.class.clone())
             .with_child(tabs)
-            .with_child(html! {<div ref={self.indicator_ref.clone()} class={indicator_class} style={indicator_style}></div>})
+            .with_optional_child(indicator)
             .onkeydown(move |event: KeyboardEvent| {
                 match event.code().as_str() {
                     "ArrowRight" => {
