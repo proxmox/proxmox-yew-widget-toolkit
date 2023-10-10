@@ -274,7 +274,7 @@ impl<'a, T: 'static> DataNode<T> for StoreNodeRef<'a, T> {
     fn record(&self) -> DataNodeDerefGuard<T> {
         let data = &self.state.data[self.node_id];
         let guard: Box<dyn Deref<Target = T>> = Box::new(data);
-        DataNodeDerefGuard { guard: guard }
+        DataNodeDerefGuard { guard }
     }
     fn level(&self) -> usize {
         0

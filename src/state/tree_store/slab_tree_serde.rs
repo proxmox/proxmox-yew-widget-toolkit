@@ -186,7 +186,7 @@ impl<'a, 'de, T: Deserialize<'de>> Visitor<'de> for TreeNodeVisitor<'a, T> {
             expanded,
             parent_id: None, // set by caller
             level: self.level,
-            children: children,
+            children,
         };
 
         assert!(self.tree.slab.insert(data) == node_id);

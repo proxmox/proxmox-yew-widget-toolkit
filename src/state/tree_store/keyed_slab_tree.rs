@@ -465,7 +465,7 @@ impl<T> KeyedSlabTree<T> {
     pub fn lookup_node(&self, key: &Key) -> Option<KeyedSlabTreeNodeRef<T>> {
         self.find_node_by_key(key)
             .map(|node_id| KeyedSlabTreeNodeRef {
-                node_id: node_id,
+                node_id,
                 tree: self,
             })
     }
@@ -474,7 +474,7 @@ impl<T> KeyedSlabTree<T> {
     pub fn lookup_node_mut(&mut self, key: &Key) -> Option<KeyedSlabTreeNodeMut<T>> {
         self.find_node_by_key(key)
             .map(|node_id| KeyedSlabTreeNodeMut {
-                node_id: node_id,
+                node_id,
                 tree: self,
             })
     }

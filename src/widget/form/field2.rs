@@ -265,7 +265,7 @@ impl ManagedField for StandardField {
         let default = props.default.as_deref().unwrap_or("").into();
 
         ManagedFieldState {
-            value: value,
+            value,
             valid: Ok(()),
             default,
             radio_group: false,

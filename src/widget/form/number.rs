@@ -388,7 +388,7 @@ impl<T: NumberTypeInfo> ManagedField for NumberField<T> {
         };
 
         ManagedFieldState {
-            value: value,
+            value,
             valid: Ok(()),
             default,
             radio_group: false,

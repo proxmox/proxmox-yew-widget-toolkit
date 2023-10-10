@@ -131,7 +131,7 @@ impl ManagedField for PwtTristateBoolean {
         };
 
         ManagedFieldState {
-            value: value,
+            value,
             valid: Ok(()),
             default,
             radio_group: false,
