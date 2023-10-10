@@ -172,3 +172,23 @@ macro_rules! rt_format {
         )
 	}};
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_gettext_fns() {
+        assert_eq!(gettext("foo bar"), "foo bar");
+
+        assert_eq!(ngettext("one", "plural", 0), "plural");
+        assert_eq!(ngettext("one", "plural", 1), "one");
+        assert_eq!(ngettext("one", "plural", 2), "plural");
+
+        assert_eq!(pgettext("context", "foo bar"), "foo bar");
+
+        assert_eq!(npgettext("context", "one", "plural", 0), "plural");
+        assert_eq!(npgettext("context", "one", "plural", 1), "one");
+        assert_eq!(npgettext("context", "one", "plural", 2), "plural");
+    }
+}
