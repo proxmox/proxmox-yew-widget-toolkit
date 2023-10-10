@@ -174,20 +174,28 @@ impl<S: DataStore + 'static> SelectorField<S> {
     }
 }
 
+#[derive(PartialEq)]
+pub struct ValidateClosure<S: DataStore> {
+    required: bool,
+    store: S,
+    validate: Option<ValidateFn<(String, S)>>,
+}
+
 impl<S: DataStore + 'static> ManagedField for SelectorField<S> {
     type Message = Msg<S>;
     type Properties = Selector<S>;
+    type ValidateClosure = ValidateClosure<S>;
 
-    fn validation_fn_need_update(props: &Self::Properties, old_props: &Self::Properties) -> bool {
-        props.input_props.required != old_props.input_props.required
-            || props.store != old_props.store
-            || props.validate != old_props.validate
+    fn validation_args(props: &Self::Properties) -> Self::ValidateClosure {
+        ValidateClosure {
+            required: props.input_props.required,
+            store: props.store.clone(),
+            validate: props.validate.clone(),
+        }
     }
 
-    fn create_validation_fn(props: &Selector<S>) -> ValidateFn<Value> {
-        let store = props.store.clone();
-        let required = props.input_props.required;
-        let validate = props.validate.clone();
+    fn create_validation_fn(props: Self::ValidateClosure) -> ValidateFn<Value> {
+
         ValidateFn::new(move |value: &Value| {
             let value = match value {
                 Value::Null => String::new(),
@@ -200,16 +208,16 @@ impl<S: DataStore + 'static> ManagedField for SelectorField<S> {
             };
 
             if value.is_empty() {
-                if required {
+                if props.required {
                     bail!("Field may not be empty.");
                 } else {
                     return Ok(());
                 }
             }
 
-            if !store.is_empty() {
-                match &validate {
-                    Some(cb) => cb.validate(&(value.into(), store.clone())),
+            if !props.store.is_empty() {
+                match &props.validate {
+                    Some(cb) => cb.validate(&(value.into(), props.store.clone())),
                     None => Ok(()),
                 }
             } else {

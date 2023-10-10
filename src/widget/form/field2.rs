@@ -175,20 +175,31 @@ fn value_to_text(value: &Value) -> String {
     }
 }
 
+#[derive(PartialEq)]
+pub struct ValidateClosure {
+    required: bool,
+    input_type: AttrValue,
+    min: Option<f64>,
+    max: Option<f64>,
+    validate: Option<ValidateFn<String>>,
+}
+
 impl ManagedField for StandardField {
     type Properties = Field;
     type Message = Msg;
+    type ValidateClosure = ValidateClosure;
 
-    fn validation_fn_need_update(props: &Self::Properties, old_props: &Self::Properties) -> bool {
-        props.input_props.required != old_props.input_props.required
-            || props.input_type != old_props.input_type
-            || props.min != old_props.min
-            || props.max != old_props.max
-            || props.validate != old_props.validate
+    fn validation_args(props: &Self::Properties) -> Self::ValidateClosure {
+        ValidateClosure {
+            required: props.input_props.required,
+            input_type: props.input_type.clone(),
+            min: props.min,
+            max: props.max,
+            validate: props.validate.clone(),
+        }
     }
 
-    fn create_validation_fn(props: &Field) -> ValidateFn<Value> {
-        let props = props.clone();
+    fn create_validation_fn(props: Self::ValidateClosure) -> ValidateFn<Value> {
         ValidateFn::new(move |value: &Value| {
             let value = match value {
                 Value::Null => String::new(),
@@ -202,7 +213,7 @@ impl ManagedField for StandardField {
             };
 
             if value.is_empty() {
-                if props.input_props.required {
+                if props.required {
                     return Err(Error::msg(tr!("Field may not be empty.")));
                 } else {
                     return Ok(());

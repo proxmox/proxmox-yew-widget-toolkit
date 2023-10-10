@@ -63,10 +63,9 @@ pub struct BooleanField {}
 impl ManagedField for BooleanField {
     type Properties = Boolean;
     type Message = Msg;
+    type ValidateClosure = ();
 
-    fn validation_fn_need_update(_props: &Self::Properties, _old_props: &Self::Properties) -> bool {
-        false
-    }
+    fn validation_args(_props: &Self::Properties) -> Self::ValidateClosure { () }
 
     fn setup(props: &Boolean) -> ManagedFieldState {
         let mut value = false;

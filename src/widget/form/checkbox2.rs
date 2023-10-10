@@ -79,10 +79,9 @@ pub struct CheckboxField {}
 impl ManagedField for CheckboxField {
     type Message = Msg;
     type Properties = Checkbox;
+    type ValidateClosure = ();
 
-    fn validation_fn_need_update(_props: &Self::Properties, _old_props: &Self::Properties) -> bool {
-        false
-    }
+    fn validation_args(_props: &Self::Properties) -> Self::ValidateClosure { () }
 
     fn setup(props: &Checkbox) -> ManagedFieldState {
         let on_value = props.value.as_deref().unwrap_or("on").to_string();

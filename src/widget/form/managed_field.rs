@@ -155,12 +155,16 @@ impl<MF: ManagedField + Sized> Clone for ManagedFieldLink<MF> {
 pub trait ManagedField: Sized {
     type Properties: Properties + FieldBuilder;
     type Message: 'static;
+    type ValidateClosure: 'static + PartialEq;
 
-    fn validation_fn_need_update(props: &Self::Properties, old_props: &Self::Properties) -> bool {
-        props != old_props
-    }
+    /// Extract arguments passed to the [create_validation_fn](Self::create_validation_fn)
+    ///
+    /// This is called when component properties changes. We rebuild the
+    /// validation function if returend value changes.
+    fn validation_args(props: &Self::Properties) -> Self::ValidateClosure;
 
-    fn create_validation_fn(_props: &Self::Properties) -> ValidateFn<Value> {
+    /// Create the validation function.
+    fn create_validation_fn(_props: Self::ValidateClosure) -> ValidateFn<Value> {
         crate::static_validation_fn!(Value, |_| Ok(()))
     }
 
@@ -291,7 +295,8 @@ impl<MF: ManagedField + 'static> Component for ManagedFieldMaster<MF> {
     fn create(ctx: &Context<Self>) -> Self {
         let props = ctx.props();
 
-        let validate = MF::create_validation_fn(props);
+        let validation_args = MF::validation_args(props);
+        let validate = MF::create_validation_fn(validation_args);
 
         let mut comp_state = MF::setup(props);
         comp_state.valid = validate
@@ -462,9 +467,12 @@ impl<MF: ManagedField + 'static> Component for ManagedFieldMaster<MF> {
                 refresh1 = true;
             }
 
-            if MF::validation_fn_need_update(props, old_props) {
+            let old_validation_args = MF::validation_args(old_props);
+            let validation_args = MF::validation_args(props);
+
+            if validation_args != old_validation_args {
                 log::info!("UPDATE VF {:?}", input_props.name);
-                let validate = MF::create_validation_fn(props);
+                let validate = MF::create_validation_fn(validation_args);
                 if validate != self.validate {
                     refresh1 = true;
                     field_handle.update_validate(Some(validate));

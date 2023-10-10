@@ -300,19 +300,29 @@ fn value_to_number(value: Value) -> Value {
     }
 }
 
+#[derive(PartialEq)]
+pub struct ValidateClosure<T> {
+    required: bool,
+    min: Option<T>,
+    max: Option<T>,
+    validate: Option<ValidateFn<T>>,
+}
+
 impl<T: NumberTypeInfo> ManagedField for NumberField<T> {
     type Properties = Number<T>;
     type Message = Msg;
+    type ValidateClosure = ValidateClosure<T>;
 
-    fn validation_fn_need_update(props: &Self::Properties, old_props: &Self::Properties) -> bool {
-        props.input_props.required != old_props.input_props.required
-            || props.min != old_props.min
-            || props.max != old_props.max
-            || props.validate != old_props.validate
-    }
+    fn validation_args(props: &Self::Properties) -> Self::ValidateClosure {
+        ValidateClosure {
+            required: props.input_props.required,
+            min: props.min,
+            max: props.max,
+            validate: props.validate.clone(),
+        }
+     }
 
-    fn create_validation_fn(props: &Number<T>) -> ValidateFn<Value> {
-        let props = props.clone();
+    fn create_validation_fn(props: Self::ValidateClosure) -> ValidateFn<Value> {
         ValidateFn::new(move |value: &Value| {
             let is_empty = match value {
                 Value::Null => true,
@@ -322,7 +332,7 @@ impl<T: NumberTypeInfo> ManagedField for NumberField<T> {
             };
 
             if is_empty {
-                if props.input_props.required {
+                if props.required {
                     return Err(Error::msg(tr!("Field may not be empty.")));
                 } else {
                     return Ok(());

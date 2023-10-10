@@ -109,6 +109,9 @@ pub struct MenuCheckboxField {}
 impl ManagedField for MenuCheckboxField {
     type Message = Msg;
     type Properties = MenuCheckbox;
+    type ValidateClosure = ();
+
+    fn validation_args(_props: &Self::Properties) -> Self::ValidateClosure { () }
 
     fn setup(props: &MenuCheckbox) -> ManagedFieldState {
         let on_value = props.value.as_deref().unwrap_or("on").to_string();

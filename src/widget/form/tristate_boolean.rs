@@ -101,12 +101,11 @@ fn value_to_tristate(value: &Value) -> Option<Tristate> {
 impl ManagedField for PwtTristateBoolean {
     type Message = Msg;
     type Properties = TristateBoolean;
+    type ValidateClosure = ();
 
-    fn validation_fn_need_update(_props: &Self::Properties, _old_props: &Self::Properties) -> bool {
-        false
-    }
+    fn validation_args(_props: &Self::Properties) -> Self::ValidateClosure { () }
 
-    fn create_validation_fn(_props: &Self::Properties) -> ValidateFn<Value> {
+    fn create_validation_fn(_props: Self::ValidateClosure) -> ValidateFn<Value> {
         ValidateFn::new(move |value: &Value| match value {
             Value::Null | Value::Bool(_) => Ok(()),
             _ => Err(Error::msg(tr!("Got wrong data type!"))),

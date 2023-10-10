@@ -102,13 +102,25 @@ fn value_to_text(value: &Value) -> String {
     }
 }
 
+#[derive(PartialEq)]
+pub struct ValidateClosure {
+    required: bool,
+    validate: Option<ValidateFn<String>>,
+}
+
 impl ManagedField for TextAreaField {
     type Properties = TextArea;
     type Message = Msg;
+    type ValidateClosure = ValidateClosure;
 
-    fn create_validation_fn(props: &TextArea) -> ValidateFn<Value> {
-        let input_props = props.input_props.clone();
-        let validate = props.validate.clone();
+    fn validation_args(props: &Self::Properties) -> Self::ValidateClosure {
+        ValidateClosure {
+            required: props.input_props.required,
+            validate: props.validate.clone(),
+        }
+    }
+
+    fn create_validation_fn(props: ValidateClosure) -> ValidateFn<Value> {
         ValidateFn::new(move |value: &Value| {
             let value = match value {
                 Value::Null => String::new(),
@@ -121,14 +133,14 @@ impl ManagedField for TextAreaField {
             };
 
             if value.is_empty() {
-                if input_props.required {
+                if props.required {
                     return Err(Error::msg(tr!("Field may not be empty.")));
                 } else {
                     return Ok(());
                 }
             }
 
-            match &validate {
+            match &props.validate {
                 Some(cb) => cb.validate(&value),
                 None => Ok(()),
             }
