@@ -8,7 +8,7 @@ use crate::state::{NavigationContext, NavigationContextExt, PersistentState, Sel
 use crate::web_sys_ext::{ResizeObserverBoxOptions, ResizeObserverOptions};
 use crate::widget::dom::{element_direction_rtl, IntoHtmlElement};
 use crate::widget::focus::roving_tabindex_next;
-use crate::widget::{Container, RtlChangeObserver, SizeObserver};
+use crate::widget::{Container, SizeObserver};
 
 use super::TabBarItem;
 
