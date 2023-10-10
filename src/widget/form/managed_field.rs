@@ -467,18 +467,23 @@ impl<MF: ManagedField + 'static> Component for ManagedFieldMaster<MF> {
                 refresh1 = true;
             }
 
-            let old_validation_args = MF::validation_args(old_props);
-            let validation_args = MF::validation_args(props);
+        }
 
-            if validation_args != old_validation_args {
-                log::info!("UPDATE VF {:?}", input_props.name);
-                let validate = MF::create_validation_fn(validation_args);
-                if validate != self.validate {
-                    refresh1 = true;
+        let old_validation_args = MF::validation_args(old_props);
+        let validation_args = MF::validation_args(props);
+
+        if validation_args != old_validation_args {
+            log::info!("UPDATE VF {:?}", props.as_input_props().name);
+            let validate = MF::create_validation_fn(validation_args);
+            if validate != self.validate {
+                refresh1 = true;
+                self.validate = validate.clone();
+                if let Some(field_handle) = &mut self.field_handle {
                     field_handle.update_validate(Some(validate));
                 }
             }
         }
+
         let sub_context = ManagedFieldContext::new(ctx, &self.comp_state);
         let refresh2 = self.slave.changed(&sub_context, old_props);
 
