@@ -2,12 +2,12 @@ use std::borrow::Cow;
 
 use slab::Slab;
 
-use serde::{Serialize, Serializer, Deserialize, Deserializer};
-use serde::ser::{SerializeStruct, SerializeSeq};
 use serde::de::{DeserializeSeed, Error, MapAccess, SeqAccess, Visitor};
+use serde::ser::{SerializeSeq, SerializeStruct};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
+use super::{KeyedSlabTree, SlabTree, SlabTreeEntry, SlabTreeNodeRef};
 use crate::props::ExtractPrimaryKey;
-use super::{SlabTree, KeyedSlabTree, SlabTreeEntry, SlabTreeNodeRef};
 
 // { record: {}, expanded: true, children: [ record: { }, ... ] }
 
@@ -17,7 +17,6 @@ struct ChildList<'a, T> {
 }
 
 impl<'a, T: 'static + Serialize> Serialize for ChildList<'a, T> {
-
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -35,7 +34,6 @@ impl<'a, T: 'static + Serialize> Serialize for ChildList<'a, T> {
 }
 
 impl<'a, T: 'static + Serialize> Serialize for SlabTreeNodeRef<'a, T> {
-
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -65,7 +63,6 @@ impl<'a, T: 'static + Serialize> Serialize for SlabTreeNodeRef<'a, T> {
 }
 
 impl<T: 'static + Serialize> Serialize for SlabTree<T> {
-
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -78,7 +75,6 @@ impl<T: 'static + Serialize> Serialize for SlabTree<T> {
 }
 
 impl<T: 'static + Serialize> Serialize for KeyedSlabTree<T> {
-
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -125,7 +121,6 @@ impl<'a, 'de, T: Deserialize<'de>> DeserializeSeed<'de> for ChildrenVisitor<'a, 
     type Value = Vec<usize>;
 
     fn deserialize<D: Deserializer<'de>>(self, deserializer: D) -> Result<Self::Value, D::Error> {
-
         let children: Vec<usize> = deserializer.deserialize_seq(self)?;
         Ok(children)
     }
@@ -208,7 +203,10 @@ impl<'de, T: Deserialize<'de>> Deserialize<'de> for SlabTree<T> {
             version: 0,
         };
 
-        let visitor = TreeNodeVisitor { tree: &mut tree, level: 0 };
+        let visitor = TreeNodeVisitor {
+            tree: &mut tree,
+            level: 0,
+        };
 
         let root_id = visitor.deserialize(deserializer)?;
 
@@ -220,7 +218,6 @@ impl<'de, T: Deserialize<'de>> Deserialize<'de> for SlabTree<T> {
 
 impl<'de, T: Deserialize<'de> + ExtractPrimaryKey> Deserialize<'de> for KeyedSlabTree<T> {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<KeyedSlabTree<T>, D::Error> {
-
         let data = SlabTree::<T>::deserialize(deserializer)?;
 
         let mut tree = KeyedSlabTree::new();
@@ -234,10 +231,6 @@ impl<'a, 'de, T: Deserialize<'de>> DeserializeSeed<'de> for TreeNodeVisitor<'a, 
     type Value = usize;
 
     fn deserialize<D: Deserializer<'de>>(self, deserializer: D) -> Result<Self::Value, D::Error> {
-        deserializer.deserialize_struct(
-            "TreeNode",
-            KNOWN_FIELDS,
-            self,
-        )
+        deserializer.deserialize_struct("TreeNode", KNOWN_FIELDS, self)
     }
 }
