@@ -139,10 +139,10 @@ macro_rules! ngettext {
 /// Like [pgettext()], but format arguments using [gettext_runtime_format!].
 #[macro_export]
 macro_rules! pgettext {
-    ($msgid:tt, $msgctx:tt,  $($tail:tt)* ) => {
+    ($msgctx:tt, $msgid:tt, $($tail:tt)* ) => {
         $crate::gettext_runtime_format!($crate::pgettext($msgctx, $msgid), $($tail)*)
     };
-    ($msgid:tt, $msgctx:tt) => {
+    ($msgctx:tt, $msgid:tt) => {
         $crate::gettext_runtime_format!($crate::pgettext($msgctx, $msgid))
     };
 }
