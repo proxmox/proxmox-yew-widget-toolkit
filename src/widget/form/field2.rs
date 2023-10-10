@@ -147,7 +147,6 @@ impl Field {
     }
 }
 
-
 pub enum Msg {
     Update(String),
     RevealPassword,
@@ -181,10 +180,11 @@ impl ManagedField for StandardField {
     type Message = Msg;
 
     fn validation_fn_need_update(props: &Self::Properties, old_props: &Self::Properties) -> bool {
-        props.input_props.required != old_props.input_props.required ||
-            props.input_type != old_props.input_type ||
-            props.min != old_props.min ||
-            props.max != old_props.max ||
+        props.input_props.required != old_props.input_props.required
+            || props.input_type != old_props.input_type
+            || props.min != old_props.min
+            || props.max != old_props.max
+            || props.validate != old_props.validate
     }
 
     fn create_validation_fn(props: &Field) -> ValidateFn<Value> {
