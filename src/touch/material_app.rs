@@ -299,7 +299,10 @@ impl Component for PwtMaterialApp {
         static THEMES: &'static [&'static str] = &["Material"];
         crate::state::set_available_themes(THEMES);
 
-        let history = props.history.clone().unwrap_or(AnyHistory::from(HashHistory::new()));
+        let history = props
+            .history
+            .clone()
+            .unwrap_or(AnyHistory::from(HashHistory::new()));
 
         let snackbar_controller = props
             .snackbar_controller
