@@ -63,7 +63,7 @@ log = "0.4.6"
 indexmap = { version = "2", features = ["std"] }
 slab = "0.4"
 wasm-bindgen = { version = "0.2" }
-serde-wasm-bindgen = "0.5"
+serde-wasm-bindgen = "0.6"
 wasm-logger = "0.2"
 gloo-events = "0.2"
 gloo-timers = "0.3"
