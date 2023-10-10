@@ -8,7 +8,7 @@ use crate::state::{NavigationContext, NavigationContextExt, PersistentState, Sel
 use crate::web_sys_ext::{ResizeObserverBoxOptions, ResizeObserverOptions};
 use crate::widget::dom::{element_direction_rtl, IntoHtmlElement};
 use crate::widget::focus::roving_tabindex_next;
-use crate::widget::{Container, SizeObserver};
+use crate::widget::{Container, RtlChangeObserver, SizeObserver};
 
 use super::TabBarItem;
 
@@ -357,21 +357,26 @@ impl Component for PwtTabBar {
                 if let (Some(indicator), Some(active), Some(size)) = (indicator, active_el, size_el)
                 {
                     let style = indicator.style();
+                    let is_rtl = element_direction_rtl(size.clone()).unwrap_or_default();
                     if let Some(parent) = active.parent_element() {
                         let parent_rect = parent.get_bounding_client_rect();
-                        let (left, width) = if use_full_width {
-                            let rect = active.get_bounding_client_rect();
-                            let left = rect.left() - parent_rect.left();
-                            (left, rect.width())
+                        let rect = if use_full_width {
+                            active.get_bounding_client_rect()
                         } else {
-                            let rect = size.get_bounding_client_rect();
-                            let left = rect.left() - parent_rect.left();
-                            (left, rect.width())
+                            size.get_bounding_client_rect()
                         };
+
+                        let start = if is_rtl {
+                            parent_rect.right() - rect.right()
+                        } else {
+                            rect.left() - parent_rect.left()
+                        };
+                        let width = rect.width();
+
                         // ignore errors
-                        let _ = style.set_property("left", &format!("{}px", left));
-                        let _ = style.remove_property("display");
+                        let _ = style.set_property("inset-inline-start", &format!("{}px", start));
                         let _ = style.set_property("width", &format!("{}px", width));
+                        let _ = style.remove_property("display");
                     }
                 }
                 false
