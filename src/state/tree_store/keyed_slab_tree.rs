@@ -2,9 +2,11 @@ use std::cmp::Ordering;
 
 use slab::Slab;
 
+use crate::props::{
+    ExtractKeyFn, ExtractPrimaryKey, FilterFn, IntoFilterFn, IntoSorterFn, SorterFn,
+};
 use yew::virtual_dom::Key;
 use yew::Callback;
-use crate::props::{ExtractKeyFn, ExtractPrimaryKey, IntoFilterFn, IntoSorterFn, SorterFn, FilterFn};
 
 use super::{SlabTree, SlabTreeEntry};
 
@@ -24,7 +26,7 @@ pub struct KeyedSlabTree<T> {
 
     sorter: Option<SorterFn<T>>,
     filter: Option<FilterFn<T>>,
- 
+
     listeners: Slab<Callback<()>>,
 
     pub(crate) view_root: bool,
@@ -94,14 +96,22 @@ impl<'a, T> KeyedSlabTreeNodeMut<'a, T> {
 
     /// Find a node by key.
     pub fn find_node_by_key(&self, key: &Key) -> Option<KeyedSlabTreeNodeRef<T>> {
-        self.tree.find_subnode_by_key(self.node_id, key)
-            .map(|node_id| KeyedSlabTreeNodeRef { node_id, tree: self.tree })
+        self.tree
+            .find_subnode_by_key(self.node_id, key)
+            .map(|node_id| KeyedSlabTreeNodeRef {
+                node_id,
+                tree: self.tree,
+            })
     }
 
     /// Find a node by key (mutable).
     pub fn find_node_by_key_mut(&mut self, key: &Key) -> Option<KeyedSlabTreeNodeMut<T>> {
-        self.tree.find_subnode_by_key(self.node_id, key)
-            .map(|node_id| KeyedSlabTreeNodeMut { node_id, tree: self.tree })
+        self.tree
+            .find_subnode_by_key(self.node_id, key)
+            .map(|node_id| KeyedSlabTreeNodeMut {
+                node_id,
+                tree: self.tree,
+            })
     }
 
     /// Remove a descendent node by key.
@@ -153,8 +163,12 @@ impl<'a, T> KeyedSlabTreeNodeRef<'a, T> {
 
     /// Find a node by key.
     pub fn find_node_by_key(&self, key: &Key) -> Option<KeyedSlabTreeNodeRef<T>> {
-        self.tree.find_subnode_by_key(self.node_id, key)
-            .map(|node_id| KeyedSlabTreeNodeRef { node_id, tree: self.tree })
+        self.tree
+            .find_subnode_by_key(self.node_id, key)
+            .map(|node_id| KeyedSlabTreeNodeRef {
+                node_id,
+                tree: self.tree,
+            })
     }
 }
 
@@ -165,7 +179,6 @@ impl<T> From<KeyedSlabTree<T>> for SlabTree<T> {
 }
 
 impl<T: ExtractPrimaryKey> KeyedSlabTree<T> {
-
     pub fn new() -> Self {
         let extract_key = ExtractKeyFn::new(|data: &T| data.extract_key());
         Self::with_extract_key(extract_key)
@@ -173,7 +186,6 @@ impl<T: ExtractPrimaryKey> KeyedSlabTree<T> {
 }
 
 impl<T> KeyedSlabTree<T> {
-
     pub fn with_extract_key(extract_key: impl Into<ExtractKeyFn<T>>) -> Self {
         Self {
             extract_key: extract_key.into(),
@@ -184,7 +196,7 @@ impl<T> KeyedSlabTree<T> {
             filter: None,
             listeners: Slab::new(),
             view_root: true,
-         }
+        }
     }
 
     /// Set flag to show/hide the root node.
@@ -236,12 +248,9 @@ impl<T> KeyedSlabTree<T> {
         self.tree.record_data_change();
     }
 
-    fn flatten_tree_children(
-        &self,
-        list: &mut Vec<usize>,
-        children: &[usize],
-    ) {
-        let mut children: Vec<usize> = children.iter()
+    fn flatten_tree_children(&self, list: &mut Vec<usize>, children: &[usize]) {
+        let mut children: Vec<usize> = children
+            .iter()
             .filter(|child_id| {
                 let child_id = **child_id;
                 let entry = self.get(child_id).unwrap();
@@ -281,7 +290,9 @@ impl<T> KeyedSlabTree<T> {
 
         if let Some(root_id) = self.tree.root_id {
             let root = self.get(root_id).unwrap();
-            if self.view_root { view.push(root_id); }
+            if self.view_root {
+                view.push(root_id);
+            }
             if !self.view_root || root.expanded {
                 if let Some(children) = &root.children {
                     self.flatten_tree_children(&mut view, children);
@@ -308,11 +319,10 @@ impl<T> KeyedSlabTree<T> {
     }
 
     pub(crate) fn filtered_record_pos(&self, key: &Key) -> Option<usize> {
-        self.linear_view.iter()
-            .position(|node_id| {
-                let entry = self.get(*node_id).unwrap();
-                key == &self.extract_key(&entry.record)
-            })
+        self.linear_view.iter().position(|node_id| {
+            let entry = self.get(*node_id).unwrap();
+            key == &self.extract_key(&entry.record)
+        })
     }
 
     pub(crate) fn filtered_data_len(&self) -> usize {
@@ -365,8 +375,15 @@ impl<T> KeyedSlabTree<T> {
         self.set_root_tree(SlabTree::new());
     }
 
-    fn append_subtree_node(&mut self, subtree: &mut SlabTree<T>, subtree_node: usize, level: usize, parent: usize) -> usize {
-        self.tree.append_subtree_node(subtree, subtree_node, level, parent)
+    fn append_subtree_node(
+        &mut self,
+        subtree: &mut SlabTree<T>,
+        subtree_node: usize,
+        level: usize,
+        parent: usize,
+    ) -> usize {
+        self.tree
+            .append_subtree_node(subtree, subtree_node, level, parent)
     }
 
     fn remove_node_id(&mut self, node_id: usize) -> Option<T> {
@@ -375,23 +392,21 @@ impl<T> KeyedSlabTree<T> {
 
     fn remove_tree_node_id(&mut self, node_id: usize) -> Option<KeyedSlabTree<T>> {
         match self.tree.remove_tree_node_id(node_id) {
-            Some(tree) => {
-                Some(KeyedSlabTree {
-                    extract_key: self.extract_key.clone(),
-                    tree,
-                    linear_view: Vec::new(),
-                    last_view_version: 0,
-                    sorter: None,
-                    filter: None,
-                    listeners: Slab::new(),
-                    view_root: true,
-                })
-            }
+            Some(tree) => Some(KeyedSlabTree {
+                extract_key: self.extract_key.clone(),
+                tree,
+                linear_view: Vec::new(),
+                last_view_version: 0,
+                sorter: None,
+                filter: None,
+                listeners: Slab::new(),
+                view_root: true,
+            }),
             None => None,
         }
     }
 
-    fn insert_record(&mut self, record: T, parent_id: Option<usize>) -> usize  {
+    fn insert_record(&mut self, record: T, parent_id: Option<usize>) -> usize {
         self.tree.insert_record(record, parent_id)
     }
 
@@ -449,25 +464,20 @@ impl<T> KeyedSlabTree<T> {
     /// Find a node by its key.
     pub fn lookup_node(&self, key: &Key) -> Option<KeyedSlabTreeNodeRef<T>> {
         self.find_node_by_key(key)
-            .map(|node_id| {
-                KeyedSlabTreeNodeRef {
-                    node_id: node_id,
-                    tree: self,
-                }
+            .map(|node_id| KeyedSlabTreeNodeRef {
+                node_id: node_id,
+                tree: self,
             })
     }
 
     /// Find a node by its key (mutable).
     pub fn lookup_node_mut(&mut self, key: &Key) -> Option<KeyedSlabTreeNodeMut<T>> {
         self.find_node_by_key(key)
-            .map(|node_id| {
-                KeyedSlabTreeNodeMut {
-                    node_id: node_id,
-                    tree: self,
-                }
+            .map(|node_id| KeyedSlabTreeNodeMut {
+                node_id: node_id,
+                tree: self,
             })
     }
-
 }
 
 /// [KeyedSlabTree] iterator over a node`s children.
