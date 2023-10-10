@@ -94,23 +94,38 @@ pub struct Dropdown {
     #[prop_or_default]
     #[builder]
     pub icons: Vec<(AttrValue, bool)>,
+
+    /// Class applied to the embedded input element.
+    #[prop_or_default]
+    pub input_class: Classes,
 }
 
 impl Dropdown {
-    // Create a new instance
+    // Create a new instance.
     pub fn new(picker: impl Into<RenderDropdownPickerFn>) -> Self {
         yew::props! { Self { picker: picker.into() } }
     }
 
-    /// Builder style method to add an icon
+    /// Builder style method to add an icon.
     pub fn with_icon(mut self, icon: impl IntoPropValue<AttrValue>, right: bool) -> Self {
         self.add_icon(icon, right);
         self
     }
 
-    /// Method to add an icon
+    /// Method to add an icon.
     pub fn add_icon(&mut self, icon: impl IntoPropValue<AttrValue>, right: bool) {
         self.icons.push((icon.into_prop_value(), right));
+    }
+
+    /// Builder style method to add a CSS class for the input element.
+    pub fn input_class(mut self, class: impl Into<Classes>) -> Self {
+        self.add_input_class(class);
+        self
+    }
+
+    /// Method to add a CSS class for the input element.
+    pub fn add_input_class(&mut self, class: impl Into<Classes>) {
+        self.input_class.push(class);
     }
 }
 
@@ -376,6 +391,7 @@ impl Component for PwtDropdown {
             .node_ref(self.dropdown_ref.clone())
             .class("pwt-input")
             .class("pwt-w-100")
+            .class(props.input_class.clone())
             .onclick(onclick);
 
         for (class, right) in &props.icons {

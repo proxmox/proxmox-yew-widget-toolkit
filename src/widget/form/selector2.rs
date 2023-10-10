@@ -406,7 +406,7 @@ impl<S: DataStore + 'static> ManagedField for SelectorField<S> {
             .with_std_props(&props.std_props)
             .with_input_props(&props.input_props)
             .editable(props.editable)
-            .class(if valid.is_ok() {
+            .input_class(if valid.is_ok() {
                 "is-valid"
             } else {
                 "is-invalid"
