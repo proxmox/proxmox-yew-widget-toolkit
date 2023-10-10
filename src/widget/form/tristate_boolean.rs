@@ -102,6 +102,10 @@ impl ManagedField for PwtTristateBoolean {
     type Message = Msg;
     type Properties = TristateBoolean;
 
+    fn validation_fn_need_update(_props: &Self::Properties, _old_props: &Self::Properties) -> bool {
+        false
+    }
+
     fn create_validation_fn(_props: &Self::Properties) -> ValidateFn<Value> {
         ValidateFn::new(move |value: &Value| match value {
             Value::Null | Value::Bool(_) => Ok(()),

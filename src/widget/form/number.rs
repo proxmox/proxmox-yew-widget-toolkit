@@ -173,7 +173,6 @@ unsigned_number_impl!(u8);
 // Instead, we use a hook which tranlates values when the user
 // calls [get_submit_data](crate::widget::form::FormContext::get_submit_data).
 
-
 /// Number input element for common Rust types (f64, u8, u16, u32, u64, i8, i16, i32, i64)
 ///
 /// When used inside a [FormContext](crate::widget::form::FormContext), values are submitted a json numbers (not strings).
@@ -305,6 +304,13 @@ impl<T: NumberTypeInfo> ManagedField for NumberField<T> {
     type Properties = Number<T>;
     type Message = Msg;
 
+    fn validation_fn_need_update(props: &Self::Properties, old_props: &Self::Properties) -> bool {
+        props.input_props.required != old_props.input_props.required
+            || props.min != old_props.min
+            || props.max != old_props.max
+            || props.validate != old_props.validate
+    }
+
     fn create_validation_fn(props: &Number<T>) -> ValidateFn<Value> {
         let props = props.clone();
         ValidateFn::new(move |value: &Value| {
@@ -325,7 +331,9 @@ impl<T: NumberTypeInfo> ManagedField for NumberField<T> {
 
             let number = match T::value_to_number(value) {
                 Ok(number) => number,
-                Err(err) => return Err(Error::msg(tr!("Parse number failed: {}", err.to_string()))),
+                Err(err) => {
+                    return Err(Error::msg(tr!("Parse number failed: {}", err.to_string())))
+                }
             };
 
             if let Some(min) = props.min {

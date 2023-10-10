@@ -64,6 +64,10 @@ impl ManagedField for BooleanField {
     type Properties = Boolean;
     type Message = Msg;
 
+    fn validation_fn_need_update(_props: &Self::Properties, _old_props: &Self::Properties) -> bool {
+        false
+    }
+
     fn setup(props: &Boolean) -> ManagedFieldState {
         let mut value = false;
         if let Some(default) = &props.default {

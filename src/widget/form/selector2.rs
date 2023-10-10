@@ -178,6 +178,12 @@ impl<S: DataStore + 'static> ManagedField for SelectorField<S> {
     type Message = Msg<S>;
     type Properties = Selector<S>;
 
+    fn validation_fn_need_update(props: &Self::Properties, old_props: &Self::Properties) -> bool {
+        props.input_props.required != old_props.input_props.required
+            || props.store != old_props.store
+            || props.validate != old_props.validate
+    }
+
     fn create_validation_fn(props: &Selector<S>) -> ValidateFn<Value> {
         let store = props.store.clone();
         let required = props.input_props.required;

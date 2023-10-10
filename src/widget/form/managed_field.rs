@@ -1,5 +1,7 @@
+use std::cell::OnceCell;
+
 use serde_json::Value;
-use wasm_bindgen::{JsCast, closure::Closure};
+use wasm_bindgen::{closure::Closure, JsCast};
 
 use yew::html::Scope;
 use yew::prelude::*;
@@ -16,7 +18,6 @@ pub struct ManagedFieldState {
     // local state, usage depends whether we have a name/form_ctx
     // None => store checked state locally
     // Some => use it to track/detect changes
-
     /// The field value (kept in sync with the form context)
     pub value: Value,
 
@@ -157,8 +158,16 @@ pub trait ManagedField: Sized {
     type Properties: Properties + FieldBuilder;
     type Message: 'static;
 
+    fn validation_fn_need_update(props: &Self::Properties, old_props: &Self::Properties) -> bool {
+        props != old_props
+    }
+
     fn create_validation_fn(_props: &Self::Properties) -> ValidateFn<Value> {
-        ValidateFn::new(|_| Ok(()))
+        // by default, always return the same ValidateFn
+        thread_local! {
+            static DEFAULT_VALIDATOR: OnceCell<ValidateFn<Value>> = OnceCell::new();
+        }
+        DEFAULT_VALIDATOR.with(|cell| cell.get_or_init(|| ValidateFn::new(|_| Ok(()))).clone())
     }
 
     /// Returns the initial field setup.
@@ -181,7 +190,9 @@ pub trait ManagedField: Sized {
     fn value_changed(&mut self, _ctx: &ManagedFieldContext<Self>) {}
 
     /// This is called when the associated label is clicked.
-    fn label_clicked(&mut self, _ctx: &ManagedFieldContext<Self>) -> bool { false }
+    fn label_clicked(&mut self, _ctx: &ManagedFieldContext<Self>) -> bool {
+        false
+    }
 
     /// Called on component property changes.
     fn changed(&mut self, _ctx: &ManagedFieldContext<Self>, _old_props: &Self::Properties) -> bool {
@@ -201,7 +212,7 @@ pub enum Msg<M> {
     ForceValue(Value, Option<Result<(), String>>),
     ChildMessage(M),
     Validate,
-    LabelClicked,                 // Associated label was clicked
+    LabelClicked,               // Associated label was clicked
     FormCtxUpdate(FormContext), // FormContext object changed
     FormCtxDataChange,          // Data inside FormContext changed
 }
@@ -271,7 +282,7 @@ impl<MF: ManagedField + 'static> ManagedFieldMaster<MF> {
 
         // FormContext may already have field data (i.e for unique fields), so sync back
         // data after field registration.
-        let (value, valid) =  field_handle.get_data();
+        let (value, valid) = field_handle.get_data();
         self.comp_state.value = value;
         self.comp_state.valid = valid;
 
@@ -289,7 +300,9 @@ impl<MF: ManagedField + 'static> Component for ManagedFieldMaster<MF> {
         let validate = MF::create_validation_fn(props);
 
         let mut comp_state = MF::setup(props);
-        comp_state.valid = validate.validate(&comp_state.value).map_err(|err| err.to_string());
+        comp_state.valid = validate
+            .validate(&comp_state.value)
+            .map_err(|err| err.to_string());
 
         let sub_context = ManagedFieldContext::new(ctx, &comp_state);
         let slave = MF::create(&sub_context);
@@ -338,11 +351,8 @@ impl<MF: ManagedField + 'static> Component for ManagedFieldMaster<MF> {
                     }
                 }
 
-                let valid = valid.unwrap_or_else(|| {
-                    self.validate
-                        .validate(&value)
-                        .map_err(|e| e.to_string())
-                });
+                let valid = valid
+                    .unwrap_or_else(|| self.validate.validate(&value).map_err(|e| e.to_string()));
 
                 let value_changed = value != self.comp_state.value;
                 let valid_changed = valid != self.comp_state.valid;
@@ -357,10 +367,7 @@ impl<MF: ManagedField + 'static> Component for ManagedFieldMaster<MF> {
                 true
             }
             Msg::UpdateValue(value) => {
-                let valid = self
-                    .validate
-                    .validate(&value)
-                    .map_err(|e| e.to_string());
+                let valid = self.validate.validate(&value).map_err(|e| e.to_string());
 
                 let value_changed = value != self.comp_state.value;
                 let valid_changed = valid != self.comp_state.valid;
@@ -443,8 +450,7 @@ impl<MF: ManagedField + 'static> Component for ManagedFieldMaster<MF> {
         let props = ctx.props();
         let mut refresh1 = false;
         if let Some(field_handle) = &mut self.field_handle {
-
-           let input_props = props.as_input_props();
+            let input_props = props.as_input_props();
             let old_input_props = old_props.as_input_props();
 
             if input_props.submit != old_input_props.submit
@@ -462,10 +468,13 @@ impl<MF: ManagedField + 'static> Component for ManagedFieldMaster<MF> {
                 refresh1 = true;
             }
 
-            let validate = MF::create_validation_fn(props);
-            if validate != self.validate {
-                refresh1 = true;
-                field_handle.update_validate(Some(validate));
+            if MF::validation_fn_need_update(props, old_props) {
+                log::info!("UPDATE VF {:?}", input_props.name);
+                let validate = MF::create_validation_fn(props);
+                if validate != self.validate {
+                    refresh1 = true;
+                    field_handle.update_validate(Some(validate));
+                }
             }
         }
         let sub_context = ManagedFieldContext::new(ctx, &self.comp_state);
