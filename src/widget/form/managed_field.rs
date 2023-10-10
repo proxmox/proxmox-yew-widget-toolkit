@@ -1,5 +1,3 @@
-use std::cell::OnceCell;
-
 use serde_json::Value;
 use wasm_bindgen::{closure::Closure, JsCast};
 
@@ -163,11 +161,7 @@ pub trait ManagedField: Sized {
     }
 
     fn create_validation_fn(_props: &Self::Properties) -> ValidateFn<Value> {
-        // by default, always return the same ValidateFn
-        thread_local! {
-            static DEFAULT_VALIDATOR: OnceCell<ValidateFn<Value>> = OnceCell::new();
-        }
-        DEFAULT_VALIDATOR.with(|cell| cell.get_or_init(|| ValidateFn::new(|_| Ok(()))).clone())
+        crate::static_validation_fn!(Value, |_| Ok(()))
     }
 
     /// Returns the initial field setup.

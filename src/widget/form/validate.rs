@@ -8,6 +8,19 @@ use anyhow::Error;
 /// Wraps `Rc` around `Fn` so it can be passed as a prop.
 pub struct ValidateFn<T>(Rc<dyn Fn(&T) -> Result<(), Error>>);
 
+/// Create a thread_local, static validation function.
+///
+/// The value is initialized once and gets never updated.
+#[macro_export]
+macro_rules! static_validation_fn {
+    ($t:ty, $v:expr) => {{
+        thread_local! {
+            static STATIC_FN: std::cell::OnceCell<$crate::widget::form::ValidateFn<$t>> = std::cell::OnceCell::new();
+        }
+        STATIC_FN.with(|cell| cell.get_or_init(|| $crate::widget::form::ValidateFn::new($v)).clone())
+    }}
+}
+
 impl<T> Clone for ValidateFn<T> {
     fn clone(&self) -> Self {
         Self(Rc::clone(&self.0))
