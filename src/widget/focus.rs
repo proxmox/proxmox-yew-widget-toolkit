@@ -26,6 +26,16 @@ pub fn focus_next(node_ref: &NodeRef, backwards: bool) {
     }
 }
 
+fn calculate_next(mut index: i32, backwards: bool, len: i32) -> i32 {
+    index = index.clamp(-1, len) + if backwards { -1 } else { 1 };
+    if index < 0 {
+        index = len - 1;
+    } else if index >= len {
+        index = 0;
+    }
+    index
+}
+
 /// Move focus to the next/previous focusable element.
 ///
 /// This fuction use all focusable descendents of the element.
@@ -46,27 +56,7 @@ pub fn focus_next_el(el: web_sys::HtmlElement, backwards: bool) {
 
         //log::info!("focus_next: got {} focusable elements, index {}", list.length(), index);
 
-        let next = if index < 0 {
-            if backwards {
-                list.length() as i32 - 1
-            } else {
-                0
-            }
-        } else {
-            if backwards {
-                if index == 0 {
-                    list.length() as i32 - 1
-                } else {
-                    index - 1
-                }
-            } else {
-                if (index + 1) >= list.length() as i32 {
-                    0
-                } else {
-                    index as i32 + 1
-                }
-            }
-        };
+        let next = calculate_next(index, backwards, list.length() as i32);
 
         if let Ok(next_element) = list.get(next as u32).dyn_into::<web_sys::HtmlElement>() {
             let _ = next_element.focus();
@@ -131,16 +121,6 @@ pub fn roving_tabindex_next_el(el: web_sys::HtmlElement, backwards: bool, roving
     }
 
     let index = get_active_index(&list);
-
-    fn calculate_next(mut index: i32, backwards: bool, len: i32) -> i32 {
-        index += if backwards { -1 } else { 1 };
-        if index < 0 {
-            index = len - 1;
-        } else if index >= len {
-            index = 0;
-        }
-        index
-    }
 
     let mut next = calculate_next(index, backwards, list.len() as i32);
 
@@ -318,5 +298,29 @@ pub fn init_roving_tabindex_el(el: web_sys::HtmlElement, take_focus: bool) {
         } else {
             item.set_tab_index(-1);
         }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::widget::focus::calculate_next;
+
+    #[test]
+    fn test_calculate_next() {
+        assert_eq!(calculate_next(0, false, 30), 1);
+        assert_eq!(calculate_next(1, false, 30), 2);
+        assert_eq!(calculate_next(-1, false, 30), 0);
+        assert_eq!(calculate_next(-2, false, 30), 0);
+        assert_eq!(calculate_next(29, false, 30), 0);
+        assert_eq!(calculate_next(30, false, 30), 0);
+        assert_eq!(calculate_next(15, false, 30), 16);
+
+        assert_eq!(calculate_next(0, true, 30), 29);
+        assert_eq!(calculate_next(1, true, 30), 0);
+        assert_eq!(calculate_next(-1, true, 30), 29);
+        assert_eq!(calculate_next(-2, true, 30), 29);
+        assert_eq!(calculate_next(29, true, 30), 28);
+        assert_eq!(calculate_next(30, true, 30), 29);
+        assert_eq!(calculate_next(15, true, 30), 14);
     }
 }
