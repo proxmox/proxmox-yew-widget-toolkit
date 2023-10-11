@@ -1,7 +1,5 @@
 //! DOM focus management helpers.
 
-use std::ops::Deref;
-
 use wasm_bindgen::JsCast;
 
 use yew::prelude::*;
@@ -18,10 +16,7 @@ pub fn element_is_focusable(el: &web_sys::HtmlElement) -> bool {
         return true;
     }
 
-    match el.tag_name().as_str() {
-        "A" | "BUTTON" | "INPUT" => true,
-        _ => false,
-    }
+    matches!(el.tag_name().as_str(), "A" | "BUTTON" | "INPUT")
 }
 
 /// Move focus to the next/previous focusable element (calls [focus_next_el]).
@@ -212,7 +207,7 @@ pub fn update_roving_tabindex_el(el: web_sys::HtmlElement) {
         let document = window.document().unwrap();
 
         let active_el = document.active_element();
-        let active_node: Option<&web_sys::Node> = active_el.as_ref().map(|el| el.deref());
+        let active_node: Option<&web_sys::Node> = active_el.as_deref();
 
         let mut index = 0;
         for i in 0..child_list.length() {
@@ -300,23 +295,21 @@ pub fn init_roving_tabindex(node_ref: &NodeRef) {
 pub fn init_roving_tabindex_el(el: web_sys::HtmlElement, take_focus: bool) {
     let list = roving_tabindex_members(&el);
 
-    if list.len() == 0 {
+    if list.is_empty() {
         return;
     }
 
     //log::info!("init_roving_tabindex: got {} focusable elements", list.length());
 
     let mut default_index = 0;
-    for i in 0..list.len() {
-        let item = &list[i];
+    for (i, item) in list.iter().enumerate() {
         if item.tab_index() == 0 {
             default_index = i;
             break;
         }
     }
 
-    for i in 0..list.len() {
-        let item = &list[i];
+    for (i, item) in list.iter().enumerate() {
         if i == default_index {
             item.set_tab_index(0);
             if take_focus {
