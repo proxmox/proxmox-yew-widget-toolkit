@@ -78,6 +78,11 @@ pub struct Dropdown {
     #[prop_or_default]
     pub value: Option<String>,
 
+    /// Flag to indicate if the value is valid.
+    #[prop_or_default]
+    #[builder]
+    pub valid: bool,
+
     /// Sets the "aria-haspopup" property.
     #[builder(IntoPropValue, into_prop_value)]
     #[prop_or_default]
@@ -95,9 +100,6 @@ pub struct Dropdown {
     #[builder]
     pub icons: Vec<(AttrValue, bool)>,
 
-    /// Class applied to the embedded input element.
-    #[prop_or_default]
-    pub input_class: Classes,
 }
 
 impl Dropdown {
@@ -115,17 +117,6 @@ impl Dropdown {
     /// Method to add an icon.
     pub fn add_icon(&mut self, icon: impl IntoPropValue<AttrValue>, right: bool) {
         self.icons.push((icon.into_prop_value(), right));
-    }
-
-    /// Builder style method to add a CSS class for the input element.
-    pub fn input_class(mut self, class: impl Into<Classes>) -> Self {
-        self.add_input_class(class);
-        self
-    }
-
-    /// Method to add a CSS class for the input element.
-    pub fn add_input_class(&mut self, class: impl Into<Classes>) {
-        self.input_class.push(class);
     }
 }
 
@@ -390,8 +381,14 @@ impl Component for PwtDropdown {
             // overwrite node_ref, becaus AutoFloatingPlacement needs stable ref
             .node_ref(self.dropdown_ref.clone())
             .class("pwt-input")
+            .class("pwt-input-type-text")
+            .class(disabled.then_some("disabled"))
             .class("pwt-w-100")
-            .class(props.input_class.clone())
+            .class(if props.valid {
+                "is-valid"
+            } else {
+                "is-invalid"
+            })
             .onclick(onclick);
 
         for (class, right) in &props.icons {
