@@ -13,8 +13,8 @@ use yew::prelude::*;
 use yew::virtual_dom::VNode;
 
 use crate::prelude::*;
-use crate::widget::{Container, Row, SizeObserver};
 use crate::touch::{GestureDetector, GestureDragEvent, GestureSwipeEvent};
+use crate::widget::{Container, Row, SizeObserver};
 
 use pwt_macros::widget;
 
@@ -277,24 +277,27 @@ impl Component for PwtSlidable {
             }
             Msg::Swipe(event) => {
                 let direction = event.direction.abs();
-                if direction < 45.0 || direction > 135.0 {
-                    if props.left_actions.is_none() && props.right_actions.is_none() {
-                        if props.on_dismiss.is_some() {
-                            // log::info!("START DISMISS");
-                            self.start_dismiss()
-                        }
-                    }
+                let is_left = direction > 135.0;
+                let is_right = direction < 45.0;
+                if (is_left || is_right)
+                    && props.left_actions.is_none()
+                    && props.right_actions.is_none()
+                    && props.on_dismiss.is_some()
+                {
+                    // log::info!("START DISMISS");
+                    self.start_dismiss()
                 }
             }
             Msg::TransitionEnd => {
                 self.switch_back = false;
-                if props.left_actions.is_none() && props.right_actions.is_none() {
-                    if self.view_state == ViewState::DismissTransition {
-                        //log::info!("DISMISS");
-                        self.view_state = ViewState::Dismissed;
-                        if let Some(on_dismiss) = &props.on_dismiss {
-                            on_dismiss.emit(());
-                        }
+                if props.left_actions.is_none()
+                    && props.right_actions.is_none()
+                    && self.view_state == ViewState::DismissTransition
+                {
+                    //log::info!("DISMISS");
+                    self.view_state = ViewState::Dismissed;
+                    if let Some(on_dismiss) = &props.on_dismiss {
+                        on_dismiss.emit(());
                     }
                 }
             }
@@ -305,11 +308,9 @@ impl Component for PwtSlidable {
                 }
                 SlidableControllerMsg::Collapse => {
                     log::info!("REquest Collapse");
-                    if self.drag_pos.is_none() {
-                        if self.start_pos != 0f64 {
-                            self.start_pos = 0f64;
-                            self.switch_back = true;
-                        }
+                    if self.drag_pos.is_none() && self.start_pos != 0f64 {
+                        self.start_pos = 0f64;
+                        self.switch_back = true;
                     }
                 }
             },
