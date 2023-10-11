@@ -320,54 +320,50 @@ impl<T: NumberTypeInfo> ManagedField for NumberField<T> {
             max: props.max,
             validate: props.validate.clone(),
         }
-     }
+    }
 
-    fn create_validation_fn(props: Self::ValidateClosure) -> ValidateFn<Value> {
-        ValidateFn::new(move |value: &Value| {
-            let is_empty = match value {
-                Value::Null => true,
-                Value::Number(_) => false,
-                Value::String(v) => v.is_empty(),
-                _ => return Err(Error::msg(tr!("Got wrong data type!"))),
-            };
+    fn validator(props: &Self::ValidateClosure, value: &Value) -> Result<(), Error> {
+        let is_empty = match value {
+            Value::Null => true,
+            Value::Number(_) => false,
+            Value::String(v) => v.is_empty(),
+            _ => return Err(Error::msg(tr!("Got wrong data type!"))),
+        };
 
-            if is_empty {
-                if props.required {
-                    return Err(Error::msg(tr!("Field may not be empty.")));
-                } else {
-                    return Ok(());
-                }
+        if is_empty {
+            if props.required {
+                return Err(Error::msg(tr!("Field may not be empty.")));
+            } else {
+                return Ok(());
             }
+        }
 
-            let number = match T::value_to_number(value) {
-                Ok(number) => number,
-                Err(err) => {
-                    return Err(Error::msg(tr!("Parse number failed: {}", err.to_string())))
-                }
-            };
+        let number = match T::value_to_number(value) {
+            Ok(number) => number,
+            Err(err) => return Err(Error::msg(tr!("Parse number failed: {}", err.to_string()))),
+        };
 
-            if let Some(min) = props.min {
-                if number < min {
-                    return Err(Error::msg(tr!(
-                        "value must be greater than or equal to '{0}'",
-                        min
-                    )));
-                }
+        if let Some(min) = props.min {
+            if number < min {
+                return Err(Error::msg(tr!(
+                    "value must be greater than or equal to '{0}'",
+                    min
+                )));
             }
-            if let Some(max) = props.max {
-                if number > max {
-                    return Err(Error::msg(tr!(
-                        "value must be less than or equal to '{0}'",
-                        max
-                    )));
-                }
+        }
+        if let Some(max) = props.max {
+            if number > max {
+                return Err(Error::msg(tr!(
+                    "value must be less than or equal to '{0}'",
+                    max
+                )));
             }
+        }
 
-            match &props.validate {
-                Some(cb) => cb.validate(&number),
-                None => Ok(()),
-            }
-        })
+        match &props.validate {
+            Some(cb) => cb.validate(&number),
+            None => Ok(()),
+        }
     }
 
     fn setup(props: &Self::Properties) -> ManagedFieldState {

@@ -120,31 +120,29 @@ impl ManagedField for TextAreaField {
         }
     }
 
-    fn create_validation_fn(props: ValidateClosure) -> ValidateFn<Value> {
-        ValidateFn::new(move |value: &Value| {
-            let value = match value {
-                Value::Null => String::new(),
-                Value::String(v) => v.clone(),
-                _ => {
-                    // should not happen
-                    log::error!("TextArea: got wrong data type in validate!");
-                    String::new()
-                }
-            };
-
-            if value.is_empty() {
-                if props.required {
-                    return Err(Error::msg(tr!("Field may not be empty.")));
-                } else {
-                    return Ok(());
-                }
+    fn validator(props: &Self::ValidateClosure, value: &Value) -> Result<(), Error> {
+        let value = match value {
+            Value::Null => String::new(),
+            Value::String(v) => v.clone(),
+            _ => {
+                // should not happen
+                log::error!("TextArea: got wrong data type in validate!");
+                String::new()
             }
+        };
 
-            match &props.validate {
-                Some(cb) => cb.validate(&value),
-                None => Ok(()),
+        if value.is_empty() {
+            if props.required {
+                return Err(Error::msg(tr!("Field may not be empty.")));
+            } else {
+                return Ok(());
             }
-        })
+        }
+
+        match &props.validate {
+            Some(cb) => cb.validate(&value),
+            None => Ok(()),
+        }
     }
 
     fn setup(props: &Self::Properties) -> ManagedFieldState {

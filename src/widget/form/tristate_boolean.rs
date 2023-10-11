@@ -12,7 +12,7 @@ use crate::state::{Selection, Store};
 use crate::widget::data_table::{DataTable, DataTableColumn, DataTableHeader};
 use crate::widget::{Dropdown, GridPicker};
 
-use super::{ManagedField, ManagedFieldContext, ManagedFieldMaster, ManagedFieldState, ValidateFn};
+use super::{ManagedField, ManagedFieldContext, ManagedFieldMaster, ManagedFieldState};
 
 use pwt_macros::{builder, widget};
 
@@ -103,13 +103,13 @@ impl ManagedField for PwtTristateBoolean {
     type Properties = TristateBoolean;
     type ValidateClosure = ();
 
-    fn validation_args(_props: &Self::Properties) -> Self::ValidateClosure { () }
+    fn validation_args(_props: &Self::Properties) -> Self::ValidateClosure {}
 
-    fn create_validation_fn(_props: Self::ValidateClosure) -> ValidateFn<Value> {
-        ValidateFn::new(move |value: &Value| match value {
+    fn validator(_props: &Self::ValidateClosure, value: &Value) -> Result<(), Error> {
+        match value {
             Value::Null | Value::Bool(_) => Ok(()),
             _ => Err(Error::msg(tr!("Got wrong data type!"))),
-        })
+        }
     }
 
     fn setup(props: &Self::Properties) -> ManagedFieldState {

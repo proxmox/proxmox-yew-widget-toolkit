@@ -1,3 +1,4 @@
+use anyhow::Error;
 use serde_json::Value;
 use wasm_bindgen::{closure::Closure, JsCast};
 
@@ -157,15 +158,17 @@ pub trait ManagedField: Sized {
     type Message: 'static;
     type ValidateClosure: 'static + PartialEq;
 
-    /// Extract arguments passed to the [create_validation_fn](Self::create_validation_fn)
+    /// Extract arguments passed to the [`validator`](Self::validator)
     ///
     /// This is called when component properties changes. We rebuild the
     /// validation function if returend value changes.
     fn validation_args(props: &Self::Properties) -> Self::ValidateClosure;
 
-    /// Create the validation function.
-    fn create_validation_fn(_props: Self::ValidateClosure) -> ValidateFn<Value> {
-        crate::static_validation_fn!(Value, |_| Ok(()))
+    /// The validation function.
+    ///
+    /// Gets the result of [`validation_args`](Self::validation_args) and the value as parameter.
+    fn validator(_props: &Self::ValidateClosure, _value: &Value) -> Result<(), Error> {
+        Ok(())
     }
 
     /// Returns the initial field setup.
@@ -296,7 +299,7 @@ impl<MF: ManagedField + 'static> Component for ManagedFieldMaster<MF> {
         let props = ctx.props();
 
         let validation_args = MF::validation_args(props);
-        let validate = MF::create_validation_fn(validation_args);
+        let validate = ValidateFn::new(move |value| MF::validator(&validation_args, value));
 
         let mut comp_state = MF::setup(props);
         comp_state.valid = validate
@@ -466,7 +469,6 @@ impl<MF: ManagedField + 'static> Component for ManagedFieldMaster<MF> {
                 field_handle.update_field_options(options);
                 refresh1 = true;
             }
-
         }
 
         let old_validation_args = MF::validation_args(old_props);
@@ -474,13 +476,11 @@ impl<MF: ManagedField + 'static> Component for ManagedFieldMaster<MF> {
 
         if validation_args != old_validation_args {
             log::info!("UPDATE VF {:?}", props.as_input_props().name);
-            let validate = MF::create_validation_fn(validation_args);
-            if validate != self.validate {
-                refresh1 = true;
-                self.validate = validate.clone();
-                if let Some(field_handle) = &mut self.field_handle {
-                    field_handle.update_validate(Some(validate));
-                }
+            let validate = ValidateFn::new(move |value| MF::validator(&validation_args, value));
+            refresh1 = true;
+            self.validate = validate.clone();
+            if let Some(field_handle) = &mut self.field_handle {
+                field_handle.update_validate(Some(validate));
             }
         }
 

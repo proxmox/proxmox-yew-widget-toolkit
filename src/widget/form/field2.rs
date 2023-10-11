@@ -199,55 +199,53 @@ impl ManagedField for StandardField {
         }
     }
 
-    fn create_validation_fn(props: Self::ValidateClosure) -> ValidateFn<Value> {
-        ValidateFn::new(move |value: &Value| {
-            let value = match value {
-                Value::Null => String::new(),
-                Value::Number(n) => n.to_string(),
-                Value::String(v) => v.clone(),
-                _ => {
-                    // should not happen
-                    log::error!("PwtField: got wrong data type in validate!");
-                    String::new()
-                }
+    fn validator(props: &Self::ValidateClosure, value: &Value) -> Result<(), Error> {
+        let value = match value {
+            Value::Null => String::new(),
+            Value::Number(n) => n.to_string(),
+            Value::String(v) => v.clone(),
+            _ => {
+                // should not happen
+                log::error!("PwtField: got wrong data type in validate!");
+                String::new()
+            }
+        };
+
+        if value.is_empty() {
+            if props.required {
+                return Err(Error::msg(tr!("Field may not be empty.")));
+            } else {
+                return Ok(());
+            }
+        }
+
+        if props.input_type == "number" {
+            let value_f64 = match value.parse::<f64>() {
+                Ok(v) => v,
+                Err(err) => return Err(Error::msg(tr!("unable to parse number: {}", &err))),
             };
-
-            if value.is_empty() {
-                if props.required {
-                    return Err(Error::msg(tr!("Field may not be empty.")));
-                } else {
-                    return Ok(());
+            if let Some(min) = props.min {
+                if value_f64 < min {
+                    return Err(Error::msg(tr!(
+                        "value must be greater than or equal to '{}'",
+                        min
+                    )));
                 }
             }
-
-            if props.input_type == "number" {
-                let value_f64 = match value.parse::<f64>() {
-                    Ok(v) => v,
-                    Err(err) => return Err(Error::msg(tr!("unable to parse number: {}", &err))),
-                };
-                if let Some(min) = props.min {
-                    if value_f64 < min {
-                        return Err(Error::msg(tr!(
-                            "value must be greater than or equal to '{}'",
-                            min
-                        )));
-                    }
-                }
-                if let Some(max) = props.max {
-                    if value_f64 > max {
-                        return Err(Error::msg(tr!(
-                            "value must be less than or equal to '{}'",
-                            max
-                        )));
-                    }
+            if let Some(max) = props.max {
+                if value_f64 > max {
+                    return Err(Error::msg(tr!(
+                        "value must be less than or equal to '{}'",
+                        max
+                    )));
                 }
             }
+        }
 
-            match &props.validate {
-                Some(cb) => cb.validate(&value),
-                None => Ok(()),
-            }
-        })
+        match &props.validate {
+            Some(cb) => cb.validate(&value),
+            None => Ok(()),
+        }
     }
 
     fn setup(props: &Self::Properties) -> ManagedFieldState {

@@ -194,36 +194,33 @@ impl<S: DataStore + 'static> ManagedField for SelectorField<S> {
         }
     }
 
-    fn create_validation_fn(props: Self::ValidateClosure) -> ValidateFn<Value> {
-
-        ValidateFn::new(move |value: &Value| {
-            let value = match value {
-                Value::Null => String::new(),
-                Value::String(v) => v.clone(),
-                _ => {
-                    // should not happen
-                    log::error!("PwtField: got wrong data type in validate!");
-                    String::new()
-                }
-            };
-
-            if value.is_empty() {
-                if props.required {
-                    bail!("Field may not be empty.");
-                } else {
-                    return Ok(());
-                }
+    fn validator(props: &Self::ValidateClosure, value: &Value) -> Result<(), Error> {
+        let value = match value {
+            Value::Null => String::new(),
+            Value::String(v) => v.clone(),
+            _ => {
+                // should not happen
+                log::error!("PwtField: got wrong data type in validate!");
+                String::new()
             }
+        };
 
-            if !props.store.is_empty() {
-                match &props.validate {
-                    Some(cb) => cb.validate(&(value.into(), props.store.clone())),
-                    None => Ok(()),
-                }
+        if value.is_empty() {
+            if props.required {
+                bail!("Field may not be empty.");
             } else {
-                bail!("no data loaded");
+                return Ok(());
             }
-        })
+        }
+
+        if !props.store.is_empty() {
+            match &props.validate {
+                Some(cb) => cb.validate(&(value.into(), props.store.clone())),
+                None => Ok(()),
+            }
+        } else {
+            bail!("no data loaded");
+        }
     }
 
     fn setup(props: &Self::Properties) -> ManagedFieldState {
