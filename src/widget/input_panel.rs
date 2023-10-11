@@ -113,44 +113,39 @@ impl InputPanel {
     }
 
     /// Builder style method to add a custom child in the first column
-    pub fn with_custom_child(mut self, child: impl Into<yew::virtual_dom::VNode>) -> Self {
+    pub fn with_custom_child(mut self, child: impl Into<Html>) -> Self {
         self.add_custom_child(child);
         self
     }
 
     /// Adds custom child in the first column
-    pub fn add_custom_child(&mut self, child: impl Into<yew::virtual_dom::VNode>) {
+    pub fn add_custom_child(&mut self, child: impl Into<Html>) {
         self.add_custom_child_impl(Position::Left, false, child);
     }
 
     /// Builder style method to add a custom child in the second column
-    pub fn with_right_custom_child(mut self, child: impl Into<yew::virtual_dom::VNode>) -> Self {
+    pub fn with_right_custom_child(mut self, child: impl Into<Html>) -> Self {
         self.add_right_custom_child(child);
         self
     }
 
     /// Adds custom child in the second column
-    pub fn add_right_custom_child(&mut self, child: impl Into<yew::virtual_dom::VNode>) {
+    pub fn add_right_custom_child(&mut self, child: impl Into<Html>) {
         self.add_custom_child_impl(Position::Right, false, child);
     }
 
     /// Builder style method to add a large custom child
-    pub fn with_large_custom_child(mut self, child: impl Into<yew::virtual_dom::VNode>) -> Self {
+    pub fn with_large_custom_child(mut self, child: impl Into<Html>) -> Self {
         self.add_large_custom_child(child);
         self
     }
 
     /// Adds large custom child
-    pub fn add_large_custom_child(&mut self, child: impl Into<yew::virtual_dom::VNode>) {
+    pub fn add_large_custom_child(&mut self, child: impl Into<Html>) {
         self.add_custom_child_impl(Position::Large, false, child);
     }
 
-    fn add_custom_child_impl(
-        &mut self,
-        column: Position,
-        advanced: bool,
-        child: impl Into<yew::virtual_dom::VNode>,
-    ) {
+    fn add_custom_child_impl(&mut self, column: Position, advanced: bool, child: impl Into<Html>) {
         let (row, start, span) = match column {
             Position::Left => {
                 self.left_count += 1;
