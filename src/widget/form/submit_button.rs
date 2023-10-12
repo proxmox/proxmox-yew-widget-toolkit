@@ -157,7 +157,7 @@ impl Component for PwtSubmitButton {
         let disabled = !form_valid || props.disabled || (props.check_dirty && !form_dirty);
 
         Button::new(&props.text)
-            .attribute("type", "submit")
+            .button_type("submit")
             .class(props.class.clone())
             .disabled(disabled)
             .onclick(submit)

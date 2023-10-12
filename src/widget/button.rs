@@ -49,6 +49,15 @@ pub struct Button {
     #[prop_or_default]
     #[builder]
     pub show_arrow: bool,
+
+    /// Button type property (default is "button")
+    ///
+    /// We overwrite the default ("submit") because that can cause unexpected
+    /// problems when you have multiple "submit" buttons.
+    #[builder(IntoPropValue, into_prop_value)]
+    #[prop_or(AttrValue::Static("button"))]
+    pub button_type: AttrValue,
+
 }
 
 impl Button {
@@ -252,6 +261,7 @@ impl Component for PwtButton {
             .tag("button")
             .class("pwt-button")
             .class(props.pressed.then(|| "pressed"))
+            .attribute("type", &props.button_type)
             .attribute("aria-disabled", props.disabled.then(|| "true"))
             .attribute("autofocus", props.autofocus.then(|| ""))
             .attribute("aria-label", props.aria_label.clone())
