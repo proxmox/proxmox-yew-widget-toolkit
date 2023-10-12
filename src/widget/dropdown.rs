@@ -79,7 +79,7 @@ pub struct Dropdown {
     pub value: Option<String>,
 
     /// Flag to indicate if the value is valid.
-    #[prop_or_default]
+    #[prop_or(true)]
     #[builder]
     pub valid: bool,
 
