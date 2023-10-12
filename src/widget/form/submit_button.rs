@@ -143,7 +143,7 @@ impl Component for PwtSubmitButton {
                 let guard = form_ctx.read();
                 (guard.is_dirty(), guard.is_valid())
             }
-            None => (false, true),
+            None => (true, true),
         };
 
         let submit = ctx.link().callback({
