@@ -87,29 +87,19 @@ impl InputPanel {
     }
 
     pub fn add_spacer(&mut self, advanced: bool) {
-        self.left_count += 1;
-        self.right_count += 1;
-
-        let visible = if advanced { self.show_advanced } else { true };
-
-        let style = if visible {
-            format!(
-                "grid-row: {}; grid-column-start: 1; grid-column-end: -1;",
-                self.left_count
-            )
-        } else {
-            format!("grid-row: {}; display: none;", self.left_count)
-        };
-
         let key = format!(
             "sp_{}_{}",
             self.left_count,
             if advanced { "1" } else { "0" }
         );
 
-        self.add_child(html! {
-            <hr {key} class="pwt-w-100 pwt-my-2" {style}/>
-        });
+        self.add_custom_child_impl(
+            Position::Large,
+            advanced,
+            html! {
+                <hr {key} class="pwt-w-100 pwt-my-2"/>
+            },
+        );
     }
 
     /// Builder style method to add a custom child in the first column
