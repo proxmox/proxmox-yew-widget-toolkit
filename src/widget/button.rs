@@ -19,30 +19,39 @@ pub struct Button {
     /// Button text.
     #[prop_or_default]
     pub text: Option<AttrValue>,
+
     /// Icon (CSS class).
     #[prop_or_default]
     pub icon_class: Option<Classes>,
 
     /// Html tabindex attribute.
     #[prop_or_default]
+    #[builder(IntoPropValue, into_prop_value)]
     pub tabindex: Option<i32>,
+
     /// ARIA label.
     #[prop_or_default]
+    #[builder(IntoPropValue, into_prop_value)]
     pub aria_label: Option<AttrValue>,
+
     /// Html placeholder attribute.
     #[prop_or_default]
+    #[builder(IntoPropValue, into_prop_value)]
     pub placeholder: Option<AttrValue>,
 
     /// Html autofocus attribute.
     #[prop_or_default]
+    #[builder]
     pub autofocus: bool,
 
     /// Disable flag.
     #[prop_or_default]
+    #[builder]
     pub disabled: bool,
 
     /// Draw button in pressed state (for use in Demo)
     #[prop_or_default]
+    #[builder]
     pub pressed: bool,
 
     /// Whether to show an arrow at the end of the menu.
@@ -57,7 +66,6 @@ pub struct Button {
     #[builder(IntoPropValue, into_prop_value)]
     #[prop_or(AttrValue::Static("button"))]
     pub button_type: AttrValue,
-
 }
 
 impl Button {
@@ -66,61 +74,6 @@ impl Button {
         yew::props!(Self {
             text: text.into_prop_value()
         })
-    }
-
-    /// Builder style method to set the html aria-label attribute.
-    pub fn aria_label(mut self, label: impl IntoPropValue<Option<AttrValue>>) -> Self {
-        self.set_aria_label(label);
-        self
-    }
-
-    /// Method to set the html aria-label attribute.
-    pub fn set_aria_label(&mut self, label: impl IntoPropValue<Option<AttrValue>>) {
-        self.aria_label = label.into_prop_value();
-    }
-
-    /// Builder style method to set the html tabindex attribute.
-    pub fn tabindex(mut self, index: impl IntoPropValue<Option<i32>>) -> Self {
-        self.set_tabindex(index);
-        self
-    }
-
-    /// Method to set the html tabindex attribute.
-    pub fn set_tabindex(&mut self, index: impl IntoPropValue<Option<i32>>) {
-        self.tabindex = index.into_prop_value();
-    }
-
-    /// Builder style method to set the autofocus flag.
-    pub fn autofocus(mut self, autofocus: bool) -> Self {
-        self.set_autofocus(autofocus);
-        self
-    }
-
-    /// Method to set the autofocus flag.
-    pub fn set_autofocus(&mut self, autofocus: bool) {
-        self.autofocus = autofocus;
-    }
-
-    /// Builder style method to set the disabled flag.
-    pub fn disabled(mut self, disabled: bool) -> Self {
-        self.set_disabled(disabled);
-        self
-    }
-
-    /// Method to set the disabled flag.
-    pub fn set_disabled(&mut self, disabled: bool) {
-        self.disabled = disabled;
-    }
-
-    /// Builder style method to set the pressed flag.
-    pub fn pressed(mut self, pressed: bool) -> Self {
-        self.set_pressed(pressed);
-        self
-    }
-
-    /// Method to set the pressed flag.
-    pub fn set_pressed(&mut self, pressed: bool) {
-        self.pressed = pressed;
     }
 
     /// Create a new icon button (without text).
