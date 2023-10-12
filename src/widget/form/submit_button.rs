@@ -5,7 +5,12 @@ use yew::html::{IntoEventCallback, IntoPropValue};
 use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 
+use crate::props::{EventSubscriber, WidgetBuilder};
+use crate::widget::Button;
+
 use super::{FormContext, FormContextObserver};
+
+use pwt_macros::builder;
 
 /// Submit button.
 ///
@@ -13,9 +18,11 @@ use super::{FormContext, FormContextObserver};
 /// enables the button only if the form is valid and dirty (contains
 /// modified data).
 #[derive(Clone, PartialEq, Properties)]
+#[builder]
 pub struct SubmitButton {
     /// Button disabled flag.
     #[prop_or_default]
+    #[builder]
     pub disabled: bool,
 
     /// Submit button press callback.
@@ -24,7 +31,13 @@ pub struct SubmitButton {
 
     /// Button text (default "Submit").
     #[prop_or(AttrValue::Static("Submit"))]
+    #[builder(IntoPropValue, into_prop_value)]
     pub text: AttrValue,
+
+    /// Disable submit button if there are no changes.
+    #[prop_or(true)]
+    #[builder]
+    pub check_dirty: bool,
 
     /// CSS class
     #[prop_or_default]
@@ -35,28 +48,6 @@ impl SubmitButton {
     /// Createa new instance.
     pub fn new() -> Self {
         yew::props!(Self {})
-    }
-
-    /// Builder style method to set the button text.
-    pub fn text(mut self, text: impl IntoPropValue<AttrValue>) -> Self {
-        self.set_text(text);
-        self
-    }
-
-    /// Method to set the button text.
-    pub fn set_text(&mut self, text: impl IntoPropValue<AttrValue>) {
-        self.text = text.into_prop_value();
-    }
-
-    /// Builder style method to set the disabled flag.
-    pub fn disabled(mut self, disabled: bool) -> Self {
-        self.set_disabled(disabled);
-        self
-    }
-
-    /// Method to set the disabled flag.
-    pub fn set_disabled(&mut self, disabled: bool) {
-        self.disabled = disabled;
     }
 
     /// Builder style method to add a html class
@@ -85,9 +76,7 @@ pub enum Msg {
 
 #[doc(hidden)]
 pub struct PwtSubmitButton {
-    form_valid: bool,
-    form_dirty: bool,
-    form_ctx: Option<FormContext>,
+     form_ctx: Option<FormContext>,
     _form_ctx_handle: Option<ContextHandle<FormContext>>,
     _form_ctx_observer: Option<FormContextObserver>,
     on_form_data_change: Callback<FormContext>,
@@ -98,9 +87,6 @@ impl Component for PwtSubmitButton {
     type Properties = SubmitButton;
 
     fn create(ctx: &Context<Self>) -> Self {
-        let mut form_valid = true;
-        let mut form_dirty = false;
-
         let on_form_ctx_change = Callback::from({
             let link = ctx.link().clone();
             move |form_ctx: FormContext| link.send_message(Msg::FormCtxUpdate(form_ctx))
@@ -115,8 +101,6 @@ impl Component for PwtSubmitButton {
         let mut _form_ctx_observer = None;
         let mut form_ctx = None;
         if let Some((form, handle)) = ctx.link().context::<FormContext>(on_form_ctx_change) {
-            form_valid = form.read().is_valid();
-            form_dirty = form.read().is_dirty();
             _form_ctx_handle = Some(handle);
             _form_ctx_observer = Some(form.add_listener(on_form_data_change.clone()));
             form_ctx = Some(form);
@@ -127,8 +111,6 @@ impl Component for PwtSubmitButton {
             _form_ctx_handle,
             _form_ctx_observer,
             form_ctx,
-            form_valid,
-            form_dirty,
         }
     }
 
@@ -138,23 +120,10 @@ impl Component for PwtSubmitButton {
             Msg::FormCtxUpdate(form_ctx) => {
                 self._form_ctx_observer =
                     Some(form_ctx.add_listener(self.on_form_data_change.clone()));
-                self.form_dirty = form_ctx.read().is_dirty();
-                self.form_valid = form_ctx.read().is_valid();
                 self.form_ctx = Some(form_ctx);
                 true
             }
-            Msg::FormCtxDataChange => {
-                let (form_dirty, form_valid) = match &self.form_ctx {
-                    Some(form_ctx) => (form_ctx.read().is_dirty(), form_ctx.read().is_valid()),
-                    None => (false, false),
-                };
-                if self.form_dirty == form_dirty && self.form_valid == form_valid {
-                    return false;
-                }
-                self.form_valid = form_valid;
-                self.form_dirty = form_dirty;
-                true
-            }
+            Msg::FormCtxDataChange => { true }
             Msg::Submit => {
                 if let Some(on_submit) = &props.on_submit {
                     if let Some(form_ctx) = self.form_ctx.clone() {
@@ -169,6 +138,14 @@ impl Component for PwtSubmitButton {
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
 
+        let (form_dirty, form_valid) = match &self.form_ctx {
+            Some(form_ctx) => {
+                let guard = form_ctx.read();
+                (guard.is_dirty(), guard.is_valid())
+            }
+            None => (false, true),
+        };
+
         let submit = ctx.link().callback({
             move |e: MouseEvent| {
                 let event = e.unchecked_into::<Event>();
@@ -177,19 +154,14 @@ impl Component for PwtSubmitButton {
             }
         });
 
-        let class = classes!(
-            "pwt-button",
-            props.class.clone(),
-        );
+        let disabled = !form_valid || props.disabled || (props.check_dirty && !form_dirty);
 
-        html! {
-            <button
-                type="submit"
-                onclick={submit}
-                {class}
-                disabled={!self.form_valid || props.disabled || !self.form_dirty}>{&props.text}
-            </button>
-        }
+        Button::new(&props.text)
+            .attribute("type", "submit")
+            .class(props.class.clone())
+            .disabled(disabled)
+            .onclick(submit)
+            .into()
     }
 }
 
