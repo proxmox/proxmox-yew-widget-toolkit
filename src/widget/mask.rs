@@ -97,14 +97,18 @@ impl Component for PwtMask {
             Some(text) => text,
         };
 
-        let mask = props.visible.then(|| {
-            Container::new().class("pwt-load-mask").with_child(
+        let mut mask = Container::new()
+            .class("pwt-load-mask")
+            .class(props.visible.then(|| "visible"));
+
+        if props.visible {
+            mask.add_child(
                 Container::new()
                     .class("pwt-load-mask-inner")
                     .with_child(html! {<i class={"pwt-loading-icon"} />})
-                    .with_child(text),
+                    .with_child(text)
             )
-        });
+        }
 
         yew::props!(Container {
             std_props: props.std_props.clone(),
@@ -114,7 +118,7 @@ impl Component for PwtMask {
         .class("pwt-d-flex")
         .class("pwt-position-relative")
         .with_child(props.content.clone())
-        .with_optional_child(mask)
+        .with_child(mask)
         .into()
     }
 }
