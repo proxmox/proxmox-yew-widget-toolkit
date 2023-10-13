@@ -1,4 +1,7 @@
-use anyhow::Error;
+use std::fmt::Display;
+use std::str::FromStr;
+
+use anyhow::{bail, Error};
 use serde_json::Value;
 
 use web_sys::HtmlInputElement;
@@ -18,15 +21,99 @@ use crate::tr;
 
 pub type PwtField = ManagedFieldMaster<StandardField>;
 
+/// Valid Input types for a [Field]
+// taken from https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input
+// Commented out values would be valid, but don't make sense for the field.
+#[derive(PartialEq, Clone, Copy)]
+pub enum InputType {
+    //Button,
+    //Checkbox,
+    Color,
+    Date,
+    DatetimeLocal,
+    Email,
+    File,
+    Hidden,
+    //Image,
+    Month,
+    Number,
+    Password,
+    //Radio,
+    Range,
+    //Reset,
+    Search,
+    //Submit,
+    Tel,
+    Text,
+    Time,
+    Url,
+    Week,
+}
+
+impl Default for InputType {
+    fn default() -> Self {
+        InputType::Text
+    }
+}
+
+impl Display for InputType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(match self {
+            InputType::Color => "color",
+            InputType::Date => "date",
+            InputType::DatetimeLocal => "datetime-local",
+            InputType::Email => "email",
+            InputType::File => "file",
+            InputType::Hidden => "hidden",
+            InputType::Month => "month",
+            InputType::Number => "number",
+            InputType::Password => "password",
+            InputType::Range => "range",
+            InputType::Search => "search",
+            InputType::Tel => "tel",
+            InputType::Text => "text",
+            InputType::Time => "time",
+            InputType::Url => "url",
+            InputType::Week => "week",
+        })
+    }
+}
+
+impl FromStr for InputType {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "color" => Ok(InputType::Color),
+            "date" => Ok(InputType::Date),
+            "datetime-local" => Ok(InputType::DatetimeLocal),
+            "email" => Ok(InputType::Email),
+            "file" => Ok(InputType::File),
+            "hidden" => Ok(InputType::Hidden),
+            "month" => Ok(InputType::Month),
+            "number" => Ok(InputType::Number),
+            "password" => Ok(InputType::Password),
+            "range" => Ok(InputType::Range),
+            "search" => Ok(InputType::Search),
+            "tel" => Ok(InputType::Tel),
+            "text" => Ok(InputType::Text),
+            "time" => Ok(InputType::Time),
+            "url" => Ok(InputType::Url),
+            "week" => Ok(InputType::Week),
+            other => bail!("invalid input type '{other}'"),
+        }
+    }
+}
+
 /// Checkbox input element, which stores values as boolean
 #[widget(pwt=crate, comp=ManagedFieldMaster<StandardField>, @input, @element)]
 #[derive(Clone, PartialEq, Properties)]
 #[builder]
 pub struct Field {
     /// Input type (html input element attribute).
-    #[prop_or(AttrValue::Static("text"))]
+    #[prop_or_default]
     #[builder(IntoPropValue, into_prop_value)]
-    pub input_type: AttrValue,
+    pub input_type: InputType,
 
     /// Minimum value for number fields.
     #[prop_or_default]
@@ -124,7 +211,7 @@ impl Field {
         self.min = min.into_prop_value();
         self.max = max.into_prop_value();
         self.step = step.into_prop_value();
-        self.input_type = AttrValue::Static("number");
+        self.input_type = InputType::Number;
         self
     }
 
@@ -193,7 +280,7 @@ fn value_to_text(value: &Value) -> String {
 #[derive(PartialEq)]
 pub struct ValidateClosure {
     required: bool,
-    input_type: AttrValue,
+    input_type: InputType,
     min: Option<f64>,
     max: Option<f64>,
     validate: Option<ValidateFn<String>>,
@@ -234,7 +321,7 @@ impl ManagedField for StandardField {
             }
         }
 
-        if props.input_type == "number" {
+        if props.input_type == InputType::Number {
             let value_f64 = match value.parse::<f64>() {
                 Ok(v) => v,
                 Err(err) => return Err(Error::msg(tr!("unable to parse number: {}", &err))),
@@ -309,7 +396,7 @@ impl ManagedField for StandardField {
 
     fn create(ctx: &ManagedFieldContext<Self>) -> Self {
         let props = ctx.props();
-        let password_state = if props.input_type == "password" {
+        let password_state = if props.input_type == InputType::Password {
             PasswordState::Hidden
         } else {
             PasswordState::NotAPassword
@@ -350,9 +437,9 @@ impl ManagedField for StandardField {
         let value = value_to_text(value);
 
         let input_type = match self.password_state {
-            PasswordState::Hidden => AttrValue::Static("password"),
-            PasswordState::Revealed => AttrValue::Static("text"),
-            PasswordState::NotAPassword => props.input_type.clone(),
+            PasswordState::Hidden => InputType::Password,
+            PasswordState::Revealed => InputType::Text,
+            PasswordState::NotAPassword => props.input_type,
         };
         let oninput = ctx.link().callback(move |event: InputEvent| {
             let input: HtmlInputElement = event.target_unchecked_into();
@@ -364,7 +451,7 @@ impl ManagedField for StandardField {
             .node_ref(self.input_ref.clone())
             .with_input_props(&props.input_props)
             .class("pwt-flex-fill")
-            .attribute("type", input_type)
+            .attribute("type", Some(input_type.to_string()))
             .attribute("readonly", disabled.then_some(""))
             .attribute("value", value)
             .attribute("min", props.min.map(|v| v.to_string()))

@@ -24,7 +24,7 @@ pub use managed_field::{
 };
 
 mod field;
-pub use field::{Field, PwtField};
+pub use field::{Field, InputType, PwtField};
 
 mod form;
 pub use form::{Form, PwtForm};
