@@ -102,6 +102,10 @@ pub struct Field {
     #[prop_or_default]
     #[builder]
     pub icons: Vec<(AttrValue, bool)>,
+
+    /// The tooltip.
+    #[prop_or_default]
+    pub tip: Option<AttrValue>,
 }
 
 impl Field {
@@ -144,6 +148,17 @@ impl Field {
     /// Method to add an icon
     pub fn add_icon(&mut self, icon: impl IntoPropValue<AttrValue>, right: bool) {
         self.icons.push((icon.into_prop_value(), right));
+    }
+
+    /// Builder style method to set the tooltip
+    pub fn tip(mut self, tip: impl IntoPropValue<Option<AttrValue>>) -> Self {
+        self.set_tip(tip);
+        self
+    }
+
+    /// Method to set the tooltip
+    pub fn set_tip(&mut self, tip: impl IntoPropValue<Option<AttrValue>>) {
+        self.tip = tip.into_prop_value();
     }
 }
 
@@ -418,6 +433,8 @@ impl ManagedField for StandardField {
 
         if let Err(msg) = &valid {
             tooltip.set_tip(msg.clone())
+        } else if let Some(tip) = &props.tip {
+            tooltip.set_tip(tip.clone())
         }
 
         tooltip.into()

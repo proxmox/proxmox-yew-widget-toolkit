@@ -4,6 +4,7 @@ use yew::html::IntoPropValue;
 use yew::virtual_dom::VNode;
 
 use crate::prelude::*;
+use crate::props::IntoOptionalInlineHtml;
 use crate::widget::align::{align_to, AlignOptions, GrowDirection, Point};
 use crate::widget::Container;
 
@@ -16,7 +17,7 @@ pub struct Tooltip {
 
     /// The tooltip content/message.
     #[prop_or_default]
-    pub tip: Option<VNode>,
+    pub tip: Option<Html>,
 
     #[prop_or_default]
     rich: bool,
@@ -40,15 +41,15 @@ impl Tooltip {
     }
 
     /// Builder style method to set the tooltip (rich style)
-    pub fn rich_tip(mut self, tip: impl Into<VNode>) -> Self {
+    pub fn rich_tip(mut self, tip: impl IntoOptionalInlineHtml) -> Self {
         self.set_rich_tip(tip);
         self
     }
 
     /// Method to set the tooltip (rich style)
-    pub fn set_rich_tip(&mut self, tip: impl Into<VNode>) {
+    pub fn set_rich_tip(&mut self, tip: impl IntoOptionalInlineHtml) {
         self.rich = true;
-        self.tip = Some(tip.into());
+        self.tip = tip.into_optional_inline_html();
     }
 }
 
