@@ -12,7 +12,7 @@ pub use message_box::{MessageBox, MessageBoxButtons, PwtMessageBox};
 pub mod align;
 
 mod button;
-pub use button::{Button, PwtButton};
+pub use button::{Button, ButtonType, PwtButton};
 
 pub mod canvas;
 

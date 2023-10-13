@@ -6,7 +6,7 @@ use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 
 use crate::props::{EventSubscriber, WidgetBuilder};
-use crate::widget::Button;
+use crate::widget::{Button, ButtonType};
 
 use super::{FormContext, FormContextObserver};
 
@@ -157,7 +157,7 @@ impl Component for PwtSubmitButton {
         let disabled = !form_valid || props.disabled || (props.check_dirty && !form_dirty);
 
         Button::new(&props.text)
-            .button_type("submit")
+            .button_type(ButtonType::Submit)
             .class(props.class.clone())
             .disabled(disabled)
             .onclick(submit)

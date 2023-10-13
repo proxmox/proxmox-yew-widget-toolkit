@@ -1,3 +1,7 @@
+use std::fmt::Display;
+use std::str::FromStr;
+
+use anyhow::bail;
 use web_sys::HtmlElement;
 
 use yew::html::IntoPropValue;
@@ -8,6 +12,42 @@ use crate::widget::dom::IntoHtmlElement;
 use crate::widget::Container;
 
 use pwt_macros::{builder, widget};
+
+#[derive(PartialEq, Clone, Copy)]
+pub enum ButtonType {
+    Button,
+    Submit,
+    Reset,
+}
+
+impl Display for ButtonType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(match self {
+            ButtonType::Button => "button",
+            ButtonType::Submit => "submit",
+            ButtonType::Reset => "reset",
+        })
+    }
+}
+
+impl FromStr for ButtonType {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "button" => Ok(ButtonType::Button),
+            "submit" => Ok(ButtonType::Submit),
+            "reset" => Ok(ButtonType::Reset),
+            _ => bail!("invalid button type"),
+        }
+    }
+}
+
+impl Default for ButtonType {
+    fn default() -> Self {
+        ButtonType::Button
+    }
+}
 
 /// Button.
 ///
@@ -64,8 +104,8 @@ pub struct Button {
     /// We overwrite the default ("submit") because that can cause unexpected
     /// problems when you have multiple "submit" buttons.
     #[builder(IntoPropValue, into_prop_value)]
-    #[prop_or(AttrValue::Static("button"))]
-    pub button_type: AttrValue,
+    #[prop_or_default]
+    pub button_type: ButtonType,
 }
 
 impl Button {
@@ -214,7 +254,7 @@ impl Component for PwtButton {
             .tag("button")
             .class("pwt-button")
             .class(props.pressed.then(|| "pressed"))
-            .attribute("type", &props.button_type)
+            .attribute("type", Some(props.button_type.to_string()))
             .attribute("aria-disabled", props.disabled.then(|| "true"))
             .attribute("autofocus", props.autofocus.then(|| ""))
             .attribute("aria-label", props.aria_label.clone())
