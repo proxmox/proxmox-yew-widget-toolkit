@@ -1,36 +1,50 @@
 use std::rc::Rc;
-use serde_json::Value;
 
+use yew::html::{IntoEventCallback, IntoPropValue};
 use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
-use yew::html::{IntoEventCallback, IntoPropValue};
 
 use crate::prelude::*;
 use crate::props::FieldStdProps;
+use crate::widget::form::{
+    ManagedField, ManagedFieldContext, ManagedFieldMaster, ManagedFieldState
+};
 use crate::widget::Container;
-use crate::widget::form::{FieldState, FieldStateMsg, ValidateFn};
 
 use super::{MenuControllerMsg, MenuEvent};
 
+use pwt_macros::builder;
+
+pub type PwtMenuCheckbox = ManagedFieldMaster<MenuCheckboxField>;
+
 /// Checkbox/RadioGroup widget for [Menu](super::Menu)s.
 #[derive(Clone, PartialEq, Properties)]
+#[builder]
 pub struct MenuCheckbox {
     /// Menu text (html inline text)
     pub text: Html,
 
     /// Checkbox value (default is "on").
+    #[builder(IntoPropValue, into_prop_value)]
+    #[prop_or_default]
     pub value: Option<AttrValue>,
+
     /// Radio group flag
     #[prop_or_default]
+    #[builder]
     pub radio_group: bool,
 
     /// Force value.
     ///
     /// To implement controlled components (for use without a FormContext).
     /// This is ignored if the field has a name.
+    #[builder(IntoPropValue, into_prop_value)]
+    #[prop_or_default]
     pub checked: Option<bool>,
 
     /// Default value.
+    #[builder(IntoPropValue, into_prop_value)]
+    #[prop_or_default]
     pub default: Option<bool>,
 
     /// Standard input element properties
@@ -40,23 +54,24 @@ pub struct MenuCheckbox {
     /// Click callback
     ///
     /// This callback is emited when the user clicks on the checkbox.
+    #[builder_cb(IntoEventCallback, into_event_callback, MenuEvent)]
+    #[prop_or_default]
     pub on_click: Option<Callback<MenuEvent>>,
 
     /// Change callback
     ///
     /// This callback is emited on any data change, i.e. if data
     /// inside the [FormContext](crate::widget::form::FormContext) changed.
-    ///
-    /// # Note
-    ///
-    /// This callback is not emitted for controlled components ([Self::checked] property defined).
+    #[builder_cb(IntoEventCallback, into_event_callback, MenuEvent)]
+    #[prop_or_default]
     pub on_change: Option<Callback<MenuEvent>>,
 
+    #[prop_or_default]
     pub(crate) menu_controller: Option<Callback<MenuControllerMsg>>,
 }
 
 impl FieldBuilder for MenuCheckbox {
-    fn as_input_props_mut(&mut self) -> &mut FieldStdProps  {
+    fn as_input_props_mut(&mut self) -> &mut FieldStdProps {
         &mut self.input_props
     }
     fn as_input_props(&self) -> &FieldStdProps {
@@ -65,12 +80,9 @@ impl FieldBuilder for MenuCheckbox {
 }
 
 impl MenuCheckbox {
-
     /// Create a new menu button
     pub fn new(text: impl Into<Html>) -> Self {
-        yew::props!(Self {
-            text: text.into()
-        })
+        yew::props!(Self { text: text.into() })
     }
 
     /// Create a new radio button
@@ -81,51 +93,6 @@ impl MenuCheckbox {
         })
     }
 
-    /// Builder style method to set the value.
-    pub fn value(mut self, value: impl IntoPropValue<Option<AttrValue>>) -> Self {
-        self.set_value(value);
-        self
-    }
-
-    /// Method to set the value.
-    pub fn set_value(&mut self, value: impl IntoPropValue<Option<AttrValue>>) {
-        self.value = value.into_prop_value();
-    }
-
-    /// Builder style method to set the checked flag.
-    pub fn checked(mut self, checked: impl IntoPropValue<Option<bool>>) -> Self {
-        self.set_checked(checked);
-        self
-    }
-
-    /// Method to set the checked flag.
-    pub fn set_checked(&mut self, checked: impl IntoPropValue<Option<bool>>) {
-        self.checked = checked.into_prop_value();
-    }
-
-    /// Builder style method to set the field default value.
-    pub fn default(mut self, default: impl IntoPropValue<Option<bool>>) -> Self {
-        self.set_default(default);
-        self
-    }
-
-    /// Method to set the field default value.
-    pub fn set_default(&mut self, default: impl IntoPropValue<Option<bool>>) {
-        self.default = default.into_prop_value();
-    }
-
-    /// Builder style method to set the on_click callback.
-    pub fn on_click(mut self, cb: impl IntoEventCallback<MenuEvent>) -> Self {
-        self.on_click = cb.into_event_callback();
-        self
-    }
-
-    /// Builder style method to set the on_change callback.
-    pub fn on_change(mut self, cb: impl IntoEventCallback<MenuEvent>) -> Self {
-        self.on_change = cb.into_event_callback();
-        self
-    }
-
     pub(crate) fn menu_controller(mut self, cb: impl IntoEventCallback<MenuControllerMsg>) -> Self {
         self.menu_controller = cb.into_event_callback();
         self
@@ -134,48 +101,19 @@ impl MenuCheckbox {
 
 pub enum Msg {
     Toggle,
-    StateUpdate(FieldStateMsg),
 }
 
 #[doc(hidden)]
-pub struct PwtMenuCheckbox {
-    state: FieldState,
-}
+pub struct MenuCheckboxField {}
 
-impl Component for PwtMenuCheckbox {
+impl ManagedField for MenuCheckboxField {
     type Message = Msg;
     type Properties = MenuCheckbox;
+    type ValidateClosure = ();
 
-    fn create(ctx: &Context<Self>) -> Self {
-        let props = ctx.props();
+    fn validation_args(_props: &Self::Properties) -> Self::ValidateClosure { () }
 
-        let real_validate = ValidateFn::new(move |_value: &Value| {
-            Ok(())
-        });
-
-        let on_change = match &props.on_change {
-            Some(on_change) => Some(Callback::from({
-                let on_change = on_change.clone();
-                let on_value = props.value.as_deref().unwrap_or("on").to_string();
-                move |value: Value| {
-                    let mut event = MenuEvent::new();
-                    event.checked = value.as_str().unwrap_or("") == on_value;
-                    on_change.emit(event);
-                }
-            })),
-            None => None,
-        };
-
-        let state = FieldState::create(
-            ctx,
-            &props.input_props,
-            ctx.link().callback(Msg::StateUpdate),
-            on_change,
-            real_validate.clone(),
-        );
-
-        let mut me = Self { state };
-
+    fn setup(props: &MenuCheckbox) -> ManagedFieldState {
         let on_value = props.value.as_deref().unwrap_or("on").to_string();
 
         let default = match props.default {
@@ -183,39 +121,63 @@ impl Component for PwtMenuCheckbox {
             _ => String::new(),
         };
 
-        if let Some(name) = &props.input_props.name {
-            me.state.register_field(&props.input_props, default.clone(), default, props.radio_group, true);
-            if props.checked.is_some() {
-                log::error!("MenuCheckbox '{name}' is named - unable to force checked.");
-            }
-         } else {
-            let value = match props.checked {
-                Some(true) => on_value.clone(),
-                _ => default,
-            };
-            me.state.force_value(value, None);
-        }
+        let value = match props.checked {
+            Some(true) => on_value.clone(),
+            Some(false) => String::new(),
+            None => default.clone(),
+        };
 
-        me
+        ManagedFieldState {
+            value: value.into(),
+            valid: Ok(()),
+            default: default.into(),
+            radio_group: props.radio_group,
+            unique: true,
+            submit_converter: None,
+        }
     }
 
-    fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
+    fn value_changed(&mut self, ctx: &ManagedFieldContext<Self>) {
         let props = ctx.props();
+        let state = ctx.state();
+        let value = state.value.as_str().unwrap_or("").to_string();
+        let on_value = props.value.as_deref().unwrap_or("on").to_string();
+        let checked = value == on_value;
+
+        let mut event = MenuEvent::new();
+        event.checked = checked;
+        if let Some(on_change) = &props.on_change {
+            on_change.emit(event);
+        }
+    }
+
+    fn create(_ctx: &ManagedFieldContext<Self>) -> Self {
+        Self {}
+    }
+
+    fn update(&mut self, ctx: &ManagedFieldContext<Self>, msg: Self::Message) -> bool {
+        let props = ctx.props();
+        let state = ctx.state();
         match msg {
-            Msg::StateUpdate(state_msg) => {
-                let on_value = props.value.as_deref().unwrap_or("on").to_string();
-                let default = match props.default {
-                    Some(true) => on_value.clone(),
-                    _ => String::new(),
-                };
-                self.state.update_hook(&props.input_props, state_msg, default, props.radio_group, true)
-            }
             Msg::Toggle => {
-                if props.input_props.disabled { return false; }
+                if props.input_props.disabled {
+                    return false;
+                }
 
                 let on_value = props.value.as_deref().unwrap_or("on").to_string();
-                let (value, _) = self.state.get_field_data();
+                let value = state.value.clone();
                 let checked = value == on_value;
+
+                let new_value = if checked {
+                    if props.radio_group {
+                        // do not allow to deselect radio buttons (same behaviour as browser).
+                        on_value
+                    } else {
+                        String::new()
+                    }
+                } else {
+                    on_value
+                };
 
                 let mut event = MenuEvent::new();
                 event.checked = checked;
@@ -229,72 +191,51 @@ impl Component for PwtMenuCheckbox {
                     }
                 }
 
-                if props.input_props.name.is_some() || props.checked.is_none() { // not forced
-                    let new_value = if checked {
-                        String::new()
-                    } else {
-                        on_value
-                    };
-
-                    self.state.set_value(new_value);
-
-                    if let Some(on_change) = &props.on_change {
-                        event.checked = checked; // in case it was modified
-                        on_change.emit(event.clone());
-                    }
-                }
-
-                /*
-                if !event.get_keep_open() {
-                    if let Some(menu_controller) = &props.menu_controller {
-                        menu_controller.emit(MenuControllerMsg::Collapse);
-                    }
-                }
-                */
+                log::info!("UPDATE");
+                ctx.link().update_value(new_value);
 
                 true
             }
         }
     }
 
-    fn changed(&mut self, ctx: &Context<Self>, old_props: &Self::Properties) -> bool {
+    fn changed(&mut self, ctx: &ManagedFieldContext<Self>, _old_props: &Self::Properties) -> bool {
         let props = ctx.props();
 
-        if let Some(name) = &props.input_props.name {
-            if props.checked.is_some() {
-                log::error!("MenuCheckbox '{name}' is named - unable to force checked.");
-            }
-            self.state.update_field_options(&props.input_props);
-        } else {
-            if props.checked != old_props.checked {
-                let on_value = props.value.as_deref().unwrap_or("on").to_string();
-                let value = match props.checked {
-                    Some(true) => on_value.clone(),
-                    _ => String::new(),
-                };
-                self.state.force_value(value.to_string(), None);
-            }
+        if let Some(checked) = props.checked {
+            let on_value = props.value.as_deref().unwrap_or("on").to_string();
+            let value = if checked { on_value } else { String::new() };
+            ctx.link().force_value(value, None);
         }
 
         true
     }
 
-    fn view(&self, ctx: &Context<Self>) -> Html {
+    fn view(&self, ctx: &ManagedFieldContext<Self>) -> Html {
         let props = ctx.props();
+        let state = ctx.state();
 
         let disabled = props.input_props.disabled;
 
         let on_value = props.value.as_deref().unwrap_or("on").to_string();
-        let (value, _) = self.state.get_field_data();
+        let value = state.value.clone();
         let checked = value == on_value;
 
         let icon_class = classes!(
             "fa",
             "fa-fw",
             if props.radio_group {
-                if checked { "fa-check-circle-o" } else { "fa-circle-o" }
+                if checked {
+                    "fa-check-circle-o"
+                } else {
+                    "fa-circle-o"
+                }
             } else {
-                if checked { "fa-check-square-o" } else { "fa-square-o" }
+                if checked {
+                    "fa-check-square-o"
+                } else {
+                    "fa-square-o"
+                }
             },
             "pwt-menu-item-icon",
         );
@@ -314,19 +255,26 @@ impl Component for PwtMenuCheckbox {
             .class("pwt-menu-item")
             .attribute("tabindex", (!disabled).then(|| "-1"))
             .attribute("aria-disabled", disabled.then(|| "true"))
-            .attribute("role", if props.radio_group { "menuitemradio" } else { "menuitemcheckbox" })
+            .attribute(
+                "role",
+                if props.radio_group {
+                    "menuitemradio"
+                } else {
+                    "menuitemcheckbox"
+                },
+            )
             .attribute("aria-checked", checked.then(|| "true"))
             .onclick(onclick)
             .onkeydown(onkeydown)
             .with_child(icon)
-            .with_child(html!{<i class="pwt-menu-item-indent">{props.text.clone()}</i>})
+            .with_child(html! {<i class="pwt-menu-item-indent">{props.text.clone()}</i>})
             .into()
-     }
+    }
 }
 
 impl Into<VNode> for MenuCheckbox {
     fn into(self) -> VNode {
-        let comp = VComp::new::<PwtMenuCheckbox>(Rc::new(self), None);
+        let comp = VComp::new::<ManagedFieldMaster<MenuCheckboxField>>(Rc::new(self), None);
         VNode::from(comp)
     }
 }

@@ -24,8 +24,8 @@ pub(crate) use menu_popper::MenuPopper;
 mod menu_item;
 pub use menu_item::MenuItem;
 
-mod menu_checkbox2;
-pub use menu_checkbox2::{MenuCheckbox, PwtMenuCheckbox};
+mod menu_checkbox;
+pub use menu_checkbox::{MenuCheckbox, PwtMenuCheckbox};
 
 mod menu_button;
 pub use menu_button::{MenuButton, PwtMenuButton};

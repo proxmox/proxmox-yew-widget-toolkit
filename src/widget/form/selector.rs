@@ -6,10 +6,10 @@ use yew::html::{IntoEventCallback, IntoPropValue};
 use yew::prelude::*;
 use yew::virtual_dom::Key;
 
-#[cfg(feature = "proxmox-schema")]
-use proxmox_schema::Schema;
-
-use super::{FieldState, FieldStateMsg, IntoValidateFn, ValidateFn};
+use super::{
+    IntoValidateFn, ManagedField, ManagedFieldContext, ManagedFieldMaster, ManagedFieldState,
+    ValidateFn,
+};
 use crate::prelude::*;
 use crate::props::{IntoLoadCallback, IntoOptionalRenderFn, LoadCallback, RenderFn};
 use crate::state::{DataStore, Selection};
@@ -27,6 +27,8 @@ pub struct SelectorRenderArgs<S: DataStore> {
     /// something.
     pub on_select: Callback<Key>,
 }
+
+pub type PwtSelector<S> = ManagedFieldMaster<SelectorField<S>>;
 
 /// Helper widget to implement [Combobox](super::Combobox) like selectors.
 ///
@@ -48,7 +50,7 @@ pub struct SelectorRenderArgs<S: DataStore> {
 ///
 /// Please use a trackable [LoadCallback] to avoid unnecessary
 /// reloads.
-#[widget(pwt=crate, comp=PwtSelector<S>, @input, @element)]
+#[widget(pwt=crate, comp=ManagedFieldMaster<SelectorField<S>>, @input)]
 #[derive(Derivative, Properties)]
 #[derivative(Clone(bound = ""), PartialEq(bound = ""))]
 #[builder]
@@ -56,6 +58,7 @@ pub struct Selector<S: DataStore + 'static> {
     store: S,
     /// The default value.
     #[builder(IntoPropValue, into_prop_value)]
+    #[prop_or_default]
     pub default: Option<AttrValue>,
 
     /// Make the input editable.
@@ -73,20 +76,29 @@ pub struct Selector<S: DataStore + 'static> {
 
     /// Change callback
     #[builder_cb(IntoEventCallback, into_event_callback, Key)]
+    #[prop_or_default]
     pub on_change: Option<Callback<Key>>,
 
     /// Picker render function
     pub picker: RenderFn<SelectorRenderArgs<S>>,
     /// Validate callback.
+    #[prop_or_default]
     pub validate: Option<ValidateFn<(String, S)>>,
     /// Data loader callback.
+    #[prop_or_default]
     pub loader: Option<LoadCallback<S::Collection>>,
 
     /// Display the output of this function instead of displaying values directly.
     ///
     /// Note: selectors using this feature are not editable (editable property is ignored)!
     #[builder_cb(IntoOptionalRenderFn, into_optional_render_fn, AttrValue)]
+    #[prop_or_default]
     pub render_value: Option<RenderFn<AttrValue>>,
+
+    /// Icons to show on the left (false) or right(true) side of the input
+    #[prop_or_default]
+    #[builder]
+    pub icons: Vec<(AttrValue, bool)>,
 }
 
 impl<S: DataStore> Selector<S> {
@@ -109,22 +121,6 @@ impl<S: DataStore> Selector<S> {
         self.validate = validate.into_validate_fn();
     }
 
-    /// Builder style method to set the validation schema
-    #[cfg(feature = "proxmox-schema")]
-    pub fn schema(mut self, schema: &'static Schema) -> Self {
-        self.set_schema(schema);
-        self
-    }
-
-    /// Method to set the validation schema
-    #[cfg(feature = "proxmox-schema")]
-    pub fn set_schema(&mut self, schema: &'static Schema) {
-        self.validate = Some(ValidateFn::new(move |(value, _list): &(String, _)| {
-            schema.parse_simple_value(&value)?;
-            Ok(())
-        }));
-    }
-
     /// Builder style method to set the load callback.
     pub fn loader(mut self, callback: impl IntoLoadCallback<S::Collection>) -> Self {
         self.set_loader(callback);
@@ -135,59 +131,35 @@ impl<S: DataStore> Selector<S> {
     pub fn set_loader(&mut self, callback: impl IntoLoadCallback<S::Collection>) {
         self.loader = callback.into_load_callback();
     }
+
+    /// Builder style method to add an icon
+    pub fn with_icon(mut self, icon: impl IntoPropValue<AttrValue>, right: bool) -> Self {
+        self.add_icon(icon, right);
+        self
+    }
+
+    /// Method to add an icon
+    pub fn add_icon(&mut self, icon: impl IntoPropValue<AttrValue>, right: bool) {
+        self.icons.push((icon.into_prop_value(), right));
+    }
 }
 
 pub enum Msg<S: DataStore> {
-    StateUpdate(FieldStateMsg),
     Select(String),
     DataChange,
     LoadResult(Result<S::Collection, Error>),
+    DeleteKey,
 }
 
 #[doc(hidden)]
-pub struct PwtSelector<S: DataStore> {
-    state: FieldState,
+pub struct SelectorField<S: DataStore> {
     selection: Selection,
     load_error: Option<String>,
     _store_observer: S::Observer,
 }
 
-fn create_selector_validation_cb<S: DataStore + 'static>(props: &Selector<S>) -> ValidateFn<Value> {
-    let store = props.store.clone();
-    let required = props.input_props.required;
-    let validate = props.validate.clone();
-    ValidateFn::new(move |value: &Value| {
-        let value = match value {
-            Value::Null => String::new(),
-            Value::String(v) => v.clone(),
-            _ => {
-                // should not happen
-                log::error!("PwtField: got wrong data type in validate!");
-                String::new()
-            }
-        };
-
-        if value.is_empty() {
-            if required {
-                bail!("Field may not be empty.");
-            } else {
-                return Ok(());
-            }
-        }
-
-        if !store.is_empty() {
-            match &validate {
-                Some(cb) => cb.validate(&(value.into(), store.clone())),
-                None => Ok(()),
-            }
-        } else {
-            bail!("no data loaded");
-        }
-    })
-}
-
-impl<S: DataStore + 'static> PwtSelector<S> {
-    fn load(&self, ctx: &Context<Self>) {
+impl<S: DataStore + 'static> SelectorField<S> {
+    fn load(&self, ctx: &ManagedFieldContext<Self>) {
         let props = ctx.props();
         let link = ctx.link().clone();
         if let Some(loader) = props.loader.clone() {
@@ -202,32 +174,83 @@ impl<S: DataStore + 'static> PwtSelector<S> {
     }
 }
 
-impl<S: DataStore + 'static> Component for PwtSelector<S> {
+#[derive(PartialEq)]
+pub struct ValidateClosure<S: DataStore> {
+    required: bool,
+    store: S,
+    validate: Option<ValidateFn<(String, S)>>,
+}
+
+impl<S: DataStore + 'static> ManagedField for SelectorField<S> {
     type Message = Msg<S>;
     type Properties = Selector<S>;
+    type ValidateClosure = ValidateClosure<S>;
 
-    fn create(ctx: &Context<Self>) -> Self {
-        let props = ctx.props();
+    fn validation_args(props: &Self::Properties) -> Self::ValidateClosure {
+        ValidateClosure {
+            required: props.input_props.required,
+            store: props.store.clone(),
+            validate: props.validate.clone(),
+        }
+    }
 
-        let real_validate = create_selector_validation_cb(props);
-
-        let on_change = match &props.on_change {
-            Some(on_change) => Some(Callback::from({
-                let on_change = on_change.clone();
-                move |value: Value| {
-                    on_change.emit(Key::from(value.as_str().unwrap_or("")));
-                }
-            })),
-            None => None,
+    fn validator(props: &Self::ValidateClosure, value: &Value) -> Result<(), Error> {
+        let value = match value {
+            Value::Null => String::new(),
+            Value::String(v) => v.clone(),
+            _ => {
+                // should not happen
+                log::error!("PwtField: got wrong data type in validate!");
+                String::new()
+            }
         };
 
-        let state = FieldState::create(
-            ctx,
-            &props.input_props,
-            ctx.link().callback(Msg::StateUpdate),
-            on_change,
-            real_validate.clone(),
-        );
+        if value.is_empty() {
+            if props.required {
+                bail!("Field may not be empty.");
+            } else {
+                return Ok(());
+            }
+        }
+
+        if !props.store.is_empty() {
+            match &props.validate {
+                Some(cb) => cb.validate(&(value.into(), props.store.clone())),
+                None => Ok(()),
+            }
+        } else {
+            bail!("no data loaded");
+        }
+    }
+
+    fn setup(props: &Self::Properties) -> ManagedFieldState {
+        let default: Value = props.default.as_deref().unwrap_or("").to_string().into();
+        let value = default.clone();
+
+        ManagedFieldState {
+            value,
+            valid: Ok(()),
+            default,
+            radio_group: false,
+            unique: false,
+            submit_converter: None,
+        }
+    }
+
+    fn value_changed(&mut self, ctx: &super::ManagedFieldContext<Self>) {
+        let props = ctx.props();
+        let state = ctx.state();
+        let key = Key::from(state.value.as_str().unwrap_or(""));
+
+        self.selection.select(key.clone());
+
+        if let Some(on_change) = &props.on_change {
+            on_change.emit(key);
+        }
+    }
+
+    fn create(ctx: &ManagedFieldContext<Self>) -> Self {
+        let props = ctx.props();
 
         let default = props.default.as_deref().unwrap_or("").to_string();
         let selection = Selection::new();
@@ -239,59 +262,45 @@ impl<S: DataStore + 'static> Component for PwtSelector<S> {
             .store
             .add_listener(ctx.link().callback(|_| Msg::DataChange));
 
-        let mut me = Self {
-            state,
+        let me = Self {
             selection,
             load_error: None,
             _store_observer,
         };
-
-        if props.input_props.name.is_some() {
-            me.state
-                .register_field(&props.input_props, default.clone(), default, false, false);
-        } else {
-            me.state.force_value(default, None);
-        }
 
         me.load(ctx);
 
         me
     }
 
-    fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
+    fn update(&mut self, ctx: &ManagedFieldContext<Self>, msg: Self::Message) -> bool {
         let props = ctx.props();
         match msg {
-            Msg::StateUpdate(state_msg) => {
-                let default = props.default.as_deref().unwrap_or("").to_string();
-                let changes =
-                    self.state
-                        .update_hook(&props.input_props, state_msg, default, false, false);
-                if changes {
-                    let (value, _valid) = self.state.get_field_data();
-                    self.selection
-                        .select(Key::from(value.as_str().unwrap_or("")));
+            Msg::DeleteKey => {
+                if !props.editable {
+                    ctx.link().update_value(String::new());
                 }
-                changes
+                false
             }
             Msg::LoadResult(res) => {
                 match res {
                     Ok(data) => {
                         self.load_error = None;
                         props.store.set_data(data);
-                        self.state.validate();
                     }
                     Err(err) => {
                         props.store.clear();
                         let default = props.default.as_deref().unwrap_or("").to_string();
-                        self.state.set_value(default);
+                        ctx.link().update_value(default.to_string());
                         self.load_error = Some(err.to_string());
                     }
                 }
                 true
             }
             Msg::DataChange => {
-                let (value, _valid) = self.state.get_field_data();
-                let value = value.as_str().unwrap_or("");
+                let state = ctx.state();
+                let value = state.value.as_str().unwrap_or("").to_owned();
+
                 if self.load_error.is_none() {
                     if value.is_empty() {
                         let mut default = props.default.clone();
@@ -303,30 +312,25 @@ impl<S: DataStore + 'static> Component for PwtSelector<S> {
                         }
 
                         if let Some(default) = default {
-                            self.state.set_value(default.to_string().clone());
-                            self.state.set_default(default.to_string().clone());
-                            return true; // set_value already validates
+                            ctx.link().update_value(default.to_string());
+                            ctx.link().update_default(default.to_string());
                         }
                     }
                 }
+                ctx.link().validate(); // re-evaluate
                 true
             }
             Msg::Select(value) => {
-                if props.input_props.disabled {
-                    return true;
+                if !props.input_props.disabled {
+                    ctx.link().update_value(value);
                 }
-                self.state.set_value(value);
-                true
+                false
             }
         }
     }
 
-    fn changed(&mut self, ctx: &Context<Self>, old_props: &Self::Properties) -> bool {
+    fn changed(&mut self, ctx: &ManagedFieldContext<Self>, old_props: &Self::Properties) -> bool {
         let props = ctx.props();
-
-        if props.input_props.name.is_some() {
-            self.state.update_field_options(&props.input_props);
-        }
 
         let mut reload = false;
 
@@ -348,11 +352,12 @@ impl<S: DataStore + 'static> Component for PwtSelector<S> {
         true
     }
 
-    fn view(&self, ctx: &Context<Self>) -> Html {
+    fn view(&self, ctx: &ManagedFieldContext<Self>) -> Html {
         let props = ctx.props();
+        let state = ctx.state();
 
-        let (value, valid) = self.state.get_field_data();
-        let value = value.as_str().unwrap_or("").to_owned();
+        let value = state.value.as_str().unwrap_or("").to_owned();
+        let valid = state.valid.clone();
 
         let picker = {
             let picker = props.picker.clone();
@@ -386,19 +391,25 @@ impl<S: DataStore + 'static> Component for PwtSelector<S> {
             Ok(_) => None,
         };
 
+        let onkeydown = Callback::from({
+            let link = ctx.link().clone();
+            move |event: KeyboardEvent| match event.key().as_str() {
+                "Delete" => link.send_message(Msg::DeleteKey),
+                _ => {}
+            }
+        });
+
         Dropdown::new(picker)
             .with_std_props(&props.std_props)
             .with_input_props(&props.input_props)
             .editable(props.editable)
-            .class(if valid.is_ok() {
-                "is-valid"
-            } else {
-                "is-invalid"
-            })
+            .valid(valid.is_ok())
+            .onkeydown(onkeydown)
             .on_change(ctx.link().callback(|key: String| Msg::Select(key)))
             .value(value)
             .render_value(props.render_value.clone())
             .tip(tip)
+            .icons(props.icons.clone())
             .into()
     }
 }

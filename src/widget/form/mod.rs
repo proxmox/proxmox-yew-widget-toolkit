@@ -7,31 +7,23 @@ pub use context::{
     FieldHandle, FieldOptions,
 };
 
-//mod boolean;
-//pub use boolean::{Boolean, PwtBoolean};
-
-mod boolean2;
-pub use boolean2::{Boolean, PwtBoolean};
+mod boolean;
+pub use boolean::{Boolean, PwtBoolean};
 
 mod tristate_boolean;
 pub use tristate_boolean::{Tristate, TristateBoolean, PwtTristateBoolean};
 
-mod checkbox2;
-pub use checkbox2::{Checkbox, PwtCheckbox};
+mod checkbox;
+pub use checkbox::{Checkbox, PwtCheckbox};
 
 mod combobox;
 pub use combobox::{Combobox, PwtCombobox};
 
-//mod field_state;
-//pub use field_state::{FieldState, FieldStateMsg};
-
 mod managed_field;
 pub use managed_field::{ManagedField, ManagedFieldContext, ManagedFieldLink, ManagedFieldMaster, ManagedFieldState};
 
-//mod field;
-//pub use field::{Field, PwtField};
-mod field2;
-pub use field2::{Field, PwtField};
+mod field;
+pub use field::{Field, PwtField};
 
 mod form;
 pub use form::{Form, PwtForm};
@@ -42,8 +34,8 @@ pub use number::{Number, PwtNumber};
 mod reset_button;
 pub use reset_button::{ResetButton, PwtResetButton};
 
-mod selector2;
-pub use selector2::{Selector, SelectorRenderArgs, PwtSelector};
+mod selector;
+pub use selector::{Selector, SelectorRenderArgs, PwtSelector};
 
 mod submit_callback;
 pub use submit_callback::{SubmitCallback, IntoSubmitCallback};
