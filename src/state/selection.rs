@@ -1,18 +1,18 @@
-use std::rc::Rc;
 use std::cell::{Ref, RefCell, RefMut};
 use std::collections::HashSet;
-use std::ops::{Deref, DerefMut};
 use std::mem::ManuallyDrop;
+use std::ops::{Deref, DerefMut};
+use std::rc::Rc;
 
-use slab::Slab;
 use derivative::Derivative;
+use slab::Slab;
 
+use yew::html::IntoEventCallback;
 use yew::prelude::*;
 use yew::virtual_dom::Key;
-use yew::html::IntoEventCallback;
 
-use crate::props::ExtractKeyFn;
 use super::optional_rc_ptr_eq;
+use crate::props::ExtractKeyFn;
 
 /// Hook to use a [Selection] with functional components.
 ///
@@ -20,7 +20,6 @@ use super::optional_rc_ptr_eq;
 /// which trigger a redraw.
 #[hook]
 pub fn use_selection<F: FnOnce() -> Selection>(init_fn: F) -> Selection {
-
     let redraw = use_state(|| 0);
 
     let selection = use_state(init_fn);
@@ -45,12 +44,12 @@ pub fn use_selection<F: FnOnce() -> Selection>(init_fn: F) -> Selection {
 /// a simply `PartialEq` would always return true. Please register a
 /// listener to get notified about changes.
 #[derive(Derivative)]
-#[derivative(Clone(bound=""), PartialEq(bound=""))]
+#[derivative(Clone(bound = ""), PartialEq(bound = ""))]
 pub struct Selection {
     // Allow to store one SelectionObserver here (for convenience)
-    #[derivative(PartialEq(compare_with="optional_rc_ptr_eq"))]
+    #[derivative(PartialEq(compare_with = "optional_rc_ptr_eq"))]
     on_select: Option<Rc<SelectionObserver>>,
-    #[derivative(PartialEq(compare_with="Rc::ptr_eq"))]
+    #[derivative(PartialEq(compare_with = "Rc::ptr_eq"))]
     inner: Rc<RefCell<SelectionState>>,
 }
 
@@ -68,11 +67,10 @@ impl Drop for SelectionObserver {
 }
 
 impl Selection {
-
     /// Create a new instance.
     pub fn new() -> Self {
         Self {
-             on_select: None,
+            on_select: None,
             inner: Rc::new(RefCell::new(SelectionState::new())),
         }
     }
@@ -107,9 +105,11 @@ impl Selection {
     /// This is usually called by [Self::on_select], which stores the
     /// observer inside the [Selection] object.
     pub fn add_listener(&self, cb: impl Into<Callback<Selection>>) -> SelectionObserver {
-        let key = self.inner.borrow_mut()
-            .add_listener(cb.into());
-        SelectionObserver { key, inner: self.inner.clone() }
+        let key = self.inner.borrow_mut().add_listener(cb.into());
+        SelectionObserver {
+            key,
+            inner: self.inner.clone(),
+        }
     }
 
     fn notify_listeners(&self) {
@@ -121,8 +121,7 @@ impl Selection {
 
     /// Clear the selection
     pub fn clear(&self) {
-        self.inner.borrow_mut()
-            .clear();
+        self.inner.borrow_mut().clear();
         self.notify_listeners();
     }
 
@@ -133,9 +132,10 @@ impl Selection {
 
     /// Add a key to the selection.
     pub fn select(&self, key: impl Into<Key>) {
-        let changed = self.inner.borrow_mut()
-            .select(key);
-        if changed { self.notify_listeners() };
+        let changed = self.inner.borrow_mut().select(key);
+        if changed {
+            self.notify_listeners()
+        };
     }
 
     /// Bulk select all keys from the hash set.
@@ -144,22 +144,19 @@ impl Selection {
     ///
     /// If multiselect is false.
     pub fn bulk_select(&mut self, map: HashSet<Key>) {
-        self.inner.borrow_mut()
-            .bulk_select(map);
+        self.inner.borrow_mut().bulk_select(map);
         self.notify_listeners();
     }
 
     /// Toggle the selection state for key.
     pub fn toggle(&self, key: impl Into<Key>) {
-        self.inner.borrow_mut()
-            .toggle(key);
+        self.inner.borrow_mut().toggle(key);
         self.notify_listeners();
     }
 
     /// Query if the selection contains the key.
     pub fn contains(&self, key: &Key) -> bool {
-        self.inner.borrow()
-            .contains(key)
+        self.inner.borrow().contains(key)
     }
 
     /// Returns the number of selected keys.
@@ -171,14 +168,12 @@ impl Selection {
     ///
     /// Note: This works for single and multiselect mode
     pub fn selected_keys(&self) -> Vec<Key> {
-        self.inner.borrow()
-            .selected_keys()
+        self.inner.borrow().selected_keys()
     }
 
     /// Returns the selected key (only for single select mode)
     pub fn selected_key(&self) -> Option<Key> {
-        self.inner.borrow()
-            .selected_key()
+        self.inner.borrow().selected_key()
     }
 
     /// Lock this store for write access.
@@ -190,7 +185,10 @@ impl Selection {
     ///
     /// Panics if the store is already locked.
     pub fn write(&self) -> SelectionWriteGuard {
-        let cloned_self = Self { on_select: None, inner: self.inner.clone() };
+        let cloned_self = Self {
+            on_select: None,
+            inner: self.inner.clone(),
+        };
         let state = ManuallyDrop::new(self.inner.borrow_mut());
         SelectionWriteGuard {
             selection: cloned_self,
@@ -235,8 +233,12 @@ impl<'a> DerefMut for SelectionWriteGuard<'a> {
 impl<'a> Drop for SelectionWriteGuard<'a> {
     fn drop(&mut self) {
         let changed = self.state.version != self.initial_version;
-        unsafe { ManuallyDrop::drop(&mut self.state); } // drop ref before calling notify listeners
-        if changed { self.selection.notify_listeners(); }
+        unsafe {
+            ManuallyDrop::drop(&mut self.state);
+        } // drop ref before calling notify listeners
+        if changed {
+            self.selection.notify_listeners();
+        }
     }
 }
 
@@ -254,29 +256,27 @@ impl<'a> Deref for SelectionReadGuard<'a> {
 }
 
 impl Selection {
-
     /// Remove vanished keys from the selection.
     pub fn filter_nonexistent<'a, T: 'a>(
         &mut self,
-        data: impl Iterator<Item=&'a T>,
+        data: impl Iterator<Item = &'a T>,
         extract_key: &ExtractKeyFn<T>,
     ) {
-        self.inner.borrow_mut()
+        self.inner
+            .borrow_mut()
             .filter_nonexistent(data, extract_key);
     }
 }
 
-
 pub struct SelectionState {
     version: usize, // change tracking
     multiselect: bool,
-    selection: Option<Key>, // used for single row
+    selection: Option<Key>,      // used for single row
     selection_map: HashSet<Key>, // used for multiselect
     listeners: Slab<Callback<Selection>>,
 }
 
 impl SelectionState {
-
     fn new() -> Self {
         Self {
             version: 0,
@@ -318,7 +318,9 @@ impl SelectionState {
 
     pub fn select(&mut self, key: impl Into<Key>) -> bool {
         let key = key.into();
-        if self.contains(&key) { return false; }
+        if self.contains(&key) {
+            return false;
+        }
         self.version += 1;
         match self.multiselect {
             false => self.selection = Some(key),
@@ -361,7 +363,7 @@ impl SelectionState {
                 if self.selection_map.contains(&key) {
                     self.selection_map.remove(&key);
                 } else {
-                   self.selection_map.insert(key);
+                    self.selection_map.insert(key);
                 }
             }
         }
@@ -387,7 +389,13 @@ impl SelectionState {
 
     pub fn len(&self) -> usize {
         match self.multiselect {
-            false => if self.selection.is_some() { 1 } else { 0 },
+            false => {
+                if self.selection.is_some() {
+                    1
+                } else {
+                    0
+                }
+            }
             true => self.selection_map.len(),
         }
     }
@@ -418,10 +426,9 @@ impl SelectionState {
 }
 
 impl SelectionState {
-
     fn filter_nonexistent<'a, T: 'a>(
         &mut self,
-        mut data: impl Iterator<Item=&'a T>,
+        mut data: impl Iterator<Item = &'a T>,
         extract_key: &ExtractKeyFn<T>,
     ) {
         match self.multiselect {
