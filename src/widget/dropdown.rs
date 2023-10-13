@@ -99,7 +99,6 @@ pub struct Dropdown {
     #[prop_or_default]
     #[builder]
     pub icons: Vec<(AttrValue, bool)>,
-
 }
 
 impl Dropdown {
@@ -236,6 +235,9 @@ impl Component for PwtDropdown {
                 false
             }
             Msg::ShowPicker => {
+                if props.input_props.disabled {
+                    return false;
+                }
                 self.show = true;
                 //log::info!("ShowPicker {}", self.show);
                 true
