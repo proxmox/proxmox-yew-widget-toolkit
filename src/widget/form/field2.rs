@@ -434,7 +434,9 @@ impl ManagedField for StandardField {
         if let Err(msg) = &valid {
             tooltip.set_tip(msg.clone())
         } else if let Some(tip) = &props.tip {
-            tooltip.set_tip(tip.clone())
+            if !disabled {
+                tooltip.set_tip(tip.clone())
+            }
         }
 
         tooltip.into()
