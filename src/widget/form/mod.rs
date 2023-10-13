@@ -2,16 +2,15 @@
 
 mod context;
 pub use context::{
-    FormContext, FormContextState, FormContextObserver,
-    FormContextReadGuard, FormContextWriteGuard,
-    FieldHandle, FieldOptions,
+    FieldHandle, FieldOptions, FormContext, FormContextObserver, FormContextReadGuard,
+    FormContextState, FormContextWriteGuard,
 };
 
 mod boolean;
 pub use boolean::{Boolean, PwtBoolean};
 
 mod tristate_boolean;
-pub use tristate_boolean::{Tristate, TristateBoolean, PwtTristateBoolean};
+pub use tristate_boolean::{PwtTristateBoolean, Tristate, TristateBoolean};
 
 mod checkbox;
 pub use checkbox::{Checkbox, PwtCheckbox};
@@ -20,7 +19,9 @@ mod combobox;
 pub use combobox::{Combobox, PwtCombobox};
 
 mod managed_field;
-pub use managed_field::{ManagedField, ManagedFieldContext, ManagedFieldLink, ManagedFieldMaster, ManagedFieldState};
+pub use managed_field::{
+    ManagedField, ManagedFieldContext, ManagedFieldLink, ManagedFieldMaster, ManagedFieldState,
+};
 
 mod field;
 pub use field::{Field, PwtField};
@@ -32,19 +33,19 @@ mod number;
 pub use number::{Number, PwtNumber};
 
 mod reset_button;
-pub use reset_button::{ResetButton, PwtResetButton};
+pub use reset_button::{PwtResetButton, ResetButton};
 
 mod selector;
-pub use selector::{Selector, SelectorRenderArgs, PwtSelector};
+pub use selector::{PwtSelector, Selector, SelectorRenderArgs};
 
 mod submit_callback;
-pub use submit_callback::{SubmitCallback, IntoSubmitCallback};
+pub use submit_callback::{IntoSubmitCallback, SubmitCallback};
 
 mod submit_button;
-pub use submit_button::{SubmitButton, PwtSubmitButton};
+pub use submit_button::{PwtSubmitButton, SubmitButton};
 
 mod textarea;
-pub use textarea::{TextArea, PwtTextArea};
+pub use textarea::{PwtTextArea, TextArea};
 
 mod validate;
 pub use validate::{IntoValidateFn, ValidateFn};
