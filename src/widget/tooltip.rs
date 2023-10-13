@@ -4,7 +4,6 @@ use yew::html::IntoPropValue;
 use yew::virtual_dom::VNode;
 
 use crate::prelude::*;
-use crate::props::IntoOptionalInlineHtml;
 use crate::widget::align::{align_to, AlignOptions, GrowDirection, Point};
 use crate::widget::Container;
 
@@ -41,15 +40,15 @@ impl Tooltip {
     }
 
     /// Builder style method to set the tooltip (rich style)
-    pub fn rich_tip(mut self, tip: impl IntoOptionalInlineHtml) -> Self {
+    pub fn rich_tip(mut self, tip: impl Into<Html>) -> Self {
         self.set_rich_tip(tip);
         self
     }
 
     /// Method to set the tooltip (rich style)
-    pub fn set_rich_tip(&mut self, tip: impl IntoOptionalInlineHtml) {
+    pub fn set_rich_tip(&mut self, tip: impl Into<Html>) {
         self.rich = true;
-        self.tip = tip.into_optional_inline_html();
+        self.tip = Some(tip.into());
     }
 }
 
