@@ -9,7 +9,7 @@ use yew::prelude::*;
 use yew::virtual_dom::{Key, VComp, VNode};
 
 use crate::prelude::*;
-use crate::props::{FilterFn, TextFilterFn, IntoTextFilterFn};
+use crate::props::{FilterFn, IntoTextFilterFn, TextFilterFn};
 use crate::state::{DataStore, Selection, SelectionObserver};
 use crate::widget::data_table::{DataTable, DataTableMouseEvent};
 use crate::widget::{Column, Input, Row};
@@ -131,9 +131,7 @@ impl<S: DataStore> PwtGridPicker<S> {
             self.store.set_filter(if let Some(filter) = &props.filter {
                 let filter_function = filter.clone();
                 let query = self.filter.clone();
-                FilterFn::new(move |item| {
-                    filter_function.apply(item, &query)
-                })
+                FilterFn::new(move |item| filter_function.apply(item, &query))
             } else {
                 let extract_key_fn = self.store.get_extract_key_fn();
                 let filter = self.filter.clone();
