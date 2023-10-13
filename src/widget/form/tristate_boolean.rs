@@ -183,9 +183,14 @@ impl ManagedField for PwtTristateBoolean {
             .render(render_value.clone())
             .into()]);
 
+        let selection = Selection::new();
+        selection.select(Key::from(tristate_to_text(
+            props.default.unwrap_or(Tristate::Null),
+        )));
+
         Self {
             store,
-            selection: Selection::new(),
+            selection,
             columns,
             render_value,
         }
