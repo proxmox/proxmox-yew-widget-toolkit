@@ -373,6 +373,7 @@ impl Component for PwtDropdown {
             "fa",
             "fa-caret-down",
             "pwt-dropdown-icon",
+            "pwt-pointer",
             self.show.then(|| "fa-rotate-180"),
             disabled.then(|| "disabled"),
         };
