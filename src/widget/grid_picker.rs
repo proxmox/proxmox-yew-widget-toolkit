@@ -195,6 +195,7 @@ impl<S: DataStore + 'static> Component for PwtGridPicker<S> {
             .clone()
             .key(Key::from("picker-table"))
             .autoselect(false)
+            .cell_class("pwt-datatable-cell pwt-pointer")
             .hover(true)
             .header_focusable(false)
             .selection(props.selection.clone())
