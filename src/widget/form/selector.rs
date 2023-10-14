@@ -394,7 +394,7 @@ impl<S: DataStore + 'static> ManagedField for SelectorField<S> {
         let onkeydown = Callback::from({
             let link = ctx.link().clone();
             move |event: KeyboardEvent| match event.key().as_str() {
-                "Delete" => link.send_message(Msg::DeleteKey),
+                "Delete" | "Backspace" => link.send_message(Msg::DeleteKey),
                 _ => {}
             }
         });
