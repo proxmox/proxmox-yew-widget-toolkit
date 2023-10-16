@@ -342,6 +342,10 @@ impl Component for PwtResizableHeader {
                     .attribute("role", "none")
                     .class("pwt-datatable-header-resize-trigger")
                     .onmousedown(ctx.link().callback(|_| Msg::StartResize))
+                    .onclick(|event: MouseEvent| {
+                        event.stop_propagation();
+                        event.prevent_default();
+                    })
                     .ondblclick({
                         let on_size_reset = props.on_size_reset.clone();
                         move |event: MouseEvent| {
