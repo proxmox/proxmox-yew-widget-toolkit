@@ -1,4 +1,4 @@
-use std::fmt::Display;
+use std::fmt::{Debug, Display};
 use std::marker::PhantomData;
 
 use anyhow::Error;
@@ -23,7 +23,7 @@ pub type PwtNumber<T> = ManagedFieldMaster<NumberField<T>>;
 
 #[doc(hidden)]
 pub trait NumberTypeInfo:
-    PartialEq + PartialOrd + Display + Copy + Clone + Sized + 'static
+    PartialEq + PartialOrd + Display + Debug + Copy + Clone + Sized + 'static
 {
     fn value_to_number(value: &Value) -> Result<Self, Error>;
     fn number_to_value(&self) -> Value;
@@ -408,10 +408,10 @@ impl<T: NumberTypeInfo> ManagedField for NumberField<T> {
     fn changed(&mut self, ctx: &ManagedFieldContext<Self>, old_props: &Self::Properties) -> bool {
         let props = ctx.props();
         if props.value != old_props.value || props.valid != old_props.valid {
-            if let Some(forced_value) = &props.value {
-                ctx.link()
-                    .force_value(forced_value.to_string(), props.valid.clone());
-            }
+            let state = ctx.state();
+            let forced_value = props.value.clone().map(|v| v.number_to_value()).unwrap_or(state.value.clone());
+            ctx.link()
+               .force_value(forced_value.to_string(), props.valid.clone());
         }
         true
     }
