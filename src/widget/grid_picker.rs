@@ -10,7 +10,7 @@ use yew::virtual_dom::{Key, VComp, VNode};
 
 use crate::prelude::*;
 use crate::props::{FilterFn, IntoTextFilterFn, TextFilterFn};
-use crate::state::{DataStore, Selection, SelectionObserver};
+use crate::state::{DataStore, Selection};
 use crate::widget::data_table::{DataTable, DataTableMouseEvent};
 use crate::widget::{Column, Input, Row};
 
@@ -113,7 +113,6 @@ pub enum Msg {
 pub struct PwtGridPicker<S> {
     filter: String,
     store: S,
-    _selection_observer: Option<SelectionObserver>,
     _phantom: PhantomData<S>,
 }
 
@@ -151,22 +150,7 @@ impl<S: DataStore + 'static> Component for PwtGridPicker<S> {
     fn create(ctx: &Context<Self>) -> Self {
         let props = ctx.props();
 
-        let _selection_observer = match &props.selection {
-            Some(selection) => Some(selection.add_listener({
-                let on_select = props.on_select.clone();
-                move |selection: Selection| {
-                    if let Some(on_select) = &on_select {
-                        if let Some(key) = selection.selected_key() {
-                            on_select.emit(key);
-                        }
-                    }
-                }
-            })),
-            None => None,
-        };
-
         let mut me = Self {
-            _selection_observer,
             _phantom: PhantomData::<S>,
             filter: String::new(),
             store: props.table.get_store(),
@@ -190,6 +174,7 @@ impl<S: DataStore + 'static> Component for PwtGridPicker<S> {
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
 
+        let on_select = ctx.props().on_select.clone();
         let table: Html = props
             .table
             .clone()
@@ -199,10 +184,10 @@ impl<S: DataStore + 'static> Component for PwtGridPicker<S> {
             .hover(true)
             .header_focusable(false)
             .selection(props.selection.clone())
-            .on_row_click(|event: &mut DataTableMouseEvent| {
+            .on_row_click(move |event: &mut DataTableMouseEvent| {
                 let key = event.record_key.clone();
-                if let Some(selection) = &event.selection {
-                    selection.select(key);
+                if let Some(on_select) = &on_select {
+                    on_select.emit(key);
                 }
             })
             .into();
