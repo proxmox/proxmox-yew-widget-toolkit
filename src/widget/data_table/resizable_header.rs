@@ -163,8 +163,8 @@ pub struct PwtResizableHeader {
     rtl: Option<bool>,
     node_ref: NodeRef,
     width: f64,
-    mousemove_listener: Option<EventListener>,
-    mouseup_listener: Option<EventListener>,
+    pointermove_listener: Option<EventListener>,
+    pointerup_listener: Option<EventListener>,
     size_observer: Option<SizeObserver>,
     has_focus: bool,
     picker_ref: NodeRef,
@@ -193,8 +193,8 @@ impl Component for PwtResizableHeader {
             node_ref: props.node_ref.clone().unwrap_or(NodeRef::default()),
             rtl: None,
             width: 0.0,
-            mousemove_listener: None,
-            mouseup_listener: None,
+            pointermove_listener: None,
+            pointerup_listener: None,
             size_observer: None,
             has_focus: false,
             picker_ref: NodeRef::default(),
@@ -230,8 +230,8 @@ impl Component for PwtResizableHeader {
                 true
             }
             Msg::StopResize => {
-                self.mouseup_listener = None;
-                self.mousemove_listener = None;
+                self.pointerup_listener = None;
+                self.pointermove_listener = None;
                 false
             }
             Msg::StartResize => {
@@ -239,18 +239,19 @@ impl Component for PwtResizableHeader {
 
                 let window = web_sys::window().unwrap();
                 let link = ctx.link();
-                let onmousemove = link.callback(|e: Event| {
-                    let event = e.dyn_ref::<web_sys::MouseEvent>().unwrap_throw();
+                let onpointermove = link.callback(|e: Event| {
+                    let event = e.dyn_ref::<web_sys::PointerEvent>().unwrap_throw();
                     Msg::MouseMove(event.client_x())
                 });
-                let mousemove_listener =
-                    EventListener::new(&window, "mousemove", move |e| onmousemove.emit(e.clone()));
-                self.mousemove_listener = Some(mousemove_listener);
+                let pointermove_listener = EventListener::new(&window, "pointermove", move |e| {
+                    onpointermove.emit(e.clone())
+                });
+                self.pointermove_listener = Some(pointermove_listener);
 
-                let onmouseup = link.callback(|_: Event| Msg::StopResize);
-                let mouseup_listener =
-                    EventListener::new(&window, "mouseup", move |e| onmouseup.emit(e.clone()));
-                self.mouseup_listener = Some(mouseup_listener);
+                let onpointerup = link.callback(|_: Event| Msg::StopResize);
+                let pointerup_listener =
+                    EventListener::new(&window, "pointerup", move |e| onpointerup.emit(e.clone()));
+                self.pointerup_listener = Some(pointerup_listener);
 
                 false
             }
@@ -341,7 +342,7 @@ impl Component for PwtResizableHeader {
                 Container::new()
                     .attribute("role", "none")
                     .class("pwt-datatable-header-resize-trigger")
-                    .onmousedown(ctx.link().callback(|_| Msg::StartResize))
+                    .onpointerdown(ctx.link().callback(|_| Msg::StartResize))
                     .onclick(|event: MouseEvent| {
                         event.stop_propagation();
                         event.prevent_default();
