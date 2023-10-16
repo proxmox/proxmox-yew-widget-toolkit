@@ -852,7 +852,7 @@ impl<S: DataStore> PwtDataTable<S> {
             "display:table;"
         };
 
-        let first_row = if fixed_mode {
+        let first_row = if fixed_mode && !self.column_widths.is_empty() {
             render_empty_row_with_sizes(&self.column_widths, &self.column_hidden, props.bordered)
         } else {
             render_empty_row_with_widths(&self.columns)
