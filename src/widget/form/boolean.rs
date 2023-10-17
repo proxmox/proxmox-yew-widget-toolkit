@@ -127,7 +127,7 @@ impl ManagedField for BooleanField {
     fn changed(&mut self, ctx: &ManagedFieldContext<Self>, _old_props: &Self::Properties) -> bool {
         let props = ctx.props();
         if let Some(checked) = props.checked {
-            ctx.link().force_value(checked, None)
+            ctx.link().force_value(Some(checked), None)
         }
         true
     }

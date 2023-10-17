@@ -386,10 +386,8 @@ impl ManagedField for StandardField {
     fn changed(&mut self, ctx: &ManagedFieldContext<Self>, old_props: &Self::Properties) -> bool {
         let props = ctx.props();
         if props.value != old_props.value || props.valid != old_props.valid {
-            if let Some(forced_value) = &props.value {
-                ctx.link()
-                    .force_value(forced_value.to_string(), props.valid.clone());
-            }
+            ctx.link()
+                .force_value(props.value.clone().map(|v| v.to_string()), props.valid.clone());
         }
         true
     }

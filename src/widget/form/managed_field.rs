@@ -121,8 +121,8 @@ impl<MF: ManagedField + Sized> ManagedFieldLink<MF> {
     /// # Note
     ///
     /// This is ignored if the field is managed by a FormContext.
-    pub fn force_value(&self, value: impl Into<Value>, valid: Option<Result<(), String>>) {
-        let msg = Msg::ForceValue(value.into(), valid);
+    pub fn force_value(&self, value: Option<impl Into<Value>>, valid: Option<Result<(), String>>) {
+        let msg = Msg::ForceValue(value.map(|v| v.into()), valid);
         self.link.send_message(msg);
     }
 }
@@ -210,7 +210,7 @@ pub trait ManagedField: Sized {
 pub enum Msg<M> {
     UpdateValue(Value),
     UpdateDefault(Value),
-    ForceValue(Value, Option<Result<(), String>>),
+    ForceValue(Option<Value>, Option<Result<(), String>>),
     ChildMessage(M),
     Validate,
     LabelClicked,               // Associated label was clicked
@@ -353,6 +353,7 @@ impl<MF: ManagedField + 'static> Component for ManagedFieldMaster<MF> {
                     }
                 }
 
+                let value = value.unwrap_or(self.comp_state.value.clone());
                 let valid = valid
                     .unwrap_or_else(|| self.validate.validate(&value).map_err(|e| e.to_string()));
 

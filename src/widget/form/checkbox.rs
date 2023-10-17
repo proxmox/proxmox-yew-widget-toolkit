@@ -167,7 +167,7 @@ impl ManagedField for CheckboxField {
         if let Some(checked) = props.checked {
             let on_value = props.value.as_deref().unwrap_or("on").to_string();
             let value = if checked { on_value } else { String::new() };
-            ctx.link().force_value(value, None);
+            ctx.link().force_value(Some(value), None);
         }
 
         true

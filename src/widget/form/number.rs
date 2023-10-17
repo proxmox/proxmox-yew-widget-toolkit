@@ -408,10 +408,9 @@ impl<T: NumberTypeInfo> ManagedField for NumberField<T> {
     fn changed(&mut self, ctx: &ManagedFieldContext<Self>, old_props: &Self::Properties) -> bool {
         let props = ctx.props();
         if props.value != old_props.value || props.valid != old_props.valid {
-            let state = ctx.state();
-            let forced_value = props.value.clone().map(|v| v.number_to_value()).unwrap_or(state.value.clone());
+            let forced_value = props.value.clone().map(|v| v.number_to_value());
             ctx.link()
-               .force_value(forced_value.to_string(), props.valid.clone());
+               .force_value(forced_value, props.valid.clone());
         }
         true
     }

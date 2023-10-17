@@ -183,7 +183,7 @@ impl ManagedField for TextAreaField {
         if props.value != old_props.value || props.valid != old_props.valid {
             if let Some(forced_value) = &props.value {
                 ctx.link()
-                    .force_value(forced_value.to_string(), props.valid.clone());
+                    .force_value(Some(forced_value.to_string()), props.valid.clone());
             }
         }
         true
