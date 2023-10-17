@@ -175,7 +175,8 @@ unsigned_number_impl!(u8);
 
 /// Number input element for common Rust types (f64, u8, u16, u32, u64, i8, i16, i32, i64)
 ///
-/// When used inside a [FormContext](crate::widget::form::FormContext), values are submitted a json numbers (not strings).
+/// When used inside a [FormContext](crate::widget::form::FormContext), values are submitted as
+/// json numbers (not strings).
 ///
 /// Usage examples:
 /// ```
@@ -194,6 +195,7 @@ unsigned_number_impl!(u8);
 ///   the value, you get a blank string. This makes it impossible to implement
 ///   controlled inputs.
 /// - different browsers accept different characters.
+/// - return localized number strings.
 /// - see <https://stackoverflow.blog/2022/12/26/why-the-number-input-is-the-worst-input>
 ///
 /// For now, we simply use a text input.
@@ -306,8 +308,15 @@ fn value_to_number(value: Value) -> Value {
             if text.is_empty() {
                 return Value::Null;
             } // fixme: howto handle submit_empty?
-            let number: serde_json::Number = text.parse().unwrap();
-            Value::Number(number)
+
+            // Note: this handles localized number format
+            let number = js_sys::Number::parse_float(text);
+
+            if let Some(number) = serde_json::value::Number::from_f64(number) {
+                Value::Number(number)
+            } else {
+                Value::Null // should not happen
+            }
         }
         _ => unreachable!(),
     }
