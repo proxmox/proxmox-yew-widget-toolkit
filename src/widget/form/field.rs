@@ -387,7 +387,7 @@ impl ManagedField for StandardField {
         let props = ctx.props();
         if props.value != old_props.value || props.valid != old_props.valid {
             ctx.link()
-                .force_value(props.value.clone().map(|v| v.to_string()), props.valid.clone());
+                .force_value(props.value.as_ref().map(|v| v.to_string()), props.valid.clone());
         }
         true
     }

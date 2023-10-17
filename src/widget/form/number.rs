@@ -210,7 +210,7 @@ pub struct Number<T: NumberTypeInfo> {
     /// This is ignored if the field has a name.
     #[builder(IntoPropValue, into_prop_value)]
     #[prop_or_default]
-    pub value: Option<T>,
+    pub value: Option<AttrValue>,
 
     /// Force validation result.
     ///
@@ -408,9 +408,8 @@ impl<T: NumberTypeInfo> ManagedField for NumberField<T> {
     fn changed(&mut self, ctx: &ManagedFieldContext<Self>, old_props: &Self::Properties) -> bool {
         let props = ctx.props();
         if props.value != old_props.value || props.valid != old_props.valid {
-            let forced_value = props.value.clone().map(|v| v.number_to_value());
             ctx.link()
-               .force_value(forced_value, props.valid.clone());
+               .force_value(props.value.as_ref().map(|v| v.to_string()), props.valid.clone());
         }
         true
     }
