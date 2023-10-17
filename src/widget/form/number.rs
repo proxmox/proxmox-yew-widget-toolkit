@@ -185,6 +185,19 @@ unsigned_number_impl!(u8);
 /// let u8_input = Number::<u8>::new();
 /// # }
 /// ```
+///
+/// # Note
+///
+/// This widget does not use `<input type="number">` because:
+///
+/// - when the number input contains an invalid value and you retrieve
+///   the value, you get a blank string. This makes it impossible to implement
+///   controlled inputs.
+/// - different browsers accept different characters.
+/// - see <https://stackoverflow.blog/2022/12/26/why-the-number-input-is-the-worst-input>
+///
+/// For now, we simply use a text input.
+///
 #[widget(pwt=crate, comp=ManagedFieldMaster<NumberField<T>>, @input, @element)]
 #[derive(Clone, PartialEq, Properties)]
 #[builder]
@@ -446,8 +459,6 @@ impl<T: NumberTypeInfo> ManagedField for NumberField<T> {
             _ => String::new(),
         };
 
-        let input_type = "number";
-
         let oninput = ctx.link().callback(move |event: InputEvent| {
             let input: HtmlInputElement = event.target_unchecked_into();
             Msg::Update(input.value())
@@ -457,11 +468,11 @@ impl<T: NumberTypeInfo> ManagedField for NumberField<T> {
             .node_ref(self.input_ref.clone())
             .with_input_props(&props.input_props)
             .class("pwt-flex-fill")
-            .attribute("type", input_type)
+            .attribute("type", "text") // important (text, not number)
+            .attribute("role", "spinbutton")
             .attribute("value", value_text)
-            .attribute("min", props.min.map(|v| v.to_string()))
-            .attribute("max", props.max.map(|v| v.to_string()))
-            .attribute("step", props.step.map(|v| v.to_string()))
+            .attribute("aria-valuemin", props.min.map(|v| v.to_string()))
+            .attribute("aria-valuemax", props.max.map(|v| v.to_string()))
             .oninput(oninput)
             .into();
 
@@ -469,7 +480,7 @@ impl<T: NumberTypeInfo> ManagedField for NumberField<T> {
             .with_std_props(&props.std_props)
             .listeners(&props.listeners)
             .class("pwt-input")
-            .class(format!("pwt-input-type-{}", input_type))
+            .class("pwt-input-type-number")
             .class("pwt-w-100")
             .class(if valid.is_ok() {
                 "is-valid"
