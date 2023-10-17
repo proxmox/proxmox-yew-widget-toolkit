@@ -7,7 +7,7 @@ use yew::virtual_dom::{VComp, VNode};
 use crate::prelude::*;
 use crate::props::FieldStdProps;
 use crate::widget::form::{
-    ManagedField, ManagedFieldContext, ManagedFieldMaster, ManagedFieldState
+    ManagedField, ManagedFieldContext, ManagedFieldMaster, ManagedFieldState,
 };
 use crate::widget::Container;
 
@@ -111,7 +111,9 @@ impl ManagedField for MenuCheckboxField {
     type Properties = MenuCheckbox;
     type ValidateClosure = ();
 
-    fn validation_args(_props: &Self::Properties) -> Self::ValidateClosure { () }
+    fn validation_args(_props: &Self::Properties) -> Self::ValidateClosure {
+        ()
+    }
 
     fn setup(props: &MenuCheckbox) -> ManagedFieldState {
         let on_value = props.value.as_deref().unwrap_or("on").to_string();
@@ -190,8 +192,6 @@ impl ManagedField for MenuCheckboxField {
                         }
                     }
                 }
-
-                log::info!("UPDATE");
                 ctx.link().update_value(new_value);
 
                 true
