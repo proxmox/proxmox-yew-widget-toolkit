@@ -248,13 +248,13 @@ unsigned_number_impl!(u8);
 /// Accepted floating point number format (f64) is:
 ///
 /// ```BNF
-/// DecimalPoint := 'read from current locale settings'
-/// Number ::= ( Digit+ |
-///              Digit+ DecimalPoint Digit* |
-///              Digit* DecimalPoint Digit+ ) Exp?
-/// Exp    ::= 'e' Sign? Digit+
-/// Sign   ::= [+-]
-//  Digit  ::= [0-9]
+/// DecimalPoint ::= 'read from current locale settings'
+/// Number       ::= ( Digit+ |
+///                    Digit+ DecimalPoint Digit* |
+///                    Digit* DecimalPoint Digit+ ) Exp?
+/// Exp          ::= 'e' Sign? Digit+
+/// Sign         ::= [+-]
+//  Digit        ::= [0-9]
 /// ```
 ///
 /// Usage examples:
