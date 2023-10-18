@@ -1,7 +1,10 @@
 use std::fmt::{Debug, Display};
 use std::marker::PhantomData;
+use std::str::FromStr;
 
 use anyhow::Error;
+use serde::Deserialize;
+
 use serde_json::Value;
 
 use web_sys::HtmlInputElement;
@@ -23,20 +26,84 @@ pub type PwtNumber<T> = ManagedFieldMaster<NumberField<T>>;
 
 #[doc(hidden)]
 pub trait NumberTypeInfo:
-    PartialEq + PartialOrd + Display + Debug + Copy + Clone + Sized + 'static
+    Into<Value> + PartialEq + PartialOrd + Display + Debug + Copy + Clone + Sized + 'static
 {
-    fn value_to_number(value: &Value) -> Result<Self, Error>;
+    fn value_to_number(value: &Value, locale_info: &LocaleInfo) -> Result<Self, Error>;
     fn number_to_value(&self) -> Value;
 }
 
+#[derive(Clone, Debug, PartialEq)]
+pub struct LocaleInfo {
+    decimal: String,
+    group: String,
+}
+
+impl LocaleInfo {
+    pub fn new() -> Self {
+        let nf = js_sys::Intl::NumberFormat::new(&js_sys::Array::new(), &js_sys::Object::new());
+
+        let info = nf.format_to_parts(11111.22);
+
+        let parts: Vec<NumberPartInfo> = serde_wasm_bindgen::from_value(info.into()).unwrap();
+
+        let decimal = parts.iter().find(|i| i.ty == "decimal").map(|i| i.value.clone());
+        let group = parts.iter().find(|i| i.ty == "group").map(|i| i.value.clone());
+
+        if let (Some(decimal), Some(group)) = (decimal, group) {
+            Self { decimal, group }
+        } else {
+            log::error!("LocaleInfo: unable to detect locale info - using defaults.");
+            Self { decimal: ".".into(), group: ",". into() }
+        }
+    }
+
+    pub fn parse_float(&self, text: &str) -> f64 {
+        let text = text.replace(&self.decimal, "{D}");
+        let text = text.replace(&self.group, "{G}");
+
+        if text.contains(['.', ',']) {
+            //log::info!("parse_float1 {}", text);
+            return f64::NAN;
+        }
+
+        // f64::from_str will fail if it finds a group separator!
+        // This is good, because group separators just add more confusion...
+        let text = text.replace("{G}", ",");
+        // f64::from_str uses '.' as decimal separator
+        let text = text.replace("{D}", ".");
+
+        let number = f64::from_str(&text).unwrap_or(f64::NAN);
+
+        // log::info!("parse_float2 {} -> {}", text, number);
+
+        number
+    }
+}
+// result from js_sys::Intl::NumberFormat::format_to_parts
+#[derive(Deserialize, Debug)]
+struct NumberPartInfo {
+    #[serde(rename = "type")]
+    ty: String,
+    value: String,
+}
+
 impl NumberTypeInfo for f64 {
-    fn value_to_number(value: &Value) -> Result<f64, Error> {
+    fn value_to_number(value: &Value, locale_info: &LocaleInfo) -> Result<f64, Error> {
         match value {
             Value::Number(n) => match n.as_f64() {
                 Some(n) => Ok(n),
                 None => return Err(Error::msg(tr!("cannot represent number as f64"))),
             },
-            Value::String(s) => Ok(s.parse()?),
+            Value::String(s) => {
+                // Note: this handles localized number format
+                let number = locale_info.parse_float(s);
+
+                if number.is_finite() {
+                    return Ok(number);
+                } else {
+                    return Err(Error::msg(tr!("unable to parse number (f64)")));
+                }
+            }
             _ => return Err(Error::msg(tr!("got wrong data type"))),
         }
     }
@@ -51,7 +118,7 @@ impl NumberTypeInfo for f64 {
 macro_rules! signed_number_impl {
     ($T:ty) => {
         impl NumberTypeInfo for $T {
-            fn value_to_number(value: &Value) -> Result<$T, Error> {
+            fn value_to_number(value: &Value, _locale_info: &LocaleInfo) -> Result<$T, Error> {
                 match value {
                     Value::Number(n) => match n.as_i64() {
                         Some(n) => {
@@ -105,7 +172,7 @@ macro_rules! signed_number_impl {
 macro_rules! unsigned_number_impl {
     ($T:ty) => {
         impl NumberTypeInfo for $T {
-            fn value_to_number(value: &Value) -> Result<$T, Error> {
+            fn value_to_number(value: &Value, _locale_info: &LocaleInfo) -> Result<$T, Error> {
                 match value {
                     Value::Number(n) => match n.as_u64() {
                         Some(n) => {
@@ -178,6 +245,18 @@ unsigned_number_impl!(u8);
 /// When used inside a [FormContext](crate::widget::form::FormContext), values are submitted as
 /// json numbers (not strings).
 ///
+/// Accepted floating point number format (f64) is:
+///
+/// ```BNF
+/// DecimalPoint := 'read from current locale settings'
+/// Number ::= ( Digit+ |
+///              Digit+ DecimalPoint Digit* |
+///              Digit* DecimalPoint Digit+ ) Exp?
+/// Exp    ::= 'e' Sign? Digit+
+/// Sign   ::= [+-]
+//  Digit  ::= [0-9]
+/// ```
+///
 /// Usage examples:
 /// ```
 /// # use pwt::widget::form::Number;
@@ -192,13 +271,13 @@ unsigned_number_impl!(u8);
 /// This widget does not use `<input type="number">` because:
 ///
 /// - when the number input contains an invalid value and you retrieve
-///   the value, you get a blank string. This makes it impossible to implement
-///   controlled inputs.
+///   the value, you get a blank string. There also seems to be some transformation
+///   depending on the locale settings. In general, the returned value is not the text
+///   presented to the user. This makes it impossible to implement controlled inputs.
 /// - different browsers accept different characters.
-/// - return localized number strings.
 /// - see <https://stackoverflow.blog/2022/12/26/why-the-number-input-is-the-worst-input>
 ///
-/// For now, we simply use a text input.
+/// For now, we simply use a text input, and handle number related feature ourselves.
 ///
 #[widget(pwt=crate, comp=ManagedFieldMaster<NumberField<T>>, @input, @element)]
 #[derive(Clone, PartialEq, Properties)]
@@ -270,6 +349,9 @@ pub struct Number<T: NumberTypeInfo> {
     #[builder_cb(IntoEventCallback, into_event_callback, String)]
     #[prop_or_default]
     pub on_input: Option<Callback<String>>,
+
+    #[prop_or(LocaleInfo::new())]
+    locale_info: LocaleInfo,
 }
 
 impl<T: NumberTypeInfo> Number<T> {
@@ -300,34 +382,35 @@ pub struct NumberField<T> {
     _phantom_data: PhantomData<T>,
 }
 
-// Note: This is called on submit, but only for valid fields
-fn value_to_number(value: Value) -> Value {
-    match &value {
-        Value::Number(_) | Value::Null => value,
-        Value::String(text) => {
-            if text.is_empty() {
-                return Value::Null;
-            } // fixme: howto handle submit_empty?
-
-            // Note: this handles localized number format
-            let number = js_sys::Number::parse_float(text);
-
-            if let Some(number) = serde_json::value::Number::from_f64(number) {
-                Value::Number(number)
-            } else {
-                Value::Null // should not happen
-            }
-        }
-        _ => unreachable!(),
-    }
-}
-
 #[derive(PartialEq)]
 pub struct ValidateClosure<T> {
     required: bool,
     min: Option<T>,
     max: Option<T>,
     validate: Option<ValidateFn<T>>,
+    locale_info: LocaleInfo,
+}
+
+impl<T: NumberTypeInfo> NumberField<T> {
+    // Note: This is called on submit, but only for valid fields
+    fn submit_convert(value: Value, locale_info: &LocaleInfo) -> Value {
+        match &value {
+            Value::Number(_) | Value::Null => value,
+            Value::String(text) => {
+                if text.is_empty() {
+                    return Value::Null;
+                }
+                match T::value_to_number(&value, locale_info) {
+                    Ok(n) => n.into(),
+                    Err(err) => {
+                        log::error!("NumberField: submit_convert failed - {err}");
+                        Value::Null // should not happen
+                    }
+                }
+            }
+            _ => unreachable!(),
+        }
+    }
 }
 
 impl<T: NumberTypeInfo> ManagedField for NumberField<T> {
@@ -341,6 +424,7 @@ impl<T: NumberTypeInfo> ManagedField for NumberField<T> {
             min: props.min,
             max: props.max,
             validate: props.validate.clone(),
+            locale_info: props.locale_info.clone(),
         }
     }
 
@@ -360,7 +444,7 @@ impl<T: NumberTypeInfo> ManagedField for NumberField<T> {
             }
         }
 
-        let number = match T::value_to_number(value) {
+        let number = match T::value_to_number(value, &props.locale_info) {
             Ok(number) => number,
             Err(err) => return Err(Error::msg(tr!("Parse number failed: {}", err.to_string()))),
         };
@@ -411,7 +495,12 @@ impl<T: NumberTypeInfo> ManagedField for NumberField<T> {
             default,
             radio_group: false,
             unique: false,
-            submit_converter: Some(Callback::from(value_to_number)),
+            submit_converter: Some(Callback::from({
+                let locale_info = props.locale_info.clone();
+                move |value: Value| {
+                    Self::submit_convert(value, &locale_info)
+                }
+            })),
         }
     }
 
@@ -419,7 +508,7 @@ impl<T: NumberTypeInfo> ManagedField for NumberField<T> {
         let props = ctx.props();
         let state = ctx.state();
         let data = match &state.valid {
-            Ok(()) => Some(T::value_to_number(&state.value).map_err(|err| err.to_string())),
+            Ok(()) => Some(T::value_to_number(&state.value, &props.locale_info).map_err(|err| err.to_string())),
             Err(err) => Some(Err(err.clone())),
         };
         if let Some(on_change) = &props.on_change {
@@ -430,8 +519,10 @@ impl<T: NumberTypeInfo> ManagedField for NumberField<T> {
     fn changed(&mut self, ctx: &ManagedFieldContext<Self>, old_props: &Self::Properties) -> bool {
         let props = ctx.props();
         if props.value != old_props.value || props.valid != old_props.valid {
-            ctx.link()
-               .force_value(props.value.as_ref().map(|v| v.to_string()), props.valid.clone());
+            ctx.link().force_value(
+                props.value.as_ref().map(|v| v.to_string()),
+                props.valid.clone(),
+            );
         }
         true
     }
