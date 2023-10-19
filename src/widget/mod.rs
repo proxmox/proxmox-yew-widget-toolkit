@@ -34,8 +34,6 @@ pub use desktop_app::{DesktopApp, PwtDesktopApp};
 mod dropdown;
 pub use dropdown::{Dropdown, PwtDropdown, RenderDropdownPickerFn};
 
-pub mod dom;
-
 mod fa;
 pub use fa::{Fa, PwtFa};
 

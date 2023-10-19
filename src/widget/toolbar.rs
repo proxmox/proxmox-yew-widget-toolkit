@@ -8,7 +8,7 @@ use yew::html::IntoPropValue;
 
 use pwt_macros::{widget, builder};
 
-use super::dom::element_direction_rtl;
+use crate::dom::element_direction_rtl;
 use super::focus::{init_roving_tabindex, roving_tabindex_next, update_roving_tabindex};
 use super::{MiniScroll, MiniScrollMode};
 use crate::prelude::*;

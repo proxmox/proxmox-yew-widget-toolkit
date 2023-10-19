@@ -12,7 +12,7 @@ use yew::virtual_dom::{Key, VComp, VNode};
 use crate::css::ColorScheme;
 use crate::prelude::*;
 use crate::props::{BuilderFn, IntoOptionalBuilderFn};
-use crate::widget::dom::element_direction_rtl;
+use crate::dom::element_direction_rtl;
 use crate::widget::menu::{Menu, MenuButton};
 use crate::widget::{Container, Row, SizeObserver};
 

@@ -172,6 +172,7 @@
 //! - [widget::nav::NavigationDrawer]
 
 pub mod css;
+pub mod dom;
 pub mod props;
 pub mod state;
 pub mod touch;

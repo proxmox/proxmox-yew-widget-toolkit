@@ -2,10 +2,8 @@
 use js_sys::Error;
 use web_sys::{window, HtmlElement};
 
-use crate::widget::{
-    dom::{element_direction_rtl, IntoHtmlElement},
-    SizeObserver,
-};
+use crate::dom::{element_direction_rtl, IntoHtmlElement};
+use crate::widget::SizeObserver;
 
 /// Defines a point on a rectangle
 ///

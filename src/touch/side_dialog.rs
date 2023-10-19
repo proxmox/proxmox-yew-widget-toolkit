@@ -9,7 +9,7 @@ use yew::virtual_dom::{Key, VComp, VNode};
 
 use crate::prelude::*;
 use crate::state::{SharedState, SharedStateObserver};
-use crate::widget::dom::IntoHtmlElement;
+use crate::dom::IntoHtmlElement;
 use crate::widget::Container;
 
 use super::{GestureDetector, GestureDragEvent, GestureSwipeEvent};

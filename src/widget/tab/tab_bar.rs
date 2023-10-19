@@ -6,7 +6,7 @@ use yew::virtual_dom::{Key, VComp, VNode};
 use crate::prelude::*;
 use crate::state::{NavigationContext, NavigationContextExt, PersistentState, Selection};
 use crate::web_sys_ext::{ResizeObserverBoxOptions, ResizeObserverOptions};
-use crate::widget::dom::{element_direction_rtl, IntoHtmlElement};
+use crate::dom::{element_direction_rtl, IntoHtmlElement};
 use crate::widget::focus::roving_tabindex_next;
 use crate::widget::{Container, SizeObserver};
 

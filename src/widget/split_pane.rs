@@ -9,7 +9,7 @@ use crate::css::{FlexFillFirstChild, Display};
 use crate::props::{ContainerBuilder, EventSubscriber, WidgetBuilder};
 
 use super::Container;
-use super::dom::element_direction_rtl;
+use crate::dom::element_direction_rtl;
 
 use pwt_macros::widget;
 
