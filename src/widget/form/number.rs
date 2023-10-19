@@ -44,13 +44,10 @@ impl NumberTypeInfo for f64 {
             },
             Value::String(s) => {
                 // Note: this handles localized number format
-                let number = crate::dom::parse_float(s);
+                let number = crate::dom::parse_float(s)
+                    .map_err(|err| Error::msg(err))?;
 
-                if number.is_finite() {
-                    return Ok(number);
-                } else {
-                    return Err(Error::msg(tr!("unable to parse number (f64)")));
-                }
+                return Ok(number);
             }
             _ => return Err(Error::msg(tr!("got wrong data type"))),
         }

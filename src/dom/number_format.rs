@@ -2,10 +2,15 @@ use std::str::FromStr;
 
 use serde::Deserialize;
 
+use crate::tr;
+
+/// Locale related setting like deciaml and thousands separator.
 #[derive(Clone, Debug, PartialEq)]
 pub struct LocaleInfo {
-    decimal: String,
-    group: String,
+    /// Decimal separator.
+    pub decimal: String,
+    /// Digit group separator.
+    pub group: String,
 }
 
 fn test_browser_locale() -> Option<LocaleInfo> {
@@ -50,7 +55,7 @@ pub fn format_float(value: f64) -> String {
 /// Parse a language-sensitive representation of f64.
 ///
 /// Uses current browser locale setting.
-pub fn parse_float(text: &str) -> f64 {
+pub fn parse_float(text: &str) -> Result<f64, String> {
     BROWSER_LOCALE.with(|info| info.parse_float(text))
 }
 
@@ -75,13 +80,14 @@ impl LocaleInfo {
     }
 
     /// Parse Rust f64 float format, but uses decimal point from browser locale settings.
-    pub fn parse_float(&self, text: &str) -> f64 {
+    ///
+    /// Note: Values 'inf' | 'infinity' | 'nan' are not allowed.
+    pub fn parse_float(&self, text: &str) -> Result<f64, String> {
         let text = text.replace(&self.decimal, "{D}");
         let text = text.replace(&self.group, "{G}");
 
         if text.contains(['.', ',']) {
-            //log::info!("parse_float1 {}", text);
-            return f64::NAN;
+            return Err(tr!("invalid float literal (wrong decimal separator)"));
         }
 
         // f64::from_str will fail if it finds a group separator!
@@ -90,11 +96,16 @@ impl LocaleInfo {
         // f64::from_str uses '.' as decimal separator
         let text = text.replace("{D}", ".");
 
-        let number = f64::from_str(&text).unwrap_or(f64::NAN);
+        let number = match f64::from_str(&text) {
+            Ok(number) => number,
+            Err(_) => return Err(tr!("invalid float literal")),
+        };
 
-        // log::info!("parse_float2 {} -> {}", text, number);
+        if !number.is_finite() { // do not allow "inf", "nan", ...
+            return Err(tr!("invalid float literal"));
+        }
 
-        number
+        Ok(number)
     }
 }
 
