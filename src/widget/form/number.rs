@@ -24,12 +24,15 @@ pub type PwtNumber<T> = ManagedFieldMaster<NumberField<T>>;
 
 #[doc(hidden)]
 pub trait NumberTypeInfo:
-    Into<Value> + PartialEq + PartialOrd + Display + Debug + Copy + Clone + Sized + 'static
+    Into<Value> + PartialEq + PartialOrd + Display + Default + Debug + Copy + Clone + Sized + 'static
 {
     fn value_to_number(value: &Value) -> Result<Self, Error>;
     fn number_to_value(&self) -> Value;
 
     fn format(&self) -> String;
+
+    fn step_down(&self, step: Option<Self>) -> Self;
+    fn step_up(&self, step: Option<Self>) -> Self;
 }
 
 impl NumberTypeInfo for f64 {
@@ -57,6 +60,12 @@ impl NumberTypeInfo for f64 {
     }
     fn format(&self) -> String {
         crate::dom::format_float(*self)
+    }
+    fn step_up(&self, step: Option<Self>) -> Self {
+        self + step.unwrap_or(1.0)
+    }
+    fn step_down(&self, step: Option<Self>) -> Self {
+        self - step.unwrap_or(1.0)
     }
 }
 
@@ -116,6 +125,22 @@ macro_rules! signed_number_impl {
             fn format(&self) -> String {
                 (*self).to_string()
             }
+            fn step_down(&self, step: Option<Self>) -> Self {
+                let step = step.unwrap_or(1);
+                if *self > (<$T>::MIN + step) {
+                    self - step
+                } else {
+                    *self
+                }
+            }
+            fn step_up(&self, step: Option<Self>) -> Self {
+                let step = step.unwrap_or(1);
+                if *self < (<$T>::MAX - step) {
+                    self + step
+                } else {
+                    *self
+                }
+            }
         }
     };
 }
@@ -172,6 +197,22 @@ macro_rules! unsigned_number_impl {
             }
             fn format(&self) -> String {
                 (*self).to_string()
+            }
+            fn step_down(&self, step: Option<Self>) -> Self {
+                let step = step.unwrap_or(1);
+                if *self > (<$T>::MIN + step) {
+                    self - step
+                } else {
+                    *self
+                }
+            }
+            fn step_up(&self, step: Option<Self>) -> Self {
+                let step = step.unwrap_or(1);
+                if *self < (<$T>::MAX - step) {
+                    self + step
+                } else {
+                    *self
+                }
             }
         }
     };
@@ -327,6 +368,8 @@ impl<T: NumberTypeInfo> Number<T> {
 
 pub enum Msg {
     Update(String),
+    Up,
+    Down,
 }
 
 #[doc(hidden)]
@@ -482,12 +525,31 @@ impl<T: NumberTypeInfo> ManagedField for NumberField<T> {
 
     fn update(&mut self, ctx: &ManagedFieldContext<Self>, msg: Self::Message) -> bool {
         let props = ctx.props();
+        let state = ctx.state();
         match msg {
             Msg::Update(input) => {
                 ctx.link().update_value(input.clone());
                 if let Some(on_input) = &props.on_input {
                     let value = T::value_to_number(&input.clone().into()).ok();
                     on_input.emit((input, value));
+                }
+                true
+            }
+            Msg::Up => {
+                let mut n = T::value_to_number(&state.value).ok();
+                if n.is_none() && state.valid.is_ok() { n = Some(T::default()); }
+                if let Some(n) = n {
+                    let next = T::step_up(&n, props.step);
+                    ctx.link().update_value(T::number_to_value(&next));
+                }
+                true
+            }
+            Msg::Down => {
+                let mut n = T::value_to_number(&state.value).ok();
+                if n.is_none() && state.valid.is_ok() { n = Some(T::default()); }
+                if let Some(n) = n {
+                    let next = T::step_down(&n, props.step);
+                    ctx.link().update_value(T::number_to_value(&next));
                 }
                 true
             }
@@ -501,12 +563,10 @@ impl<T: NumberTypeInfo> ManagedField for NumberField<T> {
         let (value, valid) = (&state.value, &state.valid);
         let value_text = match value {
             Value::Null => String::new(),
-            Value::Number(number) => {
-                match T::value_to_number(value) {
-                    Ok(n) => T::format(&n),
-                    Err(_) => number.to_string(),
-                }
-            }
+            Value::Number(number) => match T::value_to_number(value) {
+                Ok(n) => T::format(&n),
+                Err(_) => number.to_string(),
+            },
             Value::String(s) => s.to_string(),
             _ => String::new(),
         };
@@ -526,6 +586,14 @@ impl<T: NumberTypeInfo> ManagedField for NumberField<T> {
             .attribute("aria-valuemin", props.min.map(|v| v.to_string()))
             .attribute("aria-valuemax", props.max.map(|v| v.to_string()))
             .oninput(oninput)
+            .onkeydown({
+                let link = ctx.link();
+                move |event: KeyboardEvent| match event.key().as_str() {
+                    "ArrowDown" => link.send_message(Msg::Down),
+                    "ArrowUp" => link.send_message(Msg::Up),
+                    _ => return,
+                }
+            })
             .into();
 
         let input_container = Container::new()
