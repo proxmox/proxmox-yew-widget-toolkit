@@ -1,5 +1,6 @@
-use serde::Deserialize;
 use std::str::FromStr;
+
+use serde::Deserialize;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct LocaleInfo {
@@ -7,34 +8,73 @@ pub struct LocaleInfo {
     group: String,
 }
 
-impl LocaleInfo {
-    pub fn new() -> Self {
-        let nf = js_sys::Intl::NumberFormat::new(&js_sys::Array::new(), &js_sys::Object::new());
+fn test_browser_locale() -> Option<LocaleInfo> {
+    let nf = js_sys::Intl::NumberFormat::new(&js_sys::Array::new(), &js_sys::Object::new());
 
-        let info = nf.format_to_parts(11111.22);
+    let info = nf.format_to_parts(11111.22);
 
-        let parts: Vec<NumberPartInfo> = serde_wasm_bindgen::from_value(info.into()).unwrap();
+    let parts: Vec<NumberPartInfo> = serde_wasm_bindgen::from_value(info.into()).unwrap();
 
-        let decimal = parts.iter().find(|i| i.ty == "decimal").map(|i| i.value.clone());
-        let group = parts.iter().find(|i| i.ty == "group").map(|i| i.value.clone());
+    let decimal = parts.iter().find(|i| i.ty == "decimal").map(|i| i.value.clone());
+    let group = parts.iter().find(|i| i.ty == "group").map(|i| i.value.clone());
 
-        if let (Some(decimal), Some(group)) = (decimal, group) {
-            Self { decimal, group }
+    if let (Some(decimal), Some(group)) = (decimal, group) {
+        Some(LocaleInfo { decimal, group })
+    } else {
+        None
+    }
+}
+
+thread_local!{
+    static BROWSER_LOCALE: LocaleInfo = {
+        if let Some(info) = test_browser_locale() {
+            info
         } else {
             log::error!("LocaleInfo: unable to detect locale info - using defaults.");
-            Self { decimal: ".".into(), group: ",". into() }
+            LocaleInfo::default()
         }
     }
+}
 
+fn get_browser_locale_info() -> LocaleInfo {
+    BROWSER_LOCALE.with(|info| info.clone())
+}
+
+/// Returns a string with a language-sensitive representation of this number.
+///
+/// Uses current browser locale setting.
+pub fn format_float(value: f64) -> String {
+    BROWSER_LOCALE.with(|info| info.format_float(value))
+}
+
+/// Parse a language-sensitive representation of f64.
+///
+/// Uses current browser locale setting.
+pub fn parse_float(text: &str) -> f64 {
+    BROWSER_LOCALE.with(|info| info.parse_float(text))
+}
+
+impl Default for LocaleInfo {
+    fn default() -> Self {
+        Self { decimal: ".".into(), group: ",". into() }
+    }
+}
+
+impl LocaleInfo {
+    /// Return current browser locale settings.
+    pub fn new() -> Self { get_browser_locale_info() }
+
+    /// Rust f64 float format, but replaces decimal point from browser locale settings.
     pub fn format_float(&self, value: f64) -> String {
         let mut text = value.to_string();
         if self.decimal != "." {
             text = text.replace(".", &self.decimal);
         }
-        log::info!("format_float {} -> {}", value, text);
+        // log::info!("format_float {} -> {}", value, text);
         text
     }
 
+    /// Parse Rust f64 float format, but uses decimal point from browser locale settings.
     pub fn parse_float(&self, text: &str) -> f64 {
         let text = text.replace(&self.decimal, "{D}");
         let text = text.replace(&self.group, "{G}");

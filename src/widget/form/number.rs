@@ -19,7 +19,6 @@ use crate::props::{ContainerBuilder, EventSubscriber, WidgetBuilder};
 use crate::widget::{Container, Input, Tooltip};
 
 use crate::tr;
-use crate::dom::LocaleInfo;
 
 pub type PwtNumber<T> = ManagedFieldMaster<NumberField<T>>;
 
@@ -27,14 +26,14 @@ pub type PwtNumber<T> = ManagedFieldMaster<NumberField<T>>;
 pub trait NumberTypeInfo:
     Into<Value> + PartialEq + PartialOrd + Display + Debug + Copy + Clone + Sized + 'static
 {
-    fn value_to_number(value: &Value, locale_info: &LocaleInfo) -> Result<Self, Error>;
+    fn value_to_number(value: &Value) -> Result<Self, Error>;
     fn number_to_value(&self) -> Value;
 
-    fn format(&self, locale_info: &LocaleInfo) -> String;
+    fn format(&self) -> String;
 }
 
 impl NumberTypeInfo for f64 {
-    fn value_to_number(value: &Value, locale_info: &LocaleInfo) -> Result<f64, Error> {
+    fn value_to_number(value: &Value) -> Result<f64, Error> {
         match value {
             Value::Number(n) => match n.as_f64() {
                 Some(n) => Ok(n),
@@ -42,7 +41,7 @@ impl NumberTypeInfo for f64 {
             },
             Value::String(s) => {
                 // Note: this handles localized number format
-                let number = locale_info.parse_float(s);
+                let number = crate::dom::parse_float(s);
 
                 if number.is_finite() {
                     return Ok(number);
@@ -56,8 +55,8 @@ impl NumberTypeInfo for f64 {
     fn number_to_value(&self) -> Value {
         (*self).into()
     }
-    fn format(&self, locale_info: &LocaleInfo) -> String {
-        locale_info.format_float(*self)
+    fn format(&self) -> String {
+        crate::dom::format_float(*self)
     }
 }
 
@@ -67,7 +66,7 @@ impl NumberTypeInfo for f64 {
 macro_rules! signed_number_impl {
     ($T:ty) => {
         impl NumberTypeInfo for $T {
-            fn value_to_number(value: &Value, _locale_info: &LocaleInfo) -> Result<$T, Error> {
+            fn value_to_number(value: &Value) -> Result<$T, Error> {
                 match value {
                     Value::Number(n) => match n.as_i64() {
                         Some(n) => {
@@ -114,7 +113,7 @@ macro_rules! signed_number_impl {
             fn number_to_value(&self) -> Value {
                 (*self).into()
             }
-            fn format(&self, _locale_info: &LocaleInfo) -> String {
+            fn format(&self) -> String {
                 (*self).to_string()
             }
         }
@@ -124,7 +123,7 @@ macro_rules! signed_number_impl {
 macro_rules! unsigned_number_impl {
     ($T:ty) => {
         impl NumberTypeInfo for $T {
-            fn value_to_number(value: &Value, _locale_info: &LocaleInfo) -> Result<$T, Error> {
+            fn value_to_number(value: &Value) -> Result<$T, Error> {
                 match value {
                     Value::Number(n) => match n.as_u64() {
                         Some(n) => {
@@ -171,7 +170,7 @@ macro_rules! unsigned_number_impl {
             fn number_to_value(&self) -> Value {
                 (*self).into()
             }
-            fn format(&self, _locale_info: &LocaleInfo) -> String {
+            fn format(&self) -> String {
                 (*self).to_string()
             }
         }
@@ -306,9 +305,6 @@ pub struct Number<T: NumberTypeInfo> {
     #[builder_cb(IntoEventCallback, into_event_callback, (String, Option<T>))]
     #[prop_or_default]
     pub on_input: Option<Callback<(String, Option<T>)>>,
-
-    #[prop_or(LocaleInfo::new())]
-    locale_info: LocaleInfo,
 }
 
 impl<T: NumberTypeInfo> Number<T> {
@@ -345,19 +341,18 @@ pub struct ValidateClosure<T> {
     min: Option<T>,
     max: Option<T>,
     validate: Option<ValidateFn<T>>,
-    locale_info: LocaleInfo,
 }
 
 impl<T: NumberTypeInfo> NumberField<T> {
     // Note: This is called on submit, but only for valid fields
-    fn submit_convert(value: Value, locale_info: &LocaleInfo) -> Option<Value> {
+    fn submit_convert(value: Value) -> Option<Value> {
         match &value {
             Value::Number(_) | Value::Null => Some(value),
             Value::String(text) => {
                 if text.is_empty() {
                     return Some(Value::Null);
                 }
-                match T::value_to_number(&value, locale_info) {
+                match T::value_to_number(&value) {
                     Ok(n) => Some(n.into()),
                     Err(err) => {
                         log::error!("NumberField: submit_convert failed - {err}");
@@ -381,7 +376,6 @@ impl<T: NumberTypeInfo> ManagedField for NumberField<T> {
             min: props.min,
             max: props.max,
             validate: props.validate.clone(),
-            locale_info: props.locale_info.clone(),
         }
     }
 
@@ -401,7 +395,7 @@ impl<T: NumberTypeInfo> ManagedField for NumberField<T> {
             }
         }
 
-        let number = match T::value_to_number(value, &props.locale_info) {
+        let number = match T::value_to_number(value) {
             Ok(number) => number,
             Err(err) => return Err(Error::msg(tr!("Parse number failed: {}", err.to_string()))),
         };
@@ -433,7 +427,7 @@ impl<T: NumberTypeInfo> ManagedField for NumberField<T> {
         let mut value = Value::Null;
 
         if let Some(default) = props.default {
-            value = default.format(&props.locale_info).into();
+            value = T::format(&default).into();
         }
         if let Some(force_value) = &props.value {
             value = force_value.to_string().into();
@@ -452,12 +446,7 @@ impl<T: NumberTypeInfo> ManagedField for NumberField<T> {
             default,
             radio_group: false,
             unique: false,
-            submit_converter: Some(Callback::from({
-                let locale_info = props.locale_info.clone();
-                move |value: Value| {
-                    Self::submit_convert(value, &locale_info)
-                }
-            })),
+            submit_converter: Some(Callback::from(Self::submit_convert)),
         }
     }
 
@@ -465,7 +454,7 @@ impl<T: NumberTypeInfo> ManagedField for NumberField<T> {
         let props = ctx.props();
         let state = ctx.state();
         let data = match &state.valid {
-            Ok(()) => Some(T::value_to_number(&state.value, &props.locale_info).map_err(|err| err.to_string())),
+            Ok(()) => Some(T::value_to_number(&state.value).map_err(|err| err.to_string())),
             Err(err) => Some(Err(err.clone())),
         };
         if let Some(on_change) = &props.on_change {
@@ -497,7 +486,7 @@ impl<T: NumberTypeInfo> ManagedField for NumberField<T> {
             Msg::Update(input) => {
                 ctx.link().update_value(input.clone());
                 if let Some(on_input) = &props.on_input {
-                    let value = T::value_to_number(&input.clone().into(), &props.locale_info).ok();
+                    let value = T::value_to_number(&input.clone().into()).ok();
                     on_input.emit((input, value));
                 }
                 true
@@ -513,8 +502,8 @@ impl<T: NumberTypeInfo> ManagedField for NumberField<T> {
         let value_text = match value {
             Value::Null => String::new(),
             Value::Number(number) => {
-                match T::value_to_number(value, &props.locale_info) {
-                    Ok(n) => n.format(&props.locale_info),
+                match T::value_to_number(value) {
+                    Ok(n) => T::format(&n),
                     Err(_) => number.to_string(),
                 }
             }
