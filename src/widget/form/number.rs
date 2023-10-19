@@ -30,6 +30,8 @@ pub trait NumberTypeInfo:
 {
     fn value_to_number(value: &Value, locale_info: &LocaleInfo) -> Result<Self, Error>;
     fn number_to_value(&self) -> Value;
+
+    fn format(&self, locale_info: &LocaleInfo) -> String;
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -55,6 +57,15 @@ impl LocaleInfo {
             log::error!("LocaleInfo: unable to detect locale info - using defaults.");
             Self { decimal: ".".into(), group: ",". into() }
         }
+    }
+
+    pub fn format_float(&self, value: f64) -> String {
+        let mut text = value.to_string();
+        if self.decimal != "." {
+            text = text.replace(".", &self.decimal);
+        }
+        log::info!("format_float {} -> {}", value, text);
+        text
     }
 
     pub fn parse_float(&self, text: &str) -> f64 {
@@ -109,6 +120,9 @@ impl NumberTypeInfo for f64 {
     }
     fn number_to_value(&self) -> Value {
         (*self).into()
+    }
+    fn format(&self, locale_info: &LocaleInfo) -> String {
+        locale_info.format_float(*self)
     }
 }
 
@@ -165,6 +179,9 @@ macro_rules! signed_number_impl {
             fn number_to_value(&self) -> Value {
                 (*self).into()
             }
+            fn format(&self, _locale_info: &LocaleInfo) -> String {
+                (*self).to_string()
+            }
         }
     };
 }
@@ -218,6 +235,9 @@ macro_rules! unsigned_number_impl {
             }
             fn number_to_value(&self) -> Value {
                 (*self).into()
+            }
+            fn format(&self, _locale_info: &LocaleInfo) -> String {
+                (*self).to_string()
             }
         }
     };
@@ -302,6 +322,8 @@ pub struct Number<T: NumberTypeInfo> {
     ///
     /// To implement controlled components (for use without a FormContext).
     /// This is ignored if the field has a name.
+    ///
+    /// Note: for f64, value must be formated using the browser locale!
     #[builder(IntoPropValue, into_prop_value)]
     #[prop_or_default]
     pub value: Option<AttrValue>,
@@ -346,9 +368,9 @@ pub struct Number<T: NumberTypeInfo> {
     /// Input callback
     ///
     /// This callback is emited when the user types in new data.
-    #[builder_cb(IntoEventCallback, into_event_callback, String)]
+    #[builder_cb(IntoEventCallback, into_event_callback, (String, Option<T>))]
     #[prop_or_default]
-    pub on_input: Option<Callback<String>>,
+    pub on_input: Option<Callback<(String, Option<T>)>>,
 
     #[prop_or(LocaleInfo::new())]
     locale_info: LocaleInfo,
@@ -393,22 +415,22 @@ pub struct ValidateClosure<T> {
 
 impl<T: NumberTypeInfo> NumberField<T> {
     // Note: This is called on submit, but only for valid fields
-    fn submit_convert(value: Value, locale_info: &LocaleInfo) -> Value {
+    fn submit_convert(value: Value, locale_info: &LocaleInfo) -> Option<Value> {
         match &value {
-            Value::Number(_) | Value::Null => value,
+            Value::Number(_) | Value::Null => Some(value),
             Value::String(text) => {
                 if text.is_empty() {
-                    return Value::Null;
+                    return Some(Value::Null);
                 }
                 match T::value_to_number(&value, locale_info) {
-                    Ok(n) => n.into(),
+                    Ok(n) => Some(n.into()),
                     Err(err) => {
                         log::error!("NumberField: submit_convert failed - {err}");
-                        Value::Null // should not happen
+                        None
                     }
                 }
             }
-            _ => unreachable!(),
+            _ => None,
         }
     }
 }
@@ -473,20 +495,20 @@ impl<T: NumberTypeInfo> ManagedField for NumberField<T> {
     }
 
     fn setup(props: &Self::Properties) -> ManagedFieldState {
-        let mut value = String::new();
+        let mut value = Value::Null;
 
-        if let Some(default) = &props.default {
-            value = default.to_string();
+        if let Some(default) = props.default {
+            value = default.format(&props.locale_info).into();
         }
         if let Some(force_value) = &props.value {
-            value = force_value.to_string();
+            value = force_value.to_string().into();
         }
 
         let value: Value = value.clone().into();
 
         let default = match props.default {
-            Some(default) => default.to_string().into(),
-            None => String::new().into(),
+            Some(default) => T::number_to_value(&default),
+            None => Value::Null,
         };
 
         ManagedFieldState {
@@ -540,7 +562,8 @@ impl<T: NumberTypeInfo> ManagedField for NumberField<T> {
             Msg::Update(input) => {
                 ctx.link().update_value(input.clone());
                 if let Some(on_input) = &props.on_input {
-                    on_input.emit(input);
+                    let value = T::value_to_number(&input.clone().into(), &props.locale_info).ok();
+                    on_input.emit((input, value));
                 }
                 true
             }
@@ -554,7 +577,12 @@ impl<T: NumberTypeInfo> ManagedField for NumberField<T> {
         let (value, valid) = (&state.value, &state.valid);
         let value_text = match value {
             Value::Null => String::new(),
-            Value::Number(n) => n.to_string(),
+            Value::Number(number) => {
+                match T::value_to_number(value, &props.locale_info) {
+                    Ok(n) => n.format(&props.locale_info),
+                    Err(_) => number.to_string(),
+                }
+            }
             Value::String(s) => s.to_string(),
             _ => String::new(),
         };

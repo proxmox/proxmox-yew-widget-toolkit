@@ -55,9 +55,26 @@ struct FieldRegistration {
     /// Validation result.
     pub valid: Result<(), String>,
     /// Optional conversion hook called by [FormContext::get_submit_data]
-    pub submit_converter: Option<Callback<Value, Value>>,
+    ///
+    /// Should return `None` if value is invalid.
+    pub submit_converter: Option<Callback<Value, Option<Value>>>,
 }
 
+impl FieldRegistration {
+    fn is_dirty(&self) -> bool {
+        // we need to compare the value that will be submitted
+        let submit_value = match &self.submit_converter  {
+            Some(convert) => {
+                match convert.emit(self.value.clone()) {
+                    Some(v) => v,
+                    None => return true,
+                }
+            }
+            None => self.value.clone(),
+        };
+        self.default != submit_value
+    }
+}
 /// Shared form data ([Rc]<[RefCell]<[FormContextState]>>)
 ///
 /// This shared object can be used to control input fields. The
@@ -260,7 +277,7 @@ impl FormContext {
         validate: Option<ValidateFn<Value>>,
         options: FieldOptions,
         unique: bool,
-        submit_converter: Option<Callback<Value, Value>>,
+        submit_converter: Option<Callback<Value, Option<Value>>>,
     ) -> FieldHandle {
         let key = self.inner.borrow_mut().register_field(
             name,
@@ -405,7 +422,7 @@ impl FormContextState {
         validate: Option<ValidateFn<Value>>,
         options: FieldOptions,
         unique: bool,
-        submit_converter: Option<Callback<Value, Value>>,
+        submit_converter: Option<Callback<Value, Option<Value>>>,
     ) -> usize {
         let name = name.into_prop_value();
 
@@ -640,7 +657,7 @@ impl FormContextState {
 
     pub fn is_dirty(&self) -> bool {
         for (_key, field) in self.fields.iter() {
-            if field.value != field.default {
+            if field.is_dirty() {
                 return true;
             }
         }
@@ -650,7 +667,7 @@ impl FormContextState {
     pub fn dirty_count(&self) -> usize {
         let mut count = 0;
         for (_key, field) in self.fields.iter() {
-            if field.value != field.default {
+            if field.is_dirty() {
                 count += 1;
             }
         }
@@ -851,10 +868,15 @@ impl FormContextState {
                         continue;
                     }
                     if let Some(submit_converter) = &field.submit_converter {
-                        value = submit_converter.emit(value);
-                        if !submit_empty & value_is_empty(&value) {
-                            continue;
-                        }
+                        value = match submit_converter.emit(value) {
+                            Some(value) => {
+                                if !submit_empty & value_is_empty(&value) {
+                                    continue;
+                                }
+                                value
+                            }
+                            None => continue, // should not happen
+                        };
                     }
                     data[name.deref()] = value;
                 }
@@ -873,10 +895,15 @@ impl FormContextState {
                             continue;
                         }
                         if let Some(submit_converter) = &field.submit_converter {
-                            value = submit_converter.emit(value);
-                            if !submit_empty && value_is_empty(&value) {
-                                continue;
-                            }
+                            value = match submit_converter.emit(value) {
+                                Some(value) => {
+                                    if !submit_empty && value_is_empty(&value) {
+                                        continue;
+                                    }
+                                    value
+                                }
+                                None => continue, // should not happen
+                            };
                         }
                         list.push(value);
                     }

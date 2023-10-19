@@ -35,7 +35,7 @@ pub struct ManagedFieldState {
     pub unique: bool,
 
     /// Optional conversion called by [FormContext::get_submit_data]
-    pub submit_converter: Option<Callback<Value, Value>>,
+    pub submit_converter: Option<Callback<Value, Option<Value>>>,
 }
 
 /// Managed field context.
