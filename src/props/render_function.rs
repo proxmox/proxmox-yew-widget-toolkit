@@ -1,4 +1,5 @@
 use std::rc::Rc;
+use std::fmt::Display;
 
 use derivative::Derivative;
 
@@ -82,19 +83,32 @@ impl<T, F: 'static + Fn(&T) -> String> From<F> for TextRenderFn<T> {
 }
 
 /// Helper trait to create an optional [TextRenderFn] property.
+///
+/// For types implementing [Display], you can pass 'true' to create
+/// a render function whichs uses `to_string()`.
 pub trait IntoOptionalTextRenderFn<T> {
     fn into_optional_text_render_fn(self) -> Option<TextRenderFn<T>>;
 }
 
-impl<T> IntoOptionalTextRenderFn<T> for Option<TextRenderFn<T>> {
+impl<T, R: Into<TextRenderFn<T>>> IntoOptionalTextRenderFn<T> for R {
     fn into_optional_text_render_fn(self) -> Option<TextRenderFn<T>> {
-        self
+        Some(self.into())
     }
 }
 
-impl<T, F: 'static + Fn(&T) -> String> IntoOptionalTextRenderFn<T> for F {
+impl<T, R: Into<TextRenderFn<T>>> IntoOptionalTextRenderFn<T> for Option<R> {
     fn into_optional_text_render_fn(self) -> Option<TextRenderFn<T>> {
-        Some(TextRenderFn::new(self))
+        self.map(|me| me.into())
+    }
+}
+
+impl<T: Display> IntoOptionalTextRenderFn<T> for bool {
+    fn into_optional_text_render_fn(self) -> Option<TextRenderFn<T>> {
+        if self {
+            Some(TextRenderFn::new(|t: &T| { t.to_string() }))
+        } else {
+            None
+        }
     }
 }
 
