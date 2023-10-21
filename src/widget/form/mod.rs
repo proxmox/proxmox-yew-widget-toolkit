@@ -18,6 +18,9 @@ pub use checkbox::{Checkbox, PwtCheckbox};
 mod combobox;
 pub use combobox::{Combobox, PwtCombobox};
 
+mod hidden;
+pub use hidden::{Hidden, PwtHidden};
+
 mod managed_field;
 pub use managed_field::{
     ManagedField, ManagedFieldContext, ManagedFieldLink, ManagedFieldMaster, ManagedFieldState,
