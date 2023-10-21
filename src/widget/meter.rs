@@ -7,13 +7,13 @@ use yew::virtual_dom::VTag;
 use pwt_macros::{widget, builder};
 
 use crate::widget::Container;
-use crate::props::{ContainerBuilder, WidgetBuilder};
+use crate::props::{ContainerBuilder, IntoOptionalTextRenderFn, WidgetBuilder, TextRenderFn};
 
 
 /// Wrapper for Html `<meter>`.
 #[widget(pwt=crate, @element)]
 #[builder]
-#[derive(Default, Debug, Clone, PartialEq, Properties)]
+#[derive(Default, Clone, PartialEq, Properties)]
 pub struct Meter {
     /// Minimum value (default 0)
     ///
@@ -61,26 +61,16 @@ pub struct Meter {
     #[builder(IntoPropValue, into_prop_value, 0.0)]
     pub value: f32,
 
-    /// Show percentage as text.
-    #[prop_or(true)]
-    pub show_text: bool,
+    /// Show value as text.
+    #[builder_cb(IntoOptionalTextRenderFn, into_optional_text_render_fn, f32)]
+    #[prop_or_default]
+    pub render_text: Option<TextRenderFn<f32>>,
 }
 
 impl Meter {
     /// Create a new instance.
     pub fn new() -> Self {
         yew::props! { Self {}}
-    }
-
-    /// Builder style method to set the `show_text` flag.
-    pub fn show_text(mut self, value: bool) -> Self {
-        self.set_show_text(value);
-        self
-    }
-
-    /// Method to set the `show_text` flag.
-    pub fn set_show_text(&mut self, value: bool) {
-        self.show_text = value;
     }
 
     fn get_range_index(&self, value: f32) -> usize {
@@ -111,11 +101,12 @@ impl Into<VTag> for Meter {
 
         let mut children = Vec::new();
 
-        if self.show_text {
+        if let Some(render_text) = &self.render_text {
+            let text = render_text.apply(&self.value);
             children.push(
                 Container::new()
                     .class("pwt-meter-text")
-                    .with_child(format!("{}", self.value))
+                    .with_child(text)
                     .into()
             );
         }
