@@ -83,7 +83,7 @@ impl ManagedField for HiddenField {
         }
     }
 
-    fn view(&self, ctx: &ManagedFieldContext<Self>) -> Html {
+    fn view(&self, _ctx: &ManagedFieldContext<Self>) -> Html {
         html!{}
     }
 }
