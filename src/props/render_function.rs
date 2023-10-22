@@ -37,21 +37,15 @@ pub trait IntoOptionalRenderFn<T> {
     fn into_optional_render_fn(self) -> Option<RenderFn<T>>;
 }
 
-impl<T> IntoOptionalRenderFn<T> for RenderFn<T> {
+impl<T, R: Into<RenderFn<T>>> IntoOptionalRenderFn<T> for R {
     fn into_optional_render_fn(self) -> Option<RenderFn<T>> {
-        Some(self)
+        Some(self.into())
     }
 }
 
-impl<T> IntoOptionalRenderFn<T> for Option<RenderFn<T>> {
+impl<T, R: Into<RenderFn<T>>> IntoOptionalRenderFn<T> for Option<R> {
     fn into_optional_render_fn(self) -> Option<RenderFn<T>> {
-        self
-    }
-}
-
-impl<T, F: 'static + Fn(&T) -> Html> IntoOptionalRenderFn<T> for F {
-    fn into_optional_render_fn(self) -> Option<RenderFn<T>> {
-        Some(RenderFn::new(self))
+        self.map(|me| me.into())
     }
 }
 
