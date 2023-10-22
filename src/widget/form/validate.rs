@@ -15,9 +15,9 @@ pub struct ValidateFn<T>(Rc<dyn Fn(&T) -> Result<(), Error>>);
 macro_rules! static_validation_fn {
     ($t:ty, $v:expr) => {{
         thread_local! {
-            static STATIC_FN: std::cell::OnceCell<$crate::widget::form::ValidateFn<$t>> = std::cell::OnceCell::new();
+            static STATIC_FN: $crate::widget::form::ValidateFn<$t> = $crate::widget::form::ValidateFn::new($v);
         }
-        STATIC_FN.with(|cell| cell.get_or_init(|| $crate::widget::form::ValidateFn::new($v)).clone())
+        STATIC_FN.with($crate::widget::form::ValidateFn::clone)
     }}
 }
 
