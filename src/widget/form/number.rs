@@ -458,7 +458,7 @@ impl<T: NumberTypeInfo> ManagedField for NumberField<T> {
         }
 
         match &props.validate {
-            Some(cb) => cb.validate(&number),
+            Some(validate) => validate.apply(&number),
             None => Ok(()),
         }
     }

@@ -430,7 +430,7 @@ impl FormContextState {
 
         let mut valid = Ok(());
         if let Some(validate) = &validate {
-            valid = validate.validate(&value).map_err(|e| e.to_string());
+            valid = validate.apply(&value).map_err(|e| e.to_string());
         }
 
         let field = FieldRegistration {
@@ -612,7 +612,7 @@ impl FormContextState {
             if value != field.value {
                 let mut valid = Ok(());
                 if let Some(validate) = &field.validate {
-                    valid = validate.validate(&value).map_err(|e| e.to_string());
+                    valid = validate.apply(&value).map_err(|e| e.to_string());
                 }
 
                 field.value = value;
@@ -643,7 +643,7 @@ impl FormContextState {
             self.version += 1;
             field.value = field.default.clone();
             if let Some(validate) = &field.validate {
-                field.valid = validate.validate(&field.value).map_err(|e| e.to_string());
+                field.valid = validate.apply(&field.value).map_err(|e| e.to_string());
             } else {
                 field.valid = Ok(());
             }
@@ -683,7 +683,7 @@ impl FormContextState {
                 field.value = field.default.clone();
                 let mut valid = Ok(());
                 if let Some(validate) = &field.validate {
-                    valid = validate.validate(&field.value).map_err(|e| e.to_string());
+                    valid = validate.apply(&field.value).map_err(|e| e.to_string());
                 }
                 field.valid = valid;
             }
@@ -715,7 +715,7 @@ impl FormContextState {
         } else {
             let mut valid = Ok(());
             if let Some(validate) = &field.validate {
-                valid = validate.validate(&field.value).map_err(|e| e.to_string());
+                valid = validate.apply(&field.value).map_err(|e| e.to_string());
             }
             if valid != field.valid {
                 self.version += 1;

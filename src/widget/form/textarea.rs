@@ -140,7 +140,7 @@ impl ManagedField for TextAreaField {
         }
 
         match &props.validate {
-            Some(cb) => cb.validate(&value),
+            Some(validate) => validate.apply(&value),
             None => Ok(()),
         }
     }

@@ -345,7 +345,7 @@ impl ManagedField for StandardField {
         }
 
         match &props.validate {
-            Some(cb) => cb.validate(&value),
+            Some(validate) => validate.apply(&value),
             None => Ok(()),
         }
     }

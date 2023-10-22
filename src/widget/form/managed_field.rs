@@ -303,7 +303,7 @@ impl<MF: ManagedField + 'static> Component for ManagedFieldMaster<MF> {
 
         let mut comp_state = MF::setup(props);
         comp_state.valid = validate
-            .validate(&comp_state.value)
+            .apply(&comp_state.value)
             .map_err(|err| err.to_string());
 
         let sub_context = ManagedFieldContext::new(ctx, &comp_state);
@@ -355,7 +355,7 @@ impl<MF: ManagedField + 'static> Component for ManagedFieldMaster<MF> {
 
                 let value = value.unwrap_or(self.comp_state.value.clone());
                 let valid = valid
-                    .unwrap_or_else(|| self.validate.validate(&value).map_err(|e| e.to_string()));
+                    .unwrap_or_else(|| self.validate.apply(&value).map_err(|e| e.to_string()));
 
                 let value_changed = value != self.comp_state.value;
                 let valid_changed = valid != self.comp_state.valid;
@@ -370,7 +370,7 @@ impl<MF: ManagedField + 'static> Component for ManagedFieldMaster<MF> {
                 true
             }
             Msg::UpdateValue(value) => {
-                let valid = self.validate.validate(&value).map_err(|e| e.to_string());
+                let valid = self.validate.apply(&value).map_err(|e| e.to_string());
 
                 let value_changed = value != self.comp_state.value;
                 let valid_changed = valid != self.comp_state.valid;
@@ -394,7 +394,7 @@ impl<MF: ManagedField + 'static> Component for ManagedFieldMaster<MF> {
                 } else {
                     let valid = self
                         .validate
-                        .validate(&self.comp_state.value)
+                        .apply(&self.comp_state.value)
                         .map_err(|e| e.to_string());
 
                     let valid_changed = valid != self.comp_state.valid;

@@ -40,7 +40,7 @@ impl<T> ValidateFn<T> {
     }
 
     /// Apply the validation function
-    pub fn validate(&self, data: &T) -> Result<(), Error> {
+    pub fn apply(&self, data: &T) -> Result<(), Error> {
         (self.0)(data)
     }
 }

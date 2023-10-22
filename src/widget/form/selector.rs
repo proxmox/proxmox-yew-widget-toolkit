@@ -215,7 +215,7 @@ impl<S: DataStore + 'static> ManagedField for SelectorField<S> {
 
         if !props.store.is_empty() {
             match &props.validate {
-                Some(cb) => cb.validate(&(value.into(), props.store.clone())),
+                Some(validate) => validate.apply(&(value.into(), props.store.clone())),
                 None => Ok(()),
             }
         } else {
