@@ -105,9 +105,9 @@ impl ManagedField for PwtTristateBoolean {
 
     fn validation_args(_props: &Self::Properties) -> Self::ValidateClosure {}
 
-    fn validator(_props: &Self::ValidateClosure, value: &Value) -> Result<(), Error> {
+    fn validator(_props: &Self::ValidateClosure, value: &Value) -> Result<Value, Error> {
         match value {
-            Value::Null | Value::Bool(_) => Ok(()),
+            Value::Null | Value::Bool(_) => Ok(value.clone()),
             _ => Err(Error::msg(tr!("Got wrong data type!"))),
         }
     }
@@ -136,7 +136,6 @@ impl ManagedField for PwtTristateBoolean {
             default,
             radio_group: false,
             unique: false,
-            submit_converter: None,
         }
     }
 

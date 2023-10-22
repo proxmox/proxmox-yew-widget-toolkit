@@ -15,7 +15,7 @@ use yew::prelude::*;
 
 use crate::state::optional_rc_ptr_eq;
 
-use super::ValidateFn;
+use super::SubmitValidateFn;
 
 /// Basic field options used inside [FormContext].
 ///
@@ -39,7 +39,7 @@ struct FieldRegistration {
     // Field name.
     pub name: AttrValue,
     /// The validation function
-    pub validate: Option<ValidateFn<Value>>,
+    pub validate: Option<SubmitValidateFn<Value>>,
     /// Radio group flag. Set this when the field is part of a radio group.
     pub radio_group: bool,
     /// Do not allow multiple fields with the same name.
@@ -50,29 +50,43 @@ struct FieldRegistration {
     pub options: FieldOptions,
     /// Field value
     pub value: Value,
+    // Submit value (value returned by validate)
+    submit_value: Option<Value>,
     /// Field default value.
     pub default: Value,
     /// Validation result.
     pub valid: Result<(), String>,
-    /// Optional conversion hook called by [FormContext::get_submit_data]
-    ///
-    /// Should return `None` if value is invalid.
-    pub submit_converter: Option<Callback<Value, Option<Value>>>,
 }
 
 impl FieldRegistration {
     fn is_dirty(&self) -> bool {
         // we need to compare the value that will be submitted
-        let submit_value = match &self.submit_converter  {
-            Some(convert) => {
-                match convert.emit(self.value.clone()) {
-                    Some(v) => v,
-                    None => return true,
+        match &self.submit_value {
+            Some(submit_value) => &self.default != submit_value,
+            None => true,
+        }
+    }
+
+    fn apply_value(&mut self, value: Value) {
+        let (valid, submit_value);
+        if let Some(validate) = &self.validate {
+            match validate.apply(&value).map_err(|e| e.to_string()) {
+                Ok(value) => {
+                    submit_value = Some(value);
+                    valid = Ok(());
+                }
+                Err(e) => {
+                    submit_value = None;
+                    valid = Err(e.to_string());
                 }
             }
-            None => self.value.clone(),
-        };
-        self.default != submit_value
+        } else {
+            submit_value = Some(value.clone());
+            valid = Ok(());
+        }
+        self.value = value;
+        self.valid = valid;
+        self.submit_value = submit_value;
     }
 }
 /// Shared form data ([Rc]<[RefCell]<[FormContextState]>>)
@@ -182,7 +196,7 @@ impl FieldHandle {
         self.write().validate_field_by_slab_key(key);
     }
     /// Update validation function and trigger re-validation
-    pub fn update_validate(&mut self, validate: Option<ValidateFn<Value>>) {
+    pub fn update_validate(&mut self, validate: Option<SubmitValidateFn<Value>>) {
         let key = self.key;
         self.write()
             .update_field_validate_by_slab_key(key, validate);
@@ -274,10 +288,9 @@ impl FormContext {
         value: Value,
         default: Value,
         radio_group: bool,
-        validate: Option<ValidateFn<Value>>,
+        validate: Option<SubmitValidateFn<Value>>,
         options: FieldOptions,
         unique: bool,
-        submit_converter: Option<Callback<Value, Option<Value>>>,
     ) -> FieldHandle {
         let key = self.inner.borrow_mut().register_field(
             name,
@@ -287,7 +300,6 @@ impl FormContext {
             validate,
             options,
             unique,
-            submit_converter,
         );
 
         FieldHandle {
@@ -419,31 +431,27 @@ impl FormContextState {
         value: Value,
         default: Value,
         radio_group: bool,
-        validate: Option<ValidateFn<Value>>,
+        validate: Option<SubmitValidateFn<Value>>,
         options: FieldOptions,
         unique: bool,
-        submit_converter: Option<Callback<Value, Option<Value>>>,
     ) -> usize {
         let name = name.into_prop_value();
 
         let unique = if radio_group { false } else { unique };
 
-        let mut valid = Ok(());
-        if let Some(validate) = &validate {
-            valid = validate.apply(&value).map_err(|e| e.to_string());
-        }
-
-        let field = FieldRegistration {
+        let mut field = FieldRegistration {
             name: name.clone(),
             validate,
             radio_group,
             unique,
             options,
-            value,
+            value: Value::Null, // set by apply_value below
+            submit_value: None, // set by apply_value below
             default: default.clone(),
-            valid,
-            submit_converter,
+            valid: Ok(()), // set by apply_value below
         };
+
+        field.apply_value(value);
 
         let slab_key;
 
@@ -610,14 +618,7 @@ impl FormContextState {
                 self.version += 1;
             }
             if value != field.value {
-                let mut valid = Ok(());
-                if let Some(validate) = &field.validate {
-                    valid = validate.apply(&value).map_err(|e| e.to_string());
-                }
-
-                field.value = value;
-                field.valid = valid;
-
+                field.apply_value(value);
                 self.version += 1;
             }
         }
@@ -641,12 +642,7 @@ impl FormContextState {
         let field = &mut self.fields[slab_key];
         if field.value != field.default {
             self.version += 1;
-            field.value = field.default.clone();
-            if let Some(validate) = &field.validate {
-                field.valid = validate.apply(&field.value).map_err(|e| e.to_string());
-            } else {
-                field.valid = Ok(());
-            }
+            field.apply_value(field.default.clone());
         }
     }
 
@@ -680,12 +676,7 @@ impl FormContextState {
         for (_key, field) in self.fields.iter_mut() {
             if field.value != field.default {
                 changes = true;
-                field.value = field.default.clone();
-                let mut valid = Ok(());
-                if let Some(validate) = &field.validate {
-                    valid = validate.apply(&field.value).map_err(|e| e.to_string());
-                }
-                field.valid = valid;
+                field.apply_value(field.default.clone());
             }
         }
         if changes {
@@ -713,21 +704,37 @@ impl FormContextState {
         if field.radio_group {
             // fixme: do something ?
         } else {
-            let mut valid = Ok(());
+            let (valid, submit_value);
             if let Some(validate) = &field.validate {
-                valid = validate.apply(&field.value).map_err(|e| e.to_string());
+                match validate.apply(&field.value) {
+                    Ok(value) => {
+                        submit_value = Some(value);
+                        valid = Ok(());
+                    }
+                    Err(e) => {
+                        submit_value = None;
+                        valid = Err(e.to_string());
+                    }
+                }
+            } else {
+                submit_value = Some(field.value.clone());
+                valid = Ok(());
             }
             if valid != field.valid {
                 self.version += 1;
                 field.valid = valid;
             }
-        }
+            if submit_value != field.submit_value {
+                self.version += 1;
+                field.submit_value = submit_value;
+            }
+       }
     }
 
     fn update_field_validate_by_slab_key(
         &mut self,
         slab_key: usize,
-        validate: Option<ValidateFn<Value>>,
+        validate: Option<SubmitValidateFn<Value>>,
     ) {
         let field = &mut self.fields[slab_key];
         field.validate = validate;
@@ -863,22 +870,15 @@ impl FormContextState {
                 let field = &self.fields[key];
                 let submit_empty = field.options.submit_empty;
                 if field.valid.is_ok() && field.options.submit {
-                    let mut value = field.value.clone();
-                    if !submit_empty && value_is_empty(&value) {
-                        continue;
-                    }
-                    if let Some(submit_converter) = &field.submit_converter {
-                        value = match submit_converter.emit(value) {
-                            Some(value) => {
-                                if !submit_empty & value_is_empty(&value) {
-                                    continue;
-                                }
-                                value
+                     match &field.submit_value {
+                        None => continue,
+                        Some(value) => {
+                            if !submit_empty & value_is_empty(&value) {
+                                continue;
                             }
-                            None => continue, // should not happen
-                        };
+                            data[name.deref()] = value.clone();
+                        }
                     }
-                    data[name.deref()] = value;
                 }
                 continue;
             }
@@ -890,22 +890,15 @@ impl FormContextState {
                     let field = &self.fields[key];
                     let submit_empty = field.options.submit_empty;
                     if field.valid.is_ok() && field.options.submit {
-                        let mut value = field.value.clone();
-                        if !submit_empty && value_is_empty(&value) {
-                            continue;
-                        }
-                        if let Some(submit_converter) = &field.submit_converter {
-                            value = match submit_converter.emit(value) {
-                                Some(value) => {
-                                    if !submit_empty && value_is_empty(&value) {
-                                        continue;
-                                    }
-                                    value
+                        match &field.submit_value {
+                            None => continue,
+                            Some(value) => {
+                                if !submit_empty & value_is_empty(&value) {
+                                    continue;
                                 }
-                                None => continue, // should not happen
-                            };
+                                list.push(value.clone());
+                            }
                         }
-                        list.push(value);
                     }
                 }
                 if !list.is_empty() {

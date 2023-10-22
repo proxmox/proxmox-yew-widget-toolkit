@@ -301,23 +301,19 @@ impl ManagedField for StandardField {
         }
     }
 
-    fn validator(props: &Self::ValidateClosure, value: &Value) -> Result<(), Error> {
+    fn validator(props: &Self::ValidateClosure, value: &Value) -> Result<Value, Error> {
         let value = match value {
             Value::Null => String::new(),
             Value::Number(n) => n.to_string(),
             Value::String(v) => v.clone(),
-            _ => {
-                // should not happen
-                log::error!("PwtField: got wrong data type in validate!");
-                String::new()
-            }
+            _ => return Err(Error::msg(tr!("got wrong data type."))),
         };
 
         if value.is_empty() {
             if props.required {
                 return Err(Error::msg(tr!("Field may not be empty.")));
             } else {
-                return Ok(());
+                return Ok(Value::String(String::new()));
             }
         }
 
@@ -344,10 +340,11 @@ impl ManagedField for StandardField {
             }
         }
 
-        match &props.validate {
-            Some(validate) => validate.apply(&value),
-            None => Ok(()),
+        if let Some(validate) = &props.validate {
+            validate.apply(&value)?;
         }
+
+        Ok(Value::String(value))
     }
 
     fn setup(props: &Self::Properties) -> ManagedFieldState {
@@ -370,7 +367,6 @@ impl ManagedField for StandardField {
             default,
             radio_group: false,
             unique: false,
-            submit_converter: None,
         }
     }
 

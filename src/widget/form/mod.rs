@@ -50,6 +50,9 @@ pub use submit_button::{PwtSubmitButton, SubmitButton};
 mod textarea;
 pub use textarea::{PwtTextArea, TextArea};
 
+mod submit_validate;
+pub use submit_validate::{IntoSubmitValidateFn, SubmitValidateFn};
+
 mod validate;
 pub use validate::{IntoValidateFn, ValidateFn};
 

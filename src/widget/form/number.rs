@@ -383,28 +383,6 @@ pub struct ValidateClosure<T> {
     validate: Option<ValidateFn<T>>,
 }
 
-impl<T: NumberTypeInfo> NumberField<T> {
-    // Note: This is called on submit, but only for valid fields
-    fn submit_convert(value: Value) -> Option<Value> {
-        match &value {
-            Value::Number(_) | Value::Null => Some(value),
-            Value::String(text) => {
-                if text.is_empty() {
-                    return Some(Value::Null);
-                }
-                match T::value_to_number(&value) {
-                    Ok(n) => Some(n.into()),
-                    Err(err) => {
-                        log::error!("NumberField: submit_convert failed - {err}");
-                        None
-                    }
-                }
-            }
-            _ => None,
-        }
-    }
-}
-
 impl<T: NumberTypeInfo> ManagedField for NumberField<T> {
     type Properties = Number<T>;
     type Message = Msg;
@@ -419,7 +397,7 @@ impl<T: NumberTypeInfo> ManagedField for NumberField<T> {
         }
     }
 
-    fn validator(props: &Self::ValidateClosure, value: &Value) -> Result<(), Error> {
+    fn validator(props: &Self::ValidateClosure, value: &Value) -> Result<Value, Error> {
         let is_empty = match value {
             Value::Null => true,
             Value::Number(_) => false,
@@ -431,7 +409,7 @@ impl<T: NumberTypeInfo> ManagedField for NumberField<T> {
             if props.required {
                 return Err(Error::msg(tr!("Field may not be empty.")));
             } else {
-                return Ok(());
+                return Ok(Value::Null);
             }
         }
 
@@ -457,10 +435,10 @@ impl<T: NumberTypeInfo> ManagedField for NumberField<T> {
             }
         }
 
-        match &props.validate {
-            Some(validate) => validate.apply(&number),
-            None => Ok(()),
+        if let Some(validate) = &props.validate {
+            validate.apply(&number)?;
         }
+        Ok(number.into())
     }
 
     fn setup(props: &Self::Properties) -> ManagedFieldState {
@@ -486,7 +464,6 @@ impl<T: NumberTypeInfo> ManagedField for NumberField<T> {
             default,
             radio_group: false,
             unique: false,
-            submit_converter: Some(Callback::from(Self::submit_convert)),
         }
     }
 

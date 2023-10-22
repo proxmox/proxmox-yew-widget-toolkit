@@ -120,7 +120,7 @@ impl ManagedField for TextAreaField {
         }
     }
 
-    fn validator(props: &Self::ValidateClosure, value: &Value) -> Result<(), Error> {
+    fn validator(props: &Self::ValidateClosure, value: &Value) -> Result<Value, Error> {
         let value = match value {
             Value::Null => String::new(),
             Value::String(v) => v.clone(),
@@ -135,14 +135,15 @@ impl ManagedField for TextAreaField {
             if props.required {
                 return Err(Error::msg(tr!("Field may not be empty.")));
             } else {
-                return Ok(());
+                return Ok(Value::String(String::new()));
             }
         }
 
-        match &props.validate {
-            Some(validate) => validate.apply(&value),
-            None => Ok(()),
+        if let Some(validate) = &props.validate {
+            validate.apply(&value)?;
         }
+
+        Ok(Value::String(value))
     }
 
     fn setup(props: &Self::Properties) -> ManagedFieldState {
@@ -165,7 +166,6 @@ impl ManagedField for TextAreaField {
             default,
             radio_group: false,
             unique: false,
-            submit_converter: None,
         }
     }
 

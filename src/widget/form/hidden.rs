@@ -67,7 +67,6 @@ impl ManagedField for HiddenField {
             default,
             radio_group: false,
             unique: false,
-            submit_converter: None,
         }
     }
 
