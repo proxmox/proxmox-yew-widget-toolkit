@@ -79,7 +79,9 @@ pub fn delete_empty_values(record: &Value, param_list: &[&str]) -> Value {
         }
     }
 
-    new["delete"] = delete.into();
+    if !delete.is_empty() {
+        new["delete"] = delete.into();
+    }
 
     new
 }
