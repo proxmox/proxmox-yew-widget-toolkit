@@ -79,12 +79,6 @@ pub fn delete_empty_values(record: &Value, param_list: &[&str]) -> Value {
         }
     }
 
-    for param in param_list {
-        if record.get(param).is_none() {
-            delete.push(param.to_string());
-        }
-    }
-
     new["delete"] = delete.into();
 
     new
