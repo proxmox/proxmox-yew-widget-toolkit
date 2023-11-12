@@ -66,7 +66,7 @@ use serde_json::{json, Value};
 ///
 /// By default only existing values are considered. if `delete_undefined` is
 /// set, we also delete undefined values.
-pub fn delete_existent_empty_values(record: &Value, param_list: &[&str], delete_undefined: bool) -> Value {
+pub fn delete_empty_values(record: &Value, param_list: &[&str], delete_undefined: bool) -> Value {
     let mut new = json!({});
     let mut delete: Vec<String> = Vec::new();
 
