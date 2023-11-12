@@ -63,7 +63,10 @@ use serde_json::{json, Value};
 /// Proxmox API related helper: Delete empty values from the submit data.
 ///
 /// And adds their names to the "delete" parameter.
-pub fn delete_empty_values(record: &Value, param_list: &[&str]) -> Value {
+///
+/// By default only existing values are considered. if `delete_undefined` is
+/// set, we also delete undefined values.
+pub fn delete_existent_empty_values(record: &Value, param_list: &[&str], delete_undefined: bool) -> Value {
     let mut new = json!({});
     let mut delete: Vec<String> = Vec::new();
 
@@ -76,6 +79,14 @@ pub fn delete_empty_values(record: &Value, param_list: &[&str]) -> Value {
             delete.push(param.to_string());
         } else {
             new[param] = v.clone();
+        }
+    }
+
+    if delete_undefined {
+        for param in param_list {
+            if record.get(param).is_none() {
+                delete.push(param.to_string());
+            }
         }
     }
 
