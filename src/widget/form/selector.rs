@@ -214,7 +214,8 @@ impl<S: DataStore + 'static> ManagedField for SelectorField<S> {
                 validate.apply(&(value.clone().into(), props.store.clone()))?;
             }
         } else {
-            bail!("no data loaded");
+            // Return Ok if we have no data (i.e. because eof load error),
+            // so that we can still edit/update other form properties.
         }
 
         Ok(Value::String(value))
@@ -286,8 +287,6 @@ impl<S: DataStore + 'static> ManagedField for SelectorField<S> {
                     }
                     Err(err) => {
                         props.store.clear();
-                        let default = props.default.as_deref().unwrap_or("").to_string();
-                        ctx.link().update_value(default.to_string());
                         self.load_error = Some(err.to_string());
                     }
                 }
