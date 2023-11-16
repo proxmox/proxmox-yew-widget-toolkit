@@ -446,7 +446,6 @@ impl ManagedField for StandardField {
             .with_input_props(&props.input_props)
             .class("pwt-flex-fill")
             .attribute("type", Some(input_type.to_string()))
-            .attribute("readonly", disabled.then_some(""))
             .attribute("value", value)
             .attribute("min", props.min.map(|v| v.to_string()))
             .attribute("max", props.max.map(|v| v.to_string()))
