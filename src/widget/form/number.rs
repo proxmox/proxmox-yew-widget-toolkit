@@ -550,6 +550,7 @@ impl<T: NumberTypeInfo> ManagedField for NumberField<T> {
             Msg::Update(input.value())
         });
 
+        let disabled = props.input_props.disabled;
         let input: Html = Input::new()
             .node_ref(self.input_ref.clone())
             .with_input_props(&props.input_props)
@@ -576,6 +577,7 @@ impl<T: NumberTypeInfo> ManagedField for NumberField<T> {
             .class("pwt-input")
             .class("pwt-input-type-number")
             .class("pwt-w-100")
+            .class(disabled.then_some("disabled"))
             .class(if valid.is_ok() {
                 "is-valid"
             } else {
