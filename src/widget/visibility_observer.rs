@@ -5,6 +5,12 @@ use wasm_bindgen::{prelude::*};
 
 use yew::prelude::*;
 
+/// Track component visibility.
+///
+/// This struct uses the [IntersectionObserver] API to track if an element is visible
+/// in the viewport or not.
+///
+/// See <https://developer.mozilla.org/en-US/docs/Web/API/Intersection_Observer_API>.
 pub struct VisibilityObserver {
     observer: IntersectionObserver,
     // keep it alive
@@ -13,6 +19,9 @@ pub struct VisibilityObserver {
 
 impl VisibilityObserver {
 
+    /// Creates a new instance.
+    ///
+    /// The callback is called whenever the element visibility changes.
     pub fn new(el: &Element, callback: impl Into<Callback<bool>>) -> Self {
         let callback = callback.into();
 
