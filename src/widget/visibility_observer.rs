@@ -28,11 +28,10 @@ impl VisibilityObserver {
         let observer_closure = Closure::wrap(
             Box::new(
                 move |entries: Vec<IntersectionObserverEntry>, _observer: IntersectionObserver| {
-                    if entries.len() == 1 {
-                        let entry = &entries[0];
-                        callback.emit(entry.is_intersecting());
-                    } else {
-                        unreachable!();
+                    // Note: Chrome seems to queue events for a single target (sometimes), so we
+                    // check the last entry.
+                    if let Some(last) = entries.last() {
+                        callback.emit(last.is_intersecting());
                     }
                 }
             ) as Box<dyn Fn(Vec<IntersectionObserverEntry>, IntersectionObserver)>
