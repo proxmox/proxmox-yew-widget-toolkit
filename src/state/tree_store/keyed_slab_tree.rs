@@ -1,4 +1,5 @@
 use std::cmp::Ordering;
+use std::collections::HashSet;
 
 use slab::Slab;
 
@@ -134,6 +135,30 @@ impl<'a, T> KeyedSlabTreeNodeMut<'a, T> {
 
         None
     }
+
+    /// Returns the set of expanded nodes.
+    pub fn extract_expanded_state(&self) -> HashSet<Key> {
+        let mut state = HashSet::new();
+
+        self.visit(&mut |node: &KeyedSlabTreeNodeRef<T>| {
+            let key = node.key();
+            if node.expanded() {
+                state.insert(key);
+            }
+        });
+
+        state
+    }
+
+    /// Expand all nodes contained the expanded_state set.
+    pub fn apply_expanded_state(&mut self, expanded_state: &HashSet<Key>) {
+        self.visit_mut(&mut move |node: &mut KeyedSlabTreeNodeMut<T>| {
+            let key = node.key();
+            if expanded_state.contains(&key) {
+                node.set_expanded(true);
+            }
+        });
+    }
 }
 
 impl<'a, T> KeyedSlabTreeNodeRef<'a, T> {
@@ -169,6 +194,19 @@ impl<'a, T> KeyedSlabTreeNodeRef<'a, T> {
                 node_id,
                 tree: self.tree,
             })
+    }
+
+    pub fn extract_expanded_state(&self) -> HashSet<Key> {
+        let mut state = HashSet::new();
+
+        self.visit(&mut |node: &KeyedSlabTreeNodeRef<T>| {
+            let key = node.key();
+            if node.expanded() {
+                state.insert(key);
+            }
+        });
+
+        state
     }
 }
 
@@ -345,6 +383,20 @@ impl<T> KeyedSlabTree<T> {
     /// The current tree (if any) is discarded.
     pub fn set_root_tree(&mut self, data: impl Into<SlabTree<T>>) {
         self.tree.set_root_tree(data);
+    }
+
+    /// Set the whole tree, but safe/restore expanded state
+    ///
+    /// The current tree (if any) is discarded.
+    pub fn update_root_tree(&mut self, data: impl Into<SlabTree<T>>) {
+        let expanded_state = match self.root() {
+            Some(root) => root.extract_expanded_state(),
+            None => HashSet::new(),
+        };
+        self.tree.set_root_tree(data);
+        if let Some(mut root) = self.root_mut() {
+            root.apply_expanded_state(&expanded_state);
+        }
     }
 
     pub(crate) fn get(&self, node_id: usize) -> Option<&SlabTreeEntry<T>> {
