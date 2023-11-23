@@ -3,6 +3,7 @@ use std::rc::Rc;
 use pwt_macros::builder;
 use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
+use yew::html::IntoEventCallback;
 
 use crate::prelude::*;
 use crate::widget::{Button, Dialog, Row, Toolbar};
@@ -14,17 +15,21 @@ pub struct MessageBox {
     /// Dialog title
     #[builder]
     pub title: AttrValue,
+
     /// The error message.
     #[builder]
     pub message: Html,
+
     /// Close window callback.
-    #[builder_cb(Into, into, Option<Callback<bool>>)]
+    #[builder_cb(IntoEventCallback, into_event_callback, bool)]
     #[prop_or_default]
     pub on_close: Option<Callback<bool>>,
+
     /// Enable/disable dragging
     #[prop_or(true)]
     #[builder]
     pub draggable: bool,
+
     /// Button Style, defaults to a single 'Continue' button
     #[prop_or_default]
     #[builder]
