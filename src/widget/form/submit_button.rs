@@ -7,6 +7,7 @@ use yew::virtual_dom::{VComp, VNode};
 
 use crate::props::{EventSubscriber, WidgetBuilder};
 use crate::widget::{Button, ButtonType};
+use crate::tr;
 
 use super::{FormContext, FormContextObserver};
 
@@ -30,9 +31,9 @@ pub struct SubmitButton {
     pub on_submit: Option<Callback<FormContext>>,
 
     /// Button text (default "Submit").
-    #[prop_or(AttrValue::Static("Submit"))]
+    #[prop_or_default]
     #[builder(IntoPropValue, into_prop_value)]
-    pub text: AttrValue,
+    pub text: Option<AttrValue>,
 
     /// Disable submit button if there are no changes.
     #[prop_or(true)]
@@ -156,7 +157,12 @@ impl Component for PwtSubmitButton {
 
         let disabled = !form_valid || props.disabled || (props.check_dirty && !form_dirty);
 
-        Button::new(&props.text)
+        let text = match &props.text {
+            Some(text) => text.clone(),
+            None => AttrValue::from(tr!("Submit")),
+        };
+
+        Button::new(text)
             .button_type(ButtonType::Submit)
             .class(props.class.clone())
             .disabled(disabled)
