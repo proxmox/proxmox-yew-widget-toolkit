@@ -42,7 +42,7 @@ pub enum Msg<T: 'static> {
     CursorLeft,
     CursorRight,
     ItemClick(Key, Option<usize>, MouseEvent),
-    ItemDblClick(Key, MouseEvent),
+    ItemDblClick(Key, Option<usize>, MouseEvent),
     FocusChange(bool),
     Header(HeaderMsg<T>),
 }
@@ -1461,7 +1461,26 @@ impl<S: DataStore + 'static> Component for PwtDataTable<S> {
 
                 true
             }
-            Msg::ItemDblClick(record_key, event) => {
+            Msg::ItemDblClick(record_key, opt_col_num, event) => {
+
+                if let Some(col_num) = opt_col_num {
+                    if let Some(column) = self.columns.get(col_num) {
+                        if let Some(on_cell_dblclick) = &column.on_cell_dblclick {
+                            let mut event = DataTableMouseEvent {
+                                record_key: record_key.clone(),
+                                inner: event.clone(),
+                                selection: props.selection.clone(),
+                                stop_propagation: false,
+                            };
+                            on_cell_dblclick.emit(&mut event);
+                            if event.stop_propagation {
+                                return true;
+                            }
+                        }
+                    }
+                }
+
+
                 if let Some(callback) = &props.on_row_dblclick {
                     let mut event = DataTableMouseEvent {
                         record_key: record_key.clone(),
@@ -1584,8 +1603,8 @@ impl<S: DataStore + 'static> Component for PwtDataTable<S> {
                 let link = ctx.link().clone();
                 let unique_id = self.unique_id.clone();
                 move |event: MouseEvent| {
-                    if let Some((row_num, _col_num)) = dom_find_record_num(&event, &unique_id) {
-                        link.send_message(Msg::ItemDblClick(row_num, event));
+                    if let Some((row_num, col_num)) = dom_find_record_num(&event, &unique_id) {
+                        link.send_message(Msg::ItemDblClick(row_num, col_num, event));
                     }
                 }
             });

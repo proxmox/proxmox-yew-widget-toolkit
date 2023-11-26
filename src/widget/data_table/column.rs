@@ -63,6 +63,11 @@ pub struct DataTableColumn<T: 'static> {
     /// Cell click callback
     #[prop_or_default]
     pub on_cell_click: Option<CallbackMut<DataTableMouseEvent>>,
+
+    /// Cell dblclick callback
+    #[prop_or_default]
+    pub on_cell_dblclick: Option<CallbackMut<DataTableMouseEvent>>,
+
     /// Cell keydown callback
     #[prop_or_default]
     pub on_cell_keydown: Option<CallbackMut<DataTableKeyboardEvent>>,
@@ -247,6 +252,13 @@ impl<T: 'static> DataTableColumn<T> {
         self.on_cell_click = cb.into_event_cb_mut();
         self
     }
+
+    /// Builder style method to set the cell dblclick callback.
+    pub fn on_cell_dblclick(mut self, cb: impl IntoEventCallbackMut<DataTableMouseEvent>) -> Self {
+        self.on_cell_dblclick = cb.into_event_cb_mut();
+        self
+    }
+
 
     /// Builder style method to set the cell keydown callback.
     pub fn on_cell_keydown(
