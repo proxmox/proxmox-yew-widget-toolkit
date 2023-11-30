@@ -83,13 +83,13 @@ pub(crate) fn render_tree_node_impl<T>(
 ) -> Html {
     let mut list: VList = VList::new();
     for _ in 0..args.level() {
-        list.push(html! { <span class="pwt-ps-4"/> });
+        list.push(html! { <span style="flex: 0 0 auto;" class="pwt-ps-4"/> });
     }
 
     let indent: Html = list.into();
 
     let expander = if args.is_leaf() {
-        html! {<i role="none" class="fa fa-fw pwt-pe-1"/>}
+        html! {<i role="none" style="flex: 0 0 auto;" class="fa fa-fw pwt-pe-1"/>}
     } else {
         let caret = match args.is_expanded() {
             true => "pwt-tree-expander fa fa-fw fa-caret-down pwt-pe-1",
@@ -107,7 +107,7 @@ pub(crate) fn render_tree_node_impl<T>(
                 }
             }
         };
-        html! {<i role="none" class={caret} {onclick}/>}
+        html! {<i role="none" style="flex: 0 0 auto;" class={caret} {onclick}/>}
     };
     Row::new()
         .class(crate::css::AlignItems::Baseline)
