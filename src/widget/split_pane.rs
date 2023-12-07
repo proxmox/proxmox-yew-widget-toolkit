@@ -80,6 +80,8 @@ pub struct Pane {
     node_ref: NodeRef,
     // Pane content
     content: VNode,
+    // additional CSS classes
+    class: Classes,
 }
 
 impl Pane {
@@ -92,6 +94,7 @@ impl Pane {
             max_size: None,
             node_ref: NodeRef::default(),
             content: content.into(),
+            class: Classes::new(),
         }
     }
 
@@ -170,6 +173,17 @@ impl Pane {
     /// Method to set the maximal pane size as fraction.
     pub fn set_max_fraction(&mut self, fraction: impl IntoPropValue<Option<f64>>) {
        self.max_size = fraction.into_prop_value().map(|f| PaneSize::Fraction(f));
+    }
+
+    /// Builder style method to add a html class
+    pub fn class(mut self, class: impl Into<Classes>) -> Self {
+        self.add_class(class);
+        self
+    }
+
+    /// Method to add a html class.
+    pub fn add_class(&mut self, class: impl Into<Classes>) {
+        self.class.push(class);
     }
 }
 
@@ -363,6 +377,7 @@ impl PwtSplitPane {
             .attribute("style", style)
             .class(Display::Flex)
             .class(FlexFillFirstChild)
+            .class(child.class.clone())
             .with_child(child.content.clone());
 
         pane.into()
