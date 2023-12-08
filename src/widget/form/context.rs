@@ -562,6 +562,18 @@ impl FormContextState {
         }
     }
 
+    /// Get the field value as bool (for Checkbox and Boolean fields).
+    ///
+    /// Return false for non-existent fields, empty fields, or
+    /// when the field value not bool.
+    pub fn get_field_checked(&self, name: impl IntoPropValue<AttrValue>) -> bool {
+        match self.get_field_data(name).map(|data| data.0) {
+            Some(Value::Bool(checked)) => checked,
+            Some(Value::String(s)) => !s.is_empty(),
+            _ => false,
+        }
+    }
+
     /// Get the field value as string, together with the validation result.
     ///
     /// Return the empty string for non-existent fields, or
