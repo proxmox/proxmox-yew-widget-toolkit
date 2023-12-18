@@ -446,6 +446,8 @@ impl Component for PwtDialog {
             Msg::Close
         });
 
+        let onclose = oncancel.clone();
+
         let mut panel = Panel::new()
             .class("pwt-overflow-auto")
             .class("pwt-flex-fill")
@@ -486,7 +488,7 @@ impl Component for PwtDialog {
         let classes = classes!("pwt-dialog", is_dragging.then_some("pwt-user-select-none"));
 
         html! {
-            <dialog class={"pwt-outer-dialog"} {onpointerdown} aria-label={props.title.clone()} ref={props.node_ref.clone()} {oncancel} >
+            <dialog class={"pwt-outer-dialog"} {onpointerdown} aria-label={props.title.clone()} ref={props.node_ref.clone()} {oncancel} {onclose} >
                 <div class={classes} style={props.style.clone()} ref={self.inner_ref.clone()}>
                 {panel}
                 if resizable {
