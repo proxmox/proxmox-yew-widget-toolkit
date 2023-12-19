@@ -41,7 +41,7 @@ pub enum Msg<T: 'static> {
     CursorUp(usize, bool, bool),
     CursorLeft,
     CursorRight,
-    ItemClick(Key, Option<usize>, MouseEvent),
+    ItemClick(Key, Option<usize>, MouseEvent, bool),
     ItemDblClick(Key, Option<usize>, MouseEvent),
     FocusChange(bool),
     Header(HeaderMsg<T>),
@@ -191,6 +191,10 @@ pub struct DataTable<S: DataStore> {
     /// Row keydown callback
     #[prop_or_default]
     pub on_row_keydown: Option<CallbackMut<DataTableKeyboardEvent>>,
+
+    /// Row context click callback
+    #[prop_or_default]
+    pub on_row_context_click: Option<CallbackMut<DataTableMouseEvent>>,
 
     #[prop_or_default]
     pub row_render_callback: Option<DataTableRowRenderCallback<S::Record>>,
@@ -380,6 +384,15 @@ impl<S: DataStore> DataTable<S> {
     /// Builder style method to set the row click callback.
     pub fn on_row_click(mut self, cb: impl IntoEventCallbackMut<DataTableMouseEvent>) -> Self {
         self.on_row_click = cb.into_event_cb_mut();
+        self
+    }
+
+    /// Builder style method to set the row context click callback.
+    pub fn on_row_context_click(
+        mut self,
+        cb: impl IntoEventCallbackMut<DataTableMouseEvent>,
+    ) -> Self {
+        self.on_row_context_click = cb.into_event_cb_mut();
         self
     }
 
@@ -1404,7 +1417,7 @@ impl<S: DataStore + 'static> Component for PwtDataTable<S> {
                 }
                 true
             }
-            Msg::ItemClick(record_key, opt_col_num, event) => {
+            Msg::ItemClick(record_key, opt_col_num, event, context) => {
                 let new_cursor = self.filtered_record_pos(props, &record_key);
 
                 let shift = event.shift_key();
@@ -1414,32 +1427,42 @@ impl<S: DataStore + 'static> Component for PwtDataTable<S> {
 
                 if let Some(col_num) = opt_col_num {
                     if let Some(column) = self.columns.get(col_num) {
-                        if let Some(on_cell_click) = &column.on_cell_click {
-                            let mut event = DataTableMouseEvent {
-                                record_key: record_key.clone(),
-                                inner: event.clone(),
-                                selection: props.selection.clone(),
-                                stop_propagation: false,
-                            };
-                            on_cell_click.emit(&mut event);
-                            if event.stop_propagation {
-                                return true;
+                        match (
+                            context,
+                            &column.on_cell_click,
+                            &column.on_cell_context_click,
+                        ) {
+                            (false, Some(cb), _) | (true, _, Some(cb)) => {
+                                let mut event = DataTableMouseEvent {
+                                    record_key: record_key.clone(),
+                                    inner: event.clone(),
+                                    selection: props.selection.clone(),
+                                    stop_propagation: false,
+                                };
+                                cb.emit(&mut event);
+                                if event.stop_propagation {
+                                    return true;
+                                }
                             }
+                            _ => {}
                         }
                     }
                 }
 
-                if let Some(callback) = &props.on_row_click {
-                    let mut event = DataTableMouseEvent {
-                        record_key: record_key.clone(),
-                        inner: event,
-                        selection: props.selection.clone(),
-                        stop_propagation: false,
-                    };
-                    callback.emit(&mut event);
-                    if event.stop_propagation {
-                        return false;
+                match (context, &props.on_row_click, &props.on_row_context_click) {
+                    (false, Some(callback), _) | (true, _, Some(callback)) => {
+                        let mut event = DataTableMouseEvent {
+                            record_key: record_key.clone(),
+                            inner: event,
+                            selection: props.selection.clone(),
+                            stop_propagation: false,
+                        };
+                        callback.emit(&mut event);
+                        if event.stop_propagation {
+                            return false;
+                        }
                     }
+                    _ => {}
                 }
 
                 if shift {
@@ -1595,7 +1618,7 @@ impl<S: DataStore + 'static> Component for PwtDataTable<S> {
                 let unique_id = self.unique_id.clone();
                 move |event: MouseEvent| {
                     if let Some((row_num, col_num)) = dom_find_record_num(&event, &unique_id) {
-                        link.send_message(Msg::ItemClick(row_num, col_num, event));
+                        link.send_message(Msg::ItemClick(row_num, col_num, event, false));
                     }
                 }
             })
@@ -1605,6 +1628,15 @@ impl<S: DataStore + 'static> Component for PwtDataTable<S> {
                 move |event: MouseEvent| {
                     if let Some((row_num, col_num)) = dom_find_record_num(&event, &unique_id) {
                         link.send_message(Msg::ItemDblClick(row_num, col_num, event));
+                    }
+                }
+            })
+            .oncontextmenu({
+                let link = ctx.link().clone();
+                let unique_id = self.unique_id.clone();
+                move |event: MouseEvent| {
+                    if let Some((row_num, col_num)) = dom_find_record_num(&event, &unique_id) {
+                        link.send_message(Msg::ItemClick(row_num, col_num, event, true));
                     }
                 }
             });
