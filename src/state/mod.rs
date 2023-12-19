@@ -42,6 +42,17 @@ pub use language::{
     get_available_languages, set_available_languages, Language, LanguageInfo, LanguageObserver,
 };
 
+/// Where the state should be saved
+#[derive(Clone, Copy)]
+pub enum StorageLocation {
+    /// saved in the browser local storage
+    /// https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage
+    Local,
+    /// saved in the browser session storage
+    /// https://developer.mozilla.org/en-US/docs/Web/API/Window/sessionStorage
+    Session,
+}
+
 /// Helper function to get the window session [Storage](web_sys::Storage)
 pub fn session_storage() -> Option<web_sys::Storage> {
     let window = match web_sys::window() {
@@ -92,35 +103,24 @@ pub fn local_storage() -> Option<web_sys::Storage> {
     Some(store)
 }
 
-fn resolve_state_id(state_id: &str) -> Option<(&str, web_sys::Storage)> {
-    let (use_session_storage, state_id) = if let Some(state_id) = state_id.strip_prefix("*") {
-        (true, state_id)
-    } else {
-        (false, state_id)
-    };
-
-    let store = if use_session_storage {
-        match session_storage() {
-            Some(store) => store,
-            None => return None,
-        }
-    } else {
-        match local_storage() {
-            Some(store) => store,
-            None => return None,
-        }
-    };
-    Some((state_id, store))
+fn resolve_storage(storage: StorageLocation) -> Option<web_sys::Storage> {
+    match storage {
+        StorageLocation::Local => local_storage(),
+        StorageLocation::Session => session_storage(),
+    }
 }
 
-pub fn delete_state(state_id: &str) {
-    if let Some((state_id, store)) = resolve_state_id(state_id) {
+pub fn delete_state(state_id: &str, storage: StorageLocation) {
+    if let Some(store) = resolve_storage(storage) {
         let _ = store.delete(state_id);
     }
 }
 
-pub fn load_state<T: 'static + DeserializeOwned>(state_id: &str) -> Option<T> {
-    if let Some((state_id, store)) = resolve_state_id(state_id) {
+pub fn load_state<T: 'static + DeserializeOwned>(
+    state_id: &str,
+    storage: StorageLocation,
+) -> Option<T> {
+    if let Some(store) = resolve_storage(storage) {
         if let Ok(Some(item_str)) = store.get_item(state_id) {
             if let Ok(data) = serde_json::from_str(&item_str) {
                 return Some(data);
@@ -130,8 +130,8 @@ pub fn load_state<T: 'static + DeserializeOwned>(state_id: &str) -> Option<T> {
     None
 }
 
-pub fn store_state<T: 'static + Serialize>(state_id: &str, data: &T) {
-    if let Some((state_id, store)) = resolve_state_id(state_id) {
+pub fn store_state<T: 'static + Serialize>(state_id: &str, data: &T, storage: StorageLocation) {
+    if let Some(store) = resolve_storage(storage) {
         let item_str = serde_json::to_string(data).unwrap();
         match store.set_item(state_id, &item_str) {
             Err(err) => log::error!(
