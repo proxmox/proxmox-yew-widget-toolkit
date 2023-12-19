@@ -94,4 +94,9 @@ impl<T: 'static + Default + Serialize + DeserializeOwned> PersistentState<T> {
         self.data = data;
         self.store();
     }
+
+    /// Consumes self and returns the inner data
+    pub fn into_inner(self) -> T {
+        self.data
+    }
 }
