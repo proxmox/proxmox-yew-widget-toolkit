@@ -100,6 +100,7 @@ impl Into<VTag> for Meter {
         };
 
         let mut children = Vec::new();
+        let mut class = classes!("pwt-meter");
 
         if let Some(render_text) = &self.render_text {
             let text = render_text.apply(&self.value);
@@ -109,6 +110,8 @@ impl Into<VTag> for Meter {
                     .with_child(text)
                     .into()
             );
+        } else {
+            class.push("pwt-meter-small")
         }
 
         children.push(
@@ -120,6 +123,6 @@ impl Into<VTag> for Meter {
         );
 
 
-        self.std_props.into_vtag(Cow::Borrowed("div"), Some("pwt-meter"), None, Some(children))
+        self.std_props.into_vtag(Cow::Borrowed("div"), Some(class), None, Some(children))
     }
 }
