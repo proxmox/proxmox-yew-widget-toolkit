@@ -24,7 +24,9 @@ pub struct Tooltip {
 
 impl Tooltip {
     pub fn new(content: impl Into<VNode>) -> Self {
-        yew::props!(Self { content: content.into() })
+        yew::props!(Self {
+            content: content.into()
+        })
     }
 
     /// Builder style method to set the tooltip
@@ -36,7 +38,7 @@ impl Tooltip {
     /// Method to set the tooltip
     pub fn set_tip(&mut self, tip: impl IntoPropValue<Option<AttrValue>>) {
         self.rich = false;
-        self.tip = tip.into_prop_value().map(|tip| html!{{tip}});
+        self.tip = tip.into_prop_value().map(|tip| html! {{tip}});
     }
 
     /// Builder style method to set the tooltip (rich style)
@@ -122,26 +124,25 @@ impl Component for PwtTooltip {
 
         let show_tooltip = self.show && ctx.props().tip.is_some();
 
-        let content =
-            Container::new()
-                .class("pwt-flex-fill-first-child")
-                .class("pwt-d-flex")
-                .with_std_props(&props.std_props)
-                .listeners(&props.listeners)
-                .with_child(props.content.clone())
-                .onmouseenter(ctx.link().callback(|_| Msg::Show))
-                .onmouseleave(ctx.link().callback(|_| Msg::Hide))
-                .onfocus(ctx.link().callback(|_| Msg::Show))
-                .onblur(ctx.link().callback(|_| Msg::Hide))
-                .onkeydown(Callback::from({
-                    let link = ctx.link().clone();
-                    move |event: KeyboardEvent| {
-                        if show_tooltip && event.key() == "Escape" {
-                            link.send_message(Msg::Hide);
-                            event.prevent_default();
-                        }
+        let content = Container::new()
+            .class("pwt-flex-fill-first-child")
+            .class("pwt-d-flex")
+            .with_std_props(&props.std_props)
+            .listeners(&props.listeners)
+            .with_child(props.content.clone())
+            .onmouseenter(ctx.link().callback(|_| Msg::Show))
+            .onmouseleave(ctx.link().callback(|_| Msg::Hide))
+            .onfocus(ctx.link().callback(|_| Msg::Show))
+            .onblur(ctx.link().callback(|_| Msg::Hide))
+            .onkeydown(Callback::from({
+                let link = ctx.link().clone();
+                move |event: KeyboardEvent| {
+                    if show_tooltip && event.key() == "Escape" {
+                        link.send_message(Msg::Hide);
+                        event.prevent_default();
                     }
-                }));
+                }
+            }));
 
         let tip = Container::new()
             .node_ref(self.tooltip_ref.clone())
