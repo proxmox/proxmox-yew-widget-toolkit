@@ -125,7 +125,6 @@ impl Component for PwtTooltip {
         let show_tooltip = self.show && ctx.props().tip.is_some();
 
         let content = Container::new()
-            .key("content")
             .class("pwt-flex-fill-first-child")
             .class("pwt-d-flex")
             .with_std_props(&props.std_props)
@@ -147,7 +146,6 @@ impl Component for PwtTooltip {
 
         let tip = show_tooltip.then_some(
             Container::new()
-                .key("tooltip")
                 .node_ref(self.tooltip_ref.clone())
                 .attribute("role", "tooltip")
                 .attribute("aria-live", "polite")
@@ -159,7 +157,10 @@ impl Component for PwtTooltip {
                 .with_optional_child(props.tip.clone()),
         );
 
-        html! { <>{content}{tip}</> }
+        Container::new()
+            .with_child(content)
+            .with_optional_child(tip)
+            .into()
     }
 
     fn rendered(&mut self, ctx: &Context<Self>, first_render: bool) {
