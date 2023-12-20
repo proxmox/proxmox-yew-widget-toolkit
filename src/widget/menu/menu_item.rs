@@ -324,7 +324,9 @@ impl Component for PwtMenuItem {
         if props.menu.is_none() {
             return;
         }
-        self.popper.update();
+        if props.active && props.show_submenu {
+            self.popper.update();
+        }
     }
 }
 

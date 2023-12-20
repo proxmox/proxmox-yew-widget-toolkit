@@ -308,6 +308,8 @@ impl Component for PwtMenuButton {
     }
 
     fn rendered(&mut self, _ctx: &Context<Self>, _first_render: bool) {
-        self.popper.update();
+        if self.show_submenu {
+            self.popper.update();
+        }
     }
 }
