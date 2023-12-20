@@ -125,6 +125,7 @@ impl Component for PwtTooltip {
         let show_tooltip = self.show && ctx.props().tip.is_some();
 
         let content = Container::new()
+            .key("content")
             .class("pwt-flex-fill-first-child")
             .class("pwt-d-flex")
             .with_std_props(&props.std_props)
@@ -144,16 +145,19 @@ impl Component for PwtTooltip {
                 }
             }));
 
-        let tip = Container::new()
-            .node_ref(self.tooltip_ref.clone())
-            .attribute("role", "tooltip")
-            .attribute("aria-live", "polite")
-            .attribute("data-show", show_tooltip.then(|| ""))
-            .class("pwt-tooltip")
-            .class(props.rich.then(|| "pwt-tooltip-rich"))
-            .onmouseenter(ctx.link().callback(|_| Msg::Enter))
-            .onmouseleave(ctx.link().callback(|_| Msg::Leave))
-            .with_optional_child(props.tip.clone());
+        let tip = show_tooltip.then_some(
+            Container::new()
+                .key("tooltip")
+                .node_ref(self.tooltip_ref.clone())
+                .attribute("role", "tooltip")
+                .attribute("aria-live", "polite")
+                .attribute("data-show", show_tooltip.then_some(""))
+                .class("pwt-tooltip")
+                .class(props.rich.then_some("pwt-tooltip-rich"))
+                .onmouseenter(ctx.link().callback(|_| Msg::Enter))
+                .onmouseleave(ctx.link().callback(|_| Msg::Leave))
+                .with_optional_child(props.tip.clone()),
+        );
 
         html! { <>{content}{tip}</> }
     }
@@ -195,9 +199,11 @@ impl Component for PwtTooltip {
             );
         }
 
-        if let Some(content_node) = props.std_props.node_ref.get() {
-            if let Some(tooltip_node) = self.tooltip_ref.get() {
-                let _ = align_to(content_node, tooltip_node, self.align_options.clone());
+        if self.show && ctx.props().tip.is_some() {
+            if let Some(content_node) = props.std_props.node_ref.get() {
+                if let Some(tooltip_node) = self.tooltip_ref.get() {
+                    let _ = align_to(content_node, tooltip_node, self.align_options.clone());
+                }
             }
         }
     }
