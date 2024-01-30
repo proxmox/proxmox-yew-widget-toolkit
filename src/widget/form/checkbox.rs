@@ -1,12 +1,19 @@
+use anyhow::Error;
+use serde_json::Value;
+
 use yew::html::{IntoEventCallback, IntoPropValue};
 use yew::prelude::*;
 
 use pwt_macros::{builder, widget};
 
 use crate::props::{ContainerBuilder, EventSubscriber, WidgetBuilder};
-use crate::widget::Container;
+use crate::widget::{Container, Tooltip};
+use crate::tr;
 
-use super::{ManagedField, ManagedFieldContext, ManagedFieldMaster, ManagedFieldState};
+use super::{
+    IntoValidateFn, ManagedField, ManagedFieldContext, ManagedFieldMaster, ManagedFieldState,
+    ValidateFn,
+};
 
 pub type PwtCheckbox = ManagedFieldMaster<CheckboxField>;
 
@@ -40,6 +47,15 @@ pub struct Checkbox {
     #[builder]
     pub switch: bool,
 
+    /// The tooltip.
+    #[prop_or_default]
+    #[builder(IntoPropValue, into_prop_value)]
+    pub tip: Option<AttrValue>,
+
+    /// Validation function.
+    #[prop_or_default]
+    pub validate: Option<ValidateFn<bool>>,
+
     /// Change callback.
     #[builder_cb(IntoEventCallback, into_event_callback, String)]
     #[prop_or_default]
@@ -67,6 +83,17 @@ impl Checkbox {
     pub fn radio() -> Self {
         yew::props!(Self { radio_group: true })
     }
+
+    /// Builder style method to set the validate callback
+    pub fn validate(mut self, validate: impl IntoValidateFn<bool>) -> Self {
+        self.set_validate(validate);
+        self
+    }
+
+    /// Method to set the validate callback
+    pub fn set_validate(&mut self, validate: impl IntoValidateFn<bool>) {
+        self.validate = validate.into_validate_fn();
+    }
 }
 
 pub enum Msg {
@@ -76,12 +103,40 @@ pub enum Msg {
 #[doc(hidden)]
 pub struct CheckboxField {}
 
+#[derive(PartialEq)]
+pub struct ValidateClosure {
+    validate: Option<ValidateFn<bool>>,
+    on_value: AttrValue,
+}
+
 impl ManagedField for CheckboxField {
     type Message = Msg;
     type Properties = Checkbox;
-    type ValidateClosure = ();
+    type ValidateClosure = ValidateClosure;
 
-    fn validation_args(_props: &Self::Properties) -> Self::ValidateClosure { () }
+    fn validation_args(props: &Self::Properties) -> Self::ValidateClosure {
+        ValidateClosure {
+            validate: props.validate.clone(),
+            on_value: props.value.clone().unwrap_or(AttrValue::Static("on")),
+        }
+    }
+
+    fn validator(props: &Self::ValidateClosure, value: &Value) -> Result<Value, Error> {
+        let value = match value {
+            Value::String(value) => value == &props.on_value,
+            _ => return Err(Error::msg(tr!("got wrong data type."))),
+        };
+
+        if let Some(validate) = &props.validate {
+            validate.apply(&value)?;
+        }
+
+        Ok(if value {
+            Value::String(props.on_value.to_string())
+        } else {
+            Value::String(String::new())
+        })
+    }
 
     fn setup(props: &Checkbox) -> ManagedFieldState {
         let on_value = props.value.as_deref().unwrap_or("on").to_string();
@@ -152,7 +207,7 @@ impl ManagedField for CheckboxField {
                     ctx.link().update_value(new_value.clone());
 
                     if let Some(on_input) = &props.on_input {
-                         on_input.emit(new_value);
+                        on_input.emit(new_value);
                     }
                 }
                 true
@@ -179,8 +234,8 @@ impl ManagedField for CheckboxField {
         let disabled = props.input_props.disabled;
 
         let on_value = props.value.as_deref().unwrap_or("on").to_string();
-        let value = state.value.clone();
-        let checked = value == on_value;
+        let (value, valid) = (&state.value, &state.valid);
+        let checked = *value == on_value;
 
         let onclick = ctx.link().callback(|_| Msg::Toggle);
         let onkeyup = Callback::from({
@@ -212,13 +267,17 @@ impl ManagedField for CheckboxField {
 
         // TODO: add other props.input_props
 
-        let checkbox = Container::new()
+        let mut checkbox = Tooltip::new(inner)
             .with_std_props(&props.std_props)
             .listeners(&props.listeners)
             .class(layout_class)
             .class(checked.then(|| "checked"))
             .class(disabled.then(|| "disabled"))
-            .with_child(inner)
+            .class(if valid.is_ok() {
+                "is-valid"
+            } else {
+                "is-invalid"
+            })
             .attribute(
                 "tabindex",
                 props.input_props.tabindex.unwrap_or(0).to_string(),
@@ -227,6 +286,14 @@ impl ManagedField for CheckboxField {
             .attribute("aria-checked", checked.then(|| "true"))
             .onkeyup(onkeyup)
             .onclick(onclick);
+
+        if let Err(msg) = &valid {
+            checkbox.set_tip(msg.clone())
+        } else if let Some(tip) = &props.tip {
+            if !disabled {
+                checkbox.set_tip(tip.clone())
+            }
+        }
 
         if props.switch {
             checkbox.into()
