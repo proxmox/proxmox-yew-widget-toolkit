@@ -125,8 +125,6 @@ impl Component for PwtTooltip {
         let show_tooltip = self.show && ctx.props().tip.is_some();
 
         let content = Container::new()
-            .class("pwt-flex-fill-first-child")
-            .class("pwt-d-flex")
             .with_std_props(&props.std_props)
             .listeners(&props.listeners)
             .with_child(props.content.clone())
