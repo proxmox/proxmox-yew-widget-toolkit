@@ -53,6 +53,20 @@ pub struct Checkbox {
     pub tip: Option<AttrValue>,
 
     /// Validation function.
+    ///
+    /// ```
+    /// # use anyhow::bail;
+    /// # use pwt::prelude::*;
+    /// # use pwt::widget::form::Checkbox;
+    /// Checkbox::new()
+    ///   .submit(false)
+    ///   .validate(|value: &bool| {
+    ///      if !value {
+    ///         bail!("Please accept the Terms Of Service")
+    ///      }
+    ///      Ok(())
+    ///    });
+    /// ```
     #[prop_or_default]
     pub validate: Option<ValidateFn<bool>>,
 

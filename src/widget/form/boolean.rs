@@ -42,6 +42,20 @@ pub struct Boolean {
     pub tip: Option<AttrValue>,
 
     /// Validation function.
+    ///
+    /// ```
+    /// # use anyhow::bail;
+    /// # use pwt::prelude::*;
+    /// # use pwt::widget::form::Boolean;
+    /// Boolean::new()
+    ///   .submit(false)
+    ///   .validate(|value: &bool| {
+    ///      if !value {
+    ///         bail!("Please accept the Terms Of Service")
+    ///      }
+    ///      Ok(())
+    ///    });
+    /// ```
     #[prop_or_default]
     pub validate: Option<ValidateFn<bool>>,
 
@@ -225,7 +239,6 @@ impl ManagedField for BooleanField {
             } else {
                 "is-invalid"
             })
-            //.with_child(inner)
             .attribute(
                 "tabindex",
                 props.input_props.tabindex.unwrap_or(0).to_string(),

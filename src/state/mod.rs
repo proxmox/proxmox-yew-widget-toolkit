@@ -46,10 +46,10 @@ pub use language::{
 #[derive(Clone, Copy)]
 pub enum StorageLocation {
     /// saved in the browser local storage
-    /// https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage
+    /// <https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage>
     Local,
     /// saved in the browser session storage
-    /// https://developer.mozilla.org/en-US/docs/Web/API/Window/sessionStorage
+    /// <https://developer.mozilla.org/en-US/docs/Web/API/Window/sessionStorage>
     Session,
 }
 
