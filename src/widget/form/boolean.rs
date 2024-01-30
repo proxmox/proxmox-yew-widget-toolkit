@@ -1,11 +1,18 @@
-use yew::prelude::*;
+use anyhow::Error;
+use serde_json::Value;
+
 use yew::html::{IntoEventCallback, IntoPropValue};
+use yew::prelude::*;
 
 use pwt_macros::{builder, widget};
 
-use crate::props::{WidgetBuilder, ContainerBuilder, EventSubscriber};
-use crate::widget::Container;
-use super::{ManagedFieldMaster, ManagedFieldContext, ManagedField, ManagedFieldState};
+use super::{
+    IntoValidateFn, ManagedField, ManagedFieldContext, ManagedFieldMaster, ManagedFieldState,
+    ValidateFn,
+};
+use crate::props::{ContainerBuilder, EventSubscriber, WidgetBuilder};
+use crate::tr;
+use crate::widget::{Container, Tooltip};
 
 pub type PwtBoolean = ManagedFieldMaster<BooleanField>;
 
@@ -29,6 +36,15 @@ pub struct Boolean {
     #[builder]
     pub switch: bool,
 
+    /// The tooltip.
+    #[prop_or_default]
+    #[builder(IntoPropValue, into_prop_value)]
+    pub tip: Option<AttrValue>,
+
+    /// Validation function.
+    #[prop_or_default]
+    pub validate: Option<ValidateFn<bool>>,
+
     /// Change callback
     #[builder_cb(IntoEventCallback, into_event_callback, bool)]
     #[prop_or_default]
@@ -47,10 +63,20 @@ pub struct Boolean {
 }
 
 impl Boolean {
-
     /// Creates a new instance.
     pub fn new() -> Self {
         yew::props!(Self {})
+    }
+
+    /// Builder style method to set the validate callback
+    pub fn validate(mut self, validate: impl IntoValidateFn<bool>) -> Self {
+        self.set_validate(validate);
+        self
+    }
+
+    /// Method to set the validate callback
+    pub fn set_validate(&mut self, validate: impl IntoValidateFn<bool>) {
+        self.validate = validate.into_validate_fn();
     }
 }
 pub enum Msg {
@@ -60,12 +86,34 @@ pub enum Msg {
 #[doc(hidden)]
 pub struct BooleanField {}
 
+#[derive(PartialEq)]
+pub struct ValidateClosure {
+    validate: Option<ValidateFn<bool>>,
+}
+
 impl ManagedField for BooleanField {
     type Properties = Boolean;
     type Message = Msg;
-    type ValidateClosure = ();
+    type ValidateClosure = ValidateClosure;
 
-    fn validation_args(_props: &Self::Properties) -> Self::ValidateClosure { () }
+    fn validation_args(props: &Self::Properties) -> Self::ValidateClosure {
+        ValidateClosure {
+            validate: props.validate.clone(),
+        }
+    }
+
+    fn validator(props: &Self::ValidateClosure, value: &Value) -> Result<Value, Error> {
+        let value = match value {
+            Value::Bool(value) => *value,
+            _ => return Err(Error::msg(tr!("got wrong data type."))),
+        };
+
+        if let Some(validate) = &props.validate {
+            validate.apply(&value)?;
+        }
+
+        Ok(Value::Bool(value))
+    }
 
     fn setup(props: &Boolean) -> ManagedFieldState {
         let mut value = false;
@@ -81,14 +129,16 @@ impl ManagedField for BooleanField {
         let default = props.default.unwrap_or(false).into();
 
         ManagedFieldState {
-            value: value.into(), valid, default,
+            value: value.into(),
+            valid,
+            default,
             radio_group: false,
             unique: false,
         }
     }
 
     fn create(_ctx: &ManagedFieldContext<Self>) -> Self {
-        Self { }
+        Self {}
     }
 
     fn label_clicked(&mut self, ctx: &ManagedFieldContext<Self>) -> bool {
@@ -101,7 +151,7 @@ impl ManagedField for BooleanField {
         let state = ctx.state();
         match msg {
             Msg::Toggle => {
-                 let checked = state.value.as_bool().unwrap_or(false);
+                let checked = state.value.as_bool().unwrap_or(false);
                 let new_checked = !checked;
                 ctx.link().update_value(new_checked);
 
@@ -138,7 +188,8 @@ impl ManagedField for BooleanField {
 
         let state = ctx.state();
 
-        let checked = state.value.as_bool().unwrap_or(false);
+        let (value, valid) = (&state.value, &state.valid);
+        let checked = value.as_bool().unwrap_or(false);
 
         let onclick = link.callback(|_| Msg::Toggle);
         let onkeyup = Callback::from({
@@ -151,28 +202,46 @@ impl ManagedField for BooleanField {
         });
 
         let (layout_class, inner) = match props.switch {
-            true => {
-                ("pwt-switch", html!{<span class="pwt-switch-slider"><i class="fa fa-check"/></span>})
-            }
-            false => {
-                ("pwt-checkbox", html!{<span class="pwt-checkbox-icon"><i class="fa fa-check"/></span>})
-            }
+            true => (
+                "pwt-switch",
+                html! {<span class="pwt-switch-slider"><i class="fa fa-check"/></span>},
+            ),
+            false => (
+                "pwt-checkbox",
+                html! {<span class="pwt-checkbox-icon"><i class="fa fa-check"/></span>},
+            ),
         };
 
         // TODO: add other props.input_props
 
-        let checkbox = Container::new()
+        let mut checkbox = Tooltip::new(inner)
             .with_std_props(&props.std_props)
             .listeners(&props.listeners)
             .class(layout_class)
             .class(checked.then(|| "checked"))
             .class(disabled.then(|| "disabled"))
-            .with_child(inner)
-            .attribute("tabindex", props.input_props.tabindex.unwrap_or(0).to_string())
+            .class(if valid.is_ok() {
+                "is-valid"
+            } else {
+                "is-invalid"
+            })
+            //.with_child(inner)
+            .attribute(
+                "tabindex",
+                props.input_props.tabindex.unwrap_or(0).to_string(),
+            )
             .attribute("role", "checkbox")
             .attribute("aria-checked", checked.then(|| "true"))
             .onkeyup(onkeyup)
             .onclick(onclick);
+
+        if let Err(msg) = &valid {
+            checkbox.set_tip(msg.clone())
+        } else if let Some(tip) = &props.tip {
+            if !disabled {
+                checkbox.set_tip(tip.clone())
+            }
+        }
 
         if props.switch {
             checkbox.into()
