@@ -165,6 +165,9 @@ impl ManagedField for BooleanField {
         let state = ctx.state();
         match msg {
             Msg::Toggle => {
+                if props.input_props.disabled {
+                    return true;
+                }
                 let checked = state.value.as_bool().unwrap_or(false);
                 let new_checked = !checked;
                 ctx.link().update_value(new_checked);
