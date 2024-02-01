@@ -1477,9 +1477,7 @@ impl<S: DataStore + 'static> Component for PwtDataTable<S> {
                         );
                     }
                 } else {
-                    if props.autoselect {
-                        self.select_cursor(props, false, ctrl);
-                    }
+                    self.select_cursor(props, false, ctrl);
                 }
 
                 true
