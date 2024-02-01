@@ -11,7 +11,7 @@ use yew::virtual_dom::{Key, VComp, VNode};
 use crate::prelude::*;
 use crate::props::{FilterFn, IntoTextFilterFn, TextFilterFn};
 use crate::state::{DataStore, Selection};
-use crate::widget::data_table::{DataTable, DataTableMouseEvent};
+use crate::widget::data_table::{DataTable};
 use crate::widget::{Column, Input, Row};
 
 use pwt_macros::builder;
@@ -114,6 +114,7 @@ pub struct PwtGridPicker<S> {
     filter: String,
     store: S,
     _phantom: PhantomData<S>,
+    selection: Selection,
 }
 
 impl<S: DataStore> PwtGridPicker<S> {
@@ -149,11 +150,19 @@ impl<S: DataStore + 'static> Component for PwtGridPicker<S> {
 
     fn create(ctx: &Context<Self>) -> Self {
         let props = ctx.props();
+        let on_select = props.on_select.clone();
+        let selection = props.selection.clone().unwrap_or_else(|| Selection::new()).on_select(move |s: Selection| {
+            let key = s.selected_key();
+            if let Some(on_select) = &on_select {
+                on_select.emit(key.unwrap_or_else(|| Key::from("")));
+            }
+        });
 
         let mut me = Self {
             _phantom: PhantomData::<S>,
             filter: String::new(),
             store: props.table.get_store(),
+            selection,
         };
 
         me.update_filter(props, String::new()); // clear store filter
@@ -174,7 +183,6 @@ impl<S: DataStore + 'static> Component for PwtGridPicker<S> {
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
 
-        let on_select = ctx.props().on_select.clone();
         let table: Html = props
             .table
             .clone()
@@ -183,13 +191,7 @@ impl<S: DataStore + 'static> Component for PwtGridPicker<S> {
             .cell_class("pwt-datatable-cell pwt-pointer")
             .hover(true)
             .header_focusable(false)
-            .selection(props.selection.clone())
-            .on_row_click(move |event: &mut DataTableMouseEvent| {
-                let key = event.record_key.clone();
-                if let Some(on_select) = &on_select {
-                    on_select.emit(key);
-                }
-            })
+            .selection(self.selection.clone())
             .into();
 
         let mut view = Column::new()
