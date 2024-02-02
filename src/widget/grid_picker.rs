@@ -152,9 +152,10 @@ impl<S: DataStore + 'static> Component for PwtGridPicker<S> {
         let props = ctx.props();
         let on_select = props.on_select.clone();
         let selection = props.selection.clone().unwrap_or_else(|| Selection::new()).on_select(move |s: Selection| {
-            let key = s.selected_key();
-            if let Some(on_select) = &on_select {
-                on_select.emit(key.unwrap_or_else(|| Key::from("")));
+            if let Some(key) = s.selected_key() {
+                if let Some(on_select) = &on_select {
+                    on_select.emit(key);
+                }
             }
         });
 
