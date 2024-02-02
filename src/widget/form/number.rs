@@ -197,7 +197,7 @@ macro_rules! unsigned_number_impl {
             }
             fn step_down(&self, step: Option<Self>) -> Self {
                 let step = step.unwrap_or(1);
-                if *self > (<$T>::MIN + step) {
+                if *self >= (<$T>::MIN + step) {
                     self - step
                 } else {
                     *self
@@ -205,7 +205,7 @@ macro_rules! unsigned_number_impl {
             }
             fn step_up(&self, step: Option<Self>) -> Self {
                 let step = step.unwrap_or(1);
-                if *self < (<$T>::MAX - step) {
+                if *self <= (<$T>::MAX - step) {
                     self + step
                 } else {
                     *self
