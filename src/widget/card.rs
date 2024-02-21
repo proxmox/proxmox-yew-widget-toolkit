@@ -12,7 +12,6 @@ use crate::prelude::*;
 pub struct Card {}
 
 impl Card {
-
     /// Create a new instance.
     pub fn new() -> Self {
         Self::default().class("pwt-card")
@@ -23,9 +22,7 @@ impl Into<VTag> for Card {
     fn into(self) -> VTag {
         let attributes = self.std_props.cumulate_attributes(None::<&str>);
 
-        let listeners = Listeners::Pending(
-            self.listeners.listeners.into_boxed_slice()
-        );
+        let listeners = Listeners::Pending(self.listeners.listeners.into_boxed_slice());
 
         let children = VList::with_children(self.children, None);
 

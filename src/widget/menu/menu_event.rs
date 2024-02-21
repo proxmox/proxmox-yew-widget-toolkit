@@ -1,5 +1,5 @@
-use std::rc::Rc;
 use std::cell::Cell;
+use std::rc::Rc;
 
 /// Callback argument for menu events.
 #[derive(Clone)]
@@ -11,7 +11,6 @@ pub struct MenuEvent {
 }
 
 impl MenuEvent {
-
     pub(crate) fn new() -> Self {
         Self {
             checked: false,

@@ -7,9 +7,9 @@ use yew::html::{IntoEventCallback, IntoPropValue};
 use yew::prelude::*;
 use yew::virtual_dom::{Key, VComp, VNode};
 
+use crate::dom::IntoHtmlElement;
 use crate::prelude::*;
 use crate::state::{SharedState, SharedStateObserver};
-use crate::dom::IntoHtmlElement;
 use crate::widget::Container;
 
 use super::{GestureDetector, GestureDragEvent, GestureSwipeEvent};
@@ -160,9 +160,7 @@ impl PwtSideDialog {
 
         for msg in list.into_iter() {
             match msg {
-                SideDialogControllerMsg::Close => {
-                    ctx.link().send_message(Msg::Dismiss)
-                }
+                SideDialogControllerMsg::Close => ctx.link().send_message(Msg::Dismiss),
             }
         }
     }
@@ -418,7 +416,7 @@ impl Component for PwtSideDialog {
             .on_drag_update(ctx.link().callback(Msg::Drag))
             .on_swipe(ctx.link().callback(Msg::Swipe));
 
-        html!{
+        html! {
             <ContextProvider<SideDialogController> context={self.controller.clone()}>
             {view}
             </ContextProvider<SideDialogController>>

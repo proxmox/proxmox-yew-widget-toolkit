@@ -18,7 +18,6 @@ pub struct Line {
 }
 
 impl Line {
-
     /// Create a new instance.
     pub fn new(x1: f32, y1: f32, x2: f32, y2: f32) -> Self {
         let mut me = yew::props!(Self {});
@@ -37,6 +36,11 @@ impl Line {
 
 impl Into<VTag> for Line {
     fn into(self) -> VTag {
-        self.std_props.into_vtag(Cow::Borrowed("line"), None::<&str>, Some(self.listeners), self.children)
+        self.std_props.into_vtag(
+            Cow::Borrowed("line"),
+            None::<&str>,
+            Some(self.listeners),
+            self.children,
+        )
     }
 }

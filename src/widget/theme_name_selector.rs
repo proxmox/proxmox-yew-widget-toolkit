@@ -5,7 +5,7 @@ use yew::virtual_dom::{VComp, VNode};
 
 use crate::prelude::*;
 use crate::state::Theme;
-use crate::widget::form::{Combobox};
+use crate::widget::form::Combobox;
 
 #[derive(Clone, PartialEq, Properties)]
 pub struct ThemeNameSelector {

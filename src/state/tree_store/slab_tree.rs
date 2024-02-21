@@ -104,12 +104,10 @@ macro_rules! impl_slab_node_ref {
             };
 
             let child_id = match &entry.children {
-                Some(children) => {
-                    match children.get(pos) {
-                        Some(child_id) => *child_id,
-                        None => return None,
-                    }
-                }
+                Some(children) => match children.get(pos) {
+                    Some(child_id) => *child_id,
+                    None => return None,
+                },
                 None => return None,
             };
 
@@ -123,14 +121,13 @@ macro_rules! impl_slab_node_ref {
                 child.visit(visitor);
             }
         }
-    }
+    };
 }
 
 macro_rules! impl_slab_node_mut {
     ($M:ty, $T:ty) => {
         /// Appends a new node as the last child. Returns a mutable ref to the newly added node.
         pub fn append(&mut self, record: T) -> $M {
-
             let child_id = self.tree.insert_record(record, Some(self.node_id));
 
             let entry = self.tree.get_mut(self.node_id).unwrap();
@@ -150,7 +147,9 @@ macro_rules! impl_slab_node_mut {
         /// If subtree is empty.
         pub fn append_tree(&mut self, mut subtree: SlabTree<T>) -> $M {
             let root_id = subtree.root().unwrap().node_id;
-            let child_id = self.tree.append_subtree_node(&mut subtree, root_id, self.level(), self.node_id);
+            let child_id =
+                self.tree
+                    .append_subtree_node(&mut subtree, root_id, self.level(), self.node_id);
             <$M>::new(self.tree, child_id)
         }
 
@@ -165,9 +164,8 @@ macro_rules! impl_slab_node_mut {
 
             if let Some(children) = &root_entry.children {
                 for id in children {
-                    self.tree.append_subtree_node(
-                        &mut subtree, *id, self.level(), self.node_id,
-                    );
+                    self.tree
+                        .append_subtree_node(&mut subtree, *id, self.level(), self.node_id);
                 }
             }
         }
@@ -201,7 +199,7 @@ macro_rules! impl_slab_node_mut {
         where
             F: FnMut(&T, &T) -> Ordering,
         {
-            self.tree.sort_node(recursive,self.node_id, &mut compare);
+            self.tree.sort_node(recursive, self.node_id, &mut compare);
         }
 
         /// Get a mutable ref to the child at position `pos`.
@@ -212,12 +210,10 @@ macro_rules! impl_slab_node_mut {
             };
 
             let child_id = match &entry.children {
-                Some(children) => {
-                    match children.get(pos) {
-                        Some(child_id) => *child_id,
-                        None => return None,
-                    }
-                }
+                Some(children) => match children.get(pos) {
+                    Some(child_id) => *child_id,
+                    None => return None,
+                },
                 None => return None,
             };
 
@@ -297,7 +293,7 @@ macro_rules! impl_slab_node_mut {
                 child.visit_mut(visitor);
             }
         }
-    }
+    };
 }
 
 impl<'a, T> SlabTreeNodeRef<'a, T> {
@@ -315,7 +311,7 @@ impl<'a, T> SlabTreeNodeRef<'a, T> {
     }
 
     /// Visit a subtree in pre-order
-    pub fn visit(&self, visitor:  &mut impl FnMut(&SlabTreeNodeRef<T>)) {
+    pub fn visit(&self, visitor: &mut impl FnMut(&SlabTreeNodeRef<T>)) {
         visitor(self);
         self.visit_children(visitor);
     }
@@ -355,7 +351,6 @@ impl<'a, T> SlabTreeNodeMut<'a, T> {
 }
 
 impl<T> SlabTree<T> {
-
     pub fn new() -> Self {
         Self {
             root_id: None,
@@ -448,7 +443,13 @@ impl<T> SlabTree<T> {
         }
     }
 
-    pub(crate) fn append_subtree_node(&mut self, subtree: &mut SlabTree<T>, subtree_node: usize, level: usize, parent: usize) -> usize {
+    pub(crate) fn append_subtree_node(
+        &mut self,
+        subtree: &mut SlabTree<T>,
+        subtree_node: usize,
+        level: usize,
+        parent: usize,
+    ) -> usize {
         subtree.root_id = None; // make sure nobody use nodes in this tree again
         self.record_data_change();
 
@@ -480,12 +481,7 @@ impl<T> SlabTree<T> {
     }
 
     // Removes a whole subtree and move it into the target tree.
-    fn remove_subtree(
-        &mut self,
-        node_id: usize,
-        target: &mut SlabTree<T>,
-        level: usize,
-    ) -> usize {
+    fn remove_subtree(&mut self, node_id: usize, target: &mut SlabTree<T>, level: usize) -> usize {
         let mut entry = self.slab.remove(node_id);
         entry.level = level;
         entry.parent_id = None; // update later
@@ -509,13 +505,12 @@ impl<T> SlabTree<T> {
             }
         }
 
-        assert!(target.slab.insert(entry)== new_id);
+        assert!(target.slab.insert(entry) == new_id);
 
         new_id
     }
 
     pub(crate) fn remove_tree_node_id(&mut self, node_id: usize) -> Option<SlabTree<T>> {
-
         if let Some(entry) = self.slab.get(node_id) {
             let mut subtree = SlabTree::new();
 
@@ -583,7 +578,7 @@ impl<T> SlabTree<T> {
         }
     }
 
-    pub(crate) fn insert_record(&mut self, record: T, parent_id: Option<usize>) -> usize  {
+    pub(crate) fn insert_record(&mut self, record: T, parent_id: Option<usize>) -> usize {
         self.record_data_change();
 
         let level = if let Some(parent_id) = parent_id {
@@ -593,7 +588,7 @@ impl<T> SlabTree<T> {
         };
 
         let vacant_entry = self.slab.vacant_entry();
-        let node_id =  vacant_entry.key();
+        let node_id = vacant_entry.key();
 
         let entry = SlabTreeEntry {
             parent_id,
@@ -616,7 +611,6 @@ pub struct SlabTreeChildren<'a, T> {
 
 macro_rules! impl_slab_tree_child_iter {
     ($I:ident, $N:ident) => {
-
         impl<'a, T> Iterator for $I<'a, T> {
             type Item = $N<'a, T>;
 
@@ -632,12 +626,10 @@ macro_rules! impl_slab_tree_child_iter {
                 };
 
                 let child_id = match &entry.children {
-                    Some(children) => {
-                        match children.get(pos) {
-                            Some(child_id) => *child_id,
-                            None => return None,
-                        }
-                    }
+                    Some(children) => match children.get(pos) {
+                        Some(child_id) => *child_id,
+                        None => return None,
+                    },
                     None => return None,
                 };
 
@@ -649,7 +641,7 @@ macro_rules! impl_slab_tree_child_iter {
                 })
             }
         }
-    }
+    };
 }
 
 impl_slab_tree_child_iter!(SlabTreeChildren, SlabTreeNodeRef);
@@ -663,7 +655,6 @@ pub struct SlabTreeChildrenMut<'a, T> {
 
 macro_rules! impl_slab_tree_child_iter_mut {
     ($I:ident, $N:ident) => {
-
         impl<'a, T> Iterator for $I<'a, T> {
             type Item = $N<'a, T>;
 
@@ -678,12 +669,10 @@ macro_rules! impl_slab_tree_child_iter_mut {
                 };
 
                 let child_id = match &entry.children {
-                    Some(children) => {
-                        match children.get(pos) {
-                            Some(child_id) => *child_id,
-                            None => return None,
-                        }
-                    }
+                    Some(children) => match children.get(pos) {
+                        Some(child_id) => *child_id,
+                        None => return None,
+                    },
                     None => return None,
                 };
 
@@ -694,14 +683,12 @@ macro_rules! impl_slab_tree_child_iter_mut {
                     tree: self.tree,
                 };
 
-                let child = unsafe {
-                    std::mem::transmute::<$N<T>, $N<'a, T> >(child)
-                };
+                let child = unsafe { std::mem::transmute::<$N<T>, $N<'a, T>>(child) };
 
                 Some(child)
             }
         }
-    }
+    };
 }
 
 impl_slab_tree_child_iter_mut!(SlabTreeChildrenMut, SlabTreeNodeMut);
@@ -718,7 +705,9 @@ mod test {
             if count > 0 {
                 out.push('{');
                 for i in 0..count {
-                    if i > 0 { out.push(','); }
+                    if i > 0 {
+                        out.push(',');
+                    }
                     print_node(&mut node.child_mut(i).unwrap(), out);
                 }
                 out.push('}');
@@ -772,13 +761,15 @@ mod test {
         assert_eq!(node_to_string(&mut root), "{0{1,3,2}}");
 
         let list: Vec<usize> = root.children().map(|c| *c.record()).collect();
-        assert_eq!(&list, &[1,3,2]);
-        let list: Vec<usize> = root.children_mut().map(|mut c| {
-            *c.record_mut() += 1;
-            *c.record()
-        }).collect();
-        assert_eq!(&list, &[2, 4 ,3]);
-
+        assert_eq!(&list, &[1, 3, 2]);
+        let list: Vec<usize> = root
+            .children_mut()
+            .map(|mut c| {
+                *c.record_mut() += 1;
+                *c.record()
+            })
+            .collect();
+        assert_eq!(&list, &[2, 4, 3]);
 
         for mut child in root.children_mut() {
             child.append(child.record() + 10);
@@ -800,7 +791,10 @@ mod test {
 
         assert_eq!(node_to_string(&mut root), "{0{1,2{20,21{200,201}}}}");
         let mut subtree = root.remove_child_tree(1).unwrap();
-        assert_eq!(node_to_string(&mut subtree.root_mut().unwrap()), "{2{20,21{200,201}}}");
+        assert_eq!(
+            node_to_string(&mut subtree.root_mut().unwrap()),
+            "{2{20,21{200,201}}}"
+        );
         assert_eq!(node_to_string(&mut root), "{0{1}}");
 
         root.append_tree(subtree);
@@ -830,7 +824,10 @@ mod test {
         });
 
         let mut tree: SlabTree<usize> = serde_json::from_value(tree_data).unwrap();
-        assert_eq!(node_to_string(&mut tree.root_mut().unwrap()), "{0{1,4,3{31,33,32}}}");
+        assert_eq!(
+            node_to_string(&mut tree.root_mut().unwrap()),
+            "{0{1,4,3{31,33,32}}}"
+        );
 
         let mut node_count = 0;
         let mut max_level = 0;
@@ -845,7 +842,9 @@ mod test {
 
         let text = serde_json::to_string_pretty(&tree).unwrap();
         let mut tree: SlabTree<usize> = serde_json::from_str(&text).unwrap();
-        assert_eq!(node_to_string(&mut tree.root_mut().unwrap()), "{0{1,3{31,32,33},4}}");
+        assert_eq!(
+            node_to_string(&mut tree.root_mut().unwrap()),
+            "{0{1,3{31,32,33},4}}"
+        );
     }
-
 }

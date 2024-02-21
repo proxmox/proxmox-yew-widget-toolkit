@@ -6,8 +6,8 @@ use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 
 use crate::props::{EventSubscriber, WidgetBuilder};
-use crate::widget::{Button, ButtonType};
 use crate::tr;
+use crate::widget::{Button, ButtonType};
 
 use super::{FormContext, FormContextObserver};
 
@@ -77,7 +77,7 @@ pub enum Msg {
 
 #[doc(hidden)]
 pub struct PwtSubmitButton {
-     form_ctx: Option<FormContext>,
+    form_ctx: Option<FormContext>,
     _form_ctx_handle: Option<ContextHandle<FormContext>>,
     _form_ctx_observer: Option<FormContextObserver>,
     on_form_data_change: Callback<FormContext>,
@@ -124,7 +124,7 @@ impl Component for PwtSubmitButton {
                 self.form_ctx = Some(form_ctx);
                 true
             }
-            Msg::FormCtxDataChange => { true }
+            Msg::FormCtxDataChange => true,
             Msg::Submit => {
                 if let Some(on_submit) = &props.on_submit {
                     if let Some(form_ctx) = self.form_ctx.clone() {

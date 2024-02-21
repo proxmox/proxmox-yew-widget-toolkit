@@ -1,5 +1,4 @@
 macro_rules! impl_svg_position_attributes {
-
     () => {
         /// Builder style method to set the object position.
         pub fn position(mut self, x: impl Into<SvgLength>, y: impl Into<SvgLength>) -> Self {
@@ -34,9 +33,8 @@ macro_rules! impl_svg_position_attributes {
         pub fn set_y(&mut self, y: impl Into<SvgLength>) {
             self.set_attribute("y", y.into());
         }
-    }
+    };
 }
-
 
 macro_rules! impl_svg_presentation_attributes {
     () => {
@@ -98,7 +96,7 @@ macro_rules! impl_svg_presentation_attributes {
         pub fn set_stroke_opacity(&mut self, opacity: f64) {
             self.set_attribute("stroke-opacity", opacity.to_string());
         }
-    }
+    };
 }
 
 macro_rules! impl_svg_animation_attributes {
@@ -116,7 +114,7 @@ macro_rules! impl_svg_animation_attributes {
                 None => self.children = Some(vec![animation.into_svg_animation()]),
             }
         }
-    }
+    };
 }
 
 macro_rules! impl_svg_container_animation_attributes {
@@ -131,5 +129,5 @@ macro_rules! impl_svg_container_animation_attributes {
         pub fn add_animate(&mut self, animation: impl super::IntoSvgAnimation) {
             self.children.push(animation.into_svg_animation());
         }
-    }
+    };
 }

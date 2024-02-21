@@ -1,11 +1,11 @@
 use serde_json::Value;
 
-use yew::prelude::*;
 use yew::html::{IntoEventCallback, IntoPropValue};
+use yew::prelude::*;
 
 use pwt_macros::{builder, widget};
 
-use super::{ManagedFieldMaster, ManagedFieldContext, ManagedField, ManagedFieldState};
+use super::{ManagedField, ManagedFieldContext, ManagedFieldMaster, ManagedFieldState};
 
 pub type PwtHidden = ManagedFieldMaster<HiddenField>;
 
@@ -34,7 +34,6 @@ pub struct Hidden {
 }
 
 impl Hidden {
-
     /// Creates a new instance.
     pub fn new() -> Self {
         yew::props!(Self {})
@@ -49,7 +48,9 @@ impl ManagedField for HiddenField {
     type Message = ();
     type ValidateClosure = ();
 
-    fn validation_args(_props: &Self::Properties) -> Self::ValidateClosure { () }
+    fn validation_args(_props: &Self::Properties) -> Self::ValidateClosure {
+        ()
+    }
 
     fn setup(props: &Hidden) -> ManagedFieldState {
         let mut value = Value::Null;
@@ -71,18 +72,18 @@ impl ManagedField for HiddenField {
     }
 
     fn create(_ctx: &ManagedFieldContext<Self>) -> Self {
-        Self { }
+        Self {}
     }
 
     fn value_changed(&mut self, ctx: &ManagedFieldContext<Self>) {
         let props = ctx.props();
         let state = ctx.state();
-         if let Some(on_change) = &props.on_change {
+        if let Some(on_change) = &props.on_change {
             on_change.emit(state.value.clone());
         }
     }
 
     fn view(&self, _ctx: &ManagedFieldContext<Self>) -> Html {
-        html!{}
+        html! {}
     }
 }

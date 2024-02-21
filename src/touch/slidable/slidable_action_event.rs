@@ -1,6 +1,6 @@
-use std::rc::Rc;
 use std::cell::Cell;
 use std::ops::Deref;
+use std::rc::Rc;
 
 use web_sys::MouseEvent;
 
@@ -20,7 +20,6 @@ impl Deref for SlidableActionMouseEvent {
     }
 }
 impl SlidableActionMouseEvent {
-
     pub(crate) fn new(event: MouseEvent) -> Self {
         Self {
             inner: event,

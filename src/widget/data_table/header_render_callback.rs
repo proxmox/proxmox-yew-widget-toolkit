@@ -3,16 +3,16 @@ use std::rc::Rc;
 use derivative::Derivative;
 use indexmap::IndexMap;
 
-use yew::prelude::*;
 use yew::html::IntoPropValue;
+use yew::prelude::*;
 
 use super::{HeaderMsg, RowSelectionStatus};
 
 /// A context which allows sending messages to the data table..
 #[derive(Derivative)]
-#[derivative(Clone(bound=""))]
+#[derivative(Clone(bound = ""))]
 pub struct DataTableHeaderTableLink<T: 'static> {
-     pub(crate) on_message: Callback<HeaderMsg<T>>,
+    pub(crate) on_message: Callback<HeaderMsg<T>>,
 }
 
 impl<T: 'static> DataTableHeaderTableLink<T> {
@@ -39,7 +39,6 @@ pub struct DataTableHeaderRenderArgs<T: 'static> {
 }
 
 impl<T: 'static> DataTableHeaderRenderArgs<T> {
-
     /// Returns the column index.
     pub fn columns_index(&self) -> usize {
         self.column_index
@@ -76,13 +75,12 @@ impl<T: 'static> DataTableHeaderRenderArgs<T> {
     }
 }
 
-
 /// DataTable cell render callback.
 #[derive(Derivative)]
-#[derivative(Clone(bound=""), PartialEq(bound=""))]
+#[derivative(Clone(bound = ""), PartialEq(bound = ""))]
 pub struct DataTableHeaderRenderer<T: 'static>(
-    #[derivative(PartialEq(compare_with="Rc::ptr_eq"))]
-    Rc<dyn Fn(&mut DataTableHeaderRenderArgs<T>) -> Html>
+    #[derivative(PartialEq(compare_with = "Rc::ptr_eq"))]
+    Rc<dyn Fn(&mut DataTableHeaderRenderArgs<T>) -> Html>,
 );
 
 impl<T: 'static> DataTableHeaderRenderer<T> {
@@ -96,7 +94,9 @@ impl<T: 'static> DataTableHeaderRenderer<T> {
     }
 }
 
-impl<T, F: 'static + Fn(&mut DataTableHeaderRenderArgs<T>) -> Html> From<F> for DataTableHeaderRenderer<T> {
+impl<T, F: 'static + Fn(&mut DataTableHeaderRenderArgs<T>) -> Html> From<F>
+    for DataTableHeaderRenderer<T>
+{
     fn from(f: F) -> Self {
         DataTableHeaderRenderer::new(f)
     }

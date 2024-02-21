@@ -1,5 +1,5 @@
-use std::rc::Rc;
 use std::fmt::Display;
+use std::rc::Rc;
 
 use derivative::Derivative;
 
@@ -9,10 +9,9 @@ use yew::Html;
 ///
 /// Wraps `Rc` around `Fn` so it can be passed as a prop.
 #[derive(Derivative)]
-#[derivative(Clone(bound=""), PartialEq(bound=""))]
+#[derivative(Clone(bound = ""), PartialEq(bound = ""))]
 pub struct RenderFn<T>(
-    #[derivative(PartialEq(compare_with="Rc::ptr_eq"))]
-    Rc<dyn Fn(&T) -> Html>
+    #[derivative(PartialEq(compare_with = "Rc::ptr_eq"))] Rc<dyn Fn(&T) -> Html>,
 );
 
 impl<T> RenderFn<T> {
@@ -53,10 +52,9 @@ impl<T, R: Into<RenderFn<T>>> IntoOptionalRenderFn<T> for Option<R> {
 ///
 /// Wraps `Rc` around `Fn` so it can be passed as a prop.
 #[derive(Derivative)]
-#[derivative(Clone(bound=""), PartialEq(bound=""))]
+#[derivative(Clone(bound = ""), PartialEq(bound = ""))]
 pub struct TextRenderFn<T>(
-    #[derivative(PartialEq(compare_with="Rc::ptr_eq"))]
-    Rc<dyn Fn(&T) -> String>
+    #[derivative(PartialEq(compare_with = "Rc::ptr_eq"))] Rc<dyn Fn(&T) -> String>,
 );
 
 impl<T> TextRenderFn<T> {
@@ -99,7 +97,7 @@ impl<T, R: Into<TextRenderFn<T>>> IntoOptionalTextRenderFn<T> for Option<R> {
 impl<T: Display> IntoOptionalTextRenderFn<T> for bool {
     fn into_optional_text_render_fn(self) -> Option<TextRenderFn<T>> {
         if self {
-            Some(TextRenderFn::new(|t: &T| { t.to_string() }))
+            Some(TextRenderFn::new(|t: &T| t.to_string()))
         } else {
             None
         }
@@ -110,16 +108,13 @@ impl<T: Display> IntoOptionalTextRenderFn<T> for bool {
 ///
 /// Wraps `Rc` around `Fn` so it can be passed as a prop.
 #[derive(Derivative)]
-#[derivative(Clone(bound=""), PartialEq(bound=""))]
-pub struct BuilderFn<T>(
-    #[derivative(PartialEq(compare_with="Rc::ptr_eq"))]
-    Rc<dyn Fn() -> T>
-);
+#[derivative(Clone(bound = ""), PartialEq(bound = ""))]
+pub struct BuilderFn<T>(#[derivative(PartialEq(compare_with = "Rc::ptr_eq"))] Rc<dyn Fn() -> T>);
 
 impl<T: Into<Html>> Into<Html> for BuilderFn<T> {
     fn into(self) -> Html {
         self.apply().into()
-     }
+    }
 }
 
 impl<T> BuilderFn<T> {

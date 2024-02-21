@@ -111,7 +111,7 @@ impl Component for PwtSlidableAction {
                         if event.get_dismiss() {
                             controller.dismiss();
                         } else if !event.get_keep_open() {
-                             controller.collapse();
+                            controller.collapse();
                         }
                     }
                 } else {

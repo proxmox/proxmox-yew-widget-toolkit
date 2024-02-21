@@ -10,8 +10,8 @@ use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 
 use crate::prelude::*;
-use crate::widget::{get_unique_element_id, Container};
 use crate::widget::focus::get_first_focusable;
+use crate::widget::{get_unique_element_id, Container};
 
 use pwt_macros::builder;
 
@@ -88,7 +88,6 @@ pub struct Menu {
     pub submenu_timeout_ms: u32,
 
     // Methods below are used internally.
-
     #[prop_or_default]
     #[builder]
     pub(crate) autofocus: bool,
@@ -325,12 +324,10 @@ impl Component for PwtMenu {
 
         let menu_controller = if props.menubar {
             let link = ctx.link().clone();
-            Some(Callback::from(move |msg: MenuControllerMsg| {
-                match msg {
-                    MenuControllerMsg::Next => link.send_message(Msg::Next),
-                    MenuControllerMsg::Previous => link.send_message(Msg::Previous),
-                    MenuControllerMsg::Collapse => link.send_message(Msg::Collapse),
-                }
+            Some(Callback::from(move |msg: MenuControllerMsg| match msg {
+                MenuControllerMsg::Next => link.send_message(Msg::Next),
+                MenuControllerMsg::Previous => link.send_message(Msg::Previous),
+                MenuControllerMsg::Collapse => link.send_message(Msg::Collapse),
             }))
         } else {
             props.menu_controller.clone()
@@ -369,7 +366,9 @@ impl Component for PwtMenu {
             }
             // Note: only used by menubar
             Msg::DelayedFocusChange(has_focus) => {
-                if self.has_focus == has_focus { return false; }
+                if self.has_focus == has_focus {
+                    return false;
+                }
                 self.has_focus = has_focus;
                 if !has_focus {
                     self.show_submenu = false;
@@ -567,24 +566,27 @@ impl Component for PwtMenu {
             .tag("ul")
             .attribute("role", if props.menubar { "menubar" } else { "menu" })
             .attribute("id", self.unique_id.clone())
-            .class(if props.menubar { "pwt-menubar" } else { "pwt-menu" })
+            .class(if props.menubar {
+                "pwt-menubar"
+            } else {
+                "pwt-menu"
+            })
             .class(props.class.clone())
             .children(props.children.iter().enumerate().map(|(i, entry)| {
                 let mut has_submenu = false;
                 let active = self.cursor == Some(i);
                 let submenu_active = self.active_submenu == Some(i);
-                let show_submenu = submenu_active && self.show_submenu && !(props.menubar && self.collapsed);
+                let show_submenu =
+                    submenu_active && self.show_submenu && !(props.menubar && self.collapsed);
                 let child = match entry {
                     MenuEntry::Separator => {
                         if props.menubar {
-                            html!{<div role="separator" class="pwt-h-100 pwt-vertical-rule"/>}
+                            html! {<div role="separator" class="pwt-h-100 pwt-vertical-rule"/>}
                         } else {
-                            html!{<div role="separator" class="pwt-w-100 pwt-horizontal-rule"/>}
+                            html! {<div role="separator" class="pwt-w-100 pwt-horizontal-rule"/>}
                         }
                     }
-                    MenuEntry::Component(comp) => {
-                        comp.clone()
-                    }
+                    MenuEntry::Component(comp) => comp.clone(),
                     MenuEntry::MenuItem(item) => {
                         has_submenu = item.menu.is_some();
                         item.clone()
@@ -596,11 +598,10 @@ impl Component for PwtMenu {
                             .inside_menubar(props.menubar)
                             .into()
                     }
-                    MenuEntry::Checkbox(checkbox) => {
-                        checkbox.clone()
-                            .menu_controller(self.menu_controller.clone())
-                            .into()
-                    }
+                    MenuEntry::Checkbox(checkbox) => checkbox
+                        .clone()
+                        .menu_controller(self.menu_controller.clone())
+                        .into(),
                 };
 
                 let item_id = self.get_unique_item_id(i);
@@ -623,7 +624,9 @@ impl Component for PwtMenu {
                                 match event.key().as_str() {
                                     "ArrowRight" => link.send_message(Msg::Next),
                                     "ArrowLeft" => link.send_message(Msg::Previous),
-                                    "Enter" | "ArrowDown" | " " => link.send_message(Msg::ShowSubmenu(true, true)),
+                                    "Enter" | "ArrowDown" | " " => {
+                                        link.send_message(Msg::ShowSubmenu(true, true))
+                                    }
                                     "ArrowUp" => link.send_message(Msg::ShowSubmenu(false, true)),
                                     "Escape" => link.send_message(Msg::Collapse),
                                     _ => return,
@@ -674,7 +677,7 @@ impl Component for PwtMenu {
                         event.stop_propagation();
                     }))
                     .onclick(ctx.link().callback({
-                         move |event: MouseEvent| {
+                        move |event: MouseEvent| {
                             event.stop_propagation();
                             Msg::ShowSubmenu(true, false)
                         }
@@ -779,7 +782,8 @@ pub fn dispatch_menu_close_event(event: impl AsRef<web_sys::Event>) {
     options.key("Escape");
     options.key_code(27);
 
-    let event = web_sys::KeyboardEvent::new_with_keyboard_event_init_dict("keydown", &options).unwrap();
+    let event =
+        web_sys::KeyboardEvent::new_with_keyboard_event_init_dict("keydown", &options).unwrap();
 
     let _ = target.dispatch_event(&event);
 }

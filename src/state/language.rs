@@ -1,5 +1,5 @@
-use yew::Callback;
 use yew::virtual_dom::Key;
+use yew::Callback;
 
 use crate::gettext;
 use crate::props::ExtractPrimaryKey;
@@ -39,16 +39,21 @@ impl ExtractPrimaryKey for LanguageInfo {
 static mut AVAILABLE_LANGUAGES: Vec<LanguageInfo> = Vec::new();
 
 pub fn set_available_languages(list: Vec<LanguageInfo>) {
-    unsafe { AVAILABLE_LANGUAGES = list; }
+    unsafe {
+        AVAILABLE_LANGUAGES = list;
+    }
 }
 
 pub fn get_available_languages() -> Vec<LanguageInfo> {
     let list = unsafe { AVAILABLE_LANGUAGES.clone() };
 
-    let list = list.into_iter().map(|mut info| {
-        info.translated_text = gettext(&info.english_text);
-        info
-    }).collect();
+    let list = list
+        .into_iter()
+        .map(|mut info| {
+            info.translated_text = gettext(&info.english_text);
+            info
+        })
+        .collect();
 
     list
 }

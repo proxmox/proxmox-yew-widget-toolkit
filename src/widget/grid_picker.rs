@@ -11,7 +11,7 @@ use yew::virtual_dom::{Key, VComp, VNode};
 use crate::prelude::*;
 use crate::props::{FilterFn, IntoTextFilterFn, TextFilterFn};
 use crate::state::{DataStore, Selection};
-use crate::widget::data_table::{DataTable};
+use crate::widget::data_table::DataTable;
 use crate::widget::{Column, Input, Row};
 
 use pwt_macros::builder;
@@ -151,13 +151,17 @@ impl<S: DataStore + 'static> Component for PwtGridPicker<S> {
     fn create(ctx: &Context<Self>) -> Self {
         let props = ctx.props();
         let on_select = props.on_select.clone();
-        let selection = props.selection.clone().unwrap_or_else(|| Selection::new()).on_select(move |s: Selection| {
-            if let Some(key) = s.selected_key() {
-                if let Some(on_select) = &on_select {
-                    on_select.emit(key);
+        let selection = props
+            .selection
+            .clone()
+            .unwrap_or_else(|| Selection::new())
+            .on_select(move |s: Selection| {
+                if let Some(key) = s.selected_key() {
+                    if let Some(on_select) = &on_select {
+                        on_select.emit(key);
+                    }
                 }
-            }
-        });
+            });
 
         let mut me = Self {
             _phantom: PhantomData::<S>,

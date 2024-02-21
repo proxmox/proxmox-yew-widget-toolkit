@@ -1,6 +1,6 @@
-use yew::prelude::*;
-use yew::virtual_dom::{Attributes, ApplyAttributeAs, Listeners, VList, VNode, VTag};
 use yew::html::IntoPropValue;
+use yew::prelude::*;
+use yew::virtual_dom::{ApplyAttributeAs, Attributes, Listeners, VList, VNode, VTag};
 
 pub trait IntoSvgAnimation {
     fn into_svg_animation(self) -> VNode;
@@ -21,11 +21,9 @@ impl IntoSvgAnimation for Animate {
 }
 
 impl Animate {
-
     /// Creates a new instance to animate the named attribute.
     pub fn new(attribute_name: impl Into<AttrValue>) -> Self {
-        yew::props!(Self {})
-            .attribute("attributeName", attribute_name.into())
+        yew::props!(Self {}).attribute("attributeName", attribute_name.into())
     }
 
     /// Builder style method to set attributes
@@ -49,11 +47,11 @@ impl Animate {
         value: impl IntoPropValue<Option<AttrValue>>,
     ) {
         if let Some(value) = value.into_prop_value() {
-            self.attributes.get_mut_index_map()
+            self.attributes
+                .get_mut_index_map()
                 .insert(key.into(), (value, ApplyAttributeAs::Attribute));
         } else {
-            self.attributes.get_mut_index_map()
-                .remove(&key.into());
+            self.attributes.get_mut_index_map().remove(&key.into());
         }
     }
 
@@ -67,11 +65,14 @@ impl Animate {
     ///
     /// You can use [f32::INFINITY] for indefinite repeat.
     pub fn set_repeat_count(&mut self, count: f32) {
-        self.set_attribute("repeatCount", if count.is_infinite() {
-            AttrValue::Static("indefinite")
-        } else {
-            count.to_string().into()
-        });
+        self.set_attribute(
+            "repeatCount",
+            if count.is_infinite() {
+                AttrValue::Static("indefinite")
+            } else {
+                count.to_string().into()
+            },
+        );
     }
 
     /// Builder style method to set the `additive` property.
@@ -81,18 +82,18 @@ impl Animate {
     }
 
     /// Method to set the `additive` property.
-    pub fn set_additive(&mut self, additive: bool){
+    pub fn set_additive(&mut self, additive: bool) {
         self.set_attribute("additive", if additive { "sum" } else { "replace" });
     }
 
     /// Builder style method to set the `accumulate` property.
-    pub fn accumulate (mut self, accumulate: bool) -> Self {
+    pub fn accumulate(mut self, accumulate: bool) -> Self {
         self.set_accumulate(accumulate);
         self
     }
 
     /// Method to set the `accumulate` property.
-    pub fn set_accumulate(&mut self, accumulate: bool){
+    pub fn set_accumulate(&mut self, accumulate: bool) {
         self.set_attribute("accumulate", if accumulate { "sum" } else { "none" });
     }
 }

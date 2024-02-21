@@ -1,6 +1,6 @@
-use std::rc::Rc;
-use std::ops::Range;
 use derivative::Derivative;
+use std::ops::Range;
+use std::rc::Rc;
 
 use yew::prelude::*;
 use yew::virtual_dom::Key;
@@ -13,7 +13,7 @@ use super::DataTableColumn;
 /// hierachy, where a parent header can group one or more child
 /// headers.
 #[derive(Derivative)]
-#[derivative(Clone(bound=""), PartialEq(bound=""))]
+#[derivative(Clone(bound = ""), PartialEq(bound = ""))]
 pub enum DataTableHeader<T: 'static> {
     Single(DataTableColumn<T>),
     Group(DataTableHeaderGroup<T>),
@@ -32,7 +32,6 @@ impl<T: 'static> From<DataTableHeaderGroup<T>> for DataTableHeader<T> {
 }
 
 impl<T: 'static> DataTableHeader<T> {
-
     pub(crate) fn extract_column_list(&self, list: &mut Vec<DataTableColumn<T>>) {
         match self {
             DataTableHeader::Single(column) => list.push(column.clone()),
@@ -43,7 +42,7 @@ impl<T: 'static> DataTableHeader<T> {
 
 /// Group of [headers](DataTableHeader).
 #[derive(Derivative)]
-#[derivative(Clone(bound=""), PartialEq(bound=""))]
+#[derivative(Clone(bound = ""), PartialEq(bound = ""))]
 pub struct DataTableHeaderGroup<T: 'static> {
     /// The name dispayed in the header.
     pub name: AttrValue,
@@ -53,11 +52,9 @@ pub struct DataTableHeaderGroup<T: 'static> {
     pub hidden: bool,
 }
 
-
 impl<T: 'static> DataTableHeaderGroup<T> {
-
     /// Create a new instance.
-    pub fn  new(name: impl Into<AttrValue>) -> Self {
+    pub fn new(name: impl Into<AttrValue>) -> Self {
         Self {
             name: name.into(),
             key: None,
@@ -116,16 +113,15 @@ impl<T: 'static> DataTableHeaderGroup<T> {
     }
 }
 
-
 #[derive(Derivative)]
-#[derivative(Clone(bound=""), PartialEq(bound=""))]
+#[derivative(Clone(bound = ""), PartialEq(bound = ""))]
 pub enum IndexedHeader<T: 'static> {
     Single(Rc<IndexedHeaderSingle<T>>),
     Group(Rc<IndexedHeaderGroup<T>>),
 }
 
 #[derive(Derivative)]
-#[derivative(Clone(bound=""), PartialEq(bound=""))]
+#[derivative(Clone(bound = ""), PartialEq(bound = ""))]
 pub struct IndexedHeaderSingle<T: 'static> {
     pub cell_idx: usize,
     pub start_col: usize,
@@ -134,7 +130,7 @@ pub struct IndexedHeaderSingle<T: 'static> {
 }
 
 #[derive(Derivative)]
-#[derivative(Clone(bound=""), PartialEq(bound=""))]
+#[derivative(Clone(bound = ""), PartialEq(bound = ""))]
 pub struct IndexedHeaderGroup<T: 'static> {
     pub cell_idx: usize,
     pub start_col: usize,
@@ -156,12 +152,13 @@ impl<T: 'static> IndexedHeaderGroup<T> {
     }
 }
 
-pub fn create_indexed_header_list<T: 'static>(list: &[DataTableHeader<T>]) -> Vec<IndexedHeader<T>> {
+pub fn create_indexed_header_list<T: 'static>(
+    list: &[DataTableHeader<T>],
+) -> Vec<IndexedHeader<T>> {
     IndexedHeader::convert_header_list(list, 0, 0, None).0
 }
 
 impl<T: 'static> IndexedHeader<T> {
-
     pub fn convert_header_list(
         list: &[DataTableHeader<T>],
         cell_idx: usize,
@@ -184,7 +181,8 @@ impl<T: 'static> IndexedHeader<T> {
                     cells += 1;
                 }
                 DataTableHeader::Group(group) => {
-                    let indexed_group = Self::convert_group(group, cell_idx, start_col + span, parent);
+                    let indexed_group =
+                        Self::convert_group(group, cell_idx, start_col + span, parent);
                     span += indexed_group.colspan;
                     cell_idx += indexed_group.cell_count;
                     cells += indexed_group.cell_count;
@@ -215,13 +213,8 @@ impl<T: 'static> IndexedHeader<T> {
         start_col: usize,
         parent: Option<usize>,
     ) -> IndexedHeaderGroup<T> {
-
-        let (children, span, cells) = Self::convert_header_list(
-            &group.children,
-            cell_idx + 1,
-            start_col,
-            Some(cell_idx),
-        );
+        let (children, span, cells) =
+            Self::convert_header_list(&group.children, cell_idx + 1, start_col, Some(cell_idx));
 
         let cell_count = cells + 1;
         let colspan = span.max(1); // at least one column for the group header
@@ -245,10 +238,14 @@ impl<T: 'static> IndexedHeader<T> {
         for header in headers {
             match header {
                 IndexedHeader::Single(single) => {
-                    if single.cell_idx == cell_idx { return Some(header); }
+                    if single.cell_idx == cell_idx {
+                        return Some(header);
+                    }
                 }
                 IndexedHeader::Group(group) => {
-                    if group.cell_idx == cell_idx { return Some(header); }
+                    if group.cell_idx == cell_idx {
+                        return Some(header);
+                    }
                     if let Some(cell) = Self::lookup_cell(&group.children, cell_idx) {
                         return Some(cell);
                     }
@@ -273,10 +270,10 @@ impl<T: 'static> IndexedHeader<T> {
     }
 
     pub fn cell_range(&self) -> Range<usize> {
-       match self {
-           Self::Single(single) => single.cell_idx..(single.cell_idx+1),
-           Self::Group(group) => group.cell_idx..(group.cell_idx + group.cell_count),
-       }
+        match self {
+            Self::Single(single) => single.cell_idx..(single.cell_idx + 1),
+            Self::Group(group) => group.cell_idx..(group.cell_idx + group.cell_count),
+        }
     }
 
     pub fn extract_cell_list(&self, list: &mut Vec<IndexedHeader<T>>) {
@@ -297,5 +294,4 @@ impl<T: 'static> IndexedHeader<T> {
             Self::Group(group) => group.extract_column_list(list),
         }
     }
-
 }

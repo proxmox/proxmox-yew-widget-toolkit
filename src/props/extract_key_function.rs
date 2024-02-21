@@ -18,10 +18,9 @@ pub trait ExtractPrimaryKey {
 /// data type itself (rust orphan rules). Providing a separate
 /// [ExtractKeyFn] is a workaround for that.
 #[derive(Derivative)]
-#[derivative(Clone(bound=""), PartialEq(bound=""))]
+#[derivative(Clone(bound = ""), PartialEq(bound = ""))]
 pub struct ExtractKeyFn<T>(
-    #[derivative(PartialEq(compare_with="Rc::ptr_eq"))]
-    Rc<dyn Fn(&T) -> Key>
+    #[derivative(PartialEq(compare_with = "Rc::ptr_eq"))] Rc<dyn Fn(&T) -> Key>,
 );
 
 impl<T> ExtractKeyFn<T> {
@@ -58,7 +57,7 @@ impl<T> IntoExtractKeyFn<T> for Option<ExtractKeyFn<T>> {
     }
 }
 
-impl<T, F: 'static + Fn(&T) -> Key> IntoExtractKeyFn<T>  for F {
+impl<T, F: 'static + Fn(&T) -> Key> IntoExtractKeyFn<T> for F {
     fn into_extract_key_fn(self) -> Option<ExtractKeyFn<T>> {
         Some(ExtractKeyFn::new(self))
     }

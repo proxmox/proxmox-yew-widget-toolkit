@@ -51,7 +51,7 @@
 mod macros;
 
 mod animate;
-pub use animate::{IntoSvgAnimation, Animate};
+pub use animate::{Animate, IntoSvgAnimation};
 
 mod animate_transform;
 pub use animate_transform::AnimateTransform;
@@ -63,7 +63,7 @@ mod ellipse;
 pub use ellipse::Ellipse;
 
 mod group;
-pub use group:: Group;
+pub use group::Group;
 
 mod hyperlink;
 pub use hyperlink::Hyperlink;
@@ -92,11 +92,11 @@ pub use text::Text;
 mod tspan;
 pub use tspan::TSpan;
 
-use std::fmt::Display;
 use std::borrow::Cow;
+use std::fmt::Display;
 
-use yew::prelude::*;
 use yew::html::IntoPropValue;
+use yew::prelude::*;
 use yew::virtual_dom::VTag;
 
 use crate::props::WidgetBuilder;
@@ -122,7 +122,7 @@ impl Display for SvgLength {
         match self {
             SvgLength::Px(v) => write!(f, "{v}px"),
             SvgLength::Em(v) => write!(f, "{v}em"),
-            SvgLength::Fraction(v) => write!(f, "{}%", v*100.0),
+            SvgLength::Fraction(v) => write!(f, "{}%", v * 100.0),
         }
     }
 }
@@ -188,6 +188,11 @@ impl Canvas {
 
 impl Into<VTag> for Canvas {
     fn into(self) -> VTag {
-        self.std_props.into_vtag(Cow::Borrowed("svg"), None::<&str>, Some(self.listeners), Some(self.children))
+        self.std_props.into_vtag(
+            Cow::Borrowed("svg"),
+            None::<&str>,
+            Some(self.listeners),
+            Some(self.children),
+        )
     }
 }

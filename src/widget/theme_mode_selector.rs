@@ -77,15 +77,15 @@ impl Component for PwtThemeModeSelector {
         let onclick = ctx.link().callback(|_| Msg::NextMode);
 
         Button::new_icon(match self.theme {
-                ThemeMode::System => "fa fa-fw fa-asterisk",
-                ThemeMode::Dark => "fa fa-fw fa-moon-o",
-                ThemeMode::Light => "fa fa-fw fa-sun-o",
+            ThemeMode::System => "fa fa-fw fa-asterisk",
+            ThemeMode::Dark => "fa fa-fw fa-moon-o",
+            ThemeMode::Light => "fa fa-fw fa-sun-o",
         })
-            .class(props.class.clone())
-            .class("circle")
-            .onclick(onclick)
-            .aria_label("Select Theme Mode")
-            .into()
+        .class(props.class.clone())
+        .class("circle")
+        .onclick(onclick)
+        .aria_label("Select Theme Mode")
+        .into()
     }
 
     fn rendered(&mut self, ctx: &Context<Self>, first_render: bool) {

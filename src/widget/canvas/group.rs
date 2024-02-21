@@ -15,7 +15,6 @@ use super::SvgLength;
 pub struct Group {}
 
 impl Group {
-
     /// Create a new instance.
     pub fn new() -> Self {
         yew::props!(Self {})
@@ -27,6 +26,11 @@ impl Group {
 
 impl Into<VTag> for Group {
     fn into(self) -> VTag {
-        self.std_props.into_vtag(Cow::Borrowed("g"), None::<&str>, Some(self.listeners), Some(self.children))
+        self.std_props.into_vtag(
+            Cow::Borrowed("g"),
+            None::<&str>,
+            Some(self.listeners),
+            Some(self.children),
+        )
     }
 }

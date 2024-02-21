@@ -4,7 +4,7 @@ use yew::html::IntoPropValue;
 use yew::virtual_dom::{Key, VComp, VNode};
 
 use crate::prelude::*;
-use crate::widget::{Column, Row, ActionIcon};
+use crate::widget::{ActionIcon, Column, Row};
 
 use pwt_macros::builder;
 
@@ -115,9 +115,12 @@ impl Component for PwtApplicationBar {
     type Properties = ApplicationBar;
 
     fn create(ctx: &yew::Context<Self>) -> Self {
-        let page_controller =  ctx.link().context::<PageController>(Callback::from(|_| {})).map(|(c, _)| c);
+        let page_controller = ctx
+            .link()
+            .context::<PageController>(Callback::from(|_| {}))
+            .map(|(c, _)| c);
 
-        Self { page_controller}
+        Self { page_controller }
     }
 
     fn view(&self, ctx: &yew::Context<Self>) -> yew::Html {

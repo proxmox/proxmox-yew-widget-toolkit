@@ -7,7 +7,7 @@ use pwt_macros::widget;
 
 use crate::props::WidgetBuilder;
 
-use super:: {Hyperlink, SvgLength, TSpan};
+use super::{Hyperlink, SvgLength, TSpan};
 
 pub trait IntoSvgTextChild {
     fn into_svg_text_child(self) -> VNode;
@@ -40,7 +40,6 @@ pub struct Text {
 }
 
 impl Text {
-
     /// Create a new instance.
     pub fn new(text: impl IntoSvgTextChild) -> Self {
         yew::props!(Self {}).with_child(text)
@@ -87,6 +86,11 @@ impl Text {
 
 impl Into<VTag> for Text {
     fn into(self) -> VTag {
-        self.std_props.into_vtag(Cow::Borrowed("text"), None::<&str>, Some(self.listeners), Some(self.children))
+        self.std_props.into_vtag(
+            Cow::Borrowed("text"),
+            None::<&str>,
+            Some(self.listeners),
+            Some(self.children),
+        )
     }
 }

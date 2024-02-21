@@ -5,9 +5,7 @@ use wasm_bindgen::{closure::Closure, JsCast};
 use yew::html::Scope;
 use yew::prelude::*;
 
-use super::{
-    FieldHandle, FieldOptions, FormContext, FormContextObserver, SubmitValidateFn,
-};
+use super::{FieldHandle, FieldOptions, FormContext, FormContextObserver, SubmitValidateFn};
 use crate::props::FieldBuilder;
 
 /// Managed field state.
@@ -354,9 +352,12 @@ impl<MF: ManagedField + 'static> Component for ManagedFieldMaster<MF> {
                 }
 
                 let value = value.unwrap_or(self.comp_state.value.clone());
-                let valid =
-                    valid.unwrap_or_else(|| self.validate.apply(&value)
-                        .map(|_| ()).map_err(|e| e.to_string()));
+                let valid = valid.unwrap_or_else(|| {
+                    self.validate
+                        .apply(&value)
+                        .map(|_| ())
+                        .map_err(|e| e.to_string())
+                });
 
                 let value_changed = value != self.comp_state.value;
                 let valid_changed = valid != self.comp_state.valid;
@@ -371,7 +372,11 @@ impl<MF: ManagedField + 'static> Component for ManagedFieldMaster<MF> {
                 true
             }
             Msg::UpdateValue(value) => {
-                let valid = self.validate.apply(&value).map(|_| ()).map_err(|e| e.to_string());
+                let valid = self
+                    .validate
+                    .apply(&value)
+                    .map(|_| ())
+                    .map_err(|e| e.to_string());
 
                 let value_changed = value != self.comp_state.value;
                 let valid_changed = valid != self.comp_state.valid;
@@ -479,7 +484,8 @@ impl<MF: ManagedField + 'static> Component for ManagedFieldMaster<MF> {
 
         if validation_args != old_validation_args {
             log::info!("UPDATE VF {:?}", props.as_input_props().name);
-            let validate = SubmitValidateFn::new(move |value| MF::validator(&validation_args, value));
+            let validate =
+                SubmitValidateFn::new(move |value| MF::validator(&validation_args, value));
             refresh1 = true;
             self.validate = validate.clone();
             if let Some(field_handle) = &mut self.field_handle {

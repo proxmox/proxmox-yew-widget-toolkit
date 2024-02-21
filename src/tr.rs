@@ -4,7 +4,7 @@
 use crate::gettext_runtime_format;
 
 #[cfg(doc)]
-use crate::{gettext, pgettext, ngettext, npgettext};
+use crate::{gettext, ngettext, npgettext, pgettext};
 
 /// Translate strings using gettext and format arguments using [gettext_runtime_format!].
 ///
@@ -195,19 +195,46 @@ mod test {
     fn test_ngettext_macro() {
         let foo = "foo";
 
-        assert_eq!(ngettext!("You have one new message", "You have {n} new messages", 0), "You have 0 new messages");
-        assert_eq!(ngettext!("You have one new message", "You have {n} new messages", 1), "You have one new message");
-        assert_eq!(ngettext!("You have one new message", "You have {n} new messages", 2), "You have 2 new messages");
+        assert_eq!(
+            ngettext!("You have one new message", "You have {n} new messages", 0),
+            "You have 0 new messages"
+        );
+        assert_eq!(
+            ngettext!("You have one new message", "You have {n} new messages", 1),
+            "You have one new message"
+        );
+        assert_eq!(
+            ngettext!("You have one new message", "You have {n} new messages", 2),
+            "You have 2 new messages"
+        );
 
         // Two brackets for a single argument.
-        assert_eq!(ngettext!("You have one new {}", "You have {n} new {}s", 1, foo), "You have one new foo");
-        assert_eq!(ngettext!("You have one new {}", "You have {n} new {}s", 3, foo), "You have 3 new foos");
+        assert_eq!(
+            ngettext!("You have one new {}", "You have {n} new {}s", 1, foo),
+            "You have one new foo"
+        );
+        assert_eq!(
+            ngettext!("You have one new {}", "You have {n} new {}s", 3, foo),
+            "You have 3 new foos"
+        );
 
         // Only one bracket.
-        assert_eq!(ngettext!("You have one new foo", "You have {n} new {}", 1, foo), "You have one new foo");
-        assert_eq!(ngettext!("You have one new {}", "You have {n} new foos", 1, foo), "You have one new foo");
-        assert_eq!(ngettext!("You have one new {}", "You have {n} new foos", 3, foo), "You have 3 new foos");
-        assert_eq!(ngettext!("You have one new foo", "You have {n} new {}s", 3, foo), "You have 3 new foos");
+        assert_eq!(
+            ngettext!("You have one new foo", "You have {n} new {}", 1, foo),
+            "You have one new foo"
+        );
+        assert_eq!(
+            ngettext!("You have one new {}", "You have {n} new foos", 1, foo),
+            "You have one new foo"
+        );
+        assert_eq!(
+            ngettext!("You have one new {}", "You have {n} new foos", 3, foo),
+            "You have 3 new foos"
+        );
+        assert_eq!(
+            ngettext!("You have one new foo", "You have {n} new {}s", 3, foo),
+            "You have 3 new foos"
+        );
     }
 
     #[test]
@@ -222,8 +249,26 @@ mod test {
     fn test_npgettext_macro() {
         let foo = "foo";
 
-        assert_eq!(npgettext!("context", "You have one new foo", "You have {n} new {}s", 0, foo), "You have 0 new foos");
-        assert_eq!(npgettext!("context", "You have one new foo", "You have {n} new {}s", 1, foo), "You have one new foo");
+        assert_eq!(
+            npgettext!(
+                "context",
+                "You have one new foo",
+                "You have {n} new {}s",
+                0,
+                foo
+            ),
+            "You have 0 new foos"
+        );
+        assert_eq!(
+            npgettext!(
+                "context",
+                "You have one new foo",
+                "You have {n} new {}s",
+                1,
+                foo
+            ),
+            "You have one new foo"
+        );
     }
 
     #[test]
@@ -236,8 +281,17 @@ mod test {
         assert_eq!(tr!("{} bar", foo), "foo bar");
         assert_eq!(tr!("context" => "{0} bar", foo), "foo bar");
 
-        assert_eq!(tr!("You have one new {}" | "You have {n} new {}s" % 1, foo), "You have one new foo");
-        assert_eq!(tr!("You have one new {}" | "You have {n} new {}s" % 3, foo), "You have 3 new foos");
-        assert_eq!(tr!("context" => "You have one new {}" | "You have {n} new {}s" % 3, foo), "You have 3 new foos");
+        assert_eq!(
+            tr!("You have one new {}" | "You have {n} new {}s" % 1, foo),
+            "You have one new foo"
+        );
+        assert_eq!(
+            tr!("You have one new {}" | "You have {n} new {}s" % 3, foo),
+            "You have 3 new foos"
+        );
+        assert_eq!(
+            tr!("context" => "You have one new {}" | "You have {n} new {}s" % 3, foo),
+            "You have 3 new foos"
+        );
     }
 }

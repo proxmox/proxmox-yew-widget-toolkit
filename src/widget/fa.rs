@@ -27,7 +27,6 @@ pub struct Fa {
 }
 
 impl Fa {
-
     /// Create a new instrtance from the icon name.
     pub fn new(name: impl AsRef<str>) -> Self {
         Self {
@@ -105,11 +104,9 @@ impl Fa {
 #[function_component(PwtFa)]
 #[doc(hidden)]
 pub fn pwt_fa(props: &Fa) -> Html {
-
-    html!{
+    html! {
         <i class={props.class.clone()} role="none"/>
     }
-
 }
 
 impl Into<VNode> for Fa {

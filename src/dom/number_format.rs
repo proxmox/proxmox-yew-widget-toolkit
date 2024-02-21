@@ -20,8 +20,14 @@ fn test_browser_locale() -> Option<LocaleInfo> {
 
     let parts: Vec<NumberPartInfo> = serde_wasm_bindgen::from_value(info.into()).unwrap();
 
-    let decimal = parts.iter().find(|i| i.ty == "decimal").map(|i| i.value.clone());
-    let group = parts.iter().find(|i| i.ty == "group").map(|i| i.value.clone());
+    let decimal = parts
+        .iter()
+        .find(|i| i.ty == "decimal")
+        .map(|i| i.value.clone());
+    let group = parts
+        .iter()
+        .find(|i| i.ty == "group")
+        .map(|i| i.value.clone());
 
     if let (Some(decimal), Some(group)) = (decimal, group) {
         Some(LocaleInfo { decimal, group })
@@ -30,7 +36,7 @@ fn test_browser_locale() -> Option<LocaleInfo> {
     }
 }
 
-thread_local!{
+thread_local! {
     static BROWSER_LOCALE: LocaleInfo = {
         if let Some(info) = test_browser_locale() {
             info
@@ -61,13 +67,18 @@ pub fn parse_float(text: &str) -> Result<f64, String> {
 
 impl Default for LocaleInfo {
     fn default() -> Self {
-        Self { decimal: ".".into(), group: ",". into() }
+        Self {
+            decimal: ".".into(),
+            group: ",".into(),
+        }
     }
 }
 
 impl LocaleInfo {
     /// Return current browser locale settings.
-    pub fn new() -> Self { get_browser_locale_info() }
+    pub fn new() -> Self {
+        get_browser_locale_info()
+    }
 
     /// Rust f64 float format, but replaces decimal point from browser locale settings.
     pub fn format_float(&self, value: f64) -> String {
@@ -101,14 +112,14 @@ impl LocaleInfo {
             Err(_) => return Err(tr!("invalid float literal")),
         };
 
-        if !number.is_finite() { // do not allow "inf", "nan", ...
+        if !number.is_finite() {
+            // do not allow "inf", "nan", ...
             return Err(tr!("invalid float literal"));
         }
 
         Ok(number)
     }
 }
-
 
 // result from js_sys::Intl::NumberFormat::format_to_parts
 #[derive(Deserialize, Debug)]

@@ -7,7 +7,6 @@ use yew::html::IntoPropValue;
 use yew::prelude::*;
 use yew::virtual_dom::Key;
 
-
 /// Trait to generate inline Html.
 ///
 /// We use this for properties lite panel titles, where you usually just want text.
@@ -32,13 +31,13 @@ macro_rules! impl_into_inline_html {
     ($t:ty) => {
         impl IntoOptionalInlineHtml for $t {
             fn into_optional_inline_html(self) -> Option<Html> {
-                Some(html!{self})
+                Some(html! {self})
             }
         }
 
         impl IntoOptionalInlineHtml for Option<$t> {
             fn into_optional_inline_html(self) -> Option<Html> {
-                self.map(|me| html!{me})
+                self.map(|me| html! {me})
             }
         }
     };
@@ -47,8 +46,6 @@ macro_rules! impl_into_inline_html {
 impl_into_inline_html!(String);
 impl_into_inline_html!(&str);
 impl_into_inline_html!(AttrValue);
-
-
 
 /// Trait which provides mutable access to the class property.
 pub trait AsClassesMut {
@@ -154,4 +151,4 @@ mod sorter_function;
 pub use sorter_function::{IntoSorterFn, SorterFn};
 
 mod filter_function;
-pub use filter_function::{FilterFn, IntoFilterFn, TextFilterFn, IntoTextFilterFn};
+pub use filter_function::{FilterFn, IntoFilterFn, IntoTextFilterFn, TextFilterFn};

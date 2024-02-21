@@ -104,7 +104,6 @@ impl Component for PwtScaffold {
             .with_optional_child(props.body.clone())
             .with_optional_child(positioned_fab);
 
-
         Column::new()
             .class("pwt-viewport")
             .class("pwt-position-relative")

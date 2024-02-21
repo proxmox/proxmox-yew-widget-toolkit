@@ -1,13 +1,13 @@
 use std::borrow::Cow;
 
+use yew::html::IntoPropValue;
 use yew::prelude::*;
 use yew::virtual_dom::{Listeners, VList, VTag};
-use yew::html::IntoPropValue;
 
 use pwt_macros::widget;
 
-use crate::prelude::*;
 use crate::css::{Display, FlexDirection};
+use crate::prelude::*;
 
 /// Vertical container with flex layout.
 #[widget(pwt=crate, @element, @container)]
@@ -15,7 +15,6 @@ use crate::css::{Display, FlexDirection};
 pub struct Column {}
 
 impl Column {
-
     /// Create a new instance.
     pub fn new() -> Self {
         Self::default()
@@ -48,7 +47,7 @@ impl Column {
 
     /// Method to add a flexible spacer.
     pub fn add_flex_spacer(&mut self) {
-        self.add_child(html!{<div class="pwt-flex-fill"/>});
+        self.add_child(html! {<div class="pwt-flex-fill"/>});
     }
 }
 
@@ -56,9 +55,7 @@ impl Into<VTag> for Column {
     fn into(self) -> VTag {
         let attributes = self.std_props.cumulate_attributes(None::<&str>);
 
-        let listeners = Listeners::Pending(
-            self.listeners.listeners.into_boxed_slice()
-        );
+        let listeners = Listeners::Pending(self.listeners.listeners.into_boxed_slice());
 
         let children = VList::with_children(self.children, None);
 

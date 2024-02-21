@@ -1,6 +1,6 @@
-use yew::Classes;
+use super::AsClassesMut;
 use yew::html::IntoPropValue;
-use super:: AsClassesMut;
+use yew::Classes;
 
 /// Defines methods to use CSS padding classes.
 ///
@@ -31,7 +31,6 @@ use super:: AsClassesMut;
 /// ```
 
 pub trait CssPaddingBuilder: AsClassesMut + Sized {
-
     /// Builder style method to add a box padding class.
     fn padding(mut self, padding: impl IntoPropValue<Option<usize>>) -> Self {
         self.add_padding(padding);

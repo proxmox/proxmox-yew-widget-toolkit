@@ -10,10 +10,9 @@ use derivative::Derivative;
 ///
 /// Wraps `Rc` around `Fn` so it can be passed as a prop.
 #[derive(Derivative)]
-#[derivative(Clone(bound=""), PartialEq(bound=""))]
+#[derivative(Clone(bound = ""), PartialEq(bound = ""))]
 pub struct FilterFn<T>(
-    #[derivative(PartialEq(compare_with="Rc::ptr_eq"))]
-    Rc<dyn Fn(&T) -> bool>
+    #[derivative(PartialEq(compare_with = "Rc::ptr_eq"))] Rc<dyn Fn(&T) -> bool>,
 );
 
 impl<T> FilterFn<T> {
@@ -44,12 +43,11 @@ impl<T> IntoFilterFn<T> for Option<FilterFn<T>> {
     }
 }
 
-impl<T, F: 'static + Fn(&T) -> bool> IntoFilterFn<T>  for F {
+impl<T, F: 'static + Fn(&T) -> bool> IntoFilterFn<T> for F {
     fn into_filter_fn(self) -> Option<FilterFn<T>> {
         Some(FilterFn::new(self))
     }
 }
-
 
 /// A [TextFilterFn] function is a callback that determine if an element
 /// should be yielded. The filter query is passed as second argument.
@@ -59,10 +57,9 @@ impl<T, F: 'static + Fn(&T) -> bool> IntoFilterFn<T>  for F {
 ///
 /// Wraps `Rc` around `Fn` so it can be passed as a prop.
 #[derive(Derivative)]
-#[derivative(Clone(bound=""), PartialEq(bound=""))]
+#[derivative(Clone(bound = ""), PartialEq(bound = ""))]
 pub struct TextFilterFn<T>(
-    #[derivative(PartialEq(compare_with="Rc::ptr_eq"))]
-    Rc<dyn Fn(&T, &str) -> bool>
+    #[derivative(PartialEq(compare_with = "Rc::ptr_eq"))] Rc<dyn Fn(&T, &str) -> bool>,
 );
 
 impl<T> TextFilterFn<T> {
@@ -93,7 +90,7 @@ impl<T> IntoTextFilterFn<T> for Option<TextFilterFn<T>> {
     }
 }
 
-impl<T, F: 'static + Fn(&T, &str) -> bool> IntoTextFilterFn<T>  for F {
+impl<T, F: 'static + Fn(&T, &str) -> bool> IntoTextFilterFn<T> for F {
     fn into_text_filter_fn(self) -> Option<TextFilterFn<T>> {
         Some(TextFilterFn::new(self))
     }

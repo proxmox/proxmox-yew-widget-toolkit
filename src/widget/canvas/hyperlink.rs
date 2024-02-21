@@ -34,6 +34,11 @@ impl Hyperlink {
 
 impl Into<VTag> for Hyperlink {
     fn into(self) -> VTag {
-        self.std_props.into_vtag(Cow::Borrowed("a"), None::<&str>, Some(self.listeners), Some(self.children))
+        self.std_props.into_vtag(
+            Cow::Borrowed("a"),
+            None::<&str>,
+            Some(self.listeners),
+            Some(self.children),
+        )
     }
 }

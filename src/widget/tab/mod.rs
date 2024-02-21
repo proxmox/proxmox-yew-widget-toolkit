@@ -1,4 +1,3 @@
-
 mod tab_bar_item;
 pub use tab_bar_item::TabBarItem;
 

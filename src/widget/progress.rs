@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 
-use yew::prelude::*;
 use yew::html::IntoPropValue;
+use yew::prelude::*;
 use yew::virtual_dom::VTag;
 
 use pwt_macros::{builder, widget};
@@ -38,7 +38,7 @@ pub struct Progress {
 impl Progress {
     /// Create a new instance.
     pub fn new() -> Self {
-        yew::props!{ Self {}}
+        yew::props! { Self {}}
     }
 }
 
@@ -54,13 +54,14 @@ impl Into<VTag> for Progress {
                     .attribute("style", format!("width:{percentage}%"))
                     .into()
             }
-            None => {
-                Container::new()
-                    .class("pwt-progress-infinite")
-                    .into()
-            }
+            None => Container::new().class("pwt-progress-infinite").into(),
         };
 
-        self.std_props.into_vtag(Cow::Borrowed("div"), Some("pwt-progress"), None, Some(vec![bar]))
+        self.std_props.into_vtag(
+            Cow::Borrowed("div"),
+            Some("pwt-progress"),
+            None,
+            Some(vec![bar]),
+        )
     }
 }

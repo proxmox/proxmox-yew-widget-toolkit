@@ -44,8 +44,7 @@ impl NumberTypeInfo for f64 {
             },
             Value::String(s) => {
                 // Note: this handles localized number format
-                let number = crate::dom::parse_float(s)
-                    .map_err(|err| Error::msg(err))?;
+                let number = crate::dom::parse_float(s).map_err(|err| Error::msg(err))?;
 
                 return Ok(number);
             }
@@ -511,7 +510,9 @@ impl<T: NumberTypeInfo> ManagedField for NumberField<T> {
             }
             Msg::Up => {
                 let mut n = T::value_to_number(&state.value).ok();
-                if n.is_none() && state.valid.is_ok() { n = Some(T::default()); }
+                if n.is_none() && state.valid.is_ok() {
+                    n = Some(T::default());
+                }
                 if let Some(n) = n {
                     let next = T::step_up(&n, props.step);
                     ctx.link().update_value(T::number_to_value(&next));
@@ -520,7 +521,9 @@ impl<T: NumberTypeInfo> ManagedField for NumberField<T> {
             }
             Msg::Down => {
                 let mut n = T::value_to_number(&state.value).ok();
-                if n.is_none() && state.valid.is_ok() { n = Some(T::default()); }
+                if n.is_none() && state.valid.is_ok() {
+                    n = Some(T::default());
+                }
                 if let Some(n) = n {
                     let next = T::step_down(&n, props.step);
                     ctx.link().update_value(T::number_to_value(&next));

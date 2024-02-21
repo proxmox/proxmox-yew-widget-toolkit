@@ -1,6 +1,6 @@
-use yew::Classes;
+use super::AsClassesMut;
 use yew::html::IntoPropValue;
-use super:: AsClassesMut;
+use yew::Classes;
 
 /// Defines methods to use CSS margin classes.
 ///
@@ -31,7 +31,6 @@ use super:: AsClassesMut;
 /// ```
 
 pub trait CssMarginBuilder: AsClassesMut + Sized {
-
     /// Builder style method to add a box margin class.
     fn margin(mut self, margin: impl IntoPropValue<Option<usize>>) -> Self {
         self.add_margin(margin);

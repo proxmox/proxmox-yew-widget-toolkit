@@ -1,8 +1,8 @@
-use yew::prelude::*;
 use yew::html::IntoPropValue;
+use yew::prelude::*;
 use yew::virtual_dom::VNode;
 
-use super::{WidgetStdProps, IntoOptionalKey};
+use super::{IntoOptionalKey, WidgetStdProps};
 
 /// Defines common builder methods for widgets.
 pub trait WidgetBuilder: Into<VNode> {
@@ -92,5 +92,4 @@ pub trait WidgetBuilder: Into<VNode> {
     fn set_tabindex(&mut self, tabindex: i32) {
         self.set_attribute("tabindex", tabindex.to_string());
     }
-
 }

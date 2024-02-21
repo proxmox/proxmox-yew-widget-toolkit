@@ -740,7 +740,7 @@ impl FormContextState {
                 self.version += 1;
                 field.submit_value = submit_value;
             }
-       }
+        }
     }
 
     fn update_field_validate_by_slab_key(
@@ -882,7 +882,7 @@ impl FormContextState {
                 let field = &self.fields[key];
                 let submit_empty = field.options.submit_empty;
                 if field.valid.is_ok() && field.options.submit {
-                     match &field.submit_value {
+                    match &field.submit_value {
                         None => continue,
                         Some(value) => {
                             if !submit_empty & value_is_empty(&value) {

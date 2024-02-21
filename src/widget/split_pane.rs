@@ -1,11 +1,11 @@
+use yew::html::IntoPropValue;
 use yew::prelude::*;
 use yew::virtual_dom::VNode;
-use yew::html::IntoPropValue;
 
 use gloo_events::EventListener;
 use wasm_bindgen::{JsCast, UnwrapThrowExt};
 
-use crate::css::{FlexFillFirstChild, Display};
+use crate::css::{Display, FlexFillFirstChild};
 use crate::props::{ContainerBuilder, EventSubscriber, WidgetBuilder};
 
 use super::Container;
@@ -24,7 +24,6 @@ enum PaneSize {
 }
 
 impl PaneSize {
-
     fn to_css_size(&self, reserve: f64) -> String {
         match self {
             Self::Fraction(ratio) => {
@@ -43,7 +42,7 @@ impl PaneSize {
                 format!("flex: 0 0 calc((100% - {reserve}px)*{ratio});")
             }
             Self::Pixel(p) => format!("flex: 0 0 {p}px;"),
-            Self::Flex(f) =>  format!("flex: {f} 1 0px;"),
+            Self::Flex(f) => format!("flex: {f} 1 0px;"),
         }
     }
 
@@ -85,7 +84,6 @@ pub struct Pane {
 }
 
 impl Pane {
-
     /// Creates a new instance.
     pub fn new(content: impl Into<VNode>) -> Self {
         Self {
@@ -128,7 +126,7 @@ impl Pane {
 
     /// Method to set the initial pane size as fraction.
     pub fn set_fraction(&mut self, fraction: impl IntoPropValue<Option<f64>>) {
-       self.size = fraction.into_prop_value().map(|f| PaneSize::Fraction(f));
+        self.size = fraction.into_prop_value().map(|f| PaneSize::Fraction(f));
     }
 
     /// Builder style method to set the minimal pane size in pixels.
@@ -150,7 +148,7 @@ impl Pane {
 
     /// Method to set the minimal pane size as fraction.
     pub fn set_min_fraction(&mut self, fraction: impl IntoPropValue<Option<f64>>) {
-       self.min_size = fraction.into_prop_value().map(|f| PaneSize::Fraction(f));
+        self.min_size = fraction.into_prop_value().map(|f| PaneSize::Fraction(f));
     }
 
     /// Builder style method to set the maximal pane size in pixels.
@@ -161,7 +159,7 @@ impl Pane {
 
     /// Method to set the maximal pane size in pixels.
     pub fn set_max_size(&mut self, size: impl IntoPropValue<Option<usize>>) {
-        self.max_size =  size.into_prop_value().map(|p| PaneSize::Pixel(p));
+        self.max_size = size.into_prop_value().map(|p| PaneSize::Pixel(p));
     }
 
     /// Builder style method to set the maximal pane size as fraction.
@@ -172,7 +170,7 @@ impl Pane {
 
     /// Method to set the maximal pane size as fraction.
     pub fn set_max_fraction(&mut self, fraction: impl IntoPropValue<Option<f64>>) {
-       self.max_size = fraction.into_prop_value().map(|f| PaneSize::Fraction(f));
+        self.max_size = fraction.into_prop_value().map(|f| PaneSize::Fraction(f));
     }
 
     /// Builder style method to add a html class
@@ -209,7 +207,6 @@ pub struct SplitPane {
     #[prop_or(7)]
     pub handle_size: usize,
 }
-
 
 impl SplitPane {
     /// Creates a new instance
@@ -268,11 +265,10 @@ pub enum Msg {
     ResetSize,
     StartResize(usize, i32, i32, i32),
     StopResize(i32),
-    PointerMove(usize, i32, i32, i32)
+    PointerMove(usize, i32, i32, i32),
 }
 
 impl PwtSplitPane {
-
     fn create_splitter(&self, ctx: &Context<Self>, index: usize, fraction: Option<f64>) -> Html {
         let props = ctx.props();
         let vertical = props.vertical;
@@ -291,11 +287,11 @@ impl PwtSplitPane {
                         event.stop_propagation();
                         link.send_message(Msg::Shrink(index, event.shift_key()));
                     }
-                    "ArrowDown" if vertical  => {
+                    "ArrowDown" if vertical => {
                         event.stop_propagation();
                         link.send_message(Msg::Grow(index, event.shift_key()));
                     }
-                    "ArrowLeft" if !vertical && !rtl  => {
+                    "ArrowLeft" if !vertical && !rtl => {
                         event.stop_propagation();
                         link.send_message(Msg::Shrink(index, event.shift_key()));
                     }
@@ -303,7 +299,7 @@ impl PwtSplitPane {
                         event.stop_propagation();
                         link.send_message(Msg::Grow(index, event.shift_key()));
                     }
-                    "ArrowLeft" if !vertical && rtl  => {
+                    "ArrowLeft" if !vertical && rtl => {
                         event.stop_propagation();
                         link.send_message(Msg::Grow(index, event.shift_key()));
                     }
@@ -319,14 +315,33 @@ impl PwtSplitPane {
         let splitter = Container::new()
             .attribute("tabindex", "0")
             .attribute("role", "separator")
-            .attribute("aria-orientation", if props.vertical { "vertical" } else { "horizontal" })
-            .attribute("aria-valuenow", fraction.map(|f| format!("{:.0}", f*100.0)))
+            .attribute(
+                "aria-orientation",
+                if props.vertical {
+                    "vertical"
+                } else {
+                    "horizontal"
+                },
+            )
+            .attribute(
+                "aria-valuenow",
+                fraction.map(|f| format!("{:.0}", f * 100.0)),
+            )
             .attribute("style", format!("flex: 0 0 {}px;", props.handle_size))
-            .class(if props.vertical { "column-split-handle" } else { "row-split-handle" })
+            .class(if props.vertical {
+                "column-split-handle"
+            } else {
+                "row-split-handle"
+            })
             .onkeydown(onkeydown)
             .ondblclick(ctx.link().callback(|_| Msg::ResetSize))
             .onpointerdown(ctx.link().callback(move |event: PointerEvent| {
-                Msg::StartResize(index, event.offset_x(), event.offset_y(), event.pointer_id())
+                Msg::StartResize(
+                    index,
+                    event.offset_x(),
+                    event.offset_y(),
+                    event.pointer_id(),
+                )
             }));
 
         splitter.into()
@@ -335,13 +350,14 @@ impl PwtSplitPane {
     fn create_pane(&self, ctx: &Context<Self>, index: usize, child: &Pane) -> Html {
         let props = ctx.props();
 
-        let handle_size_sum = (props.handle_size as f64) * props.children.len().saturating_sub(1) as f64;
+        let handle_size_sum =
+            (props.handle_size as f64) * props.children.len().saturating_sub(1) as f64;
 
         let size_attr = if props.vertical { "height" } else { "width" };
 
         let mut style = match child.size {
             Some(size) => size.to_css_flex(handle_size_sum),
-            None => String::from("flex: 0 0 auto;")
+            None => String::from("flex: 0 0 auto;"),
         };
 
         style.push_str("overflow:auto;");
@@ -384,7 +400,6 @@ impl PwtSplitPane {
     }
 
     fn query_sizes(&self, props: &SplitPane) -> Option<Vec<f64>> {
-
         let mut sizes = Vec::new();
 
         for child in props.children.iter() {
@@ -404,8 +419,14 @@ impl PwtSplitPane {
     }
 
     fn try_new_size(&self, pane: &Pane, current_size: f64, new_size: f64) -> f64 {
-        let min = pane.min_size.map(|s| s.real_size(&self.sizes)).unwrap_or(0.0);
-        let max = pane.max_size.map(|s| s.real_size(&self.sizes)).unwrap_or(f64::MAX);
+        let min = pane
+            .min_size
+            .map(|s| s.real_size(&self.sizes))
+            .unwrap_or(0.0);
+        let max = pane
+            .max_size
+            .map(|s| s.real_size(&self.sizes))
+            .unwrap_or(f64::MAX);
 
         let size = new_size.min(max).max(min);
         let diff = size - current_size;
@@ -414,7 +435,8 @@ impl PwtSplitPane {
     }
 
     fn resize_pane(&mut self, props: &SplitPane, child_index: usize, new_size1: f64) -> bool {
-        if self.sizes.len() <= child_index { // fixme
+        if self.sizes.len() <= child_index {
+            // fixme
             // should never happen - just to be sure
             return false;
         }
@@ -442,7 +464,6 @@ impl PwtSplitPane {
         true
     }
 }
-
 
 impl Component for PwtSplitPane {
     type Message = Msg;
@@ -479,7 +500,9 @@ impl Component for PwtSplitPane {
             }
             Msg::PointerMove(child_index, x, y, pointer_id) => {
                 if self.pointer_id == Some(pointer_id) {
-                    if self.sizes.len() <= child_index { return false; }
+                    if self.sizes.len() <= child_index {
+                        return false;
+                    }
 
                     let pane = &props.children[child_index];
 
@@ -521,24 +544,24 @@ impl Component for PwtSplitPane {
                 let link = ctx.link();
                 let onpointermove = link.callback(move |e: Event| {
                     let event = e.dyn_ref::<web_sys::PointerEvent>().unwrap_throw();
-                    Msg::PointerMove(child_index, event.client_x(), event.client_y(), event.pointer_id())
+                    Msg::PointerMove(
+                        child_index,
+                        event.client_x(),
+                        event.client_y(),
+                        event.pointer_id(),
+                    )
                 });
-                let pointermove_listener = EventListener::new(
-                    &window,
-                    "pointermove",
-                    move |e| onpointermove.emit(e.clone()),
-                );
+                let pointermove_listener = EventListener::new(&window, "pointermove", move |e| {
+                    onpointermove.emit(e.clone())
+                });
                 self.pointermove_listener = Some(pointermove_listener);
 
                 let onpointerup = link.callback(|e: Event| {
                     let event = e.dyn_ref::<web_sys::PointerEvent>().unwrap_throw();
                     Msg::StopResize(event.pointer_id())
                 });
-                let pointerup_listener = EventListener::new(
-                    &window,
-                    "pointerup",
-                    move |e| onpointerup.emit(e.clone()),
-                );
+                let pointerup_listener =
+                    EventListener::new(&window, "pointerup", move |e| onpointerup.emit(e.clone()));
                 self.pointerup_listener = Some(pointerup_listener);
                 self.pointer_id = Some(pointer_id);
 
@@ -569,7 +592,7 @@ impl Component for PwtSplitPane {
         let mut position = 0f64;
         for (i, child) in props.children.iter().enumerate() {
             if i > 0 {
-                let fraction = (width > 0f64).then(|| position/width);
+                let fraction = (width > 0f64).then(|| position / width);
                 children.push(self.create_splitter(ctx, i - 1, fraction));
             }
             position += self.sizes.get(i).map(|s| *s).unwrap_or(0.0);
@@ -584,7 +607,8 @@ impl Component for PwtSplitPane {
 
         // use existing style attribute
         let attr_map = container.std_props.attributes.get_mut_index_map();
-        let mut style = attr_map.remove(&AttrValue::Static("style"))
+        let mut style = attr_map
+            .remove(&AttrValue::Static("style"))
             .map(|(style, _)| {
                 let mut style = style.to_string();
                 if !style.ends_with(';') {

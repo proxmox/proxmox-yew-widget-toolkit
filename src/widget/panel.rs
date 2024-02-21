@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 use yew::prelude::*;
-use yew::virtual_dom::{Listeners, VNode, VList, VTag};
+use yew::virtual_dom::{Listeners, VList, VNode, VTag};
 
 use pwt_macros::widget;
 
@@ -24,7 +24,6 @@ pub struct Panel {
 }
 
 impl Panel {
-
     /// Creates a new instance.
     pub fn new() -> Self {
         Self::default()
@@ -77,9 +76,7 @@ impl Into<VTag> for Panel {
 
         let attributes = self.std_props.cumulate_attributes(None::<&str>);
 
-        let listeners = Listeners::Pending(
-            self.listeners.listeners.into_boxed_slice()
-        );
+        let listeners = Listeners::Pending(self.listeners.listeners.into_boxed_slice());
 
         let children = VList::with_children(self.children, None);
 
@@ -95,14 +92,13 @@ impl Into<VTag> for Panel {
 }
 
 pub(crate) fn create_panel_title(title: Option<Html>, tools: Vec<VNode>) -> Row {
-
     let mut header = Row::new()
         .attribute("role", "group")
         .attribute("aria-label", "panel header")
         .class("pwt-align-items-center pwt-gap-1");
 
     if let Some(title) = title {
-        header.add_child(html!{
+        header.add_child(html! {
             <div role="none" class="pwt-panel-header-text">{title}</div>
         });
     }

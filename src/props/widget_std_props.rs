@@ -1,15 +1,14 @@
 use std::borrow::Cow;
 
-use yew::prelude::*;
 use yew::html::IntoPropValue;
-use yew::virtual_dom::{Attributes, ApplyAttributeAs, Listeners, Key, VList, VNode, VTag};
+use yew::prelude::*;
+use yew::virtual_dom::{ApplyAttributeAs, Attributes, Key, Listeners, VList, VNode, VTag};
 
 use crate::props::ListenersWrapper;
 
 /// Standard widget properties.
 #[derive(PartialEq, Debug, Default, Clone)]
 pub struct WidgetStdProps {
-
     /// The yew node ref.
     pub node_ref: NodeRef,
 
@@ -24,7 +23,6 @@ pub struct WidgetStdProps {
 }
 
 impl WidgetStdProps {
-
     /// Method to set attributes.
     ///
     /// Note: Value 'None' removes the attribute.
@@ -34,11 +32,11 @@ impl WidgetStdProps {
         value: impl IntoPropValue<Option<AttrValue>>,
     ) {
         if let Some(value) = value.into_prop_value() {
-            self.attributes.get_mut_index_map()
+            self.attributes
+                .get_mut_index_map()
                 .insert(key.into(), (value, ApplyAttributeAs::Attribute));
         } else {
-            self.attributes.get_mut_index_map()
-                .remove(&key.into());
+            self.attributes.get_mut_index_map().remove(&key.into());
         }
     }
 
@@ -53,7 +51,10 @@ impl WidgetStdProps {
 
         let mut attributes = self.attributes.clone();
         let attr_map = attributes.get_mut_index_map();
-        attr_map.insert(AttrValue::Static("class"), (class.into_prop_value(), ApplyAttributeAs::Attribute));
+        attr_map.insert(
+            AttrValue::Static("class"),
+            (class.into_prop_value(), ApplyAttributeAs::Attribute),
+        );
 
         attributes
     }
@@ -70,9 +71,7 @@ impl WidgetStdProps {
 
         let listeners = match listeners {
             None => Listeners::None,
-            Some(wrapper) => Listeners::Pending(
-                wrapper.listeners.into_boxed_slice()
-            ),
+            Some(wrapper) => Listeners::Pending(wrapper.listeners.into_boxed_slice()),
         };
 
         let vlist = if let Some(children) = children {

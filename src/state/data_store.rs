@@ -48,7 +48,9 @@ pub trait DataStore: Clone + PartialEq {
     /// Clears the store, removing all values.
     fn clear(&self);
 
-    fn is_empty(&self) -> bool { self.data_len() == 0}
+    fn is_empty(&self) -> bool {
+        self.data_len() == 0
+    }
 
     /// Method to add a change observer.
     ///
@@ -62,14 +64,17 @@ pub trait DataStore: Clone + PartialEq {
     fn filtered_record_pos(&self, key: &Key) -> Option<usize>;
     fn filtered_data_len(&self) -> usize;
 
-    fn filtered_data<'a>(&'a self) ->
-        Box<dyn Iterator<Item=(usize, Box<dyn DataNode<Self::Record> + 'a>)> + 'a>;
-    fn filtered_data_range<'a>(&'a self, range: Range<usize>) ->
-        Box<dyn Iterator<Item=(usize, Box<dyn DataNode<Self::Record> + 'a>)> + 'a>;
+    fn filtered_data<'a>(
+        &'a self,
+    ) -> Box<dyn Iterator<Item = (usize, Box<dyn DataNode<Self::Record> + 'a>)> + 'a>;
+    fn filtered_data_range<'a>(
+        &'a self,
+        range: Range<usize>,
+    ) -> Box<dyn Iterator<Item = (usize, Box<dyn DataNode<Self::Record> + 'a>)> + 'a>;
 }
 
 pub struct DataNodeDerefGuard<'a, T> {
-    pub(crate) guard: Box<(dyn Deref<Target=T> + 'a)>,
+    pub(crate) guard: Box<(dyn Deref<Target = T> + 'a)>,
 }
 
 impl<T> Deref for DataNodeDerefGuard<'_, T> {
@@ -77,5 +82,5 @@ impl<T> Deref for DataNodeDerefGuard<'_, T> {
 
     fn deref(&self) -> &T {
         &self.guard
-     }
+    }
 }

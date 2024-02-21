@@ -6,7 +6,7 @@ use yew::html::IntoPropValue;
 use yew::prelude::*;
 use yew::virtual_dom::Key;
 
-use crate::props::{ContainerBuilder, WidgetBuilder, IntoOptionalRenderFn, RenderFn};
+use crate::props::{ContainerBuilder, IntoOptionalRenderFn, RenderFn, WidgetBuilder};
 use crate::state::{Selection, SelectionObserver};
 use crate::widget::Container;
 

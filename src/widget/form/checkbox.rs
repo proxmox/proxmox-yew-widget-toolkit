@@ -7,8 +7,8 @@ use yew::prelude::*;
 use pwt_macros::{builder, widget};
 
 use crate::props::{ContainerBuilder, EventSubscriber, WidgetBuilder};
-use crate::widget::{Container, Tooltip};
 use crate::tr;
+use crate::widget::{Container, Tooltip};
 
 use super::{
     IntoValidateFn, ManagedField, ManagedFieldContext, ManagedFieldMaster, ManagedFieldState,

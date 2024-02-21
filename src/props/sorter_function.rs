@@ -1,5 +1,5 @@
-use std::rc::Rc;
 use std::cmp::Ordering;
+use std::rc::Rc;
 
 use derivative::Derivative;
 
@@ -7,10 +7,9 @@ use derivative::Derivative;
 ///
 /// Wraps `Rc` around `Fn` so it can be passed as a prop.
 #[derive(Derivative)]
-#[derivative(Clone(bound=""), PartialEq(bound=""))]
+#[derivative(Clone(bound = ""), PartialEq(bound = ""))]
 pub struct SorterFn<T>(
-    #[derivative(PartialEq(compare_with="Rc::ptr_eq"))]
-    Rc<dyn Fn(&T, &T) -> Ordering>
+    #[derivative(PartialEq(compare_with = "Rc::ptr_eq"))] Rc<dyn Fn(&T, &T) -> Ordering>,
 );
 
 impl<T> SorterFn<T> {
@@ -41,7 +40,7 @@ impl<T> IntoSorterFn<T> for Option<SorterFn<T>> {
     }
 }
 
-impl<T, F: 'static + Fn(&T, &T) -> Ordering> IntoSorterFn<T>  for F {
+impl<T, F: 'static + Fn(&T, &T) -> Ordering> IntoSorterFn<T> for F {
     fn into_sorter_fn(self) -> Option<SorterFn<T>> {
         Some(SorterFn::new(self))
     }

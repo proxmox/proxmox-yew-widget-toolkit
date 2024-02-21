@@ -198,8 +198,7 @@ impl Component for PwtFabMenu {
 
         let main_button = Fab::new(main_icon_class)
             .class(props.main_button_class.clone())
-            .on_click(ctx.link()
-            .callback(|_| Msg::Toggle));
+            .on_click(ctx.link().callback(|_| Msg::Toggle));
 
         container.add_child(main_button);
 
@@ -211,16 +210,17 @@ impl Component for PwtFabMenu {
             let orig_on_click = child.on_click.clone();
             let link = ctx.link().clone();
 
-            let child_button = child
-                .clone()
-                .small()
-                .class("pwt-fab-menu-item")
-                .on_click(move |event| {
-                    link.send_message(Msg::Toggle);
-                    if let Some(on_click) = &orig_on_click {
-                        on_click.emit(event);
-                    }
-                });
+            let child_button =
+                child
+                    .clone()
+                    .small()
+                    .class("pwt-fab-menu-item")
+                    .on_click(move |event| {
+                        link.send_message(Msg::Toggle);
+                        if let Some(on_click) = &orig_on_click {
+                            on_click.emit(event);
+                        }
+                    });
             container.add_child(child_button);
         }
 

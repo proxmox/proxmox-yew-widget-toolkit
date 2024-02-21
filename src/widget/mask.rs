@@ -106,7 +106,7 @@ impl Component for PwtMask {
                 Container::new()
                     .class("pwt-load-mask-inner")
                     .with_child(html! {<i class={"pwt-loading-icon"} />})
-                    .with_child(text)
+                    .with_child(text),
             )
         }
 

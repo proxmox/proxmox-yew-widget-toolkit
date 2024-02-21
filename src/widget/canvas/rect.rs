@@ -18,7 +18,6 @@ pub struct Rect {
 }
 
 impl Rect {
-
     /// Create a new instance.
     pub fn new() -> Self {
         yew::props!(Self {})
@@ -76,6 +75,11 @@ impl Rect {
 
 impl Into<VTag> for Rect {
     fn into(self) -> VTag {
-        self.std_props.into_vtag(Cow::Borrowed("rect"), None::<&str>, Some(self.listeners), self.children)
+        self.std_props.into_vtag(
+            Cow::Borrowed("rect"),
+            None::<&str>,
+            Some(self.listeners),
+            self.children,
+        )
     }
 }

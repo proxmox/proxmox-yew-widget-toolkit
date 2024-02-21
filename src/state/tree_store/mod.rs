@@ -1,28 +1,30 @@
 #[macro_use]
 mod slab_tree;
-pub use slab_tree::{SlabTree, SlabTreeNodeMut, SlabTreeNodeRef, SlabTreeChildren, SlabTreeChildrenMut};
 pub(crate) use slab_tree::SlabTreeEntry;
+pub use slab_tree::{
+    SlabTree, SlabTreeChildren, SlabTreeChildrenMut, SlabTreeNodeMut, SlabTreeNodeRef,
+};
 
 mod keyed_slab_tree;
 pub use keyed_slab_tree::{
-    KeyedSlabTree, KeyedSlabTreeNodeMut, KeyedSlabTreeNodeRef,
-    KeyedSlabTreeChildren, KeyedSlabTreeChildrenMut,
+    KeyedSlabTree, KeyedSlabTreeChildren, KeyedSlabTreeChildrenMut, KeyedSlabTreeNodeMut,
+    KeyedSlabTreeNodeRef,
 };
 
 mod slab_tree_serde;
 
-use std::rc::Rc;
 use std::cell::{Ref, RefCell, RefMut};
 use std::ops::{Deref, DerefMut, Range};
+use std::rc::Rc;
 
 use derivative::Derivative;
 
-use yew::virtual_dom::Key;
-use yew::prelude::*;
 use yew::html::IntoEventCallback;
+use yew::prelude::*;
+use yew::virtual_dom::Key;
 
-use crate::props::{ExtractKeyFn, ExtractPrimaryKey, IntoSorterFn, IntoFilterFn};
-use crate::state::{optional_rc_ptr_eq, DataStore, DataNode, DataNodeDerefGuard};
+use crate::props::{ExtractKeyFn, ExtractPrimaryKey, IntoFilterFn, IntoSorterFn};
+use crate::state::{optional_rc_ptr_eq, DataNode, DataNodeDerefGuard, DataStore};
 
 /// Hook to use a [TreeStore] with functional components.
 ///
@@ -30,7 +32,6 @@ use crate::state::{optional_rc_ptr_eq, DataStore, DataNode, DataNodeDerefGuard};
 /// events which trigger a redraw.
 #[hook]
 pub fn use_tree_store<F: FnOnce() -> TreeStore<T>, T: 'static>(init_fn: F) -> TreeStore<T> {
-
     let redraw = use_state(|| 0);
 
     let tree = use_state(init_fn);
@@ -66,17 +67,16 @@ impl<T> Drop for TreeStoreObserver<T> {
 /// a simply `PartialEq` would always return true. Please register a
 /// listener to get notified about changes.
 #[derive(Derivative)]
-#[derivative(Clone(bound=""), PartialEq(bound=""))]
+#[derivative(Clone(bound = ""), PartialEq(bound = ""))]
 pub struct TreeStore<T: 'static> {
     // Allow to store one TreeStoreObserver here (for convenience)
-    #[derivative(PartialEq(compare_with="optional_rc_ptr_eq"))]
+    #[derivative(PartialEq(compare_with = "optional_rc_ptr_eq"))]
     on_change: Option<Rc<TreeStoreObserver<T>>>,
-    #[derivative(PartialEq(compare_with="Rc::ptr_eq"))]
+    #[derivative(PartialEq(compare_with = "Rc::ptr_eq"))]
     inner: Rc<RefCell<KeyedSlabTree<T>>>,
 }
 
 impl<T: ExtractPrimaryKey + 'static> TreeStore<T> {
-
     /// Creates a new instance for types implementing [ExtractPrimaryKey].
     ///
     /// Use [Self::with_extract_key] for types which does not
@@ -90,7 +90,6 @@ impl<T: ExtractPrimaryKey + 'static> TreeStore<T> {
 }
 
 impl<T: 'static> TreeStore<T> {
-
     /// Creates a new instance with the specifies extract key function.
     pub fn with_extract_key(extract_key: impl Into<ExtractKeyFn<T>>) -> Self {
         let tree = KeyedSlabTree::with_extract_key(extract_key);
@@ -156,9 +155,11 @@ impl<T: 'static> TreeStore<T> {
     /// This is usually called by [Self::on_change], which stores the
     /// observer inside the [TreeStore] object.
     pub fn add_listener(&self, cb: impl Into<Callback<()>>) -> TreeStoreObserver<T> {
-        let key = self.inner.borrow_mut()
-            .add_listener(cb.into());
-        TreeStoreObserver { key, inner: self.inner.clone() }
+        let key = self.inner.borrow_mut().add_listener(cb.into());
+        TreeStoreObserver {
+            key,
+            inner: self.inner.clone(),
+        }
     }
 
     /// Set the sorter function.
@@ -189,7 +190,9 @@ impl<T: 'static> TreeStore<T> {
         tree.filtered_data_len()
     }
 
-    pub fn filtered_data<'a>(&'a self) -> Box<dyn Iterator<Item=(usize, Box<dyn DataNode<T> + 'a>)> + 'a> {
+    pub fn filtered_data<'a>(
+        &'a self,
+    ) -> Box<dyn Iterator<Item = (usize, Box<dyn DataNode<T> + 'a>)> + 'a> {
         self.inner.borrow_mut().update_filtered_data();
         Box::new(TreeStoreIterator {
             range: None,
@@ -201,7 +204,7 @@ impl<T: 'static> TreeStore<T> {
     pub fn filtered_data_range<'a>(
         &'a self,
         range: Range<usize>,
-    ) -> Box<dyn Iterator<Item=(usize, Box<dyn DataNode<T> + 'a>)> + 'a> {
+    ) -> Box<dyn Iterator<Item = (usize, Box<dyn DataNode<T> + 'a>)> + 'a> {
         self.inner.borrow_mut().update_filtered_data();
         Box::new(TreeStoreIterator {
             pos: range.start,
@@ -275,18 +278,19 @@ impl<T: Clone + PartialEq + 'static> DataStore for TreeStore<T> {
         self.filtered_data_len()
     }
 
-    fn filtered_data<'a>(&'a self) -> Box<dyn Iterator<Item=(usize, Box<dyn DataNode<T> + 'a>)> + 'a> {
+    fn filtered_data<'a>(
+        &'a self,
+    ) -> Box<dyn Iterator<Item = (usize, Box<dyn DataNode<T> + 'a>)> + 'a> {
         self.filtered_data()
     }
 
     fn filtered_data_range<'a>(
         &'a self,
         range: Range<usize>,
-    ) -> Box<dyn Iterator<Item=(usize, Box<dyn DataNode<T> + 'a>)> + 'a> {
+    ) -> Box<dyn Iterator<Item = (usize, Box<dyn DataNode<T> + 'a>)> + 'a> {
         self.filtered_data_range(range)
     }
 }
-
 
 /// Wraps a borrowed reference to a [TreeStore]
 pub struct TreeStoreReadGuard<'a, T> {
@@ -347,7 +351,7 @@ impl<'a, T> DataNode<T> for KeyedSlabTreeBorrowRef<'a, T> {
         let level = self.tree.get(self.node_id).unwrap().level;
         if !self.tree.view_root {
             level.saturating_sub(1)
-        } else  {
+        } else {
             level
         }
     }
@@ -361,7 +365,7 @@ impl<'a, T> DataNode<T> for KeyedSlabTreeBorrowRef<'a, T> {
         self.tree.tree.root_id == Some(self.node_id)
     }
     fn parent(&self) -> Option<Box<dyn DataNode<T> + '_>> {
-       let entry = match self.tree.get(self.node_id) {
+        let entry = match self.tree.get(self.node_id) {
             Some(entry) => entry,
             None => return None,
         };
@@ -426,7 +430,10 @@ pub struct TreeStoreIterator<'a, T: 'static> {
     range: Option<Range<usize>>,
 }
 
-impl <'a, T: 'static> Iterator for TreeStoreIterator<'a, T> where Self: 'a {
+impl<'a, T: 'static> Iterator for TreeStoreIterator<'a, T>
+where
+    Self: 'a,
+{
     type Item = (usize, Box<dyn DataNode<T> + 'a>);
 
     fn next(&mut self) -> Option<Self::Item> {

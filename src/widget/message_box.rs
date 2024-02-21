@@ -1,9 +1,9 @@
 use std::rc::Rc;
 
 use pwt_macros::builder;
+use yew::html::IntoEventCallback;
 use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
-use yew::html::IntoEventCallback;
 
 use crate::prelude::*;
 use crate::widget::{Button, Dialog, Row, Toolbar};
@@ -114,12 +114,16 @@ pub fn pwt_message_box(props: &MessageBox) -> Html {
         MessageBoxButtons::YesNo => {
             vec![
                 Button::new(tr!("Yes")).onclick(onclick_success),
-                Button::new(tr!("No")).autofocus(true).onclick(onclick_failure),
+                Button::new(tr!("No"))
+                    .autofocus(true)
+                    .onclick(onclick_failure),
             ]
         }
         MessageBoxButtons::CancelOk => {
             vec![
-                Button::new(tr!("Cancel")).autofocus(true).onclick(onclick_failure),
+                Button::new(tr!("Cancel"))
+                    .autofocus(true)
+                    .onclick(onclick_failure),
                 Button::new(tr!("Ok")).onclick(onclick_success),
             ]
         }

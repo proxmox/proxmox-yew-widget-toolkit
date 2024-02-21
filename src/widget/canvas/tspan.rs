@@ -34,7 +34,6 @@ pub struct TSpan {
 }
 
 impl TSpan {
-
     /// Create a new instance.
     pub fn new(text: impl IntoSvgTSpanChild) -> Self {
         yew::props!(Self {}).with_child(text)
@@ -77,11 +76,15 @@ impl TSpan {
     pub fn add_child(&mut self, child: impl IntoSvgTSpanChild) {
         self.children.push(child.into_svg_tspan_child());
     }
-
 }
 
 impl Into<VTag> for TSpan {
     fn into(self) -> VTag {
-        self.std_props.into_vtag(Cow::Borrowed("tspan"), None::<&str>, Some(self.listeners), Some(self.children))
+        self.std_props.into_vtag(
+            Cow::Borrowed("tspan"),
+            None::<&str>,
+            Some(self.listeners),
+            Some(self.children),
+        )
     }
 }

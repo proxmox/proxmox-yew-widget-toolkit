@@ -272,7 +272,6 @@ impl<T: 'static> DataTableColumn<T> {
         self
     }
 
-
     /// Builder style method to set the cell keydown callback.
     pub fn on_cell_keydown(
         mut self,

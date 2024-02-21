@@ -1,7 +1,7 @@
-use web_sys::{Element, IntersectionObserver, IntersectionObserverEntry};
+use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use wasm_bindgen::UnwrapThrowExt;
-use wasm_bindgen::{prelude::*};
+use web_sys::{Element, IntersectionObserver, IntersectionObserverEntry};
 
 use yew::prelude::*;
 
@@ -14,30 +14,29 @@ use yew::prelude::*;
 pub struct VisibilityObserver {
     observer: IntersectionObserver,
     // keep it alive
-    _observer_closure: Closure::<dyn Fn(Vec<IntersectionObserverEntry>, IntersectionObserver)>,
+    _observer_closure: Closure<dyn Fn(Vec<IntersectionObserverEntry>, IntersectionObserver)>,
 }
 
 impl VisibilityObserver {
-
     /// Creates a new instance.
     ///
     /// The callback is called whenever the element visibility changes.
     pub fn new(el: &Element, callback: impl Into<Callback<bool>>) -> Self {
         let callback = callback.into();
 
-        let observer_closure = Closure::wrap(
-            Box::new(
-                move |entries: Vec<IntersectionObserverEntry>, _observer: IntersectionObserver| {
-                    // Note: Chrome seems to queue events for a single target (sometimes), so we
-                    // check the last entry.
-                    if let Some(last) = entries.last() {
-                        callback.emit(last.is_intersecting());
-                    }
+        let observer_closure = Closure::wrap(Box::new(
+            move |entries: Vec<IntersectionObserverEntry>, _observer: IntersectionObserver| {
+                // Note: Chrome seems to queue events for a single target (sometimes), so we
+                // check the last entry.
+                if let Some(last) = entries.last() {
+                    callback.emit(last.is_intersecting());
                 }
-            ) as Box<dyn Fn(Vec<IntersectionObserverEntry>, IntersectionObserver)>
-        );
+            },
+        )
+            as Box<dyn Fn(Vec<IntersectionObserverEntry>, IntersectionObserver)>);
 
-        let observer = IntersectionObserver::new(observer_closure.as_ref().unchecked_ref()).unwrap_throw();
+        let observer =
+            IntersectionObserver::new(observer_closure.as_ref().unchecked_ref()).unwrap_throw();
         observer.observe(&el);
 
         Self {

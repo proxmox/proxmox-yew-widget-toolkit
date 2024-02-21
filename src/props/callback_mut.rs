@@ -2,17 +2,16 @@ use std::rc::Rc;
 
 use derivative::Derivative;
 
-use yew::BaseComponent;
 use yew::html::Scope;
+use yew::BaseComponent;
 
 /// Callback wich takes a mutable argument.
 ///
 /// Like [yew::Callback], but gets a mutable ref as argument.
 #[derive(Derivative)]
-#[derivative(Clone(bound=""), PartialEq(bound=""))]
+#[derivative(Clone(bound = ""), PartialEq(bound = ""))]
 pub struct CallbackMut<T: 'static>(
-    #[derivative(PartialEq(compare_with="Rc::ptr_eq"))]
-    Rc<dyn Fn(&mut T)>
+    #[derivative(PartialEq(compare_with = "Rc::ptr_eq"))] Rc<dyn Fn(&mut T)>,
 );
 
 impl<T: 'static> CallbackMut<T> {
@@ -58,14 +57,16 @@ impl<T: 'static, F: 'static + Fn(&mut T)> IntoEventCallbackMut<T> for F {
 /// Extension trait which adds callback_mut() helper to [Scope].
 pub trait CallbackMutScopeExt<COMP: BaseComponent> {
     fn callback_mut<F, T, M>(&self, function: F) -> CallbackMut<T>
-    where M: Into<COMP::Message>,
-          F: Fn(&mut T) -> M + 'static;
+    where
+        M: Into<COMP::Message>,
+        F: Fn(&mut T) -> M + 'static;
 }
 
 impl<COMP: BaseComponent> CallbackMutScopeExt<COMP> for Scope<COMP> {
     fn callback_mut<F, T, M>(&self, function: F) -> CallbackMut<T>
-    where M: Into<COMP::Message>,
-          F: Fn(&mut T) -> M + 'static,
+    where
+        M: Into<COMP::Message>,
+        F: Fn(&mut T) -> M + 'static,
     {
         let scope = self.clone();
         let closure = move |input: &mut T| {

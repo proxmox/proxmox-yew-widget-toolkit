@@ -5,7 +5,7 @@ use yew::prelude::*;
 use yew::virtual_dom::{Listeners, VList, VTag};
 
 use crate::props::{ContainerBuilder, EventSubscriber, WidgetBuilder};
-use crate::widget::{Button, Container, ActionIcon};
+use crate::widget::{ActionIcon, Button, Container};
 
 use pwt_macros::builder;
 use pwt_macros::widget;
@@ -113,7 +113,7 @@ impl Into<VTag> for SnackBar {
             children.push(
                 ActionIcon::new("fa fa-lg fa-close")
                     .on_activate(self.on_close.clone())
-                    .into()
+                    .into(),
             );
         }
 

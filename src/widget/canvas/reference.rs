@@ -23,7 +23,6 @@ pub struct Reference {
 }
 
 impl Reference {
-
     /// Create a new instance.
     pub fn new(href: impl Into<AttrValue>) -> Self {
         yew::props!(Self {}).attribute("href", href.into())
@@ -59,6 +58,11 @@ impl Reference {
 
 impl Into<VTag> for Reference {
     fn into(self) -> VTag {
-        self.std_props.into_vtag(Cow::Borrowed("use"), None::<&str>, Some(self.listeners), self.children)
+        self.std_props.into_vtag(
+            Cow::Borrowed("use"),
+            None::<&str>,
+            Some(self.listeners),
+            self.children,
+        )
     }
 }

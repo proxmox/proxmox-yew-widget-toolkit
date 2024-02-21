@@ -1,8 +1,8 @@
 use std::rc::Rc;
 
-use yew::prelude::*;
-use yew::virtual_dom::{VComp, VNode, Key};
 use yew::html::{IntoEventCallback, IntoPropValue};
+use yew::prelude::*;
+use yew::virtual_dom::{Key, VComp, VNode};
 
 use crate::prelude::IntoOptionalKey;
 use crate::props::{EventSubscriber, WidgetBuilder};
@@ -47,10 +47,11 @@ pub struct ActionIcon {
 }
 
 impl ActionIcon {
-
     /// Create a new instance.
     pub fn new(icon_class: impl Into<Classes>) -> Self {
-        yew::props!(Self { icon_class: icon_class.into() })
+        yew::props!(Self {
+            icon_class: icon_class.into()
+        })
     }
 
     /// Builder style method to set the yew `node_ref`
@@ -161,7 +162,9 @@ impl Component for PwtActionIcon {
                 let on_activate = props.on_activate.clone();
                 move |event: MouseEvent| {
                     event.stop_propagation();
-                    if disabled { return; }
+                    if disabled {
+                        return;
+                    }
                     if let Some(on_activate) = &on_activate {
                         on_activate.emit(());
                     }
@@ -169,21 +172,23 @@ impl Component for PwtActionIcon {
             })
             .onkeydown({
                 let on_activate = props.on_activate.clone();
-                move |event: KeyboardEvent| {
-                    match event.key().as_ref() {
-                        "Enter" | " " => {
-                            event.stop_propagation();
-                            if disabled { return; }
-                            if let Some(on_activate) = &on_activate {
-                                on_activate.emit(());
-                            }
+                move |event: KeyboardEvent| match event.key().as_ref() {
+                    "Enter" | " " => {
+                        event.stop_propagation();
+                        if disabled {
+                            return;
                         }
-                        _ => {}
+                        if let Some(on_activate) = &on_activate {
+                            on_activate.emit(());
+                        }
                     }
+                    _ => {}
                 }
             })
             // suppress double click to avoid confusion when used inside tables/trees
-            .ondblclick(move |event: MouseEvent| { event.stop_propagation(); })
+            .ondblclick(move |event: MouseEvent| {
+                event.stop_propagation();
+            })
             .into()
     }
 }

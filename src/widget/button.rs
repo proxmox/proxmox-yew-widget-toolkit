@@ -6,9 +6,9 @@ use web_sys::HtmlElement;
 
 use yew::html::IntoPropValue;
 
+use crate::dom::IntoHtmlElement;
 use crate::prelude::*;
 use crate::props::{EventSubscriber, WidgetBuilder};
-use crate::dom::IntoHtmlElement;
 use crate::widget::Container;
 
 use pwt_macros::{builder, widget};

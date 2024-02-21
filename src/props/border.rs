@@ -1,6 +1,6 @@
-use yew::Classes;
+use super::AsClassesMut;
 use yew::html::IntoPropValue;
-use super:: AsClassesMut;
+use yew::Classes;
 
 /// Defines methods to use CSS border classes.
 ///
@@ -35,7 +35,6 @@ use super:: AsClassesMut;
 /// ```
 
 pub trait CssBorderBuilder: AsClassesMut + Sized {
-
     /// Builder style method to add a box border class.
     fn border(mut self, border: impl IntoPropValue<Option<bool>>) -> Self {
         self.add_border(border);
@@ -46,10 +45,13 @@ pub trait CssBorderBuilder: AsClassesMut + Sized {
     fn add_border(&mut self, border: impl IntoPropValue<Option<bool>>) {
         let border = border.into_prop_value();
         if let Some(border) = border {
-            self.as_classes_mut().push(if border { "pwt-border" } else { "pwt-no-border" });
+            self.as_classes_mut().push(if border {
+                "pwt-border"
+            } else {
+                "pwt-no-border"
+            });
         };
     }
-
 
     /// Builder style method to add a top border class.
     fn border_top(mut self, border: impl IntoPropValue<Option<bool>>) -> Self {
@@ -61,7 +63,11 @@ pub trait CssBorderBuilder: AsClassesMut + Sized {
     fn add_border_top(&mut self, border: impl IntoPropValue<Option<bool>>) {
         let border = border.into_prop_value();
         if let Some(border) = border {
-            self.as_classes_mut().push(if border { "pwt-border-top" } else { "pwt-no-border-top" });
+            self.as_classes_mut().push(if border {
+                "pwt-border-top"
+            } else {
+                "pwt-no-border-top"
+            });
         };
     }
 
@@ -75,7 +81,11 @@ pub trait CssBorderBuilder: AsClassesMut + Sized {
     fn add_border_bottom(&mut self, border: impl IntoPropValue<Option<bool>>) {
         let border = border.into_prop_value();
         if let Some(border) = border {
-            self.as_classes_mut().push(if border { "pwt-border-bottom" } else { "pwt-no-border-bottom" });
+            self.as_classes_mut().push(if border {
+                "pwt-border-bottom"
+            } else {
+                "pwt-no-border-bottom"
+            });
         };
     }
 
@@ -87,9 +97,13 @@ pub trait CssBorderBuilder: AsClassesMut + Sized {
 
     /// Method to add a start border class.
     fn add_border_start(&mut self, border: impl IntoPropValue<Option<bool>>) {
-         let border = border.into_prop_value();
+        let border = border.into_prop_value();
         if let Some(border) = border {
-            self.as_classes_mut().push(if border { "pwt-border-start" } else { "pwt-no-border-start" });
+            self.as_classes_mut().push(if border {
+                "pwt-border-start"
+            } else {
+                "pwt-no-border-start"
+            });
         };
     }
 
@@ -103,7 +117,11 @@ pub trait CssBorderBuilder: AsClassesMut + Sized {
     fn add_border_end(&mut self, border: impl IntoPropValue<Option<bool>>) {
         let border = border.into_prop_value();
         if let Some(border) = border {
-            self.as_classes_mut().push(if border { "pwt-border-end" } else { "pwt-no-border-end" });
+            self.as_classes_mut().push(if border {
+                "pwt-border-end"
+            } else {
+                "pwt-no-border-end"
+            });
         };
     }
 
@@ -115,9 +133,13 @@ pub trait CssBorderBuilder: AsClassesMut + Sized {
 
     /// Method to add a left border class.
     fn add_border_left(&mut self, border: impl IntoPropValue<Option<bool>>) {
-         let border = border.into_prop_value();
+        let border = border.into_prop_value();
         if let Some(border) = border {
-            self.as_classes_mut().push(if border { "pwt-border-left" } else { "pwt-no-border-left" });
+            self.as_classes_mut().push(if border {
+                "pwt-border-left"
+            } else {
+                "pwt-no-border-left"
+            });
         };
     }
 
@@ -131,7 +153,11 @@ pub trait CssBorderBuilder: AsClassesMut + Sized {
     fn add_border_right(&mut self, border: impl IntoPropValue<Option<bool>>) {
         let border = border.into_prop_value();
         if let Some(border) = border {
-            self.as_classes_mut().push(if border { "pwt-border-right" } else { "pwt-no-border-right" });
+            self.as_classes_mut().push(if border {
+                "pwt-border-right"
+            } else {
+                "pwt-no-border-right"
+            });
         };
     }
 }

@@ -1,6 +1,6 @@
-use std::rc::Rc;
 use std::future::Future;
 use std::pin::Pin;
+use std::rc::Rc;
 
 use anyhow::Error;
 use derivative::Derivative;
@@ -13,12 +13,11 @@ use super::FormContext;
 #[derive(Derivative)]
 #[derivative(Clone, PartialEq)]
 pub struct SubmitCallback(
-    #[derivative(PartialEq(compare_with="Rc::ptr_eq"))]
-    Rc<dyn Fn(FormContext) -> Pin<Box<dyn Future<Output=Result<(), Error>>>>>
+    #[derivative(PartialEq(compare_with = "Rc::ptr_eq"))]
+    Rc<dyn Fn(FormContext) -> Pin<Box<dyn Future<Output = Result<(), Error>>>>>,
 );
 
 impl SubmitCallback {
-
     pub fn new<F, R>(callback: F) -> Self
     where
         F: 'static + Fn(FormContext) -> R,
@@ -49,7 +48,7 @@ impl IntoSubmitCallback for Option<SubmitCallback> {
 impl<F, R> IntoSubmitCallback for F
 where
     F: 'static + Fn(FormContext) -> R,
-    R: 'static + Future<Output = Result<(), Error>>
+    R: 'static + Future<Output = Result<(), Error>>,
 {
     fn into_submit_callback(self) -> Option<SubmitCallback> {
         Some(SubmitCallback::new(self))

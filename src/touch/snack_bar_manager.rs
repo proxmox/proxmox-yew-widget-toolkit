@@ -1,7 +1,6 @@
 use std::collections::VecDeque;
 use std::rc::Rc;
 
-
 use gloo_timers::callback::Timeout;
 
 use yew::html::IntoPropValue;
@@ -33,14 +32,15 @@ pub struct SnackBarController {
 
 impl SnackBarController {
     pub fn new() -> Self {
-        Self { state: SharedState::new(Vec::new()) }
+        Self {
+            state: SharedState::new(Vec::new()),
+        }
     }
 
     /// Push a new snackbar to the display queue.
     ///
     /// Returns the snackbar ID, which can be used to dismiss specific items.
     pub fn show_snackbar(&self, mut snackbar: SnackBar) -> AttrValue {
-
         let id = match &snackbar.id {
             Some(id) => id.clone(),
             None => {
@@ -50,7 +50,8 @@ impl SnackBarController {
             }
         };
 
-        self.state.write()
+        self.state
+            .write()
             .push(SnackBarControllerMsg::Show(snackbar));
 
         id
@@ -58,20 +59,19 @@ impl SnackBarController {
 
     /// Dismiss a specific snackbar.
     pub fn dismiss(&self, id: AttrValue) {
-        self.state.write()
-            .push(SnackBarControllerMsg::Dismiss(id));
+        self.state.write().push(SnackBarControllerMsg::Dismiss(id));
     }
 
     /// Dismiss currently shown snackbar.
     pub fn dismiss_current(&self) {
-        self.state.write()
+        self.state
+            .write()
             .push(SnackBarControllerMsg::DismissCurrent);
     }
 
     /// Dismiss all queued snackbars.
     pub fn dismiss_all(&self) {
-        self.state.write()
-            .push(SnackBarControllerMsg::DismissAll);
+        self.state.write().push(SnackBarControllerMsg::DismissAll);
     }
 }
 
@@ -136,7 +136,9 @@ pub struct PwtSnackBarManager {
 
 impl PwtSnackBarManager {
     fn display_next(&mut self, ctx: &Context<Self>) {
-        if self.view_state != ViewState::Idle { return; }
+        if self.view_state != ViewState::Idle {
+            return;
+        }
 
         let next_snackbar = self.queue.pop_front();
 
@@ -146,7 +148,7 @@ impl PwtSnackBarManager {
                 if snackbar.is_dismissive() {
                     let duration = snackbar.duration.unwrap_or(4000).max(1000);
                     self.timeout = Some(Timeout::new(duration, {
-                      let link = ctx.link().clone();
+                        let link = ctx.link().clone();
                         move || link.send_message(Msg::Timeout)
                     }));
                 }
@@ -168,7 +170,9 @@ impl PwtSnackBarManager {
 
     fn handle_controller_messages(&mut self, ctx: &Context<Self>) {
         let count = self.controller.state.read().len();
-        if count == 0 { return; } // Note: avoid endless loop
+        if count == 0 {
+            return;
+        } // Note: avoid endless loop
 
         let list = self.controller.state.write().split_off(0);
 
@@ -223,7 +227,7 @@ impl Component for PwtSnackBarManager {
 
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
         match msg {
-           Msg::ActionButtonPress => {
+            Msg::ActionButtonPress => {
                 self.timeout = None;
 
                 let snackbar = match &self.view_state {
@@ -255,29 +259,27 @@ impl Component for PwtSnackBarManager {
 
                 true
             }
-            Msg::Controller  => {
+            Msg::Controller => {
                 self.handle_controller_messages(ctx);
                 true
-            },
-            Msg::AnimationEnd(_event) => {
-                match &self.view_state {
-                    ViewState::Idle | ViewState::Visible(_) => false,
-                    ViewState::FadeIn(snackbar) => {
-                        self.view_state = ViewState::Visible(snackbar.clone());
-                        true
-                    }
-                    ViewState::FadeOut(_snackbar) => {
-                        self.view_state = ViewState::Idle;
-                        self.display_next(ctx);
-                        true
-                    }
-                }
             }
+            Msg::AnimationEnd(_event) => match &self.view_state {
+                ViewState::Idle | ViewState::Visible(_) => false,
+                ViewState::FadeIn(snackbar) => {
+                    self.view_state = ViewState::Visible(snackbar.clone());
+                    true
+                }
+                ViewState::FadeOut(_snackbar) => {
+                    self.view_state = ViewState::Idle;
+                    self.display_next(ctx);
+                    true
+                }
+            },
             Msg::Timeout => {
                 self.timeout = None;
                 match &self.view_state {
                     ViewState::Idle | ViewState::FadeOut(_) => false,
-                    ViewState::FadeIn(snackbar) | ViewState::Visible(snackbar)=> {
+                    ViewState::FadeIn(snackbar) | ViewState::Visible(snackbar) => {
                         self.view_state = ViewState::FadeOut(snackbar.clone());
                         true
                     }
@@ -296,11 +298,15 @@ impl Component for PwtSnackBarManager {
             ViewState::Visible(snackbar) => snackbar.clone().class("visible"),
         };
         let snackbar = snackbar
-            .attribute("style", props.bottom_offset.map(|offset| format!("bottom: {offset}px;")))
+            .attribute(
+                "style",
+                props
+                    .bottom_offset
+                    .map(|offset| format!("bottom: {offset}px;")),
+            )
             .on_action(ctx.link().callback(|_| Msg::ActionButtonPress))
             .on_close(ctx.link().callback(|_| Msg::CloseButtonPress))
             .onanimationend(ctx.link().callback(Msg::AnimationEnd));
-
 
         html! {
             <ContextProvider<SnackBarController> context={self.controller.clone()}>

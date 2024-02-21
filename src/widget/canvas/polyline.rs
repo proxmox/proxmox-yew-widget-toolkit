@@ -32,7 +32,9 @@ impl Polyline {
     /// Method to define the list of points.
     pub fn set_points(&mut self, points: &[(f32, f32)]) {
         let points = points.iter().fold(String::new(), |mut acc, (x, y)| {
-            if !acc.is_empty() { acc.push(' '); }
+            if !acc.is_empty() {
+                acc.push(' ');
+            }
             acc.push_str(&format!("{x},{y}"));
             acc
         });
@@ -45,6 +47,11 @@ impl Polyline {
 
 impl Into<VTag> for Polyline {
     fn into(self) -> VTag {
-        self.std_props.into_vtag(Cow::Borrowed("polyline"), None::<&str>,  Some(self.listeners), self.children)
+        self.std_props.into_vtag(
+            Cow::Borrowed("polyline"),
+            None::<&str>,
+            Some(self.listeners),
+            self.children,
+        )
     }
 }

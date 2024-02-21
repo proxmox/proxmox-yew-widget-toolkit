@@ -1,14 +1,13 @@
 use std::borrow::Cow;
 
-use yew::prelude::*;
 use yew::html::IntoPropValue;
+use yew::prelude::*;
 use yew::virtual_dom::VTag;
 
-use pwt_macros::{widget, builder};
+use pwt_macros::{builder, widget};
 
+use crate::props::{ContainerBuilder, IntoOptionalTextRenderFn, TextRenderFn, WidgetBuilder};
 use crate::widget::Container;
-use crate::props::{ContainerBuilder, IntoOptionalTextRenderFn, WidgetBuilder, TextRenderFn};
-
 
 /// Wrapper for Html `<meter>`.
 #[widget(pwt=crate, @element)]
@@ -84,10 +83,11 @@ impl Meter {
     }
 }
 
-
 impl Into<VTag> for Meter {
     fn into(self) -> VTag {
-        let percentage = (((self.value - self.min).max(0.0) / (self.max - self.min)) * 100.0).min(100.0).max(0.0);
+        let percentage = (((self.value - self.min).max(0.0) / (self.max - self.min)) * 100.0)
+            .min(100.0)
+            .max(0.0);
 
         let distance_to_optimum = if let Some(optimum) = self.optimum {
             if optimum > self.value {
@@ -108,7 +108,7 @@ impl Into<VTag> for Meter {
                 Container::new()
                     .class("pwt-meter-text")
                     .with_child(text)
-                    .into()
+                    .into(),
             );
         } else {
             class.push("pwt-meter-small")
@@ -119,10 +119,10 @@ impl Into<VTag> for Meter {
                 .class("pwt-meter-bar")
                 .class(format!("pwt-meter-distance-{}", distance_to_optimum))
                 .attribute("style", format!("width:{percentage}%"))
-                .into()
+                .into(),
         );
 
-
-        self.std_props.into_vtag(Cow::Borrowed("div"), Some(class), None, Some(children))
+        self.std_props
+            .into_vtag(Cow::Borrowed("div"), Some(class), None, Some(children))
     }
 }

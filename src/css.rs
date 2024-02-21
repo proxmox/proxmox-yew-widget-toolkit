@@ -33,8 +33,6 @@
 //! ```
 //!
 
-
-
 use yew::Classes;
 
 #[cfg(doc)]
@@ -434,7 +432,9 @@ impl From<WhiteSpace> for Classes {
 /// ```
 pub struct TextTruncate;
 impl From<TextTruncate> for Classes {
-    fn from(_value: TextTruncate) -> Self { "pwt-text-truncate".into() }
+    fn from(_value: TextTruncate) -> Self {
+        "pwt-text-truncate".into()
+    }
 }
 
 /// CSS utility type to fit into parent box
@@ -454,9 +454,10 @@ impl From<TextTruncate> for Classes {
 /// ```
 pub struct Fit;
 impl From<Fit> for Classes {
-    fn from(_value: Fit) -> Self { "pwt-fit".into() }
+    fn from(_value: Fit) -> Self {
+        "pwt-fit".into()
+    }
 }
-
 
 /// CSS utility type to set "flex: 1 1 auto;" to the first child of a container.
 ///
@@ -477,10 +478,10 @@ impl From<Fit> for Classes {
 /// ```
 pub struct FlexFillFirstChild;
 impl From<FlexFillFirstChild> for Classes {
-    fn from(_value: FlexFillFirstChild) -> Self { "pwt-flex-fill-first-child".into() }
+    fn from(_value: FlexFillFirstChild) -> Self {
+        "pwt-flex-fill-first-child".into()
+    }
 }
-
-
 
 /// CSS utility type to fit into viewport (use all visible space)
 ///
@@ -494,7 +495,9 @@ impl From<FlexFillFirstChild> for Classes {
 /// ```
 pub struct Viewport;
 impl From<Viewport> for Classes {
-    fn from(_value: Viewport) -> Self { "pwt-viewport".into() }
+    fn from(_value: Viewport) -> Self {
+        "pwt-viewport".into()
+    }
 }
 
 /// CSS utility type to set the flex property.

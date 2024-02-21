@@ -2,15 +2,15 @@ use std::borrow::Cow;
 
 use gloo_timers::callback::Timeout;
 
+use yew::html::IntoPropValue;
 use yew::prelude::*;
 use yew::virtual_dom::{Listeners, VList, VTag};
-use yew::html::IntoPropValue;
 
-use pwt_macros::{widget, builder};
+use pwt_macros::{builder, widget};
 
-use crate::dom::element_direction_rtl;
 use super::focus::{init_roving_tabindex, roving_tabindex_next, update_roving_tabindex};
 use super::{MiniScroll, MiniScrollMode};
+use crate::dom::element_direction_rtl;
 use crate::prelude::*;
 
 /// Horizontal container for buttons with roving tabindex.
@@ -61,9 +61,7 @@ impl Toolbar {
     ///
     /// Spacers separate elements by a simple vertical rule.
     pub fn add_spacer(&mut self) {
-        self.add_child(
-            html! {<div role="none" class="pwt-align-self-stretch pwt-vertical-rule"/>},
-        );
+        self.add_child(html! {<div role="none" class="pwt-align-self-stretch pwt-vertical-rule"/>});
     }
 
     /// Builder style method to add a flex spacer.

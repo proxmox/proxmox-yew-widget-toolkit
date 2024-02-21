@@ -1483,7 +1483,6 @@ impl<S: DataStore + 'static> Component for PwtDataTable<S> {
                 true
             }
             Msg::ItemDblClick(record_key, opt_col_num, event) => {
-
                 if let Some(col_num) = opt_col_num {
                     if let Some(column) = self.columns.get(col_num) {
                         if let Some(on_cell_dblclick) = &column.on_cell_dblclick {
@@ -1500,7 +1499,6 @@ impl<S: DataStore + 'static> Component for PwtDataTable<S> {
                         }
                     }
                 }
-
 
                 if let Some(callback) = &props.on_row_dblclick {
                     let mut event = DataTableMouseEvent {

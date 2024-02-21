@@ -1,9 +1,9 @@
 use wasm_bindgen::JsCast;
 
 use std::rc::Rc;
+use yew::html::{IntoEventCallback, IntoPropValue};
 use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
-use yew::html::{IntoEventCallback, IntoPropValue};
 
 use crate::props::{EventSubscriber, WidgetBuilder};
 use crate::widget::Button;
@@ -36,7 +36,6 @@ pub struct ResetButton {
 }
 
 impl ResetButton {
-
     /// Create a new instance.
     pub fn new() -> Self {
         yew::props!(Self {})
@@ -104,13 +103,12 @@ impl Component for PwtResetButton {
         let props = ctx.props();
         match msg {
             Msg::FormCtxUpdate(form_ctx) => {
-                self._form_ctx_observer = Some(form_ctx.add_listener(self.on_form_data_change.clone()));
+                self._form_ctx_observer =
+                    Some(form_ctx.add_listener(self.on_form_data_change.clone()));
                 self.form_ctx = Some(form_ctx);
                 true
             }
-            Msg::FormCtxDataChange => {
-                true
-            }
+            Msg::FormCtxDataChange => true,
             Msg::Reset => {
                 if let Some(form_ctx) = &self.form_ctx {
                     form_ctx.write().reset_form();
@@ -140,10 +138,10 @@ impl Component for PwtResetButton {
         });
 
         Button::new(&props.text)
-        .class(props.class.clone())
-        .disabled(!form_dirty)
-        .onclick(reset)
-        .into()
+            .class(props.class.clone())
+            .disabled(!form_dirty)
+            .onclick(reset)
+            .into()
     }
 }
 

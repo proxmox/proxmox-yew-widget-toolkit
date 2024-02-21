@@ -9,8 +9,8 @@ use web_sys::MediaQueryList;
 
 use yew::prelude::*;
 
-use crate::state::local_storage;
 use crate::dom::get_system_prefer_dark_mode;
+use crate::state::local_storage;
 
 /// Theme mode - dark, light or auto (use system settings).
 #[derive(PartialEq, Debug, Default, Clone, Copy)]

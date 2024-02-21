@@ -11,9 +11,9 @@ use yew::html::{IntoEventCallback, IntoPropValue};
 use yew::prelude::*;
 use yew::virtual_dom::{Key, VComp, VNode};
 
+use crate::dom::IntoHtmlElement;
 use crate::prelude::*;
 use crate::widget::align::{align_to_viewport, align_to_xy, Point};
-use crate::dom::IntoHtmlElement;
 use crate::widget::{ActionIcon, Panel};
 
 use pwt_macros::builder;
@@ -451,7 +451,12 @@ impl Component for PwtDialog {
         let mut panel = Panel::new()
             .class("pwt-overflow-auto")
             .class("pwt-flex-fill")
-            .title(props.html_title.clone().unwrap_or(html!{props.title.clone()}))
+            .title(
+                props
+                    .html_title
+                    .clone()
+                    .unwrap_or(html! {props.title.clone()}),
+            )
             .header_class(props.draggable.then_some("pwt-draggable"))
             .border(false);
 

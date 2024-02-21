@@ -3,8 +3,8 @@ use std::rc::Rc;
 use derivative::Derivative;
 use indexmap::IndexMap;
 
-use yew::prelude::*;
 use yew::html::IntoPropValue;
+use yew::prelude::*;
 use yew::virtual_dom::Key;
 
 use crate::state::Selection;
@@ -38,7 +38,6 @@ pub struct DataTableCellRenderArgs<'a, T> {
 }
 
 impl<'a, T> DataTableCellRenderArgs<'a, T> {
-
     /// Return the data node.
     pub fn record(&self) -> &T {
         self.record
@@ -103,10 +102,10 @@ impl<'a, T> DataTableCellRenderArgs<'a, T> {
 
 /// DataTable cell render callback.
 #[derive(Derivative)]
-#[derivative(Clone(bound=""), PartialEq(bound=""))]
+#[derivative(Clone(bound = ""), PartialEq(bound = ""))]
 pub struct DataTableCellRenderer<T>(
-    #[derivative(PartialEq(compare_with="Rc::ptr_eq"))]
-    Rc<dyn Fn(&mut DataTableCellRenderArgs<T>) -> Html>
+    #[derivative(PartialEq(compare_with = "Rc::ptr_eq"))]
+    Rc<dyn Fn(&mut DataTableCellRenderArgs<T>) -> Html>,
 );
 
 impl<T> DataTableCellRenderer<T> {
@@ -120,7 +119,9 @@ impl<T> DataTableCellRenderer<T> {
     }
 }
 
-impl<T, F: 'static + Fn(&mut DataTableCellRenderArgs<T>) -> Html> From<F> for DataTableCellRenderer<T> {
+impl<T, F: 'static + Fn(&mut DataTableCellRenderArgs<T>) -> Html> From<F>
+    for DataTableCellRenderer<T>
+{
     fn from(f: F) -> Self {
         DataTableCellRenderer::new(f)
     }

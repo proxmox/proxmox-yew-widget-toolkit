@@ -16,8 +16,8 @@ mod fab_menu;
 pub use fab_menu::{FabMenu, FabMenuAlign, FabMenuDirection, PwtFabMenu};
 
 mod material_app;
-pub use material_app::{MaterialApp, PwtMaterialApp};
 pub use material_app::PageController;
+pub use material_app::{MaterialApp, PwtMaterialApp};
 
 mod navigation_bar;
 pub use navigation_bar::NavigationBar;
@@ -32,10 +32,10 @@ mod page_stack;
 pub use page_stack::{PageAnimationStyle, PageStack, PwtPageStack};
 
 mod side_dialog;
-pub use side_dialog::{SideDialog, PwtSideDialog, SideDialogLocation, SideDialogController};
+pub use side_dialog::{PwtSideDialog, SideDialog, SideDialogController, SideDialogLocation};
 
 mod scaffold;
-pub use scaffold::{Scaffold, PwtScaffold};
+pub use scaffold::{PwtScaffold, Scaffold};
 
 mod slidable;
 pub use slidable::{
@@ -47,7 +47,7 @@ mod snack_bar;
 pub use snack_bar::SnackBar;
 
 mod snack_bar_manager;
-pub use snack_bar_manager::{SnackBarController, SnackBarManager, PwtSnackBarManager};
+pub use snack_bar_manager::{PwtSnackBarManager, SnackBarController, SnackBarManager};
 
 mod snack_bar_context_extension;
 pub use snack_bar_context_extension::SnackBarContextExt;

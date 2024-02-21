@@ -3,8 +3,8 @@ use std::rc::Rc;
 use derivative::Derivative;
 use indexmap::IndexMap;
 
-use yew::prelude::*;
 use yew::html::IntoPropValue;
+use yew::prelude::*;
 use yew::virtual_dom::Key;
 
 /// Row render callback arguments.
@@ -28,7 +28,6 @@ pub struct DataTableRowRenderArgs<'a, T> {
 }
 
 impl<'a, T> DataTableRowRenderArgs<'a, T> {
-
     /// Return the data node.
     pub fn record(&self) -> &T {
         self.record
@@ -74,10 +73,10 @@ impl<'a, T> DataTableRowRenderArgs<'a, T> {
 /// This can be used to set additional CSS classes and attributes on
 /// the table row.
 #[derive(Derivative)]
-#[derivative(Clone(bound=""), PartialEq(bound=""))]
+#[derivative(Clone(bound = ""), PartialEq(bound = ""))]
 pub struct DataTableRowRenderCallback<T>(
-    #[derivative(PartialEq(compare_with="Rc::ptr_eq"))]
-    Rc<dyn Fn(&mut DataTableRowRenderArgs<T>)>
+    #[derivative(PartialEq(compare_with = "Rc::ptr_eq"))]
+    Rc<dyn Fn(&mut DataTableRowRenderArgs<T>)>,
 );
 
 impl<T> DataTableRowRenderCallback<T> {
@@ -113,7 +112,9 @@ impl<T> IntoOptionalDataTableRowRenderCallback<T> for Option<DataTableRowRenderC
     }
 }
 
-impl<T, F: 'static + Fn(&mut DataTableRowRenderArgs<T>)> IntoOptionalDataTableRowRenderCallback<T> for F {
+impl<T, F: 'static + Fn(&mut DataTableRowRenderArgs<T>)> IntoOptionalDataTableRowRenderCallback<T>
+    for F
+{
     fn into_optional_row_render_cb(self) -> Option<DataTableRowRenderCallback<T>> {
         Some(DataTableRowRenderCallback::new(self))
     }

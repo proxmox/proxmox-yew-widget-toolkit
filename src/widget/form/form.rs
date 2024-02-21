@@ -1,8 +1,8 @@
 use std::borrow::Cow;
 
 use yew::prelude::*;
-use yew::virtual_dom::{Listeners, VList, VNode, VTag};
 use yew::virtual_dom::ApplyAttributeAs;
+use yew::virtual_dom::{Listeners, VList, VNode, VTag};
 
 use super::FormContext;
 
@@ -79,11 +79,12 @@ impl Component for PwtForm {
 
         let mut attributes = props.std_props.cumulate_attributes(Some("pwt-form"));
         let attr_map = attributes.get_mut_index_map();
-        attr_map.insert(AttrValue::Static("novalidate"), (AttrValue::Static("true"), ApplyAttributeAs::Attribute));
-
-        let listeners = Listeners::Pending(
-            props.listeners.listeners.into_boxed_slice()
+        attr_map.insert(
+            AttrValue::Static("novalidate"),
+            (AttrValue::Static("true"), ApplyAttributeAs::Attribute),
         );
+
+        let listeners = Listeners::Pending(props.listeners.listeners.into_boxed_slice());
 
         let children = VList::with_children(props.children, None);
 
@@ -96,7 +97,7 @@ impl Component for PwtForm {
             children.into(),
         ));
 
-        html!{
+        html! {
             <ContextProvider<FormContext> context={form_ctx}>{form}</ContextProvider<FormContext>>
         }
     }

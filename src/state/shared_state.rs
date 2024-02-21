@@ -1,13 +1,13 @@
-use std::rc::Rc;
 use std::cell::{Ref, RefCell, RefMut};
-use std::ops::{Deref, DerefMut};
 use std::mem::ManuallyDrop;
+use std::ops::{Deref, DerefMut};
+use std::rc::Rc;
 
 use derivative::Derivative;
 use slab::Slab;
 
-use yew::prelude::*;
 use yew::html::IntoEventCallback;
+use yew::prelude::*;
 
 use crate::state::optional_rc_ptr_eq;
 
@@ -42,12 +42,12 @@ impl<T> DerefMut for SharedStateInner<T> {
 }
 
 #[derive(Derivative)]
-#[derivative(Clone(bound=""), PartialEq(bound=""))]
+#[derivative(Clone(bound = ""), PartialEq(bound = ""))]
 pub struct SharedState<T> {
     // Allow to store one Observer here (for convenience)
-    #[derivative(PartialEq(compare_with="optional_rc_ptr_eq"))]
+    #[derivative(PartialEq(compare_with = "optional_rc_ptr_eq"))]
     on_change: Option<Rc<SharedStateObserver<T>>>,
-    #[derivative(PartialEq(compare_with="Rc::ptr_eq"))]
+    #[derivative(PartialEq(compare_with = "Rc::ptr_eq"))]
     inner: Rc<RefCell<SharedStateInner<T>>>,
 }
 
@@ -72,7 +72,7 @@ impl<T> SharedState<T> {
             inner: Rc::new(RefCell::new(SharedStateInner {
                 data,
                 listeners: Slab::new(),
-            }))
+            })),
         }
     }
 
@@ -99,9 +99,11 @@ impl<T> SharedState<T> {
     /// This is usually called by [Self::on_change], which stores the
     /// observer inside the [SharedState] object.
     pub fn add_listener(&self, cb: impl Into<Callback<SharedState<T>>>) -> SharedStateObserver<T> {
-        let key = self.inner.borrow_mut()
-            .add_listener(cb.into());
-        SharedStateObserver { key, inner: self.inner.clone() }
+        let key = self.inner.borrow_mut().add_listener(cb.into());
+        SharedStateObserver {
+            key,
+            inner: self.inner.clone(),
+        }
     }
 
     fn notify_listeners(&self) {
@@ -120,7 +122,10 @@ impl<T> SharedState<T> {
     ///
     /// Panics if the store is already locked.
     pub fn write(&self) -> SharedStateWriteGuard<T> {
-        let cloned_self = Self { on_change: None, inner: self.inner.clone() };
+        let cloned_self = Self {
+            on_change: None,
+            inner: self.inner.clone(),
+        };
         let borrowed_state = ManuallyDrop::new(self.inner.borrow_mut());
         SharedStateWriteGuard {
             shared_state: cloned_self,
@@ -147,7 +152,7 @@ pub struct SharedStateWriteGuard<'a, T> {
     shared_state: SharedState<T>,
     borrowed_state: ManuallyDrop<RefMut<'a, SharedStateInner<T>>>,
     pub notify: bool, // send notifications
-    //initial_version: usize,
+                      //initial_version: usize,
 }
 
 impl<'a, T> Deref for SharedStateWriteGuard<'a, T> {
@@ -168,8 +173,12 @@ impl<'a, T> Drop for SharedStateWriteGuard<'a, T> {
     fn drop(&mut self) {
         //let changed = self.state.version != self.initial_version;
         let changed = true; // TODO: impl change detection?
-        unsafe { ManuallyDrop::drop(&mut self.borrowed_state); } // drop ref before calling notify listeners
-        if self.notify && changed { self.shared_state.notify_listeners(); }
+        unsafe {
+            ManuallyDrop::drop(&mut self.borrowed_state);
+        } // drop ref before calling notify listeners
+        if self.notify && changed {
+            self.shared_state.notify_listeners();
+        }
     }
 }
 
