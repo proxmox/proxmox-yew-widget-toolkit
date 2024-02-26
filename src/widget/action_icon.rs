@@ -8,9 +8,12 @@ use crate::prelude::IntoOptionalKey;
 use crate::props::{EventSubscriber, WidgetBuilder};
 use crate::widget::Container;
 
+use pwt_macros::builder;
+
 /// A clickable icon. Like [Button](super::Button) without any decoration (inline element).
 ///
 /// This component is useful in data tables because it is visually lighter than a button.
+#[builder]
 #[derive(Properties, PartialEq, Clone)]
 pub struct ActionIcon {
     /// Yew component `ref`.
@@ -30,18 +33,22 @@ pub struct ActionIcon {
     pub icon_class: Option<Classes>,
 
     /// Html tabindex (defaults to -1)
+    #[builder(IntoPropValue, into_prop_value)]
     #[prop_or_default]
     pub tabindex: Option<i32>,
 
     /// Aria label
+    #[builder(IntoPropValue, into_prop_value)]
     #[prop_or_default]
     pub aria_label: Option<AttrValue>,
 
     /// Disable flag
+    #[builder]
     #[prop_or_default]
     pub disabled: bool,
 
     /// Activate callback (click, enter, space)
+    #[builder_cb(IntoEventCallback, into_event_callback, ())]
     #[prop_or_default]
     pub on_activate: Option<Callback<()>>,
 }
@@ -85,45 +92,6 @@ impl ActionIcon {
     /// Method to add a html class
     pub fn add_class(&mut self, class: impl Into<Classes>) {
         self.class.push(class);
-    }
-
-    /// Builder style method to set the html tabindex attribute
-    pub fn tabindex(mut self, index: impl IntoPropValue<Option<i32>>) -> Self {
-        self.set_tabindex(index);
-        self
-    }
-
-    /// Method to set the html tabindex attribute
-    pub fn set_tabindex(&mut self, index: impl IntoPropValue<Option<i32>>) {
-        self.tabindex = index.into_prop_value();
-    }
-
-    /// Builder style method to set the html aria-label attribute
-    pub fn aria_label(mut self, label: impl IntoPropValue<Option<AttrValue>>) -> Self {
-        self.set_aria_label(label);
-        self
-    }
-
-    /// Method to set the html aria-label attribute
-    pub fn set_aria_label(&mut self, label: impl IntoPropValue<Option<AttrValue>>) {
-        self.aria_label = label.into_prop_value();
-    }
-
-    /// Builder style method to set the disabled flag
-    pub fn disabled(mut self, disabled: bool) -> Self {
-        self.set_disabled(disabled);
-        self
-    }
-
-    /// Method to set the disabled flag
-    pub fn set_disabled(&mut self, disabled: bool) {
-        self.disabled = disabled;
-    }
-
-    /// Builder style method to set the activate callback.
-    pub fn on_activate(mut self, cb: impl IntoEventCallback<()>) -> Self {
-        self.on_activate = cb.into_event_callback();
-        self
     }
 }
 
