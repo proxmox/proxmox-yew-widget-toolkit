@@ -124,7 +124,20 @@ impl Component for PwtTooltip {
 
         let show_tooltip = self.show && ctx.props().tip.is_some();
 
-        let content = Container::new()
+        let tip = show_tooltip.then_some(
+            Container::new()
+                .node_ref(self.tooltip_ref.clone())
+                .attribute("role", "tooltip")
+                .attribute("aria-live", "polite")
+                .attribute("data-show", show_tooltip.then_some(""))
+                .class("pwt-tooltip")
+                .class(props.rich.then_some("pwt-tooltip-rich"))
+                .onmouseenter(ctx.link().callback(|_| Msg::Enter))
+                .onmouseleave(ctx.link().callback(|_| Msg::Leave))
+                .with_optional_child(props.tip.clone()),
+        );
+
+        Container::new()
             .with_std_props(&props.std_props)
             .listeners(&props.listeners)
             .with_child(props.content.clone())
@@ -140,23 +153,7 @@ impl Component for PwtTooltip {
                         event.prevent_default();
                     }
                 }
-            }));
-
-        let tip = show_tooltip.then_some(
-            Container::new()
-                .node_ref(self.tooltip_ref.clone())
-                .attribute("role", "tooltip")
-                .attribute("aria-live", "polite")
-                .attribute("data-show", show_tooltip.then_some(""))
-                .class("pwt-tooltip")
-                .class(props.rich.then_some("pwt-tooltip-rich"))
-                .onmouseenter(ctx.link().callback(|_| Msg::Enter))
-                .onmouseleave(ctx.link().callback(|_| Msg::Leave))
-                .with_optional_child(props.tip.clone()),
-        );
-
-        Container::new()
-            .with_child(content)
+            }))
             .with_optional_child(tip)
             .into()
     }
