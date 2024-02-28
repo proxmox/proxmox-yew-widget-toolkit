@@ -235,34 +235,32 @@ impl Component for PwtMenuButton {
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
 
-        let mut submenu = Container::new()
-            .attribute("role", "none")
-            .node_ref(self.submenu_ref.clone())
-            // Note: position "fixed" (remove from the normal document flow), move to invisible position
-            .attribute("style", "position: fixed;top:-100px;")
-            .class("pwt-submenu");
-
-        let mut menu = None;
-        if self.show_submenu {
-            if let Some(menu_builder) = &props.menu_builder {
-                menu = Some(
+        let submenu = self.show_submenu.then(|| {
+            let menu = if let Some(menu_builder) = &props.menu_builder {
+                Some(
                     menu_builder
                         .apply()
                         .autofocus(true)
                         .menu_controller(self.menu_controller.clone())
                         .on_close(ctx.link().callback(|_| Msg::CloseMenu)),
-                );
+                )
             } else if let Some(m) = &props.menu {
-                menu = Some(
+                Some(
                     m.clone()
                         .autofocus(true)
                         .menu_controller(self.menu_controller.clone())
                         .on_close(ctx.link().callback(|_| Msg::CloseMenu)),
-                );
-            }
-        }
+                )
+            } else {
+                None
+            };
 
-        submenu.add_optional_child(menu);
+            Container::new()
+                .attribute("role", "none")
+                .node_ref(self.submenu_ref.clone())
+                .class("pwt-submenu")
+                .with_optional_child(menu)
+        });
 
         let mut button = Button::new(&props.text)
             .show_arrow(props.show_arrow)
@@ -303,8 +301,7 @@ impl Component for PwtMenuButton {
                 }
             })
             .with_child(button)
-            // submenu is position fixed, so it removed from the normal document flow.
-            .with_child(submenu)
+            .with_optional_child(submenu)
             .into()
     }
 
