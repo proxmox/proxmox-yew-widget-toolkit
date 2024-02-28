@@ -235,15 +235,15 @@ impl Component for PwtMenuButton {
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
 
-        let show_submenu = self.show_submenu;
-
         let mut submenu = Container::new()
             .attribute("role", "none")
             .node_ref(self.submenu_ref.clone())
+            // Note: position "fixed" (remove from the normal document flow), move to invisible position
+            .attribute("style", "position: fixed;top:-100px;")
             .class("pwt-submenu");
 
         let mut menu = None;
-        if show_submenu {
+        if self.show_submenu {
             if let Some(menu_builder) = &props.menu_builder {
                 menu = Some(
                     menu_builder
@@ -303,6 +303,7 @@ impl Component for PwtMenuButton {
                 }
             })
             .with_child(button)
+            // submenu is position fixed, so it removed from the normal document flow.
             .with_child(submenu)
             .into()
     }
