@@ -66,7 +66,7 @@ pub enum Msg {
 #[doc(hidden)]
 pub struct PwtTooltip {
     tooltip_ref: NodeRef,
-    align_options: Option<AlignOptions>,
+    align_options: AlignOptions,
     show: bool,
     hover_tooltip: bool,
     timeout: Option<Timeout>,
@@ -77,12 +77,42 @@ impl Component for PwtTooltip {
     type Properties = Tooltip;
 
     fn create(_ctx: &Context<Self>) -> Self {
+        let align_options = AlignOptions::new(Point::BottomStart, Point::TopStart, GrowDirection::None)
+                .with_fallback_placement(
+                    Point::TopStart,
+                    Point::BottomStart,
+                    GrowDirection::None,
+                )
+                .with_fallback_placement(Point::TopEnd, Point::TopStart, GrowDirection::None)
+                .with_fallback_placement(Point::TopStart, Point::TopEnd, GrowDirection::None)
+                .with_fallback_placement(
+                    Point::BottomStart,
+                    Point::TopStart,
+                    GrowDirection::StartEnd,
+                )
+                .with_fallback_placement(
+                    Point::TopStart,
+                    Point::BottomStart,
+                    GrowDirection::StartEnd,
+                )
+                .with_fallback_placement(
+                    Point::TopEnd,
+                    Point::TopStart,
+                    GrowDirection::TopBottom,
+                )
+                .with_fallback_placement(
+                    Point::TopStart,
+                    Point::TopEnd,
+                    GrowDirection::TopBottom,
+                )
+                .offset(4.0, 4.0);
+
         Self {
             tooltip_ref: NodeRef::default(),
             show: false,
             hover_tooltip: false,
             timeout: None,
-            align_options: None,
+            align_options,
         }
     }
 
@@ -158,47 +188,12 @@ impl Component for PwtTooltip {
             .into()
     }
 
-    fn rendered(&mut self, ctx: &Context<Self>, first_render: bool) {
+    fn rendered(&mut self, ctx: &Context<Self>, _first_render: bool) {
         let props = ctx.props();
-
-        if first_render {
-            self.align_options = Some(
-                AlignOptions::new(Point::BottomStart, Point::TopStart, GrowDirection::None)
-                    .with_fallback_placement(
-                        Point::TopStart,
-                        Point::BottomStart,
-                        GrowDirection::None,
-                    )
-                    .with_fallback_placement(Point::TopEnd, Point::TopStart, GrowDirection::None)
-                    .with_fallback_placement(Point::TopStart, Point::TopEnd, GrowDirection::None)
-                    .with_fallback_placement(
-                        Point::BottomStart,
-                        Point::TopStart,
-                        GrowDirection::StartEnd,
-                    )
-                    .with_fallback_placement(
-                        Point::TopStart,
-                        Point::BottomStart,
-                        GrowDirection::StartEnd,
-                    )
-                    .with_fallback_placement(
-                        Point::TopEnd,
-                        Point::TopStart,
-                        GrowDirection::TopBottom,
-                    )
-                    .with_fallback_placement(
-                        Point::TopStart,
-                        Point::TopEnd,
-                        GrowDirection::TopBottom,
-                    )
-                    .offset(4.0, 4.0),
-            );
-        }
-
         if self.show && ctx.props().tip.is_some() {
             if let Some(content_node) = props.std_props.node_ref.get() {
                 if let Some(tooltip_node) = self.tooltip_ref.get() {
-                    let _ = align_to(content_node, tooltip_node, self.align_options.clone());
+                    let _ = align_to(content_node, tooltip_node, Some(self.align_options.clone()));
                 }
             }
         }
