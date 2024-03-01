@@ -37,6 +37,9 @@ pub use dropdown::{Dropdown, PwtDropdown, RenderDropdownPickerFn};
 mod fa;
 pub use fa::{Fa, PwtFa};
 
+mod file_button;
+pub use file_button::{FileButton, PwtFileButton};
+
 pub mod focus;
 
 pub mod form;
