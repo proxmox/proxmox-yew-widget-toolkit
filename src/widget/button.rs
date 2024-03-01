@@ -74,11 +74,6 @@ pub struct Button {
     #[builder(IntoPropValue, into_prop_value)]
     pub aria_label: Option<AttrValue>,
 
-    /// Html placeholder attribute.
-    #[prop_or_default]
-    #[builder(IntoPropValue, into_prop_value)]
-    pub placeholder: Option<AttrValue>,
-
     /// Html autofocus attribute.
     #[prop_or_default]
     #[builder]
