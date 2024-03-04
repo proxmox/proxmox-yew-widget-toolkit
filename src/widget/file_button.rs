@@ -12,6 +12,12 @@ use pwt_macros::{builder, widget};
 /// File Selection Button.
 ///
 /// FileButtons can be text only, icons with text, or icons only.
+///
+/// Note: In future, this can be done with a normal Button, using showOpenFilePicker.
+/// But showOpenFilePicker is currently not in web-sys (unstable)
+/// see: https://github.com/rustwasm/wasm-bindgen/discussions/3796
+// let window = web_sys::window().unwrap();
+// let promise =  window.showOpenFilePicker();
 #[widget(pwt=crate, comp=crate::widget::PwtFileButton, @element)]
 #[derive(Properties, PartialEq, Clone)]
 #[builder]
