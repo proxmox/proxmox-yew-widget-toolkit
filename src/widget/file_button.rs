@@ -1,4 +1,3 @@
-
 use web_sys::{HtmlElement, HtmlInputElement};
 
 use yew::html::{IntoEventCallback, IntoPropValue};
@@ -106,7 +105,10 @@ impl Component for PwtFileButton {
     type Properties = FileButton;
 
     fn create(_ctx: &Context<Self>) -> Self {
-        Self { ripple_pos: None, input_ref: NodeRef::default() }
+        Self {
+            ripple_pos: None,
+            input_ref: NodeRef::default(),
+        }
     }
 
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
@@ -157,6 +159,11 @@ impl Component for PwtFileButton {
             false => None,
         };
 
+        let suppress_oncancel: Callback<Event> = Callback::from(|event: Event| {
+                event.prevent_default();
+                event.stop_propagation();
+            });
+
         if let Some(icon_class) = &props.icon_class {
             if !icon_class.is_empty() {
                 // Chromium fires onclick from nested elements, so we need to suppress that manually here
@@ -197,18 +204,19 @@ impl Component for PwtFileButton {
                 .attribute("accept", props.accept.clone())
                 .attribute("multiple", props.multiple.then(|| ""))
                 .class("pwt-d-none")
+                .oncancel(suppress_oncancel)
                 .onchange({
                     let on_change = props.on_change.clone();
                     let input_ref = self.input_ref.clone();
                     move |_| {
-                        if let Some(on_change) = &on_change  {
+                        if let Some(on_change) = &on_change {
                             if let Some(el) = input_ref.cast::<HtmlInputElement>() {
                                 on_change.emit(el.files());
                             }
                         }
                     }
                 })
-                .into()
+                .into(),
         );
 
         let listeners = (!props.disabled).then_some(props.listeners.clone());
