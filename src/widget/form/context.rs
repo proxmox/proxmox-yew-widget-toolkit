@@ -477,7 +477,7 @@ impl FormContextState {
         if radio_group {
             if let Some(default) = default.as_str() {
                 if !default.is_empty() && group.value.is_none() {
-                    group.value = Some(default.clone().into());
+                    group.value = Some(default.into());
                 }
             }
             group.radio_count += 1;
