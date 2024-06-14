@@ -162,7 +162,7 @@ impl<T: Clone + PartialEq + 'static> Component for PwtDataTableRow<T> {
 
             let cell = column.apply_render(&mut args);
 
-            if let Some(style) = args.attributes.remove("style") {
+            if let Some(style) = args.attributes.swap_remove("style") {
                 item_style.push_str(&style);
             }
 

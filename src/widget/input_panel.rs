@@ -376,7 +376,7 @@ impl Into<VTag> for InputPanel {
                 .std_props
                 .attributes
                 .get_mut_index_map()
-                .remove(&AttrValue::Static("style"))
+                .swap_remove(&AttrValue::Static("style"))
                 .map(|(style, _)| style)
                 .unwrap_or("".into());
 

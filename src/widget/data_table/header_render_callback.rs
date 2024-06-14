@@ -60,7 +60,7 @@ impl<T: 'static> DataTableHeaderRenderArgs<T> {
         if let Some(value) = value.into_prop_value() {
             self.attributes.insert(key.into(), value);
         } else {
-            self.attributes.remove(&key.into());
+            self.attributes.swap_remove(&key.into());
         }
     }
 

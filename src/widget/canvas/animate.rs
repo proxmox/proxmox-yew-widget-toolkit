@@ -51,7 +51,7 @@ impl Animate {
                 .get_mut_index_map()
                 .insert(key.into(), (value, ApplyAttributeAs::Attribute));
         } else {
-            self.attributes.get_mut_index_map().remove(&key.into());
+            self.attributes.get_mut_index_map().swap_remove(&key.into());
         }
     }
 

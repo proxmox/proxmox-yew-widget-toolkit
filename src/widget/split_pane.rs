@@ -608,7 +608,7 @@ impl Component for PwtSplitPane {
         // use existing style attribute
         let attr_map = container.std_props.attributes.get_mut_index_map();
         let mut style = attr_map
-            .remove(&AttrValue::Static("style"))
+            .swap_remove(&AttrValue::Static("style"))
             .map(|(style, _)| {
                 let mut style = style.to_string();
                 if !style.ends_with(';') {
