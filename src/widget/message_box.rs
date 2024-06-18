@@ -64,18 +64,16 @@ impl MessageBox {
     }
 }
 
-pub(crate) fn message(text: impl Into<Html>, class: &str, icon_class: impl Into<Classes>) -> Html {
+pub(crate) fn message(text: impl Into<Html>, icon_class: impl Into<Classes>) -> Row {
     let icon_class = classes!("fa-lg", "fa", "fa-align-center", icon_class,);
 
     Row::new()
         .padding(2)
-        .class(class.to_owned())
         .class("pwt-align-items-center")
         .with_child(
             html! {<span class={"pwt-message-sign"} role="none"><i class={icon_class}/></span>},
         )
         .with_child(html! {<p style={"overflow-wrap: anywhere;"}>{text.into()}</p>})
-        .into()
 }
 
 #[function_component(PwtMessageBox)]
@@ -139,7 +137,7 @@ pub fn pwt_message_box(props: &MessageBox) -> Html {
         .style("min-width: 300px; max-width:600px;")
         .draggable(props.draggable)
         .on_close(on_close)
-        .with_child(message(props.message.clone(), "", props.icon_class.clone()))
+        .with_child(message(props.message.clone(), props.icon_class.clone()))
         .with_child(bbar)
         .into()
 }

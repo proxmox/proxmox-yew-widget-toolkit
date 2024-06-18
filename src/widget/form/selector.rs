@@ -363,7 +363,9 @@ impl<S: DataStore + 'static> ManagedField for SelectorField<S> {
 
             move |on_select: &Callback<Key>| {
                 if let Some(load_error) = &load_error {
-                    return error_message(&format!("Error: {}", load_error), "pwt-p-2");
+                    return error_message(&format!("Error: {}", load_error))
+                        .padding(2)
+                        .into();
                 }
 
                 if store.is_empty() {

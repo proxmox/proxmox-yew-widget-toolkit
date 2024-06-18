@@ -139,6 +139,6 @@ pub fn get_unique_element_id() -> String {
 }
 
 /// Creates a nicely formatted error message.
-pub fn error_message(text: &str, class: &str) -> yew::Html {
-    message_box::message(text, class, "fa-exclamation-triangle")
+pub fn error_message(text: &str) -> Row {
+    message_box::message(text, "fa-exclamation-triangle")
 }

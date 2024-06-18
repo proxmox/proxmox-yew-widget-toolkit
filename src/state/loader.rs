@@ -164,7 +164,7 @@ impl<T: 'static + DeserializeOwned + Serialize> Loader<T> {
                 </div>
             },
             Some(Ok(ref data)) => render(Rc::clone(data)).into(),
-            Some(Err(err)) => error_message(&format!("Error: {}", err), "pwt-p-2"),
+            Some(Err(err)) => error_message(&format!("Error: {}", err)).padding(2).into(),
         }
     }
 
