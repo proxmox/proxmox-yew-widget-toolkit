@@ -57,7 +57,7 @@ pub enum Msg {
     ScrollResize(f64, f64),
     ContentResize(f64, f64),
     HandleResize(f64, f64),
-    Wheel(bool),
+    Wheel(f64),
     Scroll,
     ScrollStop,
     ScrollLeft,
@@ -197,30 +197,15 @@ impl Component for PwtMiniScroll {
                 self.scroll_timeout = None;
                 true
             }
-            Msg::Wheel(left) => {
+            Msg::Wheel(delta_y) => {
                 let el = match self.scroll_ref.cast::<web_sys::Element>() {
                     None => return false,
                     Some(el) => el,
                 };
 
-                let width = el.get_bounding_client_rect().width();
-                let diff = self.content_width - width;
-
-                log::info!("Diff {diff}");
-                let inc = 0.1;
-                if left {
-                    self.pos = (self.pos - inc).max(0f64);
-                    if self.pos == 0f64 {
-                        self.scroll_mode = ScrollMode::None;
-                    }
-                } else {
-                    self.pos = (self.pos + inc).min(1f64);
-                    if self.pos == 1f64 {
-                        self.scroll_mode = ScrollMode::None;
-                    }
-                }
-
-                el.set_scroll_left((diff * self.pos) as i32);
+                let new_left = el.scroll_left() as f64 + delta_y;
+                self.pos = (new_left / (self.content_width - self.width)).clamp(0.0, 1.0);
+                el.set_scroll_left(new_left as i32);
                 true
             }
         }
@@ -248,7 +233,7 @@ impl Component for PwtMiniScroll {
                 let link = ctx.link().clone();
                 move |event: WheelEvent| {
                     event.prevent_default();
-                    link.send_message(Msg::Wheel(event.delta_y() < 0.0))
+                    link.send_message(Msg::Wheel(event.delta_y()))
                 }
             });
 
