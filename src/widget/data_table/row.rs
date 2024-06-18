@@ -124,12 +124,7 @@ impl<T: Clone + PartialEq + 'static> Component for PwtDataTableRow<T> {
         let mut col_index = 0;
         let mut column_num = 0;
 
-        loop {
-            let column = match props.columns.get(column_num) {
-                Some(column) => column,
-                None => break,
-            };
-
+        while let Some(column) = props.columns.get(column_num) {
             if let Some(true) = props.column_hidden.get(column_num) {
                 column_num += 1;
                 continue;
