@@ -215,6 +215,20 @@ impl Field {
         self
     }
 
+    /// Create a new range field.
+    pub fn range(
+        mut self,
+        min: impl IntoPropValue<Option<f64>>,
+        max: impl IntoPropValue<Option<f64>>,
+        step: impl IntoPropValue<Option<f64>>,
+    ) -> Self {
+        self.min = min.into_prop_value();
+        self.max = max.into_prop_value();
+        self.step = step.into_prop_value();
+        self.input_type = InputType::Range;
+        self
+    }
+
     /// Builder style method to set the validate callback
     pub fn validate(mut self, validate: impl IntoValidateFn<String>) -> Self {
         self.set_validate(validate);
