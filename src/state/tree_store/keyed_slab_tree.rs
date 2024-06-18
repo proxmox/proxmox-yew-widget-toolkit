@@ -287,18 +287,18 @@ impl<T> KeyedSlabTree<T> {
     }
 
     fn flatten_tree_children(&self, list: &mut Vec<usize>, children: &[usize]) {
-        let mut children: Vec<usize> = children
-            .iter()
-            .filter(|child_id| {
-                let child_id = **child_id;
-                let entry = self.get(child_id).unwrap();
-                match &self.filter {
-                    Some(filter) => filter.apply(&entry.record),
-                    None => true,
-                }
-            })
-            .map(|child_id| *child_id)
-            .collect();
+        let mut children: Vec<usize> = match &self.filter {
+            Some(filter) => children
+                .iter()
+                .filter(|child_id| {
+                    let child_id = **child_id;
+                    let entry = self.get(child_id).unwrap();
+                    filter.apply(&entry.record)
+                })
+                .copied()
+                .collect(),
+            None => children.to_vec(),
+        };
 
         if let Some(sorter) = &self.sorter {
             children.sort_by(|child_id_a, child_id_b| {
