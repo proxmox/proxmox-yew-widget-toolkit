@@ -7,6 +7,7 @@ use yew::virtual_dom::{Key, VComp, VNode};
 
 use pwt_macros::builder;
 
+use crate::css::{OverflowX, OverflowY};
 use crate::props::{
     AsClassesMut, AsCssStylesMut, ContainerBuilder, CssBorderBuilder, CssPaddingBuilder, CssStyles,
     EventSubscriber, IntoOptionalKey, WidgetBuilder, WidgetStyleBuilder,
@@ -585,7 +586,9 @@ impl Component for PwtNavigationDrawer {
             .attribute("tabindex", "-1")
             .attribute("role", "navigation")
             .attribute("aria-label", props.aria_label.clone())
-            .class("pwt-nav-menu pwt-overflow-none")
+            .class("pwt-nav-menu")
+            .class(OverflowX::Hidden)
+            .class(OverflowY::Auto)
             .class(props.class.clone())
             .styles(props.styles.clone())
             .with_optional_child(props.header.clone());
