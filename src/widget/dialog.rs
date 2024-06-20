@@ -128,6 +128,8 @@ pub enum Msg {
 
 enum DragState {
     Idle,
+    // we have to keep a reference to the event listeners, but never need to access them
+    #[allow(dead_code)]
     Dragging(f64, f64, EventListener, EventListener, i32),
 }
 
