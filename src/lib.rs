@@ -266,6 +266,7 @@ pub mod prelude {
     pub use crate::props::FieldBuilder;
     pub use crate::props::IntoOptionalKey;
     pub use crate::props::WidgetBuilder;
+    pub use crate::props::WidgetStyleBuilder;
 
     pub use crate::tr;
     pub use crate::{gettext, gettext_noop, ngettext, npgettext, pgettext};

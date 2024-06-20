@@ -5,7 +5,7 @@ use yew::html::{IntoEventCallback, IntoPropValue};
 use yew::prelude::*;
 
 use crate::prelude::*;
-use crate::props::{BuilderFn, IntoOptionalBuilderFn, WidgetStyleBuilder};
+use crate::props::{BuilderFn, IntoOptionalBuilderFn};
 use crate::widget::{Button, Container};
 
 use super::{Menu, MenuControllerMsg, MenuPopper};

@@ -9,7 +9,6 @@ use yew::virtual_dom::{Key, VComp, VNode};
 
 use crate::dom::IntoHtmlElement;
 use crate::prelude::*;
-use crate::props::WidgetStyleBuilder;
 use crate::state::{SharedState, SharedStateObserver};
 use crate::widget::Container;
 

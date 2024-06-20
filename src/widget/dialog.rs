@@ -13,7 +13,7 @@ use yew::virtual_dom::{Key, VComp, VNode};
 
 use crate::dom::IntoHtmlElement;
 use crate::prelude::*;
-use crate::props::{AsCssStylesMut, CssStyles, WidgetStyleBuilder};
+use crate::props::{AsCssStylesMut, CssStyles};
 use crate::widget::align::{align_to_viewport, align_to_xy, Point};
 use crate::widget::{ActionIcon, Panel};
 

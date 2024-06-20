@@ -11,7 +11,6 @@ use yew::prelude::*;
 use yew::virtual_dom::{Key, VComp, VNode};
 
 use crate::prelude::*;
-use crate::props::WidgetStyleBuilder;
 use crate::widget::menu::{Menu, MenuCheckbox, MenuEvent, MenuItem};
 use crate::widget::{get_unique_element_id, Container, Fa};
 

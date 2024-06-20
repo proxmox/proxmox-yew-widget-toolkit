@@ -13,7 +13,7 @@ use yew::prelude::*;
 use yew::virtual_dom::VNode;
 
 use crate::prelude::*;
-use crate::props::{CssLength, WidgetStyleBuilder};
+use crate::props::CssLength;
 use crate::touch::{GestureDetector, GestureDragEvent, GestureSwipeEvent};
 use crate::widget::{Container, Row, SizeObserver};
 

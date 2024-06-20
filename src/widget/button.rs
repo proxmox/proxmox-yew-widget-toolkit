@@ -8,7 +8,7 @@ use yew::html::IntoPropValue;
 
 use crate::dom::IntoHtmlElement;
 use crate::prelude::*;
-use crate::props::{EventSubscriber, WidgetBuilder, WidgetStyleBuilder};
+use crate::props::EventSubscriber;
 use crate::widget::Container;
 
 use pwt_macros::{builder, widget};

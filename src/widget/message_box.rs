@@ -6,7 +6,6 @@ use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 
 use crate::prelude::*;
-use crate::props::WidgetStyleBuilder;
 use crate::widget::{Button, Dialog, Row, Toolbar};
 
 /// Message Box - Modal window to display various messages.

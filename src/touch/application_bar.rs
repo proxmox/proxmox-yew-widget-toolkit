@@ -4,7 +4,6 @@ use yew::html::IntoPropValue;
 use yew::virtual_dom::{Key, VComp, VNode};
 
 use crate::prelude::*;
-use crate::props::WidgetStyleBuilder;
 use crate::widget::{ActionIcon, Column, Row};
 
 use pwt_macros::builder;
