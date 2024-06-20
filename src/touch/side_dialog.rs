@@ -9,6 +9,7 @@ use yew::virtual_dom::{Key, VComp, VNode};
 
 use crate::dom::IntoHtmlElement;
 use crate::prelude::*;
+use crate::props::WidgetStyleBuilder;
 use crate::state::{SharedState, SharedStateObserver};
 use crate::widget::Container;
 
@@ -339,35 +340,25 @@ impl Component for PwtSideDialog {
         };
 
         let mut transform = None;
+        let mut transition = None;
         if let Some((delta_x, delta_y)) = self.drag_delta {
+            transition = Some("none");
             match props.direction {
                 SideDialogLocation::Left => {
                     let delta_x = delta_x.min(0.0);
-                    transform = Some(format!(
-                        "transition:none;transform: translateX({}px);",
-                        delta_x
-                    ));
+                    transform = Some(format!("translateX({delta_x}px);"));
                 }
                 SideDialogLocation::Right => {
                     let delta_x = delta_x.max(0.0);
-                    transform = Some(format!(
-                        "transition:none;transform: translateX({}px);",
-                        delta_x
-                    ));
+                    transform = Some(format!("translateX({delta_x}px);",));
                 }
                 SideDialogLocation::Top => {
                     let delta_y = delta_y.min(0.0);
-                    transform = Some(format!(
-                        "transition:none;transform: translateY({}px);",
-                        delta_y
-                    ));
+                    transform = Some(format!("translateY({delta_y}px);",));
                 }
                 SideDialogLocation::Bottom => {
                     let delta_y = delta_y.max(0.0);
-                    transform = Some(format!(
-                        "transition:none;transform: translateY({}px);",
-                        delta_y
-                    ));
+                    transform = Some(format!("translateY({delta_y}px);",));
                 }
             }
         }
@@ -384,7 +375,8 @@ impl Component for PwtSideDialog {
                     .class("pwt-side-dialog-slider")
                     .class(slider_direction_class)
                     .class(slider_state_class)
-                    .attribute("style", transform)
+                    .style("transition", transition)
+                    .style("transform", transform)
                     .ontransitionend(ctx.link().callback(|_| Msg::SliderAnimationEnd))
                     .children(props.children.clone()),
             );

@@ -7,7 +7,7 @@ use indexmap::IndexMap;
 use yew::prelude::*;
 use yew::virtual_dom::{Key, VComp, VNode};
 
-use crate::props::{ContainerBuilder, WidgetBuilder};
+use crate::props::{ContainerBuilder, WidgetBuilder, WidgetStyleBuilder};
 use crate::state::Selection;
 use crate::widget::Container;
 
@@ -130,11 +130,8 @@ impl<T: Clone + PartialEq + 'static> Component for PwtDataTableRow<T> {
                 continue;
             }
 
-            let mut item_style = format!(
-                "vertical-align: {}; text-align: {};",
-                props.vertical_align.as_deref().unwrap_or("baseline"),
-                column.justify,
-            );
+            let vertical_align = props.vertical_align.to_owned().unwrap_or("baseline".into());
+            let text_align = column.justify.to_owned();
 
             let cell_active = match props.active_cell {
                 Some(active_cell) => active_cell == column_num,
@@ -157,15 +154,13 @@ impl<T: Clone + PartialEq + 'static> Component for PwtDataTableRow<T> {
 
             let cell = column.apply_render(&mut args);
 
-            if let Some(style) = args.attributes.swap_remove("style") {
-                item_style.push_str(&style);
-            }
-
             let mut td = Container::new()
                 .tag("td")
                 .class(args.class)
                 .class((cell_active && props.has_focus).then(|| "cell-cursor"))
-                .attribute("style", item_style)
+                .style("vertical-align", vertical_align)
+                .style("text-align", text_align)
+                .attribute("style", args.attributes.swap_remove("style"))
                 .attribute("role", "gridcell")
                 .attribute("data-column-num", column_num.to_string())
                 .attribute("tabindex", if cell_active { "0" } else { "-1" })

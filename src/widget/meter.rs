@@ -6,7 +6,10 @@ use yew::virtual_dom::VTag;
 
 use pwt_macros::{builder, widget};
 
-use crate::props::{ContainerBuilder, IntoOptionalTextRenderFn, TextRenderFn, WidgetBuilder};
+use crate::props::{
+    ContainerBuilder, CssLength, IntoOptionalTextRenderFn, TextRenderFn, WidgetBuilder,
+    WidgetStyleBuilder,
+};
 use crate::widget::Container;
 
 /// Wrapper for Html `<meter>`.
@@ -85,9 +88,7 @@ impl Meter {
 
 impl Into<VTag> for Meter {
     fn into(self) -> VTag {
-        let percentage = (((self.value - self.min).max(0.0) / (self.max - self.min)) * 100.0)
-            .min(100.0)
-            .max(0.0);
+        let percentage = ((self.value - self.min).max(0.0) / (self.max - self.min)).clamp(0.0, 1.0);
 
         let distance_to_optimum = if let Some(optimum) = self.optimum {
             if optimum > self.value {
@@ -118,7 +119,7 @@ impl Into<VTag> for Meter {
             Container::new()
                 .class("pwt-meter-bar")
                 .class(format!("pwt-meter-distance-{}", distance_to_optimum))
-                .attribute("style", format!("width:{percentage}%"))
+                .width(CssLength::Fraction(percentage))
                 .into(),
         );
 

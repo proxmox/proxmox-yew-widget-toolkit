@@ -5,8 +5,8 @@ use yew::virtual_dom::VNode;
 use gloo_events::EventListener;
 use wasm_bindgen::{JsCast, UnwrapThrowExt};
 
-use crate::css::{Display, FlexFillFirstChild};
-use crate::props::{ContainerBuilder, EventSubscriber, WidgetBuilder};
+use crate::css::{Display, FlexFillFirstChild, Overflow};
+use crate::props::{ContainerBuilder, EventSubscriber, WidgetBuilder, WidgetStyleBuilder};
 
 use super::Container;
 use crate::dom::element_direction_rtl;
@@ -39,10 +39,10 @@ impl PaneSize {
         match self {
             Self::Fraction(ratio) => {
                 // Note: compute percentage without space used by separators.
-                format!("flex: 0 0 calc((100% - {reserve}px)*{ratio});")
+                format!("0 0 calc((100% - {reserve}px)*{ratio})")
             }
-            Self::Pixel(p) => format!("flex: 0 0 {p}px;"),
-            Self::Flex(f) => format!("flex: {f} 1 0px;"),
+            Self::Pixel(p) => format!("0 0 {p}px"),
+            Self::Flex(f) => format!("{f} 1 0px"),
         }
     }
 
@@ -327,7 +327,7 @@ impl PwtSplitPane {
                 "aria-valuenow",
                 fraction.map(|f| format!("{:.0}", f * 100.0)),
             )
-            .attribute("style", format!("flex: 0 0 {}px;", props.handle_size))
+            .style("flex", format!("0 0 {}px", props.handle_size))
             .class(if props.vertical {
                 "column-split-handle"
             } else {
@@ -355,43 +355,38 @@ impl PwtSplitPane {
 
         let size_attr = if props.vertical { "height" } else { "width" };
 
-        let mut style = match child.size {
+        let mut flex = Some(match child.size {
             Some(size) => size.to_css_flex(handle_size_sum),
-            None => String::from("flex: 0 0 auto;"),
-        };
+            None => String::from("0 0 auto"),
+        });
 
-        style.push_str("overflow:auto;");
-
+        let mut size_style = None;
         if let Some(size) = self.sizes.get(index) {
             // use flex-grow to set size. If we resize the container,
             // children resize proportional
 
-            let dynamic = match child.size {
-                Some(PaneSize::Fraction(_)) | Some(PaneSize::Flex(_)) => true,
-                _ => false,
-            };
-
-            style = if dynamic {
-                format!("overflow:auto;flex: {size} 1 0px;")
-            } else {
-                format!("overflow:auto;{size_attr}:{size}px;")
-            };
+            match child.size {
+                Some(PaneSize::Fraction(_)) | Some(PaneSize::Flex(_)) => {
+                    flex = Some(format!("{size} 1 0px"))
+                }
+                _ => {
+                    size_style = Some(format!("{size}px"));
+                    flex = None
+                }
+            }
         }
 
-        if let Some(min_size) = &child.min_size {
-            let min_size = min_size.to_css_size(handle_size_sum);
-            style.push_str(&format!("min-{size_attr}: {min_size};"));
-        }
-
-        if let Some(max_size) = &child.max_size {
-            let max_size = max_size.to_css_size(handle_size_sum);
-            style.push_str(&format!("max-{size_attr}: {max_size};"));
-        }
+        let min_size = child.min_size.map(|s| s.to_css_size(handle_size_sum));
+        let max_size = child.max_size.map(|s| s.to_css_size(handle_size_sum));
 
         let pane = Container::new()
             .node_ref(child.node_ref.clone())
-            .attribute("style", style)
+            .style("flex", flex)
+            .style(size_attr, size_style)
+            .style(format!("min-{size_attr}"), min_size)
+            .style(format!("max-{size_attr}"), max_size)
             .class(Display::Flex)
+            .class(Overflow::Auto)
             .class(FlexFillFirstChild)
             .class(child.class.clone())
             .with_child(child.content.clone());
@@ -607,25 +602,16 @@ impl Component for PwtSplitPane {
 
         // use existing style attribute
         let attr_map = container.std_props.attributes.get_mut_index_map();
-        let mut style = attr_map
+        let style = attr_map
             .swap_remove(&AttrValue::Static("style"))
-            .map(|(style, _)| {
-                let mut style = style.to_string();
-                if !style.ends_with(';') {
-                    style.push(';');
-                }
-                style
-            })
-            .unwrap_or(String::new());
+            .map(|s| s.0);
 
-        // and append our style at the end
-        style.push_str(if props.vertical {
-            "display:flex;flex-direction:column;align-items:stretch;"
-        } else {
-            "display:flex;flex-direction:row;align-items:stretch;"
-        });
+        let flex_direction = if props.vertical { "column" } else { "row" };
 
         container
+            .style("display", "flex")
+            .style("flex-direction", flex_direction)
+            .style("align-items", "stretch")
             .attribute("style", style)
             .onfocusin(ctx.link().callback(|_| Msg::FocusIn))
             .into()

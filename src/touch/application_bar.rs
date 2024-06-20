@@ -4,6 +4,7 @@ use yew::html::IntoPropValue;
 use yew::virtual_dom::{Key, VComp, VNode};
 
 use crate::prelude::*;
+use crate::props::WidgetStyleBuilder;
 use crate::widget::{ActionIcon, Column, Row};
 
 use pwt_macros::builder;
@@ -150,7 +151,7 @@ impl Component for PwtApplicationBar {
             .with_child(actions);
 
         Column::new()
-            .attribute("style", "z-index: 1;") // make shadow (if any) visible
+            .style("z-index", "1") // make shadow (if any) visible
             .attribute("role", "banner")
             .class("pwt-application-bar")
             .with_child(row1)

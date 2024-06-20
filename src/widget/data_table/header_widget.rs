@@ -11,6 +11,7 @@ use yew::prelude::*;
 use yew::virtual_dom::{Key, VComp, VNode};
 
 use crate::prelude::*;
+use crate::props::WidgetStyleBuilder;
 use crate::widget::menu::{Menu, MenuCheckbox, MenuEvent, MenuItem};
 use crate::widget::{get_unique_element_id, Container, Fa};
 
@@ -137,9 +138,8 @@ pub struct PwtHeaderWidget<T: 'static> {
 }
 
 impl<T: 'static> PwtHeaderWidget<T> {
-    fn compute_grid_style(&self, ctx: &Context<Self>) -> String {
-        let mut grid_style =
-            String::from("user-select: none; display:grid; grid-template-columns:");
+    fn compute_grid_columns(&self, ctx: &Context<Self>) -> String {
+        let mut grid_style = String::new();
         for (col_idx, cell) in self.state.columns().iter().enumerate() {
             if self.state.get_column_hidden(col_idx) {
                 continue;
@@ -154,7 +154,7 @@ impl<T: 'static> PwtHeaderWidget<T> {
 
         let scrollbar_size = ctx.props().reserve_scroll_space;
         if scrollbar_size > 0.0 {
-            grid_style.push_str(&format!(" {scrollbar_size}px;"));
+            grid_style.push_str(&format!(" {scrollbar_size}px"));
         }
 
         grid_style
@@ -617,7 +617,9 @@ impl<T: 'static> Component for PwtHeaderWidget<T> {
             .attribute("role", "row")
             .node_ref(self.node_ref.clone())
             .class("pwt-d-grid")
-            .attribute("style", self.compute_grid_style(ctx))
+            .style("user-select", "none")
+            .style("display", "grid")
+            .style("grid-template-columns", self.compute_grid_columns(ctx))
             .children(header_row)
             .onkeydown({
                 let link = ctx.link().clone();

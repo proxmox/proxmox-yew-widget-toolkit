@@ -8,7 +8,7 @@ use yew::prelude::*;
 use yew::virtual_dom::{Key, VComp, VNode};
 
 use crate::impl_to_html;
-use crate::props::{ContainerBuilder, EventSubscriber, WidgetBuilder};
+use crate::props::{ContainerBuilder, EventSubscriber, WidgetBuilder, WidgetStyleBuilder};
 use crate::widget::Container;
 
 /// Like [PointerEvent](web_sys::PointerEvent) (currently no additional features)
@@ -557,7 +557,7 @@ impl Component for PwtGestureDetector {
         Container::new()
             .node_ref(self.node_ref.clone())
             .class("pwt-d-contents")
-            .attribute("style", "touch-action:none;")
+            .style("touch-action", "none")
             .onpointerdown(ctx.link().callback(Msg::PointerDown))
             .onpointerup(ctx.link().callback(Msg::PointerUp))
             .onpointermove(ctx.link().callback(Msg::PointerMove))

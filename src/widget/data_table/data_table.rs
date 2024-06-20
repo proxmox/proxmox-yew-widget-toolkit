@@ -13,8 +13,8 @@ use yew::virtual_dom::{Key, VComp, VNode};
 
 use crate::prelude::*;
 use crate::props::{
-    AsClassesMut, AsCssStylesMut, CallbackMut, CssStyles, IntoEventCallbackMut, SorterFn,
-    WidgetStyleBuilder,
+    AsClassesMut, AsCssStylesMut, CallbackMut, CssLength, CssStyles, IntoEventCallbackMut,
+    SorterFn, WidgetStyleBuilder,
 };
 use crate::state::{DataStore, Selection, SelectionObserver};
 use crate::widget::{get_unique_element_id, Column, Container, SizeObserver};
@@ -511,7 +511,8 @@ fn render_empty_row_with_widths<R>(columns: &[DataTableColumn<R>]) -> Html {
         .attribute("role", "none")
         .key(Key::from("sizes"))
         // Note: This row should not be visible, so avoid borders
-        .attribute("style", "border-top-width: 0px; border-bottom-width: 0px;")
+        .style("border-top-width", "0px")
+        .style("border-bottom-width", "0px")
         .children(columns.iter().filter_map(|column| {
             if column.hidden {
                 None
@@ -532,7 +533,8 @@ fn render_empty_row_with_sizes(widths: &[f64], column_hidden: &[bool], bordered:
         .attribute("role", "none")
         .key(Key::from("sizes"))
          // Note: This row should not be visible, so avoid borders
-        .attribute("style", "border-top-width: 0px; border-bottom-width: 0px;")
+        .style("border-top-width", "0px")
+        .style("border-bottom-width", "0px")
         .children(
             widths.iter().enumerate()
                 .filter(|(column_num, _)| {
@@ -959,7 +961,7 @@ impl<S: DataStore> PwtDataTable<S> {
         let height = self.scroll_info.height;
 
         Container::new()
-            .attribute("style", format!("height:{}px", height))
+            .height(height)
             .attribute("role", "none")
             .with_child(table)
             .into()
@@ -1657,12 +1659,6 @@ impl<S: DataStore + 'static> Component for PwtDataTable<S> {
             .map(|s| s.is_multiselect())
             .unwrap_or(false);
 
-        let header_style = if props.show_header {
-            "flex: 0 0 auto;"
-        } else {
-            "flex: 0 0 auto;height:0px;"
-        };
-
         let mut header_class = props.header_class.clone();
         if header_class.is_empty() {
             header_class.push("pwt-datatable-header-cell");
@@ -1687,7 +1683,12 @@ impl<S: DataStore + 'static> Component for PwtDataTable<S> {
                     .node_ref(self.header_scroll_ref.clone())
                     .attribute("role", "rowgroup")
                     .attribute("aria-label", "table header")
-                    .attribute("style", header_style)
+                    .style("flex", "0 0 auto")
+                    .height(if props.show_header {
+                        CssLength::None
+                    } else {
+                        CssLength::Px(0.0)
+                    })
                     .class("pwt-overflow-hidden")
                     .class("pwt-datatable-header")
                     .class((!props.show_header).then_some("pwt-datatable-header-hidden"))

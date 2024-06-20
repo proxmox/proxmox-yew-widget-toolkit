@@ -5,7 +5,7 @@ use yew::html::{IntoEventCallback, IntoPropValue};
 use yew::prelude::*;
 
 use crate::prelude::*;
-use crate::props::{BuilderFn, IntoOptionalBuilderFn};
+use crate::props::{BuilderFn, IntoOptionalBuilderFn, WidgetStyleBuilder};
 use crate::widget::{Button, Container};
 
 use super::{Menu, MenuControllerMsg, MenuPopper};
@@ -284,7 +284,7 @@ impl Component for PwtMenuButton {
         }));
 
         Container::new()
-            .attribute("style", "display:contents;")
+            .style("display", "contents")
             .attribute("role", "none")
             .onfocusin(ctx.link().callback(|_| Msg::FocusChange(true)))
             .onfocusout(ctx.link().callback(|_| Msg::FocusChange(false)))

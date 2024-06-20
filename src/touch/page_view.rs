@@ -5,7 +5,7 @@ use yew::prelude::*;
 use yew::virtual_dom::{Key, VComp, VNode};
 
 use crate::impl_to_html;
-use crate::props::{ContainerBuilder, WidgetBuilder};
+use crate::props::{ContainerBuilder, CssLength, WidgetBuilder, WidgetStyleBuilder};
 use crate::touch::GestureDetector;
 use crate::widget::Container;
 
@@ -106,7 +106,7 @@ impl Component for PwtPageView {
             .iter()
             .enumerate()
             .map(|(i, child)| {
-                let pos = if i <  props.view_page {
+                let pos = if i < props.view_page {
                     -1
                 } else if i > props.view_page {
                     1
@@ -114,12 +114,13 @@ impl Component for PwtPageView {
                     0
                 };
 
-                let style = format!(
-                    "position:absolute;width:100%;height:100%,top:0;transition: all ease 0.5s;left:calc({}*100%);",
-                    pos,
-                );
                 Container::new()
-                    .attribute("style", style)
+                    .width(CssLength::Fraction(1.0))
+                    .height(CssLength::Fraction(1.0))
+                    .style("position", "absolute")
+                    .style("top", "0")
+                    .style("transition", "all ease 0.5s")
+                    .style("left", format!("calc({pos}*100%)"))
                     .with_child(child.clone())
                     .into()
             })
@@ -129,7 +130,8 @@ impl Component for PwtPageView {
             Container::new()
                 .class("pwt-position-relative")
                 .class("pwt-overflow-hidden")
-                .attribute("style", "width: 100%; height: 100%;")
+                .width(CssLength::Fraction(1.0))
+                .height(CssLength::Fraction(1.0))
                 .children(pages),
         )
         .on_swipe({

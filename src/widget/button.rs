@@ -8,7 +8,7 @@ use yew::html::IntoPropValue;
 
 use crate::dom::IntoHtmlElement;
 use crate::prelude::*;
-use crate::props::{EventSubscriber, WidgetBuilder};
+use crate::props::{EventSubscriber, WidgetBuilder, WidgetStyleBuilder};
 use crate::widget::Container;
 
 use pwt_macros::{builder, widget};
@@ -225,13 +225,12 @@ impl Component for PwtButton {
         // by setting the "animate" class. Else, onclick handler is not reliable
         // triggered (dont know why).
         children.push({
-            let style = format!(
-                "--pwt-ripple-x: {x}px; --pwt-ripple-y: {y}px; --pwt-ripple-radius: {radius}px;"
-            );
             Container::new()
                 .class("pwt-button-ripple")
                 .class(self.ripple_pos.is_some().then(|| "animate"))
-                .attribute("style", style)
+                .style("--pwt-ripple-x", format!("{x}px"))
+                .style("--pwt-ripple-y", format!("{y}px"))
+                .style("--pwt-ripple-radius", format!("{radius}px"))
                 .onanimationend(ctx.link().callback(|_| Msg::AnimationEnd))
                 // Chromium fires onclick from nested elements, so we need to suppress that manually here
                 .onclick(suppress_onclick)

@@ -6,7 +6,7 @@ use yew::virtual_dom::VTag;
 
 use pwt_macros::{builder, widget};
 
-use crate::props::WidgetBuilder;
+use crate::props::{CssLength, WidgetBuilder, WidgetStyleBuilder};
 use crate::widget::Container;
 
 /// Wrapper for Html `<progress>`.
@@ -48,10 +48,10 @@ impl Into<VTag> for Progress {
 
         let bar = match self.value {
             Some(value) => {
-                let percentage = ((value / max) * 100.0).min(100.0).max(0.0);
+                let percentage = (value / max).clamp(0.0, 1.0);
                 Container::new()
                     .class("pwt-progress-bar")
-                    .attribute("style", format!("width:{percentage}%"))
+                    .width(CssLength::Fraction(percentage))
                     .into()
             }
             None => Container::new().class("pwt-progress-infinite").into(),

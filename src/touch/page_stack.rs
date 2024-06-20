@@ -5,7 +5,9 @@ use yew::virtual_dom::{VComp, VNode};
 //use yew::html::IntoEventCallback;
 use yew::virtual_dom::Key;
 
-use crate::props::{ContainerBuilder, EventSubscriber, WidgetBuilder};
+use crate::props::{
+    ContainerBuilder, CssLength, EventSubscriber, WidgetBuilder, WidgetStyleBuilder,
+};
 use crate::widget::Container;
 
 /// Page animation style.
@@ -147,7 +149,8 @@ impl Component for PwtPageStack {
         Container::new()
             .class("pwt-position-relative")
             .class("pwt-overflow-hidden")
-            .attribute("style", "width: 100%; height: 100%;")
+            .width(CssLength::Fraction(1.0))
+            .height(CssLength::Fraction(1.0))
             .children(children)
             .into()
     }

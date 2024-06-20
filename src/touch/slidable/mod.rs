@@ -13,6 +13,7 @@ use yew::prelude::*;
 use yew::virtual_dom::VNode;
 
 use crate::prelude::*;
+use crate::props::{CssLength, WidgetStyleBuilder};
 use crate::touch::{GestureDetector, GestureDragEvent, GestureSwipeEvent};
 use crate::widget::{Container, Row, SizeObserver};
 
@@ -161,7 +162,9 @@ impl PwtSlidable {
             .with_child(
                 Container::new()
                     .node_ref(self.left_action_ref.clone())
-                    .attribute("style", "height:100%;min-width:0;flex:0 1 auto")
+                    .height(CssLength::Fraction(1.0))
+                    .min_width(0)
+                    .style("flex", "0 1 auto")
                     .with_optional_child(actions),
             )
             .with_child(html! {<div style="flex: 1 1 auto;"></div>})
@@ -179,7 +182,9 @@ impl PwtSlidable {
             .with_child(
                 Container::new()
                     .node_ref(self.right_action_ref.clone())
-                    .attribute("style", "height:100%;min-width:0;flex:0 1 auto")
+                    .height(CssLength::Fraction(1.0))
+                    .min_width(0)
+                    .style("flex", "0 1 auto")
                     .with_optional_child(actions),
             )
             .into()
