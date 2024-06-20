@@ -12,7 +12,10 @@ use yew::prelude::*;
 use yew::virtual_dom::{Key, VComp, VNode};
 
 use crate::prelude::*;
-use crate::props::{AsClassesMut, CallbackMut, IntoEventCallbackMut, SorterFn};
+use crate::props::{
+    AsClassesMut, AsCssStylesMut, CallbackMut, CssStyles, IntoEventCallbackMut, SorterFn,
+    WidgetStyleBuilder,
+};
 use crate::state::{DataStore, Selection, SelectionObserver};
 use crate::widget::{get_unique_element_id, Column, Container, SizeObserver};
 
@@ -113,6 +116,10 @@ pub struct DataTable<S: DataStore> {
     #[prop_or_default]
     pub class: Classes,
 
+    /// CSS styles of the container
+    #[prop_or_default]
+    pub styles: CssStyles,
+
     #[derivative(PartialEq(compare_with = "Rc::ptr_eq"))]
     headers: Rc<Vec<DataTableHeader<S::Record>>>,
 
@@ -206,9 +213,16 @@ impl<S: DataStore> AsClassesMut for DataTable<S> {
     }
 }
 
+impl<S: DataStore> AsCssStylesMut for DataTable<S> {
+    fn as_css_styles_mut(&mut self) -> &mut crate::props::CssStyles {
+        &mut self.styles
+    }
+}
+
 impl<S: DataStore> CssBorderBuilder for DataTable<S> {}
 impl<S: DataStore> CssPaddingBuilder for DataTable<S> {}
 impl<S: DataStore> CssMarginBuilder for DataTable<S> {}
+impl<S: DataStore> WidgetStyleBuilder for DataTable<S> {}
 
 static VIRTUAL_SCROLL_TRIGGER: usize = 30;
 
@@ -1657,6 +1671,7 @@ impl<S: DataStore + 'static> Component for PwtDataTable<S> {
         Column::new()
             .class("pwt-datatable")
             .class(props.class.clone())
+            .styles(props.styles.clone())
             .node_ref(self.container_ref.clone())
             .attribute("role", "grid")
             .attribute("aria-activedescendant", active_descendant)
