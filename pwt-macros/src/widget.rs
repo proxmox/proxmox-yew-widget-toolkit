@@ -222,9 +222,17 @@ fn derive_widget(setup: &WidgetSetup, widget: DeriveInput) -> Result<proc_macro2
                     &mut self.std_props.class
                 }
             }
+
+            impl #impl_generics #pwt::props::AsCssStylesMut for #ident #ty_generics #where_clause {
+                fn as_css_styles_mut(&mut self) -> &mut #pwt::props::CssStyles {
+                    &mut self.std_props.styles
+                }
+            }
+
             impl #impl_generics #pwt::props::CssMarginBuilder for #ident #ty_generics #where_clause {}
             impl #impl_generics #pwt::props::CssPaddingBuilder for #ident #ty_generics #where_clause {}
             impl #impl_generics #pwt::props::CssBorderBuilder for #ident #ty_generics #where_clause {}
+            impl #impl_generics #pwt::props::WidgetStyleBuilder for #ident #ty_generics #where_clause {}
         });
     }
 
