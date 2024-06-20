@@ -126,6 +126,12 @@ pub use widget_std_props::WidgetStdProps;
 mod widget_builder;
 pub use widget_builder::WidgetBuilder;
 
+mod css_styles;
+pub use css_styles::{AsCssStylesMut, CssStyles};
+
+mod widget_style_builder;
+pub use widget_style_builder::{CssLength, WidgetStyleBuilder};
+
 mod container_builder;
 pub use container_builder::ContainerBuilder;
 
