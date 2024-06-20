@@ -5,6 +5,9 @@ use std::rc::Rc;
 use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 
+use crate::props::{AsClassesMut, AsCssStylesMut, CssStyles, WidgetStyleBuilder};
+use crate::touch::prelude::{CssMarginBuilder, CssPaddingBuilder};
+
 /// Font Awesome icons.
 ///
 /// This is a helper to create Font Awesome icons from there name.
@@ -24,6 +27,10 @@ pub struct Fa {
     #[prop_or_default]
     #[doc(hidden)]
     pub class: Classes,
+
+    #[prop_or_default]
+    #[doc(hidden)]
+    pub style: CssStyles,
 }
 
 impl Fa {
@@ -31,6 +38,7 @@ impl Fa {
     pub fn new(name: impl AsRef<str>) -> Self {
         Self {
             class: classes!("fa", format!("fa-{}", name.as_ref())),
+            style: Default::default(),
         }
     }
 
@@ -38,6 +46,7 @@ impl Fa {
     pub fn from_class(class: impl Into<Classes>) -> Self {
         Self {
             class: class.into(),
+            style: Default::default(),
         }
     }
 
@@ -101,11 +110,28 @@ impl Fa {
     }
 }
 
+impl AsClassesMut for Fa {
+    fn as_classes_mut(&mut self) -> &mut yew::Classes {
+        &mut self.class
+    }
+}
+
+impl AsCssStylesMut for Fa {
+    fn as_css_styles_mut(&mut self) -> &mut CssStyles {
+        &mut self.style
+    }
+}
+
+impl CssPaddingBuilder for Fa {}
+impl CssMarginBuilder for Fa {}
+impl WidgetStyleBuilder for Fa {}
+
 #[function_component(PwtFa)]
 #[doc(hidden)]
 pub fn pwt_fa(props: &Fa) -> Html {
+    let style = props.style.compile_style_attribute(None);
     html! {
-        <i class={props.class.clone()} role="none"/>
+        <i class={props.class.clone()} {style} role="none"/>
     }
 }
 
