@@ -13,6 +13,7 @@ use yew::virtual_dom::{Key, VComp, VNode};
 
 use crate::dom::IntoHtmlElement;
 use crate::prelude::*;
+use crate::props::{AsCssStylesMut, CssStyles, WidgetStyleBuilder};
 use crate::widget::align::{align_to_viewport, align_to_xy, Point};
 use crate::widget::{ActionIcon, Panel};
 
@@ -48,10 +49,9 @@ pub struct Dialog {
     #[prop_or_default]
     pub children: Vec<VNode>,
 
-    /// CSS style for the dialog window.
-    #[builder(IntoPropValue, into_prop_value)]
+    /// CSS style for the dialog window
     #[prop_or_default]
-    pub style: Option<AttrValue>,
+    pub styles: CssStyles,
 
     /// Determines if the dialog can be moved
     ///
@@ -81,6 +81,14 @@ impl ContainerBuilder for Dialog {
         &mut self.children
     }
 }
+
+impl AsCssStylesMut for Dialog {
+    fn as_css_styles_mut(&mut self) -> &mut CssStyles {
+        &mut self.styles
+    }
+}
+
+impl WidgetStyleBuilder for Dialog {}
 
 impl Dialog {
     pub fn new(title: impl Into<AttrValue>) -> Self {
@@ -492,9 +500,11 @@ impl Component for PwtDialog {
         let is_dragging = !matches!(self.dragging_state, DragState::Idle);
         let classes = classes!("pwt-dialog", is_dragging.then_some("pwt-user-select-none"));
 
+        let style = props.styles.compile_style_attribute(None);
+
         html! {
             <dialog class={"pwt-outer-dialog"} {onpointerdown} aria-label={props.title.clone()} ref={props.node_ref.clone()} {oncancel} {onclose} >
-                <div class={classes} style={props.style.clone()} ref={self.inner_ref.clone()}>
+                <div class={classes} {style} ref={self.inner_ref.clone()}>
                 {panel}
                 if resizable {
                     <div onpointerdown={west_down} class="dialog-resize-handle west"></div>

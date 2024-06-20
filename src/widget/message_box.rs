@@ -6,6 +6,7 @@ use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 
 use crate::prelude::*;
+use crate::props::WidgetStyleBuilder;
 use crate::widget::{Button, Dialog, Row, Toolbar};
 
 /// Message Box - Modal window to display various messages.
@@ -134,7 +135,8 @@ pub fn pwt_message_box(props: &MessageBox) -> Html {
     bbar.add_flex_spacer();
 
     Dialog::new(props.title.clone())
-        .style("min-width: 300px; max-width:600px;")
+        .min_width(300)
+        .max_width(600)
         .draggable(props.draggable)
         .on_close(on_close)
         .with_child(message(props.message.clone(), props.icon_class.clone()))
