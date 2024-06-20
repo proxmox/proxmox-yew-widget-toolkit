@@ -8,8 +8,8 @@ use yew::virtual_dom::{Key, VComp, VNode};
 use pwt_macros::builder;
 
 use crate::props::{
-    AsClassesMut, ContainerBuilder, CssBorderBuilder, CssPaddingBuilder, EventSubscriber,
-    IntoOptionalKey, WidgetBuilder,
+    AsClassesMut, AsCssStylesMut, ContainerBuilder, CssBorderBuilder, CssPaddingBuilder, CssStyles,
+    EventSubscriber, IntoOptionalKey, WidgetBuilder, WidgetStyleBuilder,
 };
 use crate::state::{NavigationContext, NavigationContextExt, Selection};
 
@@ -35,6 +35,10 @@ pub struct NavigationDrawer {
     /// CSS Class
     #[prop_or_default]
     pub class: Classes,
+
+    /// CSS styles
+    #[prop_or_default]
+    pub styles: CssStyles,
 
     menu: Menu,
 
@@ -76,6 +80,13 @@ impl AsClassesMut for NavigationDrawer {
         &mut self.class
     }
 }
+
+impl AsCssStylesMut for NavigationDrawer {
+    fn as_css_styles_mut(&mut self) -> &mut CssStyles {
+        &mut self.styles
+    }
+}
+
 impl CssBorderBuilder for NavigationDrawer {}
 impl CssPaddingBuilder for NavigationDrawer {}
 
@@ -576,6 +587,7 @@ impl Component for PwtNavigationDrawer {
             .attribute("aria-label", props.aria_label.clone())
             .class("pwt-nav-menu pwt-overflow-none")
             .class(props.class.clone())
+            .styles(props.styles.clone())
             .with_optional_child(props.header.clone());
 
         let active = get_active_or_default(props, &self.active);
