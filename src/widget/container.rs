@@ -16,10 +16,12 @@ pub struct Container {
 }
 
 impl Container {
+    /// Creates new Container instance
     pub fn new() -> Self {
         yew::props! { Self {} }
     }
 
+    /// Creates a new instance from existing properties
     pub fn form_widget_props(
         std_props: WidgetStdProps,
         listeners: Option<ListenersWrapper>,
@@ -27,11 +29,13 @@ impl Container {
         yew::props! { Self { std_props, listeners: listeners.unwrap_or_default() } }
     }
 
+    /// Builder style method to set the tag of the element (default is `div`)
     pub fn tag(mut self, tag: impl Into<Cow<'static, str>>) -> Self {
         self.set_tag(tag);
         self
     }
 
+    /// Method to set the tag of the element (default is `div`)
     pub fn set_tag(&mut self, tag: impl Into<Cow<'static, str>>) {
         self.tag = tag.into();
     }
