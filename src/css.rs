@@ -569,7 +569,7 @@ impl From<ColorScheme> for Classes {
             ColorScheme::SecondaryContainer => "pwt-scheme-secondary-container".into(),
             ColorScheme::Tertiary => "pwt-scheme-tertiary".into(),
             ColorScheme::TertiaryContainer => "pwt-scheme-tertiary-container".into(),
-            ColorScheme::Success => "pwt-scheme-sucsess".into(),
+            ColorScheme::Success => "pwt-scheme-success".into(),
             ColorScheme::SuccessContainer => "pwt-scheme-success-container".into(),
             ColorScheme::Error => "pwt-scheme-error".into(),
             ColorScheme::ErrorContainer => "pwt-scheme-error-container".into(),
