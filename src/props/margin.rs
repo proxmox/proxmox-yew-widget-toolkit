@@ -1,25 +1,27 @@
-use super::AsClassesMut;
 use yew::html::IntoPropValue;
-use yew::Classes;
+
+use crate::props::{AsClassesMut, AsCssStylesMut};
 
 /// Defines methods to use CSS margin classes.
 ///
-/// The default CSS template defines utility classes for margins.
+/// The default CSS template defines utility classes for margins that rely on a
+/// CSS variable that multiplies with the base width of the spacer to get
+/// consistent spacings.
 ///
-/// - `pwt-m-{S}`: margin on all sides.
-/// - `pwt-mx-{S}`: margin on x-axis (start and end).
-/// - `pwt-my-{S}`: margin on y-axis (top and bottom).
-/// - `pwt-mt-{S}`: margin on top.
-/// - `pwt-mb-{S}`: margin on bottom.
-/// - `pwt-ms-{S}`: margin at start.
-/// - `pwt-me-{S}`: margin at end.
+/// - `pwt-m` (`--pwt-margin-factor`): margin on all sides
+/// - `pwt-mx` (`--pwt-margin-x-factor`): margin on x-axis (start and end).
+/// - `pwt-my` (`--pwt-margin-y-factor`): margin on y-axis (top and bottom).
+/// - `pwt-mt` (`--pwt-margin-top-factor`): margin on top.
+/// - `pwt-mb` (`--pwt-margin-bottom-factor`): margin on bottom.
+/// - `pwt-ms` (`--pwt-margin-start-factor`): margin at start.
+/// - `pwt-me` (`--pwt-margin-end-factor`): margin at end.
 ///
-/// The template sepcifies those classes for values 0, 1, 2 and 3. The
-/// real size is specified inside the CSS and defaults to 0.5em, 1em,
-/// 1.5em and 2em.
+/// The template specifies those classes and the code sets the variable via
+/// the `style` attribute on the element. The base size is specified inside
+/// the CSS.
 ///
 /// This trait get automatically implemented for widgets using the
-/// widget macro, and is also implemented on [Classes].
+/// widget macro.
 ///
 /// ```
 /// # use pwt::prelude::*;
@@ -30,7 +32,7 @@ use yew::Classes;
 /// # ;
 /// ```
 
-pub trait CssMarginBuilder: AsClassesMut + Sized {
+pub trait CssMarginBuilder: AsClassesMut + AsCssStylesMut + Sized {
     /// Builder style method to add a box margin class.
     fn margin(mut self, margin: impl IntoPropValue<Option<usize>>) -> Self {
         self.add_margin(margin);
@@ -40,7 +42,9 @@ pub trait CssMarginBuilder: AsClassesMut + Sized {
     /// Method to add a box margin class.
     fn add_margin(&mut self, margin: impl IntoPropValue<Option<usize>>) {
         if let Some(margin) = margin.into_prop_value() {
-            self.as_classes_mut().push(format!("pwt-m-{margin}"));
+            self.as_classes_mut().push("pwt-m");
+            self.as_css_styles_mut()
+                .set_style("--pwt-margin-factor", margin.to_string())
         }
     }
 
@@ -53,7 +57,9 @@ pub trait CssMarginBuilder: AsClassesMut + Sized {
     /// Method to add a x-axis margin class.
     fn add_margin_x(&mut self, margin: impl IntoPropValue<Option<usize>>) {
         if let Some(margin) = margin.into_prop_value() {
-            self.as_classes_mut().push(format!("pwt-mx-{margin}"));
+            self.as_classes_mut().push("pwt-mx");
+            self.as_css_styles_mut()
+                .set_style("--pwt-margin-x-factor", margin.to_string());
         }
     }
 
@@ -66,7 +72,9 @@ pub trait CssMarginBuilder: AsClassesMut + Sized {
     /// Method to add a y-axis margin class.
     fn add_margin_y(&mut self, margin: impl IntoPropValue<Option<usize>>) {
         if let Some(margin) = margin.into_prop_value() {
-            self.as_classes_mut().push(format!("pwt-my-{margin}"));
+            self.as_classes_mut().push("pwt-my");
+            self.as_css_styles_mut()
+                .set_style("--pwt-margin-y-factor", margin.to_string());
         }
     }
 
@@ -79,7 +87,9 @@ pub trait CssMarginBuilder: AsClassesMut + Sized {
     /// Method to add a top margin class.
     fn add_margin_top(&mut self, margin: impl IntoPropValue<Option<usize>>) {
         if let Some(margin) = margin.into_prop_value() {
-            self.as_classes_mut().push(format!("pwt-mt-{margin}"));
+            self.as_classes_mut().push("pwt-mt");
+            self.as_css_styles_mut()
+                .set_style("--pwt-margin-top-factor", margin.to_string());
         }
     }
 
@@ -92,7 +102,9 @@ pub trait CssMarginBuilder: AsClassesMut + Sized {
     /// Method to add a bottom margin class.
     fn add_margin_bottom(&mut self, margin: impl IntoPropValue<Option<usize>>) {
         if let Some(margin) = margin.into_prop_value() {
-            self.as_classes_mut().push(format!("pwt-mb-{margin}"));
+            self.as_classes_mut().push("pwt-mb");
+            self.as_css_styles_mut()
+                .set_style("--pwt-margin-bottom-factor", margin.to_string());
         }
     }
 
@@ -105,7 +117,9 @@ pub trait CssMarginBuilder: AsClassesMut + Sized {
     /// Method to add a start margin class.
     fn add_margin_start(&mut self, margin: impl IntoPropValue<Option<usize>>) {
         if let Some(margin) = margin.into_prop_value() {
-            self.as_classes_mut().push(format!("pwt-ms-{margin}"));
+            self.as_classes_mut().push("pwt-ms");
+            self.as_css_styles_mut()
+                .set_style("--pwt-margin-start-factor", margin.to_string());
         }
     }
 
@@ -118,9 +132,9 @@ pub trait CssMarginBuilder: AsClassesMut + Sized {
     /// Method to add an end margin class.
     fn add_margin_end(&mut self, margin: impl IntoPropValue<Option<usize>>) {
         if let Some(margin) = margin.into_prop_value() {
-            self.as_classes_mut().push(format!("pwt-me-{margin}"));
+            self.as_classes_mut().push("pwt-me");
+            self.as_css_styles_mut()
+                .set_style("--pwt-margin-end-factor", margin.to_string());
         }
     }
 }
-
-impl CssMarginBuilder for Classes {}
