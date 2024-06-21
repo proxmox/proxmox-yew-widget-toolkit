@@ -24,24 +24,11 @@ Install
 
     cargo install trunk
 
-3. Install SASS (dart-sass is required)
+3. Install SASS (rust-grass is required)
 
-We recommend installing dart-sass from github:
+We recommend installing it via apt:
 
-    cd ~
-    wget https://github.com/sass/dart-sass/releases/download/1.58.3/dart-sass-1.58.3-linux-x64.tar.gz
-    tar xf dart-sass-1.58.3-linux-x64.tar.gz
-
-This should extract the binary to `~/dart-sass/sass`. You need to add the `dart-sass`
-directory to the PATH variable:
-
-    export PATH="$HOME/dart-sass:$PATH"
-
-Note: In theory, Trunk downloads and use dart-sass automatically. To use it inside
-hooks you still have to put the download directory into your path:
-
-    export PATH="$HOME/.cache/trunk/sass-1.50.0:$PATH"
-
+    apt install rust-grass
 
 I18N
 ====
