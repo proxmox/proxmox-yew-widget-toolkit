@@ -22,7 +22,7 @@ impl Container {
     }
 
     /// Creates a new instance from existing properties
-    pub fn form_widget_props(
+    pub fn from_widget_props(
         std_props: WidgetStdProps,
         listeners: Option<ListenersWrapper>,
     ) -> Self {

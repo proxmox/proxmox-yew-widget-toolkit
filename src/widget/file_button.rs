@@ -226,7 +226,7 @@ impl Component for PwtFileButton {
 
         let listeners = (!props.disabled).then_some(props.listeners.clone());
 
-        Container::form_widget_props(props.std_props.clone(), listeners)
+        Container::from_widget_props(props.std_props.clone(), listeners)
             .children(children)
             .tag("label")
             .class("pwt-button")

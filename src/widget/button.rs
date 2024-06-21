@@ -243,7 +243,7 @@ impl Component for PwtButton {
 
         let listeners = (!props.disabled).then_some(props.listeners.clone());
 
-        Container::form_widget_props(props.std_props.clone(), listeners)
+        Container::from_widget_props(props.std_props.clone(), listeners)
             .children(children)
             .tag("button")
             .class("pwt-button")
