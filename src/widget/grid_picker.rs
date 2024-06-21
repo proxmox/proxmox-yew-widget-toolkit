@@ -218,7 +218,8 @@ impl<S: DataStore + 'static> Component for PwtGridPicker<S> {
             let filter = Row::new()
                 .key(Key::from("picker-filter"))
                 .gap(2)
-                .class("pwt-p-2 pwt-w-100 pwt-align-items-center")
+                .padding(2)
+                .class("pwt-w-100 pwt-align-items-center")
                 .with_child(html! {<label for="testinput">{"Filter"}</label>})
                 .with_child(
                     Input::new()

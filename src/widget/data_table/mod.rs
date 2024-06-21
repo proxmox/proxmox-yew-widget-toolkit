@@ -46,10 +46,9 @@ pub(crate) use data_table::HeaderMsg;
 pub use data_table::{DataTable, PwtDataTable, RowSelectionStatus};
 
 use yew::prelude::*;
-use yew::virtual_dom::VList;
 
-use super::Row;
-use crate::props::{ContainerBuilder, WidgetBuilder};
+use super::{Container, Row};
+use crate::props::{ContainerBuilder, CssPaddingBuilder, WidgetBuilder, WidgetStyleBuilder};
 use crate::state::TreeStore;
 
 /// Helper function to render tree nodes.
@@ -84,19 +83,17 @@ pub(crate) fn render_tree_node_impl<T>(
     content: Html,
     tree_store: Option<TreeStore<T>>,
 ) -> Html {
-    let mut list: VList = VList::new();
-    for _ in 0..args.level() {
-        list.push(html! { <span style="flex: 0 0 auto;" class="pwt-ps-4"/> });
-    }
-
-    let indent: Html = list.into();
+    let indent = Container::new()
+        .tag("span")
+        .style("flex", "0 0 auto")
+        .padding_start(4 * args.level());
 
     let expander = if args.is_leaf() {
-        html! {<i role="none" style="flex: 0 0 auto;" class="fa fa-fw pwt-pe-1"/>}
+        html! {<i role="none" style="flex: 0 0 auto;" class="fa fa-fw"/>}
     } else {
         let caret = match args.is_expanded() {
-            true => "pwt-tree-expander fa fa-fw fa-caret-down pwt-pe-1",
-            false => "pwt-tree-expander fa fa-fw fa-caret-right pwt-pe-1",
+            true => "pwt-tree-expander fa fa-fw fa-caret-down",
+            false => "pwt-tree-expander fa fa-fw fa-caret-right",
         };
 
         let onclick = {

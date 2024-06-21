@@ -13,7 +13,7 @@ use super::{
 use crate::prelude::*;
 use crate::props::{IntoLoadCallback, IntoOptionalRenderFn, LoadCallback, RenderFn};
 use crate::state::{DataStore, Selection};
-use crate::widget::{error_message, Dropdown};
+use crate::widget::{error_message, Container, Dropdown};
 
 use pwt_macros::{builder, widget};
 
@@ -369,9 +369,10 @@ impl<S: DataStore + 'static> ManagedField for SelectorField<S> {
                 }
 
                 if store.is_empty() {
-                    return html! {
-                        <div class="pwt-p-2">{"List does not contain any items."}</div>
-                    };
+                    return Container::new()
+                        .padding(2)
+                        .with_child("List does not contain any items.")
+                        .into();
                 }
 
                 let render_picker_args = SelectorRenderArgs {

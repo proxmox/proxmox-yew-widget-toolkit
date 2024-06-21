@@ -7,6 +7,9 @@ use yew::virtual_dom::{Key, Listeners, VList, VTag};
 use pwt_macros::{builder, widget};
 
 use crate::prelude::*;
+use crate::props::WidgetStyleBuilder;
+
+use super::Container;
 
 enum Position {
     Left,
@@ -96,9 +99,11 @@ impl InputPanel {
         self.add_custom_child_impl(
             Position::Large,
             advanced,
-            html! {
-                <hr {key} class="pwt-w-100 pwt-my-2"/>
-            },
+            Container::new()
+                .tag("hr")
+                .key(key)
+                .class("pwt-w-100")
+                .margin_y(2),
         );
     }
 
@@ -364,29 +369,17 @@ impl Into<VTag> for InputPanel {
         if self.label_width.is_some() || self.field_width.is_some() {
             let mut column_template = format!(
                 "{} {}",
-                self.label_width.unwrap_or("minmax(130px, 0.65fr)".into()),
-                self.field_width.unwrap_or("minmax(200px, 1fr)".into())
+                self.label_width
+                    .as_deref()
+                    .unwrap_or("minmax(130px, 0.65fr)"),
+                self.field_width.as_deref().unwrap_or("minmax(200px, 1fr)")
             );
 
             if self.two_column {
                 column_template = format!("{} {}", column_template, column_template);
             }
 
-            let style = self
-                .std_props
-                .attributes
-                .get_mut_index_map()
-                .swap_remove(&AttrValue::Static("style"))
-                .map(|(style, _)| style)
-                .unwrap_or("".into());
-
-            self.std_props.attributes.get_mut_index_map().insert(
-                "style".into(),
-                (
-                    format!("grid-template-columns: {};{}", column_template, style).into(),
-                    yew::virtual_dom::ApplyAttributeAs::Attribute,
-                ),
-            );
+            self.set_style("grid-template-columns", column_template.to_string());
         }
 
         let attributes = self.std_props.cumulate_attributes(None::<&str>);

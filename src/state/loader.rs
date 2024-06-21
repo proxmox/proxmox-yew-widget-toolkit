@@ -10,7 +10,7 @@ use yew::prelude::*;
 use crate::prelude::*;
 use crate::props::{IntoLoadCallback, LoadCallback};
 use crate::state::{SharedState, SharedStateObserver, SharedStateReadGuard, SharedStateWriteGuard};
-use crate::widget::{error_message, Button, Fa};
+use crate::widget::{error_message, Button, Container, Fa};
 
 use super::StorageLocation;
 
@@ -157,12 +157,12 @@ impl<T: 'static + DeserializeOwned + Serialize> Loader<T> {
 
     pub fn render<R: Into<Html>>(&self, render: impl Fn(Rc<T>) -> R) -> Html {
         match &self.read().data {
-            None => html! {
-                <div class="pwt-text-center pwt-p-4">
-                {Fa::new("spinner").class("pwt-me-1").pulse()}
-                {"Loading..."}
-                </div>
-            },
+            None => Container::new()
+                .class("pwt-text-center")
+                .padding(4)
+                .with_child(Fa::new("spinner").margin_end(1).pulse())
+                .with_child("Loading...")
+                .into(),
             Some(Ok(ref data)) => render(Rc::clone(data)).into(),
             Some(Err(err)) => error_message(&format!("Error: {}", err)).padding(2).into(),
         }

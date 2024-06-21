@@ -244,9 +244,9 @@ impl<T: 'static> PwtHeaderWidget<T> {
         let sort_icon = match sort_order {
             Some(ascending) => {
                 if ascending {
-                    Fa::new("long-arrow-up").class("pwt-pe-1").into()
+                    Fa::new("long-arrow-up").padding_end(1).into()
                 } else {
-                    Fa::new("long-arrow-down").class("pwt-pe-1").into()
+                    Fa::new("long-arrow-down").padding_end(1).into()
                 }
             }
             None => html! {},
@@ -680,9 +680,10 @@ fn headers_to_menu<T>(
     hidden_cells: &[bool],
     last: bool,
 ) {
-    let indent: Html = (0..indent_level)
-        .map(|_| html! { <span role="none" class="pwt-ps-4"/> })
-        .collect();
+    let indent = Container::new()
+        .tag("span")
+        .attribute("role", "none")
+        .padding_start(4 * indent_level);
 
     let num_active: usize = headers
         .iter()

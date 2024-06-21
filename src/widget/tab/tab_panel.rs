@@ -245,7 +245,7 @@ impl Component for PwtTabPanel {
         let (title, tools) = if props.title.is_some() {
             let title =
                 crate::widget::panel::create_panel_title(props.title.clone(), props.tools.clone())
-                    .class("pwt-pb-2")
+                    .padding_bottom(2)
                     .class(material_style.then_some("pwt-panel-header"));
             (Some(title), None)
         } else {

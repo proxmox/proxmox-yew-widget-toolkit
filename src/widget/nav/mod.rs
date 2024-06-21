@@ -6,7 +6,8 @@ use yew::virtual_dom::{Key, VNode};
 
 use pwt_macros::builder;
 
-use crate::props::IntoOptionalKey;
+use crate::props::{CssPaddingBuilder, IntoOptionalKey};
+use crate::widget::Container;
 
 #[derive(Clone, PartialEq, Properties)]
 #[builder]
@@ -123,7 +124,7 @@ impl Menu {
 
     /// Add a spacer element.
     pub fn add_spacer(&mut self) {
-        self.add_component(html! {<div class="pwt-p-1"></div>})
+        self.add_component(Container::new().padding(1))
     }
 
     pub fn add_component(&mut self, component: impl Into<VNode>) {
