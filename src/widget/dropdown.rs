@@ -415,8 +415,7 @@ impl Component for PwtDropdown {
         select.add_child(html! {<i onclick={trigger_onclick} class={trigger_cls}></i>});
 
         let dropdown = Container::new().with_child(select).with_child(
-            Container::new()
-                .tag("dialog")
+            Container::from_tag("dialog")
                 .class("pwt-dialog")
                 .class("pwt-dropdown")
                 .attribute("id", self.picker_id.clone())

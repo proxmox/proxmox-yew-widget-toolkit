@@ -21,6 +21,11 @@ impl Container {
         yew::props! { Self {} }
     }
 
+    /// Shorthand for `Container::new().tag(<tag>)`
+    pub fn from_tag(tag: impl Into<Cow<'static, str>>) -> Self {
+        Self::new().tag(tag)
+    }
+
     /// Creates a new instance from existing properties
     pub fn from_widget_props(
         std_props: WidgetStdProps,

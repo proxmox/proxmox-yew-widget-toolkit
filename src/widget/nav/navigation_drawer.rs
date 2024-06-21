@@ -229,9 +229,8 @@ impl PwtNavigationDrawer {
             None
         };
 
-        Container::new()
+        Container::from_tag("a")
             .key(item.key.clone())
-            .tag("a")
             .attribute("role", "link")
             .attribute("aria-expanded", aria_expanded)
             .attribute(
@@ -256,8 +255,7 @@ impl PwtNavigationDrawer {
             .with_child(html! {<div class="pwt-text-truncate pwt-flex-fill">{&item.label}</div>})
             // add optional menu-open icon
             .with_optional_child(is_menu.then(|| {
-                Container::new()
-                    .tag("i")
+                Container::from_tag("i")
                     .attribute("role", "none")
                     .class("fa fa-caret-down")
                     .class("pwt-nav-menu-item-arrow")

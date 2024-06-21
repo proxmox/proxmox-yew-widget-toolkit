@@ -202,8 +202,7 @@ impl Component for PwtFileButton {
         });
 
         children.push(
-            Container::new()
-                .tag("input")
+            Container::from_tag("input")
                 .node_ref(self.input_ref.clone())
                 .attribute("type", "file")
                 .attribute("accept", props.accept.clone())

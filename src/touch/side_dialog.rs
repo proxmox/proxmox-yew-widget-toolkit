@@ -362,9 +362,8 @@ impl Component for PwtSideDialog {
             }
         }
 
-        let dialog = Container::new()
+        let dialog = Container::from_tag("dialog")
             .node_ref(props.node_ref.clone())
-            .tag("dialog")
             .class("pwt-side-dialog")
             .class(slider_state_class)
             .oncancel(oncancel)

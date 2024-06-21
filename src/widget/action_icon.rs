@@ -139,8 +139,7 @@ impl Component for PwtActionIcon {
             None => String::from("-1"),
         };
 
-        Container::new()
-            .tag("i")
+        Container::from_tag("i")
             .node_ref(props.node_ref.clone())
             .attribute("tabindex", (!disabled).then(|| tabindex))
             .attribute("role", "button")

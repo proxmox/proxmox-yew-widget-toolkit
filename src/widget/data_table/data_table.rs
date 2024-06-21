@@ -506,8 +506,7 @@ pub struct PwtDataTable<S: DataStore> {
 
 // Generate first table row using the width from the column definitions.
 fn render_empty_row_with_widths<R>(columns: &[DataTableColumn<R>]) -> Html {
-    Container::new()
-        .tag("tr")
+    Container::from_tag("tr")
         .attribute("role", "none")
         .key(Key::from("sizes"))
         // Note: This row should not be visible, so avoid borders
@@ -528,8 +527,7 @@ fn render_empty_row_with_widths<R>(columns: &[DataTableColumn<R>]) -> Html {
 // Generate first table row using the observed header sizes.
 fn render_empty_row_with_sizes(widths: &[f64], column_hidden: &[bool], bordered: bool) -> Html {
     let border_width = if bordered { 1.0 } else { 0.0 };
-    Container::new()
-        .tag("tr")
+    Container::from_tag("tr")
         .attribute("role", "none")
         .key(Key::from("sizes"))
          // Note: This row should not be visible, so avoid borders

@@ -99,8 +99,7 @@ impl InputPanel {
         self.add_custom_child_impl(
             Position::Large,
             advanced,
-            Container::new()
-                .tag("hr")
+            Container::from_tag("hr")
                 .key(key)
                 .class("pwt-w-100")
                 .margin_y(2),

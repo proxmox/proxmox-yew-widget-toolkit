@@ -561,9 +561,8 @@ impl Component for PwtMenu {
 
         let focus_on_over = !props.menubar || self.has_focus;
 
-        let menu = Container::new()
+        let menu = Container::from_tag("ul")
             .node_ref(self.inner_ref.clone())
-            .tag("ul")
             .attribute("role", if props.menubar { "menubar" } else { "menu" })
             .attribute("id", self.unique_id.clone())
             .class(if props.menubar {
@@ -610,8 +609,7 @@ impl Component for PwtMenu {
                 let menubar = props.menubar;
                 let menubar_child = props.menubar_child;
 
-                Container::new()
-                    .tag("li")
+                Container::from_tag("li")
                     .attribute("id", item_id.clone())
                     .attribute("data-index", i.to_string()) // fixme: remove
                     .attribute("role", "none")

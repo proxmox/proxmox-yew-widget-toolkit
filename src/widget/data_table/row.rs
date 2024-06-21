@@ -81,8 +81,7 @@ impl<T: Clone + PartialEq + 'static> Component for PwtDataTableRow<T> {
             }
         };
 
-        let mut row = Container::new()
-            .tag("tr")
+        let mut row = Container::from_tag("tr")
             .key(props.record_key.clone())
             .attribute("role", "row")
             // aria-rowindex does not work, no firefox support?
@@ -154,8 +153,7 @@ impl<T: Clone + PartialEq + 'static> Component for PwtDataTableRow<T> {
 
             let cell = column.apply_render(&mut args);
 
-            let mut td = Container::new()
-                .tag("td")
+            let mut td = Container::from_tag("td")
                 .class(args.config.class)
                 .class((cell_active && props.has_focus).then(|| "cell-cursor"))
                 .styles(args.config.style)

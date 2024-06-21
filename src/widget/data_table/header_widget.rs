@@ -291,9 +291,8 @@ impl<T: 'static> PwtHeaderWidget<T> {
         attributes.insert(AttrValue::Static("aria-label"), cell.column.name.clone());
 
         header_row.push(
-            Container::new()
+            Container::from_tag("th")
                 .key(Key::from(cell_idx))
-                .tag("th")
                 .attribute("role", "columnheader")
                 .attribute("aria-sort", aria_sort)
                 .attribute(
@@ -405,8 +404,7 @@ impl<T: 'static> PwtHeaderWidget<T> {
         let span = span.max(1); // at least one column for the group header
 
         header_row.push(
-            Container::new()
-                .tag("th")
+            Container::from_tag("th")
                 .key(Key::from(cell_idx))
                 // Note: ARIA has no notation for group headers. We need
                 // to hide them to get correct column order.
@@ -611,8 +609,7 @@ impl<T: 'static> Component for PwtHeaderWidget<T> {
             );
         }
 
-        Container::new()
-            .tag("table")
+        Container::from_tag("table")
             .attribute("role", "row")
             .node_ref(self.node_ref.clone())
             .class("pwt-d-grid")
@@ -680,8 +677,7 @@ fn headers_to_menu<T>(
     hidden_cells: &[bool],
     last: bool,
 ) {
-    let indent = Container::new()
-        .tag("span")
+    let indent = Container::from_tag("span")
         .attribute("role", "none")
         .padding_start(4 * indent_level);
 

@@ -83,8 +83,7 @@ pub(crate) fn render_tree_node_impl<T>(
     content: Html,
     tree_store: Option<TreeStore<T>>,
 ) -> Html {
-    let indent = Container::new()
-        .tag("span")
+    let indent = Container::from_tag("span")
         .style("flex", "0 0 auto")
         .padding_start(4 * args.level());
 
