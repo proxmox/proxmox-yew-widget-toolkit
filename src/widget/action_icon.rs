@@ -5,7 +5,10 @@ use yew::prelude::*;
 use yew::virtual_dom::{Key, VComp, VNode};
 
 use crate::prelude::IntoOptionalKey;
-use crate::props::{EventSubscriber, WidgetBuilder};
+use crate::props::{
+    AsClassesMut, AsCssStylesMut, CssMarginBuilder, CssPaddingBuilder, CssStyles, EventSubscriber,
+    WidgetBuilder, WidgetStyleBuilder,
+};
 use crate::widget::Container;
 
 use pwt_macros::builder;
@@ -27,6 +30,10 @@ pub struct ActionIcon {
     /// CSS class
     #[prop_or_default]
     pub class: Classes,
+
+    /// CSS style
+    #[prop_or_default]
+    pub style: CssStyles,
 
     /// The CSS icon class
     #[prop_or_default]
@@ -95,6 +102,22 @@ impl ActionIcon {
     }
 }
 
+impl AsClassesMut for ActionIcon {
+    fn as_classes_mut(&mut self) -> &mut yew::Classes {
+        &mut self.class
+    }
+}
+
+impl AsCssStylesMut for ActionIcon {
+    fn as_css_styles_mut(&mut self) -> &mut CssStyles {
+        &mut self.style
+    }
+}
+
+impl CssPaddingBuilder for ActionIcon {}
+impl CssMarginBuilder for ActionIcon {}
+impl WidgetStyleBuilder for ActionIcon {}
+
 #[doc(hidden)]
 pub struct PwtActionIcon;
 
@@ -126,6 +149,7 @@ impl Component for PwtActionIcon {
             .class(props.disabled.then(|| "disabled"))
             .class(props.class.clone())
             .class(props.icon_class.clone())
+            .styles(props.style.clone())
             .onclick({
                 let on_activate = props.on_activate.clone();
                 move |event: MouseEvent| {
