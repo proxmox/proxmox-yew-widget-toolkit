@@ -23,6 +23,9 @@ pub use row_render_callback::{
 mod row;
 pub(crate) use row::DataTableRow;
 
+mod cell_configuration;
+pub use cell_configuration::CellConfiguration;
+
 mod cell_render_callback;
 pub use cell_render_callback::{DataTableCellRenderArgs, DataTableCellRenderer};
 

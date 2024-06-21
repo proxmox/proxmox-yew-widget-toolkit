@@ -12,7 +12,8 @@ use crate::state::Selection;
 use crate::widget::Container;
 
 use super::{
-    DataTableCellRenderArgs, DataTableColumn, DataTableRowRenderArgs, DataTableRowRenderCallback,
+    CellConfiguration, DataTableCellRenderArgs, DataTableColumn, DataTableRowRenderArgs,
+    DataTableRowRenderCallback,
 };
 
 /// DataTable row properties.
@@ -34,7 +35,7 @@ pub(crate) struct DataTableRow<T: Clone + PartialEq + 'static> {
     pub column_hidden: Rc<Vec<bool>>,
     pub min_row_height: usize,
     pub vertical_align: Option<AttrValue>,
-    pub cell_class: Rc<Classes>,
+    pub cell_config: Rc<CellConfiguration>,
     pub row_render_callback: Option<DataTableRowRenderCallback<T>>,
 
     #[prop_or_default]
@@ -145,8 +146,7 @@ impl<T: Clone + PartialEq + 'static> Component for PwtDataTableRow<T> {
                 row_index: props.row_num,
                 column_index: col_index,
                 selected: props.selected,
-                class: (&*props.cell_class).clone(),
-                attributes: IndexMap::new(),
+                config: (*props.cell_config).clone(),
                 is_expanded: props.is_expanded,
                 is_leaf: props.is_leaf,
                 level: props.level,
@@ -156,11 +156,11 @@ impl<T: Clone + PartialEq + 'static> Component for PwtDataTableRow<T> {
 
             let mut td = Container::new()
                 .tag("td")
-                .class(args.class)
+                .class(args.config.class)
                 .class((cell_active && props.has_focus).then(|| "cell-cursor"))
+                .styles(args.config.style)
                 .style("vertical-align", vertical_align)
                 .style("text-align", text_align)
-                .attribute("style", args.attributes.swap_remove("style"))
                 .attribute("role", "gridcell")
                 .attribute("data-column-num", column_num.to_string())
                 .attribute("tabindex", if cell_active { "0" } else { "-1" })
@@ -168,17 +168,17 @@ impl<T: Clone + PartialEq + 'static> Component for PwtDataTableRow<T> {
 
             let mut colspan = 1;
 
-            if let Some(colspan_str) = args.attributes.get("colspan") {
-                if let Ok(n) = (*colspan_str).parse::<usize>() {
-                    if n > 0 {
-                        colspan = n
+            for (attr_name, attr_value) in args.config.attributes.iter() {
+                if attr_name == "colspan" {
+                    if let Ok(n) = attr_value.parse::<usize>() {
+                        if n > 0 {
+                            colspan = n
+                        }
                     }
                 }
             }
 
-            for (attr_name, attr_value) in args.attributes.into_iter() {
-                td.set_attribute(attr_name, attr_value);
-            }
+            td.as_std_props_mut().attributes = args.config.attributes;
 
             col_index += colspan;
             column_num += colspan;

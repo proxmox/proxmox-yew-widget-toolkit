@@ -16,6 +16,8 @@ use crate::widget::{Column, Input, Row};
 
 use pwt_macros::builder;
 
+use super::data_table::CellConfiguration;
+
 /// Display a [DataTable] with optional text filter field.
 ///
 /// Allows you to select one or more items from a table. This is usually used
@@ -193,7 +195,7 @@ impl<S: DataStore + 'static> Component for PwtGridPicker<S> {
             .clone()
             .key(Key::from("picker-table"))
             .autoselect(false)
-            .cell_class("pwt-datatable-cell pwt-pointer")
+            .cell_configuration(CellConfiguration::new().class("pwt-datatable-cell pwt-pointer"))
             .hover(true)
             .header_focusable(false)
             .selection(self.selection.clone())

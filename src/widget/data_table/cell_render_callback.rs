@@ -1,13 +1,14 @@
 use std::rc::Rc;
 
 use derivative::Derivative;
-use indexmap::IndexMap;
 
 use yew::html::IntoPropValue;
 use yew::prelude::*;
 use yew::virtual_dom::Key;
 
+use crate::props::WidgetStyleBuilder;
 use crate::state::Selection;
+use crate::widget::data_table::CellConfiguration;
 
 /// Cell render function arguments.
 ///
@@ -30,11 +31,9 @@ pub struct DataTableCellRenderArgs<'a, T> {
     pub(crate) is_leaf: bool,
     pub(crate) level: usize,
 
-    /// Cell class. This attribute may be modified to change the
-    /// appearance of the cell.
-    pub class: Classes,
-    /// Additional cell attributes (style, colspan, ...)
-    pub attributes: IndexMap<AttrValue, AttrValue>,
+    /// Cell Configuration. This attribute may be modified to change the
+    /// classes, style and attributes of the cell.
+    pub config: CellConfiguration,
 }
 
 impl<'a, T> DataTableCellRenderArgs<'a, T> {
@@ -87,16 +86,23 @@ impl<'a, T> DataTableCellRenderArgs<'a, T> {
         key: impl Into<AttrValue>,
         value: impl IntoPropValue<Option<AttrValue>>,
     ) {
-        if let Some(value) = value.into_prop_value() {
-            self.attributes.insert(key.into(), value);
-        } else {
-            self.attributes.swap_remove(&key.into());
-        }
+        self.config.set_attribute(key, value)
     }
 
     /// Method to add a CSS class to the table cell
     pub fn add_class(&mut self, class: impl Into<Classes>) {
-        self.class.push(class);
+        self.config.class.push(class);
+    }
+
+    /// Method to set additional CSS styles on the table cell
+    ///
+    /// Value 'None' removes the attribute.
+    pub fn set_style(
+        &mut self,
+        key: impl Into<AttrValue>,
+        value: impl IntoPropValue<Option<AttrValue>>,
+    ) {
+        self.config.set_style(key, value)
     }
 }
 

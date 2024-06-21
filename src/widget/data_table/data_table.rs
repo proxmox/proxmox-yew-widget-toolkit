@@ -20,9 +20,9 @@ use crate::state::{DataStore, Selection, SelectionObserver};
 use crate::widget::{get_unique_element_id, Column, Container, SizeObserver};
 
 use super::{
-    create_indexed_header_list, DataTableColumn, DataTableHeader, DataTableKeyboardEvent,
-    DataTableMouseEvent, DataTableRow, DataTableRowRenderCallback, HeaderWidget, IndexedHeader,
-    IntoOptionalDataTableRowRenderCallback,
+    create_indexed_header_list, CellConfiguration, DataTableColumn, DataTableHeader,
+    DataTableKeyboardEvent, DataTableMouseEvent, DataTableRow, DataTableRowRenderCallback,
+    HeaderWidget, IndexedHeader, IntoOptionalDataTableRowRenderCallback,
 };
 
 pub enum HeaderMsg<T: 'static> {
@@ -126,9 +126,9 @@ pub struct DataTable<S: DataStore> {
     // The data collection ([Store] or [TreeStore](crate::state::TreeStore)).
     store: S,
 
-    /// Set class for table cells (default is "pwt-datatable-cell").
+    /// Set the class, style and attributes for Cells
     #[prop_or_default]
-    pub cell_class: Classes,
+    pub cell_configuration: CellConfiguration,
 
     /// CSS class for header cells (default is "pwt-datatable-header-cell").
     #[prop_or_default]
@@ -257,15 +257,15 @@ impl<S: DataStore> DataTable<S> {
         self.class.push(class);
     }
 
-    /// Builder style method to add a html class for table cells.
-    pub fn cell_class(mut self, class: impl Into<Classes>) -> Self {
-        self.add_cell_class(class);
+    /// Builder style method to set the configuration for cells.
+    pub fn cell_configuration(mut self, config: impl Into<CellConfiguration>) -> Self {
+        self.set_cell_configuration(config);
         self
     }
 
-    /// Method to add a html class for table cells.
-    pub fn add_cell_class(&mut self, class: impl Into<Classes>) {
-        self.cell_class.push(class);
+    /// Method to set the configuration for cells.
+    pub fn set_cell_configuration(&mut self, config: impl Into<CellConfiguration>) {
+        self.cell_configuration = config.into();
     }
 
     /// Builder style method to add a html class for header cells.
@@ -479,7 +479,7 @@ pub struct PwtDataTable<S: DataStore> {
     column_hidden: Rc<Vec<bool>>,
     scroll_info: VirtualScrollInfo,
 
-    cell_class: Rc<Classes>,
+    cell_config: Rc<CellConfiguration>,
 
     header_scroll_ref: NodeRef,
     scroll_ref: NodeRef,
@@ -934,7 +934,7 @@ impl<S: DataStore> PwtDataTable<S> {
                 column_hidden: self.column_hidden.clone(),
                 min_row_height: props.min_row_height,
                 vertical_align: props.vertical_align.clone(),
-                cell_class: self.cell_class.clone(),
+                cell_config: self.cell_config.clone(),
                 row_render_callback: props.row_render_callback.clone(),
                 selected,
                 active_cell: active.then(|| self.active_column),
@@ -1039,10 +1039,10 @@ impl<S: DataStore + 'static> Component for PwtDataTable<S> {
             column_hidden.push(column.hidden);
         }
 
-        let cell_class = if props.cell_class.is_empty() {
-            Classes::from("pwt-datatable-cell")
+        let cell_config = if props.cell_configuration.class.is_empty() {
+            CellConfiguration::new().class("pwt-datatable-cell")
         } else {
-            props.cell_class.clone()
+            props.cell_configuration.clone()
         };
 
         let _store_observer = props
@@ -1073,7 +1073,7 @@ impl<S: DataStore + 'static> Component for PwtDataTable<S> {
             column_widths: Vec::new(),
             column_hidden: Rc::new(column_hidden),
             scroll_info: VirtualScrollInfo::default(),
-            cell_class: Rc::new(cell_class),
+            cell_config: Rc::new(cell_config),
             scroll_top: 0,
             set_scroll_top: None,
             viewport_height: 0.0,
