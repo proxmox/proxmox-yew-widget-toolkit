@@ -176,7 +176,7 @@ impl<T: Clone + PartialEq + 'static> Component for PwtDataTableRow<T> {
                 }
             }
 
-            td.as_std_props_mut().attributes = args.config.attributes;
+            td.as_std_props_mut().add_attributes(args.config.attributes);
 
             col_index += colspan;
             column_num += colspan;

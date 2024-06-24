@@ -43,6 +43,33 @@ impl WidgetStdProps {
         }
     }
 
+    /// Method to moves attributes over
+    ///
+    /// Tries to be efficient by consuming the source.
+    /// Overwrites existing attributes.
+    pub fn add_attributes(&mut self, attributes: Attributes) {
+        let attrs = self.attributes.get_mut_index_map();
+        match attributes {
+            Attributes::Static(list) => {
+                for (key, value, attr) in list {
+                    attrs.insert((*key).into(), ((*value).into(), *attr));
+                }
+            }
+            Attributes::Dynamic { keys, values } => {
+                for (key, value) in keys.iter().zip(values.into_vec().into_iter()) {
+                    if let Some((value, attr)) = value {
+                        attrs.insert((*key).into(), (value, attr));
+                    }
+                }
+            }
+            Attributes::IndexMap(list) => {
+                for (key, (value, attr)) in list.into_iter() {
+                    attrs.insert(key, (value, attr));
+                }
+            }
+        }
+    }
+
     /// Helper to gather all attributes into a single [Attributes]
     /// map.
     pub fn cumulate_attributes(&self, additional_class: Option<impl Into<Classes>>) -> Attributes {
