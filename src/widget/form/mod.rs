@@ -18,6 +18,9 @@ pub use checkbox::{Checkbox, PwtCheckbox};
 mod combobox;
 pub use combobox::{Combobox, PwtCombobox};
 
+mod display;
+pub use display::{DisplayField, PwtDisplayField};
+
 mod hidden;
 pub use hidden::{Hidden, PwtHidden};
 
