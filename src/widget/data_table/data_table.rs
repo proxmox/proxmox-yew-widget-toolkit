@@ -1004,6 +1004,10 @@ impl<S: DataStore> PwtDataTable<S> {
             row_count
         };
 
+        if start > end {
+            start = end.saturating_sub(max_visible_rows);
+        }
+
         let offset = (start as f64) * self.row_height;
 
         let height =
