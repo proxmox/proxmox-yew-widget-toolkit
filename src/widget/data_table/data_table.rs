@@ -1122,8 +1122,6 @@ impl<S: DataStore + 'static> Component for PwtDataTable<S> {
                 }
                 self.update_scroll_info(props);
 
-                self.scroll_cursor_into_view();
-
                 if self.selection_status == RowSelectionStatus::All {
                     self.select_all(props);
                 } else {
