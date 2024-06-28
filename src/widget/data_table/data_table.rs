@@ -11,6 +11,7 @@ use yew::html::IntoPropValue;
 use yew::prelude::*;
 use yew::virtual_dom::{Key, VComp, VNode};
 
+use crate::dom::IntoHtmlElement;
 use crate::prelude::*;
 use crate::props::{
     AsClassesMut, AsCssStylesMut, CallbackMut, CssLength, CssStyles, IntoEventCallbackMut,
@@ -46,7 +47,7 @@ pub enum Msg<T: 'static> {
     CursorRight,
     ItemClick(Key, Option<usize>, MouseEvent, bool),
     ItemDblClick(Key, Option<usize>, MouseEvent),
-    FocusChange(bool),
+    FocusChange(bool, bool),
     Header(HeaderMsg<T>),
 }
 
@@ -449,6 +450,10 @@ impl VirtualScrollInfo {
     fn visible_rows(&self) -> usize {
         self.end.saturating_sub(self.start)
     }
+
+    fn is_visible(&self, row: usize) -> bool {
+        (self.start..=self.end).contains(&row)
+    }
 }
 
 #[derive(Debug)]
@@ -502,6 +507,8 @@ pub struct PwtDataTable<S: DataStore> {
     container_width: f64,
 
     keypress_timeout: Option<Timeout>,
+
+    focus_table: bool,
 }
 
 // Generate first table row using the width from the column definitions.
@@ -1095,6 +1102,8 @@ impl<S: DataStore + 'static> Component for PwtDataTable<S> {
             row_height: props.min_row_height as f64,
             scrollbar_size: None,
             keypress_timeout: None,
+
+            focus_table: false,
         };
 
         me.update_scroll_info(props);
@@ -1535,7 +1544,7 @@ impl<S: DataStore + 'static> Component for PwtDataTable<S> {
 
                 true
             }
-            Msg::FocusChange(has_focus) => {
+            Msg::FocusChange(has_focus, has_related_target) => {
                 if has_focus {
                     if let Some((row, column)) = self.find_focused_cell() {
                         let cursor = self.filtered_record_pos(props, &row);
@@ -1547,6 +1556,17 @@ impl<S: DataStore + 'static> Component for PwtDataTable<S> {
                         }
                         if let Some(column) = column {
                             self.active_column = column;
+                        }
+                    }
+                } else if !has_related_target {
+                    // focus table again if the focused/selected cell vanished
+                    if let Some(Cursor { ref record_key, .. }) = &self.cursor {
+                        match self.filtered_record_pos(props, record_key) {
+                            None => self.focus_table = true,
+                            Some(pos) if !self.scroll_info.is_visible(pos) => {
+                                self.focus_table = true
+                            }
+                            _ => {}
                         }
                     }
                 }
@@ -1613,8 +1633,10 @@ impl<S: DataStore + 'static> Component for PwtDataTable<S> {
             .attribute("role", "rowgroup")
             .attribute("aria-label", "table body")
             .with_child(self.render_scroll_content(props))
-            .onfocusin(ctx.link().callback(|_| Msg::FocusChange(true)))
-            .onfocusout(ctx.link().callback(|_| Msg::FocusChange(false)))
+            .onfocusin(ctx.link().callback(|_| Msg::FocusChange(true, false)))
+            .onfocusout(ctx.link().callback(|event: FocusEvent| {
+                Msg::FocusChange(false, event.related_target().is_some())
+            }))
             .onscroll(ctx.link().batch_callback(move |event: Event| {
                 let target: Option<web_sys::HtmlElement> = event.target_dyn_into();
                 target.map(|el| Msg::ScrollTo(el.scroll_left(), el.scroll_top()))
@@ -1757,6 +1779,13 @@ impl<S: DataStore + 'static> Component for PwtDataTable<S> {
             // scroll) and looses focus.
             self.take_focus = false;
             self.focus_cursor();
+        }
+
+        if self.focus_table {
+            self.focus_table = false;
+            if let Some(el) = self.scroll_ref.clone().into_html_element() {
+                let _ = el.focus();
+            }
         }
     }
 }
