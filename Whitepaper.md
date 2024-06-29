@@ -47,7 +47,7 @@ use [Yew](https://yew.rs) as base, because
   is kind of cross-platform.
 
 - Future prove: Sure, I'm no clairvoyant, but I'm pretty confident
-  that used technologies (browser, web-assembly, rust) will last for
+  that those technologies (browser, web-assembly, rust) will last for
   the next 30 years.
 
 - Well known environment (browser), with great debugging options.
@@ -76,7 +76,7 @@ uses countless of complex UI elements like:
 And all other stuff supported by the currently used framework, which
 is about 11Mb JavaScript code!.
 
-So the next step was quite clear. I need to write reusable widget
+So the next step was quite clear. I need to write a reusable widget
 library providing all that functionality.
 
 
@@ -95,7 +95,7 @@ backup server GUI, but there is still room for improvements:
 - improve patterns for code sharing
 - improve CSS styling
 
-The good think is that Rust is a strongly typed language. It allows
+The good thing is that Rust is a strongly typed language. It allows
 you to restructure large parts of your code, and if it still compiles,
 it still works. We will try to gradually improve the library while
 keeping the API stable.
@@ -184,10 +184,10 @@ to people who rely on screen readers and people who cannot use a
 mouse.
 
 The number of those affected is in the single-digit percentage
-range. This looks relatively low at first, but accounts to a large
-number of unhappy users which can't use your product. So good ARIA
-support is a must have for us (Note: Your eyes don't get better as you
-get older).
+range. This looks relatively low at first, but would account to a
+large number of unhappy users, which can't use our products. So good
+ARIA support is a must have for us (Note: Your eyes don't get better
+as you get older).
 
 We tired to make all widget fully accessible by following the [ARIA
 Authoring Practices Guide](https://www.w3.org/WAI/ARIA/apg).
