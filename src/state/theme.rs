@@ -231,22 +231,8 @@ impl Theme {
     }
 
     /// Generate a CSS file name: `{name}-yew-style-{mode}.css`
-    pub fn get_css_filename(&self, prefer_dark_mode: bool, prefix: &str) -> String {
-        let mode_str = match self.mode {
-            ThemeMode::System => match prefer_dark_mode {
-                true => "dark",
-                false => "light",
-            },
-            ThemeMode::Dark => "dark",
-            ThemeMode::Light => "light",
-        };
-
-        format!(
-            "{}{}-yew-style-{}.css",
-            prefix,
-            self.name.to_lowercase(),
-            mode_str
-        )
+    pub fn get_css_filename(&self, prefix: &str) -> String {
+        format!("{}{}-yew-style.css", prefix, self.name.to_lowercase(),)
     }
 }
 

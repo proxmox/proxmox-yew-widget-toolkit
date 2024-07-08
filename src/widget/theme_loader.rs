@@ -79,9 +79,26 @@ fn set_css_density(density: ThemeDensity) {
     };
 }
 
+fn set_dark_mode(dark: bool) {
+    let root = match get_document_root() {
+        Some(root) => root,
+        None => return,
+    };
+
+    let class_list = root.class_list();
+
+    let _ = class_list.remove_2("pwt-dark-mode", "pwt-light-mode");
+
+    let _ = class_list.add_1(if dark {
+        "pwt-dark-mode"
+    } else {
+        "pwt-light-mode"
+    });
+}
+
 impl PwtThemeLoader {
     fn update_theme(&mut self, theme: Theme, dark_mode: bool, loaded: bool, prefix: &str) -> bool {
-        let new_css = theme.get_css_filename(dark_mode, prefix).to_string();
+        let new_css = theme.get_css_filename(prefix);
 
         if self.theme_css != new_css && self.new_theme_css.is_none() {
             self.new_theme_css = Some(new_css);
@@ -90,6 +107,7 @@ impl PwtThemeLoader {
         }
 
         set_css_density(theme.density);
+        set_dark_mode(dark_mode);
 
         if self.new_theme_css.is_some() && loaded {
             self.theme_css = self.new_theme_css.take().unwrap();
@@ -117,16 +135,13 @@ impl Component for PwtThemeLoader {
         let theme_observer = ThemeObserver::new(ctx.link().callback(Msg::ThemeChanged));
 
         let theme = theme_observer.theme();
-        let dark_mode = theme_observer.dark_mode();
 
         let props = ctx.props();
 
         Self {
             theme_observer,
             loadstate: LoadState::Initial,
-            theme_css: theme
-                .get_css_filename(dark_mode, props.dir_prefix.as_str())
-                .to_string(),
+            theme_css: theme.get_css_filename(props.dir_prefix.as_str()),
             new_theme_css: None,
         }
     }
