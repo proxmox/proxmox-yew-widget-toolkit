@@ -73,3 +73,22 @@ This should work in major browsers now (2022). Anyways, a polyfill is also avail
 https://github.com/GoogleChrome/dialog-polyfill
 
 You can enable it manually in older versions of firefox in "about:config" (dom.dialog_element.enabled)
+
+Debugging
+---------
+
+Simplest way to debug is using 'printf' debugging using log::{info,warning,error} in the code itself.
+
+Another way is to use the DWARF info from wasm in the browser (chrome/chromium only):
+
+* compile wasm file but keep debug info:
+    * trunk: `<link data-trunk rel="rust" data-keep-debug data-no-demangle>` in index.html
+    * others: `--keep-debug` in wasm-bindgen
+* install debugging extension in chrome:
+    * https://goo.gle/wasm-debugging-extension
+    * restart browser after (else it won't work)
+* open page with wasm with DWARF info
+    * there should be a message in the console like: `[C/C++ DevTools Support (DWARF)] Loading debug symbols for ...`
+* debugger should show a `file://` entry for rust files on disk
+    * if the paths match with your local install, nothing else is to be done
+    * otherwise use the extension options to map the source paths correctly
