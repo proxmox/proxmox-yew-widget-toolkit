@@ -18,6 +18,7 @@ members = [
   # Examples
 
   "examples/counter",
+  "examples/counter2",
   "examples/demo",
   "examples/form",
   "examples/loader",
