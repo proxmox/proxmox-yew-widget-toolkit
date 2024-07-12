@@ -2,8 +2,8 @@ use std::rc::Rc;
 
 use derivative::Derivative;
 
-use gloo_events::EventListener;
-use wasm_bindgen::{JsCast, UnwrapThrowExt};
+use gloo_timers::callback::Timeout;
+use wasm_bindgen::JsCast;
 use web_sys::HtmlInputElement;
 
 use yew::html::{IntoEventCallback, IntoPropValue};
@@ -126,6 +126,9 @@ pub enum Msg {
     DialogClosed,
     Select(Key),
     Input(String),
+    MouseDownInput,
+    FocusChange(bool),
+    DelayedFocusChange(bool),
 }
 
 #[doc(hidden)]
@@ -136,12 +139,16 @@ pub struct PwtDropdown {
     // fire on_change() event delayed, after the dialog is closed, so that
     // other widget can grep the focus after a change (if the want)
     pending_change: bool,
-    mousedown_listener: Option<EventListener>,
+    change_from_input: bool,
+    focus_on_field: bool,
+
     input_ref: NodeRef,
     picker_ref: NodeRef,
     dropdown_ref: NodeRef,
     picker_id: String,
     picker_placer: Option<AutoFloatingPlacement>,
+    focus_timeout: Option<Timeout>,
+    last_has_focus: bool,
 }
 
 impl PwtDropdown {
@@ -184,12 +191,15 @@ impl Component for PwtDropdown {
             last_show: false,
             pending_change: false,
             value: ctx.props().value.clone().unwrap_or_else(|| String::new()),
-            mousedown_listener: None,
+            focus_on_field: false,
+            change_from_input: false,
             input_ref: NodeRef::default(),
             picker_ref: NodeRef::default(),
             dropdown_ref: NodeRef::default(),
             picker_id: crate::widget::get_unique_element_id(),
             picker_placer: None,
+            focus_timeout: None,
+            last_has_focus: false,
         }
     }
 
@@ -246,7 +256,12 @@ impl Component for PwtDropdown {
                 self.value = key.to_string();
                 if self.show {
                     self.pending_change = true;
-                    yew::Component::update(self, ctx, Msg::HidePicker)
+                    if !self.change_from_input {
+                        yew::Component::update(self, ctx, Msg::HidePicker)
+                    } else {
+                        self.change_from_input = false;
+                        true
+                    }
                 } else {
                     //log::info!("Select {} {}", key, value);
                     if let Some(on_change) = &ctx.props().on_change {
@@ -260,9 +275,34 @@ impl Component for PwtDropdown {
                 //log::info!("Input {}", value);
                 if props.editable {
                     self.value = value;
+                    self.change_from_input = true;
                     if let Some(on_change) = &ctx.props().on_change {
                         on_change.emit(self.value.clone());
                     }
+                }
+                true
+            }
+            Msg::MouseDownInput => {
+                if ctx.props().editable {
+                    self.focus_on_field = true;
+                }
+                true
+            }
+            Msg::FocusChange(has_focus) => {
+                let link = ctx.link().clone();
+                self.focus_timeout = Some(Timeout::new(1, move || {
+                    link.send_message(Msg::DelayedFocusChange(has_focus));
+                }));
+                false
+            }
+            Msg::DelayedFocusChange(has_focus) => {
+                if has_focus == self.last_has_focus {
+                    return false;
+                }
+                self.last_has_focus = has_focus;
+
+                if !has_focus {
+                    self.show = false;
                 }
                 true
             }
@@ -273,13 +313,23 @@ impl Component for PwtDropdown {
         let props = ctx.props();
 
         let disabled = props.input_props.disabled;
+        let editable = props.editable;
 
-        let onclick = ctx.link().callback(|e: MouseEvent| {
+        let onclick = ctx.link().batch_callback(move |e: MouseEvent| {
+            let event = e.unchecked_into::<Event>();
+            event.stop_propagation();
+            // toggle on click only when the field is not editable
+            if editable {
+                vec![Msg::MouseDownInput, Msg::ShowPicker]
+            } else {
+                vec![Msg::TogglePicker]
+            }
+        });
+        let trigger_onclick = ctx.link().callback(move |e: MouseEvent| {
             let event = e.unchecked_into::<Event>();
             event.stop_propagation();
             Msg::TogglePicker
         });
-        let trigger_onclick = onclick.clone();
 
         let onkeydown = Callback::from({
             let link = ctx.link().clone();
@@ -298,6 +348,7 @@ impl Component for PwtDropdown {
                     _ => return,
                 }
                 event.prevent_default();
+                event.stop_propagation();
             }
         });
 
@@ -350,6 +401,7 @@ impl Component for PwtDropdown {
                         .name(props.input_props.name.clone())
                         .disabled(props.input_props.disabled)
                         .required(props.input_props.required)
+                        .onpointerdown(ctx.link().callback(|_| Msg::MouseDownInput))
                         .attribute("value", value)
                         .attribute("type", "hidden"),
                 )
@@ -369,6 +421,7 @@ impl Component for PwtDropdown {
                 .attribute("aria-controls", self.picker_id.clone())
                 .attribute("aria-haspopup", props.popup_type.clone())
                 .oninput(oninput)
+                .onpointerdown(ctx.link().callback(|_| Msg::MouseDownInput))
                 .onkeydown(onkeydown)
                 .into()
         };
@@ -413,23 +466,38 @@ impl Component for PwtDropdown {
             }
         }
 
-        select.add_child(html! {<i onclick={trigger_onclick} class={trigger_cls}></i>});
+        select
+            .add_child(html! {<i onclick={trigger_onclick} tabindex="-1" class={trigger_cls}></i>});
 
-        let dropdown = Container::new().with_child(select).with_child(
-            Container::from_tag("dialog")
-                .class("pwt-dialog")
-                .class("pwt-dropdown")
-                .attribute("id", self.picker_id.clone())
-                .attribute("data-show", data_show)
-                .node_ref(self.picker_ref.clone())
-                .onclose(ctx.link().callback(|_| Msg::DialogClosed))
-                .oncancel(ctx.link().callback(|event: Event| {
-                    event.stop_propagation();
-                    event.prevent_default();
-                    Msg::HidePicker
-                }))
-                .with_optional_child(self.show.then(|| (props.picker.0)(&onselect))),
-        );
+        let dropdown = Container::new()
+            .onfocusin(ctx.link().callback(|_| Msg::FocusChange(true)))
+            .onfocusout(ctx.link().callback(|_| Msg::FocusChange(false)))
+            .with_child(select)
+            .with_child(
+                Container::from_tag("dialog")
+                    .class("pwt-dialog")
+                    .class("pwt-dropdown")
+                    .attribute("id", self.picker_id.clone())
+                    .attribute("data-show", data_show)
+                    .node_ref(self.picker_ref.clone())
+                    .onclose(ctx.link().callback(|_| Msg::DialogClosed))
+                    .onkeydown(ctx.link().batch_callback(|event: KeyboardEvent| {
+                        if event.key() == "Escape" {
+                            // handle escape ourselves since it's a non modal dialog
+                            event.prevent_default();
+                            event.stop_propagation();
+                            Some(Msg::HidePicker)
+                        } else {
+                            None
+                        }
+                    }))
+                    .oncancel(ctx.link().callback(|event: Event| {
+                        event.stop_propagation();
+                        event.prevent_default();
+                        Msg::HidePicker
+                    }))
+                    .with_optional_child(self.show.then(|| (props.picker.0)(&onselect))),
+            );
 
         let mut tooltip = Tooltip::new(dropdown).with_std_props(&props.std_props);
 
@@ -460,35 +528,8 @@ impl Component for PwtDropdown {
     fn rendered(&mut self, ctx: &Context<Self>, first_render: bool) {
         if first_render {
             let props = ctx.props();
-            let link = ctx.link().clone();
-            let window = web_sys::window().unwrap();
-            let picker_ref = self.picker_ref.clone();
 
             self.update_picker_placer(props);
-
-            self.mousedown_listener = Some(EventListener::new(
-                &window,
-                "mousedown",
-                move |e: &Event| {
-                    let e = e.dyn_ref::<web_sys::MouseEvent>().unwrap_throw();
-
-                    if let Some(el) = picker_ref.cast::<web_sys::Element>() {
-                        let x = e.client_x() as f64;
-                        let y = e.client_y() as f64;
-
-                        let rect = el.get_bounding_client_rect();
-                        if x > rect.left()
-                            && x < rect.right()
-                            && y > rect.top()
-                            && y < rect.bottom()
-                        {
-                            return;
-                        }
-
-                        link.send_message(Msg::HidePicker);
-                    }
-                },
-            ));
 
             if props.input_props.autofocus {
                 if let Some(el) = self.input_ref.cast::<web_sys::HtmlElement>() {
@@ -507,13 +548,20 @@ impl Component for PwtDropdown {
             self.last_show = self.show;
             if let Some(dialog_node) = self.picker_ref.get() {
                 if self.show {
-                    crate::show_modal_dialog(dialog_node);
-                    focus_selected_element(&self.picker_ref);
+                    crate::show_dialog(dialog_node);
+                    if self.focus_on_field {
+                        if let Some(el) = self.input_ref.cast::<web_sys::HtmlElement>() {
+                            let _ = el.focus();
+                        }
+                    } else {
+                        focus_selected_element(&self.picker_ref);
+                    }
                 } else {
                     crate::close_dialog(dialog_node);
                 }
             }
         }
+        self.focus_on_field = false;
     }
 }
 
