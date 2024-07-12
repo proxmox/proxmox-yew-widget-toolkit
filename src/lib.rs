@@ -226,6 +226,9 @@ mod panic_wrapper {
     pub fn show_modal_dialog(_dialog: web_sys::Node) {
         unreachable!()
     }
+    pub fn show_dialog(_dialog: web_sys::Node) {
+        unreachable!()
+    }
     pub fn close_dialog(_dialog: web_sys::Node) {
         unreachable!()
     }
