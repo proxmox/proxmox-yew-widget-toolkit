@@ -1,4 +1,8 @@
 //! Tools for aligning elements to each other
+//!
+//! Note: These things should be much simpler when the `anchor-positioning` api
+//! is available in all browsers we want to target:
+//! https://developer.chrome.com/blog/anchor-positioning-api
 use js_sys::Error;
 use web_sys::{window, HtmlElement};
 
