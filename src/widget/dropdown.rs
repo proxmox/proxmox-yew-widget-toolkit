@@ -387,6 +387,7 @@ impl Component for PwtDropdown {
             .node_ref(self.dropdown_ref.clone())
             .class("pwt-input")
             .class("pwt-input-type-text")
+            .class(self.show.then_some("picker-open"))
             .class(disabled.then_some("disabled"))
             .class("pwt-w-100")
             .class(if props.valid {
