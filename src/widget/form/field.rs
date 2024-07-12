@@ -15,7 +15,7 @@ use super::{
     ValidateFn,
 };
 use crate::props::{ContainerBuilder, EventSubscriber, WidgetBuilder};
-use crate::widget::{Container, Input, Tooltip};
+use crate::widget::{Container, Input, Tooltip, Trigger};
 
 use crate::tr;
 
@@ -188,7 +188,7 @@ pub struct Field {
     /// Icons to show on the left (false) or right(true) side of the input
     #[prop_or_default]
     #[builder]
-    pub icons: Vec<(AttrValue, bool)>,
+    pub trigger: Vec<(Trigger, bool)>,
 
     /// The tooltip.
     #[prop_or_default]
@@ -240,15 +240,15 @@ impl Field {
         self.validate = validate.into_validate_fn();
     }
 
-    /// Builder style method to add an icon
-    pub fn with_icon(mut self, icon: impl IntoPropValue<AttrValue>, right: bool) -> Self {
-        self.add_icon(icon, right);
+    /// Builder style method to add an trigger
+    pub fn with_trigger(mut self, trigger: impl Into<Trigger>, right: bool) -> Self {
+        self.add_trigger(trigger, right);
         self
     }
 
-    /// Method to add an icon
-    pub fn add_icon(&mut self, icon: impl IntoPropValue<AttrValue>, right: bool) {
-        self.icons.push((icon.into_prop_value(), right));
+    /// Method to add an trigger
+    pub fn add_trigger(&mut self, trigger: impl Into<Trigger>, right: bool) {
+        self.trigger.push((trigger.into(), right));
     }
 
     /// Builder style method to set the tooltip
@@ -506,21 +506,19 @@ impl ManagedField for StandardField {
                 "is-invalid"
             });
 
-        for (class, right) in &props.icons {
+        for (trigger, right) in &props.trigger {
             if !right {
-                let class = class.to_string();
                 let outer_class = "pwt-flex-fill-first-child pwt-d-flex pwt-align-self-center";
-                input_container.add_child(html! {<div class={outer_class}><i {class} /></div>});
+                input_container.add_child(html! {<div class={outer_class}>{trigger}</div>});
             }
         }
 
         input_container.add_child(input);
 
-        for (class, right) in &props.icons {
+        for (trigger, right) in &props.trigger {
             if *right {
-                let class = class.to_string();
                 let outer_class = "pwt-flex-fill-first-child pwt-d-flex pwt-align-self-center";
-                input_container.add_child(html! {<div class={outer_class}><i {class} /></div>});
+                input_container.add_child(html! {<div class={outer_class}>{trigger}</div>});
             }
         }
         input_container.add_optional_child(peek_icon);

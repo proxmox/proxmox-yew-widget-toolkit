@@ -31,6 +31,9 @@ pub use container::Container;
 mod desktop_app;
 pub use desktop_app::{DesktopApp, PwtDesktopApp};
 
+mod trigger;
+pub use trigger::Trigger;
+
 mod dropdown;
 pub use dropdown::{Dropdown, PwtDropdown, RenderDropdownPickerFn};
 

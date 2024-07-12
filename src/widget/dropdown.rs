@@ -12,7 +12,7 @@ use yew::virtual_dom::Key;
 
 use crate::prelude::*;
 use crate::props::{IntoOptionalRenderFn, RenderFn};
-use crate::widget::{Container, Input, Tooltip};
+use crate::widget::{Container, Input, Tooltip, Trigger};
 
 use pwt_macros::{builder, widget};
 
@@ -98,7 +98,7 @@ pub struct Dropdown {
     /// Icons to show on the left (false) or right(true) side of the input
     #[prop_or_default]
     #[builder]
-    pub icons: Vec<(AttrValue, bool)>,
+    pub trigger: Vec<(Trigger, bool)>,
 }
 
 impl Dropdown {
@@ -108,14 +108,14 @@ impl Dropdown {
     }
 
     /// Builder style method to add an icon.
-    pub fn with_icon(mut self, icon: impl IntoPropValue<AttrValue>, right: bool) -> Self {
-        self.add_icon(icon, right);
+    pub fn with_trigger(mut self, trigger: impl Into<Trigger>, right: bool) -> Self {
+        self.add_trigger(trigger, right);
         self
     }
 
     /// Method to add an icon.
-    pub fn add_icon(&mut self, icon: impl IntoPropValue<AttrValue>, right: bool) {
-        self.icons.push((icon.into_prop_value(), right));
+    pub fn add_trigger(&mut self, trigger: impl Into<Trigger>, right: bool) {
+        self.trigger.push((trigger.into(), right));
     }
 }
 
@@ -394,21 +394,19 @@ impl Component for PwtDropdown {
             })
             .onclick(onclick);
 
-        for (class, right) in &props.icons {
+        for (trigger, right) in &props.trigger {
             if !right {
-                let class = class.to_string();
                 let outer_class = "pwt-flex-fill-first-child pwt-d-flex pwt-align-self-center";
-                select.add_child(html! {<div class={outer_class}><i {class} /></div>});
+                select.add_child(html! {<div class={outer_class}>{trigger}</div>});
             }
         }
 
         select.add_child(input);
 
-        for (class, right) in &props.icons {
+        for (trigger, right) in &props.trigger {
             if *right {
-                let class = class.to_string();
                 let outer_class = "pwt-flex-fill-first-child pwt-d-flex pwt-align-self-center";
-                select.add_child(html! {<div class={outer_class}><i {class} /></div>});
+                select.add_child(html! {<div class={outer_class}>{trigger}</div>});
             }
         }
 

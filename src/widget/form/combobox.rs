@@ -11,7 +11,7 @@ use crate::prelude::*;
 use crate::props::{IntoOptionalRenderFn, IntoTextFilterFn, RenderFn, TextFilterFn};
 use crate::state::Store;
 use crate::widget::data_table::{DataTable, DataTableColumn, DataTableHeader};
-use crate::widget::GridPicker;
+use crate::widget::{GridPicker, Trigger};
 
 use super::{IntoValidateFn, Selector, SelectorRenderArgs, ValidateFn};
 
@@ -80,7 +80,7 @@ pub struct Combobox {
     /// Icons to show on the left (false) or right(true) side of the input
     #[prop_or_default]
     #[builder]
-    pub icons: Vec<(AttrValue, bool)>,
+    pub trigger: Vec<(Trigger, bool)>,
 }
 
 impl Combobox {
@@ -138,15 +138,15 @@ impl Combobox {
         });
     }
 
-    /// Builder style method to add an icon
-    pub fn with_icon(mut self, icon: impl IntoPropValue<AttrValue>, right: bool) -> Self {
-        self.add_icon(icon, right);
+    /// Builder style method to add an trigger
+    pub fn with_trigger(mut self, trigger: impl Into<Trigger>, right: bool) -> Self {
+        self.add_trigger(trigger, right);
         self
     }
 
-    /// Method to add an icon
-    pub fn add_icon(&mut self, icon: impl IntoPropValue<AttrValue>, right: bool) {
-        self.icons.push((icon.into_prop_value(), right));
+    /// Method to add an trigger
+    pub fn add_trigger(&mut self, trigger: impl Into<Trigger>, right: bool) {
+        self.trigger.push((trigger.into(), right));
     }
 }
 
@@ -251,7 +251,7 @@ impl Component for PwtCombobox {
             .default(&props.default)
             .validate(props.validate.clone())
             .render_value(props.render_value.clone())
-            .icons(props.icons.clone())
+            .trigger(props.trigger.clone())
             .on_change({
                 let on_change = props.on_change.clone();
                 move |key: Key| {
