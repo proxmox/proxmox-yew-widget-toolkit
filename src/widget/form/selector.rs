@@ -397,6 +397,20 @@ impl<S: DataStore + 'static> ManagedField for SelectorField<S> {
             }
         });
 
+        let mut trigger = props.trigger.clone();
+        if !value.is_empty()
+            && !props.editable
+            && !props.is_disabled()
+            && !props.input_props.required
+        {
+            trigger.push((
+                Trigger::new("fa fa-times")
+                    .tip(tr!("Clear Value"))
+                    .onclick(ctx.link().callback(|_| Msg::DeleteKey)),
+                true,
+            ));
+        }
+
         Dropdown::new(picker)
             .with_std_props(&props.std_props)
             .with_input_props(&props.input_props)

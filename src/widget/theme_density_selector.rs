@@ -75,6 +75,7 @@ impl Component for PwtThemeDensitySelector {
 
         Combobox::new()
             .class(props.class.clone())
+            .required(true)
             .default(self.density.to_string())
             .items(self.items.clone())
             .on_change(ctx.link().callback(|density: String| {

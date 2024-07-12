@@ -79,6 +79,7 @@ impl Component for PwtThemeNameSelector {
             .on_change(ctx.link().callback(|v| Msg::SetThemeName(v)))
             .aria_label("Select Theme")
             .default(self.theme.clone())
+            .required(true)
             .items(self.available_themes.clone())
             .into()
     }

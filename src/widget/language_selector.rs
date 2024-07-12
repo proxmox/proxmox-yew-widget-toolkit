@@ -141,6 +141,7 @@ impl Component for ProxmoxLanguageSelector {
         let store = self.store.clone();
 
         Dropdown::new(picker)
+            .required(true)
             .class(props.class.clone())
             .value(self.lang.clone())
             .on_change(ctx.link().callback(Msg::Select))
