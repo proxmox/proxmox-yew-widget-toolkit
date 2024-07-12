@@ -350,7 +350,18 @@ fn fits(inner: &Rect, outer: &Rect, direction: &GrowDirection) -> bool {
 // up with a transform property that is not 'none'
 fn get_containing_block(element: &HtmlElement) -> Option<HtmlElement> {
     if element.node_name().to_lowercase() == "dialog" {
-        return None;
+        // return only for modal dialogs
+        match element.get_attribute("aria-modal") {
+            Some(modal) if &modal == "true" => return None,
+            Some(modal) if &modal == "false" => {}
+            Some(modal) => {
+                #[cfg(debug_assertions)]
+                log::warn!("invalid 'aria-modal' attribute found: '{modal}");
+                // treat invalid values as modal
+                return None;
+            }
+            None => return None,
+        }
     }
     let mut current = element.parent_node();
 
@@ -392,6 +403,11 @@ fn set_position_style(
 /// The possible options are described in [`AlignOptions`]. Note that if nested elements need
 /// aligning (for examples tooltips inside dialogs), make sure to allow visible overflow on the
 /// aligned elements, otherwise there may be issues with scrollbars
+///
+/// Note: when aligning a `<dialog>` element, make sure to use [pwt::show_dialog] or
+/// [pwt::show_modal_dialog] to open it, and [pwt::close_dialog] to close it again. This will set
+/// an additional attribute on the dialog that is necessary to distinguish modal and non modal
+/// dialogs (They have to be handled differently for positioning).
 pub fn align_to<B, N>(base: B, element: N, options: Option<AlignOptions>) -> Result<(), Error>
 where
     B: IntoHtmlElement,

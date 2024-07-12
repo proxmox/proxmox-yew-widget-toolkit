@@ -213,6 +213,7 @@ extern "C" {
 
     //Dialog bindings
     fn show_modal_dialog(dialog: web_sys::Node);
+    fn show_dialog(dialog: web_sys::Node);
     fn close_dialog(dialog: web_sys::Node);
 }
 
