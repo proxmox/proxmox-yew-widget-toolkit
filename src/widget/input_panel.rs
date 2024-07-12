@@ -175,7 +175,8 @@ impl InputPanel {
         let key = match child.key() {
             Some(key) => key.clone(),
             None => {
-                log::warn!("could not extract key from custom child");
+                #[cfg(debug_assertions)]
+                log::warn!("could not extract key from custom child, generating one");
                 yew::virtual_dom::Key::from(format!("cl_{}", self.left_count))
             }
         };
