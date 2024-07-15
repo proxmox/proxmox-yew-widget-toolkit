@@ -425,7 +425,7 @@ impl<T: NumberTypeInfo> ManagedField for NumberField<T> {
 
         let number = match T::value_to_number(value) {
             Ok(number) => number,
-            Err(err) => return Err(Error::msg(tr!("Parse number failed: {}", err.to_string()))),
+            Err(err) => return Err(Error::msg(tr!("Input invalid: {}", err.to_string()))),
         };
 
         if let Some(min) = props.min {
