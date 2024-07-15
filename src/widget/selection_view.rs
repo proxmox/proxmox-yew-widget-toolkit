@@ -10,6 +10,24 @@ use crate::widget::Container;
 
 use pwt_macros::{builder, widget};
 
+#[derive(Clone, PartialEq)]
+/// This provides a context for visibility in certain conditions such as Tab Panels.
+///
+/// By using this as an indicator if the element is visible, one can handle
+/// things like turning off/on timers,intervals,etc. without having to rely
+/// on prop-drilling or the dom visibility.
+///
+/// If properly used, this can be nested without problems.
+pub struct VisibilityContext {
+    pub visible: bool,
+}
+
+impl Default for VisibilityContext {
+    fn default() -> Self {
+        Self { visible: true }
+    }
+}
+
 /// Infos passed to the [SelectionView] render function.
 pub struct SelectionViewRenderInfo {
     /// The key of the item to render
@@ -83,6 +101,7 @@ impl SelectionView {
 }
 pub enum Msg {
     SelectionChange(Selection),
+    VisibilityChanged(VisibilityContext),
 }
 
 #[doc(hidden)]
@@ -90,6 +109,8 @@ pub struct PwtSelectionView {
     active: Option<Key>,
     render_set: IndexSet<Key>,
     _selection_observer: SelectionObserver,
+    visibility: VisibilityContext,
+    _visibility_handle: Option<ContextHandle<VisibilityContext>>,
 }
 
 impl Component for PwtSelectionView {
@@ -104,10 +125,17 @@ impl Component for PwtSelectionView {
             .unwrap_or(Selection::new())
             .add_listener(ctx.link().callback(Msg::SelectionChange));
 
+        let (visibility, _visibility_handle) = ctx
+            .link()
+            .context(ctx.link().callback(Msg::VisibilityChanged))
+            .unzip();
+
         Self {
             active: None,
             render_set: IndexSet::new(),
             _selection_observer,
+            visibility: visibility.unwrap_or_default(),
+            _visibility_handle,
         }
     }
 
@@ -122,9 +150,14 @@ impl Component for PwtSelectionView {
                 if let Some(key) = &self.active {
                     self.render_set.insert(key.clone());
                 }
+                true
+            }
+            Msg::VisibilityChanged(visibility) => {
+                let changed = visibility != self.visibility;
+                self.visibility = visibility;
+                changed
             }
         }
-        true
     }
 
     fn changed(&mut self, ctx: &Context<Self>, old_props: &Self::Properties) -> bool {
@@ -167,7 +200,12 @@ impl Component for PwtSelectionView {
             } else {
                 classes!("pwt-d-none")
             };
-            html! { <div key={key.clone()} {class}>{page}</div>}
+
+            html! {
+                <ContextProvider<VisibilityContext> context={self.visibility.clone()} key={key.clone()}>
+                    <div key={key.clone()} {class}>{page}</div>
+                </ContextProvider<VisibilityContext>>
+            }
         });
 
         yew::props!(Container {

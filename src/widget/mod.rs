@@ -96,7 +96,9 @@ mod rtl_switcher;
 pub use rtl_switcher::RtlSwitcher;
 
 mod selection_view;
-pub use selection_view::{PwtSelectionView, SelectionView, SelectionViewRenderInfo};
+pub use selection_view::{
+    PwtSelectionView, SelectionView, SelectionViewRenderInfo, VisibilityContext,
+};
 
 mod segmented_button;
 pub use segmented_button::{PwtSegmentedButton, SegmentedButton};
