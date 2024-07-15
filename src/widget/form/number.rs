@@ -572,6 +572,14 @@ impl<T: NumberTypeInfo> ManagedField for NumberField<T> {
                     _ => return,
                 }
             })
+            .onwheel({
+                let link = ctx.link();
+                move |event: WheelEvent| match event.delta_y() {
+                    delta if delta < 0.0 => link.send_message(Msg::Up),
+                    delta if delta > 0.0 => link.send_message(Msg::Down),
+                    _ => {}
+                }
+            })
             .into();
 
         let input_container = Container::new()
