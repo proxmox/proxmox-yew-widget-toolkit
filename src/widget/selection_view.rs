@@ -1,6 +1,4 @@
-use std::collections::HashSet;
-
-use indexmap::IndexMap;
+use indexmap::{IndexMap, IndexSet};
 
 use yew::html::IntoPropValue;
 use yew::prelude::*;
@@ -90,7 +88,7 @@ pub enum Msg {
 #[doc(hidden)]
 pub struct PwtSelectionView {
     active: Option<Key>,
-    render_set: HashSet<Key>,
+    render_set: IndexSet<Key>,
     _selection_observer: SelectionObserver,
 }
 
@@ -108,7 +106,7 @@ impl Component for PwtSelectionView {
 
         Self {
             active: None,
-            render_set: HashSet::new(),
+            render_set: IndexSet::new(),
             _selection_observer,
         }
     }
