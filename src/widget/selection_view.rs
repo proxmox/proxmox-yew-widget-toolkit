@@ -163,12 +163,13 @@ impl Component for PwtSelectionView {
             } else {
                 html! {}
             };
-            if active {
+            let class = if active {
                 // Note: use "pwt-d-flex pwt-flex-fill" to make it work with min-height, min-width, ...
-                html! { <div key={key.clone()} class="pwt-d-flex pwt-flex-fill pwt-overflow-auto">{page}</div>}
+                classes!("pwt-d-flex", "pwt-flex-fill", "pwt-overflow-auto")
             } else {
-                html! { <div key={key.clone()} class="pwt-d-none">{page}</div>}
-            }
+                classes!("pwt-d-none")
+            };
+            html! { <div key={key.clone()} {class}>{page}</div>}
         });
 
         yew::props!(Container {
