@@ -33,6 +33,8 @@ pub trait NumberTypeInfo:
 
     fn step_down(&self, step: Option<Self>) -> Self;
     fn step_up(&self, step: Option<Self>) -> Self;
+
+    fn clamp_value(&self, min: Option<Self>, max: Option<Self>) -> Self;
 }
 
 impl NumberTypeInfo for f64 {
@@ -62,6 +64,9 @@ impl NumberTypeInfo for f64 {
     }
     fn step_down(&self, step: Option<Self>) -> Self {
         self - step.unwrap_or(1.0)
+    }
+    fn clamp_value(&self, min: Option<Self>, max: Option<Self>) -> Self {
+        self.clamp(min.unwrap_or(f64::MIN), max.unwrap_or(f64::MAX))
     }
 }
 
@@ -137,6 +142,9 @@ macro_rules! signed_number_impl {
                     *self
                 }
             }
+            fn clamp_value(&self, min: Option<Self>, max: Option<Self>) -> Self {
+                (*self).clamp(min.unwrap_or(<$T>::MIN), max.unwrap_or(<$T>::MAX))
+            }
         }
     };
 }
@@ -209,6 +217,9 @@ macro_rules! unsigned_number_impl {
                 } else {
                     *self
                 }
+            }
+            fn clamp_value(&self, min: Option<Self>, max: Option<Self>) -> Self {
+                (*self).clamp(min.unwrap_or(<$T>::MIN), max.unwrap_or(<$T>::MAX))
             }
         }
     };
@@ -509,24 +520,42 @@ impl<T: NumberTypeInfo> ManagedField for NumberField<T> {
                 true
             }
             Msg::Up => {
-                let mut n = T::value_to_number(&state.value).ok();
-                if n.is_none() && state.valid.is_ok() {
-                    n = Some(T::default());
-                }
+                let n = T::value_to_number(&state.value).ok();
+                let n = match (n, state.valid.is_ok()) {
+                    (None, true) => Some(T::default().clamp_value(props.min, props.max)),
+                    (Some(n), _) => {
+                        let next = T::step_up(&n, props.step);
+                        match props.max {
+                            Some(max) if next <= max => {}
+                            None => {}
+                            Some(_) => return false,
+                        }
+                        Some(next)
+                    }
+                    (None, false) => None,
+                };
                 if let Some(n) = n {
-                    let next = T::step_up(&n, props.step);
-                    ctx.link().update_value(T::number_to_value(&next));
+                    ctx.link().update_value(T::number_to_value(&n));
                 }
                 true
             }
             Msg::Down => {
-                let mut n = T::value_to_number(&state.value).ok();
-                if n.is_none() && state.valid.is_ok() {
-                    n = Some(T::default());
-                }
+                let n = T::value_to_number(&state.value).ok();
+                let n = match (n, state.valid.is_ok()) {
+                    (None, true) => Some(T::default().clamp_value(props.min, props.max)),
+                    (Some(n), _) => {
+                        let next = T::step_down(&n, props.step);
+                        match props.min {
+                            Some(min) if next >= min => {}
+                            None => {}
+                            Some(_) => return false,
+                        }
+                        Some(next)
+                    }
+                    (None, false) => None,
+                };
                 if let Some(n) = n {
-                    let next = T::step_down(&n, props.step);
-                    ctx.link().update_value(T::number_to_value(&next));
+                    ctx.link().update_value(T::number_to_value(&n));
                 }
                 true
             }
