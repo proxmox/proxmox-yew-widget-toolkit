@@ -16,7 +16,7 @@ use super::{
     ValidateFn,
 };
 use crate::props::{ContainerBuilder, EventSubscriber, WidgetBuilder};
-use crate::widget::{Container, Input, Tooltip};
+use crate::widget::{Column, Container, Input, Tooltip};
 
 use crate::tr;
 
@@ -626,7 +626,21 @@ impl<T: NumberTypeInfo> ManagedField for NumberField<T> {
             } else {
                 "is-invalid"
             })
-            .with_child(input);
+            .with_child(input)
+            .with_child(
+                Column::new()
+                    .class("spinner")
+                    .with_child(
+                        Container::from_tag("i")
+                            .class("fa fa-angle-up")
+                            .onclick(ctx.link().callback(|_| Msg::Up)),
+                    )
+                    .with_child(
+                        Container::from_tag("i")
+                            .class("fa fa-angle-down")
+                            .onclick(ctx.link().callback(|_| Msg::Down)),
+                    ),
+            );
 
         let mut tooltip = Tooltip::new(input_container);
 
