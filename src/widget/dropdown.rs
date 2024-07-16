@@ -382,6 +382,7 @@ impl Component for PwtDropdown {
                 .listeners(&props.listeners)
                 .class("pwt-flex-fill")
                 .class("pwt-input-content")
+                .class((!props.editable).then_some("non-editable"))
                 .attribute(
                     "tabindex",
                     props.input_props.tabindex.unwrap_or(0).to_string(),
@@ -397,7 +398,6 @@ impl Component for PwtDropdown {
                 .with_child(rendered_value)
                 .with_child(
                     Input::new()
-                        .class((!props.editable).then_some("non-editable"))
                         .name(props.input_props.name.clone())
                         .disabled(props.input_props.disabled)
                         .required(props.input_props.required)
