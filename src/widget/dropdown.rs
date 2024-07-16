@@ -428,10 +428,9 @@ impl Component for PwtDropdown {
 
         let trigger_cls = classes! {
             "fa",
-            "fa-caret-down",
             "pwt-dropdown-icon",
             "pwt-pointer",
-            self.show.then(|| "fa-rotate-180"),
+            if self.show { "fa-angle-up" } else { "fa-angle-down" },
             disabled.then(|| "disabled"),
         };
 
