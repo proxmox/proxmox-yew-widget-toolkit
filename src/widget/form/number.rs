@@ -603,10 +603,13 @@ impl<T: NumberTypeInfo> ManagedField for NumberField<T> {
             })
             .onwheel({
                 let link = ctx.link();
-                move |event: WheelEvent| match event.delta_y() {
-                    delta if delta < 0.0 => link.send_message(Msg::Up),
-                    delta if delta > 0.0 => link.send_message(Msg::Down),
-                    _ => {}
+                move |event: WheelEvent| {
+                    match event.delta_y() {
+                        delta if delta < 0.0 => link.send_message(Msg::Up),
+                        delta if delta > 0.0 => link.send_message(Msg::Down),
+                        _ => {}
+                    }
+                    event.prevent_default();
                 }
             })
             .into();
