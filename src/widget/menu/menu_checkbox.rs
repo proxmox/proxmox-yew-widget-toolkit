@@ -225,7 +225,7 @@ impl ManagedField for MenuCheckboxField {
             "fa-fw",
             if props.radio_group {
                 if checked {
-                    "fa-check-circle-o"
+                    "fa-dot-circle-o"
                 } else {
                     "fa-circle-o"
                 }
