@@ -3,6 +3,7 @@ use std::marker::PhantomData;
 
 use anyhow::Error;
 
+use gloo_timers::callback::{Interval, Timeout};
 use serde_json::Value;
 
 use web_sys::HtmlInputElement;
@@ -19,6 +20,9 @@ use crate::props::{ContainerBuilder, EventSubscriber, WidgetBuilder};
 use crate::widget::{Column, Container, Input, Tooltip};
 
 use crate::tr;
+
+const SPINNER_START_DELAY_MS: u32 = 200;
+const SPINNER_REPEAT_INTERVAL_MS: u32 = 50;
 
 pub type PwtNumber<T> = ManagedFieldMaster<NumberField<T>>;
 
@@ -377,12 +381,17 @@ pub enum Msg {
     Update(String),
     Up,
     Down,
+    SpinnerStart(bool),
+    SpinnerStartRepeat(bool),
+    SpinnerStop,
 }
 
 #[doc(hidden)]
 pub struct NumberField<T> {
     input_ref: NodeRef,
     _phantom_data: PhantomData<T>,
+    _spinner_start_timeout: Option<Timeout>,
+    _spinner_interval: Option<Interval>,
 }
 
 #[derive(PartialEq)]
@@ -504,6 +513,8 @@ impl<T: NumberTypeInfo> ManagedField for NumberField<T> {
         Self {
             input_ref: NodeRef::default(),
             _phantom_data: PhantomData::<T>,
+            _spinner_start_timeout: None,
+            _spinner_interval: None,
         }
     }
 
@@ -558,6 +569,29 @@ impl<T: NumberTypeInfo> ManagedField for NumberField<T> {
                     ctx.link().update_value(T::number_to_value(&n));
                 }
                 true
+            }
+            Msg::SpinnerStart(up) => {
+                let link = ctx.link();
+                ctx.link()
+                    .send_message(if up { Msg::Up } else { Msg::Down });
+                self._spinner_start_timeout =
+                    Some(Timeout::new(SPINNER_START_DELAY_MS, move || {
+                        link.send_message(Msg::SpinnerStartRepeat(up))
+                    }));
+                true
+            }
+            Msg::SpinnerStartRepeat(up) => {
+                let link = ctx.link();
+                self._spinner_interval =
+                    Some(Interval::new(SPINNER_REPEAT_INTERVAL_MS, move || {
+                        link.send_message(if up { Msg::Up } else { Msg::Down });
+                    }));
+                false
+            }
+            Msg::SpinnerStop => {
+                self._spinner_start_timeout = None;
+                self._spinner_interval = None;
+                false
             }
         }
     }
@@ -633,12 +667,14 @@ impl<T: NumberTypeInfo> ManagedField for NumberField<T> {
                     .with_child(
                         Container::from_tag("i")
                             .class("fa fa-angle-up")
-                            .onclick(ctx.link().callback(|_| Msg::Up)),
+                            .onpointerdown(ctx.link().callback(|_| Msg::SpinnerStart(true)))
+                            .onpointerup(ctx.link().callback(|_| Msg::SpinnerStop)),
                     )
                     .with_child(
                         Container::from_tag("i")
                             .class("fa fa-angle-down")
-                            .onclick(ctx.link().callback(|_| Msg::Down)),
+                            .onpointerdown(ctx.link().callback(|_| Msg::SpinnerStart(false)))
+                            .onpointerup(ctx.link().callback(|_| Msg::SpinnerStop)),
                     ),
             );
 
