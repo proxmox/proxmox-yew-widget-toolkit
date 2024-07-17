@@ -2,7 +2,6 @@ use std::rc::Rc;
 
 use derivative::Derivative;
 
-use gloo_timers::callback::Timeout;
 use wasm_bindgen::JsCast;
 use web_sys::HtmlInputElement;
 
@@ -12,7 +11,7 @@ use yew::virtual_dom::Key;
 
 use crate::prelude::*;
 use crate::props::{IntoOptionalRenderFn, RenderFn};
-use crate::widget::{Container, Input, Tooltip, Trigger};
+use crate::widget::{focus::FocusTracker, Container, Input, Tooltip, Trigger};
 
 use pwt_macros::{builder, widget};
 
@@ -128,7 +127,6 @@ pub enum Msg {
     Input(String),
     MouseDownInput,
     FocusChange(bool),
-    DelayedFocusChange(bool),
 }
 
 #[doc(hidden)]
@@ -147,8 +145,7 @@ pub struct PwtDropdown {
     dropdown_ref: NodeRef,
     picker_id: String,
     picker_placer: Option<AutoFloatingPlacement>,
-    focus_timeout: Option<Timeout>,
-    last_has_focus: bool,
+    focus_tracker: FocusTracker,
 }
 
 impl PwtDropdown {
@@ -186,6 +183,7 @@ impl Component for PwtDropdown {
     type Properties = Dropdown;
 
     fn create(ctx: &Context<Self>) -> Self {
+        let focus_tracker = FocusTracker::new(ctx.link().callback(Msg::FocusChange));
         Self {
             show: false,
             last_show: false,
@@ -198,8 +196,7 @@ impl Component for PwtDropdown {
             dropdown_ref: NodeRef::default(),
             picker_id: crate::widget::get_unique_element_id(),
             picker_placer: None,
-            focus_timeout: None,
-            last_has_focus: false,
+            focus_tracker,
         }
     }
 
@@ -289,18 +286,6 @@ impl Component for PwtDropdown {
                 true
             }
             Msg::FocusChange(has_focus) => {
-                let link = ctx.link().clone();
-                self.focus_timeout = Some(Timeout::new(1, move || {
-                    link.send_message(Msg::DelayedFocusChange(has_focus));
-                }));
-                false
-            }
-            Msg::DelayedFocusChange(has_focus) => {
-                if has_focus == self.last_has_focus {
-                    return false;
-                }
-                self.last_has_focus = has_focus;
-
                 if !has_focus {
                     self.show = false;
                 }
@@ -469,8 +454,8 @@ impl Component for PwtDropdown {
             .add_child(html! {<i onclick={trigger_onclick} tabindex="-1" class={trigger_cls}></i>});
 
         let dropdown = Container::new()
-            .onfocusin(ctx.link().callback(|_| Msg::FocusChange(true)))
-            .onfocusout(ctx.link().callback(|_| Msg::FocusChange(false)))
+            .onfocusin(self.focus_tracker.get_focus_callback(true))
+            .onfocusout(self.focus_tracker.get_focus_callback(false))
             .with_child(select)
             .with_child(
                 Container::from_tag("dialog")

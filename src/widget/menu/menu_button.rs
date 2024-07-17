@@ -1,4 +1,3 @@
-use gloo_timers::callback::Timeout;
 use wasm_bindgen::JsCast;
 
 use yew::html::{IntoEventCallback, IntoPropValue};
@@ -6,6 +5,7 @@ use yew::prelude::*;
 
 use crate::prelude::*;
 use crate::props::{BuilderFn, IntoOptionalBuilderFn};
+use crate::widget::focus::FocusTracker;
 use crate::widget::{Button, Container};
 
 use super::{Menu, MenuControllerMsg, MenuPopper};
@@ -129,7 +129,6 @@ pub enum Msg {
     ShowMenu,
     CloseMenu,
     FocusChange(bool),
-    DelayedFocusChange(bool),
 }
 
 #[doc(hidden)]
@@ -138,9 +137,7 @@ pub struct PwtMenuButton {
     popper: MenuPopper,
     menu_controller: Callback<MenuControllerMsg>,
     show_submenu: bool,
-    timeout: Option<Timeout>,
-
-    last_has_focus: bool,
+    focus_tracker: FocusTracker,
 }
 
 impl PwtMenuButton {
@@ -173,13 +170,14 @@ impl Component for PwtMenuButton {
             })
         };
 
+        let focus_tracker = FocusTracker::new(ctx.link().callback(Msg::FocusChange));
+
         Self {
             submenu_ref,
             popper,
             menu_controller,
             show_submenu: false,
-            timeout: None,
-            last_has_focus: false,
+            focus_tracker,
         }
     }
 
@@ -208,18 +206,6 @@ impl Component for PwtMenuButton {
                 true
             }
             Msg::FocusChange(has_focus) => {
-                let link = ctx.link().clone();
-                self.timeout = Some(Timeout::new(1, move || {
-                    link.send_message(Msg::DelayedFocusChange(has_focus));
-                }));
-                false
-            }
-            Msg::DelayedFocusChange(has_focus) => {
-                if has_focus == self.last_has_focus {
-                    return false;
-                }
-                self.last_has_focus = has_focus;
-
                 if has_focus {
                     if props.autoshow_menu {
                         self.show_submenu = true;
@@ -286,8 +272,8 @@ impl Component for PwtMenuButton {
         Container::new()
             .style("display", "contents")
             .attribute("role", "none")
-            .onfocusin(ctx.link().callback(|_| Msg::FocusChange(true)))
-            .onfocusout(ctx.link().callback(|_| Msg::FocusChange(false)))
+            .onfocusin(self.focus_tracker.get_focus_callback(true))
+            .onfocusout(self.focus_tracker.get_focus_callback(false))
             .onkeydown({
                 let link = ctx.link().clone();
                 move |event: KeyboardEvent| {

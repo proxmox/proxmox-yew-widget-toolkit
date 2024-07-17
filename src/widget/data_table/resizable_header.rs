@@ -1,7 +1,6 @@
 use std::rc::Rc;
 
 use gloo_events::EventListener;
-use gloo_timers::callback::Timeout;
 use indexmap::IndexMap;
 use wasm_bindgen::{JsCast, UnwrapThrowExt};
 
@@ -13,6 +12,7 @@ use crate::css::ColorScheme;
 use crate::dom::element_direction_rtl;
 use crate::prelude::*;
 use crate::props::{BuilderFn, IntoOptionalBuilderFn};
+use crate::widget::focus::FocusTracker;
 use crate::widget::menu::{Menu, MenuButton};
 use crate::widget::{Container, Row, SizeObserver};
 
@@ -153,7 +153,6 @@ pub enum Msg {
     StopResize,
     MouseMove(i32),
     FocusChange(bool),
-    DelayedFocusChange(bool),
     ShowPicker,
     HidePicker,
 }
@@ -169,7 +168,7 @@ pub struct PwtResizableHeader {
     has_focus: bool,
     picker_ref: NodeRef,
     show_picker: bool,
-    timeout: Option<Timeout>,
+    focus_tracker: FocusTracker,
 }
 
 impl PwtResizableHeader {
@@ -188,6 +187,7 @@ impl Component for PwtResizableHeader {
 
     fn create(ctx: &Context<Self>) -> Self {
         let props = ctx.props();
+        let focus_tracker = FocusTracker::new(ctx.link().callback(Msg::FocusChange));
 
         Self {
             node_ref: props.node_ref.clone().unwrap_or(NodeRef::default()),
@@ -199,7 +199,7 @@ impl Component for PwtResizableHeader {
             has_focus: false,
             picker_ref: NodeRef::default(),
             show_picker: false,
-            timeout: None,
+            focus_tracker,
         }
     }
 
@@ -256,13 +256,6 @@ impl Component for PwtResizableHeader {
                 false
             }
             Msg::FocusChange(has_focus) => {
-                let link = ctx.link().clone();
-                self.timeout = Some(Timeout::new(1, move || {
-                    link.send_message(Msg::DelayedFocusChange(has_focus));
-                }));
-                false
-            }
-            Msg::DelayedFocusChange(has_focus) => {
                 self.has_focus = has_focus;
                 if has_focus {
                     self.rtl = element_direction_rtl(&self.node_ref);
@@ -296,8 +289,8 @@ impl Component for PwtResizableHeader {
             .class(self.has_focus.then(|| "focused"))
             .class(props.class.clone())
             .attribute("id", props.id.clone())
-            .onfocusin(ctx.link().callback(|_| Msg::FocusChange(true)))
-            .onfocusout(ctx.link().callback(|_| Msg::FocusChange(false)))
+            .onfocusin(self.focus_tracker.get_focus_callback(true))
+            .onfocusout(self.focus_tracker.get_focus_callback(false))
             .onkeydown({
                 let link = ctx.link().clone();
                 move |event: KeyboardEvent| match event.key().as_str() {

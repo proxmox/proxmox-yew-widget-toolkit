@@ -1,14 +1,14 @@
 use std::borrow::Cow;
 
-use gloo_timers::callback::Timeout;
-
 use yew::html::IntoPropValue;
 use yew::prelude::*;
 use yew::virtual_dom::{Listeners, VList, VTag};
 
 use pwt_macros::{builder, widget};
 
-use super::focus::{init_roving_tabindex, roving_tabindex_next, update_roving_tabindex};
+use super::focus::{
+    init_roving_tabindex, roving_tabindex_next, update_roving_tabindex, FocusTracker,
+};
 use super::{MiniScroll, MiniScrollMode};
 use crate::dom::element_direction_rtl;
 use crate::prelude::*;
@@ -80,14 +80,13 @@ impl Toolbar {
 
 pub enum Msg {
     FocusChange(bool),
-    DelayedFocusChange(bool),
     Scroll(bool),
 }
 
 #[doc(hidden)]
 pub struct PwtToolbar {
     inner_ref: NodeRef,
-    timeout: Option<Timeout>,
+    focus_tracker: FocusTracker,
     rtl: Option<bool>,
 }
 
@@ -95,11 +94,12 @@ impl Component for PwtToolbar {
     type Message = Msg;
     type Properties = Toolbar;
 
-    fn create(_ctx: &Context<Self>) -> Self {
+    fn create(ctx: &Context<Self>) -> Self {
+        let focus_tracker = FocusTracker::new(ctx.link().callback(Msg::FocusChange));
         Self {
             rtl: None,
             inner_ref: NodeRef::default(),
-            timeout: None,
+            focus_tracker,
         }
     }
 
@@ -107,13 +107,6 @@ impl Component for PwtToolbar {
         let props = ctx.props();
         match msg {
             Msg::FocusChange(has_focus) => {
-                let link = ctx.link().clone();
-                self.timeout = Some(Timeout::new(1, move || {
-                    link.send_message(Msg::DelayedFocusChange(has_focus));
-                }));
-                false
-            }
-            Msg::DelayedFocusChange(has_focus) => {
                 if has_focus {
                     update_roving_tabindex(&self.inner_ref);
                 }
@@ -143,8 +136,8 @@ impl Component for PwtToolbar {
         let props = ctx
             .props()
             .clone()
-            .onfocusin(ctx.link().callback(|_| Msg::FocusChange(true)))
-            .onfocusout(ctx.link().callback(|_| Msg::FocusChange(false)))
+            .onfocusin(self.focus_tracker.get_focus_callback(true))
+            .onfocusout(self.focus_tracker.get_focus_callback(false))
             .onwheel({
                 let link = ctx.link().clone();
                 move |event: WheelEvent| {

@@ -10,7 +10,7 @@ use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 
 use crate::prelude::*;
-use crate::widget::focus::get_first_focusable;
+use crate::widget::focus::{get_first_focusable, FocusTracker};
 use crate::widget::{get_unique_element_id, Container};
 
 use pwt_macros::builder;
@@ -178,7 +178,6 @@ impl Menu {
 pub enum Msg {
     Collapse,
     FocusChange(bool),
-    DelayedFocusChange(bool),
     Next,
     Previous,
     DelayedNext,
@@ -200,7 +199,7 @@ pub struct PwtMenu {
     inside_submenu: bool,
     show_submenu: bool,
     collapsed: bool,
-    focus_timeout: Option<Timeout>,
+    focus_tracker: FocusTracker,
     has_focus: bool,
     move_timeout: Option<Timeout>, // for Next/Prev
     active_submenu: Option<usize>,
@@ -333,6 +332,8 @@ impl Component for PwtMenu {
             props.menu_controller.clone()
         };
 
+        let focus_tracker = FocusTracker::new(ctx.link().callback(Msg::FocusChange));
+
         Self {
             cursor: None,
             unique_id: get_unique_element_id(),
@@ -341,7 +342,7 @@ impl Component for PwtMenu {
             inside_submenu: false,
             show_submenu: !props.menubar,
             collapsed: true,
-            focus_timeout: None,
+            focus_tracker,
             has_focus: false,
             move_timeout: None,
             active_submenu: None,
@@ -357,18 +358,6 @@ impl Component for PwtMenu {
         match msg {
             // Note: only used by menubar
             Msg::FocusChange(has_focus) => {
-                // return false; // useful to debug menu layout
-                let link = ctx.link().clone();
-                self.focus_timeout = Some(Timeout::new(1, move || {
-                    link.send_message(Msg::DelayedFocusChange(has_focus));
-                }));
-                false
-            }
-            // Note: only used by menubar
-            Msg::DelayedFocusChange(has_focus) => {
-                if self.has_focus == has_focus {
-                    return false;
-                }
                 self.has_focus = has_focus;
                 if !has_focus {
                     self.show_submenu = false;
@@ -688,8 +677,8 @@ impl Component for PwtMenu {
             }));
 
         if props.menubar {
-            menu.onfocusin(ctx.link().callback(|_| Msg::FocusChange(true)))
-                .onfocusout(ctx.link().callback(|_| Msg::FocusChange(false)))
+            menu.onfocusin(self.focus_tracker.get_focus_callback(true))
+                .onfocusout(self.focus_tracker.get_focus_callback(false))
                 .into()
         } else {
             menu.into()

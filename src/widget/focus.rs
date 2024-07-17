@@ -1,5 +1,8 @@
 //! DOM focus management helpers.
 
+use std::{cell::Cell, rc::Rc};
+
+use gloo_timers::callback::Timeout;
 use wasm_bindgen::JsCast;
 
 use yew::prelude::*;
@@ -298,6 +301,49 @@ pub fn init_roving_tabindex_el(el: web_sys::HtmlElement, take_focus: bool) {
         } else {
             item.set_tab_index(-1);
         }
+    }
+}
+
+/// Can be used to better track focus with nested elements.
+///
+/// focusin/focusout events are problematic, because sometimes they trigger
+/// in fast succession after one another, eg. out/in/out/in and rerendering
+/// after everyone makes handling certain things hard.
+///
+/// To solve this, we use a Timeout with 1ms, this will be called
+/// after all pending event handlers are called (each one replaces the
+/// previous timeout) so the last focus event "wins".
+pub struct FocusTracker {
+    // note we use Rc<Cell> here since we are single threaded
+    // and using Rc<Mutex> here compiles to basically the same thing
+    timeout: Rc<Cell<Option<Timeout>>>,
+    last_focus: Rc<Cell<bool>>,
+    on_change: Callback<bool>,
+}
+
+impl FocusTracker {
+    pub fn new(on_change: impl Into<Callback<bool>>) -> Self {
+        Self {
+            timeout: Rc::new(Cell::new(None)),
+            last_focus: Rc::new(Cell::new(false)),
+            on_change: on_change.into(),
+        }
+    }
+
+    pub fn get_focus_callback(&self, focus_in: bool) -> Callback<FocusEvent> {
+        let callback = self.on_change.clone();
+        let timeout = self.timeout.clone();
+        let last_focus = self.last_focus.clone();
+        Callback::from(move |_| {
+            let callback = callback.clone();
+            let last_focus = last_focus.clone();
+            timeout.replace(Some(Timeout::new(1, move || {
+                if last_focus.get() != focus_in {
+                    last_focus.set(focus_in);
+                    callback.emit(focus_in);
+                }
+            })));
+        })
     }
 }
 
