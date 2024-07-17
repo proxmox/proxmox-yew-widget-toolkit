@@ -392,6 +392,7 @@ pub struct NumberField<T> {
     _phantom_data: PhantomData<T>,
     _spinner_start_timeout: Option<Timeout>,
     _spinner_interval: Option<Interval>,
+    focus_input: bool,
 }
 
 #[derive(PartialEq)]
@@ -515,6 +516,7 @@ impl<T: NumberTypeInfo> ManagedField for NumberField<T> {
             _phantom_data: PhantomData::<T>,
             _spinner_start_timeout: None,
             _spinner_interval: None,
+            focus_input: false,
         }
     }
 
@@ -578,6 +580,7 @@ impl<T: NumberTypeInfo> ManagedField for NumberField<T> {
                     Some(Timeout::new(SPINNER_START_DELAY_MS, move || {
                         link.send_message(Msg::SpinnerStartRepeat(up))
                     }));
+                self.focus_input = true;
                 true
             }
             Msg::SpinnerStartRepeat(up) => {
@@ -667,13 +670,19 @@ impl<T: NumberTypeInfo> ManagedField for NumberField<T> {
                     .with_child(
                         Container::from_tag("i")
                             .class("fa fa-angle-up")
-                            .onpointerdown(ctx.link().callback(|_| Msg::SpinnerStart(true)))
+                            .onpointerdown(ctx.link().callback(|event: PointerEvent| {
+                                event.prevent_default(); // prevent focus loss
+                                Msg::SpinnerStart(true)
+                            }))
                             .onpointerup(ctx.link().callback(|_| Msg::SpinnerStop)),
                     )
                     .with_child(
                         Container::from_tag("i")
                             .class("fa fa-angle-down")
-                            .onpointerdown(ctx.link().callback(|_| Msg::SpinnerStart(false)))
+                            .onpointerdown(ctx.link().callback(|event: PointerEvent| {
+                                event.prevent_default(); // prevent focus loss
+                                Msg::SpinnerStart(false)
+                            }))
                             .onpointerup(ctx.link().callback(|_| Msg::SpinnerStop)),
                     ),
             );
@@ -688,13 +697,11 @@ impl<T: NumberTypeInfo> ManagedField for NumberField<T> {
     }
 
     fn rendered(&mut self, ctx: &ManagedFieldContext<Self>, first_render: bool) {
-        if first_render {
-            let props = ctx.props();
-            if props.input_props.autofocus {
-                if let Some(el) = self.input_ref.cast::<web_sys::HtmlElement>() {
-                    let _ = el.focus();
-                }
+        if (first_render && ctx.props().input_props.autofocus) || self.focus_input {
+            if let Some(el) = self.input_ref.cast::<web_sys::HtmlElement>() {
+                let _ = el.focus();
             }
+            self.focus_input = false;
         }
     }
 }
