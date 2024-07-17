@@ -674,6 +674,7 @@ impl<T: NumberTypeInfo> ManagedField for NumberField<T> {
                                 event.prevent_default(); // prevent focus loss
                                 Msg::SpinnerStart(true)
                             }))
+                            .onpointerout(ctx.link().callback(|_| Msg::SpinnerStop))
                             .onpointerup(ctx.link().callback(|_| Msg::SpinnerStop)),
                     )
                     .with_child(
@@ -683,6 +684,7 @@ impl<T: NumberTypeInfo> ManagedField for NumberField<T> {
                                 event.prevent_default(); // prevent focus loss
                                 Msg::SpinnerStart(false)
                             }))
+                            .onpointerout(ctx.link().callback(|_| Msg::SpinnerStop))
                             .onpointerup(ctx.link().callback(|_| Msg::SpinnerStop)),
                     ),
             );
