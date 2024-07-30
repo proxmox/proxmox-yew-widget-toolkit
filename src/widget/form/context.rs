@@ -302,6 +302,8 @@ impl FormContext {
             unique,
         );
 
+        self.notify_listeners();
+
         FieldHandle {
             key,
             form_ctx: self.clone(),
