@@ -4,8 +4,8 @@ use yew::html::{IntoEventCallback, IntoPropValue};
 use yew::prelude::*;
 use yew::virtual_dom::Key;
 
-#[cfg(feature = "proxmox-schema")]
-use proxmox_schema::Schema;
+// #[cfg(feature = "proxmox-schema")]
+// use proxmox_schema::Schema;
 
 use crate::prelude::*;
 use crate::props::{IntoOptionalRenderFn, IntoTextFilterFn, RenderFn, TextFilterFn};
@@ -122,21 +122,21 @@ impl Combobox {
         self.validate = validate.into_validate_fn();
     }
 
-    /// Builder style method to set the validation schema
-    #[cfg(feature = "proxmox-schema")]
-    pub fn schema(mut self, schema: &'static Schema) -> Self {
-        self.set_schema(schema);
-        self
-    }
+    // /// Builder style method to set the validation schema
+    // #[cfg(feature = "proxmox-schema")]
+    // pub fn schema(mut self, schema: &'static Schema) -> Self {
+    //     self.set_schema(schema);
+    //     self
+    // }
 
-    /// Method to set the validation schema
-    #[cfg(feature = "proxmox-schema")]
-    pub fn set_schema(&mut self, schema: &'static Schema) {
-        self.set_validate(move |(value, _store): &(String, _)| {
-            schema.parse_simple_value(value)?;
-            Ok(())
-        });
-    }
+    // /// Method to set the validation schema
+    // #[cfg(feature = "proxmox-schema")]
+    // pub fn set_schema(&mut self, schema: &'static Schema) {
+    //     self.set_validate(move |(value, _store): &(String, _)| {
+    //         schema.parse_simple_value(value)?;
+    //         Ok(())
+    //     });
+    // }
 
     /// Builder style method to add an trigger
     pub fn with_trigger(mut self, trigger: impl Into<Trigger>, right: bool) -> Self {
