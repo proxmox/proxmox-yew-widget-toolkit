@@ -359,8 +359,9 @@ fn get_containing_block(element: &HtmlElement) -> Option<HtmlElement> {
             Some(modal) if &modal == "true" => return None,
             Some(modal) if &modal == "false" => {}
             Some(modal) => {
-                #[cfg(debug_assertions)]
-                log::warn!("invalid 'aria-modal' attribute found: '{modal}");
+                if cfg!(debug_assertions) {
+                    log::warn!("invalid 'aria-modal' attribute found: '{modal}");
+                }
                 // treat invalid values as modal
                 return None;
             }
