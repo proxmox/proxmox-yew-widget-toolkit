@@ -821,11 +821,7 @@ impl<S: DataStore> PwtDataTable<S> {
             selection.clear();
         }
 
-        if ctrl {
-            selection.toggle(record_key.clone());
-        } else {
-            selection.select(record_key.clone());
-        }
+        selection.toggle(record_key.clone());
         true
     }
 
