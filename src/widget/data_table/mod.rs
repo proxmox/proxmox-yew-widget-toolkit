@@ -123,6 +123,7 @@ pub fn render_row_number<T>(args: &mut DataTableCellRenderArgs<T>) -> Html {
 
 /// Column render function generating an selection indicator (checkbox).
 pub fn render_selection_indicator<T>(args: &mut DataTableCellRenderArgs<T>) -> Html {
+    args.add_class("pwt-pointer");
     let class = classes!(
         "pwt-no-outline",
         "fa",
