@@ -278,11 +278,6 @@ impl<T: 'static> DataTableColumn<T> {
         cb: impl IntoEventCallbackMut<DataTableKeyboardEvent>,
     ) -> Self {
         self.on_cell_keydown = cb.into_event_cb_mut();
-
-        if self.tree_store.is_some() {
-            self.tree_store = self.tree_store.take();
-        }
-
         self
     }
 
