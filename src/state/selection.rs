@@ -292,7 +292,28 @@ impl SelectionState {
     }
 
     fn set_multiselect(&mut self, multiselect: bool) {
+        let old = self.multiselect;
         self.multiselect = multiselect;
+
+        match (old, multiselect) {
+            (true, false) => {
+                let len = self.selection_map.len();
+                if len > 0 {
+                    // safe, we know there must be at least one entry
+                    let key = self.selection_map.iter().next().unwrap().clone();
+                    self.clear();
+                    if len == 1 {
+                        self.select(key);
+                    }
+                }
+            }
+            (false, true) => {
+                if let Some(key) = self.selection.take() {
+                    self.select(key);
+                }
+            }
+            (true, true) | (false, false) => {}
+        }
     }
 
     fn add_listener(&mut self, cb: Callback<Selection>) -> usize {
