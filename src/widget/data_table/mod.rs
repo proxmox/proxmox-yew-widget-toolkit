@@ -136,18 +136,8 @@ pub fn render_selection_indicator<T>(args: &mut DataTableCellRenderArgs<T>) -> H
 
     let aria_checked = if args.is_selected() { "true" } else { "false" };
 
-    let onclick = Callback::from({
-        let selection = args.selection();
-        let record_key = args.record_key.clone();
-        move |_| {
-            if let Some(selection) = &selection {
-                selection.toggle(record_key.clone());
-            }
-        }
-    });
-
     html! {
-        <i {class} {onclick} role="checkbox" aria-checked={aria_checked} aria-label="select"/>
+        <i {class} role="checkbox" aria-checked={aria_checked} aria-label="select"/>
     }
 }
 

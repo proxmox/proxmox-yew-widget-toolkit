@@ -102,6 +102,14 @@ impl<T: 'static> DataTableColumn<T> {
             .show_menu(false)
             .render_header(super::render_selection_header)
             .render_cell(super::render_selection_indicator)
+            .on_cell_click(|event: &mut DataTableMouseEvent| {
+                let record_key = event.record_key.clone();
+                if let Some(selection) = &event.selection {
+                    selection.toggle(record_key.clone());
+                    event.prevent_default();
+                    event.stop_propagation();
+                }
+            })
             .on_header_keydown(|event: &mut DataTableHeaderKeyboardEvent<T>| {
                 if event.key() == " " {
                     event.stop_propagation();
