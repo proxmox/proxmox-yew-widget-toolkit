@@ -62,6 +62,16 @@ pub enum RowSelectionStatus {
     All,
 }
 
+#[derive(Copy, Clone, Debug, PartialEq, Default)]
+/// Determines the mode for using multiple selection.
+pub enum MultiSelectMode {
+    #[default]
+    /// Selecting multiple values is only possible with CTRL/SHIFT keyboard keys. (default)
+    Default,
+    /// Clicking a row toggles it instead of making it the only selection.
+    Simple,
+}
+
 /// Data Table/Tree with virual scroll.
 ///
 /// # Features
@@ -206,6 +216,9 @@ pub struct DataTable<S: DataStore> {
 
     #[prop_or_default]
     pub row_render_callback: Option<DataTableRowRenderCallback<S::Record>>,
+
+    #[prop_or_default]
+    pub multiselect_mode: MultiSelectMode,
 }
 
 impl<S: DataStore> AsClassesMut for DataTable<S> {
@@ -435,6 +448,20 @@ impl<S: DataStore> DataTable<S> {
     /// Returns the [DataStore].
     pub fn get_store(&self) -> S {
         self.store.clone()
+    }
+
+    /// Sets the multiselect mode
+    pub fn set_multiselect_mode(&mut self, multiselect_mode: impl IntoPropValue<MultiSelectMode>) {
+        self.multiselect_mode = multiselect_mode.into_prop_value();
+    }
+
+    /// Builder style method to set the multiselect mode.
+    pub fn multiselect_mode(
+        mut self,
+        multiselect_mode: impl IntoPropValue<MultiSelectMode>,
+    ) -> Self {
+        self.set_multiselect_mode(multiselect_mode);
+        self
     }
 }
 
@@ -790,7 +817,7 @@ impl<S: DataStore> PwtDataTable<S> {
 
         self.last_select_position = Some(cursor);
 
-        if !(shift || ctrl) {
+        if !(shift || ctrl) && props.multiselect_mode != MultiSelectMode::Simple {
             selection.clear();
         }
 
