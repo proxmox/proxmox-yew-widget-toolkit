@@ -9,7 +9,6 @@ exclude = [ "debian" ]
 proc-macro = true
 
 [dependencies]
-lazy_static = "1"
 proc-macro2 = "1"
 syn = { version = "2" , features = [ "extra-traits" ] }
 quote = "1"
