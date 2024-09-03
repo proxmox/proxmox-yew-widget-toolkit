@@ -263,7 +263,9 @@ impl Component for PwtDropdown {
                 //log::info!("Input {}", value);
                 if props.editable {
                     self.value = value;
-                    self.change_from_input = true;
+                    if self.show {
+                        self.change_from_input = true;
+                    }
                     if let Some(on_change) = &ctx.props().on_change {
                         on_change.emit(self.value.clone());
                     }
