@@ -13,7 +13,7 @@ use super::{
 use crate::prelude::*;
 use crate::props::{IntoLoadCallback, IntoOptionalRenderFn, LoadCallback, RenderFn};
 use crate::state::{DataStore, Selection};
-use crate::widget::{error_message, Container, Dropdown, Trigger};
+use crate::widget::{error_message, Container, Dropdown, DropdownController, Trigger};
 
 use pwt_macros::{builder, widget};
 
@@ -23,9 +23,8 @@ pub struct SelectorRenderArgs<S: DataStore> {
     pub store: S,
     /// The selection.
     pub selection: Selection,
-    /// This callback must be called by the picker to select
-    /// something.
-    pub on_select: Callback<Key>,
+    /// Drowdown controller.
+    pub controller: DropdownController,
 }
 
 pub type PwtSelector<S> = ManagedFieldMaster<SelectorField<S>>;
@@ -361,7 +360,7 @@ impl<S: DataStore + 'static> ManagedField for SelectorField<S> {
 
             let load_error = self.load_error.clone();
 
-            move |on_select: &Callback<Key>| {
+            move |controller: &DropdownController| {
                 if let Some(load_error) = &load_error {
                     return error_message(&format!("Error: {}", load_error))
                         .padding(2)
@@ -378,7 +377,7 @@ impl<S: DataStore + 'static> ManagedField for SelectorField<S> {
                 let render_picker_args = SelectorRenderArgs {
                     store: store.clone(),
                     selection: selection.clone(),
-                    on_select: on_select.clone(), // fixme
+                    controller: controller.clone(),
                 };
                 picker.apply(&render_picker_args)
             }

@@ -10,7 +10,7 @@ use crate::prelude::*;
 use crate::props::RenderFn;
 use crate::state::{Selection, Store};
 use crate::widget::data_table::{DataTable, DataTableColumn, DataTableHeader};
-use crate::widget::{Dropdown, GridPicker};
+use crate::widget::{Dropdown, DropdownController, GridPicker};
 
 use super::{ManagedField, ManagedFieldContext, ManagedFieldMaster, ManagedFieldState};
 
@@ -248,7 +248,7 @@ impl ManagedField for PwtTristateBoolean {
             let store = self.store.clone();
             let selection = self.selection.clone();
 
-            move |on_select: &Callback<Key>| {
+            move |controller: &DropdownController| {
                 // TODO use a simpler list widget without virtual scroll support?
                 let table = DataTable::new(columns.clone(), store.clone())
                     //.class("pwt-fit")
@@ -259,7 +259,7 @@ impl ManagedField for PwtTristateBoolean {
                 GridPicker::new(table)
                     .selection(selection.clone())
                     .show_filter(false)
-                    .on_select(on_select.clone())
+                    .on_select(controller.on_select_callback())
                     .into()
             }
         };

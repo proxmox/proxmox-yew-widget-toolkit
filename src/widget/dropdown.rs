@@ -1,13 +1,9 @@
-use std::rc::Rc;
-
-use derivative::Derivative;
-
+use html::Scope;
 use wasm_bindgen::JsCast;
 use web_sys::HtmlInputElement;
 
 use yew::html::{IntoEventCallback, IntoPropValue};
 use yew::prelude::*;
-use yew::virtual_dom::Key;
 
 use crate::prelude::*;
 use crate::props::{IntoOptionalRenderFn, RenderFn};
@@ -17,30 +13,25 @@ use pwt_macros::{builder, widget};
 
 use crate::widget::align::{AlignOptions, AutoFloatingPlacement, GrowDirection, Point};
 
-/// Render function to create the [Dropdown] picker.
-#[derive(Clone, Derivative)]
-#[derivative(PartialEq)]
-pub struct RenderDropdownPickerFn(
-    #[derivative(PartialEq(compare_with = "Rc::ptr_eq"))] Rc<dyn Fn(&Callback<Key>) -> Html>,
-);
-
-impl RenderDropdownPickerFn {
-    /// Creates a new [`RenderDropdownPickerFn`]
-    ///
-    /// The render function is called with an `on_select`
-    /// callback. The picker needs to call that when an item is
-    /// selected.
-    pub fn new(renderer: impl 'static + Fn(&Callback<Key>) -> Html) -> Self {
-        Self(Rc::new(renderer))
-    }
+#[derive(Clone)]
+pub struct DropdownController {
+    link: Scope<PwtDropdown>,
 }
 
-impl<F: 'static + Fn(&Callback<Key>) -> Html> From<F> for RenderDropdownPickerFn {
-    fn from(f: F) -> Self {
-        RenderDropdownPickerFn::new(f)
+impl DropdownController {
+    /// Change the Combobox value.
+    pub fn change_value(&self, value: String) {
+        self.link.send_message(Msg::ChangeValue(value));
+    }
+
+    /// Convenience function to generate Callback.
+    pub fn on_select_callback<S: std::fmt::Display>(&self) -> Callback<S> {
+        let controller = self.clone();
+        Callback::from(move |key: S| {
+            controller.change_value(key.to_string());
+        })
     }
 }
-
 /// Base widget to implement [Combobox](crate::widget::form::Combobox) like widgets.
 ///
 /// # Note
@@ -60,7 +51,7 @@ pub struct Dropdown {
     pub editable: bool,
 
     /// Function to generate the picker widget.
-    pub picker: RenderDropdownPickerFn,
+    pub picker: RenderFn<DropdownController>,
 
     /// Tooltip for the input
     #[builder(IntoPropValue, into_prop_value)]
@@ -102,7 +93,7 @@ pub struct Dropdown {
 
 impl Dropdown {
     // Create a new instance.
-    pub fn new(picker: impl Into<RenderDropdownPickerFn>) -> Self {
+    pub fn new(picker: impl Into<RenderFn<DropdownController>>) -> Self {
         yew::props! { Self { picker: picker.into() } }
     }
 
@@ -123,7 +114,7 @@ pub enum Msg {
     HidePicker,
     ShowPicker,
     DialogClosed,
-    Select(Key),
+    ChangeValue(String),
     Input(String),
     MouseDownInput,
     FocusChange(bool),
@@ -249,8 +240,8 @@ impl Component for PwtDropdown {
                 //log::info!("ShowPicker {}", self.show);
                 true
             }
-            Msg::Select(key) => {
-                self.value = key.to_string();
+            Msg::ChangeValue(value) => {
+                self.value = value;
                 if self.show {
                     self.pending_change = true;
                     if !self.change_from_input {
@@ -260,7 +251,7 @@ impl Component for PwtDropdown {
                         true
                     }
                 } else {
-                    //log::info!("Select {} {}", key, value);
+                    //log::info!("ChangeValue {} {}", key, value);
                     if let Some(on_change) = &ctx.props().on_change {
                         on_change.emit(self.value.clone());
                     }
@@ -342,10 +333,9 @@ impl Component for PwtDropdown {
             Msg::Input(input.value())
         });
 
-        let link = ctx.link().clone();
-        let onselect = Callback::from(move |key: Key| {
-            link.send_message(Msg::Select(key));
-        });
+        let controller = DropdownController {
+            link: ctx.link().clone(),
+        };
 
         let data_show = self.show.then(|| "true");
 
@@ -480,7 +470,7 @@ impl Component for PwtDropdown {
                         event.prevent_default();
                         Msg::HidePicker
                     }))
-                    .with_optional_child(self.show.then(|| (props.picker.0)(&onselect))),
+                    .with_optional_child(self.show.then(|| props.picker.apply(&controller))),
             );
 
         let mut tooltip = Tooltip::new(dropdown).with_std_props(&props.std_props);

@@ -14,6 +14,8 @@ use crate::widget::CatalogLoader;
 
 use pwt_macros::builder;
 
+use super::DropdownController;
+
 /// Language Selector
 ///
 /// Combobox like selector to choose from a list of available languages.
@@ -127,13 +129,13 @@ impl Component for ProxmoxLanguageSelector {
             let columns = COLUMNS.with(Rc::clone);
             let selection = self.selection.clone();
 
-            move |on_select: &Callback<Key>| {
+            move |controller: &DropdownController| {
                 let table = DataTable::new(columns.clone(), store.clone());
 
                 GridPicker::new(table)
                     .selection(selection.clone())
                     .show_filter(false)
-                    .on_select(on_select.clone())
+                    .on_select(controller.on_select_callback())
                     .into()
             }
         };

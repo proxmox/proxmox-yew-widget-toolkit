@@ -35,7 +35,7 @@ mod trigger;
 pub use trigger::Trigger;
 
 mod dropdown;
-pub use dropdown::{Dropdown, PwtDropdown, RenderDropdownPickerFn};
+pub use dropdown::{Dropdown, DropdownController, PwtDropdown};
 
 mod fa;
 pub use fa::{Fa, PwtFa};

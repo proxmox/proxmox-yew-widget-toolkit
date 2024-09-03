@@ -230,7 +230,7 @@ impl Component for PwtCombobox {
                 .selection(args.selection.clone())
                 .show_filter(show_filter)
                 .filter(filter.clone())
-                .on_select(args.on_select.clone());
+                .on_select(args.controller.on_select_callback());
 
             if show_filter {
                 picker.set_on_filter_change({
