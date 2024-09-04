@@ -504,6 +504,14 @@ impl Component for PwtNavigationDrawer {
 
                 if key == self.active {
                     if let Some(key) = key {
+                        // when using a router, navigate to key. this is necessary to
+                        // allow navigation back to the parent navigation context if we
+                        // are currently in a child navigation context, but are
+                        // selecting the parent's navigation elements.
+                        if props.router && update_route {
+                            ctx.link().push_relative_route(&key);
+                        }
+
                         if update_route {
                             self.emit_item_activate(&key, ctx);
                         }
