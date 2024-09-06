@@ -23,7 +23,7 @@ pub struct SelectorRenderArgs<S: DataStore> {
     pub store: S,
     /// The selection.
     pub selection: Selection,
-    /// Drowdown controller.
+    /// Dropdown controller.
     pub controller: DropdownController,
 }
 

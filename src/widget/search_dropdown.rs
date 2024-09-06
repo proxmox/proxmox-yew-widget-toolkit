@@ -19,11 +19,11 @@ use crate::widget::{Dropdown, DropdownController};
 use pwt_macros::{builder, widget};
 
 #[derive(Clone)]
-/// Parameters passed to the [SearchDropdown::picker] callback.
+/// Parameters passed to the [SearchDropdown] picker callback.
 ///
 /// The select function trigger a selection and closes the dropdown.
 pub struct SearchDropdownRenderArgs<S: DataStore + 'static> {
-    /// The [DataStore] used by the [Selector].
+    /// The [DataStore] used by the [SearchDropdown].
     pub store: S,
     /// Drowdown controller.
     pub controller: DropdownController,
@@ -48,6 +48,7 @@ pub struct FilteredLoadCallback<T> {
 }
 
 impl<T> FilteredLoadCallback<T> {
+    /// Create a new instance.
     pub fn new<F, R>(callback: F) -> Self
     where
         F: 'static + Fn(String) -> R,
@@ -80,12 +81,22 @@ impl<T> PartialEq for FilteredLoadCallback<T> {
     }
 }
 
+/// Text box which presents search results in the dropdown.
+///
+/// Text input is passed to the async load callback as a filter. The user
+/// can then select a value from  the dropdown.
+///
+/// # Note
+///
+/// This widget does not interact with a form context, so it ignore
+/// form context related properties like (name, required, submit,
+/// submit_empty).
 #[widget(pwt=crate, comp=PwtSearchDropdown<S>, @input)]
 #[derive(Derivative, Properties)]
 #[derivative(Clone(bound = ""), PartialEq(bound = ""))]
 #[builder]
 pub struct SearchDropdown<S: DataStore + 'static> {
-    /// Value change callback.
+    /// Select callback, emitted when the user selects something from the picker.
     #[builder_cb(IntoEventCallback, into_event_callback, Key)]
     #[prop_or_default]
     pub on_select: Option<Callback<Key>>,
@@ -98,7 +109,7 @@ pub struct SearchDropdown<S: DataStore + 'static> {
 }
 
 impl<S: DataStore + 'static> SearchDropdown<S> {
-    /// Create a new instance.
+    /// Create a new instance with custom picker.
     pub fn new<Fut, F>(picker: impl Into<RenderFn<SearchDropdownRenderArgs<S>>>, loader: F) -> Self
     where
         F: Fn(String) -> Fut + 'static,
@@ -111,6 +122,7 @@ impl<S: DataStore + 'static> SearchDropdown<S> {
         })
     }
 
+    /// Create a new instance using a combobox like dropdown (simple text lines).
     pub fn simple<Fut, F>(render: impl Into<RenderFn<S::Record>>, loader: F) -> Self
     where
         F: Fn(String) -> Fut + 'static,
@@ -150,6 +162,7 @@ impl<S: DataStore + 'static> SearchDropdown<S> {
         yew::props!(Self { loader, picker })
     }
 
+    /// Create a new instance using a [DataTable] dropdown with specified columns.
     pub fn table<Fut, F>(columns: Rc<Vec<DataTableHeader<S::Record>>>, loader: F) -> Self
     where
         F: Fn(String) -> Fut + 'static,
@@ -190,6 +203,7 @@ pub enum Msg<S: DataStore> {
     Select(Key),
 }
 
+#[doc(hidden)]
 pub struct PwtSearchDropdown<S: DataStore + 'static> {
     filter: String,
     load_error: Option<String>,

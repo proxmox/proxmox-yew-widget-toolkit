@@ -13,13 +13,14 @@ use pwt_macros::{builder, widget};
 
 use crate::widget::align::{AlignOptions, AutoFloatingPlacement, GrowDirection, Point};
 
+/// Parameters passed to the [Dropdown] picker callback.
 #[derive(Clone)]
 pub struct DropdownController {
     link: Scope<PwtDropdown>,
 }
 
 impl DropdownController {
-    /// Change the Combobox value.
+    /// Change the [Dropdown] input element value.
     pub fn change_value(&self, value: String) {
         self.link.send_message(Msg::ChangeValue(value));
     }
