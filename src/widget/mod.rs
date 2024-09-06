@@ -95,6 +95,11 @@ pub use row::Row;
 mod rtl_switcher;
 pub use rtl_switcher::RtlSwitcher;
 
+mod search_dropdown;
+pub use search_dropdown::{
+    FilteredLoadCallback, PwtSearchDropdown, SearchDropdown, SearchDropdownRenderArgs,
+};
+
 mod selection_view;
 pub use selection_view::{
     PwtSelectionView, SelectionView, SelectionViewRenderInfo, VisibilityContext,
