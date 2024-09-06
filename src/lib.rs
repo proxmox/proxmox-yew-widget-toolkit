@@ -115,6 +115,18 @@
 //!
 //! There are also special buttons for [reset](widget::form::ResetButton)
 //! and [submit](widget::form::SubmitButton).
+//!
+//! ### Other input Elements
+//!
+//! Some elements are html inputs, but do not act as form fields, i.e. they do
+//! not interact with the form [context](widget::form::FormContext).
+//!
+//! The [Dropdown](widget::Dropdown) widget is used as base widget to
+//! implement the the more complex [Combobox](widget::form::Combobox) and
+//! [Selector](widget::form::Selector) widgets.
+//!
+//! The [SearchDropdown](widget::SearchDropdown) also uses the [Dropdown](widget::Dropdown)
+//! to represent asynchrounous search results to the user.
 
 //! ### Buttons
 //!
