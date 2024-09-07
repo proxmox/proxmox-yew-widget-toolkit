@@ -5,6 +5,7 @@ use std::rc::Rc;
 use anyhow::Error;
 use derivative::Derivative;
 
+use gloo_timers::callback::Timeout;
 use yew::html::{IntoEventCallback, Scope};
 use yew::virtual_dom::Key;
 
@@ -199,6 +200,7 @@ impl<S: DataStore + 'static> SearchDropdown<S> {
 
 pub enum Msg<S: DataStore> {
     UpdateFilter(String),
+    Load,
     LoadResult(Result<S, Error>),
     Select(Key),
 }
@@ -207,6 +209,7 @@ pub enum Msg<S: DataStore> {
 pub struct PwtSearchDropdown<S: DataStore + 'static> {
     filter: String,
     load_error: Option<String>,
+    load_timeout: Option<Timeout>,
     store: Option<S>,
 }
 
@@ -215,21 +218,35 @@ impl<S: DataStore + 'static> Component for PwtSearchDropdown<S> {
     type Properties = SearchDropdown<S>;
 
     fn create(ctx: &Context<Self>) -> Self {
-        let me = Self {
+        ctx.link().send_message(Msg::Load);
+        Self {
             filter: String::new(),
             load_error: None,
+            load_timeout: None,
             store: None,
-        };
-        me.reload(ctx);
-        me
+        }
     }
 
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
         match msg {
             Msg::UpdateFilter(filter) => {
                 self.filter = filter;
-                self.reload(ctx);
+                let link = ctx.link().clone();
+                self.load_timeout = Some(Timeout::new(200, move || {
+                    link.send_message(Msg::Load);
+                }));
                 true
+            }
+
+            Msg::Load => {
+                let loader = ctx.props().loader.clone();
+                let filter = self.filter.clone();
+                let link = ctx.link().clone();
+                wasm_bindgen_futures::spawn_local(async move {
+                    let res = loader.apply(filter).await;
+                    link.send_message(Msg::LoadResult(res));
+                });
+                false
             }
             Msg::LoadResult(result) => {
                 match result {
@@ -287,17 +304,5 @@ impl<S: DataStore + 'static> Component for PwtSearchDropdown<S> {
         .editable(true)
         .on_change(ctx.link().callback(Msg::UpdateFilter))
         .into()
-    }
-}
-
-impl<S: DataStore + 'static> PwtSearchDropdown<S> {
-    fn reload(&self, ctx: &Context<Self>) {
-        let loader = ctx.props().loader.clone();
-        let filter = self.filter.clone();
-        let link = ctx.link().clone();
-        wasm_bindgen_futures::spawn_local(async move {
-            let res = loader.apply(filter).await;
-            link.send_message(Msg::LoadResult(res));
-        });
     }
 }
