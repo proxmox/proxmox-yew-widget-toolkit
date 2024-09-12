@@ -582,3 +582,22 @@ impl From<ColorScheme> for Classes {
         }
     }
 }
+
+/// CSS utility type to use shadow classes
+///
+/// pwt-shadow0 - pwt-shadow5
+///
+/// ```
+/// # use pwt::prelude::*;
+/// # use pwt::widget::Container;
+/// use pwt::css::*;
+/// Container::new()
+///    .class(Shadow(0))
+/// # ;
+/// ```
+pub struct Shadow(pub u8);
+impl From<Shadow> for Classes {
+    fn from(value: Shadow) -> Self {
+        format!("pwt-shadow{}", value.0).into()
+    }
+}
