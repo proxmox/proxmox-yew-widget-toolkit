@@ -623,3 +623,33 @@ impl From<Shadow> for Classes {
         format!("pwt-shadow{}", value.0).into()
     }
 }
+
+/// CSS utility type to use the pwt-flex-fit class
+///
+/// ```
+/// # use pwt::prelude::*;
+/// # use pwt::widget::Container;
+/// use pwt::css::*;
+/// Container::new()
+///    .class(FlexFit)
+/// # ;
+/// ```
+///
+/// This is equivalent to:
+///
+/// ```
+/// # use pwt::prelude::*;
+/// # use pwt::widget::Container;
+/// use pwt::css::*;
+/// Container::new()
+///    .class(Flex::Fill)
+///    .class(Overflow::Auto)
+/// # ;
+/// ```
+///
+pub struct FlexFit;
+impl From<FlexFit> for Classes {
+    fn from(_value: FlexFit) -> Self {
+        "pwt-flex-fit".into()
+    }
+}
