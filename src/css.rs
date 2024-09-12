@@ -653,3 +653,61 @@ impl From<FlexFit> for Classes {
         "pwt-flex-fit".into()
     }
 }
+
+/// Wrapper type to specify CSS font color class.
+///
+/// Very useful in combination with icons.
+///
+/// ```
+/// # use pwt::prelude::*;
+/// # use pwt::widget::Container;
+/// # use pwt::widget::Fa;
+/// use pwt::css::*;
+/// Fa::new("check")
+///    .class(FontColor::Success)
+/// # ;
+/// ```
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub enum FontColor {
+    Primary,
+    PrimaryContainer,
+    Secondary,
+    SecondaryContainer,
+    Tertiary,
+    TertiaryContainer,
+    Success,
+    SuccessContainer,
+    Error,
+    ErrorContainer,
+    Warning,
+    WarningContainer,
+    Neutral,
+    Surface,
+    InverseSurface,
+    NeutralAlt,
+    DarkSurface,
+}
+
+impl From<FontColor> for Classes {
+    fn from(value: FontColor) -> Self {
+        match value {
+            FontColor::Primary => "pwt-color-primary".into(),
+            FontColor::PrimaryContainer => "pwt-color-primary-container".into(),
+            FontColor::Secondary => "pwt-color-secondary".into(),
+            FontColor::SecondaryContainer => "pwt-color-secondary-container".into(),
+            FontColor::Tertiary => "pwt-color-tertiary".into(),
+            FontColor::TertiaryContainer => "pwt-color-tertiary-container".into(),
+            FontColor::Success => "pwt-color-success".into(),
+            FontColor::SuccessContainer => "pwt-color-success-container".into(),
+            FontColor::Error => "pwt-color-error".into(),
+            FontColor::ErrorContainer => "pwt-color-error-container".into(),
+            FontColor::Warning => "pwt-color-warning".into(),
+            FontColor::WarningContainer => "pwt-color-warning-container".into(),
+            FontColor::Neutral => "pwt-color-neutral".into(),
+            FontColor::Surface => "pwt-color-surface".into(),
+            FontColor::InverseSurface => "pwt-color-inverse-surface".into(),
+            FontColor::NeutralAlt => "pwt-color-neutral-alt".into(),
+            FontColor::DarkSurface => "pwt-color-dark-surface".into(),
+        }
+    }
+}
