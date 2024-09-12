@@ -540,6 +540,24 @@ impl From<Flex> for Classes {
 ///    .class(ColorScheme::Primary)
 /// # ;
 /// ```
+/// You can also have custom color schemes like this:
+///
+/// ```
+/// # use pwt::prelude::*;
+/// # use pwt::widget::Container;
+/// use pwt::css::*;
+/// Container::new()
+///    .class(ColorScheme::Custom("foo"))
+/// # ;
+/// ```
+///
+/// Where the relevant css code must look like this:
+/// ```ignore
+/// .pwt-scheme-foo {
+///    --pwt-color: #ff00ff;
+///    --pwt-color-background: #00ff00;
+/// }
+/// ```
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum ColorScheme {
     Primary,
@@ -559,6 +577,7 @@ pub enum ColorScheme {
     InverseSurface,
     NeutralAlt,
     DarkSurface,
+    Custom(&'static str),
 }
 
 impl From<ColorScheme> for Classes {
@@ -581,6 +600,7 @@ impl From<ColorScheme> for Classes {
             ColorScheme::InverseSurface => "pwt-scheme-inverse-surface".into(),
             ColorScheme::NeutralAlt => "pwt-scheme-neutral-alt".into(),
             ColorScheme::DarkSurface => "pwt-scheme-dark-surface".into(),
+            ColorScheme::Custom(value) => format!("pwt-scheme-{value}").into(),
         }
     }
 }
