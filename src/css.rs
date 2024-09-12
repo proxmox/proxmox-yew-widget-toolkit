@@ -558,6 +558,7 @@ pub enum ColorScheme {
     Surface,
     InverseSurface,
     NeutralAlt,
+    DarkSurface,
 }
 
 impl From<ColorScheme> for Classes {
@@ -579,6 +580,7 @@ impl From<ColorScheme> for Classes {
             ColorScheme::Surface => "pwt-scheme-surface".into(),
             ColorScheme::InverseSurface => "pwt-scheme-inverse-surface".into(),
             ColorScheme::NeutralAlt => "pwt-scheme-neutral-alt".into(),
+            ColorScheme::DarkSurface => "pwt-scheme-dark-surface".into(),
         }
     }
 }
