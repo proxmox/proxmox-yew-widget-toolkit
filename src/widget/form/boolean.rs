@@ -248,8 +248,7 @@ impl ManagedField for BooleanField {
             )
             .attribute("role", "checkbox")
             .attribute("aria-checked", checked.then(|| "true"))
-            .onkeyup(onkeyup)
-            .onclick(onclick);
+            .onkeyup(onkeyup);
 
         if let Err(msg) = &valid {
             checkbox.set_tip(msg.clone())
@@ -260,10 +259,11 @@ impl ManagedField for BooleanField {
         }
 
         if props.switch {
-            checkbox.into()
+            checkbox.onclick(onclick).into()
         } else {
             Container::new()
                 .class("pwt-checkbox-state")
+                .onclick(onclick)
                 .with_child(checkbox)
                 .into()
         }
