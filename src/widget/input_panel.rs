@@ -8,8 +8,7 @@ use pwt_macros::{builder, widget};
 
 use crate::prelude::*;
 use crate::props::WidgetStyleBuilder;
-
-use super::Container;
+use crate::widget::{Container, FieldLabel};
 
 enum Position {
     Left,
@@ -176,7 +175,7 @@ impl InputPanel {
         &mut self,
         column: Position,
         advanced: bool,
-        label: impl IntoPropValue<AttrValue>,
+        label: impl Into<FieldLabel>,
         field: impl FieldBuilder,
     ) {
         let (label_column, row, field_class) = match column {
@@ -209,21 +208,14 @@ impl InputPanel {
         };
 
         let label_id = crate::widget::get_unique_element_id();
+        let label = label.into().id(label_id.clone());
         let class = classes!(
             format!("pwt-grid-column-{}", label_column),
             "pwt-align-self-center",
-            matches!(column, Position::Right).then_some("pwt-text-align-end"),
             field.is_disabled().then_some("pwt-label-disabled"),
         );
 
-        let label = label.into_prop_value();
-        let key = Key::from(format!("label_{label}"));
-
-        self.add_child(html! {
-            <label {key} id={label_id.clone()} {class} style={style.clone()}>
-                {label}
-            </label>
-        });
+        self.add_child(label.class(class).attribute("style", style.clone()));
 
         let name = field.as_input_props().name.clone();
         let field = field.label_id(label_id).into();
@@ -245,18 +237,14 @@ impl InputPanel {
     }
 
     /// Builder style method to add a field with label at the left column.
-    pub fn with_field(
-        mut self,
-        label: impl IntoPropValue<AttrValue>,
-        field: impl FieldBuilder,
-    ) -> Self {
+    pub fn with_field(mut self, label: impl Into<FieldLabel>, field: impl FieldBuilder) -> Self {
         self.add_field(false, label, field);
         self
     }
 
     pub fn with_advanced_field(
         mut self,
-        label: impl IntoPropValue<AttrValue>,
+        label: impl Into<FieldLabel>,
         field: impl FieldBuilder,
     ) -> Self {
         self.add_field(true, label, field);
@@ -267,7 +255,7 @@ impl InputPanel {
     pub fn add_field(
         &mut self,
         advanced: bool,
-        label: impl IntoPropValue<AttrValue>,
+        label: impl Into<FieldLabel>,
         field: impl FieldBuilder,
     ) {
         self.add_field_impl(Position::Left, advanced, label, field)
@@ -276,7 +264,7 @@ impl InputPanel {
     /// Builder style method to add a field with label at the right column.
     pub fn with_right_field(
         mut self,
-        label: impl IntoPropValue<AttrValue>,
+        label: impl Into<FieldLabel>,
         field: impl FieldBuilder,
     ) -> Self {
         self.add_right_field(false, label, field);
@@ -286,7 +274,7 @@ impl InputPanel {
     /// Builder style method to add a right column field in the advanced section.
     pub fn with_right_advanced_field(
         mut self,
-        label: impl IntoPropValue<AttrValue>,
+        label: impl Into<FieldLabel>,
         field: impl FieldBuilder,
     ) -> Self {
         self.add_right_field(true, label, field);
@@ -297,7 +285,7 @@ impl InputPanel {
     pub fn add_right_field(
         &mut self,
         advanced: bool,
-        label: impl IntoPropValue<AttrValue>,
+        label: impl Into<FieldLabel>,
         field: impl FieldBuilder,
     ) {
         self.add_field_impl(Position::Right, advanced, label, field)
@@ -306,7 +294,7 @@ impl InputPanel {
     /// Builder style method to add a large field spanning both columns.
     pub fn with_large_field(
         mut self,
-        label: impl IntoPropValue<AttrValue>,
+        label: impl Into<FieldLabel>,
         field: impl FieldBuilder,
     ) -> Self {
         self.add_large_field(false, label, field);
@@ -316,7 +304,7 @@ impl InputPanel {
     /// Builder style method to add a large field in the advanced section
     pub fn with_large_advanced_field(
         mut self,
-        label: impl IntoPropValue<AttrValue>,
+        label: impl Into<FieldLabel>,
         field: impl FieldBuilder,
     ) -> Self {
         self.add_large_field(true, label, field);
@@ -327,7 +315,7 @@ impl InputPanel {
     pub fn add_large_field(
         &mut self,
         advanced: bool,
-        label: impl IntoPropValue<AttrValue>,
+        label: impl Into<FieldLabel>,
         field: impl FieldBuilder,
     ) {
         self.add_field_impl(Position::Large, advanced, label, field)
