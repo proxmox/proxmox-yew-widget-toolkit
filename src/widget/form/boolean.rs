@@ -12,7 +12,7 @@ use super::{
 };
 use crate::props::{ContainerBuilder, EventSubscriber, WidgetBuilder};
 use crate::tr;
-use crate::widget::{Container, Tooltip};
+use crate::widget::{Container, Fa, Tooltip};
 
 pub type PwtBoolean = ManagedFieldMaster<BooleanField>;
 
@@ -218,37 +218,43 @@ impl ManagedField for BooleanField {
             }
         });
 
-        let (layout_class, inner) = match props.switch {
-            true => (
-                "pwt-switch",
-                html! {<span class="pwt-switch-slider"><i class="fa fa-check"/></span>},
-            ),
-            false => (
-                "pwt-checkbox",
-                html! {<span class="pwt-checkbox-icon"><i class="fa fa-check"/></span>},
-            ),
+        let (layout_class, inner_class) = match props.switch {
+            true => ("pwt-switch", "pwt-switch-slider"),
+            false => ("pwt-checkbox", "pwt-checkbox-icon"),
         };
+
+        let checkbox = Container::new()
+            .class((!props.switch).then_some("pwt-checkbox-state"))
+            .with_child(
+                Container::new()
+                    .class(layout_class)
+                    .with_child(
+                        Container::from_tag("span")
+                            .class(inner_class)
+                            .with_child(Fa::new("check")),
+                    )
+                    .class(checked.then_some("checked"))
+                    .class(disabled.then_some("disabled"))
+                    .class(if valid.is_ok() {
+                        "is-valid"
+                    } else {
+                        "is-invalid"
+                    })
+                    .attribute(
+                        "tabindex",
+                        props.input_props.tabindex.unwrap_or(0).to_string(),
+                    )
+                    .attribute("role", "checkbox")
+                    .attribute("aria-checked", checked.then_some("true"))
+                    .onkeyup(onkeyup),
+            );
 
         // TODO: add other props.input_props
 
-        let mut checkbox = Tooltip::new(inner)
+        let mut checkbox = Tooltip::new(checkbox)
             .with_std_props(&props.std_props)
             .listeners(&props.listeners)
-            .class(layout_class)
-            .class(checked.then(|| "checked"))
-            .class(disabled.then(|| "disabled"))
-            .class(if valid.is_ok() {
-                "is-valid"
-            } else {
-                "is-invalid"
-            })
-            .attribute(
-                "tabindex",
-                props.input_props.tabindex.unwrap_or(0).to_string(),
-            )
-            .attribute("role", "checkbox")
-            .attribute("aria-checked", checked.then(|| "true"))
-            .onkeyup(onkeyup);
+            .onclick(onclick);
 
         if let Err(msg) = &valid {
             checkbox.set_tip(msg.clone())
@@ -258,15 +264,7 @@ impl ManagedField for BooleanField {
             }
         }
 
-        if props.switch {
-            checkbox.onclick(onclick).into()
-        } else {
-            Container::new()
-                .class("pwt-checkbox-state")
-                .onclick(onclick)
-                .with_child(checkbox)
-                .into()
-        }
+        checkbox.into()
     }
 
     fn rendered(&mut self, ctx: &ManagedFieldContext<Self>, first_render: bool) {
