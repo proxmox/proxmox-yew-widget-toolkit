@@ -1,71 +1,59 @@
-use std::marker::PhantomData;
-
-use crate::css::{AlignItems, Display};
 use crate::prelude::*;
 
-use crate::props::{EventSubscriber, FieldBuilder, WidgetBuilder};
-use crate::widget::{get_unique_element_id, Container};
+use crate::props::{EventSubscriber, WidgetBuilder};
+use crate::widget::Container;
 
 use pwt_macros::widget;
 
-#[cfg(doc)]
-use crate::widget::{
-    form::{Boolean, Checkbox, Field},
-    Row,
-};
-
-/// Field Label (right side label).
-///
-/// Simply put a [Field] into a [Row], and append the label to the right side.
-/// This is sometimes useful for [Checkbox] or [Boolean] fields, where you have much
-/// empty space on the right side.
-///
-/// The label is clickable a toggles the value of a boolean or checkbox field.
-#[widget(pwt=crate, comp=PwtFieldLabel<F>, @element)]
+/// Represents a Field Label.
+#[widget(pwt=crate, comp=PwtFieldLabel, @element)]
 #[derive(Clone, PartialEq, Properties)]
-pub struct FieldLabel<F: Clone + PartialEq + FieldBuilder + Properties + 'static> {
-    pub field: F,
-
-    pub label: Html,
+pub struct FieldLabel {
+    pub label: AttrValue,
 }
 
-impl<F: Clone + PartialEq + Properties + FieldBuilder> FieldLabel<F> {
-    pub fn new(label: impl Into<Html>, field: F) -> Self {
-        yew::props! { Self { label: label.into(), field } }
+impl FieldLabel {
+    pub fn new(label: impl Into<AttrValue>) -> Self {
+        let label = label.into();
+        yew::props! { Self {label} }
     }
 }
 
-pub struct PwtFieldLabel<F> {
-    label_id: AttrValue,
-    _phantom: PhantomData<F>,
-}
+pub struct PwtFieldLabel {}
 
-impl<F: Clone + PartialEq + Properties + FieldBuilder + 'static> Component for PwtFieldLabel<F> {
+impl Component for PwtFieldLabel {
     type Message = ();
-    type Properties = FieldLabel<F>;
+    type Properties = FieldLabel;
 
     fn create(_ctx: &Context<Self>) -> Self {
-        let label_id = AttrValue::from(get_unique_element_id());
-        Self {
-            label_id,
-            _phantom: PhantomData::<F>,
-        }
+        Self {}
     }
 
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
-        Container::new()
+        Container::from_tag("label")
             .with_std_props(&props.std_props)
             .listeners(&props.listeners)
-            .class(Display::Flex)
-            .class(AlignItems::Center)
-            .class("pwt-gap-2")
-            .with_child(props.field.clone().label_id(self.label_id.clone()))
-            .with_child(html! {
-                <span class="pwt-user-select-none" id={self.label_id.clone()}>
-                    {props.label.clone()}
-                </span>
-            })
+            .key(format!("label_{}", props.label))
+            .with_child(props.label.clone())
             .into()
+    }
+}
+
+impl From<&'static str> for FieldLabel {
+    fn from(value: &'static str) -> Self {
+        FieldLabel::new(value)
+    }
+}
+
+impl From<AttrValue> for FieldLabel {
+    fn from(value: AttrValue) -> Self {
+        FieldLabel::new(value)
+    }
+}
+
+impl From<String> for FieldLabel {
+    fn from(value: String) -> Self {
+        FieldLabel::new(value)
     }
 }

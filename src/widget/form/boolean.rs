@@ -10,9 +10,10 @@ use super::{
     IntoValidateFn, ManagedField, ManagedFieldContext, ManagedFieldMaster, ManagedFieldState,
     ValidateFn,
 };
-use crate::props::{ContainerBuilder, EventSubscriber, WidgetBuilder};
+use crate::css::AlignItems;
+use crate::props::{ContainerBuilder, CssPaddingBuilder, EventSubscriber, WidgetBuilder};
 use crate::tr;
-use crate::widget::{Container, Fa, Tooltip};
+use crate::widget::{Container, Fa, FieldLabel, Row, Tooltip};
 
 pub type PwtBoolean = ManagedFieldMaster<BooleanField>;
 
@@ -74,6 +75,10 @@ pub struct Boolean {
     #[builder_cb(IntoEventCallback, into_event_callback, bool)]
     #[prop_or_default]
     pub on_input: Option<Callback<bool>>,
+
+    /// A right side label for the checkbox, to display additional information
+    #[prop_or_default]
+    pub box_label: Option<FieldLabel>,
 }
 
 impl Boolean {
@@ -91,6 +96,21 @@ impl Boolean {
     /// Method to set the validate callback
     pub fn set_validate(&mut self, validate: impl IntoValidateFn<bool>) {
         self.validate = validate.into_validate_fn();
+    }
+
+    /// Method to set the box label.
+    ///
+    /// A right side label for the checkbox to display additional information
+    pub fn set_box_label(&mut self, box_label: impl Into<FieldLabel>) {
+        self.box_label = Some(box_label.into());
+    }
+
+    /// Builder method to set the box label.
+    ///
+    ///A right side label for the checkbox to display additional information
+    pub fn box_label(mut self, box_label: impl Into<FieldLabel>) -> Self {
+        self.set_box_label(box_label);
+        self
     }
 }
 pub enum Msg {
@@ -248,6 +268,13 @@ impl ManagedField for BooleanField {
                     .attribute("aria-checked", checked.then_some("true"))
                     .onkeyup(onkeyup),
             );
+
+        let box_label = props.box_label.clone().map(|label| label.padding_start(2));
+
+        let checkbox = Row::new()
+            .class(AlignItems::Center)
+            .with_child(checkbox)
+            .with_optional_child(box_label);
 
         // TODO: add other props.input_props
 
