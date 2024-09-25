@@ -25,9 +25,6 @@ enum Position {
 #[builder]
 #[derive(Properties, PartialEq, Clone)]
 pub struct InputPanel {
-    /// Spacing between fields
-    #[prop_or_default]
-    pub gap: usize,
     /// Flag to show the advanced region.
     #[prop_or_default]
     pub show_advanced: bool,
@@ -55,17 +52,6 @@ impl InputPanel {
     /// Creates a new instance.
     pub fn new() -> Self {
         yew::props!(Self {})
-    }
-
-    /// Builder style method to set the field spacing.
-    pub fn gap(mut self, gap: usize) -> Self {
-        self.set_gap(gap);
-        self
-    }
-
-    /// Method to set the field spacing.
-    pub fn set_gap(&mut self, gap: usize) {
-        self.gap = gap;
     }
 
     /// Builder style method to set the show_advanced flag.
@@ -361,10 +347,6 @@ impl Into<VTag> for InputPanel {
         } else {
             self.add_class("pwt-form-grid-col2")
         }
-
-        if self.gap > 0 {
-            self.add_class(format!("pwt-gap-{}", self.gap));
-        };
 
         if self.label_width.is_some() || self.field_width.is_some() {
             let mut column_template = format!(
