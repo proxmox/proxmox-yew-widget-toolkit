@@ -90,6 +90,7 @@ impl AsCssStylesMut for NavigationDrawer {
 
 impl CssBorderBuilder for NavigationDrawer {}
 impl CssPaddingBuilder for NavigationDrawer {}
+impl WidgetStyleBuilder for NavigationDrawer {}
 
 impl NavigationDrawer {
     /// Create a new instance.
