@@ -1,4 +1,12 @@
-rust-pwt (0.2.0-1) unstable; urgency=medium
+rust-pwt (0.3.0) bookworm; urgency=medium
+
+  * countless bug fixes
+
+  * prepare for first public release
+
+ -- Proxmox Support Team <support@proxmox.com>  Fri, 27 Sep 2024 17:23:25 +0200
+
+rust-pwt (0.2.0) unstable; urgency=medium
 
   * initial Debian package
 

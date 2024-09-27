@@ -1,6 +1,6 @@
 [package]
 name = "pwt"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2021"
 authors = ["Dietmar Maurer <dietmar@proxmox.com>"]
 license = "MIT OR Apache-2.0"
@@ -12,19 +12,7 @@ exclude = ["debian"]
 
 [workspace]
 exclude = ["build"]
-members = [
-  "pwt-macros",
-
-  # Examples
-
-  "examples/counter",
-  "examples/demo",
-  "examples/form",
-  "examples/loader",
-  "examples/mobile",
-  "examples/mobile2",
-  "examples/themes",
-]
+members = ["pwt-macros"]
 
 [dependencies]
 anyhow = "1.0"
@@ -76,10 +64,3 @@ percent-encoding = "2.1"
 gettext = "0.4"
 
 pwt-macros = { version = "0.1", path = "pwt-macros" }
-
-# proxmox-schema = { version = "1", optional = true }
-
-[features]
-default = []
-# disable this feature for now, because cargo always depend on proxmox-schema
-#proxmox-schema = [ "dep:proxmox-schema" ]
