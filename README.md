@@ -13,33 +13,23 @@ necessary.
 
 The [Whitepaper](Whitepaper.md) contains more details on this.
 
-Install
-=======
+Usage
+=====
 
-1. Install WebAssembly target
+We provide a separate repository with usage examples:
 
-    rustup target add wasm32-unknown-unknown
+https://git.proxmox.com/rust/proxmox-yew-wiget-toolkit-examples.git
 
-2. Install Trunk
-
-    cargo install trunk
-
-3. Install SASS (rust-grass is required)
-
-We recommend installing it via apt:
-
-    apt install rust-grass
 
 I18N
 ====
 
-We will use the "tr" crate for I18N. So all translatable strings are
-marked using the "tr!" macro.
+All translatable strings are marked using the "tr!" macro.
 
 Extract gettext messages with the "xtr" binary, which is part of the
 "tr" crate.
 
-See example/demo for an usage example.
+See the demo in the examples crate on how to use this.
 
 
 Notes
@@ -49,10 +39,10 @@ We try to use the builder pattern instead of the html macro.
 
 Conventions:
 
-- The Component is prefixed with "Pwt" (i.e. "PwtColumn")
-- Corresponding Props without prefix (i.e. "Column")
-
-- Builder is implemented on the Props
+- The Yew Component is prefixed with "Pwt" (i.e. "PwtColumn")
+- Corresponding Component Properties without prefix (i.e. "Column")
+- Builder is implemented on the Component Properties.
+- Component Properties implements Into&lt;Html&gt;.
 
 
 Focus traversal
@@ -73,6 +63,7 @@ This should work in major browsers now (2022). Anyways, a polyfill is also avail
 https://github.com/GoogleChrome/dialog-polyfill
 
 You can enable it manually in older versions of firefox in "about:config" (dom.dialog_element.enabled)
+
 
 Debugging
 ---------
