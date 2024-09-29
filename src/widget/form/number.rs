@@ -243,7 +243,7 @@ unsigned_number_impl!(u8);
 // the conversion String/Number is not bijective, and would lead to strange effects
 // especially for floating point numbers.
 //
-// Instead, we use a hook which tranlates values when the user
+// Instead, we use a hook which translates values when the user
 // calls [get_submit_data](crate::widget::form::FormContext::get_submit_data).
 
 /// Number input element for common Rust types (f64, u8, u16, u32, u64, i8, i16, i32, i64)

@@ -108,13 +108,24 @@
 //!
 //! The following field types are available.
 //!
-//! - [widget::form::Checkbox]: Checkbox or Radiobox field
+//! - [widget::form::Boolean]: Checkbox input element, which stores values as boolean.
+//! - [widget::form::Checkbox]: Checkbox or Radiobox field, which stores values as strings.
 //! - [widget::form::Combobox]: Select value from a list of options.
+//! - [widget::form::DisplayField]: Just display values (not editable).
 //! - [widget::form::Field]: Wrapper around standard Html fields.
+//! - [widget::form::Hidden]: Hidden fields.
+//! - [widget::form::Number]: Number input element for common Rust number types,
+//!   which stores values a number (not string).
 //! - [widget::form::Selector]: Select value from a picker widget.
+//! - [widget::form::TextArea]: Textarea input element.
 //!
 //! There are also special buttons for [reset](widget::form::ResetButton)
 //! and [submit](widget::form::SubmitButton).
+//!
+//! The [ManagedField](widget::form::ManagedField) trait is used as base
+//! for input elements, because it simplifies the interaction with the
+//! [context](widget::form::FormContext).
+//!
 //!
 //! ### Other input Elements
 //!

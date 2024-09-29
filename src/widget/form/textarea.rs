@@ -18,7 +18,7 @@ use crate::tr;
 
 pub type PwtTextArea = ManagedFieldMaster<TextAreaField>;
 
-/// Checkbox input element, which stores values as boolean
+/// Textarea input element
 #[widget(pwt=crate, comp=ManagedFieldMaster<TextAreaField>, @input, @element)]
 #[derive(Clone, PartialEq, Properties)]
 #[builder]
