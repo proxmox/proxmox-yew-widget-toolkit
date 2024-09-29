@@ -54,6 +54,8 @@ use [Yew](https://yew.rs) as base, because
 
 - [ARIA](https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA) support.
 
+- We can use [SASS](https://sass-lang.com) to write CSS style sheets.
+
 
 ## Using Yew directly.
 
@@ -83,12 +85,12 @@ library providing all that functionality.
 ## Writing complex components/widgets.
 
 The set of required widget was quite clear, so this was more of a
-trial and error phase to find convienient APIs and data structures for
+trial and error phase to find convenient APIs and data structures for
 Rust.
 
 The current library is called [Proxmox Yew Widget
 Toolkit](https://git.proxmox.com) and is the result of multiple
-rewrites. It is flexible enought to implement larger parts of the
+rewrites. It is flexible enough to implement larger parts of the
 backup server GUI, but there is still room for improvements:
 
 - provide more components
@@ -134,11 +136,22 @@ Row::new()
 The `class()` method also deserves some attention. You can pass text
 strings to specify CSS classes. But we also provide Rust types for
 common classes which implements `Into<Classes>`. The class method
-directly accepts those types, so you can spefify css classes in a type
+directly accepts those types, so you can specify css classes in a type
 safe way.
 
 All base widgets implements a common builder API to specify classes,
 attributes and event callbacks.
+
+To further simplify layout, we also defined functions
+to set padding, margin and style on those widgets:
+
+```
+Container::new()
+   .style("color", "red")
+   .style("background-color", "white)
+   .margin(2)
+   .padding(4)
+``
 
 We think that this style is much easier to read/format and understand,
 especially when you configure many propertyies. We still use the html
@@ -148,7 +161,7 @@ case.
 
 ### Layout Containers
 
-I started with some very simple layout containers called `Row` and
+We started with some very simple layout containers called `Row` and
 `Column`. They simply create a HTML flexbox (`<div style="display:
 flex;...`>) with the corresponding direction. Everything else can be
 controlled by adding class attributes to either the container or its
@@ -197,10 +210,10 @@ Authoring Practices Guide](https://www.w3.org/WAI/ARIA/apg).
 
 Languages like Arabic, Hebrew and Persian are left-to-right, and
 people expect that row-layouts also change direction when you use such
-language. Fortunatly, CSS already support switching between LTR/RTL
+language. Fortunately, CSS already support switching between LTR/RTL
 direction, and a flexbox row automatically changes the direction.
 
-There are still things you need to do programatically, and it is
+There are still things you need to do programmatically, and it is
 sometimes required to consider the script direction. Especially when
 you navigate through flexbox children using arrow keys, or if you
 resize flexbox children using the mouse.
@@ -254,8 +267,8 @@ pub trait EventSubscriber: Static {
 
 For further convenience, we provide a `widget` macro that
 automatically add required properties and methods. For example, the
-following code implements the buider function for a full featured
-container:
+following code implements the builder function for a full featured
+container widget:
 
 ```
 #[widget(/* required features */ @element, @container)]
@@ -286,6 +299,12 @@ and dissatisfied after making mistakes.
 We used the [material design](https://m3.material.io) guidelines from Google as
 baseline. The resulting theme wastes a lot of space on the desktop,
 but is a requirement for mobile devices.
+
+In the end, we added another theme with spacing optimized for common
+desktop application.
+
+All themes are written with [SASS](https://sass-lang.com), so it is relatively
+easy to modify them.
 
 
 ## Mobile Devices
@@ -349,9 +368,6 @@ fn YourApp() -> Html {
         .into()
 }
 ```
-
-
-
 
 ## Conclusion
 
