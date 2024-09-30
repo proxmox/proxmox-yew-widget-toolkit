@@ -108,8 +108,8 @@
 //!
 //! The following field types are available.
 //!
-//! - [widget::form::Boolean]: Checkbox input element, which stores values as boolean.
-//! - [widget::form::Checkbox]: Checkbox or Radiobox field, which stores values as strings.
+//! - [widget::form::Checkbox]: Checkbox input element, which stores values as boolean by default.
+//! - [widget::form::RadioButton]: RadioButton field, which stores values as strings.
 //! - [widget::form::Combobox]: Select value from a list of options.
 //! - [widget::form::DisplayField]: Just display values (not editable).
 //! - [widget::form::Field]: Wrapper around standard Html fields.
