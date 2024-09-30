@@ -22,6 +22,20 @@ pub type PwtBoolean = ManagedFieldMaster<BooleanField>;
 #[derive(Clone, PartialEq, Properties)]
 #[builder]
 pub struct Boolean {
+    /// The value that will be submitted when the field is checked/on.
+    ///
+    /// Note: must differ from the `submit_off_value` to be working correctly.
+    #[builder(Into, into)]
+    #[prop_or(Value::Bool(true))]
+    pub submit_on_value: Value,
+
+    /// The value that will be submitted when the field is not checked/off.
+    ///
+    /// Note: must differ from the `submit_on_value` to be working correctly.
+    #[builder(Into, into)]
+    #[prop_or(Value::Bool(false))]
+    pub submit_off_value: Value,
+
     /// Force value (ignored by managed fields)
     #[builder(IntoPropValue, into_prop_value)]
     #[prop_or_default]
@@ -123,6 +137,8 @@ pub struct BooleanField {}
 #[derive(PartialEq)]
 pub struct ValidateClosure {
     validate: Option<ValidateFn<bool>>,
+    submit_on_value: Value,
+    submit_off_value: Value,
 }
 
 impl ManagedField for BooleanField {
@@ -133,13 +149,23 @@ impl ManagedField for BooleanField {
     fn validation_args(props: &Self::Properties) -> Self::ValidateClosure {
         ValidateClosure {
             validate: props.validate.clone(),
+            submit_on_value: props.submit_on_value.clone(),
+            submit_off_value: props.submit_off_value.clone(),
         }
     }
 
     fn validator(props: &Self::ValidateClosure, value: &Value) -> Result<Value, Error> {
         let value = match value {
             Value::Bool(value) => *value,
-            _ => return Err(Error::msg(tr!("got wrong data type."))),
+            other => {
+                if *other == props.submit_on_value {
+                    true
+                } else if *other == props.submit_off_value {
+                    false
+                } else {
+                    return Err(Error::msg(tr!("got invalid value.")));
+                }
+            }
         };
 
         if let Some(validate) = &props.validate {
@@ -150,20 +176,32 @@ impl ManagedField for BooleanField {
     }
 
     fn setup(props: &Boolean) -> ManagedFieldState {
-        let mut value = false;
+        let mut value = Value::Bool(false);
         if let Some(default) = &props.default {
-            value = *default;
+            value = if *default {
+                props.submit_on_value.clone()
+            } else {
+                props.submit_off_value.clone()
+            };
         }
         if let Some(checked) = &props.checked {
-            value = *checked;
+            value = if *checked {
+                props.submit_on_value.clone()
+            } else {
+                props.submit_off_value.clone()
+            };
         }
 
         let valid = Ok(());
 
-        let default = props.default.unwrap_or(false).into();
+        let default = if props.default.unwrap_or(false) {
+            props.submit_on_value.clone()
+        } else {
+            props.submit_off_value.clone()
+        };
 
         ManagedFieldState {
-            value: value.into(),
+            value,
             valid,
             default,
             radio_group: false,
@@ -188,12 +226,16 @@ impl ManagedField for BooleanField {
                 if props.input_props.disabled {
                     return true;
                 }
-                let checked = state.value.as_bool().unwrap_or(false);
-                let new_checked = !checked;
-                ctx.link().update_value(new_checked);
+                let checked = state.value == props.submit_on_value;
+                let new_value = if checked {
+                    props.submit_off_value.clone()
+                } else {
+                    props.submit_on_value.clone()
+                };
+                ctx.link().update_value(new_value);
 
                 if let Some(on_input) = &props.on_input {
-                    on_input.emit(new_checked);
+                    on_input.emit(!checked);
                 }
 
                 false
@@ -204,7 +246,7 @@ impl ManagedField for BooleanField {
     fn value_changed(&mut self, ctx: &ManagedFieldContext<Self>) {
         let props = ctx.props();
         let state = ctx.state();
-        let checked = state.value.as_bool().unwrap_or(false);
+        let checked = state.value == props.submit_on_value;
         if let Some(on_change) = &props.on_change {
             on_change.emit(checked);
         }
@@ -213,7 +255,12 @@ impl ManagedField for BooleanField {
     fn changed(&mut self, ctx: &ManagedFieldContext<Self>, _old_props: &Self::Properties) -> bool {
         let props = ctx.props();
         if let Some(checked) = props.checked {
-            ctx.link().force_value(Some(checked), None)
+            let value = if checked {
+                props.submit_on_value.clone()
+            } else {
+                props.submit_off_value.clone()
+            };
+            ctx.link().force_value(Some(value), None)
         }
         true
     }
@@ -226,7 +273,10 @@ impl ManagedField for BooleanField {
         let state = ctx.state();
 
         let (value, valid) = (&state.value, &state.valid);
-        let checked = value.as_bool().unwrap_or(false);
+        let checked = {
+            let this = &props;
+            *value == this.submit_on_value
+        };
 
         let onclick = link.callback(|_| Msg::Toggle);
         let onkeyup = Callback::from({
