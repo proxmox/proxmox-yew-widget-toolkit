@@ -6,9 +6,6 @@ pub use context::{
     FormContextState, FormContextWriteGuard,
 };
 
-mod boolean;
-pub use boolean::{Boolean, PwtBoolean};
-
 mod tristate_boolean;
 pub use tristate_boolean::{PwtTristateBoolean, Tristate, TristateBoolean};
 

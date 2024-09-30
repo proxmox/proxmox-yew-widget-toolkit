@@ -564,7 +564,7 @@ impl FormContextState {
         }
     }
 
-    /// Get the field value as bool (for Checkbox and Boolean fields).
+    /// Get the field value as bool (for Checkbox fields).
     ///
     /// Return false for non-existent fields, empty fields, or
     /// when the field value not bool.
