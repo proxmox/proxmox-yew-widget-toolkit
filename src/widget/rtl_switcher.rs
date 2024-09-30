@@ -2,6 +2,7 @@ use pwt_macros::widget;
 use yew::{Classes, Component, Properties};
 
 use super::form::Checkbox;
+use crate::props::{FieldBuilder, WidgetBuilder};
 
 /// A checkbox to switch between Left-to-Right and Right-to-Left layouts
 #[widget(pwt=crate, comp=PwtRtlSwitcher, @input, @element)]
@@ -85,7 +86,13 @@ impl Component for PwtRtlSwitcher {
     }
 
     fn view(&self, ctx: &yew::Context<Self>) -> yew::Html {
+        let props = ctx.props();
         let onclick = ctx.link().callback(|_| Msg::ToggleRtl);
-        Checkbox::new().checked(self.rtl).on_change(onclick).into()
+        Checkbox::new()
+            .with_std_props(&props.std_props)
+            .with_input_props(&props.input_props)
+            .checked(self.rtl)
+            .on_change(onclick)
+            .into()
     }
 }
