@@ -48,11 +48,11 @@ pub struct RadioButton {
     /// # use anyhow::bail;
     /// # use pwt::prelude::*;
     /// # use pwt::widget::form::RadioButton;
-    /// RadioButton::new()
+    /// RadioButton::new("value")
     ///   .submit(false)
     ///   .validate(|value: &bool| {
     ///      if !value {
-    ///         bail!("Please accept the Terms Of Service")
+    ///         bail!("Please select 'value'")
     ///      }
     ///      Ok(())
     ///    });
