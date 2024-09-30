@@ -118,6 +118,7 @@
 //!   which stores values a number (not string).
 //! - [widget::form::Selector]: Select value from a picker widget.
 //! - [widget::form::TextArea]: Textarea input element.
+//! - [widget::form::TristateBoolean]: Tristate Boolean widget (yes, no, null)
 //!
 //! There are also special buttons for [reset](widget::form::ResetButton)
 //! and [submit](widget::form::SubmitButton).
@@ -174,7 +175,7 @@
 //! - [touch::Fab]: Favorite action button.
 //! - [touch::FabMenu]: Favorite actions button Menu.
 //! - [touch::GestureDetector]: Gesture detector.
-//! - [touch::MaterialApp]: Helper to implement applications that uses material design gudelines.
+//! - [touch::MaterialApp]: Helper to implement applications that uses material design guidelines.
 //! - [touch::NavigationBar]: Navigation bar (bottom)
 //! - [touch::NavigationRail]: Navigation rail (left)
 //! - [touch::PageView]: A scrollable list that works page by page.
@@ -182,7 +183,7 @@
 //! - [touch::Scaffold]: Material Design visual page layout.
 //! - [touch::SideDialog]: Modal Dialog with slide in/out animations.
 //! - [touch::Slidable]: Slidable widget with directional slide actions that can be dismissed.
-//! - [touch::SnackBar]: Display iightweight messages with an optional action button.
+//! - [touch::SnackBar]: Display lightweight messages with an optional action button.
 
 //! ## Router
 //!
@@ -194,6 +195,11 @@
 //!
 //! - [widget::TabPanel]
 //! - [widget::nav::NavigationDrawer]
+//!
+//! ## Application implementation helpers
+//!
+//! - [widget::DesktopApp]: Application scaffold for desktop applications.
+//! - [touch::MaterialApp]: Helper to implement applications that uses material design guidelines.
 
 pub mod css;
 pub mod dom;

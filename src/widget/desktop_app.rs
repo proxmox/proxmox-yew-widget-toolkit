@@ -13,7 +13,7 @@ use crate::widget::{CatalogLoader, ThemeLoader};
 
 use pwt_macros::builder;
 
-/// An application that uses material design gudelines.
+/// Application scaffold for desktop applications.
 ///
 /// This is just a convenient way to set up the following things:
 ///
