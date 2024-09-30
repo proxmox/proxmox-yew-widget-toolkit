@@ -241,15 +241,15 @@ extern "C" {
     fn test_alert();
 
     //Dialog bindings
-    fn show_modal_dialog(dialog: web_sys::Node);
-    fn show_dialog(dialog: web_sys::Node);
-    fn close_dialog(dialog: web_sys::Node);
+    pub fn show_modal_dialog(dialog: web_sys::Node);
+    pub fn show_dialog(dialog: web_sys::Node);
+    pub fn close_dialog(dialog: web_sys::Node);
 }
 
 // Create wrapper which panics if called from target_arch!=wasm32
 // This allows us to run tests with "cargo test".
 #[cfg(not(target_arch = "wasm32"))]
-pub(crate) use panic_wrapper::*;
+pub use panic_wrapper::*;
 #[cfg(not(target_arch = "wasm32"))]
 mod panic_wrapper {
     pub fn show_modal_dialog(_dialog: web_sys::Node) {
