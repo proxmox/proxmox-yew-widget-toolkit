@@ -114,6 +114,9 @@ pub use extract_key_function::{ExtractKeyFn, ExtractPrimaryKey, IntoExtractKeyFn
 mod load_callback;
 pub use load_callback::{set_http_get_method, IntoLoadCallback, LoadCallback};
 
+mod submit_callback;
+pub use submit_callback::{IntoSubmitCallback, SubmitCallback};
+
 mod field_std_props;
 pub use field_std_props::FieldStdProps;
 

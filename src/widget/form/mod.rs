@@ -44,9 +44,6 @@ pub use reset_button::{PwtResetButton, ResetButton};
 mod selector;
 pub use selector::{PwtSelector, Selector, SelectorRenderArgs};
 
-mod submit_callback;
-pub use submit_callback::{IntoSubmitCallback, SubmitCallback};
-
 mod submit_button;
 pub use submit_button::{PwtSubmitButton, SubmitButton};
 
