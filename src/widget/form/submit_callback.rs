@@ -5,52 +5,50 @@ use std::rc::Rc;
 use anyhow::Error;
 use derivative::Derivative;
 
-use super::FormContext;
-
 /// A [SubmitCallback] is an async callback ([Future]) that gets the
-/// [FormContext] as parameter, returning the [Result] of the submit
-/// opertation.
+/// data to be submitted as parameter, returning the [Result] of the submit
+/// operation.
 #[derive(Derivative)]
 #[derivative(Clone, PartialEq)]
-pub struct SubmitCallback(
+pub struct SubmitCallback<T>(
     #[derivative(PartialEq(compare_with = "Rc::ptr_eq"))]
-    Rc<dyn Fn(FormContext) -> Pin<Box<dyn Future<Output = Result<(), Error>>>>>,
+    Rc<dyn Fn(T) -> Pin<Box<dyn Future<Output = Result<(), Error>>>>>,
 );
 
-impl SubmitCallback {
+impl<T> SubmitCallback<T> {
     pub fn new<F, R>(callback: F) -> Self
     where
-        F: 'static + Fn(FormContext) -> R,
+        F: 'static + Fn(T) -> R,
         R: 'static + Future<Output = Result<(), Error>>,
     {
-        Self(Rc::new(move |state: FormContext| {
+        Self(Rc::new(move |state: T| {
             let future = callback(state);
             Box::pin(future)
         }))
     }
 
-    pub async fn apply(&self, form_ctx: FormContext) -> Result<(), Error> {
+    pub async fn apply(&self, form_ctx: T) -> Result<(), Error> {
         (self.0)(form_ctx).await
     }
 }
 
 /// Helper trait to create an optional [SubmitCallback] property.
-pub trait IntoSubmitCallback {
-    fn into_submit_callback(self) -> Option<SubmitCallback>;
+pub trait IntoSubmitCallback<T> {
+    fn into_submit_callback(self) -> Option<SubmitCallback<T>>;
 }
 
-impl IntoSubmitCallback for Option<SubmitCallback> {
-    fn into_submit_callback(self) -> Option<SubmitCallback> {
+impl<T> IntoSubmitCallback<T> for Option<SubmitCallback<T>> {
+    fn into_submit_callback(self) -> Option<SubmitCallback<T>> {
         self
     }
 }
 
-impl<F, R> IntoSubmitCallback for F
+impl<F, R, T> IntoSubmitCallback<T> for F
 where
-    F: 'static + Fn(FormContext) -> R,
+    F: 'static + Fn(T) -> R,
     R: 'static + Future<Output = Result<(), Error>>,
 {
-    fn into_submit_callback(self) -> Option<SubmitCallback> {
+    fn into_submit_callback(self) -> Option<SubmitCallback<T>> {
         Some(SubmitCallback::new(self))
     }
 }
