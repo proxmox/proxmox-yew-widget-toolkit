@@ -346,7 +346,10 @@ impl Into<VTag> for InputPanel {
             );
 
             if self.two_column {
-                column_template = format!("{} {}", column_template, column_template);
+                column_template = format!(
+                    "{} calc(var(--pwt-spacer-4) * 2) {}",
+                    column_template, column_template
+                );
             }
 
             self.set_style("grid-template-columns", column_template.to_string());
