@@ -10,6 +10,7 @@ pub enum CssLength {
     Px(f64),
     Em(f64),
     Fraction(f32),
+    Custom(&'static str),
     None,
 }
 
@@ -25,6 +26,7 @@ impl Display for CssLength {
             CssLength::Px(v) => write!(f, "{v}px"),
             CssLength::Em(v) => write!(f, "{v}em"),
             CssLength::Fraction(v) => write!(f, "{}%", v * 100.0),
+            CssLength::Custom(v) => write!(f, "{v}"),
             CssLength::None => Ok(()),
         }
     }
@@ -51,6 +53,12 @@ impl From<usize> for CssLength {
 impl From<i32> for CssLength {
     fn from(v: i32) -> CssLength {
         CssLength::Px(v as f64)
+    }
+}
+
+impl From<&'static str> for CssLength {
+    fn from(v: &'static str) -> Self {
+        CssLength::Custom(v)
     }
 }
 
