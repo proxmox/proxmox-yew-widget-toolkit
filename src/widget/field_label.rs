@@ -34,7 +34,6 @@ impl Component for PwtFieldLabel {
         Container::from_tag("label")
             .with_std_props(&props.std_props)
             .listeners(&props.listeners)
-            .key(format!("label_{}", props.label))
             .with_child(props.label.clone())
             .into()
     }

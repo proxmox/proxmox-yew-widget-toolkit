@@ -208,7 +208,10 @@ impl InputPanel {
         };
 
         let label_id = crate::widget::get_unique_element_id();
-        let label = label.into().id(label_id.clone());
+        let mut label: FieldLabel = label.into().id(label_id.clone());
+        if label.std_props.key.is_none() {
+            label.set_key(format!("label_{}", label.label));
+        }
         let class = classes!(
             format!("pwt-grid-column-{}", label_column),
             "pwt-align-self-center",
