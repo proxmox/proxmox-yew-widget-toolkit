@@ -1050,15 +1050,8 @@ impl<S: DataStore> PwtDataTable<S> {
             height,
         };
     }
-}
 
-impl<S: DataStore + 'static> Component for PwtDataTable<S> {
-    type Message = Msg<S::Record>;
-    type Properties = DataTable<S>;
-
-    fn create(ctx: &Context<Self>) -> Self {
-        let props = ctx.props();
-
+    fn init_headers(&mut self, props: &DataTable<S>) {
         let headers = create_indexed_header_list(&props.headers);
 
         // fixme: remove
@@ -1070,6 +1063,18 @@ impl<S: DataStore + 'static> Component for PwtDataTable<S> {
         for column in columns.iter() {
             column_hidden.push(column.hidden);
         }
+        self.headers = Rc::new(headers);
+        self.columns = Rc::new(columns);
+        self.column_hidden = Rc::new(column_hidden);
+    }
+}
+
+impl<S: DataStore + 'static> Component for PwtDataTable<S> {
+    type Message = Msg<S::Record>;
+    type Properties = DataTable<S>;
+
+    fn create(ctx: &Context<Self>) -> Self {
+        let props = ctx.props();
 
         let cell_config = if props.cell_configuration.class.is_empty() {
             CellConfiguration::new().class("pwt-datatable-cell")
@@ -1091,7 +1096,7 @@ impl<S: DataStore + 'static> Component for PwtDataTable<S> {
         let mut me = Self {
             _phantom_store: PhantomData::<S>,
             _store_observer,
-            headers: Rc::new(headers),
+            headers: Rc::new(Vec::new()),
             unique_id: AttrValue::from(get_unique_element_id()),
             has_focus: false,
             take_focus: false,
@@ -1101,9 +1106,9 @@ impl<S: DataStore + 'static> Component for PwtDataTable<S> {
             _selection_observer,
 
             active_column: 0,
-            columns: Rc::new(columns),
+            columns: Rc::new(Vec::new()),
             column_widths: Vec::new(),
-            column_hidden: Rc::new(column_hidden),
+            column_hidden: Rc::new(Vec::new()),
             scroll_info: VirtualScrollInfo::default(),
             cell_config: Rc::new(cell_config),
             scroll_top: 0,
@@ -1128,6 +1133,7 @@ impl<S: DataStore + 'static> Component for PwtDataTable<S> {
 
             focus_table: false,
         };
+        me.init_headers(props);
 
         me.update_scroll_info(props);
         // fixme: remove umknown keys from  selection
@@ -1755,6 +1761,10 @@ impl<S: DataStore + 'static> Component for PwtDataTable<S> {
         if props.store != old_props.store {
             // store changed
             self.update_scroll_info(props);
+        }
+
+        if props.headers != old_props.headers {
+            self.init_headers(props);
         }
 
         true
