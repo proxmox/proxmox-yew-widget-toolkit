@@ -1054,7 +1054,7 @@ impl<S: DataStore> PwtDataTable<S> {
     fn init_headers(&mut self, props: &DataTable<S>) {
         let headers = create_indexed_header_list(&props.headers);
 
-        // fixme: remove
+        // fixme: try to put column info into indexed headers so we have only one place for that
         let mut columns = Vec::new();
         for header in props.headers.iter() {
             header.extract_column_list(&mut columns);
