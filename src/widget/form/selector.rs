@@ -162,10 +162,12 @@ impl<S: DataStore + 'static> SelectorField<S> {
         let props = ctx.props();
         let link = ctx.link().clone();
         if let Some(loader) = props.loader.clone() {
-            wasm_bindgen_futures::spawn_local(async move {
-                let res = loader.apply().await;
-                link.send_message(Msg::LoadResult(res));
-            });
+            if !props.is_disabled() {
+                wasm_bindgen_futures::spawn_local(async move {
+                    let res = loader.apply().await;
+                    link.send_message(Msg::LoadResult(res));
+                });
+            }
         } else {
             // just trigger a data change to set the default value.
             link.send_message(Msg::DataChange);
@@ -336,6 +338,10 @@ impl<S: DataStore + 'static> ManagedField for SelectorField<S> {
         }
 
         if props.loader != old_props.loader {
+            reload = true;
+        }
+
+        if old_props.is_disabled() && !props.is_disabled() {
             reload = true;
         }
 
