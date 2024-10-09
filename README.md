@@ -1,5 +1,4 @@
-Motivation
-==========
+# Motivation
 
 The motivation for writing this toolkit was:
 
@@ -13,16 +12,22 @@ necessary.
 
 The [Whitepaper](Whitepaper.md) contains more details on this.
 
-Usage
-=====
+# Usage
 
 We provide a separate repository with usage examples:
 
 https://git.proxmox.com/rust/proxmox-yew-wiget-toolkit-examples.git
 
 
-I18N
-====
+# Contributions
+
+All contributions to this project must accept the Developer Certificate of Origin (DCO) https://developercertificate.org/
+
+See our Developer Documentations for how to communicate with other developers and for how
+to sent patches https://pve.proxmox.com/wiki/Developer_Documentation
+
+
+# I18N
 
 All translatable strings are marked using the "tr!" macro.
 
@@ -32,8 +37,7 @@ Extract gettext messages with the "xtr" binary, which is part of the
 See the demo in the examples crate on how to use this.
 
 
-Notes
-=====
+# Notes
 
 We try to use the builder pattern instead of the html macro.
 
@@ -45,18 +49,16 @@ Conventions:
 - Component Properties implements Into&lt;Html&gt;.
 
 
-Focus traversal
----------------
+## Focus traversal
 
 Focus handling should be like:
 
 https://developer.mozilla.org/en-US/docs/Web/Accessibility/Keyboard-navigable_JavaScript_widgets
 
 
-Dialog
-------
+## Dialog
 
-We use the new html <dialog> tag (mainly to simplify focus handling).
+We use the new html &lt;dialog&gt; tag (mainly to simplify focus handling).
 
 This should work in major browsers now (2022). Anyways, a polyfill is also available:
 
@@ -65,8 +67,7 @@ https://github.com/GoogleChrome/dialog-polyfill
 You can enable it manually in older versions of firefox in "about:config" (dom.dialog_element.enabled)
 
 
-Debugging
----------
+## Debugging
 
 Simplest way to debug is using 'printf' debugging using log::{info,warning,error} in the code itself.
 
