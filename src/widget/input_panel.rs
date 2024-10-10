@@ -10,7 +10,7 @@ use crate::prelude::*;
 use crate::props::WidgetStyleBuilder;
 use crate::widget::{Container, FieldLabel};
 
-enum Position {
+pub enum FieldPosition {
     Left,
     Right,
     Large,
@@ -82,7 +82,7 @@ impl InputPanel {
         );
 
         self.add_custom_child_impl(
-            Position::Large,
+            FieldPosition::Large,
             advanced,
             Container::from_tag("hr")
                 .key(key)
@@ -99,7 +99,7 @@ impl InputPanel {
 
     /// Adds custom child in the first column
     pub fn add_custom_child(&mut self, child: impl Into<Html>) {
-        self.add_custom_child_impl(Position::Left, false, child);
+        self.add_custom_child_impl(FieldPosition::Left, false, child);
     }
 
     /// Builder style method to add a custom child in the second column
@@ -110,7 +110,7 @@ impl InputPanel {
 
     /// Adds custom child in the second column
     pub fn add_right_custom_child(&mut self, child: impl Into<Html>) {
-        self.add_custom_child_impl(Position::Right, false, child);
+        self.add_custom_child_impl(FieldPosition::Right, false, child);
     }
 
     /// Builder style method to add a large custom child
@@ -121,21 +121,26 @@ impl InputPanel {
 
     /// Adds large custom child
     pub fn add_large_custom_child(&mut self, child: impl Into<Html>) {
-        self.add_custom_child_impl(Position::Large, false, child);
+        self.add_custom_child_impl(FieldPosition::Large, false, child);
     }
 
-    fn add_custom_child_impl(&mut self, column: Position, advanced: bool, child: impl Into<Html>) {
+    fn add_custom_child_impl(
+        &mut self,
+        column: FieldPosition,
+        advanced: bool,
+        child: impl Into<Html>,
+    ) {
         let (row, start, span) = match column {
-            Position::Left => {
+            FieldPosition::Left => {
                 self.left_count += 1;
                 (self.left_count, 1, 3)
             }
-            Position::Right => {
+            FieldPosition::Right => {
                 self.two_column = true;
                 self.right_count += 1;
                 (self.right_count, 3, -1)
             }
-            Position::Large => {
+            FieldPosition::Large => {
                 self.two_column = true;
 
                 let max = self.left_count.max(self.right_count);
@@ -173,38 +178,46 @@ impl InputPanel {
 
     fn add_field_impl(
         &mut self,
-        column: Position,
+        column: FieldPosition,
         advanced: bool,
+        hidden: bool,
         label: impl Into<FieldLabel>,
         field: impl FieldBuilder,
     ) {
-        let (label_column, row, field_class) = match column {
-            Position::Left => {
-                self.left_count += 1;
-                (1, self.left_count, "pwt-grid-column-2")
-            }
-            Position::Right => {
-                self.two_column = true;
-                self.right_count += 1;
-                (3, self.right_count, "pwt-grid-column-4")
-            }
-            Position::Large => {
-                self.two_column = true;
+        let mut visible = if advanced { self.show_advanced } else { true };
+        if hidden {
+            visible = false;
+        }
 
-                let max = self.left_count.max(self.right_count);
-                self.left_count = max + 1;
-                self.right_count = max + 1;
+        let (label_column, row, field_class) = if visible {
+            match column {
+                FieldPosition::Left => {
+                    self.left_count += 1;
+                    (1, self.left_count, "pwt-grid-column-2")
+                }
+                FieldPosition::Right => {
+                    self.two_column = true;
+                    self.right_count += 1;
+                    (3, self.right_count, "pwt-grid-column-4")
+                }
+                FieldPosition::Large => {
+                    self.two_column = true;
 
-                (1, self.left_count, "pwt-fill-grid-row")
+                    let max = self.left_count.max(self.right_count);
+                    self.left_count = max + 1;
+                    self.right_count = max + 1;
+
+                    (1, self.left_count, "pwt-fill-grid-row")
+                }
             }
+        } else {
+            (1, 10000, "pwt-grid-column-2")
         };
-
-        let visible = if advanced { self.show_advanced } else { true };
 
         let style = if visible {
             format!("grid-row: {};", row)
         } else {
-            format!("grid-row: {}; display: none;", row)
+            format!("display: none;")
         };
 
         let label_id = crate::widget::get_unique_element_id();
@@ -241,7 +254,20 @@ impl InputPanel {
 
     /// Builder style method to add a field with label at the left column.
     pub fn with_field(mut self, label: impl Into<FieldLabel>, field: impl FieldBuilder) -> Self {
-        self.add_field(false, label, field);
+        self.add_field(label, field);
+        self
+    }
+
+    /// Builder style method to add a field with label
+    pub fn with_field_and_options(
+        mut self,
+        position: FieldPosition,
+        advanced: bool,
+        hidden: bool,
+        label: impl Into<FieldLabel>,
+        field: impl FieldBuilder,
+    ) -> Self {
+        self.add_field_with_options(position, advanced, hidden, label, field);
         self
     }
 
@@ -250,18 +276,25 @@ impl InputPanel {
         label: impl Into<FieldLabel>,
         field: impl FieldBuilder,
     ) -> Self {
-        self.add_field(true, label, field);
+        self.add_field_with_options(FieldPosition::Left, true, false, label, field);
         self
     }
 
     /// Method to add a field with label at the left column.
-    pub fn add_field(
+    pub fn add_field(&mut self, label: impl Into<FieldLabel>, field: impl FieldBuilder) {
+        self.add_field_impl(FieldPosition::Left, false, false, label, field)
+    }
+
+    /// Method to add a field with label
+    pub fn add_field_with_options(
         &mut self,
+        position: FieldPosition,
         advanced: bool,
+        hidden: bool,
         label: impl Into<FieldLabel>,
         field: impl FieldBuilder,
     ) {
-        self.add_field_impl(Position::Left, advanced, label, field)
+        self.add_field_impl(position, advanced, hidden, label, field)
     }
 
     /// Builder style method to add a field with label at the right column.
@@ -270,7 +303,7 @@ impl InputPanel {
         label: impl Into<FieldLabel>,
         field: impl FieldBuilder,
     ) -> Self {
-        self.add_right_field(false, label, field);
+        self.add_right_field(label, field);
         self
     }
 
@@ -280,18 +313,13 @@ impl InputPanel {
         label: impl Into<FieldLabel>,
         field: impl FieldBuilder,
     ) -> Self {
-        self.add_right_field(true, label, field);
+        self.add_field_with_options(FieldPosition::Right, true, false, label, field);
         self
     }
 
     /// Method to add a field with label at the right column.
-    pub fn add_right_field(
-        &mut self,
-        advanced: bool,
-        label: impl Into<FieldLabel>,
-        field: impl FieldBuilder,
-    ) {
-        self.add_field_impl(Position::Right, advanced, label, field)
+    pub fn add_right_field(&mut self, label: impl Into<FieldLabel>, field: impl FieldBuilder) {
+        self.add_field_impl(FieldPosition::Right, false, false, label, field)
     }
 
     /// Builder style method to add a large field spanning both columns.
@@ -300,7 +328,7 @@ impl InputPanel {
         label: impl Into<FieldLabel>,
         field: impl FieldBuilder,
     ) -> Self {
-        self.add_large_field(false, label, field);
+        self.add_large_field(false, false, label, field);
         self
     }
 
@@ -310,7 +338,7 @@ impl InputPanel {
         label: impl Into<FieldLabel>,
         field: impl FieldBuilder,
     ) -> Self {
-        self.add_large_field(true, label, field);
+        self.add_large_field(true, false, label, field);
         self
     }
 
@@ -318,10 +346,11 @@ impl InputPanel {
     pub fn add_large_field(
         &mut self,
         advanced: bool,
+        hidden: bool,
         label: impl Into<FieldLabel>,
         field: impl FieldBuilder,
     ) {
-        self.add_field_impl(Position::Large, advanced, label, field)
+        self.add_field_impl(FieldPosition::Large, advanced, hidden, label, field)
     }
 }
 

@@ -54,7 +54,7 @@ mod input;
 pub use input::Input;
 
 mod input_panel;
-pub use input_panel::InputPanel;
+pub use input_panel::{FieldPosition, InputPanel};
 
 mod language_selector;
 pub use language_selector::{LanguageSelector, ProxmoxLanguageSelector};
