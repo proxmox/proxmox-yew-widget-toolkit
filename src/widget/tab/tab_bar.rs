@@ -458,7 +458,6 @@ impl Component for PwtTabBar {
                 let tabindex = if is_active { "0" } else { "-1" };
                 let aria_disabled = if disabled { "true" } else { "false" };
                 let style = format!("grid-column: {};", i + 1);
-                    format!("grid-column: {};", i + 1);
 
                 html! {
                     <a ref={active_ref} aria-disabled={aria_disabled} {style} {onclick} {onkeyup} class={nav_class} {tabindex}>
