@@ -155,6 +155,27 @@ pub trait WidgetStyleBuilder: AsCssStylesMut + Sized {
         self
     }
 
+    /// Method to set an opacity value.
+    ///
+    /// This is equivalent to `.set_style("opacity", format!("{opacity}%"))`
+    ///
+    /// Note: The given value will be clamped between 0 and 100.
+    fn set_opacity(&mut self, opacity: u8) {
+        let opacity = opacity.clamp(0, 100);
+        self.as_css_styles_mut()
+            .set_style("opacity", format!("{opacity}%"));
+    }
+
+    /// Builder style method to set an opacity value.
+    ///
+    /// This is equivalent to `.style("opacity", format!("{opacity}%"))`
+    ///
+    /// Note: The given value will be clamped between 0 and 100.
+    fn opacity(mut self, opacity: u8) -> Self {
+        self.set_opacity(opacity);
+        self
+    }
+
     generate_style_trait_fn!(set_width, width, "width");
     generate_style_trait_fn!(set_min_width, min_width, "min-width");
     generate_style_trait_fn!(set_max_width, max_width, "max-width");
