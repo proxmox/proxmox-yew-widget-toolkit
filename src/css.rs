@@ -711,3 +711,37 @@ impl From<FontColor> for Classes {
         }
     }
 }
+
+/// Wrapper type to specify CSS opacity class.
+///
+/// Very useful in combination with icons.
+///
+/// ```
+/// # use pwt::prelude::*;
+/// # use pwt::widget::Container;
+/// # use pwt::widget::Fa;
+/// use pwt::css::*;
+/// Fa::new("check")
+///    .class(Opacity::Quarter)
+/// # ;
+/// ```
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub enum Opacity {
+    Zero,
+    Quarter,
+    Half,
+    ThreeQuarters,
+    Full,
+}
+
+impl From<Opacity> for Classes {
+    fn from(value: Opacity) -> Self {
+        match value {
+            Opacity::Zero => "pwt-opacity-0".into(),
+            Opacity::Quarter => "pwt-opacity-25".into(),
+            Opacity::Half => "pwt-opacity-50".into(),
+            Opacity::ThreeQuarters => "pwt-opacity-75".into(),
+            Opacity::Full => "pwt-opacity-100".into(),
+        }
+    }
+}
