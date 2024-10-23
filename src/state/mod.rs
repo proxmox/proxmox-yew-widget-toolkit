@@ -4,6 +4,9 @@ use std::rc::Rc;
 
 use serde::{de::DeserializeOwned, Serialize};
 
+mod async_abort_guard;
+pub use async_abort_guard::AsyncAbortGuard;
+
 mod data_store;
 pub use data_store::{DataNode, DataNodeDerefGuard, DataStore};
 
