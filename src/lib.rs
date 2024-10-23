@@ -209,6 +209,10 @@ pub mod dom;
 pub mod props;
 pub mod state;
 pub mod touch;
+
+mod web_sys_abort_guard;
+pub use web_sys_abort_guard::WebSysAbortGuard;
+
 pub mod widget;
 
 #[doc(hidden)]

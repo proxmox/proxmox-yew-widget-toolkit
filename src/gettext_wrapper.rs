@@ -115,7 +115,7 @@ fn convert_js_error(js_err: ::wasm_bindgen::JsValue) -> String {
 }
 
 async fn fetch_catalog(url: &str) -> Result<(), String> {
-    let abort = crate::props::WebSysAbortGuard::new()
+    let abort = crate::WebSysAbortGuard::new()
         .map_err(|err| format!("unable to create abort guard: {err}"))?;
 
     let mut init = web_sys::RequestInit::new();
