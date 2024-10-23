@@ -12,7 +12,7 @@ use super::{
 };
 use crate::prelude::*;
 use crate::props::{IntoLoadCallback, IntoOptionalRenderFn, LoadCallback, RenderFn};
-use crate::state::{DataStore, Selection};
+use crate::state::{AsyncAbortGuard, DataStore, Selection};
 use crate::widget::{error_message, Container, Dropdown, DropdownController, Trigger};
 
 use pwt_macros::{builder, widget};
@@ -155,18 +155,20 @@ pub struct SelectorField<S: DataStore> {
     selection: Selection,
     load_error: Option<String>,
     _store_observer: S::Observer,
+    abort_load_guard: Option<AsyncAbortGuard>,
 }
 
 impl<S: DataStore + 'static> SelectorField<S> {
-    fn load(&self, ctx: &ManagedFieldContext<Self>) {
+    fn load(&mut self, ctx: &ManagedFieldContext<Self>) {
         let props = ctx.props();
         let link = ctx.link().clone();
+        self.abort_load_guard = None; // abort any previous load
         if let Some(loader) = props.loader.clone() {
             if !props.is_disabled() {
-                wasm_bindgen_futures::spawn_local(async move {
+                self.abort_load_guard = Some(AsyncAbortGuard::spawn(async move {
                     let res = loader.apply().await;
                     link.send_message(Msg::LoadResult(res));
-                });
+                }));
             }
         } else {
             // just trigger a data change to set the default value.
@@ -260,10 +262,11 @@ impl<S: DataStore + 'static> ManagedField for SelectorField<S> {
             .store
             .add_listener(ctx.link().callback(|_| Msg::DataChange));
 
-        let me = Self {
+        let mut me = Self {
             selection,
             load_error: None,
             _store_observer,
+            abort_load_guard: None,
         };
 
         me.load(ctx);
