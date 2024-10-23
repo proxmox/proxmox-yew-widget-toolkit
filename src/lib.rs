@@ -204,6 +204,9 @@
 mod async_abort_guard;
 pub use async_abort_guard::AsyncAbortGuard;
 
+mod async_pool;
+pub use async_pool::AsyncPool;
+
 pub mod css;
 pub mod dom;
 pub mod props;
