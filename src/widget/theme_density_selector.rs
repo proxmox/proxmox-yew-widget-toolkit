@@ -62,9 +62,7 @@ impl Component for PwtThemeDensitySelector {
     fn update(&mut self, _ctx: &Context<Self>, msg: Self::Message) -> bool {
         match msg {
             Msg::SetThemeDensity(density) => {
-                if let Ok(density) = ThemeDensity::try_from(density) {
-                    let _ = Theme::store_theme_density(density);
-                }
+                let _ = Theme::store_theme_density(density);
                 true
             }
         }
