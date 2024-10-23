@@ -1,7 +1,9 @@
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
+use std::sync::atomic::{AtomicUsize, Ordering};
 
+use derivative::Derivative;
 use futures::future::{abortable, AbortHandle};
 use std::future::Future;
 
@@ -10,8 +12,15 @@ use std::future::Future;
 /// This can be used by components to spawn async functions.
 /// If you drop the pool, all functions are aborted, i.e. any
 /// spawned http request will be aborted.
+#[derive(Derivative)]
+#[derivative(Clone(bound = ""), PartialEq(bound = ""))]
 pub struct AsyncPool {
-    id_counter: usize,
+    #[derivative(PartialEq(compare_with = "Rc::ptr_eq"))]
+    inner: Rc<AsyncPoolInner>,
+}
+
+struct AsyncPoolInner {
+    id_counter: AtomicUsize,
     abort_handles: Rc<RefCell<HashMap<usize, AbortHandle>>>,
 }
 
@@ -19,20 +28,23 @@ impl AsyncPool {
     /// Create a new instance.
     pub fn new() -> Self {
         Self {
-            id_counter: 0,
-            abort_handles: Rc::new(RefCell::new(HashMap::new())),
+            inner: Rc::new(AsyncPoolInner {
+                id_counter: AtomicUsize::new(0),
+                abort_handles: Rc::new(RefCell::new(HashMap::new())),
+            }),
         }
     }
 
     /// Runs a Rust Future on the current thread.
-    pub fn spawn<F>(&mut self, future: F)
+    pub fn spawn<F>(&self, future: F)
     where
         F: Future<Output = ()> + 'static,
     {
         let (future, abort_handle) = abortable(future);
-        let abort_handles = Rc::clone(&self.abort_handles);
-        self.id_counter += 1;
-        let abort_id = self.id_counter;
+        let abort_handles = Rc::clone(&self.inner.abort_handles);
+        self.inner.id_counter.fetch_add(1, Ordering::Relaxed);
+        let abort_id = self.inner.id_counter.load(Ordering::Relaxed);
+
         abort_handles.borrow_mut().insert(abort_id, abort_handle);
 
         wasm_bindgen_futures::spawn_local(async move {
@@ -49,9 +61,11 @@ impl AsyncPool {
     }
 }
 
-impl Drop for AsyncPool {
+// Note: We implement Drop on the Inner type, so this is
+// called when we drop the last clone of the AsyncPool.
+impl Drop for AsyncPoolInner {
     fn drop(&mut self) {
-        for (_, handle) in &*self.abort_handles.borrow() {
+        for (_, handle) in self.abort_handles.borrow().iter() {
             handle.abort();
         }
     }
