@@ -11,8 +11,9 @@ use crate::prelude::*;
 use crate::props::{IntoLoadCallback, LoadCallback};
 use crate::state::{SharedState, SharedStateObserver, SharedStateReadGuard, SharedStateWriteGuard};
 use crate::widget::{error_message, Button, Container, Fa};
+use crate::AsyncAbortGuard;
 
-use super::{AsyncAbortGuard, StorageLocation};
+use super::StorageLocation;
 
 /// Shared HTTP load state
 ///

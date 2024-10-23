@@ -201,6 +201,9 @@
 //! - [widget::DesktopApp]: Application scaffold for desktop applications.
 //! - [touch::MaterialApp]: Helper to implement applications that uses material design guidelines.
 
+mod async_abort_guard;
+pub use async_abort_guard::AsyncAbortGuard;
+
 pub mod css;
 pub mod dom;
 pub mod props;
