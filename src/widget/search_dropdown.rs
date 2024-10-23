@@ -9,13 +9,13 @@ use gloo_timers::callback::Timeout;
 use yew::html::{IntoEventCallback, Scope};
 use yew::virtual_dom::Key;
 
-use crate::prelude::*;
 use crate::props::{CssLength, FieldBuilder, RenderFn, WidgetBuilder};
 use crate::state::DataStore;
 use crate::widget::data_table::{
     DataTable, DataTableColumn, DataTableHeader, DataTableKeyboardEvent, DataTableMouseEvent,
 };
 use crate::widget::{Dropdown, DropdownController};
+use crate::{prelude::*, AsyncAbortGuard};
 
 use pwt_macros::{builder, widget};
 
@@ -210,6 +210,7 @@ pub struct PwtSearchDropdown<S: DataStore + 'static> {
     filter: String,
     load_error: Option<String>,
     load_timeout: Option<Timeout>,
+    load_abort_guard: Option<AsyncAbortGuard>,
     store: Option<S>,
 }
 
@@ -224,6 +225,7 @@ impl<S: DataStore + 'static> Component for PwtSearchDropdown<S> {
             load_error: None,
             load_timeout: None,
             store: None,
+            load_abort_guard: None,
         }
     }
 
@@ -242,10 +244,11 @@ impl<S: DataStore + 'static> Component for PwtSearchDropdown<S> {
                 let loader = ctx.props().loader.clone();
                 let filter = self.filter.clone();
                 let link = ctx.link().clone();
-                wasm_bindgen_futures::spawn_local(async move {
+
+                self.load_abort_guard = Some(AsyncAbortGuard::spawn(async move {
                     let res = loader.apply(filter).await;
                     link.send_message(Msg::LoadResult(res));
-                });
+                }));
                 false
             }
             Msg::LoadResult(result) => {
