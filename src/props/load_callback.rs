@@ -3,7 +3,7 @@ use std::future::Future;
 use std::pin::Pin;
 use std::rc::Rc;
 
-use anyhow::{bail, format_err, Error};
+use anyhow::{bail, format_err, Context, Error};
 use serde::de::DeserializeOwned;
 use serde_json::Value;
 
@@ -176,9 +176,36 @@ pub fn set_http_get_method<F: 'static + Future<Output = Result<Value, Error>>>(
     HTTP_GET.with(|cell| *cell.borrow_mut() = Rc::new(move |url| Box::pin(cb(url))));
 }
 
+/// Abort Guard for web fetch requests
+pub struct WebSysAbortGuard {
+    controller: web_sys::AbortController,
+}
+
+impl WebSysAbortGuard {
+    pub fn new() -> Result<Self, Error> {
+        Ok(Self {
+            controller: web_sys::AbortController::new()
+                .map_err(crate::convert_js_error)
+                .context("failed to create AbortController")?,
+        })
+    }
+
+    pub fn signal(&self) -> web_sys::AbortSignal {
+        self.controller.signal()
+    }
+}
+
+impl Drop for WebSysAbortGuard {
+    fn drop(&mut self) {
+        self.controller.abort();
+    }
+}
+
 async fn http_get(url: String) -> Result<Value, Error> {
+    let abort = WebSysAbortGuard::new()?;
     let mut init = web_sys::RequestInit::new();
     init.method("GET");
+    init.signal(Some(&abort.signal()));
 
     let js_headers = web_sys::Headers::new().map_err(|err| format_err!("{:?}", err))?;
 
