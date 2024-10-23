@@ -12,7 +12,7 @@ use crate::props::{IntoLoadCallback, LoadCallback};
 use crate::state::{SharedState, SharedStateObserver, SharedStateReadGuard, SharedStateWriteGuard};
 use crate::widget::{error_message, Button, Container, Fa};
 
-use super::StorageLocation;
+use super::{AsyncAbortGuard, StorageLocation};
 
 /// Shared HTTP load state
 ///
@@ -21,6 +21,7 @@ pub struct LoaderState<T> {
     loading: u64,
     state_id: Option<AttrValue>,
     storage_location: StorageLocation,
+    async_abort_guard: Option<AsyncAbortGuard>,
     pub loader: Option<LoadCallback<T>>,
     pub data: Option<Result<Rc<T>, Error>>,
 }
@@ -75,6 +76,7 @@ impl<T: 'static + DeserializeOwned + Serialize> Loader<T> {
             data: None,
             loader: None,
             storage_location: StorageLocation::Session,
+            async_abort_guard: None,
         };
         Self(SharedState::new(state))
     }
@@ -176,13 +178,15 @@ impl<T: 'static + DeserializeOwned + Serialize> Loader<T> {
 
         self.write().loading += 1;
         let me = self.clone();
-        wasm_bindgen_futures::spawn_local(async move {
+
+        self.write().async_abort_guard = Some(AsyncAbortGuard::spawn(async move {
             let res = loader.apply().await;
             let mut me = me.write();
+            me.async_abort_guard = None;
             me.loading -= 1;
             me.data = Some(res.map(|data| Rc::new(data)));
             me.store_to_cache();
-        });
+        }));
     }
 
     pub fn reload_button(&self) -> Button {
