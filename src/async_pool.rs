@@ -42,8 +42,7 @@ impl AsyncPool {
     {
         let (future, abort_handle) = abortable(future);
         let abort_handles = Rc::clone(&self.inner.abort_handles);
-        self.inner.id_counter.fetch_add(1, Ordering::Relaxed);
-        let abort_id = self.inner.id_counter.load(Ordering::Relaxed);
+        let abort_id = self.inner.id_counter.fetch_add(1, Ordering::Relaxed);
 
         abort_handles.borrow_mut().insert(abort_id, abort_handle);
 
