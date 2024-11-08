@@ -59,31 +59,16 @@ impl AsyncPool {
         });
     }
 
-    /// Uses [`yew::Scope::send_future_batch`] to run a cancelable future.
-    pub fn send_future<C, F>(&self, ctx: &yew::Context<C>, future: F)
+    /// This method asynchronously awaits a Future that returns a message and sends it
+    /// using `link.send_message`.
+    pub fn send_future<COMP, F>(&self, link: yew::html::Scope<COMP>, future: F)
     where
-        C: yew::Component,
-        F: Future<Output = C::Message> + 'static,
+        COMP: yew::Component,
+        F: Future<Output = COMP::Message> + 'static,
     {
-        let (future, abort_handle) = abortable(future);
-        let abort_handles = Rc::clone(&self.inner.abort_handles);
-        self.inner.id_counter.fetch_add(1, Ordering::Relaxed);
-        let abort_id = self.inner.id_counter.load(Ordering::Relaxed);
-
-        abort_handles.borrow_mut().insert(abort_id, abort_handle);
-
-        ctx.link().send_future_batch(async move {
-            match future.await {
-                Ok(msg) => {
-                    abort_handles.borrow_mut().remove(&abort_id);
-                    Some(msg)
-                }
-                Err(futures::future::Aborted) => {
-                    // this is only tiggered from drop, so there is no
-                    // need to do anything
-                    None
-                }
-            }
+        self.spawn(async move {
+            let msg = future.await;
+            link.send_message(msg);
         });
     }
 }
