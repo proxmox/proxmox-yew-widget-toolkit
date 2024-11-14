@@ -368,6 +368,12 @@ fn get_containing_block(element: &HtmlElement) -> Option<HtmlElement> {
             None => return None,
         }
     }
+
+    // popovers don't have a containing block
+    if element.has_attribute("popover") {
+        return None;
+    }
+
     let mut current = element.parent_node();
 
     while let Some(node) = current {

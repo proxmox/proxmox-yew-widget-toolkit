@@ -254,6 +254,10 @@ extern "C" {
     pub fn show_modal_dialog(dialog: web_sys::Node);
     pub fn show_dialog(dialog: web_sys::Node);
     pub fn close_dialog(dialog: web_sys::Node);
+    pub fn show_popover(popover: web_sys::Node);
+    pub fn hide_popover(popover: web_sys::Node);
+    pub fn toggle_popover(popover: web_sys::Node);
+    pub fn toggle_event_is_closed(event: web_sys::Event) -> bool;
 }
 
 // Create wrapper which panics if called from target_arch!=wasm32
@@ -269,6 +273,15 @@ mod panic_wrapper {
         unreachable!()
     }
     pub fn close_dialog(_dialog: web_sys::Node) {
+        unreachable!()
+    }
+    pub fn show_popover(popover: web_sys::Node) {
+        unreachable!()
+    }
+    pub fn hide_popover(popover: web_sys::Node) {
+        unreachable!()
+    }
+    pub fn toggle_popover(popover: web_sys::Node) {
         unreachable!()
     }
 }

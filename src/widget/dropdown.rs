@@ -114,7 +114,6 @@ pub enum Msg {
     TogglePicker,
     HidePicker,
     ShowPicker,
-    DialogClosed,
     ChangeValue(String),
     Input(String),
     MouseDownInput,
@@ -126,7 +125,7 @@ pub struct PwtDropdown {
     show: bool,
     last_show: bool, // track changes
     value: String,
-    // fire on_change() event delayed, after the dialog is closed, so that
+    // fire on_change() event delayed, after the popover is closed, so that
     // other widget can grep the focus after a change (if the want)
     pending_change: bool,
     change_from_input: bool,
@@ -141,8 +140,7 @@ pub struct PwtDropdown {
 }
 
 impl PwtDropdown {
-    // focus the input elelent (after closing the dropdown dialog)
-    // just to be sure (Dialog should do this automatically)
+    // focus the input elelent (after closing the dropdown popover)
     fn restore_focus(&mut self, props: &Dropdown) {
         if let Some(el) = props.std_props.node_ref.cast::<web_sys::HtmlElement>() {
             let _ = el.focus();
@@ -195,19 +193,6 @@ impl Component for PwtDropdown {
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
         let props = ctx.props();
         match msg {
-            Msg::DialogClosed => {
-                self.show = false;
-                //log::info!("DialogClosed");
-                self.restore_focus(props);
-                if self.pending_change {
-                    self.pending_change = false;
-                    //log::info!("Pending Change {}", self.value);
-                    if let Some(on_change) = &ctx.props().on_change {
-                        on_change.emit(self.value.clone());
-                    }
-                }
-                true
-            }
             Msg::TogglePicker => {
                 if props.input_props.disabled {
                     return false;
@@ -224,14 +209,20 @@ impl Component for PwtDropdown {
                 )
             }
             Msg::HidePicker => {
-                // Note: close_dialog() is async, so we use the
-                // onclose handler (Msg::DialogClosed) to wait for
-                // the real close (else restore_focus() does not work)
-                if let Some(dialog_node) = self.picker_ref.get() {
-                    crate::close_dialog(dialog_node);
+                if let Some(popover_node) = self.picker_ref.get() {
+                    crate::hide_popover(popover_node);
+                }
+                self.show = false;
+                self.restore_focus(props);
+                if self.pending_change {
+                    self.pending_change = false;
+                    //log::info!("Pending Change {}", self.value);
+                    if let Some(on_change) = &ctx.props().on_change {
+                        on_change.emit(self.value.clone());
+                    }
                 }
                 //log::info!("HidePicker {}", self.show);
-                false
+                true
             }
             Msg::ShowPicker => {
                 if props.input_props.disabled {
@@ -318,7 +309,7 @@ impl Component for PwtDropdown {
                     "Escape" => {
                         if !show {
                             return;
-                        } // allow default (close dialog)
+                        } // allow default (close popover)
                         link.send_message(Msg::HidePicker);
                     }
                     "ArrowDown" => {
@@ -451,16 +442,18 @@ impl Component for PwtDropdown {
             .onfocusout(self.focus_tracker.get_focus_callback(false))
             .with_child(select)
             .with_child(
-                Container::from_tag("dialog")
+                Container::new()
+                    .attribute("popover", "")
+                    .attribute("tabindex", "-1")
+                    .style("overflow", "visible ! important")
                     .class("pwt-dialog")
                     .class("pwt-dropdown")
                     .attribute("id", self.picker_id.clone())
                     .attribute("data-show", data_show)
                     .node_ref(self.picker_ref.clone())
-                    .onclose(ctx.link().callback(|_| Msg::DialogClosed))
                     .onkeydown(ctx.link().batch_callback(|event: KeyboardEvent| {
                         if event.key() == "Escape" {
-                            // handle escape ourselves since it's a non modal dialog
+                            // handle escape ourselves since it's a non modal popover
                             event.prevent_default();
                             event.stop_propagation();
                             Some(Msg::HidePicker)
@@ -486,9 +479,9 @@ impl Component for PwtDropdown {
     }
 
     fn destroy(&mut self, _ctx: &Context<Self>) {
-        // always close the dialog
-        if let Some(dialog_node) = self.picker_ref.get() {
-            crate::close_dialog(dialog_node);
+        // always close the popover
+        if let Some(popover) = self.picker_ref.get() {
+            crate::hide_popover(popover);
         }
     }
 
@@ -523,9 +516,9 @@ impl Component for PwtDropdown {
 
         if self.show != self.last_show {
             self.last_show = self.show;
-            if let Some(dialog_node) = self.picker_ref.get() {
+            if let Some(popover_node) = self.picker_ref.get() {
                 if self.show {
-                    crate::show_dialog(dialog_node);
+                    crate::show_popover(popover_node);
                     if self.focus_on_field {
                         if let Some(el) = self.input_ref.cast::<web_sys::HtmlElement>() {
                             let _ = el.focus();
@@ -534,7 +527,7 @@ impl Component for PwtDropdown {
                         focus_selected_element(&self.picker_ref);
                     }
                 } else {
-                    crate::close_dialog(dialog_node);
+                    crate::hide_popover(popover_node);
                 }
             }
         }
