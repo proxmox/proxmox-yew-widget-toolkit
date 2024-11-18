@@ -388,6 +388,7 @@ impl Component for PwtDropdown {
                 .attribute("value", value)
                 .attribute("type", "text")
                 .attribute("role", "combobox")
+                .attribute("readonly", (!props.editable).then_some(""))
                 .attribute("aria-expanded", if self.show { "true" } else { "false" })
                 .attribute("aria-controls", self.picker_id.clone())
                 .attribute("aria-haspopup", props.popup_type.clone())
