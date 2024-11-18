@@ -541,11 +541,12 @@ impl Component for PwtDropdown {
 // Note: this scrolls the selected element into the view.
 pub fn focus_selected_element(node_ref: &NodeRef) {
     if let Some(el) = node_ref.cast::<web_sys::HtmlElement>() {
-        if element_is_focusable(&el) {
-            let _ = el.focus();
-        } else {
-            if let Ok(Some(selected_el)) = el.query_selector(".selected") {
-                if let Some(focusable_el) = get_first_focusable(selected_el) {
+        if let Ok(Some(selected_el)) = el.query_selector(".selected") {
+            let selected_el = selected_el.dyn_into::<web_sys::HtmlElement>().unwrap();
+            if element_is_focusable(&selected_el) {
+                let _ = el.focus();
+            } else {
+                if let Some(focusable_el) = get_first_focusable(selected_el.into()) {
                     let _ = focusable_el.focus();
                 }
             }
