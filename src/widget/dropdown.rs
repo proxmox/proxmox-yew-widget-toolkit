@@ -446,7 +446,7 @@ impl Component for PwtDropdown {
             .with_child(select)
             .with_child(
                 Container::new()
-                    .attribute("popover", "")
+                    .attribute("popover", "manual")
                     .attribute("tabindex", "-1")
                     .style("overflow", "visible ! important")
                     .class("pwt-dialog")
