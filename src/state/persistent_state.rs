@@ -1,9 +1,9 @@
 use serde::{de::DeserializeOwned, Serialize};
 use std::ops::Deref;
 
-use super::StorageLocation;
+use crate::props::StorageLocation;
 
-/// Helper to store data persitently using window local [Storage](web_sys::Storage)
+/// Helper to store data persistently using window local [Storage](web_sys::Storage)
 ///
 /// Usage:
 ///
@@ -35,7 +35,6 @@ use super::StorageLocation;
 /// ```
 pub struct PersistentState<T> {
     storage: StorageLocation,
-    state_id: String,
     data: T,
 }
 
@@ -48,41 +47,26 @@ impl<T> Deref for PersistentState<T> {
 }
 
 impl<T: 'static + Default + Serialize + DeserializeOwned> PersistentState<T> {
-    /// Create a new instance, using 'state_id' as storage key in the
-    /// local storage.
+    /// Create a new instance, using 'state_id' as storage location.
     ///
     /// See [Self::with_location] for details.
-    pub fn new(state_id: &str) -> Self {
-        Self::with_location(state_id, StorageLocation::Local)
-    }
-
-    /// Create a new instance, using 'state_id' as storage key from the given
-    /// [StorageLocation]
-    ///
-    /// This automatically loads data from the storage.
-    ///
-    /// # Note
-    ///
-    /// Any errors are logged and ignored. Returns the default value
-    /// in case of errors.
-    pub fn with_location(state_id: &str, storage: StorageLocation) -> Self {
+    pub fn new(storage: impl Into<StorageLocation>) -> Self {
         let mut me = Self {
-            state_id: state_id.into(),
             data: T::default(),
-            storage,
+            storage: storage.into(),
         };
         me.load();
         me
     }
 
     fn load(&mut self) {
-        if let Some(data) = super::load_state(&self.state_id, self.storage) {
+        if let Some(data) = super::load_state(&self.storage) {
             self.data = data;
         }
     }
 
     fn store(&self) {
-        super::store_state(&self.state_id, &self.data, self.storage)
+        super::store_state(&self.data, &self.storage)
     }
 
     /// Update data and write the new value back to the storage.

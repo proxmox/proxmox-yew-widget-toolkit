@@ -5,6 +5,7 @@ use yew::virtual_dom::{Key, VComp, VNode};
 
 use crate::dom::{element_direction_rtl, IntoHtmlElement};
 use crate::prelude::*;
+use crate::props::{IntoStorageLocation, StorageLocation};
 use crate::state::{NavigationContext, NavigationContextExt, PersistentState, Selection};
 use crate::web_sys_ext::{ResizeObserverBoxOptions, ResizeObserverOptions};
 use crate::widget::focus::roving_tabindex_next;
@@ -45,8 +46,7 @@ pub struct TabBar {
 
     /// Store current state (selected item).
     #[prop_or_default]
-    #[builder(IntoPropValue, into_prop_value)]
-    pub state_id: Option<AttrValue>,
+    pub state_id: Option<StorageLocation>,
 
     /// Selection object to store the currently selected tab key.
     ///
@@ -109,6 +109,17 @@ impl TabBar {
     /// Method to set the yew `key` property.
     pub fn set_key(&mut self, key: impl IntoOptionalKey) {
         self.key = key.into_optional_key();
+    }
+
+    /// Builder style method to set the persistent state ID.
+    pub fn state_id(mut self, state_id: impl IntoStorageLocation) -> Self {
+        self.set_state_id(state_id);
+        self
+    }
+
+    /// Method to set the persistent state ID.
+    pub fn set_state_id(&mut self, state_id: impl IntoStorageLocation) {
+        self.state_id = state_id.into_storage_location();
     }
 
     // Builder style method to set `default_active` property.
@@ -232,7 +243,7 @@ impl Component for PwtTabBar {
         let active_cache = props
             .state_id
             .as_ref()
-            .map(|state_id| PersistentState::<String>::new(state_id));
+            .map(|state_id| PersistentState::<String>::new(state_id.clone()));
 
         if let Some(active_cache) = &active_cache {
             let last_active: &str = &*active_cache;

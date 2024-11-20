@@ -123,6 +123,9 @@ pub use field_std_props::FieldStdProps;
 mod field_builder;
 pub use field_builder::FieldBuilder;
 
+mod storage_location;
+pub use storage_location::{IntoStorageLocation, StorageLocation};
+
 mod widget_std_props;
 pub use widget_std_props::WidgetStdProps;
 

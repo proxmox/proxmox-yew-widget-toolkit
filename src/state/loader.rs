@@ -4,24 +4,21 @@ use anyhow::Error;
 use derivative::Derivative;
 
 use serde::{de::DeserializeOwned, Serialize};
-use yew::html::{IntoEventCallback, IntoPropValue};
+use yew::html::IntoEventCallback;
 use yew::prelude::*;
 
 use crate::prelude::*;
-use crate::props::{IntoLoadCallback, LoadCallback};
+use crate::props::{IntoLoadCallback, IntoStorageLocation, LoadCallback, StorageLocation};
 use crate::state::{SharedState, SharedStateObserver, SharedStateReadGuard, SharedStateWriteGuard};
 use crate::widget::{error_message, Button, Container, Fa};
 use crate::AsyncAbortGuard;
-
-use super::StorageLocation;
 
 /// Shared HTTP load state
 ///
 /// This struct stores the state (loading) and the result of the load.
 pub struct LoaderState<T> {
     loading: u64,
-    state_id: Option<AttrValue>,
-    storage_location: StorageLocation,
+    storage_location: Option<StorageLocation>,
     async_abort_guard: Option<AsyncAbortGuard>,
     pub loader: Option<LoadCallback<T>>,
     pub data: Option<Result<Rc<T>, Error>>,
@@ -29,28 +26,28 @@ pub struct LoaderState<T> {
 
 impl<T: 'static + DeserializeOwned + Serialize> LoaderState<T> {
     fn load_from_cache(&mut self) {
-        let state_id = match &self.state_id {
-            Some(state_id) => state_id,
+        let storage_location = match &self.storage_location {
+            Some(storage_location) => storage_location,
             None => return,
         };
 
-        if let Some(data) = super::load_state(state_id, self.storage_location) {
+        if let Some(data) = super::load_state(storage_location) {
             self.data = Some(Ok(Rc::new(data)));
         }
     }
 
     fn store_to_cache(&mut self) {
-        let state_id = match &self.state_id {
-            Some(state_id) => state_id,
+        let storage_location = match &self.storage_location {
+            Some(storage_location) => storage_location,
             None => return,
         };
 
         match &self.data {
             Some(Ok(data)) => {
-                super::store_state(state_id, data, self.storage_location);
+                super::store_state(data, storage_location);
             }
             _ => {
-                super::delete_state(state_id, self.storage_location);
+                super::delete_state(storage_location);
             }
         }
     }
@@ -73,38 +70,25 @@ impl<T: 'static + DeserializeOwned + Serialize> Loader<T> {
     pub fn new() -> Self {
         let state = LoaderState {
             loading: 0,
-            state_id: None,
             data: None,
             loader: None,
-            storage_location: StorageLocation::Session,
+            storage_location: None,
             async_abort_guard: None,
         };
         Self(SharedState::new(state))
     }
 
     /// Builder style method to set the persistent state ID.
-    pub fn state_id(mut self, state_id: impl IntoPropValue<Option<AttrValue>>) -> Self {
+    pub fn state_id(mut self, state_id: impl IntoStorageLocation) -> Self {
         self.set_state_id(state_id);
         self
     }
 
     /// Method to set the persistent state ID.
-    pub fn set_state_id(&mut self, state_id: impl IntoPropValue<Option<AttrValue>>) {
+    pub fn set_state_id(&mut self, state_id: impl IntoStorageLocation) {
         let mut me = self.write();
-        me.state_id = state_id.into_prop_value();
+        me.storage_location = state_id.into_storage_location();
         me.load_from_cache();
-    }
-
-    /// Method to set the [StorageLocation]
-    pub fn set_storage_location(&mut self, storage_location: StorageLocation) {
-        let mut me = self.write();
-        me.storage_location = storage_location;
-    }
-
-    /// Builder style method to set the [StorageLocation]
-    pub fn storage(mut self, storage_location: StorageLocation) -> Self {
-        self.set_storage_location(storage_location);
-        self
     }
 
     pub fn on_change(mut self, cb: impl IntoEventCallback<Loader<T>>) -> Self {

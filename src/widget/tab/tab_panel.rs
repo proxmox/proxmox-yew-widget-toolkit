@@ -5,7 +5,7 @@ use yew::prelude::*;
 use yew::virtual_dom::{Key, VComp, VList, VNode};
 
 use crate::prelude::*;
-use crate::props::IntoOptionalInlineHtml;
+use crate::props::{IntoOptionalInlineHtml, IntoStorageLocation, StorageLocation};
 use crate::state::Selection;
 use crate::widget::{
     Column, MiniScroll, MiniScrollMode, SelectionView, SelectionViewRenderInfo, TabBar, TabBarItem,
@@ -77,8 +77,7 @@ pub struct TabPanel {
 
     /// Store current state (selected item).
     #[prop_or_default]
-    #[builder(IntoPropValue, into_prop_value)]
-    pub state_id: Option<AttrValue>,
+    pub state_id: Option<StorageLocation>,
 
     /// Use [MiniScroll] for [TabBar] to allow scrolling.
     #[prop_or_default]
@@ -103,6 +102,17 @@ impl TabPanel {
             .page_cache(true)
             .class("pwt-flex-fill pwt-overflow-auto");
         yew::props!(TabPanel { view })
+    }
+
+    /// Builder style method to set the persistent state ID.
+    pub fn state_id(mut self, state_id: impl IntoStorageLocation) -> Self {
+        self.set_state_id(state_id);
+        self
+    }
+
+    /// Method to set the persistent state ID.
+    pub fn set_state_id(&mut self, state_id: impl IntoStorageLocation) {
+        self.state_id = state_id.into_storage_location();
     }
 
     /// Builder style method to set the title text.
