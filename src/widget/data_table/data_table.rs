@@ -255,8 +255,8 @@ impl<S: DataStore> DataTable<S> {
     }
 
     /// Builder style method to set the yew `key` property.
-    pub fn key(mut self, key: impl Into<Key>) -> Self {
-        self.key = Some(key.into());
+    pub fn key(mut self, key: impl IntoOptionalKey) -> Self {
+        self.key = key.into_optional_key();
         self
     }
 
