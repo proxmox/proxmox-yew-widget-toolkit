@@ -10,7 +10,6 @@ use crate::props::StorageLocation;
 /// ```
 /// # fn test() {
 /// use pwt::state::PersistentState;
-/// use pwt::state::StorageLocation;
 ///
 /// let mut state = PersistentState::<bool>::new("my-storage-key-name");
 ///
@@ -24,9 +23,9 @@ use crate::props::StorageLocation;
 /// ```
 /// # fn test() {
 /// use pwt::state::PersistentState;
-/// use pwt::state::StorageLocation;
+/// use pwt::props::StorageLocation;
 ///
-/// let mut state = PersistentState::<bool>::with_location("my-storage-key-name", StorageLocation::Session);
+/// let mut state = PersistentState::<bool>::new(StorageLocation::session("my-storage-key-name"));
 ///
 /// let cunnent_value: bool = *state; // acess value with Deref
 ///
