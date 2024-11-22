@@ -10,6 +10,7 @@ use super::{
     IntoValidateFn, ManagedField, ManagedFieldContext, ManagedFieldMaster, ManagedFieldState,
     ValidateFn,
 };
+use crate::css;
 use crate::prelude::*;
 use crate::props::{IntoLoadCallback, IntoOptionalRenderFn, LoadCallback, RenderFn};
 use crate::state::{DataStore, Selection};
@@ -379,8 +380,17 @@ impl<S: DataStore + 'static> ManagedField for SelectorField<S> {
                         .into();
                 }
                 if let Some(load_error) = &load_error {
-                    return error_message(&format!("Error: {}", load_error))
-                        .padding(2)
+                    // make extra container so we can limit the inner message to the
+                    // width of the input field, but no less that 400 px
+                    return Container::new()
+                        .class(css::Flex::Fill)
+                        .class(css::Display::Flex)
+                        .with_child(
+                            error_message(&format!("Error: {}", load_error))
+                                .padding(2)
+                                .class(css::Flex::Fill)
+                                .width(400),
+                        )
                         .into();
                 }
 
