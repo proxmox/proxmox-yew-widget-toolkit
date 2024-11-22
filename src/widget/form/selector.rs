@@ -13,7 +13,7 @@ use super::{
 use crate::prelude::*;
 use crate::props::{IntoLoadCallback, IntoOptionalRenderFn, LoadCallback, RenderFn};
 use crate::state::{DataStore, Selection};
-use crate::widget::{error_message, Container, Dropdown, DropdownController, Trigger};
+use crate::widget::{error_message, Container, Dropdown, DropdownController, Mask, Trigger};
 use crate::AsyncAbortGuard;
 
 use pwt_macros::{builder, widget};
@@ -295,6 +295,7 @@ impl<S: DataStore + 'static> ManagedField for SelectorField<S> {
                         self.load_error = Some(err.to_string());
                     }
                 }
+                self.abort_load_guard = None;
                 true
             }
             Msg::DataChange => {
@@ -369,8 +370,14 @@ impl<S: DataStore + 'static> ManagedField for SelectorField<S> {
             let selection = self.selection.clone();
 
             let load_error = self.load_error.clone();
+            let is_loading = self.abort_load_guard.is_some();
 
             move |controller: &DropdownController| {
+                if is_loading {
+                    return Mask::new(Container::new().min_height(100))
+                        .visible(true)
+                        .into();
+                }
                 if let Some(load_error) = &load_error {
                     return error_message(&format!("Error: {}", load_error))
                         .padding(2)
