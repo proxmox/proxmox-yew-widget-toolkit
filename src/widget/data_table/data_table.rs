@@ -38,7 +38,6 @@ pub enum Msg<T: 'static> {
     DataChange,
     ScrollTo(i32, i32),
     ViewportResize(f64, f64, f64),
-    ContainerResize(f64, f64),
     TableResize(f64, f64),
     KeyDown(KeyboardEvent),
     CursorDown(usize, bool, bool),
@@ -528,10 +527,6 @@ pub struct PwtDataTable<S: DataStore> {
 
     row_height: f64,
     scrollbar_size: Option<f64>,
-
-    container_ref: NodeRef,
-    container_size_observer: Option<SizeObserver>,
-    container_width: f64,
 
     keypress_timeout: Option<Timeout>,
 
@@ -1119,10 +1114,6 @@ impl<S: DataStore + 'static> Component for PwtDataTable<S> {
             table_size_observer: None,
             table_height: 0.0,
 
-            container_ref: NodeRef::default(),
-            container_size_observer: None,
-            container_width: 0.0,
-
             row_height: props.min_row_height as f64,
             scrollbar_size: None,
             keypress_timeout: None,
@@ -1186,10 +1177,6 @@ impl<S: DataStore + 'static> Component for PwtDataTable<S> {
 
                 self.update_scroll_info(props);
 
-                true
-            }
-            Msg::ContainerResize(width, _height) => {
-                self.container_width = width.max(0.0);
                 true
             }
             Msg::TableResize(_width, height) => {
@@ -1713,7 +1700,6 @@ impl<S: DataStore + 'static> Component for PwtDataTable<S> {
             .class("pwt-datatable")
             .class(props.class.clone())
             .styles(props.styles.clone())
-            .node_ref(self.container_ref.clone())
             .attribute("role", "grid")
             .attribute("aria-activedescendant", active_descendant)
             .attribute("aria-rowcount", row_count.to_string())
@@ -1773,14 +1759,6 @@ impl<S: DataStore + 'static> Component for PwtDataTable<S> {
                         link.send_message(Msg::ViewportResize(width, height, width - client_width));
                     });
                 self.viewport_size_observer = Some(size_observer);
-            }
-
-            if let Some(el) = self.container_ref.cast::<web_sys::Element>() {
-                let link = ctx.link().clone();
-                let size_observer = SizeObserver::new(&el, move |(width, height)| {
-                    link.send_message(Msg::ContainerResize(width, height));
-                });
-                self.container_size_observer = Some(size_observer);
             }
 
             if let Some(el) = self.table_ref.cast::<web_sys::HtmlElement>() {
