@@ -62,6 +62,9 @@ pub use language_selector::{LanguageSelector, ProxmoxLanguageSelector};
 mod list;
 pub use list::{List, PwtList};
 
+mod list_tile;
+pub use list_tile::ListTile;
+
 mod mask;
 pub use mask::{Mask, PwtMask};
 
