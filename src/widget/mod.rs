@@ -59,6 +59,9 @@ pub use input_panel::{FieldPosition, InputPanel};
 mod language_selector;
 pub use language_selector::{LanguageSelector, ProxmoxLanguageSelector};
 
+mod list;
+pub use list::{List, PwtList};
+
 mod mask;
 pub use mask::{Mask, PwtMask};
 
