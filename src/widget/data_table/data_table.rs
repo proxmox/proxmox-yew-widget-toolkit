@@ -1123,7 +1123,7 @@ impl<S: DataStore + 'static> Component for PwtDataTable<S> {
         me.init_headers(props);
 
         me.update_scroll_info(props);
-        // fixme: remove umknown keys from  selection
+        // fixme: remove unknown keys from selection
         me.update_selection_status(props);
         me
     }
