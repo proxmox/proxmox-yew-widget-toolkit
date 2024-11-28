@@ -1,12 +1,13 @@
+use html::IntoPropValue;
 use yew::virtual_dom::Key;
 
 use crate::prelude::*;
 
-use crate::props::{EventSubscriber, IntoOptionalRenderFn, RenderFn, WidgetBuilder};
+use crate::props::{EventSubscriber, WidgetBuilder};
 
 use crate::widget::Container;
 
-use super::SizeObserver;
+use super::{ListTile, SizeObserver};
 
 use pwt_macros::{builder, widget};
 
@@ -20,11 +21,16 @@ pub struct List {
     // Item count
     item_count: u64,
     // List item render function
-    renderer: RenderFn<u64>,
+    //renderer: ListRenderFn,
+    renderer: Callback<u64, ListTile>,
 
     /// Yew key property.
     #[prop_or_default]
     pub key: Option<Key>,
+
+    #[prop_or(AttrValue::Static("1fr"))]
+    #[builder(IntoPropValue, into_prop_value)]
+    pub grid_template_columns: AttrValue,
 
     /// Virtual Scroll
     ///
@@ -44,15 +50,17 @@ pub struct List {
 
     /// Separator, added between list items.
     #[prop_or_default]
-    #[builder_cb(IntoOptionalRenderFn, into_optional_render_fn, u64)]
-    pub separator: Option<RenderFn<u64>>,
+    //#[builder_cb(IntoOptionalRenderFn, into_optional_render_fn, u64)]
+    //pub separator: Option<RenderFn<u64>>,
+    #[builder(IntoPropValue, into_prop_value)]
+    pub separator: Option<Callback<u64, Html>>,
 }
 
 impl List {
     /// Create a new instance.
     ///
     /// Note: Virtual scrolling works best if all items have the same size.
-    pub fn new(item_count: u64, renderer: impl Into<RenderFn<u64>>) -> Self {
+    pub fn new(item_count: u64, renderer: impl Into<Callback<u64, ListTile>>) -> Self {
         yew::props!(List {
             item_count,
             renderer: renderer.into()
@@ -149,29 +157,31 @@ impl PwtList {
     }
 
     fn render_content(&self, props: &List) -> Html {
+        let min_height = format!("{}px", props.min_row_height);
+
         let mut content = Container::new()
             .attribute("role", "none")
             .class("pwt-list-content")
             .node_ref(self.table_ref.clone())
+            .style("display", "grid")
+            .style("grid-template-columns", &props.grid_template_columns)
+            .style("--pwt-list-tile-min-height", min_height)
             .style("position", "relative")
             .style("top", format!("{}px", self.scroll_info.offset));
-
-        let min_height = format!("{}px", props.min_row_height);
 
         for pos in self.scroll_info.start..self.scroll_info.end {
             if pos != 0 {
                 if let Some(separator) = &props.separator {
-                    content.add_child(separator.apply(&pos));
+                    let separator = separator.emit(pos);
+                    content.add_child(
+                        Container::new()
+                            .class("pwt-list-separator")
+                            .with_child(separator),
+                    );
                 }
             }
-
-            let row = props.renderer.apply(&pos);
-            content.add_child(
-                Container::new()
-                    .class("pwt-list-item")
-                    .style("min-height", min_height.clone())
-                    .with_child(row),
-            );
+            let row = props.renderer.emit(pos);
+            content.add_child(row);
         }
 
         Container::new()
