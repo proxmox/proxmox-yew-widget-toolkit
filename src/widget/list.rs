@@ -100,7 +100,6 @@ pub struct PwtList {
     viewport_size_observer: Option<SizeObserver>,
     viewport_scrollbar_size: Option<f64>,
     viewport_scroll_top: usize,
-    set_viewport_scroll_top: Option<usize>,
 
     table_ref: NodeRef,
     table_size_observer: Option<SizeObserver>,
@@ -175,12 +174,14 @@ impl PwtList {
                     let separator = separator.emit(pos);
                     content.add_child(
                         Container::new()
+                            .key(format!("sep-{pos}"))
                             .class("pwt-list-separator")
                             .with_child(separator),
                     );
                 }
             }
-            let row = props.renderer.emit(pos);
+            let mut row = props.renderer.emit(pos);
+            row.set_key(format!("row-{pos}"));
             content.add_child(row);
         }
 
@@ -205,7 +206,6 @@ impl Component for PwtList {
             viewport_scrollbar_size: None,
             viewport_ref: NodeRef::default(),
             viewport_scroll_top: 0,
-            set_viewport_scroll_top: None,
 
             table_ref: NodeRef::default(),
             table_size_observer: None,
@@ -290,14 +290,6 @@ impl Component for PwtList {
                     link.send_message(Msg::TableResize(width, height));
                 });
                 self.table_size_observer = Some(size_observer);
-            }
-        }
-        if let Some(top) = self.set_viewport_scroll_top.take() {
-            // Note: we delay setting ScrollTop until we rendered the
-            // viewport with correct height. Else, set_viewport_scroll_top can
-            // fail because the viewport is smaller.
-            if let Some(el) = self.viewport_ref.cast::<web_sys::Element>() {
-                el.set_scroll_top(top as i32);
             }
         }
     }
