@@ -7,19 +7,24 @@ use crate::props::{ListenersWrapper, WidgetStdProps};
 
 use pwt_macros::{builder, widget};
 
-/// List tile. A container with flex row layout.
+/// List tile. A container with grid/subgrid layout.
+///
+/// This is meant to be used inside [List].
 ///
 /// ```
 /// # use pwt::prelude::*;
-/// # use pwt::widget::ListTile;
-/// # fn create_list_tile() -> ListTile {
-///   ListTile::new()
-///       .with_child(html!{<span>{"A simple list tile"}</span>})
-///       .with_child(html!{<span>{"second column"}</span>})
-///       .interactive(true)
-///       .disabled(false)
-///       .style("justify-content", "space-between")
-///       .class(pwt::css::ColorScheme::Primary)
+/// # use pwt::widget::{List, ListTile};
+/// # fn create_list_tile() -> List {
+///     List::new(100, |pos| {
+///         ListTile::new()
+///             .with_child(html!{<span>{format!("{pos}")}</span>})
+///             .with_child(html!{<span>{"A simple list tile"}</span>})
+///             .with_child(html!{<span>{"third column"}</span>})
+///             .interactive(true)
+///             .disabled(false)
+///             .class(pwt::css::ColorScheme::Primary)
+///     })
+///     .grid_template_columns("auto 1fr auto")
 /// # }
 /// ```
 #[widget(pwt=crate, @element, @container)]
