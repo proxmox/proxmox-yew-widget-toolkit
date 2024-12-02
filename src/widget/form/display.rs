@@ -59,7 +59,9 @@ impl ManagedField for DisplayFieldImpl {
 
     fn view(&self, ctx: &super::ManagedFieldContext<Self>) -> yew::Html {
         let props = ctx.props();
-        Tooltip::new(Container::from_tag("span").with_child(&props.value))
+        let state = ctx.state();
+        let value = state.value.as_str().unwrap_or(&props.value);
+        Tooltip::new(Container::from_tag("span").with_child(value))
             .with_std_props(&props.std_props)
             .class("pwt-input-display")
             .tip(&props.tip)
