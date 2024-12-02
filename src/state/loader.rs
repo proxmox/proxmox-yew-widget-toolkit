@@ -161,10 +161,11 @@ impl<T: 'static + DeserializeOwned + Serialize> Loader<T> {
             None => return, // do nothing
         };
 
-        self.write().loading += 1;
         let me = self.clone();
 
-        self.write().async_abort_guard = Some(AsyncAbortGuard::spawn(async move {
+        let mut state = self.write();
+        state.loading += 1;
+        state.async_abort_guard = Some(AsyncAbortGuard::spawn(async move {
             let res = loader.apply().await;
             let mut me = me.write();
             me.async_abort_guard = None;
@@ -172,6 +173,10 @@ impl<T: 'static + DeserializeOwned + Serialize> Loader<T> {
             me.data = Some(res.map(|data| Rc::new(data)));
             me.store_to_cache();
         }));
+
+        // we don't want to notify listeners here, because we just set up the loading
+        state.notify = false;
+        drop(state);
     }
 
     pub fn reload_button(&self) -> Button {
