@@ -1,4 +1,5 @@
 use std::sync::OnceLock;
+
 use yew::virtual_dom::Key;
 use yew::Callback;
 
@@ -62,17 +63,11 @@ pub fn get_available_languages() -> Vec<LanguageInfo> {
     list
 }
 
-static mut LANGUAGE: Option<SharedState<PersistentState<String>>> = None;
-
-fn get_state() -> SharedState<PersistentState<String>> {
-    unsafe {
-        if LANGUAGE.is_none() {
-            let state = PersistentState::<String>::new("Language");
-
-            LANGUAGE = Some(SharedState::new(state));
-        }
-        LANGUAGE.clone().unwrap()
-    }
+// this `thread_local!` definition should be fine as this crate is essentially WASM only where
+// besides web workers and similar ways to spawn futures, there is only one thread. if this
+// assumption changes, this will need to be adapted.
+thread_local! {
+    static LANGUAGE: SharedState<PersistentState<String>> = SharedState::new(PersistentState::new("Language"));
 }
 
 /// Persistent store for language setting.
@@ -86,21 +81,18 @@ pub struct Language;
 impl Language {
     /// Load current language.
     pub fn load() -> String {
-        let state = get_state();
-        let lang = (***state.read()).to_string();
-        lang
+        LANGUAGE.with(|s| s.read().to_string())
     }
 
     /// Update language.
     pub fn store(lang: impl Into<String>) {
         let lang = lang.into();
 
-        let state = get_state();
-
-        if lang == ***state.read() {
+        if LANGUAGE.with(|s| ***s.read() == lang) {
             return; // nothing changed
         }
-        state.write().update(lang);
+
+        LANGUAGE.with(|s| s.write().update(lang));
     }
 }
 
@@ -111,10 +103,11 @@ pub struct LanguageObserver {
 
 impl LanguageObserver {
     pub fn new(on_change: Callback<String>) -> Self {
-        let state = get_state();
-        let _observer = state.add_listener(move |state: SharedState<PersistentState<String>>| {
-            let lang = (***state.read()).clone();
-            on_change.emit(lang);
+        let _observer = LANGUAGE.with(|state| {
+            state.add_listener(move |state: SharedState<PersistentState<String>>| {
+                let lang = (***state.read()).clone();
+                on_change.emit(lang);
+            })
         });
         Self { _observer }
     }
