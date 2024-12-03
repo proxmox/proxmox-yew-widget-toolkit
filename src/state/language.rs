@@ -1,3 +1,4 @@
+use std::sync::OnceLock;
 use yew::virtual_dom::Key;
 use yew::Callback;
 
@@ -6,7 +7,7 @@ use crate::props::ExtractPrimaryKey;
 
 use super::{PersistentState, SharedState, SharedStateObserver};
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct LanguageInfo {
     pub lang: String,            // id (de, en, ...)
     pub text: String,            // Language name (native).
@@ -36,16 +37,19 @@ impl ExtractPrimaryKey for LanguageInfo {
     }
 }
 
-static mut AVAILABLE_LANGUAGES: Vec<LanguageInfo> = Vec::new();
+static AVAILABLE_LANGUAGES: OnceLock<Vec<LanguageInfo>> = OnceLock::new();
 
 pub fn set_available_languages(list: Vec<LanguageInfo>) {
-    unsafe {
-        AVAILABLE_LANGUAGES = list;
-    }
+    AVAILABLE_LANGUAGES
+        .set(list)
+        .expect("cannot set language info twice")
 }
 
 pub fn get_available_languages() -> Vec<LanguageInfo> {
-    let list = unsafe { AVAILABLE_LANGUAGES.clone() };
+    let list = AVAILABLE_LANGUAGES
+        .get()
+        .cloned()
+        .expect("cannot access available languages before they've been set");
 
     let list = list
         .into_iter()
