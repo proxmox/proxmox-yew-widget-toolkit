@@ -181,6 +181,8 @@ impl PwtList {
                 }
             }
             let mut row = props.renderer.emit(pos);
+            // if we have keys, we need overflow-anchor none on the scroll container
+            // see: https://github.com/facebook/react/issues/27044
             row.set_key(format!("row-{pos}"));
             content.add_child(row);
         }
@@ -266,6 +268,7 @@ impl Component for PwtList {
         Container::from_widget_props(props.std_props.clone(), Some(props.listeners.clone()))
             .node_ref(self.viewport_ref.clone())
             .class("pwt-list")
+            .style("overflow-anchor", "none")
             .onscroll(ctx.link().batch_callback(move |event: Event| {
                 let target: Option<web_sys::HtmlElement> = event.target_dyn_into();
                 target.map(|el| Msg::ScrollTo(el.scroll_left(), el.scroll_top()))
