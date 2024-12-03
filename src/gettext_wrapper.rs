@@ -1,13 +1,24 @@
+use std::sync::RwLock;
+
 use gettext::Catalog;
 
 use yew::html::IntoEventCallback;
 
-static mut CATALOG: Option<Catalog> = None;
+static CATALOG: RwLock<Option<Catalog>> = RwLock::new(None);
 
 /// Intitialize the global translation catalog.
 pub fn init_i18n(catalog: Catalog) {
-    unsafe {
-        CATALOG = Some(catalog);
+    let mut guard = CATALOG.write().expect("could not write catalog");
+    *guard = Some(catalog);
+}
+
+fn get_catalog() -> Option<Catalog> {
+    match CATALOG.read() {
+        Ok(guard) => guard.clone(),
+        Err(_) => {
+            log::debug!("CATALOG read-write lock is poisoined");
+            None
+        },
     }
 }
 
@@ -39,12 +50,11 @@ pub fn init_i18n_from_url(url: &str, on_load: impl IntoEventCallback<String>) {
 ///
 /// Please use [gettext!](crate::gettext!) to format text with arguments.
 pub fn gettext(msg_id: &str) -> String {
-    let catalog = unsafe {
-        match CATALOG.as_ref() {
-            None => return msg_id.to_string(),
-            Some(catalog) => catalog,
-        }
+    let catalog = match get_catalog() {
+        None => return msg_id.to_string(),
+        Some(catalog) => catalog,
     };
+
     catalog.gettext(msg_id).to_string()
 }
 
@@ -57,12 +67,11 @@ pub fn gettext_noop(msg_id: &str) -> &str {
 ///
 /// Please use [pgettext!](crate::pgettext!) to format text with arguments.
 pub fn pgettext(msg_context: &str, msg_id: &str) -> String {
-    let catalog = unsafe {
-        match CATALOG.as_ref() {
-            None => return msg_id.to_string(),
-            Some(catalog) => catalog,
-        }
+    let catalog = match get_catalog() {
+        None => return msg_id.to_string(),
+        Some(catalog) => catalog,
     };
+
     catalog.pgettext(msg_context, msg_id).to_string()
 }
 
@@ -70,18 +79,17 @@ pub fn pgettext(msg_context: &str, msg_id: &str) -> String {
 ///
 /// Please use [ngettext!](crate::ngettext!) to format text with arguments.
 pub fn ngettext(msg_id: &str, msg_id_plural: &str, n: u64) -> String {
-    let catalog = unsafe {
-        match CATALOG.as_ref() {
-            None => {
-                return if n == 1 {
-                    msg_id.to_string()
-                } else {
-                    msg_id_plural.to_string()
-                }
+    let catalog = match get_catalog() {
+        None => {
+            return if n == 1 {
+                msg_id.to_string()
+            } else {
+                msg_id_plural.to_string()
             }
-            Some(catalog) => catalog,
         }
+        Some(catalog) => catalog,
     };
+
     catalog.ngettext(msg_id, msg_id_plural, n).to_string()
 }
 
@@ -89,18 +97,17 @@ pub fn ngettext(msg_id: &str, msg_id_plural: &str, n: u64) -> String {
 ///
 /// Please use [npgettext!](crate::npgettext!) to format text with arguments.
 pub fn npgettext(msg_context: &str, msg_id: &str, msg_id_plural: &str, n: u64) -> String {
-    let catalog = unsafe {
-        match CATALOG.as_ref() {
-            None => {
-                return if n == 1 {
-                    msg_id.to_string()
-                } else {
-                    msg_id_plural.to_string()
-                }
+    let catalog = match get_catalog() {
+        None => {
+            return if n == 1 {
+                msg_id.to_string()
+            } else {
+                msg_id_plural.to_string()
             }
-            Some(catalog) => catalog,
         }
+        Some(catalog) => catalog,
     };
+
     catalog
         .npgettext(msg_context, msg_id, msg_id_plural, n)
         .to_string()
