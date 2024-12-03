@@ -275,13 +275,13 @@ mod panic_wrapper {
     pub fn close_dialog(_dialog: web_sys::Node) {
         unreachable!()
     }
-    pub fn show_popover(popover: web_sys::Node) {
+    pub fn show_popover(_popover: web_sys::Node) {
         unreachable!()
     }
-    pub fn hide_popover(popover: web_sys::Node) {
+    pub fn hide_popover(_popover: web_sys::Node) {
         unreachable!()
     }
-    pub fn toggle_popover(popover: web_sys::Node) {
+    pub fn toggle_popover(_popover: web_sys::Node) {
         unreachable!()
     }
 }
