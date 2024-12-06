@@ -100,11 +100,13 @@ struct SizeAccumulator {
 }
 
 impl SizeAccumulator {
-    fn update_row(&mut self, index: usize, height: u64, min_row_height: u64) {
+    fn update_row(&mut self, index: usize, height: u64, min_row_height: u64) -> i64 {
         if self.height_list.len() <= index {
             self.height_list.resize(index + 1, min_row_height);
         }
+        let diff = height as i64 - self.height_list[index] as i64;
         self.height_list[index] = height;
+        diff
     }
 
     fn find_start_row(&mut self, offset: u64, min_row_height: u64) -> (u64, u64) {
@@ -146,6 +148,8 @@ pub struct PwtList {
     scroll_info: VirtualScrollInfo,
 
     start_space: SizeAccumulator,
+
+    set_scroll_top: Option<usize>,
 }
 
 impl PwtList {
@@ -154,6 +158,8 @@ impl PwtList {
         let table_rect = table.get_bounding_client_rect();
         let list_start_row_str = table.get_attribute("data-list-start-row").unwrap();
         let start = list_start_row_str.parse::<u64>().unwrap();
+        let list_offset_str = table.get_attribute("data-list-offset").unwrap();
+        let list_offset = list_offset_str.parse::<u64>().unwrap();
 
         let children = table.children();
         let mut last_y = None;
@@ -182,11 +188,27 @@ impl PwtList {
 
         // log::info!("TILES {} {:?}", height_list.len(), height_list);
 
+        let mut offset = list_offset as f64;
+        let mut diff = 0i64;
         for (i, tile_height) in height_list.iter().enumerate() {
             let pos = start as usize + i;
-            // log::info!("TILE HEIGH {} {}", pos, tile_height);
-            self.start_space
+
+            // test if tile start is visible
+            let visible = offset > self.viewport_scroll_top as f64;
+            offset += tile_height;
+
+            let corr = self
+                .start_space
                 .update_row(pos, *tile_height as u64, props.min_row_height);
+
+            if !visible {
+                diff += corr;
+                // log::info!("UPDATE HIDDEN {} {}", pos, tile_height);
+            }
+        }
+        if diff != 0 && self.viewport_scroll_top != 0 {
+            // log::info!("TOP DIFF {}", diff);
+            self.set_scroll_top = Some((self.viewport_scroll_top as i64 + diff).max(0) as usize);
         }
     }
 
@@ -233,6 +255,7 @@ impl PwtList {
             .class("pwt-list-content")
             .node_ref(self.table_ref.clone())
             .attribute("data-list-start-row", self.scroll_info.start.to_string())
+            .attribute("data-list-offset", self.scroll_info.offset.to_string())
             .style("display", "grid")
             .style("grid-template-columns", &props.grid_template_columns)
             .style("--pwt-list-tile-min-height", min_height)
@@ -287,6 +310,8 @@ impl Component for PwtList {
             scroll_info: VirtualScrollInfo::default(),
 
             start_space: SizeAccumulator::default(),
+
+            set_scroll_top: None,
         }
     }
 
@@ -367,6 +392,14 @@ impl Component for PwtList {
                     link.send_message(Msg::TableResize(width, height));
                 });
                 self.table_size_observer = Some(size_observer);
+            }
+        }
+        if let Some(top) = self.set_scroll_top.take() {
+            // Note: we delay setting ScrollTop until we rendered the
+            // viewport with correct height. Else, set_scroll_top can
+            // fail because the viewport is smaller.
+            if let Some(el) = self.viewport_ref.cast::<web_sys::Element>() {
+                el.set_scroll_top(top as i32);
             }
         }
     }
