@@ -1,5 +1,4 @@
 use html::IntoPropValue;
-use wasm_bindgen::JsCast;
 use yew::virtual_dom::Key;
 
 use crate::prelude::*;
@@ -94,42 +93,6 @@ pub enum Msg {
     ViewportResize(f64, f64, f64),
 }
 
-#[derive(Default)]
-struct SizeAccumulator {
-    height_list: Vec<u64>,
-}
-
-impl SizeAccumulator {
-    fn update_row(&mut self, index: usize, height: u64, min_row_height: u64) {
-        if self.height_list.len() <= index {
-            self.height_list.resize(index + 1, min_row_height);
-        }
-        self.height_list[index] = height;
-    }
-
-    fn find_start_row(&mut self, offset: u64, min_row_height: u64) -> (u64, u64) {
-        if self.height_list.len() <= 2 {
-            return (0, 0);
-        }
-
-        let mut height = 0u64;
-        for i in 0..self.height_list.len() {
-            let new_height = height + self.height_list[i];
-            if new_height >= offset {
-                // log::info!("START OFFSET {} {}", i, height);
-                return (i as u64, height);
-            }
-            height = new_height;
-        }
-        let rest = (offset - height) / min_row_height;
-        // log::info!("REST OFFSET {} {}", height, rest);
-        (
-            self.height_list.len() as u64 + rest,
-            height + rest * min_row_height,
-        )
-    }
-}
-
 pub struct PwtList {
     viewport_height: f64,
     viewport_width: f64,
@@ -144,52 +107,9 @@ pub struct PwtList {
 
     row_height: f64,
     scroll_info: VirtualScrollInfo,
-
-    start_space: SizeAccumulator,
 }
 
 impl PwtList {
-    fn update_row_height(&mut self, props: &List) {
-        let table = self.table_ref.cast::<web_sys::HtmlElement>().unwrap();
-        let table_rect = table.get_bounding_client_rect();
-        let list_start_row_str = table.get_attribute("data-list-start-row").unwrap();
-        let start = list_start_row_str.parse::<u64>().unwrap();
-
-        let children = table.children();
-        let mut last_y = None;
-        let mut height_list: Vec<f64> = Vec::new();
-        for i in 0..children.length() {
-            let item = children
-                .get_with_index(i)
-                .unwrap()
-                .dyn_into::<web_sys::HtmlElement>()
-                .unwrap();
-
-            let class_list = item.class_list();
-            let rect = item.get_bounding_client_rect();
-
-            if class_list.contains("pwt-list-tile") {
-                let current_y = rect.y();
-                if let Some(last) = last_y.take() {
-                    height_list.push(current_y - last);
-                }
-                last_y = Some(rect.y());
-            }
-        }
-        if let Some(last) = last_y.take() {
-            height_list.push(table_rect.height() + table_rect.y() - last);
-        }
-
-        // log::info!("TILES {} {:?}", height_list.len(), height_list);
-
-        for (i, tile_height) in height_list.iter().enumerate() {
-            let pos = start as usize + i;
-            // log::info!("TILE HEIGH {} {}", pos, tile_height);
-            self.start_space
-                .update_row(pos, *tile_height as u64, props.min_row_height);
-        }
-    }
-
     fn update_scroll_info(&mut self, props: &List) {
         let item_count = props.item_count;
 
@@ -197,13 +117,18 @@ impl PwtList {
             .virtual_scroll
             .unwrap_or(item_count >= VIRTUAL_SCROLL_TRIGGER);
 
-        let (start, offset) = if virtual_scroll {
-            //(self.viewport_scroll_top as f64 / self.row_height).floor() as u64
-            self.start_space
-                .find_start_row(self.viewport_scroll_top as u64, props.min_row_height)
+        let mut start = if virtual_scroll {
+            (self.viewport_scroll_top as f64 / self.row_height).floor() as u64
         } else {
-            (0, 0)
+            0
         };
+
+        if start > 0 {
+            start -= 1;
+        }
+        if (start & 1) == 1 {
+            start -= 1;
+        } // make it work with striped rows
 
         let max_visible_rows =
             (self.viewport_height / props.min_row_height as f64).ceil() as u64 + 5;
@@ -213,14 +138,19 @@ impl PwtList {
             item_count
         };
 
-        let offset_end = offset as f64 + self.table_height;
+        if start > end {
+            start = end.saturating_sub(max_visible_rows);
+        }
+
+        let offset = (start as f64) * self.row_height;
+        let offset_end = offset + self.table_height;
 
         let height = offset_end + item_count.saturating_sub(end) as f64 * self.row_height;
 
         self.scroll_info = VirtualScrollInfo {
             start,
             end,
-            offset: offset as f64,
+            offset,
             height,
         };
     }
@@ -232,7 +162,6 @@ impl PwtList {
             .attribute("role", "none")
             .class("pwt-list-content")
             .node_ref(self.table_ref.clone())
-            .attribute("data-list-start-row", self.scroll_info.start.to_string())
             .style("display", "grid")
             .style("grid-template-columns", &props.grid_template_columns)
             .style("--pwt-list-tile-min-height", min_height)
@@ -240,7 +169,7 @@ impl PwtList {
             .style("top", format!("{}px", self.scroll_info.offset));
 
         for pos in self.scroll_info.start..self.scroll_info.end {
-            if pos != self.scroll_info.start {
+            if pos != 0 {
                 if let Some(separator) = &props.separator {
                     let separator = separator.emit(pos);
                     content.add_child(
@@ -285,8 +214,6 @@ impl Component for PwtList {
             table_height: 0.0,
             row_height: props.min_row_height as f64,
             scroll_info: VirtualScrollInfo::default(),
-
-            start_space: SizeAccumulator::default(),
         }
     }
 
@@ -326,7 +253,6 @@ impl Component for PwtList {
                         self.row_height = row_height;
                     }
                 }
-                self.update_row_height(props);
 
                 self.update_scroll_info(props);
                 true
