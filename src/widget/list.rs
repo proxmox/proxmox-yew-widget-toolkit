@@ -46,6 +46,25 @@ pub struct List {
     #[prop_or_default]
     pub key: Option<Key>,
 
+    /// The list uses a html grid layout, and you can set the 'grid-template-columns' property.
+    ///
+    /// This is a convenient way to use a column layout.
+    ///
+    ///  ```
+    /// # use pwt::prelude::*;
+    /// # use pwt::widget::{List, ListTile};
+    /// # fn create_list_tile() -> List {
+    ///     List::new(100, |pos| {
+    ///         ListTile::new()
+    ///             .with_child(html!{<span>{format!("{pos}")}</span>})
+    ///             .with_child(html!{<span>{"A simple list tile"}</span>})
+    ///     })
+    ///     // Use a two column layout.
+    ///     .grid_template_columns("auto 1fr")
+    /// # }
+    /// ```
+    ///
+    /// see: <https://developer.mozilla.org/en-US/docs/Web/CSS/grid-template-columns>
     #[prop_or(AttrValue::Static("1fr"))]
     #[builder(IntoPropValue, into_prop_value)]
     pub grid_template_columns: AttrValue,
@@ -149,6 +168,7 @@ impl SizeAccumulator {
     }
 }
 
+#[doc(hidden)]
 pub struct PwtList {
     viewport_height: f64,
     viewport_width: f64,

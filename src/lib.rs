@@ -1,12 +1,13 @@
 //! # Proxmox Widget Toolkit (for Yew)
 //!
 //! This toolkit provides Yew components to build Single Page
-//! Apps. It provides evertything you need to build complex user
+//! Apps. It provides everything you need to build complex user
 //! interfaces:
 //!
 //! - Basic layout widgets like [Row](widget::Row) and [Column](widget::Column) (using css flexbox).
 //! - Standard widgets like buttons, menus, toolbars, tooltips, tab panels,
 //! - Data table with virtual scroll, sorting, nested resizable headers, tree support ...
+//! - List widget with virtual scroll support.
 //! - Helpers to build complex forms easily ([widget::form])
 //! - Modal dialogs
 //! - Split pane with a draggable sparator.
@@ -160,6 +161,11 @@
 //! The [DataTable](widget::data_table) widget is currently
 //! the most complex widget. It is able to display tables and trees, and
 //! has virtual scroll support.
+
+//! ### Lists
+//!
+//! The [List](widget::List) widget also supports virtual scrolling, and allows
+//! using a html grid column layout.
 
 //! ### Drawing Canvas
 //!
