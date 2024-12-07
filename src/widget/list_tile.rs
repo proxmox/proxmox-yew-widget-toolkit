@@ -9,7 +9,7 @@ use pwt_macros::{builder, widget};
 
 /// List tile. A container with grid/subgrid layout.
 ///
-/// This is meant to be used inside [List].
+/// This is meant to be used inside [List](crate::widget::List).
 ///
 /// ```
 /// # use pwt::prelude::*;

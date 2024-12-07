@@ -46,9 +46,7 @@ impl<T> Deref for PersistentState<T> {
 }
 
 impl<T: 'static + Default + Serialize + DeserializeOwned> PersistentState<T> {
-    /// Create a new instance, using 'state_id' as storage location.
-    ///
-    /// See [Self::with_location] for details.
+    /// Create a new instance, using 'storage' [location](StorageLocation).
     pub fn new(storage: impl Into<StorageLocation>) -> Self {
         let mut me = Self {
             data: T::default(),
