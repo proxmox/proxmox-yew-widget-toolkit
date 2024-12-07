@@ -67,7 +67,7 @@ impl LanguageSelector {
 }
 
 #[doc(hidden)]
-pub struct ProxmoxLanguageSelector {
+pub struct PwtLanguageSelector {
     store: Store<LanguageInfo>,
     selection: Selection,
     lang: String,
@@ -77,7 +77,7 @@ pub enum Msg {
     Select(String),
 }
 
-impl Component for ProxmoxLanguageSelector {
+impl Component for PwtLanguageSelector {
     type Message = Msg;
     type Properties = LanguageSelector;
 
@@ -161,7 +161,7 @@ impl Component for ProxmoxLanguageSelector {
 
 impl Into<VNode> for LanguageSelector {
     fn into(self) -> VNode {
-        let comp = VComp::new::<ProxmoxLanguageSelector>(Rc::new(self), None);
+        let comp = VComp::new::<PwtLanguageSelector>(Rc::new(self), None);
         VNode::from(comp)
     }
 }
