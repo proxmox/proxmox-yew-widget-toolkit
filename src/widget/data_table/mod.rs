@@ -43,7 +43,9 @@ pub(crate) use header_widget::HeaderWidget;
 #[allow(clippy::module_inception)]
 mod data_table;
 pub(crate) use data_table::HeaderMsg;
-pub use data_table::{DataTable, MultiSelectMode, PwtDataTable, RowSelectionStatus};
+#[doc(hidden)]
+pub use data_table::PwtDataTable;
+pub use data_table::{DataTable, MultiSelectMode, RowSelectionStatus};
 
 use yew::prelude::*;
 

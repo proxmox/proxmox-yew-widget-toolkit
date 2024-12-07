@@ -1,5 +1,8 @@
 mod navigation_drawer;
-pub use navigation_drawer::{NavigationDrawer, PwtNavigationDrawer};
+pub use navigation_drawer::NavigationDrawer;
+#[doc(hidden)]
+pub use navigation_drawer::PwtNavigationDrawer;
+
 use yew::html::{IntoEventCallback, IntoPropValue};
 use yew::prelude::*;
 use yew::virtual_dom::{Key, VNode};

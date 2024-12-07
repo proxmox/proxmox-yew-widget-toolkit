@@ -1,18 +1,26 @@
 //! # Basic widgets
 
 mod action_icon;
-pub use action_icon::{ActionIcon, PwtActionIcon};
+pub use action_icon::ActionIcon;
+#[doc(hidden)]
+pub use action_icon::PwtActionIcon;
 
 mod alert_dialog;
-pub use alert_dialog::{AlertDialog, PwtAlertDialog};
+pub use alert_dialog::AlertDialog;
+#[doc(hidden)]
+pub use alert_dialog::PwtAlertDialog;
 
 mod message_box;
-pub use message_box::{MessageBox, MessageBoxButtons, PwtMessageBox};
+#[doc(hidden)]
+pub use message_box::PwtMessageBox;
+pub use message_box::{MessageBox, MessageBoxButtons};
 
 pub mod align;
 
 mod button;
-pub use button::{Button, ButtonType, PwtButton};
+#[doc(hidden)]
+pub use button::PwtButton;
+pub use button::{Button, ButtonType};
 
 pub mod canvas;
 
@@ -20,7 +28,9 @@ mod card;
 pub use card::Card;
 
 mod catalog_loader;
-pub use catalog_loader::{CatalogLoader, PwtCatalogLoader};
+pub use catalog_loader::CatalogLoader;
+#[doc(hidden)]
+pub use catalog_loader::PwtCatalogLoader;
 
 mod column;
 pub use column::Column;
@@ -29,26 +39,36 @@ mod container;
 pub use container::Container;
 
 mod desktop_app;
-pub use desktop_app::{DesktopApp, PwtDesktopApp};
+pub use desktop_app::DesktopApp;
+#[doc(hidden)]
+pub use desktop_app::PwtDesktopApp;
 
 mod trigger;
 pub use trigger::Trigger;
 
 mod dropdown;
-pub use dropdown::{Dropdown, DropdownController, PwtDropdown};
+#[doc(hidden)]
+pub use dropdown::PwtDropdown;
+pub use dropdown::{Dropdown, DropdownController};
 
 mod fa;
-pub use fa::{Fa, PwtFa};
+pub use fa::Fa;
+#[doc(hidden)]
+pub use fa::PwtFa;
 
 mod file_button;
-pub use file_button::{FileButton, PwtFileButton};
+pub use file_button::FileButton;
+#[doc(hidden)]
+pub use file_button::PwtFileButton;
 
 pub mod focus;
 
 pub mod form;
 
 mod field_label;
-pub use field_label::{FieldLabel, PwtFieldLabel};
+pub use field_label::FieldLabel;
+#[doc(hidden)]
+pub use field_label::PwtFieldLabel;
 
 mod input;
 pub use input::Input;
@@ -57,23 +77,31 @@ mod input_panel;
 pub use input_panel::{FieldPosition, InputPanel};
 
 mod language_selector;
-pub use language_selector::{LanguageSelector, ProxmoxLanguageSelector};
+pub use language_selector::LanguageSelector;
+#[doc(hidden)]
+pub use language_selector::ProxmoxLanguageSelector;
 
 // Old code, no longer used.
 // mod list_simple;
 // pub use list_simple::{List, PwtList};
 
 mod list;
-pub use list::{List, PwtList};
+pub use list::List;
+#[doc(hidden)]
+pub use list::PwtList;
 
 mod list_tile;
 pub use list_tile::ListTile;
 
 mod mask;
-pub use mask::{Mask, PwtMask};
+pub use mask::Mask;
+#[doc(hidden)]
+pub use mask::PwtMask;
 
 mod mini_scroll;
-pub use mini_scroll::{MiniScroll, MiniScrollMode, PwtMiniScroll};
+#[doc(hidden)]
+pub use mini_scroll::PwtMiniScroll;
+pub use mini_scroll::{MiniScroll, MiniScrollMode};
 
 pub mod nav;
 
@@ -83,18 +111,24 @@ mod meter;
 pub use meter::Meter;
 
 mod split_pane;
-pub use split_pane::{Pane, PwtSplitPane, SplitPane};
+#[doc(hidden)]
+pub use split_pane::PwtSplitPane;
+pub use split_pane::{Pane, SplitPane};
 
 pub mod data_table;
 
 mod dialog;
-pub use dialog::{Dialog, PwtDialog};
+pub use dialog::Dialog;
+#[doc(hidden)]
+pub use dialog::PwtDialog;
 
 mod panel;
 pub use panel::Panel;
 
 mod grid_picker;
 pub use grid_picker::GridPicker;
+#[doc(hidden)]
+pub use grid_picker::PwtGridPicker;
 
 mod progress;
 pub use progress::Progress;
@@ -106,44 +140,57 @@ mod rtl_switcher;
 pub use rtl_switcher::RtlSwitcher;
 
 mod search_dropdown;
-pub use search_dropdown::{
-    FilteredLoadCallback, PwtSearchDropdown, SearchDropdown, SearchDropdownRenderArgs,
-};
+#[doc(hidden)]
+pub use search_dropdown::PwtSearchDropdown;
+pub use search_dropdown::{FilteredLoadCallback, SearchDropdown, SearchDropdownRenderArgs};
 
 mod selection_view;
-pub use selection_view::{
-    PwtSelectionView, SelectionView, SelectionViewRenderInfo, VisibilityContext,
-};
+#[doc(hidden)]
+pub use selection_view::PwtSelectionView;
+pub use selection_view::{SelectionView, SelectionViewRenderInfo, VisibilityContext};
 
 mod segmented_button;
-pub use segmented_button::{PwtSegmentedButton, SegmentedButton};
+#[doc(hidden)]
+pub use segmented_button::PwtSegmentedButton;
+pub use segmented_button::SegmentedButton;
 
 mod size_observer;
 pub use size_observer::{IntoSizeCallback, SizeObserver};
 
 mod tab;
-pub use tab::*;
+#[doc(hidden)]
+pub use tab::{PwtTabBar, PwtTabPanel};
+pub use tab::{TabBar, TabBarItem, TabBarStyle, TabPanel};
 
 mod theme_loader;
+#[doc(hidden)]
+pub use theme_loader::PwtThemeLoader;
 pub use theme_loader::ThemeLoader;
 
 mod theme_density_selector;
-pub use theme_density_selector::{PwtThemeDensitySelector, ThemeDensitySelector};
+#[doc(hidden)]
+pub use theme_density_selector::PwtThemeDensitySelector;
+pub use theme_density_selector::ThemeDensitySelector;
 
 mod theme_mode_selector;
+#[doc(hidden)]
+pub use theme_mode_selector::PwtThemeModeSelector;
 pub use theme_mode_selector::ThemeModeSelector;
 
 mod theme_name_selector;
+#[doc(hidden)]
+pub use theme_name_selector::PwtThemeNameSelector;
 pub use theme_name_selector::ThemeNameSelector;
 
 mod toolbar;
-pub use toolbar::{PwtToolbar, Toolbar};
+#[doc(hidden)]
+pub use toolbar::PwtToolbar;
+pub use toolbar::Toolbar;
 
 mod tooltip;
-pub use tooltip::{PwtTooltip, Tooltip};
-
-//mod virtual_scroll;
-//pub use virtual_scroll::VirtualScroll;
+#[doc(hidden)]
+pub use tooltip::PwtTooltip;
+pub use tooltip::Tooltip;
 
 mod visibility_observer;
 pub use visibility_observer::VisibilityObserver;

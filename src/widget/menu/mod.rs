@@ -25,10 +25,14 @@ mod menu_item;
 pub use menu_item::MenuItem;
 
 mod menu_checkbox;
-pub use menu_checkbox::{MenuCheckbox, PwtMenuCheckbox};
+pub use menu_checkbox::MenuCheckbox;
+#[doc(hidden)]
+pub use menu_checkbox::PwtMenuCheckbox;
 
 mod menu_button;
-pub use menu_button::{MenuButton, PwtMenuButton};
+pub use menu_button::MenuButton;
+#[doc(hidden)]
+pub use menu_button::PwtMenuButton;
 
 /// Menu entries.
 #[derive(Clone, PartialEq)]
