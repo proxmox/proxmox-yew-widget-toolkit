@@ -15,6 +15,23 @@ use pwt_macros::{builder, widget};
 static VIRTUAL_SCROLL_TRIGGER: u64 = 30;
 
 /// List with virtual scrolling (vertical).
+///
+/// This [List] only renders the visible elements.
+///
+/// ```
+/// # use pwt::prelude::*;
+/// # use pwt::widget::{List, ListTile};
+/// # fn create_list_tile() -> List {
+///     // Create a list with 1000 items.
+///     List::new(1000, |pos| {
+///         // we have to return a ListTile here.
+///         ListTile::new().with_child(format!("Item {pos}"))
+///     })
+/// # }
+/// ```
+///
+/// The virtual scrolling algorithm can handle different tile
+/// sizes even if the tile size changes dynamically.
 #[widget(pwt=crate, comp=crate::widget::PwtList, @element)]
 #[derive(Properties, Clone, PartialEq)]
 #[builder]
