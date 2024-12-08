@@ -136,6 +136,9 @@ struct SizeAccumulator {
 }
 
 impl SizeAccumulator {
+    // Update the size of a row.
+    //
+    // Returns the size difference (new height minus previous height)
     fn update_row(&mut self, index: usize, height: u64, min_row_height: u64) -> i64 {
         if self.height_list.len() <= index {
             self.height_list.resize(index + 1, min_row_height);
@@ -145,6 +148,9 @@ impl SizeAccumulator {
         diff
     }
 
+    // Find the first visible row (a row ending after offset).
+    //
+    // Returns the row number, and the start offset of that row.
     fn find_start_row(&mut self, offset: u64, min_row_height: u64) -> (u64, u64) {
         if self.height_list.len() <= 2 {
             return (0, 0);
