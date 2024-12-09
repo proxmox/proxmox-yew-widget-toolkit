@@ -1,3 +1,4 @@
+use gloo_timers::callback::Timeout;
 use html::IntoPropValue;
 use wasm_bindgen::JsCast;
 use yew::virtual_dom::Key;
@@ -129,6 +130,7 @@ pub enum Msg {
     TableResize(f64, f64),
     ViewportResize(f64, f64, f64),
     TileResize,
+    DelayedTileResize,
 }
 
 #[derive(Default)]
@@ -197,6 +199,7 @@ pub struct PwtList {
     set_scroll_top: Option<usize>,
 
     tile_resize_callback: Callback<(f64, f64)>,
+    tile_resize_timeout: Option<Timeout>,
 }
 
 impl PwtList {
@@ -363,17 +366,27 @@ impl Component for PwtList {
             set_scroll_top: None,
 
             tile_resize_callback: ctx.link().callback(|_| Msg::TileResize),
+            tile_resize_timeout: None,
         }
     }
 
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
         let props = ctx.props();
         match msg {
-            Msg::TileResize => {
-                //log::info!("TILE RESIZE");
+            Msg::DelayedTileResize => {
                 self.update_row_height(props);
                 self.update_scroll_info(props);
+                self.tile_resize_timeout = None;
                 true
+            }
+            Msg::TileResize => {
+                let link = ctx.link().clone();
+                // try to gather all update events
+                self.tile_resize_timeout = Some(Timeout::new(10, move || {
+                    link.send_message(Msg::DelayedTileResize);
+                }));
+                // avoid redraw
+                false
             }
             Msg::ScrollTo(_x, y) => {
                 self.viewport_scroll_top = y.max(0) as usize;
