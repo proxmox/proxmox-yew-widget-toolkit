@@ -92,6 +92,8 @@ pub use list::PwtList;
 
 mod list_tile;
 pub use list_tile::ListTile;
+#[doc(hidden)]
+pub use list_tile::PwtListTile;
 
 mod mask;
 pub use mask::Mask;

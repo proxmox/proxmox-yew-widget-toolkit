@@ -1,11 +1,11 @@
-use std::borrow::Cow;
-
+use html::IntoEventCallback;
 use yew::prelude::*;
-use yew::virtual_dom::VTag;
 
-use crate::props::{ListenersWrapper, WidgetStdProps};
+use crate::props::{ContainerBuilder, ListenersWrapper, WidgetBuilder, WidgetStdProps};
 
 use pwt_macros::{builder, widget};
+
+use super::{Container, SizeObserver};
 
 /// List tile. A container with grid/subgrid layout.
 ///
@@ -27,7 +27,7 @@ use pwt_macros::{builder, widget};
 ///     .grid_template_columns("auto 1fr auto")
 /// # }
 /// ```
-#[widget(pwt=crate, @element, @container)]
+#[widget(pwt=crate, comp=crate::widget::PwtListTile, @element, @container)]
 #[derive(Default, Debug, Clone, PartialEq, Properties)]
 #[builder]
 pub struct ListTile {
@@ -38,6 +38,11 @@ pub struct ListTile {
     #[prop_or_default]
     #[builder]
     disabled: bool,
+
+    // This is used internally by the List widget.
+    #[prop_or_default]
+    #[builder_cb(IntoEventCallback, into_event_callback, (f64, f64))]
+    pub(crate) resize_callback: Option<Callback<(f64, f64)>>,
 }
 
 impl ListTile {
@@ -55,19 +60,43 @@ impl ListTile {
     }
 }
 
-impl Into<VTag> for ListTile {
-    fn into(self) -> VTag {
-        let classes = classes!(
-            "pwt-list-tile",
-            self.interactive.then(|| "pwt-interactive"),
-            self.disabled.then(|| "disabled")
-        );
+pub struct PwtListTile {
+    node_ref: NodeRef,
+    size_observer: Option<SizeObserver>,
+}
 
-        self.std_props.into_vtag(
-            Cow::Borrowed("div"),
-            Some(classes),
-            Some(self.listeners),
-            Some(self.children),
-        )
+impl Component for PwtListTile {
+    type Message = ();
+    type Properties = ListTile;
+
+    fn create(_ctx: &Context<Self>) -> Self {
+        Self {
+            node_ref: NodeRef::default(),
+            size_observer: None,
+        }
+    }
+
+    fn view(&self, ctx: &Context<Self>) -> Html {
+        let props = ctx.props();
+        Container::from_widget_props(props.std_props.clone(), Some(props.listeners.clone()))
+            .node_ref(self.node_ref.clone())
+            .class("pwt-list-tile")
+            .class(props.interactive.then(|| "pwt-interactive"))
+            .class(props.disabled.then(|| "disabled"))
+            .children(props.children.clone())
+            .into()
+    }
+
+    fn rendered(&mut self, ctx: &Context<Self>, first_render: bool) {
+        if first_render {
+            if let Some(el) = self.node_ref.cast::<web_sys::HtmlElement>() {
+                if let Some(resize_callback) = &ctx.props().resize_callback {
+                    let resize_callback = resize_callback.clone();
+                    self.size_observer = Some(SizeObserver::new(&el, move |(x, y)| {
+                        resize_callback.emit((x, y));
+                    }));
+                }
+            }
+        }
     }
 }
