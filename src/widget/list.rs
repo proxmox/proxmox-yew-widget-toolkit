@@ -128,6 +128,7 @@ pub enum Msg {
     ScrollTo(i32, i32),
     TableResize(f64, f64),
     ViewportResize(f64, f64, f64),
+    TileResize,
 }
 
 #[derive(Default)]
@@ -145,6 +146,7 @@ impl SizeAccumulator {
         }
         let diff = height as i64 - self.height_list[index] as i64;
         self.height_list[index] = height;
+        //log::info!("UPDATE ROW {} {} {}", index, height, diff);
         diff
     }
 
@@ -193,6 +195,8 @@ pub struct PwtList {
     start_space: SizeAccumulator,
 
     set_scroll_top: Option<usize>,
+
+    tile_resize_callback: Callback<(f64, f64)>,
 }
 
 impl PwtList {
@@ -321,6 +325,7 @@ impl PwtList {
             // if we have keys, we need overflow-anchor none on the scroll container
             // see: https://github.com/facebook/react/issues/27044
             row.set_key(format!("row-{pos}"));
+            row.set_resize_callback(Some(self.tile_resize_callback.clone()));
             content.add_child(row);
         }
 
@@ -338,6 +343,7 @@ impl Component for PwtList {
 
     fn create(ctx: &Context<Self>) -> Self {
         let props = ctx.props();
+
         Self {
             viewport_height: 0.0,
             viewport_width: 0.0,
@@ -355,12 +361,20 @@ impl Component for PwtList {
             start_space: SizeAccumulator::default(),
 
             set_scroll_top: None,
+
+            tile_resize_callback: ctx.link().callback(|_| Msg::TileResize),
         }
     }
 
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
         let props = ctx.props();
         match msg {
+            Msg::TileResize => {
+                //log::info!("TILE RESIZE");
+                self.update_row_height(props);
+                self.update_scroll_info(props);
+                true
+            }
             Msg::ScrollTo(_x, y) => {
                 self.viewport_scroll_top = y.max(0) as usize;
                 self.update_scroll_info(props);
