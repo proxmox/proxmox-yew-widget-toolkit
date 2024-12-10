@@ -83,6 +83,7 @@ impl Component for PwtListTile {
             .class("pwt-list-tile")
             .class(props.interactive.then(|| "pwt-interactive"))
             .class(props.disabled.then(|| "disabled"))
+            .attribute("aria-disabled", props.disabled.then(|| "true"))
             .children(props.children.clone())
             .into()
     }

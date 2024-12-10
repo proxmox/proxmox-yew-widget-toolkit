@@ -339,6 +339,8 @@ impl PwtList {
             // see: https://github.com/facebook/react/issues/27044
             row.set_key(format!("row-{pos}"));
             row.set_resize_callback(Some(self.tile_resize_callback.clone()));
+            row.set_attribute("role", "listitem");
+
             content.add_child(row);
         }
 
@@ -431,6 +433,7 @@ impl Component for PwtList {
         Container::from_widget_props(props.std_props.clone(), Some(props.listeners.clone()))
             .node_ref(self.viewport_ref.clone())
             .class("pwt-list")
+            .attribute("role", "list")
             .style("overflow-anchor", "none")
             .onscroll(ctx.link().batch_callback(move |event: Event| {
                 let target: Option<web_sys::HtmlElement> = event.target_dyn_into();
