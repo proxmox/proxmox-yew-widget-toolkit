@@ -176,6 +176,18 @@ impl SizeAccumulator {
             height + rest * min_row_height,
         )
     }
+
+    fn compute_tail_height(&mut self, row_count: usize, end: usize, min_row_height: u64) -> u64 {
+        if self.height_list.len() < row_count {
+            self.height_list.resize(row_count, min_row_height);
+        }
+
+        let mut height = 0u64;
+        for i in ((end + 1)..row_count).rev() {
+            height += self.height_list[i];
+        }
+        height
+    }
 }
 
 #[doc(hidden)]
@@ -287,7 +299,13 @@ impl PwtList {
 
         let offset_end = offset as f64 + self.table_height;
 
-        let height = offset_end + item_count.saturating_sub(end) as f64 * self.row_height;
+        let tail_height = self.start_space.compute_tail_height(
+            props.item_count as usize,
+            end as usize,
+            props.min_row_height,
+        );
+
+        let height = offset_end + tail_height as f64;
 
         self.scroll_info = VirtualScrollInfo {
             start,
