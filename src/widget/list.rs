@@ -119,12 +119,6 @@ struct VirtualScrollInfo {
     offset: f64,
 }
 
-impl VirtualScrollInfo {
-    fn visible_rows(&self) -> u64 {
-        self.end.saturating_sub(self.start)
-    }
-}
-
 pub enum Msg {
     ScrollTo(i32, i32),
     TableResize(f64, f64),
@@ -203,10 +197,9 @@ pub struct PwtList {
     table_size_observer: Option<SizeObserver>,
     table_height: f64,
 
-    row_height: f64,
     scroll_info: VirtualScrollInfo,
 
-    start_space: SizeAccumulator,
+    row_heights: SizeAccumulator,
 
     set_scroll_top: Option<usize>,
 
@@ -260,7 +253,7 @@ impl PwtList {
             offset += tile_height;
 
             let corr = self
-                .start_space
+                .row_heights
                 .update_row(pos, *tile_height as u64, props.min_row_height);
 
             if !visible {
@@ -282,8 +275,7 @@ impl PwtList {
             .unwrap_or(item_count >= VIRTUAL_SCROLL_TRIGGER);
 
         let (start, offset) = if virtual_scroll {
-            //(self.viewport_scroll_top as f64 / self.row_height).floor() as u64
-            self.start_space
+            self.row_heights
                 .find_start_row(self.viewport_scroll_top as u64, props.min_row_height)
         } else {
             (0, 0)
@@ -299,7 +291,7 @@ impl PwtList {
 
         let offset_end = offset as f64 + self.table_height;
 
-        let tail_height = self.start_space.compute_tail_height(
+        let tail_height = self.row_heights.compute_tail_height(
             props.item_count as usize,
             end as usize,
             props.min_row_height,
@@ -363,8 +355,6 @@ impl Component for PwtList {
     type Properties = List;
 
     fn create(ctx: &Context<Self>) -> Self {
-        let props = ctx.props();
-
         Self {
             viewport_height: 0.0,
             viewport_width: 0.0,
@@ -376,10 +366,9 @@ impl Component for PwtList {
             table_ref: NodeRef::default(),
             table_size_observer: None,
             table_height: 0.0,
-            row_height: props.min_row_height as f64,
             scroll_info: VirtualScrollInfo::default(),
 
-            start_space: SizeAccumulator::default(),
+            row_heights: SizeAccumulator::default(),
 
             set_scroll_top: None,
 
@@ -426,21 +415,8 @@ impl Component for PwtList {
                 true
             }
             Msg::TableResize(_width, height) => {
-                let height = height.max(0.0);
-                if self.table_height == height {
-                    return false;
-                };
-
-                self.table_height = height;
-                let visible_rows = self.scroll_info.visible_rows();
-                if (height > 0.0) && (visible_rows > 0) {
-                    let row_height = height / visible_rows as f64;
-                    if row_height > self.row_height {
-                        self.row_height = row_height;
-                    }
-                }
+                self.table_height = height.max(0.0);
                 self.update_row_height(props);
-
                 self.update_scroll_info(props);
                 true
             }
@@ -495,11 +471,11 @@ impl Component for PwtList {
                 }
             }
 
-            /// Fix for missing onscroll event.
-            ///
-            /// If we hide the complete list inside a TabPanel, the scrollbar vanish and scrollTop
-            /// gets zero. After entering the TabPanel view again, scrollTop gets set to the previous value,
-            /// but chromium does not fire an onscroll event.
+            // Fix for missing onscroll event.
+            //
+            // If we hide the complete list inside a TabPanel, the scrollbar vanish and scrollTop
+            // gets zero. After entering the TabPanel view again, scrollTop gets set to the previous value,
+            // but chromium does not fire an onscroll event.
             if self.viewport_scroll_top == 0 {
                 let top = el.scroll_top();
                 if top > 0 {
