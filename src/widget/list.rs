@@ -447,8 +447,10 @@ impl Component for PwtList {
     }
 
     fn rendered(&mut self, ctx: &Context<Self>, first_render: bool) {
+        let viewport_el = self.viewport_ref.cast::<web_sys::Element>();
+
         if first_render {
-            if let Some(el) = self.viewport_ref.cast::<web_sys::Element>() {
+            if let Some(el) = &viewport_el {
                 let link = ctx.link().clone();
                 let size_observer =
                     SizeObserver::new(&el, move |(width, height, client_width, _)| {
@@ -464,12 +466,27 @@ impl Component for PwtList {
                 self.table_size_observer = Some(size_observer);
             }
         }
-        if let Some(top) = self.set_scroll_top.take() {
-            // Note: we delay setting ScrollTop until we rendered the
-            // viewport with correct height. Else, set_scroll_top can
-            // fail because the viewport is smaller.
-            if let Some(el) = self.viewport_ref.cast::<web_sys::Element>() {
-                el.set_scroll_top(top as i32);
+
+        if let Some(el) = &viewport_el {
+            if let Some(top) = self.set_scroll_top.take() {
+                // Note: we delay setting ScrollTop until we rendered the
+                // viewport with correct height. Else, set_scroll_top can
+                // fail because the viewport is smaller.
+                if let Some(el) = &viewport_el {
+                    el.set_scroll_top(top as i32);
+                }
+            }
+
+            /// Fix for missing onscroll event.
+            ///
+            /// If we hide the complete list inside a TabPanel, the scrollbar vanish and scrollTop
+            /// gets zero. After entering the TabPanel view again, scrollTop gets set to the previous value,
+            /// but chromium does not fire an onscroll event.
+            if self.viewport_scroll_top == 0 {
+                let top = el.scroll_top();
+                if top > 0 {
+                    ctx.link().send_message(Msg::ScrollTo(0, top));
+                }
             }
         }
     }
