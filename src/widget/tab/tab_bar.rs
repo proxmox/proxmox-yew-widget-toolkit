@@ -81,9 +81,9 @@ pub struct TabBar {
 #[derive(PartialEq, Eq, Default, Clone, Copy)]
 pub enum TabBarStyle {
     /// Pill/Button style tabs
-    #[default]
     Pills,
     /// Material 3 Primary style tabs
+    #[default]
     MaterialPrimary,
     /// Material 3 Secondary style tabs
     MaterialSecondary,
