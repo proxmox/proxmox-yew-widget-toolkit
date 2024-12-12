@@ -85,13 +85,6 @@ pub struct List {
     #[prop_or(22)]
     #[builder]
     pub min_row_height: u64,
-
-    /// Separator, added between list items.
-    #[prop_or_default]
-    //#[builder_cb(IntoOptionalRenderFn, into_optional_render_fn, u64)]
-    //pub separator: Option<RenderFn<u64>>,
-    #[builder(IntoPropValue, into_prop_value)]
-    pub separator: Option<Callback<u64, Html>>,
 }
 
 impl List {
@@ -323,17 +316,6 @@ impl PwtList {
             .style("top", format!("{}px", self.scroll_info.offset));
 
         for pos in self.scroll_info.start..self.scroll_info.end {
-            if pos != self.scroll_info.start {
-                if let Some(separator) = &props.separator {
-                    let separator = separator.emit(pos);
-                    content.add_child(
-                        Container::new()
-                            .key(format!("sep-{pos}"))
-                            .class("pwt-list-separator")
-                            .with_child(separator),
-                    );
-                }
-            }
             let mut row = props.renderer.emit(pos);
             // if we have keys, we need overflow-anchor none on the scroll container
             // see: https://github.com/facebook/react/issues/27044
