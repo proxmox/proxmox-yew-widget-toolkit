@@ -1,7 +1,9 @@
-use html::IntoEventCallback;
+use yew::html::{IntoEventCallback, IntoPropValue};
 use yew::prelude::*;
 
-use crate::props::{ContainerBuilder, ListenersWrapper, WidgetBuilder, WidgetStdProps};
+use crate::props::{
+    ContainerBuilder, ListenersWrapper, WidgetBuilder, WidgetStdProps, WidgetStyleBuilder,
+};
 
 use pwt_macros::{builder, widget};
 
@@ -38,6 +40,10 @@ pub struct ListTile {
     #[prop_or_default]
     #[builder]
     disabled: bool,
+
+    #[prop_or_default]
+    #[builder(IntoPropValue, into_prop_value)]
+    force_height: Option<u32>,
 
     // This is used internally by the List widget.
     #[prop_or_default]
@@ -78,14 +84,20 @@ impl Component for PwtListTile {
 
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
-        Container::from_widget_props(props.std_props.clone(), Some(props.listeners.clone()))
-            .node_ref(self.node_ref.clone())
-            .class("pwt-list-tile")
-            .class(props.interactive.then(|| "pwt-interactive"))
-            .class(props.disabled.then(|| "disabled"))
-            .attribute("aria-disabled", props.disabled.then(|| "true"))
-            .children(props.children.clone())
-            .into()
+        let tile =
+            Container::from_widget_props(props.std_props.clone(), Some(props.listeners.clone()))
+                .node_ref(self.node_ref.clone())
+                .class("pwt-list-tile")
+                .class(props.interactive.then(|| "pwt-interactive"))
+                .class(props.disabled.then(|| "disabled"))
+                .attribute("aria-disabled", props.disabled.then(|| "true"))
+                .children(props.children.clone());
+
+        let mut wrapper = Container::new().with_child(tile);
+        if let Some(height) = &props.force_height {
+            wrapper.set_height(*height as f32);
+        }
+        wrapper.into()
     }
 
     fn rendered(&mut self, ctx: &Context<Self>, first_render: bool) {
