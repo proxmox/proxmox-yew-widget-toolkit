@@ -78,13 +78,12 @@ impl PwtListTileObserver {
                     //  log::info!("add size observer {}", props.tile_pos);
                 }
                 let tile_pos = props.tile_pos;
-                let separator_height = if props.separator { 1.0 } else { 0.0 };
 
                 self.size_observer = Some(SizeObserver::new(&el, {
                     let el = el.clone();
                     move |(w, h)| {
                         log::info!("REAL HEIGHT {}", el.scroll_height());
-                        resize_callback.emit((tile_pos, w, h + separator_height));
+                        resize_callback.emit((tile_pos, w, h));
                     }
                 }));
             }
@@ -125,15 +124,15 @@ impl Component for PwtListTileObserver {
             .style("display", "grid")
             .style("grid-template-columns", "subgrid")
             .style("grid-column", "1 / -1")
+            .border_bottom(props.separator)
             .with_child(props.tile.clone());
 
         let mut wrapper = Container::new()
-            .with_child(inner)
             .style("overflow", "hidden")
             .style("display", "grid")
             .style("grid-template-columns", "subgrid")
             .style("grid-column", "1 / -1")
-            .border_bottom(props.separator);
+            .with_child(inner);
 
         if let Some(height) = &props.force_height {
             wrapper.set_height(*height as f32);
