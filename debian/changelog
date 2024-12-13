@@ -1,4 +1,4 @@
-rust-pwt (0.4.0) unstable; urgency=medium
+rust-pwt (0.4.0) bookworm; urgency=medium
 
   * new lits widget with virtual scrolling
 
