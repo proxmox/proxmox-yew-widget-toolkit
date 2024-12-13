@@ -1,3 +1,13 @@
+rust-pwt-macros (0.2.0) bookworm; urgency=medium
+
+  * switch to native package version numbers
+
+  * pwt-macros: drop unused dependency on lazy_static
+
+  * pwt-macros: automatically implement WidgetStyleBuilder for elements
+
+ -- Proxmox Support Team <support@proxmox.com>  Fri, 13 Dec 2024 17:32:18 +0100
+
 rust-pwt-macros (0.1.0-1) unstable; urgency=medium
 
   * initial Debian package
