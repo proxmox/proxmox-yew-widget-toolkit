@@ -116,7 +116,7 @@ pub enum Msg {
     ScrollTo(i32, i32),
     TableResize(f64, f64),
     ViewportResize(f64, f64, f64),
-    TileResize,
+    TileResize(u64, f64, f64),
     DelayedTileResize,
 }
 
@@ -126,6 +126,14 @@ struct SizeAccumulator {
 }
 
 impl SizeAccumulator {
+    // Returns the row height
+    fn get_row_height(&self, index: usize, min_row_height: u64) -> u64 {
+        self.height_list
+            .get(index)
+            .map(|v| *v)
+            .unwrap_or(min_row_height)
+    }
+
     // Update the size of a row.
     //
     // Returns the size difference (new height minus previous height)
@@ -196,70 +204,12 @@ pub struct PwtList {
 
     set_scroll_top: Option<usize>,
 
-    tile_resize_callback: Callback<(f64, f64)>,
+    tile_resize_callback: Callback<(u64, f64, f64)>,
     tile_resize_timeout: Option<Timeout>,
+    scroll_diff: i64,
 }
 
 impl PwtList {
-    fn update_row_height(&mut self, props: &List) {
-        let table = self.table_ref.cast::<web_sys::HtmlElement>().unwrap();
-        let table_rect = table.get_bounding_client_rect();
-        let list_start_row_str = table.get_attribute("data-list-start-row").unwrap();
-        let start = list_start_row_str.parse::<u64>().unwrap();
-        let list_offset_str = table.get_attribute("data-list-offset").unwrap();
-        let list_offset = list_offset_str.parse::<u64>().unwrap();
-
-        let children = table.children();
-        let mut last_y = None;
-        let mut height_list: Vec<f64> = Vec::new();
-        for i in 0..children.length() {
-            let item = children
-                .get_with_index(i)
-                .unwrap()
-                .dyn_into::<web_sys::HtmlElement>()
-                .unwrap();
-
-            let class_list = item.class_list();
-            let rect = item.get_bounding_client_rect();
-
-            if class_list.contains("pwt-list-tile") {
-                let current_y = rect.y();
-                if let Some(last) = last_y.take() {
-                    height_list.push(current_y - last);
-                }
-                last_y = Some(rect.y());
-            }
-        }
-        if let Some(last) = last_y.take() {
-            height_list.push(table_rect.height() + table_rect.y() - last);
-        }
-
-        // log::info!("TILES {} {:?}", height_list.len(), height_list);
-
-        let mut offset = list_offset as f64;
-        let mut diff = 0i64;
-        for (i, tile_height) in height_list.iter().enumerate() {
-            let pos = start as usize + i;
-
-            // test if tile start is visible
-            let visible = offset > self.viewport_scroll_top as f64;
-            offset += tile_height;
-
-            let corr = self
-                .row_heights
-                .update_row(pos, *tile_height as u64, props.min_row_height);
-
-            if !visible {
-                diff += corr;
-                // log::info!("UPDATE HIDDEN {} {}", pos, tile_height);
-            }
-        }
-        if diff != 0 && self.viewport_scroll_top != 0 {
-            // log::info!("TOP DIFF {}", diff);
-            self.set_scroll_top = Some((self.viewport_scroll_top as i64 + diff).max(0) as usize);
-        }
-    }
-
     fn update_scroll_info(&mut self, props: &List) {
         let item_count = props.item_count;
 
@@ -300,7 +250,7 @@ impl PwtList {
         };
     }
 
-    fn render_content(&self, props: &List) -> Html {
+    fn render_content(&self, ctx: &Context<Self>, props: &List) -> Html {
         let min_height = format!("{}px", props.min_row_height);
 
         let mut content = Container::new()
@@ -315,11 +265,27 @@ impl PwtList {
             .style("position", "relative")
             .style("top", format!("{}px", self.scroll_info.offset));
 
+        if self.scroll_info.end > self.scroll_info.start {
+            if self.scroll_info.start > 5 {
+                for index in (self.scroll_info.start - 5)..self.scroll_info.start {
+                    // log::info!("ADD CACHED ROW {index}");
+                    let mut row = props.renderer.emit(index);
+                    row.set_key(format!("row-{index}"));
+                    row.set_force_height(0);
+                    row.set_tile_pos(index);
+                    row.set_resize_callback(Some(self.tile_resize_callback.clone()));
+                    row.set_attribute("role", "listitem");
+                    content.add_child(row);
+                }
+            }
+        }
+
         for pos in self.scroll_info.start..self.scroll_info.end {
             let mut row = props.renderer.emit(pos);
             // if we have keys, we need overflow-anchor none on the scroll container
             // see: https://github.com/facebook/react/issues/27044
             row.set_key(format!("row-{pos}"));
+            row.set_tile_pos(pos);
             row.set_resize_callback(Some(self.tile_resize_callback.clone()));
             row.set_attribute("role", "listitem");
 
@@ -356,8 +322,11 @@ impl Component for PwtList {
 
             set_scroll_top: None,
 
-            tile_resize_callback: ctx.link().callback(|_| Msg::TileResize),
+            tile_resize_callback: ctx
+                .link()
+                .callback(|(pos, w, h)| Msg::TileResize(pos, w, h)),
             tile_resize_timeout: None,
+            scroll_diff: 0,
         }
     }
 
@@ -365,15 +334,32 @@ impl Component for PwtList {
         let props = ctx.props();
         match msg {
             Msg::DelayedTileResize => {
-                self.update_row_height(props);
                 self.update_scroll_info(props);
                 self.tile_resize_timeout = None;
+                if self.scroll_diff != 0 && self.viewport_scroll_top != 0 {
+                    log::info!("TOP DIFF {}", self.scroll_diff);
+                    self.set_scroll_top =
+                        Some((self.viewport_scroll_top as i64 + self.scroll_diff).max(0) as usize);
+                    self.scroll_diff = 0;
+                }
                 true
             }
-            Msg::TileResize => {
+            Msg::TileResize(pos, _w, h) => {
+                let corr =
+                    self.row_heights
+                        .update_row(pos as usize, h as u64, props.min_row_height);
+                log::info!("UPDATE ROW HEIGHT {pos} {h} {corr}");
+
+                //self.update_scroll_info(props);
+
+                if corr != 0 && pos < self.scroll_info.start {
+                    log::info!("CORRECTION {pos} {corr}");
+                    self.scroll_diff += corr;
+                }
+
                 let link = ctx.link().clone();
                 // try to gather all update events
-                self.tile_resize_timeout = Some(Timeout::new(10, move || {
+                self.tile_resize_timeout = Some(Timeout::new(1, move || {
                     link.send_message(Msg::DelayedTileResize);
                 }));
                 // avoid redraw
@@ -400,7 +386,6 @@ impl Component for PwtList {
             }
             Msg::TableResize(_width, height) => {
                 self.table_height = height.max(0.0);
-                self.update_row_height(props);
                 self.update_scroll_info(props);
                 true
             }
@@ -410,7 +395,7 @@ impl Component for PwtList {
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
 
-        let content = self.render_content(props);
+        let content = self.render_content(ctx, props);
 
         Container::from_widget_props(props.std_props.clone(), Some(props.listeners.clone()))
             .node_ref(self.viewport_ref.clone())
