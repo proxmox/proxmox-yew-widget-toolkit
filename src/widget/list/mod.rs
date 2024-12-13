@@ -50,10 +50,6 @@ pub struct List {
     //renderer: ListRenderFn,
     renderer: Callback<u64, ListTile>,
 
-    /// Yew key property.
-    #[prop_or_default]
-    pub key: Option<Key>,
-
     /// The list uses a html grid layout, and you can set the 'grid-template-columns' property.
     ///
     /// This is a convenient way to use a column layout.
@@ -108,11 +104,6 @@ impl List {
             item_count,
             renderer: renderer.into()
         })
-    }
-    /// Builder style method to set the yew `key` property.
-    pub fn key(mut self, key: impl IntoOptionalKey) -> Self {
-        self.key = key.into_optional_key();
-        self
     }
 }
 
