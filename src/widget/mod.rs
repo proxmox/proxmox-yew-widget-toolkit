@@ -86,14 +86,10 @@ pub use language_selector::PwtLanguageSelector;
 // pub use list_simple::{List, PwtList};
 
 mod list;
-pub use list::List;
-#[doc(hidden)]
-pub use list::PwtList;
+pub use list::{List, ListTile, ListTileObserver};
 
-mod list_tile;
-pub use list_tile::ListTile;
 #[doc(hidden)]
-pub use list_tile::PwtListTile;
+pub use list::{PwtList, PwtListTileObserver};
 
 mod mask;
 pub use mask::Mask;

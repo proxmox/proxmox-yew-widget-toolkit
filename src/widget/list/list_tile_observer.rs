@@ -1,13 +1,11 @@
 use yew::html::{IntoEventCallback, IntoPropValue};
 use yew::prelude::*;
 
-use crate::props::{
-    ContainerBuilder, ListenersWrapper, WidgetBuilder, WidgetStdProps, WidgetStyleBuilder,
-};
+use crate::props::{ContainerBuilder, WidgetBuilder, WidgetStyleBuilder};
 
 use pwt_macros::{builder, widget};
 
-use super::{Container, SizeObserver};
+use super::{Container, CssBorderBuilder, ListTile, SizeObserver};
 
 /// List tile. A container with grid/subgrid layout.
 ///
@@ -29,21 +27,19 @@ use super::{Container, SizeObserver};
 ///     .grid_template_columns("auto 1fr auto")
 /// # }
 /// ```
-#[widget(pwt=crate, comp=crate::widget::PwtListTile, @element, @container)]
+#[widget(pwt=crate, comp=crate::widget::PwtListTileObserver)]
 #[derive(Default, Debug, Clone, PartialEq, Properties)]
 #[builder]
-pub struct ListTile {
+pub struct ListTileObserver {
+    /// Add a line as separator
     #[prop_or_default]
     #[builder]
-    interactive: bool,
+    pub separator: bool,
 
-    #[prop_or_default]
-    #[builder]
-    disabled: bool,
-
+    /// Force the height of the widget
     #[prop_or_default]
     #[builder(IntoPropValue, into_prop_value)]
-    force_height: Option<u32>,
+    pub force_height: Option<u32>,
 
     // This is used internally by the List widget.
     #[prop_or_default]
@@ -53,24 +49,18 @@ pub struct ListTile {
     #[prop_or_default]
     #[builder]
     pub(crate) tile_pos: u64,
+
+    tile: ListTile,
 }
 
-impl ListTile {
-    /// Creates new ListTile instance
-    pub fn new() -> Self {
-        yew::props! { Self {} }
-    }
-
-    /// Creates a new instance from existing properties
-    pub fn from_widget_props(
-        std_props: WidgetStdProps,
-        listeners: Option<ListenersWrapper>,
-    ) -> Self {
-        yew::props! { Self { std_props, listeners: listeners.unwrap_or_default() } }
+impl ListTileObserver {
+    /// Creates new ListTileObserver instance
+    pub fn new(tile: ListTile) -> Self {
+        yew::props! { Self { tile } }
     }
 }
 
-pub struct PwtListTile {
+pub struct PwtListTileObserver {
     node_ref: NodeRef,
     size_observer: Option<SizeObserver>,
 }
@@ -79,8 +69,8 @@ pub enum Msg {
     SetupSizeObserver,
 }
 
-impl PwtListTile {
-    fn setup_size_observer(&mut self, props: &ListTile) {
+impl PwtListTileObserver {
+    fn setup_size_observer(&mut self, props: &ListTileObserver) {
         if let Some(el) = self.node_ref.cast::<web_sys::HtmlElement>() {
             if let Some(resize_callback) = &props.resize_callback {
                 let resize_callback = resize_callback.clone();
@@ -88,20 +78,22 @@ impl PwtListTile {
                     //  log::info!("add size observer {}", props.tile_pos);
                 }
                 let tile_pos = props.tile_pos;
+                let separator_height = if props.separator { 1.0 } else { 0.0 };
+
                 self.size_observer = Some(SizeObserver::new(&el, {
                     let el = el.clone();
-                    move |(x, y)| {
+                    move |(w, h)| {
                         log::info!("REAL HEIGHT {}", el.scroll_height());
-                        resize_callback.emit((tile_pos, x, y));
+                        resize_callback.emit((tile_pos, w, h + separator_height));
                     }
                 }));
             }
         }
     }
 }
-impl Component for PwtListTile {
+impl Component for PwtListTileObserver {
     type Message = Msg;
-    type Properties = ListTile;
+    type Properties = ListTileObserver;
 
     fn create(_ctx: &Context<Self>) -> Self {
         Self {
@@ -126,14 +118,6 @@ impl Component for PwtListTile {
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
 
-        let tile =
-            Container::from_widget_props(props.std_props.clone(), Some(props.listeners.clone()))
-                .class("pwt-list-tile")
-                .class(props.interactive.then(|| "pwt-interactive"))
-                .attribute("aria-disabled", props.disabled.then(|| "true"))
-                .class(props.disabled.then(|| "disabled"))
-                .children(props.children.clone());
-
         let inner = Container::new()
             .node_ref(self.node_ref.clone())
             // We need to set height to "fit-content" in order to observe correct size
@@ -141,14 +125,15 @@ impl Component for PwtListTile {
             .style("display", "grid")
             .style("grid-template-columns", "subgrid")
             .style("grid-column", "1 / -1")
-            .with_child(tile);
+            .with_child(props.tile.clone());
 
         let mut wrapper = Container::new()
             .with_child(inner)
             .style("overflow", "hidden")
             .style("display", "grid")
             .style("grid-template-columns", "subgrid")
-            .style("grid-column", "1 / -1");
+            .style("grid-column", "1 / -1")
+            .border_bottom(props.separator);
 
         if let Some(height) = &props.force_height {
             wrapper.set_height(*height as f32);

@@ -1,6 +1,5 @@
 use gloo_timers::callback::Timeout;
 use html::IntoPropValue;
-use wasm_bindgen::JsCast;
 use yew::virtual_dom::Key;
 
 use crate::prelude::*;
@@ -9,11 +8,19 @@ use crate::props::{EventSubscriber, WidgetBuilder};
 
 use crate::widget::Container;
 
-use super::{ListTile, SizeObserver};
+use super::SizeObserver;
 
 use pwt_macros::{builder, widget};
 
 static VIRTUAL_SCROLL_TRIGGER: u64 = 30;
+
+mod list_tile;
+pub use list_tile::ListTile;
+
+mod list_tile_observer;
+pub use list_tile_observer::ListTileObserver;
+#[doc(hidden)]
+pub use list_tile_observer::PwtListTileObserver;
 
 /// List with virtual scrolling (vertical).
 ///
@@ -269,25 +276,26 @@ impl PwtList {
             if self.scroll_info.start > 5 {
                 for index in (self.scroll_info.start - 5)..self.scroll_info.start {
                     // log::info!("ADD CACHED ROW {index}");
-                    let mut row = props.renderer.emit(index);
-                    row.set_key(format!("row-{index}"));
-                    row.set_force_height(0);
-                    row.set_tile_pos(index);
-                    row.set_resize_callback(Some(self.tile_resize_callback.clone()));
-                    row.set_attribute("role", "listitem");
+
+                    let row = ListTileObserver::new(props.renderer.emit(index))
+                        .key(format!("row-{index}"))
+                        .force_height(0)
+                        .tile_pos(index)
+                        .resize_callback(Some(self.tile_resize_callback.clone()));
+
+                    //row.set_attribute("role", "listitem");
                     content.add_child(row);
                 }
             }
         }
 
         for pos in self.scroll_info.start..self.scroll_info.end {
-            let mut row = props.renderer.emit(pos);
             // if we have keys, we need overflow-anchor none on the scroll container
             // see: https://github.com/facebook/react/issues/27044
-            row.set_key(format!("row-{pos}"));
-            row.set_tile_pos(pos);
-            row.set_resize_callback(Some(self.tile_resize_callback.clone()));
-            row.set_attribute("role", "listitem");
+            let row = ListTileObserver::new(props.renderer.emit(pos))
+                .key(format!("row-{pos}"))
+                .tile_pos(pos)
+                .resize_callback(Some(self.tile_resize_callback.clone()));
 
             content.add_child(row);
         }
