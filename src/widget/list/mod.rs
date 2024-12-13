@@ -92,6 +92,11 @@ pub struct List {
     #[prop_or(22)]
     #[builder]
     pub min_row_height: u64,
+
+    /// Add a line as separator between list items.
+    #[prop_or_default]
+    #[builder]
+    pub separator: bool,
 }
 
 impl List {
@@ -281,6 +286,7 @@ impl PwtList {
                         .key(format!("row-{index}"))
                         .force_height(0)
                         .tile_pos(index)
+                        .separator(props.separator)
                         .resize_callback(Some(self.tile_resize_callback.clone()));
 
                     //row.set_attribute("role", "listitem");
@@ -295,6 +301,7 @@ impl PwtList {
             let row = ListTileObserver::new(props.renderer.emit(pos))
                 .key(format!("row-{pos}"))
                 .tile_pos(pos)
+                .separator(props.separator)
                 .resize_callback(Some(self.tile_resize_callback.clone()));
 
             content.add_child(row);
