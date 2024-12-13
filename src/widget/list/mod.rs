@@ -1,6 +1,5 @@
 use gloo_timers::callback::Timeout;
 use html::IntoPropValue;
-use yew::virtual_dom::Key;
 
 use crate::prelude::*;
 
@@ -130,7 +129,7 @@ struct SizeAccumulator {
 
 impl SizeAccumulator {
     // Returns the row height
-    fn get_row_height(&self, index: usize, min_row_height: u64) -> u64 {
+    fn _get_row_height(&self, index: usize, min_row_height: u64) -> u64 {
         self.height_list
             .get(index)
             .map(|v| *v)
@@ -253,7 +252,7 @@ impl PwtList {
         };
     }
 
-    fn render_content(&self, ctx: &Context<Self>, props: &List) -> Html {
+    fn render_content(&self, _ctx: &Context<Self>, props: &List) -> Html {
         let min_height = format!("{}px", props.min_row_height);
 
         let mut content = Container::new()

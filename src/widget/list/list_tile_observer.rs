@@ -142,8 +142,6 @@ impl Component for PwtListTileObserver {
     }
 
     fn rendered(&mut self, ctx: &Context<Self>, _first_render: bool) {
-        let props = ctx.props();
-
         if self.size_observer.is_none() {
             ctx.link().send_message(Msg::SetupSizeObserver);
         }
