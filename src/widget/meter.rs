@@ -67,6 +67,12 @@ pub struct Meter {
     #[builder_cb(IntoOptionalTextRenderFn, into_optional_text_render_fn, f32)]
     #[prop_or_default]
     pub render_text: Option<TextRenderFn<f32>>,
+
+    /// Determines if the meter value transitions are animated (via CSS) or not.
+    /// It is equivalent to setting the class `pwt-animated`.
+    #[builder]
+    #[prop_or_default]
+    pub animated: bool,
 }
 
 impl Meter {
@@ -113,6 +119,10 @@ impl Into<VTag> for Meter {
             );
         } else {
             class.push("pwt-meter-small")
+        }
+
+        if self.animated {
+            class.push("pwt-animated");
         }
 
         children.push(
