@@ -745,3 +745,69 @@ impl From<Opacity> for Classes {
         }
     }
 }
+
+/// Wrapper type to specify CSS font style class.
+///
+/// uses the defined font styles for
+/// `display`, `headline`, `title`, `label`, `body`
+/// in three sizes each:
+/// `small`, `medium`, `large`.
+///
+/// The exact font-size/line-height/etc. is determined by the chosen theme.
+///
+/// maps to the class: `pwt-font-<style>-<size>`
+///
+/// ```
+/// # use pwt::prelude::*;
+/// # use pwt::widget::Container;
+/// # use pwt::widget::Fa;
+/// use pwt::css::*;
+/// Container::new()
+///    .class(FontStyle::DisplaySmall)
+///    .with_child("Some Text")
+/// # ;
+/// ```
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub enum FontStyle {
+    DisplaySmall,
+    DisplayMedium,
+    DisplayLarge,
+
+    HeadlineSmall,
+    HeadlineMedium,
+    HeadlineLarge,
+
+    TitleSmall,
+    TitleMedium,
+    TitleLarge,
+
+    LabelSmall,
+    LabelMedium,
+    LabelLarge,
+
+    BodySmall,
+    BodyMedium,
+    BodyLarge,
+}
+
+impl From<FontStyle> for Classes {
+    fn from(value: FontStyle) -> Self {
+        match value {
+            FontStyle::DisplaySmall => "pwt-font-display-small".into(),
+            FontStyle::DisplayMedium => "pwt-font-display-medium".into(),
+            FontStyle::DisplayLarge => "pwt-font-display-large".into(),
+            FontStyle::HeadlineSmall => "pwt-font-headline-small".into(),
+            FontStyle::HeadlineMedium => "pwt-font-headline-medium".into(),
+            FontStyle::HeadlineLarge => "pwt-font-headline-large".into(),
+            FontStyle::TitleSmall => "pwt-font-title-small".into(),
+            FontStyle::TitleMedium => "pwt-font-title-medium".into(),
+            FontStyle::TitleLarge => "pwt-font-title-large".into(),
+            FontStyle::LabelSmall => "pwt-font-label-small".into(),
+            FontStyle::LabelMedium => "pwt-font-label-medium".into(),
+            FontStyle::LabelLarge => "pwt-font-label-large".into(),
+            FontStyle::BodySmall => "pwt-font-body-small".into(),
+            FontStyle::BodyMedium => "pwt-font-body-medium".into(),
+            FontStyle::BodyLarge => "pwt-font-body-large".into(),
+        }
+    }
+}
