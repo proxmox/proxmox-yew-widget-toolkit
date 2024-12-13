@@ -1,3 +1,31 @@
+rust-pwt (0.4.0) unstable; urgency=medium
+
+  * new lits widget with virtual scrolling
+
+  * tab: change default style to MaterialPrimary
+
+  * improved documentation
+
+  * avoid `static mut` variables
+
+  * combine storage location and state_id
+
+  * add/use new AsyncPool and AsyncAbortGuard
+
+  * SearchDropdown: use async abort guard
+
+  * InputPanel: add code to add hidden fields
+
+  * widget: form: rename Boolean to Checkbox
+
+  * widget: form: add RadioButton component
+
+  * widget: boolean: implement custom on/off values
+
+  * many bug fixes and cleanups
+
+ -- Proxmox Support Team <support@proxmox.com>  Fri, 13 Dec 2024 17:24:01 +0100
+
 rust-pwt (0.3.0) bookworm; urgency=medium
 
   * countless bug fixes
