@@ -66,16 +66,16 @@ fn set_css_density(density: ThemeDensity) {
     );
 
     match density {
-        ThemeDensity::High => {
+        ThemeDensity::Compact => {
             let _ = class_list.add_1("pwt-density-high");
         }
-        ThemeDensity::Touch => {
+        ThemeDensity::Relaxed => {
             let _ = class_list.add_1("pwt-density-touch");
         }
         ThemeDensity::Medium => {
             let _ = class_list.add_1("pwt-density-medium");
         }
-        ThemeDensity::Auto => { /* do nothing */ }
+        ThemeDensity::Preset => { /* do nothing */ }
     };
 }
 

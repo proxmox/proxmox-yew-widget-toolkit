@@ -51,10 +51,10 @@ impl Component for PwtThemeDensitySelector {
         Self {
             density: theme.density,
             items: Rc::new(vec![
-                AttrValue::from(ThemeDensity::Auto.to_string()),
-                AttrValue::from(ThemeDensity::High.to_string()),
+                AttrValue::from(ThemeDensity::Preset.to_string()),
+                AttrValue::from(ThemeDensity::Compact.to_string()),
                 AttrValue::from(ThemeDensity::Medium.to_string()),
-                AttrValue::from(ThemeDensity::Touch.to_string()),
+                AttrValue::from(ThemeDensity::Relaxed.to_string()),
             ]),
         }
     }

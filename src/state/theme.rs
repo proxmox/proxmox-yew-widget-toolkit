@@ -46,24 +46,24 @@ impl TryFrom<&str> for ThemeMode {
 /// Theme density
 #[derive(PartialEq, Debug, Default, Clone, Copy)]
 pub enum ThemeDensity {
-    /// Use defaults from CSS.
+    /// Use default spacing and font size from theme.
     #[default]
-    Auto,
-    /// High density theme.
-    High,
-    /// Normal spacing, suitable for desktop application.
+    Preset,
+    /// High density theme with narrow spacing and smaller font.
+    Compact,
+    /// Medium spacing, suitable for desktop application.
     Medium,
-    /// Large spacing, suitable for touch devices.
-    Touch,
+    /// Large, relaxed spacing and higher font size, suitable for high DPI and touch devices.
+    Relaxed,
 }
 
 impl std::fmt::Display for ThemeDensity {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(match self {
-            ThemeDensity::High => "High",
+            ThemeDensity::Compact => "Compact",
             ThemeDensity::Medium => "Medium",
-            ThemeDensity::Touch => "Touch",
-            ThemeDensity::Auto => "Auto",
+            ThemeDensity::Relaxed => "Relaxed",
+            ThemeDensity::Preset => "Preset",
         })
     }
 }
@@ -72,11 +72,16 @@ impl TryFrom<&str> for ThemeDensity {
     type Error = Error;
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         Ok(match value {
-            "High" => ThemeDensity::High,
+            "Compact" => ThemeDensity::Compact,
             "Medium" => ThemeDensity::Medium,
-            "Touch" => ThemeDensity::Touch,
-            "" | "Auto" => ThemeDensity::Auto,
-            _ => bail!("'{}' is not a valid theme density", value),
+            "Relaxed" => ThemeDensity::Relaxed,
+            // NOTE: the three matches (High, Touch, Auto) below are for migrating due to a rename
+            // of the options. They could be removed with some future (stable) release.
+            "High" => ThemeDensity::Compact,
+            "Touch" => ThemeDensity::Relaxed,
+            "Auto" => ThemeDensity::Preset,
+            "" | "Preset" => ThemeDensity::Preset,
+            _ => bail!("'{value}' is not a valid theme density"),
         })
     }
 }
@@ -118,7 +123,7 @@ impl Default for Theme {
     fn default() -> Self {
         Self {
             mode: ThemeMode::default(),
-            density: ThemeDensity::Auto, // use default from css
+            density: ThemeDensity::Preset, // use default from css
             name: String::from(get_default_theme_name()),
         }
     }
