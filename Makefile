@@ -9,11 +9,17 @@ deb:
 	rm -rf build
 	mkdir build
 	echo system >build/rust-toolchain
-	debcargo package --config "${PWD}/pwt-macros/debian/debcargo.toml" --changelog-ready --no-overlay-write-back --directory "${PWD}/build/pwt-macros" "pwt-macros" "${MACRO_PKG_VER}"
+	debcargo package \
+	  --config "${PWD}/pwt-macros/debian/debcargo.toml" \
+	  --changelog-ready --no-overlay-write-back \
+	  --directory "${PWD}/build/pwt-macros" \
+	  "pwt-macros" "${MACRO_PKG_VER}"
 	cd build/pwt-macros; dpkg-buildpackage -b -uc -us
-	# Please install librust-pwt-macros-dev
-	# dpkg -i build/librust-pwt-macros-dev_*_amd64.deb
-	debcargo package --config "${PWD}/debian/debcargo.toml" --changelog-ready --no-overlay-write-back --directory "${PWD}/build/pwt" "pwt" "${PKG_VER}"
+	# Please install librust-pwt-macros-dev: dpkg -i build/librust-pwt-macros-dev_*_amd64.deb
+	debcargo package \
+	  --config "${PWD}/debian/debcargo.toml" \
+	  --changelog-ready --no-overlay-write-back \
+	  --directory "${PWD}/build/pwt" "pwt" "${PKG_VER}"
 	cd build/pwt; dpkg-buildpackage -b -uc -us
 
 
