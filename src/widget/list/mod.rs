@@ -92,6 +92,11 @@ pub struct List {
     #[prop_or_default]
     #[builder]
     pub separator: bool,
+
+    /// Render rows before they become visible.
+    #[prop_or(2)]
+    #[builder]
+    pub prefetch_count: u8,
 }
 
 impl List {
@@ -226,8 +231,9 @@ impl PwtList {
             (0, 0)
         };
 
-        let max_visible_rows =
-            (self.viewport_height / props.min_row_height as f64).ceil() as u64 + 5;
+        let max_visible_rows = (self.viewport_height / props.min_row_height as f64).ceil() as u64
+            + 1u64
+            + (props.prefetch_count as u64);
         let end = if virtual_scroll {
             (start + max_visible_rows).min(item_count)
         } else {
@@ -267,9 +273,10 @@ impl PwtList {
             .style("position", "relative")
             .style("top", format!("{}px", self.scroll_info.offset));
 
+        let prefetch_count = props.prefetch_count as u64;
         if self.scroll_info.end > self.scroll_info.start {
-            if self.scroll_info.start > 5 {
-                for index in (self.scroll_info.start - 5)..self.scroll_info.start {
+            if self.scroll_info.start > prefetch_count {
+                for index in (self.scroll_info.start - prefetch_count)..self.scroll_info.start {
                     // log::info!("ADD CACHED ROW {index}");
 
                     let row = ListTileObserver::new(props.renderer.emit(index))
