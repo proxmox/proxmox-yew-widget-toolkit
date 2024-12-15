@@ -3,13 +3,13 @@ use std::rc::Rc;
 use yew::html::{IntoEventCallback, IntoPropValue};
 use yew::virtual_dom::{Key, VComp, VNode};
 
-use crate::dom::{element_direction_rtl, IntoHtmlElement};
+use crate::dom::{element_direction_rtl, DomSizeObserver, IntoHtmlElement};
 use crate::prelude::*;
 use crate::props::{IntoStorageLocation, StorageLocation};
 use crate::state::{NavigationContext, NavigationContextExt, PersistentState, Selection};
 use crate::web_sys_ext::{ResizeObserverBoxOptions, ResizeObserverOptions};
 use crate::widget::focus::roving_tabindex_next;
-use crate::widget::{Container, SizeObserver};
+use crate::widget::Container;
 
 use super::TabBarItem;
 
@@ -185,7 +185,7 @@ pub struct PwtTabBar {
     indicator_ref: NodeRef,
     active_ref: NodeRef,
     size_ref: NodeRef,
-    active_size_observer: Option<SizeObserver>,
+    active_size_observer: Option<DomSizeObserver>,
 }
 
 fn get_active_or_default(props: &TabBar, active: &Option<Key>) -> Option<Key> {
@@ -532,7 +532,7 @@ impl Component for PwtTabBar {
         if let Some(element) = self.active_ref.clone().into_html_element() {
             let mut options = ResizeObserverOptions::new();
             options.box_(ResizeObserverBoxOptions::BorderBox);
-            self.active_size_observer = Some(SizeObserver::new_with_options(
+            self.active_size_observer = Some(DomSizeObserver::new_with_options(
                 &element,
                 move |(_, _)| {
                     link.send_message(Msg::UpdateIndicator);

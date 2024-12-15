@@ -6,8 +6,7 @@
 use js_sys::Error;
 use web_sys::{window, HtmlElement};
 
-use crate::dom::{element_direction_rtl, IntoHtmlElement};
-use crate::widget::SizeObserver;
+use crate::dom::{element_direction_rtl, DomSizeObserver, IntoHtmlElement};
 
 /// Defines a point on a rectangle
 ///
@@ -571,18 +570,18 @@ pub fn align_to_viewport<N: IntoHtmlElement>(
     Ok(())
 }
 
-/// Uses [`align_to`] and a [`SizeObserver`] to automatically adjust the position of floating
+/// Uses [`align_to`] and a [`DomSizeObserver`] to automatically adjust the position of floating
 /// elements when they change size. This is useful for elements where the initial size is not
 /// known (e.g. a [`crate::widget::data_table::DataTable`] with virtual scrolling).
 pub struct AutoFloatingPlacement {
     base: HtmlElement,
     element: HtmlElement,
     options: AlignOptions,
-    _size_observer: SizeObserver,
+    _size_observer: DomSizeObserver,
 }
 
 impl AutoFloatingPlacement {
-    /// Sets up the [`SizeObserver`] on `element` and updates the intial alignment.
+    /// Sets up the [`DomSizeObserver`] on `element` and updates the intial alignment.
     pub fn new<B, N>(base: B, element: N, options: AlignOptions) -> Result<Self, Error>
     where
         B: IntoHtmlElement + Clone + 'static,
@@ -599,7 +598,7 @@ impl AutoFloatingPlacement {
             .into_html_element()
             .ok_or_else(|| js_sys::Error::new("element is not an HtmlElement"))?;
 
-        let size_observer = SizeObserver::new(element.as_ref(), move |(_, _)| {
+        let size_observer = DomSizeObserver::new(element.as_ref(), move |(_, _)| {
             if let Err(err) = align_to(
                 observer_base.clone(),
                 observer_element.clone(),

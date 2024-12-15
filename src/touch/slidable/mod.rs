@@ -12,10 +12,11 @@ use yew::html::{IntoEventCallback, IntoPropValue};
 use yew::prelude::*;
 use yew::virtual_dom::VNode;
 
+use crate::dom::DomSizeObserver;
 use crate::prelude::*;
 use crate::props::CssLength;
 use crate::touch::{GestureDetector, GestureDragEvent, GestureSwipeEvent};
-use crate::widget::{Container, Row, SizeObserver};
+use crate::widget::{Container, Row};
 
 use pwt_macros::widget;
 
@@ -97,15 +98,15 @@ pub struct PwtSlidable {
     left_size: f64,
     left_ref: NodeRef,
     left_action_ref: NodeRef,
-    left_observer: Option<SizeObserver>,
+    left_observer: Option<DomSizeObserver>,
     right_size: f64,
     right_ref: NodeRef,
     right_action_ref: NodeRef,
-    right_observer: Option<SizeObserver>,
+    right_observer: Option<DomSizeObserver>,
     content_width: f64,
     content_height: f64,
     content_ref: NodeRef,
-    content_observer: Option<SizeObserver>,
+    content_observer: Option<DomSizeObserver>,
     last_action_left: bool,
     switch_back: bool,
     view_state: ViewState,
@@ -426,19 +427,19 @@ impl Component for PwtSlidable {
         if first_render {
             if let Some(el) = self.content_ref.cast::<web_sys::HtmlElement>() {
                 let link = ctx.link().clone();
-                self.content_observer = Some(SizeObserver::new(&el, move |(x, y)| {
+                self.content_observer = Some(DomSizeObserver::new(&el, move |(x, y)| {
                     link.send_message(Msg::ContentResize(x, y));
                 }));
             }
             if let Some(el) = self.left_ref.cast::<web_sys::HtmlElement>() {
                 let link = ctx.link().clone();
-                self.left_observer = Some(SizeObserver::new(&el, move |(x, _y)| {
+                self.left_observer = Some(DomSizeObserver::new(&el, move |(x, _y)| {
                     link.send_message(Msg::LeftResize(x));
                 }));
             }
             if let Some(el) = self.right_ref.cast::<web_sys::HtmlElement>() {
                 let link = ctx.link().clone();
-                self.right_observer = Some(SizeObserver::new(&el, move |(x, _y)| {
+                self.right_observer = Some(DomSizeObserver::new(&el, move |(x, _y)| {
                     link.send_message(Msg::RightResize(x));
                 }));
             }

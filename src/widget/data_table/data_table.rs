@@ -11,7 +11,7 @@ use yew::html::IntoPropValue;
 use yew::prelude::*;
 use yew::virtual_dom::{Key, VComp, VNode};
 
-use crate::dom::IntoHtmlElement;
+use crate::dom::{DomSizeObserver, IntoHtmlElement};
 use crate::prelude::*;
 use crate::props::{
     AsClassesMut, AsCssStylesMut, CallbackMut, CssLength, CssStyles, IntoEventCallbackMut,
@@ -19,7 +19,7 @@ use crate::props::{
 };
 use crate::state::{DataStore, Selection, SelectionObserver};
 use crate::widget::focus::focus_inside_input;
-use crate::widget::{get_unique_element_id, Column, Container, SizeObserver};
+use crate::widget::{get_unique_element_id, Column, Container};
 
 use super::{
     create_indexed_header_list, CellConfiguration, DataTableColumn, DataTableHeader,
@@ -514,10 +514,10 @@ pub struct PwtDataTable<S: DataStore> {
     viewport_width: f64,
     table_height: f64,
 
-    viewport_size_observer: Option<SizeObserver>,
+    viewport_size_observer: Option<DomSizeObserver>,
 
     table_ref: NodeRef,
-    table_size_observer: Option<SizeObserver>,
+    table_size_observer: Option<DomSizeObserver>,
 
     row_height: f64,
     scrollbar_size: Option<f64>,
@@ -1754,7 +1754,7 @@ impl<S: DataStore + 'static> Component for PwtDataTable<S> {
             if let Some(el) = self.scroll_ref.cast::<web_sys::Element>() {
                 let link = ctx.link().clone();
                 let size_observer =
-                    SizeObserver::new(&el, move |(width, height, client_width, _)| {
+                    DomSizeObserver::new(&el, move |(width, height, client_width, _)| {
                         link.send_message(Msg::ViewportResize(width, height, width - client_width));
                     });
                 self.viewport_size_observer = Some(size_observer);
@@ -1762,7 +1762,7 @@ impl<S: DataStore + 'static> Component for PwtDataTable<S> {
 
             if let Some(el) = self.table_ref.cast::<web_sys::HtmlElement>() {
                 let link = ctx.link().clone();
-                let size_observer = SizeObserver::new(&el, move |(width, height)| {
+                let size_observer = DomSizeObserver::new(&el, move |(width, height)| {
                     link.send_message(Msg::TableResize(width, height));
                 });
                 self.table_size_observer = Some(size_observer);

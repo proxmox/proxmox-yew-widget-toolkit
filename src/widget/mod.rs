@@ -152,9 +152,6 @@ mod segmented_button;
 pub use segmented_button::PwtSegmentedButton;
 pub use segmented_button::SegmentedButton;
 
-mod size_observer;
-pub use size_observer::{IntoSizeCallback, SizeObserver};
-
 mod tab;
 #[doc(hidden)]
 pub use tab::{PwtTabBar, PwtTabPanel};

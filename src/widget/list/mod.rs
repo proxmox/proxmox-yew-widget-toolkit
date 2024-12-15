@@ -7,7 +7,7 @@ use crate::props::{EventSubscriber, WidgetBuilder};
 
 use crate::widget::Container;
 
-use super::SizeObserver;
+use crate::dom::DomSizeObserver;
 
 use pwt_macros::{builder, widget};
 
@@ -197,12 +197,12 @@ pub struct PwtList {
     viewport_height: f64,
     viewport_width: f64,
     viewport_ref: NodeRef,
-    viewport_size_observer: Option<SizeObserver>,
+    viewport_size_observer: Option<DomSizeObserver>,
     viewport_scrollbar_size: Option<f64>,
     viewport_scroll_top: usize,
 
     table_ref: NodeRef,
-    table_size_observer: Option<SizeObserver>,
+    table_size_observer: Option<DomSizeObserver>,
     table_height: f64,
 
     scroll_info: VirtualScrollInfo,
@@ -426,14 +426,14 @@ impl Component for PwtList {
             if let Some(el) = &viewport_el {
                 let link = ctx.link().clone();
                 let size_observer =
-                    SizeObserver::new(&el, move |(width, height, client_width, _)| {
+                    DomSizeObserver::new(&el, move |(width, height, client_width, _)| {
                         link.send_message(Msg::ViewportResize(width, height, width - client_width));
                     });
                 self.viewport_size_observer = Some(size_observer);
             }
             if let Some(el) = self.table_ref.cast::<web_sys::HtmlElement>() {
                 let link = ctx.link().clone();
-                let size_observer = SizeObserver::new(&el, move |(width, height)| {
+                let size_observer = DomSizeObserver::new(&el, move |(width, height)| {
                     link.send_message(Msg::TableResize(width, height));
                 });
                 self.table_size_observer = Some(size_observer);

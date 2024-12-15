@@ -5,7 +5,8 @@ use crate::props::{ContainerBuilder, WidgetBuilder, WidgetStyleBuilder};
 
 use pwt_macros::{builder, widget};
 
-use super::{Container, CssBorderBuilder, ListTile, SizeObserver};
+use super::{Container, CssBorderBuilder, ListTile};
+use crate::dom::DomSizeObserver;
 
 /// List tile. A container with grid/subgrid layout.
 ///
@@ -62,7 +63,7 @@ impl ListTileObserver {
 
 pub struct PwtListTileObserver {
     node_ref: NodeRef,
-    size_observer: Option<SizeObserver>,
+    size_observer: Option<DomSizeObserver>,
 }
 
 pub enum Msg {
@@ -79,7 +80,7 @@ impl PwtListTileObserver {
                 }
                 let tile_pos = props.tile_pos;
 
-                self.size_observer = Some(SizeObserver::new(&el, {
+                self.size_observer = Some(DomSizeObserver::new(&el, {
                     let el = el.clone();
                     move |(w, h)| {
                         resize_callback.emit((tile_pos, w, h));

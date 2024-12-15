@@ -10,11 +10,12 @@ use yew::virtual_dom::{Key, VComp, VNode};
 
 use crate::css::ColorScheme;
 use crate::dom::element_direction_rtl;
+use crate::dom::DomSizeObserver;
 use crate::prelude::*;
 use crate::props::{BuilderFn, IntoOptionalBuilderFn};
 use crate::widget::focus::FocusTracker;
 use crate::widget::menu::{Menu, MenuButton};
-use crate::widget::{Container, Row, SizeObserver};
+use crate::widget::{Container, Row};
 
 // Note about node_ref property: make it optional, and generate an
 // unique one in Component::create(). That way we can clone Properies without
@@ -164,7 +165,7 @@ pub struct PwtResizableHeader {
     width: f64,
     pointermove_listener: Option<EventListener>,
     pointerup_listener: Option<EventListener>,
-    size_observer: Option<SizeObserver>,
+    size_observer: Option<DomSizeObserver>,
     has_focus: bool,
     picker_ref: NodeRef,
     show_picker: bool,
@@ -364,7 +365,7 @@ impl Component for PwtResizableHeader {
             let props = ctx.props();
             if let Some(el) = self.node_ref.cast::<web_sys::HtmlElement>() {
                 let on_size_change = props.on_size_change.clone();
-                self.size_observer = Some(SizeObserver::new(&el, move |(x, _y)| {
+                self.size_observer = Some(DomSizeObserver::new(&el, move |(x, _y)| {
                     if let Some(on_size_change) = &on_size_change {
                         on_size_change.emit(x);
                     }

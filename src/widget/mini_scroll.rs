@@ -2,8 +2,9 @@ use yew::prelude::*;
 
 use gloo_timers::callback::Timeout;
 
+use crate::dom::DomSizeObserver;
 use crate::props::{ContainerBuilder, EventSubscriber, WidgetBuilder};
-use crate::widget::{Container, SizeObserver};
+use crate::widget::Container;
 
 use pwt_macros::widget;
 
@@ -73,11 +74,11 @@ enum ScrollMode {
 #[doc(hidden)]
 pub struct PwtMiniScroll {
     handle_ref: NodeRef,
-    handle_size_observer: Option<SizeObserver>,
+    handle_size_observer: Option<DomSizeObserver>,
     scroll_ref: NodeRef,
     content_ref: NodeRef,
-    content_size_observer: Option<SizeObserver>,
-    scroll_size_observer: Option<SizeObserver>,
+    content_size_observer: Option<DomSizeObserver>,
+    scroll_size_observer: Option<DomSizeObserver>,
     width: f64,
     handle_width: f64,
     content_width: f64,
@@ -277,21 +278,21 @@ impl Component for PwtMiniScroll {
         if first_render {
             if let Some(el) = self.scroll_ref.cast::<web_sys::Element>() {
                 let link = ctx.link().clone();
-                let size_observer = SizeObserver::new(&el, move |(width, height)| {
+                let size_observer = DomSizeObserver::new(&el, move |(width, height)| {
                     link.send_message(Msg::ScrollResize(width, height));
                 });
                 self.scroll_size_observer = Some(size_observer);
             }
             if let Some(el) = self.content_ref.cast::<web_sys::Element>() {
                 let link = ctx.link().clone();
-                let size_observer = SizeObserver::new(&el, move |(width, height)| {
+                let size_observer = DomSizeObserver::new(&el, move |(width, height)| {
                     link.send_message(Msg::ContentResize(width, height));
                 });
                 self.content_size_observer = Some(size_observer);
             }
             if let Some(el) = self.handle_ref.cast::<web_sys::Element>() {
                 let link = ctx.link().clone();
-                let size_observer = SizeObserver::new(&el, move |(width, height)| {
+                let size_observer = DomSizeObserver::new(&el, move |(width, height)| {
                     link.send_message(Msg::HandleResize(width, height));
                 });
                 self.handle_size_observer = Some(size_observer);
