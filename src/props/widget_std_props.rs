@@ -4,7 +4,7 @@ use yew::html::IntoPropValue;
 use yew::prelude::*;
 use yew::virtual_dom::{ApplyAttributeAs, Attributes, Key, Listeners, VList, VNode, VTag};
 
-use crate::props::{AsCssStylesMut, CssStyles, ListenersWrapper};
+use crate::props::{CssStyles, ListenersWrapper};
 
 /// Standard widget properties.
 #[derive(PartialEq, Debug, Default, Clone)]
@@ -127,11 +127,5 @@ impl WidgetStdProps {
             listeners,
             vlist.into(),
         )
-    }
-}
-
-impl AsCssStylesMut for WidgetStdProps {
-    fn as_css_styles_mut(&mut self) -> &mut CssStyles {
-        &mut self.styles
     }
 }
