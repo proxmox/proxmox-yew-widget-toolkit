@@ -171,6 +171,26 @@ pub fn focus_inside_el(el: web_sys::HtmlElement) -> bool {
     }
 }
 
+/// Test if focus is inside a input like field
+///
+/// This is the case if the focused element is an input, textarea or is
+/// marked as 'contenteditable'.
+pub fn focus_inside_input() -> bool {
+    let window = web_sys::window().unwrap();
+    let document = window.document().unwrap();
+
+    match document.active_element() {
+        Some(el) => match el.dyn_into::<web_sys::HtmlElement>() {
+            Ok(el) => {
+                let tag = el.tag_name().to_lowercase();
+                tag == "input" || tag == "textarea" || el.is_content_editable()
+            }
+            Err(_) => false,
+        },
+        None => false,
+    }
+}
+
 /// Update roving tabindex after focus change (calls [update_roving_tabindex_el]).
 pub fn update_roving_tabindex(node_ref: &NodeRef) {
     if let Some(el) = node_ref.cast::<web_sys::HtmlElement>() {

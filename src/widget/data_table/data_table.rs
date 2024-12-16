@@ -18,6 +18,7 @@ use crate::props::{
     SorterFn, WidgetStyleBuilder,
 };
 use crate::state::{DataStore, Selection, SelectionObserver};
+use crate::widget::focus::focus_inside_input;
 use crate::widget::{get_unique_element_id, Column, Container, SizeObserver};
 
 use super::{
@@ -1232,20 +1233,25 @@ impl<S: DataStore + 'static> Component for PwtDataTable<S> {
                     }
 
                     if self.focus_inside_cell(&record_key) {
+                        let inside_input = focus_inside_input();
                         match key {
                             "F2" | "Escape" => {
                                 event.prevent_default();
                                 self.focus_cell(&record_key);
                             }
-                            "ArrowRight" | "ArrowDown" => {
+                            "ArrowRight" | "ArrowDown" if !inside_input => {
                                 event.prevent_default();
                                 self.cell_focus_next(&record_key, false);
                             }
-                            "ArrowLeft" | "ArrowUp" => {
+                            "ArrowLeft" | "ArrowUp" if !inside_input => {
                                 event.prevent_default();
                                 self.cell_focus_next(&record_key, true);
                             }
-                            " " => {
+                            "Tab" if inside_input => {
+                                event.prevent_default();
+                                self.cell_focus_next(&record_key, !shift);
+                            }
+                            " " if !inside_input => {
                                 // avoid scrollbar default action
                                 event.prevent_default();
                             }
