@@ -349,7 +349,6 @@ impl Component for PwtList {
                 self.update_scroll_info(props);
                 self.tile_resize_timeout = None;
                 if self.scroll_diff != 0 && self.viewport_scroll_top != 0 {
-                    log::info!("TOP DIFF {}", self.scroll_diff);
                     self.set_scroll_top =
                         Some((self.viewport_scroll_top as i64 + self.scroll_diff).max(0) as usize);
                     self.scroll_diff = 0;
@@ -360,12 +359,10 @@ impl Component for PwtList {
                 let corr =
                     self.row_heights
                         .update_row(pos as usize, h as u64, props.min_row_height);
-                log::info!("UPDATE ROW HEIGHT {pos} {h} {corr}");
 
                 //self.update_scroll_info(props);
 
                 if corr != 0 && pos < self.scroll_info.start {
-                    log::info!("CORRECTION {pos} {corr}");
                     self.scroll_diff += corr;
                 }
 

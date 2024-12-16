@@ -82,7 +82,6 @@ impl PwtListTileObserver {
                 self.size_observer = Some(SizeObserver::new(&el, {
                     let el = el.clone();
                     move |(w, h)| {
-                        log::info!("REAL HEIGHT {}", el.scroll_height());
                         resize_callback.emit((tile_pos, w, h));
                     }
                 }));

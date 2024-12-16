@@ -483,7 +483,6 @@ impl<MF: ManagedField + 'static> Component for ManagedFieldMaster<MF> {
         let validation_args = MF::validation_args(props);
 
         if validation_args != old_validation_args {
-            log::info!("UPDATE VF {:?}", props.as_input_props().name);
             let validate =
                 SubmitValidateFn::new(move |value| MF::validator(&validation_args, value));
             refresh1 = true;
