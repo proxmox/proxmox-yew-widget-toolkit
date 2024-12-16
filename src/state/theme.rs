@@ -107,11 +107,10 @@ fn get_default_theme_name() -> String {
 
 /// Theme. Combines a theme name with a theme mode ([ThemeMode])
 ///
-/// This struct implements methods to load and store the current theme
-/// settings in the local browser store. The theme name and theme mode
-/// can be stored and changed separately, and we emit a custom
-/// [web_sys::Event] called `pwt-theme-changed`. So it is possible to
-/// observe changes by adding an event listener to the document.
+/// This struct implements methods to load and store the current theme settings in the local
+/// browser store. The theme name and theme mode can be stored and changed separately, and we emit
+/// a custom [web_sys::Event] called `pwt-theme-changed`. So it is possible to observe changes by
+/// adding an event listener to the document.
 #[derive(PartialEq, Debug, Clone)]
 pub struct Theme {
     pub mode: ThemeMode,
@@ -251,8 +250,8 @@ fn use_dark_mode(theme: &Theme, system_prefer_dark_mode: bool) -> bool {
 
 /// Listen to theme changes.
 ///
-/// This helper listens to the `pwt-theme-changed` event, and uses a media
-/// query to get notified when `prefers-color-scheme` changes.
+/// This helper listens to the `pwt-theme-changed` event, and uses a media query to get notified
+/// when `prefers-color-scheme` changes.
 pub struct ThemeObserver {
     media_query: MediaQueryList,
     scheme_changed_closure: Option<Closure<dyn Fn()>>,
