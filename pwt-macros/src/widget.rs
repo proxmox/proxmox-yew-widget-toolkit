@@ -209,6 +209,9 @@ fn derive_widget(setup: &WidgetSetup, widget: DeriveInput) -> Result<proc_macro2
 
     output.extend(quote! {
         impl #impl_generics #pwt::props::WidgetBuilder for #ident #ty_generics #where_clause {
+            fn as_std_props(&self) -> & #pwt::props::WidgetStdProps {
+                &self.std_props
+            }
             fn as_std_props_mut(&mut self) -> &mut #pwt::props::WidgetStdProps {
                 &mut self.std_props
             }

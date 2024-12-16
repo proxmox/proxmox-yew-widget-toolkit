@@ -1,0 +1,89 @@
+use std::marker::PhantomData;
+use std::rc::Rc;
+
+use yew::prelude::*;
+use yew::virtual_dom::{VComp, VNode};
+
+use crate::props::WidgetBuilder;
+
+use crate::dom::{DomSizeObserver, IntoSizeCallback, SizeCallback};
+
+#[derive(Clone, PartialEq, Properties)]
+pub struct SizeObserver<W: WidgetBuilder + PartialEq + Clone> {
+    content: W,
+    on_resize: SizeCallback,
+}
+
+impl<W: WidgetBuilder + PartialEq + Clone + 'static> SizeObserver<W> {
+    /// Creates a new instance.
+    pub fn new<X>(content: W, on_resize: impl IntoSizeCallback<X>) -> Self {
+        yew::props!(Self {
+            content,
+            on_resize: on_resize.into_size_cb()
+        })
+    }
+}
+
+#[doc(hidden)]
+pub struct PwtSizeObserver<W> {
+    observer: Option<DomSizeObserver>,
+    _phantom: PhantomData<W>,
+}
+
+pub enum Msg {
+    Resize((f64, f64, f64, f64)),
+}
+
+impl<W: WidgetBuilder + PartialEq + Clone + 'static> Component for PwtSizeObserver<W> {
+    type Message = Msg;
+    type Properties = SizeObserver<W>;
+
+    fn create(_ctx: &Context<Self>) -> Self {
+        Self {
+            observer: None,
+            _phantom: PhantomData,
+        }
+    }
+
+    fn view(&self, ctx: &Context<Self>) -> Html {
+        let props = ctx.props();
+        let widget = props.content.clone();
+
+        widget.into()
+    }
+
+    fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
+        let props = ctx.props();
+        match msg {
+            Msg::Resize(args) => {
+                match &props.on_resize {
+                    SizeCallback::Normal(cb) => cb.emit((args.0, args.1)),
+                    SizeCallback::ClientRect(cb) => cb.emit(args),
+                }
+                false
+            }
+        }
+    }
+
+    fn rendered(&mut self, ctx: &Context<Self>, first_render: bool) {
+        if first_render {
+            let props = ctx.props();
+            let node_ref = props.content.as_std_props().node_ref.clone();
+            let el = node_ref.cast::<web_sys::Element>().unwrap();
+            let link = ctx.link().clone();
+            let size_observer =
+                DomSizeObserver::new(&el, move |(width, height, client_width, client_height)| {
+                    link.send_message(Msg::Resize((width, height, client_width, client_height)));
+                });
+            self.observer = Some(size_observer);
+        }
+    }
+}
+
+impl<W: WidgetBuilder + PartialEq + Clone + 'static> Into<VNode> for SizeObserver<W> {
+    fn into(self) -> VNode {
+        let key = self.content.as_std_props().key.clone();
+        let comp = VComp::new::<PwtSizeObserver<W>>(Rc::new(self), key);
+        VNode::from(comp)
+    }
+}

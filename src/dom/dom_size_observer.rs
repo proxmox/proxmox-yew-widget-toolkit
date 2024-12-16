@@ -42,6 +42,7 @@ where
     }
 }
 
+#[derive(Clone, PartialEq)]
 pub enum SizeCallback {
     Normal(Callback<(f64, f64)>),
     ClientRect(Callback<(f64, f64, f64, f64)>),

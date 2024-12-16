@@ -6,6 +6,9 @@ use super::{IntoOptionalKey, WidgetStdProps};
 
 /// Defines common builder methods for widgets.
 pub trait WidgetBuilder: Into<VNode> {
+    /// Acces to the widget [properties](WidgetStdProps).
+    fn as_std_props(&self) -> &WidgetStdProps;
+
     /// Mutable acces to the widget [properties](WidgetStdProps).
     fn as_std_props_mut(&mut self) -> &mut WidgetStdProps;
 
