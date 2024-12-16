@@ -16,7 +16,7 @@ The [Whitepaper](Whitepaper.md) contains more details on this.
 
 We provide a separate repository with usage examples:
 
-https://git.proxmox.com/rust/proxmox-yew-wiget-toolkit-examples.git
+https://git.proxmox.com/ui/proxmox-yew-wiget-toolkit-examples.git
 
 
 # Contributions
