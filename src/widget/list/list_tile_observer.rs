@@ -1,12 +1,12 @@
 use yew::html::{IntoEventCallback, IntoPropValue};
 use yew::prelude::*;
 
-use crate::props::{ContainerBuilder, WidgetBuilder, WidgetStyleBuilder};
+use crate::props::{ContainerBuilder, WidgetStyleBuilder};
+use crate::widget::SizeObserver;
 
 use pwt_macros::{builder, widget};
 
 use super::{Container, CssBorderBuilder, ListTile};
-use crate::dom::DomSizeObserver;
 
 /// List tile. A container with grid/subgrid layout.
 ///
@@ -61,64 +61,20 @@ impl ListTileObserver {
     }
 }
 
-pub struct PwtListTileObserver {
-    node_ref: NodeRef,
-    size_observer: Option<DomSizeObserver>,
-}
+pub struct PwtListTileObserver {}
 
-pub enum Msg {
-    SetupSizeObserver,
-}
-
-impl PwtListTileObserver {
-    fn setup_size_observer(&mut self, props: &ListTileObserver) {
-        if let Some(el) = self.node_ref.cast::<web_sys::HtmlElement>() {
-            if let Some(resize_callback) = &props.resize_callback {
-                let resize_callback = resize_callback.clone();
-                if props.force_height.is_some() {
-                    //  log::info!("add size observer {}", props.tile_pos);
-                }
-                let tile_pos = props.tile_pos;
-
-                self.size_observer = Some(DomSizeObserver::new(&el, {
-                    let el = el.clone();
-                    move |(w, h)| {
-                        resize_callback.emit((tile_pos, w, h));
-                    }
-                }));
-            }
-        }
-    }
-}
 impl Component for PwtListTileObserver {
-    type Message = Msg;
+    type Message = ();
     type Properties = ListTileObserver;
 
     fn create(_ctx: &Context<Self>) -> Self {
-        Self {
-            node_ref: NodeRef::default(),
-            size_observer: None,
-        }
+        Self {}
     }
 
-    fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
-        let props = ctx.props();
-        match msg {
-            Msg::SetupSizeObserver => {
-                if self.size_observer.is_none() {
-                    self.setup_size_observer(props);
-                    true
-                } else {
-                    false
-                }
-            }
-        }
-    }
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
 
         let inner = Container::new()
-            .node_ref(self.node_ref.clone())
             // We need to set height to "fit-content" in order to observe correct size
             .style("height", "fit-content")
             .style("display", "grid")
@@ -126,6 +82,14 @@ impl Component for PwtListTileObserver {
             .style("grid-column", "1 / -1")
             .border_bottom(props.separator)
             .with_child(props.tile.clone());
+
+        let resize_callback = props.resize_callback.clone();
+        let tile_pos = props.tile_pos;
+        let inner = SizeObserver::new(inner, move |(w, h)| {
+            if let Some(resize_callback) = &resize_callback {
+                resize_callback.emit((tile_pos, w, h));
+            }
+        });
 
         let mut wrapper = Container::new()
             .style("overflow", "hidden")
@@ -138,11 +102,5 @@ impl Component for PwtListTileObserver {
             wrapper.set_height(*height as f32);
         }
         wrapper.into()
-    }
-
-    fn rendered(&mut self, ctx: &Context<Self>, _first_render: bool) {
-        if self.size_observer.is_none() {
-            ctx.link().send_message(Msg::SetupSizeObserver);
-        }
     }
 }
