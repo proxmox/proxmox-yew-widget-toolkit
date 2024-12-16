@@ -192,6 +192,9 @@ mod tooltip;
 pub use tooltip::PwtTooltip;
 pub use tooltip::Tooltip;
 
+mod visibility_observer;
+pub use visibility_observer::VisibilityObserver;
+
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 static UNIQUE_ELEMENT_ID: AtomicUsize = AtomicUsize::new(0);
