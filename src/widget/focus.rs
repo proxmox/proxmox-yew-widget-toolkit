@@ -12,8 +12,8 @@ const FOCUSABLE_SELECTOR_ALL: &str = "a, button, input, [tabindex]";
 
 /// Test is an element can take focus.
 ///
-/// Returns true if the element has an `tabindex` attribute, or if the
-/// element is of type `<a>`, `<button>`, or `<input>`.
+/// Returns true if the element has an `tabindex` attribute, or if the element is of type `<a>`,
+/// `<button>`, or `<input>`.
 pub fn element_is_focusable(el: &web_sys::HtmlElement) -> bool {
     if el.has_attribute("tabindex") {
         return true;
@@ -98,9 +98,8 @@ pub fn roving_tabindex_next(node_ref: &NodeRef, backwards: bool, roving: bool) {
 
 /// Move focus to the next/previous focusable child.
 ///
-/// If `roving` is enabled, this also sets the `tabindex` attribute
-/// for the active child to `"0"`, and to `"-1"` for all other
-/// children.
+/// If `roving` is enabled, this also sets the `tabindex` attribute for the active child to `"0"`,
+/// and to `"-1"` for all other children.
 pub fn roving_tabindex_next_el(el: web_sys::HtmlElement, backwards: bool, roving: bool) {
     let list = roving_tabindex_members(&el);
 
@@ -173,8 +172,7 @@ pub fn focus_inside_el(el: web_sys::HtmlElement) -> bool {
 
 /// Test if focus is inside a input like field
 ///
-/// This is the case if the focused element is an input, textarea or is
-/// marked as 'contenteditable'.
+/// This is the case if the focused element is an input, textarea or is marked as 'contenteditable'.
 pub fn focus_inside_input() -> bool {
     let window = web_sys::window().unwrap();
     let document = window.document().unwrap();
@@ -251,16 +249,15 @@ pub fn update_roving_tabindex_el(el: web_sys::HtmlElement) {
 
 /// Return all child elements participating in the roving tabindex algorithm.
 ///
-/// The list contains all direct children which are [focusable](element_is_focusable),
-/// or the first focusable descendant for children not directly focusable.
+/// The list contains all direct children which are [focusable](element_is_focusable), or the first
+/// focusable descendant for children not directly focusable.
 ///
 /// The list includes disabled element.
 ///
 /// # Note
 ///
-/// This kind of member selection makes it possible to include more complex widget
-/// like [MenuButton](crate::widget::menu::MenuButton)s inside a
-/// [Toolbar](crate::widget::Toolbar).
+/// This kind of member selection makes it possible to include more complex widget like
+/// [MenuButton](crate::widget::menu::MenuButton)s inside a [Toolbar](crate::widget::Toolbar).
 pub fn roving_tabindex_members(el: &web_sys::HtmlElement) -> Vec<web_sys::HtmlElement> {
     let mut members: Vec<web_sys::HtmlElement> = Vec::new();
 
@@ -292,9 +289,8 @@ pub fn init_roving_tabindex(node_ref: &NodeRef) {
 
 /// Initialize elements participating in the roving tabindex algorithm.
 ///
-/// This function makes sure that exactly one element has the
-/// `tabindex` attribute set to `"0"`. All others gets a `tabindex` of
-/// `"-1"`.
+/// This function makes sure that exactly one element has the `tabindex` attribute set to `"0"`. All
+/// other elements get a `tabindex` of `"-1"`.
 pub fn init_roving_tabindex_el(el: web_sys::HtmlElement, take_focus: bool) {
     let list = roving_tabindex_members(&el);
 
@@ -326,13 +322,12 @@ pub fn init_roving_tabindex_el(el: web_sys::HtmlElement, take_focus: bool) {
 
 /// Can be used to better track focus with nested elements.
 ///
-/// focusin/focusout events are problematic, because sometimes they trigger
-/// in fast succession after one another, eg. out/in/out/in and rerendering
-/// after everyone makes handling certain things hard.
+/// `focusin` and `focusout` events are problematic, because sometimes they trigger in fast
+/// succession after one another, e.g. out/in/out/in and rerendering after everyone makes handling
+/// certain things hard.
 ///
-/// To solve this, we use a Timeout with 1ms, this will be called
-/// after all pending event handlers are called (each one replaces the
-/// previous timeout) so the last focus event "wins".
+/// To solve this, we use a Timeout with 1ms, this will be called after all pending event handlers
+/// are called (each one replaces the previous timeout) so the last focus event "wins".
 pub struct FocusTracker {
     // note we use Rc<Cell> here since we are single threaded
     // and using Rc<Mutex> here compiles to basically the same thing

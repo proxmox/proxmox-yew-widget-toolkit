@@ -86,34 +86,27 @@ pub enum MultiSelectMode {
 ///
 /// # Keyboard bindings
 ///
-/// * `Right Arrow`: Moves focus one cell to the right. If focus is on
-/// the right-most cell in the row, focus does not move.
+/// * `Right Arrow`: Moves focus one cell to the right. If focus is on the right-most cell in the
+///    row, focus does not move.
 ///
-/// * `Left Arrow`: Moves focus one cell to the left. If focus is on
-/// the left-most cell in the row, focus does not move.
+/// * `Left Arrow`: Moves focus one cell to the left. If focus is on the left-most cell in the row,
+///    focus does not move.
 ///
-/// * `Down Arrow`: Moves focus one cell down. If focus is on the
-/// bottom cell in the column, focus does not move.
+/// * `Down Arrow`: Moves focus one cell down. If focus is on the bottom cell in the column, focus
+///    does not move.
 ///
-/// * `Up Arrow`: Moves focus one cell Up. If focus is on the top cell
-/// in the column, focus does not move.
+/// * `Up Arrow`: Moves focus one cell Up. If focus is on the top cell in the column, focus does
+///    not move.
 ///
-/// * `Page Down`: Moves focus down one page. If focus is in the last
-/// row of the grid, focus does not move.
+/// * `Page Down`: Moves focus down one page. If focus is in the last row of the grid, focus does
+///    not move.
 ///
-/// * `Page Up`: Moves focus up one page. If focus is in the first row
-/// of the grid, focus does not move.
+/// * `Page Up`: Moves focus up one page. If focus is in the first row of the grid, focus does not
+///    move.
 ///
-/// * `Home`: moves focus to the first cell in the row that contains
-/// focus.
+/// * `Home`: moves focus to the first cell in the row that contains focus.
 ///
-/// * `End`: moves focus to the last cell in the row that contains
-/// focus.
-
-//
-// * Control + Home: moves focus to the first cell in the first row.
-// * Control + End: moves focus to the last cell in the last row.
-
+/// * `End`: moves focus to the last cell in the row that contains focus.
 #[derive(Properties, Derivative)]
 #[derivative(Clone(bound = ""), PartialEq(bound = ""))]
 pub struct DataTable<S: DataStore> {
