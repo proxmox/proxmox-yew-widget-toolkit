@@ -11,13 +11,13 @@ use yew::prelude::*;
 /// in the viewport or not.
 ///
 /// See <https://developer.mozilla.org/en-US/docs/Web/API/Intersection_Observer_API>.
-pub struct VisibilityObserver {
+pub struct DomVisibilityObserver {
     observer: IntersectionObserver,
     // keep it alive
     _observer_closure: Closure<dyn Fn(Vec<IntersectionObserverEntry>, IntersectionObserver)>,
 }
 
-impl VisibilityObserver {
+impl DomVisibilityObserver {
     /// Creates a new instance.
     ///
     /// The callback is called whenever the element visibility changes.
@@ -46,7 +46,7 @@ impl VisibilityObserver {
     }
 }
 
-impl Drop for VisibilityObserver {
+impl Drop for DomVisibilityObserver {
     fn drop(&mut self) {
         self.observer.disconnect();
     }

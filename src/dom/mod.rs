@@ -6,6 +6,9 @@ pub use number_format::{format_float, parse_float, LocaleInfo};
 mod dom_size_observer;
 pub use dom_size_observer::{DomSizeObserver, IntoSizeCallback, SizeCallback};
 
+mod dom_visibility_observer;
+pub use dom_visibility_observer::DomVisibilityObserver;
+
 use web_sys::Node;
 use yew::prelude::*;
 
