@@ -1,3 +1,5 @@
+include /usr/share/dpkg/pkg-info.mk
+
 PKG_VER != dpkg-parsechangelog -l ${PWD}/debian/changelog -SVersion | sed -e 's/-.*//'
 MACRO_PKG_VER != dpkg-parsechangelog -l ${PWD}/pwt-macros/debian/changelog -SVersion | sed -e 's/-.*//'
 
@@ -36,6 +38,11 @@ deb:
 	cd $(BUILDDIR)/pwt; dpkg-buildpackage -b -uc -us
 	cp $(BUILDDIR)/pwt/debian/control debian/control
 
+upload: UPLOAD_DIST ?= $(DEB_DISTRIBUTION)
+upload: $(BUILD_DEBS)
+	(cd $(BUILDDIR); \
+	  tar cf - $(DEBS) | ssh -X repoman@repo.proxmox.com -- upload --product devel --dist $(UPLOAD_DIST) \
+	)
 
 .PHONY: check
 check:
