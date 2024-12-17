@@ -8,6 +8,22 @@ use crate::props::WidgetBuilder;
 
 use crate::dom::DomVisibilityObserver;
 
+/// Observe visibility changes.
+///
+/// This is a wrapper around another widget, which sets up a [DomVisibilityObserver]
+/// to track visibility changes.
+///
+/// ```
+/// # use pwt::widget::{Panel, VisibilityObserver};
+/// fn test_visibility_observer() {
+///     VisibilityObserver::new(
+///         Panel::new().title("My Panel"),
+///         |visible| {
+///             log::info!("Panel visibility changed: {visible}");
+///         }
+///     );
+/// }
+/// ```
 #[derive(Clone, PartialEq, Properties)]
 pub struct VisibilityObserver<W: WidgetBuilder + PartialEq + Clone> {
     content: W,
@@ -16,7 +32,7 @@ pub struct VisibilityObserver<W: WidgetBuilder + PartialEq + Clone> {
 
 impl<W: WidgetBuilder + PartialEq + Clone + 'static> VisibilityObserver<W> {
     /// Creates a new instance.
-    pub fn new<X>(content: W, on_visibility_change: impl Into<Callback<bool>>) -> Self {
+    pub fn new(content: W, on_visibility_change: impl Into<Callback<bool>>) -> Self {
         yew::props!(Self {
             content,
             on_visibility_change: on_visibility_change.into(),
