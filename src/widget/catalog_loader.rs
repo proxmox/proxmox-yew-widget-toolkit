@@ -1,5 +1,6 @@
 use std::rc::Rc;
 
+use gettext::Catalog;
 use yew::html::IntoPropValue;
 use yew::virtual_dom::{VComp, VNode};
 
@@ -141,13 +142,17 @@ impl Component for PwtCatalogLoader {
         let props = ctx.props();
         match &self.state {
             LoadState::Idle => {
-                let url = props.lang_to_url(&self.lang);
-                if self.last_url != url {
-                    self.state = LoadState::Loading;
-                    let link = ctx.link().clone();
-                    crate::init_i18n_from_url(&url, move |url| {
-                        link.send_message(Msg::LoadFinished(url));
-                    });
+                if !self.lang.is_empty() {
+                    let url = props.lang_to_url(&self.lang);
+                    if self.last_url != url {
+                        self.state = LoadState::Loading;
+                        let link = ctx.link().clone();
+                        crate::init_i18n_from_url(&url, move |url| {
+                            link.send_message(Msg::LoadFinished(url));
+                        });
+                    }
+                } else {
+                    crate::init_i18n(Catalog::empty());
                 }
             }
             LoadState::Loading => { /* wait until loaded */ }
