@@ -20,7 +20,7 @@ $(BUILD_DEBS): deb
 deb:
 	rm -rf $(BUILDDIR)
 	mkdir $(BUILDDIR)
-	echo system >build/rust-toolchain
+	echo system >$(BUILDDIR)/rust-toolchain
 	rm -f pwt-macros/debian/control
 	debcargo package \
 	  --config "${PWD}/pwt-macros/debian/debcargo.toml" \
@@ -40,9 +40,7 @@ deb:
 
 upload: UPLOAD_DIST ?= $(DEB_DISTRIBUTION)
 upload: $(BUILD_DEBS)
-	(cd $(BUILDDIR); \
-	  tar cf - $(DEBS) | ssh -X repoman@repo.proxmox.com -- upload --product devel --dist $(UPLOAD_DIST) \
-	)
+	cd $(BUILDDIR); tar cf - $(DEBS) | ssh -X repoman@repo.proxmox.com -- upload --product devel --dist $(UPLOAD_DIST)
 
 .PHONY: check
 check:
@@ -51,5 +49,5 @@ check:
 .PHONY: clean
 clean:
 	cargo clean
-	rm -rf build Cargo.lock
+	rm -rf $(BUILDDIR) Cargo.lock
 	find . -name '*~' -exec rm {} ';'
