@@ -8,6 +8,22 @@ use crate::props::WidgetBuilder;
 
 use crate::dom::{DomSizeObserver, IntoSizeCallback, SizeCallback};
 
+/// Observe size changes.
+///
+/// This is a wrapper around another widget, which sets up a [DomSizeObserver]
+/// to track size changes.
+///
+/// ```
+/// # use pwt::widget::{Panel, SizeObserver};
+/// fn test_size_observer() {
+///     SizeObserver::new(
+///         Panel::new().title("My Panel"),
+///         |(width, height)| {
+///             log::info!("Panel size changed: {width}x{height}");
+///         }
+///     );
+/// }
+/// ```
 #[derive(Clone, PartialEq, Properties)]
 pub struct SizeObserver<W: WidgetBuilder + PartialEq + Clone> {
     content: W,
