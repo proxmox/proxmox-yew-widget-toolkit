@@ -13,20 +13,23 @@ use crate::widget::Row;
 /// The header can contain tools, which are widgets displayed on the
 /// right side of the header, like a help button.
 #[widget(pwt=crate, @element, @container)]
-#[derive(Default, Debug, Clone)]
+#[derive(Clone, Debug, PartialEq, Properties)]
 pub struct Panel {
     /// Optional header text.
+    #[prop_or_default]
     pub title: Option<Html>,
     /// Tools, displayed right aligned in the header.
+    #[prop_or_default]
     pub tools: Vec<VNode>,
     /// Optional header CSS class.
+    #[prop_or_default]
     pub header_class: Classes,
 }
 
 impl Panel {
     /// Creates a new instance.
     pub fn new() -> Self {
-        Self::default()
+        yew::props!(Self {})
     }
 
     /// Builder style method to set the title text.
