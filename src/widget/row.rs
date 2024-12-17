@@ -28,13 +28,13 @@ use crate::prelude::*;
 /// # ;
 /// ```
 #[widget(pwt=crate, @element, @container)]
-#[derive(Default, Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Properties)]
 pub struct Row {}
 
 impl Row {
     /// Create a new instance.
     pub fn new() -> Self {
-        Self::default().class(Display::Flex)
+        yew::props!(Self {}).class(Display::Flex)
     }
 
     /// Builder style method to add a CSS class to set gap between children.
