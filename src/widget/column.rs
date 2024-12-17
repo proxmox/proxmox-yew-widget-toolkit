@@ -11,13 +11,13 @@ use crate::prelude::*;
 
 /// Vertical container with flex layout.
 #[widget(pwt=crate, @element, @container)]
-#[derive(Default, Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Properties)]
 pub struct Column {}
 
 impl Column {
     /// Create a new instance.
     pub fn new() -> Self {
-        Self::default()
+        yew::props!(Self {})
             .class(Display::Flex)
             .class(FlexDirection::Column)
     }
