@@ -119,7 +119,7 @@ impl Button {
     /// Create a Refresh/Reload button.
     pub fn refresh(loading: bool) -> Self {
         let icon_class = if loading {
-            "fa fa-fw pwt-loading-icon"
+            "fa fa-fw fa-refresh fa-spin"
         } else {
             "fa fa-fw fa-refresh"
         };
