@@ -11,7 +11,7 @@ use crate::widget::{focus::FocusTracker, Container, Input, Tooltip, Trigger};
 
 use pwt_macros::{builder, widget};
 
-use crate::widget::align::{AlignOptions, AutoFloatingPlacement, GrowDirection, Point};
+use crate::dom::align::{AlignOptions, AutoFloatingPlacement, GrowDirection, Point};
 
 use super::focus::{element_is_focusable, get_first_focusable};
 

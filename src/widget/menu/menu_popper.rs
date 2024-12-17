@@ -1,6 +1,6 @@
 use yew::prelude::*;
 
-use crate::widget::align::{AlignOptions, GrowDirection, Point};
+use crate::dom::align::{align_to, AlignOptions, GrowDirection, Point};
 
 pub struct MenuPopper {
     content_ref: NodeRef,
@@ -54,7 +54,7 @@ impl MenuPopper {
             });
         }
 
-        if let Err(err) = crate::widget::align::align_to(
+        if let Err(err) = align_to(
             &self.content_ref,
             &self.submenu_ref,
             self.align_options.clone(),

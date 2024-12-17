@@ -1,5 +1,7 @@
 //! DOM helpers.
 
+pub mod align;
+
 mod number_format;
 pub use number_format::{format_float, parse_float, LocaleInfo};
 

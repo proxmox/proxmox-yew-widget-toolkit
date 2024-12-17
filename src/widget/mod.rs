@@ -15,8 +15,6 @@ mod message_box;
 pub use message_box::PwtMessageBox;
 pub use message_box::{MessageBox, MessageBoxButtons};
 
-pub mod align;
-
 mod button;
 #[doc(hidden)]
 pub use button::PwtButton;

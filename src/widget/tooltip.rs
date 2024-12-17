@@ -3,8 +3,8 @@ use gloo_timers::callback::Timeout;
 use yew::html::IntoPropValue;
 use yew::virtual_dom::VNode;
 
+use crate::dom::align::{align_to, AlignOptions, GrowDirection, Point};
 use crate::prelude::*;
-use crate::widget::align::{align_to, AlignOptions, GrowDirection, Point};
 use crate::widget::Container;
 
 use pwt_macros::widget;
@@ -77,12 +77,9 @@ impl Component for PwtTooltip {
     type Properties = Tooltip;
 
     fn create(_ctx: &Context<Self>) -> Self {
-        let align_options = AlignOptions::new(Point::BottomStart, Point::TopStart, GrowDirection::None)
-                .with_fallback_placement(
-                    Point::TopStart,
-                    Point::BottomStart,
-                    GrowDirection::None,
-                )
+        let align_options =
+            AlignOptions::new(Point::BottomStart, Point::TopStart, GrowDirection::None)
+                .with_fallback_placement(Point::TopStart, Point::BottomStart, GrowDirection::None)
                 .with_fallback_placement(Point::TopEnd, Point::TopStart, GrowDirection::None)
                 .with_fallback_placement(Point::TopStart, Point::TopEnd, GrowDirection::None)
                 .with_fallback_placement(
@@ -95,16 +92,8 @@ impl Component for PwtTooltip {
                     Point::BottomStart,
                     GrowDirection::StartEnd,
                 )
-                .with_fallback_placement(
-                    Point::TopEnd,
-                    Point::TopStart,
-                    GrowDirection::TopBottom,
-                )
-                .with_fallback_placement(
-                    Point::TopStart,
-                    Point::TopEnd,
-                    GrowDirection::TopBottom,
-                )
+                .with_fallback_placement(Point::TopEnd, Point::TopStart, GrowDirection::TopBottom)
+                .with_fallback_placement(Point::TopStart, Point::TopEnd, GrowDirection::TopBottom)
                 .offset(4.0, 4.0);
 
         Self {
