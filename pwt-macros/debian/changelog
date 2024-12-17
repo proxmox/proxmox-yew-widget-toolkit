@@ -1,3 +1,9 @@
+rust-pwt-macros (0.3.0) bookwork; urgency=medium
+
+  * pwt-macros: implement as_std_props for WidgetBuilder
+
+ -- Proxmox Support Team <support@proxmox.com>  Tue, 17 Dec 2024 09:22:04 +0100
+
 rust-pwt-macros (0.2.0) bookworm; urgency=medium
 
   * switch to native package version numbers
