@@ -1,3 +1,17 @@
+rust-pwt (0.4.3) bookworm; urgency=medium
+
+  * buildsys: add new upload target
+
+  * focus: move code to dom module
+
+  * align: move code to dom module
+
+  * use derive Properties instead of Default for several widgets
+
+  * improve docs for SizeObserver and VisibilityObserver
+
+ -- Proxmox Support Team <support@proxmox.com>  Tue, 17 Dec 2024 12:54:47 +0100
+
 rust-pwt (0.4.2) bookworm; urgency=medium
 
   * rename old VisibilityObserver to DomVisibilityObserver, and add real
