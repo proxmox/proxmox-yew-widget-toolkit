@@ -15,14 +15,14 @@ use crate::dom::DomVisibilityObserver;
 ///
 /// ```
 /// # use pwt::widget::{Panel, VisibilityObserver};
-/// fn test_visibility_observer() {
-///     VisibilityObserver::new(
-///         Panel::new().title("My Panel"),
-///         |visible| {
-///             log::info!("Panel visibility changed: {visible}");
-///         }
-///     );
-/// }
+/// # fn test_visibility_observer() {
+/// VisibilityObserver::new(
+///     Panel::new().title("My Panel"),
+///     |visible| {
+///         log::info!("Panel visibility changed: {visible}");
+///     }
+/// );
+/// # }
 /// ```
 #[derive(Clone, PartialEq, Properties)]
 pub struct VisibilityObserver<W: WidgetBuilder + PartialEq + Clone> {

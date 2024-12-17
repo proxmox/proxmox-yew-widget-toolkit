@@ -15,14 +15,14 @@ use crate::dom::{DomSizeObserver, IntoSizeCallback, SizeCallback};
 ///
 /// ```
 /// # use pwt::widget::{Panel, SizeObserver};
-/// fn test_size_observer() {
-///     SizeObserver::new(
-///         Panel::new().title("My Panel"),
-///         |(width, height)| {
-///             log::info!("Panel size changed: {width}x{height}");
-///         }
-///     );
-/// }
+/// # fn test_size_observer() {
+/// SizeObserver::new(
+///     Panel::new().title("My Panel"),
+///     |(width, height)| {
+///         log::info!("Panel size changed: {width}x{height}");
+///     }
+/// );
+/// # }
 /// ```
 #[derive(Clone, PartialEq, Properties)]
 pub struct SizeObserver<W: WidgetBuilder + PartialEq + Clone> {
