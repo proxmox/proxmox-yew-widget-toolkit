@@ -3,12 +3,12 @@ use std::rc::Rc;
 use yew::html::{IntoEventCallback, IntoPropValue};
 use yew::virtual_dom::{Key, VComp, VNode};
 
+use crate::dom::focus::roving_tabindex_next;
 use crate::dom::{element_direction_rtl, DomSizeObserver, IntoHtmlElement};
 use crate::prelude::*;
 use crate::props::{IntoStorageLocation, StorageLocation};
 use crate::state::{NavigationContext, NavigationContextExt, PersistentState, Selection};
 use crate::web_sys_ext::{ResizeObserverBoxOptions, ResizeObserverOptions};
-use crate::widget::focus::roving_tabindex_next;
 use crate::widget::Container;
 
 use super::TabBarItem;

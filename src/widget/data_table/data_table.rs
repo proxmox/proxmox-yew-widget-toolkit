@@ -11,6 +11,7 @@ use yew::html::IntoPropValue;
 use yew::prelude::*;
 use yew::virtual_dom::{Key, VComp, VNode};
 
+use crate::dom::focus::{focus_inside_el, focus_inside_input, focus_next_el};
 use crate::dom::{DomSizeObserver, IntoHtmlElement};
 use crate::prelude::*;
 use crate::props::{
@@ -18,7 +19,6 @@ use crate::props::{
     SorterFn, WidgetStyleBuilder,
 };
 use crate::state::{DataStore, Selection, SelectionObserver};
-use crate::widget::focus::focus_inside_input;
 use crate::widget::{get_unique_element_id, Column, Container};
 
 use super::{
@@ -848,7 +848,7 @@ impl<S: DataStore> PwtDataTable<S> {
             None => return false,
         };
         if let Some(cell) = dom_find_cell(&row_el, self.active_column) {
-            return crate::widget::focus::focus_inside_el(cell);
+            return focus_inside_el(cell);
         }
         false
     }
@@ -859,7 +859,7 @@ impl<S: DataStore> PwtDataTable<S> {
             None => return,
         };
         if let Some(cell) = dom_find_cell(&row_el, self.active_column) {
-            crate::widget::focus::focus_next_el(cell, backwards);
+            focus_next_el(cell, backwards);
         }
     }
 

@@ -9,8 +9,8 @@ use yew::html::IntoEventCallback;
 use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 
+use crate::dom::focus::{get_first_focusable, FocusTracker};
 use crate::prelude::*;
-use crate::widget::focus::{get_first_focusable, FocusTracker};
 use crate::widget::{get_unique_element_id, Container};
 
 use pwt_macros::builder;

@@ -364,7 +364,7 @@ impl FocusTracker {
 
 #[cfg(test)]
 mod test {
-    use crate::widget::focus::calculate_next;
+    use crate::dom::focus::calculate_next;
 
     #[test]
     fn test_calculate_next() {

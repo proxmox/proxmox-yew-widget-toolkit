@@ -6,11 +6,11 @@ use yew::virtual_dom::{Listeners, VList, VTag};
 
 use pwt_macros::{builder, widget};
 
-use super::focus::{
-    init_roving_tabindex, roving_tabindex_next, update_roving_tabindex, FocusTracker,
-};
 use super::{MiniScroll, MiniScrollMode};
 use crate::dom::element_direction_rtl;
+use crate::dom::focus::{
+    init_roving_tabindex, roving_tabindex_next, update_roving_tabindex, FocusTracker,
+};
 use crate::prelude::*;
 
 /// Horizontal container for buttons with roving tabindex.

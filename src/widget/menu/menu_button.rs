@@ -3,9 +3,9 @@ use wasm_bindgen::JsCast;
 use yew::html::{IntoEventCallback, IntoPropValue};
 use yew::prelude::*;
 
+use crate::dom::focus::FocusTracker;
 use crate::prelude::*;
 use crate::props::{BuilderFn, IntoOptionalBuilderFn};
-use crate::widget::focus::FocusTracker;
 use crate::widget::{Button, Container};
 
 use super::{Menu, MenuControllerMsg, MenuPopper};

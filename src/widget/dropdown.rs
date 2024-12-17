@@ -7,13 +7,13 @@ use yew::prelude::*;
 
 use crate::prelude::*;
 use crate::props::{IntoOptionalRenderFn, RenderFn};
-use crate::widget::{focus::FocusTracker, Container, Input, Tooltip, Trigger};
+use crate::widget::{Container, Input, Tooltip, Trigger};
 
 use pwt_macros::{builder, widget};
 
 use crate::dom::align::{AlignOptions, AutoFloatingPlacement, GrowDirection, Point};
 
-use super::focus::{element_is_focusable, get_first_focusable};
+use crate::dom::focus::{element_is_focusable, get_first_focusable, FocusTracker};
 
 /// Parameters passed to the [Dropdown] picker callback.
 #[derive(Clone)]

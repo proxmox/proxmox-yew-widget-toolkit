@@ -59,8 +59,6 @@ pub use file_button::FileButton;
 #[doc(hidden)]
 pub use file_button::PwtFileButton;
 
-pub mod focus;
-
 pub mod form;
 
 mod field_label;

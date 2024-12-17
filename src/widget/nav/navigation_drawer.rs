@@ -14,7 +14,7 @@ use crate::props::{
 };
 use crate::state::{NavigationContext, NavigationContextExt, Selection};
 
-use crate::widget::focus::roving_tabindex_next;
+use crate::dom::focus::roving_tabindex_next;
 use crate::widget::{Column, Container};
 
 use super::{Menu, MenuEntry, MenuItem};
