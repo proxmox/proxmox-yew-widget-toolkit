@@ -1,3 +1,13 @@
+rust-pwt (0.4.4) bookworm; urgency=medium
+
+  * widget: button: use 'fa-spin' for refresh icon
+
+  * message catalog: don't try to load the catalog if the language is empty
+
+  * widget: add ConfirmDialog
+
+ -- Proxmox Support Team <support@proxmox.com>  Wed, 18 Dec 2024 14:40:19 +0100
+
 rust-pwt (0.4.3) bookworm; urgency=medium
 
   * buildsys: add new upload target
