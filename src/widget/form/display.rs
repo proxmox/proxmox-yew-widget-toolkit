@@ -45,7 +45,7 @@ impl ManagedField for DisplayFieldImpl {
 
     fn setup(props: &Self::Properties) -> super::ManagedFieldState {
         ManagedFieldState {
-            value: props.value.to_string().into(),
+            value: serde_json::Value::Null,
             valid: Ok(()),
             default: props.value.to_string().into(),
             radio_group: false,
