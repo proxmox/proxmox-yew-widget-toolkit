@@ -36,6 +36,9 @@ pub use column::Column;
 mod container;
 pub use container::Container;
 
+mod confirm_dialog;
+pub use confirm_dialog::ConfirmDialog;
+
 mod desktop_app;
 pub use desktop_app::DesktopApp;
 #[doc(hidden)]
