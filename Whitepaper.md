@@ -6,9 +6,9 @@ We at [Proxmox](https://www.proxmox.com) started using
 Rust in 2020.
 
 Well, I need to correct myself: Only the server side is written in Rust. The
-product also includes a GUI, which is browser based and written in Javascript.
+product also includes a GUI, which is browser based and written in JavaScript.
 
-But everyone here is exited about the Rust language, so we asked ourselves if
+But everyone here is excited about the Rust language, so we asked ourselves if
 it's possible to write GUIs in Rust. It would give us the following advantages:
 
 - Reduce the number of programming languages used inside the company (long term
@@ -23,7 +23,7 @@ server.
 
 ## Technology selection.
 
-First, let me know you that we currently ship web based GUIs for all our
+First, let me inform you that we currently ship web based GUIs for all our
 products. Some products additionally have native GUIs on Linux, and we ship
 GUIs for mobile devices (i.e. using [Flutter](https://flutter.dev)). So we are
 looking for something cross-platform.
@@ -41,7 +41,7 @@ I started testing various Rust GUI libraries, and finally decided to use
 - Possible to ship native apps using [Tauri](https://tauri.app). So it is kind
   of cross-platform.
 
-- Future prove: Sure, I'm no clairvoyant, but I'm pretty confident that those
+- Future proof: Sure, I'm no clairvoyant, but I'm pretty confident that those
   technologies (browser, web-assembly, rust) will last for the next 30 years.
 
 - Well known environment (browser), with great debugging options.
@@ -143,7 +143,7 @@ Container::new()
 ```
 
 We think that this style is much easier to read/format and understand,
-especially when you configure many propertyies. We still use the html macro for
+especially when you configure many properties. We still use the html macro for
 short html fragments, because it's sometimes simpler in that case.
 
 
