@@ -133,12 +133,12 @@ impl InputPanel {
         let (row, start, span) = match column {
             FieldPosition::Left => {
                 self.left_count += 1;
-                (self.left_count, 1, 3)
+                (self.left_count, 1, 4)
             }
             FieldPosition::Right => {
                 self.two_column = true;
                 self.right_count += 1;
-                (self.right_count, 3, -1)
+                (self.right_count, 4, -1)
             }
             FieldPosition::Large => {
                 self.two_column = true;
