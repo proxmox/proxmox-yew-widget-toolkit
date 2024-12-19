@@ -1,50 +1,64 @@
 use std::rc::Rc;
 
-use crate::props::{ContainerBuilder, CssPaddingBuilder, EventSubscriber, WidgetBuilder};
-use crate::widget::{Button, Container, Dialog, Toolbar};
 use html::{IntoEventCallback, IntoPropValue};
 use pwt_macros::builder;
-use wasm_bindgen::JsCast;
 use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 
+use crate::tr;
+
+use super::MessageBox;
+
 #[derive(Clone, PartialEq, Properties)]
 #[builder]
+/// A dialog that can be used to let users confirm an action before it is taken.
 pub struct ConfirmDialog {
+    /// The title of the dialog.
     #[prop_or_default]
     #[builder(IntoPropValue, into_prop_value)]
     pub title: AttrValue,
 
-    #[prop_or_default]
+    /// A message that conveys what will be confirmed.
+    #[prop_or(html!(tr!("Confirm this action?")))]
     #[builder(IntoPropValue, into_prop_value)]
-    pub confirm_text: AttrValue,
+    pub confirm_message: Html,
 
+    /// An icon that will be shown in the dialogs message.
+    #[prop_or("fa fa-exclamation-triangle".into())]
+    #[builder(Into, into)]
+    pub icon_class: Classes,
+
+    /// A callback for an action that needs to be confirmed by the user.
     #[prop_or_default]
-    #[builder(IntoPropValue, into_prop_value)]
-    pub confirm_message: AttrValue,
-
     #[builder_cb(IntoEventCallback, into_event_callback, ())]
-    #[prop_or_default]
     pub on_confirm: Option<Callback<()>>,
 
-    #[builder_cb(IntoEventCallback, into_event_callback, ())]
+    /// A callback that will trigger if the user dismisses the action.
     #[prop_or_default]
-    pub on_close: Option<Callback<()>>,
+    #[builder_cb(IntoEventCallback, into_event_callback, ())]
+    pub on_dismiss: Option<Callback<()>>,
 
-    #[builder_cb(IntoEventCallback, into_event_callback, ())]
+    /// A callback that will trigger if the dialog is closed, regardless of whether the action was
+    /// confirmed or not.
     #[prop_or_default]
-    pub on_done: Option<Callback<()>>,
+    #[builder_cb(IntoEventCallback, into_event_callback, ())]
+    pub on_close: Option<Callback<()>>,
 }
 
 impl ConfirmDialog {
-    pub fn new() -> Self {
-        yew::props!(Self {})
+    pub fn new(title: impl Into<AttrValue>, confirm_message: impl Into<AttrValue>) -> Self {
+        yew::props!(Self {
+            title: title.into(),
+            confirm_message: Some(html! {confirm_message.into()})
+        })
     }
 }
 
 impl Default for ConfirmDialog {
     fn default() -> Self {
-        Self::new()
+        yew::props!(Self {
+            title: tr!("Confirm"),
+        })
     }
 }
 
@@ -71,46 +85,26 @@ impl Component for PwtConfirmDialog {
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
 
-        Dialog::new(props.title.clone())
-            .with_child(
-                Container::new()
-                    .padding(4)
-                    .class("pwt-d-felx pwt-flex-direction-column")
-                    .with_child(props.confirm_message.clone()),
-            )
-            .with_child(Toolbar::new().with_flex_spacer().with_child(
-                Button::new(props.confirm_text.clone()).onclick({
-                    let on_confirm = props.on_confirm.clone();
-                    let on_done = props.on_done.clone();
+        let on_confirm = props.on_confirm.clone();
+        let on_dismiss = props.on_dismiss.clone();
+        let on_close = props.on_close.clone();
 
-                    move |e: MouseEvent| {
-                        let event = e.unchecked_into::<Event>();
-                        event.prevent_default();
-
-                        if let Some(on_confirm) = &on_confirm {
-                            on_confirm.emit(());
-                        }
-
-                        if let Some(on_done) = &on_done {
-                            on_done.emit(());
-                        }
+        MessageBox::new(props.title.clone(), props.confirm_message.clone())
+            .buttons(super::MessageBoxButtons::YesNo)
+            .icon_class(props.icon_class.clone())
+            .on_close(ctx.link().callback(move |confirm| {
+                if confirm {
+                    if let Some(on_confirm) = &on_confirm {
+                        on_confirm.emit(());
                     }
-                }),
-            ))
-            .on_close({
-                let on_close = props.on_close.clone();
-                let on_done = props.on_done.clone();
-
-                move |()| {
-                    if let Some(on_close) = &on_close {
-                        on_close.emit(());
-                    }
-
-                    if let Some(on_done) = &on_done {
-                        on_done.emit(());
-                    }
+                } else if let Some(on_dismiss) = &on_dismiss {
+                    on_dismiss.emit(());
                 }
-            })
+
+                if let Some(on_close) = &on_close {
+                    on_close.emit(());
+                }
+            }))
             .into()
     }
 }
