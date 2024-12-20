@@ -510,12 +510,6 @@ impl Component for PwtDropdown {
             }
         }
 
-        if let Some(placer) = &self.picker_placer {
-            if let Err(err) = placer.update() {
-                log::error!("error updating placement: {}", err.to_string());
-            }
-        }
-
         if self.show != self.last_show {
             self.last_show = self.show;
             if let Some(popover_node) = self.picker_ref.get() {
@@ -533,6 +527,15 @@ impl Component for PwtDropdown {
                 }
             }
         }
+
+        // update picker placement after we opened/closed to cope with a bug that only seems to
+        // affect webkit based browsers like Safari
+        if let Some(placer) = &self.picker_placer {
+            if let Err(err) = placer.update() {
+                log::error!("error updating placement: {}", err.to_string());
+            }
+        }
+
         self.focus_on_field = false;
     }
 }
