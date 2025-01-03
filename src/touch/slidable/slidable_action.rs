@@ -98,7 +98,7 @@ impl Component for PwtSlidableAction {
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
 
-        let icon = props.icon_class.clone().map(|class| Fa::from_class(class));
+        let icon = props.icon_class.clone().map(Fa::from_class);
 
         let onclick = Callback::from({
             let controller = self.controller.clone();
@@ -132,10 +132,10 @@ impl Component for PwtSlidableAction {
     }
 }
 
-impl Into<VNode> for SlidableAction {
-    fn into(self) -> VNode {
-        let key = self.key.clone();
-        let comp = VComp::new::<PwtSlidableAction>(Rc::new(self), key);
+impl From<SlidableAction> for VNode {
+    fn from(val: SlidableAction) -> Self {
+        let key = val.key.clone();
+        let comp = VComp::new::<PwtSlidableAction>(Rc::new(val), key);
         VNode::from(comp)
     }
 }

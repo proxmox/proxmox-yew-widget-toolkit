@@ -194,7 +194,7 @@ impl Component for PwtNavigationBar {
                 let key = selection.selected_key();
                 let key = get_active_or_default(props, &key);
 
-                if &self.active == &key {
+                if self.active == key {
                     return false;
                 }
 
@@ -202,7 +202,7 @@ impl Component for PwtNavigationBar {
 
                 if let Some(key) = &self.active {
                     if props.router {
-                        ctx.link().push_relative_route(&key);
+                        ctx.link().push_relative_route(key);
                     }
                 }
 
@@ -217,7 +217,7 @@ impl Component for PwtNavigationBar {
                 log::info!("select {:?}", key);
 
                 let key = get_active_or_default(props, &key);
-                if &self.active == &key {
+                if self.active == key {
                     return false;
                 }
 
@@ -277,18 +277,17 @@ impl Component for PwtNavigationBar {
 
                     let class = classes!(
                         "pwt-navigation-bar-icon-container",
-                        is_active.then(|| "active"),
+                        is_active.then_some("active"),
                     );
                     Some(html! {<div {class}><i class={icon_class}/></div>})
                 }
                 None => None,
             };
-            let label = match &item.label {
-                Some(label) => Some(html! {
+            let label = item.label.as_ref().map(|label| {
+                html! {
                     <div class="pwt-navigation-bar-label">{label}</div>
-                }),
-                None => None,
-            };
+                }
+            });
 
             Container::new()
                 .class("pwt-navigation-bar-item")
@@ -314,10 +313,10 @@ impl Component for PwtNavigationBar {
     }
 }
 
-impl Into<VNode> for NavigationBar {
-    fn into(self) -> VNode {
-        let key = self.key.clone();
-        let comp = VComp::new::<PwtNavigationBar>(Rc::new(self), key);
+impl From<NavigationBar> for VNode {
+    fn from(val: NavigationBar) -> Self {
+        let key = val.key.clone();
+        let comp = VComp::new::<PwtNavigationBar>(Rc::new(val), key);
         VNode::from(comp)
     }
 }

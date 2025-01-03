@@ -48,6 +48,12 @@ pub struct TabBarItem {
     pub disabled: bool,
 }
 
+impl Default for TabBarItem {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl TabBarItem {
     /// Create a new instance.
     pub fn new() -> Self {

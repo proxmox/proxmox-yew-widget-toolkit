@@ -307,7 +307,7 @@ impl<T: 'static> DataTableColumn<T> {
         let get_property_fn = Rc::new(get_property_fn);
         self.sorter({
             let get_property_fn = get_property_fn.clone();
-            move |itema: &T, itemb: &T| get_property_fn(itema).cmp(&get_property_fn(itemb))
+            move |itema: &T, itemb: &T| get_property_fn(itema).cmp(get_property_fn(itemb))
         })
         .render(move |item: &T| html! {{get_property_fn(item)}})
     }

@@ -86,6 +86,12 @@ pub struct Menu {
     pub children: Vec<MenuEntry>,
 }
 
+impl Default for Menu {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Menu {
     /// Create a new instance.
     pub fn new() -> Self {

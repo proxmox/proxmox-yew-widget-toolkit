@@ -17,6 +17,12 @@ pub struct Ellipse {
     children: Option<Vec<VNode>>,
 }
 
+impl Default for Ellipse {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Ellipse {
     /// Create a new instance.
     pub fn new() -> Self {
@@ -61,12 +67,12 @@ impl Ellipse {
     impl_svg_presentation_attributes!();
 }
 
-impl Into<VTag> for Ellipse {
-    fn into(self) -> VTag {
-        self.std_props.into_vtag(
+impl From<Ellipse> for VTag {
+    fn from(val: Ellipse) -> Self {
+        val.std_props.into_vtag(
             Cow::Borrowed("ellipse"),
             None::<&str>,
-            Some(self.listeners),
+            Some(val.listeners),
             None,
         )
     }

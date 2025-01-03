@@ -14,6 +14,12 @@ use super::SvgLength;
 #[derive(Properties, Clone, PartialEq)]
 pub struct Group {}
 
+impl Default for Group {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Group {
     /// Create a new instance.
     pub fn new() -> Self {
@@ -24,13 +30,13 @@ impl Group {
     impl_svg_presentation_attributes!();
 }
 
-impl Into<VTag> for Group {
-    fn into(self) -> VTag {
-        self.std_props.into_vtag(
+impl From<Group> for VTag {
+    fn from(val: Group) -> Self {
+        val.std_props.into_vtag(
             Cow::Borrowed("g"),
             None::<&str>,
-            Some(self.listeners),
-            Some(self.children),
+            Some(val.listeners),
+            Some(val.children),
         )
     }
 }

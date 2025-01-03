@@ -180,7 +180,7 @@ impl Component for PwtFileButton {
         }
 
         if let Some(text) = &props.text {
-            children.push((&*text).into());
+            children.push(text.into());
         }
 
         let (x, y, radius) = self.ripple_pos.unwrap_or((0, 0, 0));
@@ -191,7 +191,7 @@ impl Component for PwtFileButton {
         children.push({
             Container::new()
                 .class("pwt-button-ripple")
-                .class(self.ripple_pos.is_some().then(|| "animate"))
+                .class(self.ripple_pos.is_some().then_some("animate"))
                 .style("--pwt-ripple-x", format!("{x}px"))
                 .style("--pwt-ripple-y", format!("{y}px"))
                 .style("--pwt-ripple-radius", format!("{radius}px"))
@@ -206,7 +206,7 @@ impl Component for PwtFileButton {
                 .node_ref(self.input_ref.clone())
                 .attribute("type", "file")
                 .attribute("accept", props.accept.clone())
-                .attribute("multiple", props.multiple.then(|| ""))
+                .attribute("multiple", props.multiple.then_some(""))
                 .class("pwt-d-none")
                 .oncancel(suppress_oncancel)
                 .onchange({
@@ -229,9 +229,9 @@ impl Component for PwtFileButton {
             .children(children)
             .tag("label")
             .class("pwt-button")
-            .class(props.pressed.then(|| "pressed"))
-            .attribute("aria-disabled", props.disabled.then(|| "true"))
-            .attribute("autofocus", props.autofocus.then(|| ""))
+            .class(props.pressed.then_some("pressed"))
+            .attribute("aria-disabled", props.disabled.then_some("true"))
+            .attribute("autofocus", props.autofocus.then_some(""))
             .attribute("aria-label", props.aria_label.clone())
             .attribute("tabindex", props.tabindex.map(|i| i.to_string()))
             .onpointerdown(ctx.link().callback(Msg::ShowRippleAnimation))

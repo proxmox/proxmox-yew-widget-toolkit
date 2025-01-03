@@ -296,13 +296,13 @@ macro_rules! impl_slab_node_mut {
     };
 }
 
-impl<'a, T> SlabTreeNodeRef<'a, T> {
+impl<T> SlabTreeNodeRef<'_, T> {
     impl_slab_node_ref!(SlabTreeNodeRef<T>);
 
     /// Iterate over children.
     pub fn children(&self) -> SlabTreeChildren<T> {
         let entry = self.tree.get(self.node_id).unwrap();
-        let pos = entry.children.is_some().then(|| 0);
+        let pos = entry.children.is_some().then_some(0);
         SlabTreeChildren {
             node_id: self.node_id,
             tree: self.tree,
@@ -317,14 +317,14 @@ impl<'a, T> SlabTreeNodeRef<'a, T> {
     }
 }
 
-impl<'a, T> SlabTreeNodeMut<'a, T> {
+impl<T> SlabTreeNodeMut<'_, T> {
     impl_slab_node_ref!(SlabTreeNodeRef<T>);
     impl_slab_node_mut!(SlabTreeNodeMut<T>, SlabTree<T>);
 
     /// Iterate over children.
     pub fn children(&self) -> SlabTreeChildren<T> {
         let entry = self.tree.get(self.node_id).unwrap();
-        let pos = entry.children.is_some().then(|| 0);
+        let pos = entry.children.is_some().then_some(0);
         SlabTreeChildren {
             node_id: self.node_id,
             tree: self.tree,
@@ -335,7 +335,7 @@ impl<'a, T> SlabTreeNodeMut<'a, T> {
     /// Iterate over children (mutable).
     pub fn children_mut(&mut self) -> SlabTreeChildrenMut<T> {
         let entry = self.tree.get(self.node_id).unwrap();
-        let pos = entry.children.is_some().then(|| 0);
+        let pos = entry.children.is_some().then_some(0);
         SlabTreeChildrenMut {
             node_id: self.node_id,
             tree: self.tree,
@@ -347,6 +347,12 @@ impl<'a, T> SlabTreeNodeMut<'a, T> {
         let node_ref = SlabTreeNodeRef::new(self.tree, self.node_id);
         visitor(&node_ref);
         self.visit_children(visitor);
+    }
+}
+
+impl<T> Default for SlabTree<T> {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

@@ -139,7 +139,7 @@ impl SizeAccumulator {
     fn _get_row_height(&self, index: usize, min_row_height: u64) -> u64 {
         self.height_list
             .get(index)
-            .map(|v| *v)
+            .copied()
             .unwrap_or(min_row_height)
     }
 
@@ -275,21 +275,20 @@ impl PwtList {
             .style("top", format!("{}px", self.scroll_info.offset));
 
         let prefetch_count = props.prefetch_count as u64;
-        if self.scroll_info.end > self.scroll_info.start {
-            if self.scroll_info.start > prefetch_count {
-                for index in (self.scroll_info.start - prefetch_count)..self.scroll_info.start {
-                    // log::info!("ADD CACHED ROW {index}");
+        if self.scroll_info.end > self.scroll_info.start && self.scroll_info.start > prefetch_count
+        {
+            for index in (self.scroll_info.start - prefetch_count)..self.scroll_info.start {
+                // log::info!("ADD CACHED ROW {index}");
 
-                    let row = ListTileObserver::new(props.renderer.emit(index))
-                        .key(format!("row-{index}"))
-                        .force_height(0)
-                        .tile_pos(index)
-                        .separator(props.separator)
-                        .resize_callback(Some(self.tile_resize_callback.clone()));
+                let row = ListTileObserver::new(props.renderer.emit(index))
+                    .key(format!("row-{index}"))
+                    .force_height(0)
+                    .tile_pos(index)
+                    .separator(props.separator)
+                    .resize_callback(Some(self.tile_resize_callback.clone()));
 
-                    //row.set_attribute("role", "listitem");
-                    content.add_child(row);
-                }
+                //row.set_attribute("role", "listitem");
+                content.add_child(row);
             }
         }
 
@@ -435,7 +434,7 @@ impl Component for PwtList {
             if let Some(el) = &viewport_el {
                 let link = ctx.link().clone();
                 let size_observer =
-                    DomSizeObserver::new(&el, move |(width, height, client_width, _)| {
+                    DomSizeObserver::new(el, move |(width, height, client_width, _)| {
                         link.send_message(Msg::ViewportResize(width, height, width - client_width));
                     });
                 self.viewport_size_observer = Some(size_observer);

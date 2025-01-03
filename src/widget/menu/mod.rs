@@ -127,6 +127,12 @@ impl MenuBar {
     }
 }
 
+impl Default for Menu {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Menu {
     /// Create a new instance.
     pub fn new() -> Self {
@@ -237,10 +243,7 @@ impl PwtMenu {
             None => return false,
         };
 
-        let res = match focus_el.focus() {
-            Ok(_) => true,
-            Err(_) => false,
-        };
+        let res = focus_el.focus().is_ok();
 
         if has_focus {
             //log::info!("FOCUS {:?}", focus_el);
@@ -380,7 +383,7 @@ impl Component for PwtMenu {
                     self.set_cursor(cursor, true);
                 }
                 //log::info!("CLOSE {} {} {}", self.unique_id, self.show_submenu, self.inside_submenu);
-                return true;
+                true
             }
             Msg::Redraw => true,
             Msg::Next => {
@@ -432,7 +435,7 @@ impl Component for PwtMenu {
                         }
                     }
                     None => {
-                        if props.children.len() == 0 {
+                        if props.children.is_empty() {
                             return false;
                         } else {
                             props.children.len() - 1
@@ -481,7 +484,7 @@ impl Component for PwtMenu {
                     }
                 }
 
-                if show == false {
+                if !show {
                     if let Some(on_close) = &props.on_close {
                         //log::info!("PROPAGATE CLOSE {} {}", self.unique_id, show);
                         on_close.emit(());
@@ -606,7 +609,7 @@ impl Component for PwtMenu {
                     .attribute("id", item_id.clone())
                     .attribute("data-index", i.to_string()) // fixme: remove
                     .attribute("role", "none")
-                    .class((active).then(|| "active"))
+                    .class((active).then_some("active"))
                     .with_child(child)
                     .onkeydown({
                         let link = ctx.link().clone();
@@ -718,9 +721,9 @@ impl Component for PwtMenu {
     }
 }
 
-impl Into<VNode> for Menu {
-    fn into(self) -> VNode {
-        let comp = VComp::new::<PwtMenu>(Rc::new(self), None);
+impl From<Menu> for VNode {
+    fn from(val: Menu) -> Self {
+        let comp = VComp::new::<PwtMenu>(Rc::new(val), None);
         VNode::from(comp)
     }
 }

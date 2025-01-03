@@ -34,13 +34,13 @@ impl Line {
     impl_svg_presentation_attributes!();
 }
 
-impl Into<VTag> for Line {
-    fn into(self) -> VTag {
-        self.std_props.into_vtag(
+impl From<Line> for VTag {
+    fn from(val: Line) -> Self {
+        val.std_props.into_vtag(
             Cow::Borrowed("line"),
             None::<&str>,
-            Some(self.listeners),
-            self.children,
+            Some(val.listeners),
+            val.children,
         )
     }
 }

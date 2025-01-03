@@ -21,6 +21,12 @@ pub struct Form {
     pub form_context: Option<FormContext>,
 }
 
+impl Default for Form {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Form {
     /// Creates a new instance.
     pub fn new() -> Self {

@@ -18,9 +18,9 @@ pub enum PageAnimationStyle {
     Cover,
 }
 
-impl Into<Classes> for PageAnimationStyle {
-    fn into(self) -> Classes {
-        match self {
+impl From<PageAnimationStyle> for Classes {
+    fn from(val: PageAnimationStyle) -> Self {
+        match val {
             PageAnimationStyle::Push => "pwt-page-animation-push",
             PageAnimationStyle::Fade => "pwt-page-animation-fade",
             PageAnimationStyle::Cover => "pwt-page-animation-cover",
@@ -156,9 +156,9 @@ impl Component for PwtPageStack {
     }
 }
 
-impl Into<VNode> for PageStack {
-    fn into(self) -> VNode {
-        let comp = VComp::new::<PwtPageStack>(Rc::new(self), None);
+impl From<PageStack> for VNode {
+    fn from(val: PageStack) -> Self {
+        let comp = VComp::new::<PwtPageStack>(Rc::new(val), None);
         VNode::from(comp)
     }
 }

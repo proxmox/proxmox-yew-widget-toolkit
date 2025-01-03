@@ -534,10 +534,10 @@ impl Component for PwtDialog {
     }
 }
 
-impl Into<VNode> for Dialog {
-    fn into(self) -> VNode {
-        let key = self.key.clone();
-        let comp = VComp::new::<PwtDialog>(Rc::new(self), key);
+impl From<Dialog> for VNode {
+    fn from(val: Dialog) -> Self {
+        let key = val.key.clone();
+        let comp = VComp::new::<PwtDialog>(Rc::new(val), key);
         VNode::from(comp)
     }
 }

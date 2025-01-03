@@ -56,13 +56,13 @@ impl Reference {
     impl_svg_presentation_attributes!();
 }
 
-impl Into<VTag> for Reference {
-    fn into(self) -> VTag {
-        self.std_props.into_vtag(
+impl From<Reference> for VTag {
+    fn from(val: Reference) -> Self {
+        val.std_props.into_vtag(
             Cow::Borrowed("use"),
             None::<&str>,
-            Some(self.listeners),
-            self.children,
+            Some(val.listeners),
+            val.children,
         )
     }
 }

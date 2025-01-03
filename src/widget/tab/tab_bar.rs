@@ -246,7 +246,7 @@ impl Component for PwtTabBar {
             .map(|state_id| PersistentState::<String>::new(state_id.clone()));
 
         if let Some(active_cache) = &active_cache {
-            let last_active: &str = &*active_cache;
+            let last_active: &str = active_cache;
             if !last_active.is_empty() {
                 active = Some(Key::from(last_active));
             }
@@ -309,7 +309,7 @@ impl Component for PwtTabBar {
                 let key = selection.selected_key();
                 let key = get_active_or_default(props, &key);
 
-                if &self.active == &key {
+                if self.active == key {
                     return false;
                 }
 
@@ -318,7 +318,7 @@ impl Component for PwtTabBar {
 
                 if let Some(key) = &self.active {
                     if props.router {
-                        ctx.link().push_relative_route(&key);
+                        ctx.link().push_relative_route(key);
                     }
                 }
                 if let Some(on_select) = &props.on_select {
@@ -330,7 +330,7 @@ impl Component for PwtTabBar {
             // Handle internal selection changes
             Msg::Select(key, update_route) => {
                 let key = get_active_or_default(props, &key);
-                if &self.active == &key {
+                if self.active == key {
                     return false;
                 }
 
@@ -545,10 +545,10 @@ impl Component for PwtTabBar {
     }
 }
 
-impl Into<VNode> for TabBar {
-    fn into(self) -> VNode {
-        let key = self.key.clone();
-        let comp = VComp::new::<PwtTabBar>(Rc::new(self), key);
+impl From<TabBar> for VNode {
+    fn from(val: TabBar) -> Self {
+        let key = val.key.clone();
+        let comp = VComp::new::<PwtTabBar>(Rc::new(val), key);
         VNode::from(comp)
     }
 }

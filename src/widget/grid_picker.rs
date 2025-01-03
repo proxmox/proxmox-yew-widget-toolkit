@@ -153,17 +153,18 @@ impl<S: DataStore + 'static> Component for PwtGridPicker<S> {
     fn create(ctx: &Context<Self>) -> Self {
         let props = ctx.props();
         let on_select = props.on_select.clone();
-        let selection = props
-            .selection
-            .clone()
-            .unwrap_or_else(|| Selection::new())
-            .on_select(move |s: Selection| {
-                if let Some(key) = s.selected_key() {
-                    if let Some(on_select) = &on_select {
-                        on_select.emit(key);
+        let selection =
+            props
+                .selection
+                .clone()
+                .unwrap_or_default()
+                .on_select(move |s: Selection| {
+                    if let Some(key) = s.selected_key() {
+                        if let Some(on_select) = &on_select {
+                            on_select.emit(key);
+                        }
                     }
-                }
-            });
+                });
 
         let mut me = Self {
             _phantom: PhantomData::<S>,
@@ -205,13 +206,9 @@ impl<S: DataStore + 'static> Component for PwtGridPicker<S> {
             .node_ref(props.node_ref.clone())
             .class("pwt-flex-fill pwt-overflow-auto");
 
-        let show_filter = props.show_filter.unwrap_or_else(|| {
-            if self.store.data_len() > 10 {
-                true
-            } else {
-                false
-            }
-        });
+        let show_filter = props
+            .show_filter
+            .unwrap_or_else(|| self.store.data_len() > 10);
 
         if show_filter {
             let filter_invalid = false;
@@ -233,7 +230,7 @@ impl<S: DataStore + 'static> Component for PwtGridPicker<S> {
                             "is-valid"
                         })
                         .attribute("value", self.filter.clone())
-                        .attribute("aria-invalid", filter_invalid.then(|| "true"))
+                        .attribute("aria-invalid", filter_invalid.then_some("true"))
                         .oninput(ctx.link().callback(move |event: InputEvent| {
                             let input: HtmlInputElement = event.target_unchecked_into();
                             Msg::FilterUpdate(input.value())
@@ -249,10 +246,10 @@ impl<S: DataStore + 'static> Component for PwtGridPicker<S> {
     }
 }
 
-impl<S: DataStore + 'static> Into<VNode> for GridPicker<S> {
-    fn into(self) -> VNode {
-        let key = self.key.clone();
-        let comp = VComp::new::<PwtGridPicker<S>>(Rc::new(self), key);
+impl<S: DataStore + 'static> From<GridPicker<S>> for VNode {
+    fn from(val: GridPicker<S>) -> Self {
+        let key = val.key.clone();
+        let comp = VComp::new::<PwtGridPicker<S>>(Rc::new(val), key);
         VNode::from(comp)
     }
 }

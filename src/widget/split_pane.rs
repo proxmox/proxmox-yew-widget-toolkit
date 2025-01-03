@@ -104,7 +104,7 @@ impl Pane {
 
     /// Method to set the initial pane size in pixels.
     pub fn set_size(&mut self, size: impl IntoPropValue<Option<usize>>) {
-        self.size = size.into_prop_value().map(|p| PaneSize::Pixel(p));
+        self.size = size.into_prop_value().map(PaneSize::Pixel);
     }
 
     /// Builder style method to set the initial pane size as flex.
@@ -115,7 +115,7 @@ impl Pane {
 
     /// Method to set the initial pane size as flex.
     pub fn set_flex(&mut self, flex: impl IntoPropValue<Option<usize>>) {
-        self.size = flex.into_prop_value().map(|f| PaneSize::Flex(f));
+        self.size = flex.into_prop_value().map(PaneSize::Flex);
     }
 
     /// Builder style method to set the initial pane size as fraction.
@@ -126,7 +126,7 @@ impl Pane {
 
     /// Method to set the initial pane size as fraction.
     pub fn set_fraction(&mut self, fraction: impl IntoPropValue<Option<f64>>) {
-        self.size = fraction.into_prop_value().map(|f| PaneSize::Fraction(f));
+        self.size = fraction.into_prop_value().map(PaneSize::Fraction);
     }
 
     /// Builder style method to set the minimal pane size in pixels.
@@ -137,7 +137,7 @@ impl Pane {
 
     /// Method to set the minimal pane size in pixels.
     pub fn set_min_size(&mut self, size: impl IntoPropValue<Option<usize>>) {
-        self.min_size = size.into_prop_value().map(|p| PaneSize::Pixel(p));
+        self.min_size = size.into_prop_value().map(PaneSize::Pixel);
     }
 
     /// Builder style method to set the minimal pane size as fraction.
@@ -148,7 +148,7 @@ impl Pane {
 
     /// Method to set the minimal pane size as fraction.
     pub fn set_min_fraction(&mut self, fraction: impl IntoPropValue<Option<f64>>) {
-        self.min_size = fraction.into_prop_value().map(|f| PaneSize::Fraction(f));
+        self.min_size = fraction.into_prop_value().map(PaneSize::Fraction);
     }
 
     /// Builder style method to set the maximal pane size in pixels.
@@ -159,7 +159,7 @@ impl Pane {
 
     /// Method to set the maximal pane size in pixels.
     pub fn set_max_size(&mut self, size: impl IntoPropValue<Option<usize>>) {
-        self.max_size = size.into_prop_value().map(|p| PaneSize::Pixel(p));
+        self.max_size = size.into_prop_value().map(PaneSize::Pixel);
     }
 
     /// Builder style method to set the maximal pane size as fraction.
@@ -170,7 +170,7 @@ impl Pane {
 
     /// Method to set the maximal pane size as fraction.
     pub fn set_max_fraction(&mut self, fraction: impl IntoPropValue<Option<f64>>) {
-        self.max_size = fraction.into_prop_value().map(|f| PaneSize::Fraction(f));
+        self.max_size = fraction.into_prop_value().map(PaneSize::Fraction);
     }
 
     /// Builder style method to add a html class
@@ -206,6 +206,12 @@ pub struct SplitPane {
     /// Resize handle size (defaults to 7 pixels).
     #[prop_or(7)]
     pub handle_size: usize,
+}
+
+impl Default for SplitPane {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl SplitPane {
@@ -424,9 +430,8 @@ impl PwtSplitPane {
             .unwrap_or(f64::MAX);
 
         let size = new_size.min(max).max(min);
-        let diff = size - current_size;
 
-        diff
+        size - current_size
     }
 
     fn resize_pane(&mut self, props: &SplitPane, child_index: usize, new_size1: f64) -> bool {
@@ -590,8 +595,8 @@ impl Component for PwtSplitPane {
                 let fraction = (width > 0f64).then(|| position / width);
                 children.push(self.create_splitter(ctx, i - 1, fraction));
             }
-            position += self.sizes.get(i).map(|s| *s).unwrap_or(0.0);
-            children.push(self.create_pane(ctx, i, &child))
+            position += self.sizes.get(i).copied().unwrap_or(0.0);
+            children.push(self.create_pane(ctx, i, child))
         }
 
         let mut container = yew::props!(Container {

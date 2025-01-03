@@ -57,6 +57,12 @@ pub struct FabMenu {
     pub children: Vec<Fab>,
 }
 
+impl Default for FabMenu {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl FabMenu {
     /// Create a new instance.
     pub fn new() -> Self {
@@ -186,7 +192,7 @@ impl Component for PwtFabMenu {
                 FabMenuDirection::Left => "pwt-fab-direction-left",
                 FabMenuDirection::Right => "pwt-fab-direction-right",
             })
-            .class(self.show_items.then(|| "active"))
+            .class(self.show_items.then_some("active"))
             .onkeydown({
                 let link = ctx.link().clone();
                 move |event: KeyboardEvent| {
@@ -228,10 +234,10 @@ impl Component for PwtFabMenu {
     }
 }
 
-impl Into<VNode> for FabMenu {
-    fn into(self) -> VNode {
-        let key = self.key.clone();
-        let comp = VComp::new::<PwtFabMenu>(Rc::new(self), key);
+impl From<FabMenu> for VNode {
+    fn from(val: FabMenu) -> Self {
+        let key = val.key.clone();
+        let comp = VComp::new::<PwtFabMenu>(Rc::new(val), key);
         VNode::from(comp)
     }
 }

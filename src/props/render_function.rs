@@ -111,9 +111,9 @@ impl<T: Display> IntoOptionalTextRenderFn<T> for bool {
 #[derivative(Clone(bound = ""), PartialEq(bound = ""))]
 pub struct BuilderFn<T>(#[derivative(PartialEq(compare_with = "Rc::ptr_eq"))] Rc<dyn Fn() -> T>);
 
-impl<T: Into<Html>> Into<Html> for BuilderFn<T> {
-    fn into(self) -> Html {
-        self.apply().into()
+impl<T: Into<Html>> From<BuilderFn<T>> for Html {
+    fn from(val: BuilderFn<T>) -> Self {
+        val.apply().into()
     }
 }
 

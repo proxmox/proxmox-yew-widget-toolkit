@@ -14,6 +14,12 @@ use crate::props::WidgetBuilder;
 #[derive(Properties, Clone, PartialEq)]
 pub struct Hyperlink {}
 
+impl Default for Hyperlink {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Hyperlink {
     /// Create a new instance.
     pub fn new() -> Self {
@@ -32,13 +38,13 @@ impl Hyperlink {
     }
 }
 
-impl Into<VTag> for Hyperlink {
-    fn into(self) -> VTag {
-        self.std_props.into_vtag(
+impl From<Hyperlink> for VTag {
+    fn from(val: Hyperlink) -> Self {
+        val.std_props.into_vtag(
             Cow::Borrowed("a"),
             None::<&str>,
-            Some(self.listeners),
-            Some(self.children),
+            Some(val.listeners),
+            Some(val.children),
         )
     }
 }

@@ -54,6 +54,12 @@ pub struct TristateBoolean {
     pub on_change: Option<Callback<Tristate>>,
 }
 
+impl Default for TristateBoolean {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl TristateBoolean {
     /// Create a new instance.
     pub fn new() -> Self {
@@ -123,7 +129,7 @@ impl ManagedField for PwtTristateBoolean {
         // fixme: value = force_value.to_string();
         //}
 
-        let value: Value = value.clone().into();
+        let value: Value = value.clone();
 
         let default = match props.default {
             None => Value::Null,

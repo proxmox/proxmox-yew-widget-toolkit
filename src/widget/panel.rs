@@ -26,6 +26,12 @@ pub struct Panel {
     pub header_class: Classes,
 }
 
+impl Default for Panel {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Panel {
     /// Creates a new instance.
     pub fn new() -> Self {
@@ -66,27 +72,27 @@ impl Panel {
     }
 }
 
-impl Into<VTag> for Panel {
-    fn into(mut self) -> VTag {
-        self.add_class("pwt-panel");
+impl From<Panel> for VTag {
+    fn from(mut val: Panel) -> Self {
+        val.add_class("pwt-panel");
 
-        if self.title.is_some() || !self.tools.is_empty() {
-            let header = create_panel_title(self.title, self.tools)
+        if val.title.is_some() || !val.tools.is_empty() {
+            let header = create_panel_title(val.title, val.tools)
                 .class("pwt-panel-header")
-                .class(self.header_class);
-            self.children.insert(0, header.into());
+                .class(val.header_class);
+            val.children.insert(0, header.into());
         }
 
-        let attributes = self.std_props.cumulate_attributes(None::<&str>);
+        let attributes = val.std_props.cumulate_attributes(None::<&str>);
 
-        let listeners = Listeners::Pending(self.listeners.listeners.into_boxed_slice());
+        let listeners = Listeners::Pending(val.listeners.listeners.into_boxed_slice());
 
-        let children = VList::with_children(self.children, None);
+        let children = VList::with_children(val.children, None);
 
         VTag::__new_other(
             Cow::Borrowed("div"),
-            self.std_props.node_ref,
-            self.std_props.key,
+            val.std_props.node_ref,
+            val.std_props.key,
             attributes,
             listeners,
             children.into(),

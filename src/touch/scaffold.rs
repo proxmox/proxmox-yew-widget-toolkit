@@ -37,6 +37,12 @@ pub struct Scaffold {
     pub favorite_action_button: Option<VNode>,
 }
 
+impl Default for Scaffold {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Scaffold {
     /// Create a new instance.
     pub fn new() -> Self {
@@ -114,10 +120,10 @@ impl Component for PwtScaffold {
     }
 }
 
-impl Into<VNode> for Scaffold {
-    fn into(self) -> VNode {
-        let key = self.key.clone();
-        let comp = VComp::new::<PwtScaffold>(Rc::new(self), key);
+impl From<Scaffold> for VNode {
+    fn from(val: Scaffold) -> Self {
+        let key = val.key.clone();
+        let comp = VComp::new::<PwtScaffold>(Rc::new(val), key);
         VNode::from(comp)
     }
 }

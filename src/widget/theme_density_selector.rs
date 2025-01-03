@@ -14,6 +14,12 @@ pub struct ThemeDensitySelector {
     class: Classes,
 }
 
+impl Default for ThemeDensitySelector {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ThemeDensitySelector {
     pub fn new() -> Self {
         yew::props!(Self {})
@@ -84,9 +90,9 @@ impl Component for PwtThemeDensitySelector {
     }
 }
 
-impl Into<VNode> for ThemeDensitySelector {
-    fn into(self) -> VNode {
-        let comp = VComp::new::<PwtThemeDensitySelector>(Rc::new(self), None);
+impl From<ThemeDensitySelector> for VNode {
+    fn from(val: ThemeDensitySelector) -> Self {
+        let comp = VComp::new::<PwtThemeDensitySelector>(Rc::new(val), None);
         VNode::from(comp)
     }
 }

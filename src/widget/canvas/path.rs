@@ -17,6 +17,12 @@ pub struct Path {
     children: Option<Vec<VNode>>,
 }
 
+impl Default for Path {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Path {
     /// Create a new instance.
     pub fn new() -> Self {
@@ -38,13 +44,13 @@ impl Path {
     impl_svg_presentation_attributes!();
 }
 
-impl Into<VTag> for Path {
-    fn into(self) -> VTag {
-        self.std_props.into_vtag(
+impl From<Path> for VTag {
+    fn from(val: Path) -> Self {
+        val.std_props.into_vtag(
             Cow::Borrowed("path"),
             None::<&str>,
-            Some(self.listeners),
-            self.children,
+            Some(val.listeners),
+            val.children,
         )
     }
 }

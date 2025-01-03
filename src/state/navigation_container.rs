@@ -136,6 +136,12 @@ pub struct NavigationContainer {
     pub children: Vec<VNode>,
 }
 
+impl Default for NavigationContainer {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl NavigationContainer {
     pub fn new() -> Self {
         yew::props!(Self {})
@@ -168,7 +174,7 @@ impl Component for PwtNavigationContainer {
         let parent_context_handle;
         let location_context_handle;
         let nav_ctx;
-        let on_ctx_update = ctx.link().callback(|nav_ctx| Msg::NavCtxUpdate(nav_ctx));
+        let on_ctx_update = ctx.link().callback(Msg::NavCtxUpdate);
         if let Some((parent_nav_ctx, handle)) =
             ctx.link().context::<NavigationContext>(on_ctx_update)
         {
@@ -176,7 +182,7 @@ impl Component for PwtNavigationContainer {
             parent_context_handle = Some(handle);
             location_context_handle = None;
         } else {
-            let on_loc_update = ctx.link().callback(|loc| Msg::LocationUpdate(loc));
+            let on_loc_update = ctx.link().callback(Msg::LocationUpdate);
             if let Some(loc_handle) = ctx.link().add_location_listener(on_loc_update) {
                 nav_ctx = location_to_nav_ctx(&ctx.link().location());
                 parent_context_handle = None;
@@ -223,9 +229,9 @@ impl Component for PwtNavigationContainer {
     }
 }
 
-impl Into<VNode> for NavigationContainer {
-    fn into(self) -> VNode {
-        let comp = VComp::new::<PwtNavigationContainer>(Rc::new(self), None);
+impl From<NavigationContainer> for VNode {
+    fn from(val: NavigationContainer) -> Self {
+        let comp = VComp::new::<PwtNavigationContainer>(Rc::new(val), None);
         VNode::from(comp)
     }
 }

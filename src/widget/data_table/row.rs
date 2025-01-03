@@ -73,12 +73,10 @@ impl<T: Clone + PartialEq + 'static> Component for PwtDataTableRow<T> {
 
         let aria_expanded = if props.is_leaf {
             None
+        } else if props.is_expanded {
+            Some("true")
         } else {
-            if props.is_expanded {
-                Some("true")
-            } else {
-                Some("false")
-            }
+            Some("false")
         };
 
         let mut row = Container::from_tag("tr")
@@ -92,8 +90,8 @@ impl<T: Clone + PartialEq + 'static> Component for PwtDataTableRow<T> {
                 if props.selected { "true" } else { "false" },
             )
             .attribute("id", item_id)
-            .class((props.active_cell.is_some() && props.has_focus).then(|| "row-cursor"))
-            .class(props.selected.then(|| "selected")); // fixme: remove
+            .class((props.active_cell.is_some() && props.has_focus).then_some("row-cursor"))
+            .class(props.selected.then_some("selected")); // fixme: remove
 
         if let Some(row_render_callback) = &props.row_render_callback {
             let mut args = DataTableRowRenderArgs {
@@ -155,7 +153,7 @@ impl<T: Clone + PartialEq + 'static> Component for PwtDataTableRow<T> {
 
             let mut td = Container::from_tag("td")
                 .class(args.config.class)
-                .class((cell_active && props.has_focus).then(|| "cell-cursor"))
+                .class((cell_active && props.has_focus).then_some("cell-cursor"))
                 .styles(args.config.style)
                 .style("vertical-align", vertical_align)
                 .style("text-align", text_align)
@@ -189,10 +187,10 @@ impl<T: Clone + PartialEq + 'static> Component for PwtDataTableRow<T> {
     }
 }
 
-impl<T: Clone + PartialEq + 'static> Into<VNode> for DataTableRow<T> {
-    fn into(self) -> VNode {
-        let key = Some(self.record_key.clone());
-        let comp = VComp::new::<PwtDataTableRow<T>>(Rc::new(self), key);
+impl<T: Clone + PartialEq + 'static> From<DataTableRow<T>> for VNode {
+    fn from(val: DataTableRow<T>) -> Self {
+        let key = Some(val.record_key.clone());
+        let comp = VComp::new::<PwtDataTableRow<T>>(Rc::new(val), key);
         VNode::from(comp)
     }
 }

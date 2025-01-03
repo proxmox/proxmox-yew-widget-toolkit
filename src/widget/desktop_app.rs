@@ -90,10 +90,10 @@ impl Component for PwtDesktopApp {
     }
 }
 
-impl Into<VNode> for DesktopApp {
-    fn into(self) -> VNode {
-        let key = self.key.clone();
-        let comp = VComp::new::<PwtDesktopApp>(Rc::new(self), key);
+impl From<DesktopApp> for VNode {
+    fn from(val: DesktopApp) -> Self {
+        let key = val.key.clone();
+        let comp = VComp::new::<PwtDesktopApp>(Rc::new(val), key);
         VNode::from(comp)
     }
 }

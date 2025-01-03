@@ -73,6 +73,12 @@ pub struct SelectionView {
     pub page_cache: bool,
 }
 
+impl Default for SelectionView {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SelectionView {
     /// Creates a new instance.
     pub fn new() -> Self {
@@ -122,7 +128,7 @@ impl Component for PwtSelectionView {
         let _selection_observer = props
             .selection
             .clone()
-            .unwrap_or(Selection::new())
+            .unwrap_or_default()
             .add_listener(ctx.link().callback(Msg::SelectionChange));
 
         let (visibility, _visibility_handle) = ctx
@@ -166,7 +172,7 @@ impl Component for PwtSelectionView {
             self._selection_observer = props
                 .selection
                 .clone()
-                .unwrap_or(Selection::new())
+                .unwrap_or_default()
                 .add_listener(ctx.link().callback(Msg::SelectionChange));
         }
         true

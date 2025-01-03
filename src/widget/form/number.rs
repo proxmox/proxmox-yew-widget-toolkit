@@ -46,15 +46,15 @@ impl NumberTypeInfo for f64 {
         match value {
             Value::Number(n) => match n.as_f64() {
                 Some(n) => Ok(n),
-                None => return Err(Error::msg(tr!("cannot represent number as f64"))),
+                None => Err(Error::msg(tr!("cannot represent number as f64"))),
             },
             Value::String(s) => {
                 // Note: this handles localized number format
-                let number = crate::dom::parse_float(s).map_err(|err| Error::msg(err))?;
+                let number = crate::dom::parse_float(s).map_err(Error::msg)?;
 
-                return Ok(number);
+                Ok(number)
             }
-            _ => return Err(Error::msg(tr!("got wrong data type"))),
+            _ => Err(Error::msg(tr!("got wrong data type"))),
         }
     }
     fn number_to_value(&self) -> Value {
@@ -359,6 +359,12 @@ pub struct Number<T: NumberTypeInfo> {
     pub on_input: Option<Callback<(String, Option<T>)>>,
 }
 
+impl<T: NumberTypeInfo> Default for Number<T> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<T: NumberTypeInfo> Number<T> {
     /// Create a new instance.
     pub fn new() -> Self {
@@ -471,7 +477,7 @@ impl<T: NumberTypeInfo> ManagedField for NumberField<T> {
             value = force_value.to_string().into();
         }
 
-        let value: Value = value.clone().into();
+        let value: Value = value.clone();
 
         let default = match props.default {
             Some(default) => T::number_to_value(&default),
@@ -635,7 +641,7 @@ impl<T: NumberTypeInfo> ManagedField for NumberField<T> {
                 move |event: KeyboardEvent| match event.key().as_str() {
                     "ArrowDown" => link.send_message(Msg::Down),
                     "ArrowUp" => link.send_message(Msg::Up),
-                    _ => return,
+                    _ => (),
                 }
             })
             .onwheel({

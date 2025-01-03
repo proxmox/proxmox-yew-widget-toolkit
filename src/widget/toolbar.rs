@@ -45,6 +45,12 @@ pub struct Toolbar {
     pub scroll_mode: Option<MiniScrollMode>,
 }
 
+impl Default for Toolbar {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Toolbar {
     /// Create a new instance.
     pub fn new() -> Self {

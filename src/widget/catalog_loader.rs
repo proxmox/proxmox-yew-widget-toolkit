@@ -164,9 +164,9 @@ impl Component for PwtCatalogLoader {
     }
 }
 
-impl Into<VNode> for CatalogLoader {
-    fn into(self) -> VNode {
-        let comp = VComp::new::<PwtCatalogLoader>(Rc::new(self), None);
+impl From<CatalogLoader> for VNode {
+    fn from(val: CatalogLoader) -> Self {
+        let comp = VComp::new::<PwtCatalogLoader>(Rc::new(val), None);
         VNode::from(comp)
     }
 }

@@ -83,6 +83,12 @@ pub struct Combobox {
     pub trigger: Vec<(Trigger, bool)>,
 }
 
+impl Default for Combobox {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Combobox {
     /// Create a new instance.
     pub fn new() -> Self {
@@ -206,13 +212,9 @@ impl Component for PwtCombobox {
         let props = ctx.props();
         let link = ctx.link().clone();
 
-        let show_filter = props.show_filter.unwrap_or_else(|| {
-            if self.store.data_len() > 10 {
-                true
-            } else {
-                false
-            }
-        });
+        let show_filter = props
+            .show_filter
+            .unwrap_or_else(|| self.store.data_len() > 10);
 
         let filter = props.filter.clone();
 

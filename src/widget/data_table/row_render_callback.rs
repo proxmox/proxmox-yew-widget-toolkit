@@ -27,7 +27,7 @@ pub struct DataTableRowRenderArgs<'a, T> {
     pub attributes: IndexMap<AttrValue, AttrValue>,
 }
 
-impl<'a, T> DataTableRowRenderArgs<'a, T> {
+impl<T> DataTableRowRenderArgs<'_, T> {
     /// Return the data node.
     pub fn record(&self) -> &T {
         self.record

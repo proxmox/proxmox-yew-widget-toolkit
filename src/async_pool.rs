@@ -24,6 +24,12 @@ struct AsyncPoolInner {
     abort_handles: Rc<RefCell<HashMap<usize, AbortHandle>>>,
 }
 
+impl Default for AsyncPool {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl AsyncPool {
     /// Create a new instance.
     pub fn new() -> Self {

@@ -95,6 +95,12 @@ pub struct Checkbox {
     pub box_label: Option<FieldLabel>,
 }
 
+impl Default for Checkbox {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Checkbox {
     /// Creates a new instance.
     pub fn new() -> Self {

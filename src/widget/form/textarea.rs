@@ -67,6 +67,12 @@ pub struct TextArea {
     pub on_input: Option<Callback<String>>,
 }
 
+impl Default for TextArea {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl TextArea {
     /// Create a new instance.
     pub fn new() -> Self {

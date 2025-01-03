@@ -214,7 +214,7 @@ impl Component for PwtNavigationRail {
                 let key = selection.selected_key();
                 let key = get_active_or_default(props, &key);
 
-                if &self.active == &key {
+                if self.active == key {
                     return false;
                 }
 
@@ -222,7 +222,7 @@ impl Component for PwtNavigationRail {
 
                 if let Some(key) = &self.active {
                     if props.router {
-                        ctx.link().push_relative_route(&key);
+                        ctx.link().push_relative_route(key);
                     }
                 }
 
@@ -237,7 +237,7 @@ impl Component for PwtNavigationRail {
                 log::info!("select {:?}", key);
 
                 let key = get_active_or_default(props, &key);
-                if &self.active == &key {
+                if self.active == key {
                     return false;
                 }
 
@@ -297,18 +297,17 @@ impl Component for PwtNavigationRail {
 
                     let class = classes!(
                         "pwt-navigation-rail-icon-container",
-                        is_active.then(|| "active"),
+                        is_active.then_some("active"),
                     );
                     Some(html! {<div {class}><i class={icon_class}/></div>})
                 }
                 None => None,
             };
-            let label = match &item.label {
-                Some(label) => Some(html! {
+            let label = item.label.as_ref().map(|label| {
+                html! {
                     <div class="pwt-navigation-rail-label">{label}</div>
-                }),
-                None => None,
-            };
+                }
+            });
 
             Container::new()
                 .class("pwt-navigation-rail-item")
@@ -340,10 +339,10 @@ impl Component for PwtNavigationRail {
     }
 }
 
-impl Into<VNode> for NavigationRail {
-    fn into(self) -> VNode {
-        let key = self.key.clone();
-        let comp = VComp::new::<PwtNavigationRail>(Rc::new(self), key);
+impl From<NavigationRail> for VNode {
+    fn from(val: NavigationRail) -> Self {
+        let key = val.key.clone();
+        let comp = VComp::new::<PwtNavigationRail>(Rc::new(val), key);
         VNode::from(comp)
     }
 }

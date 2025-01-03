@@ -568,10 +568,10 @@ impl Component for PwtGestureDetector {
     }
 }
 
-impl Into<VNode> for GestureDetector {
-    fn into(self) -> VNode {
-        let key = self.key.clone();
-        let comp = VComp::new::<PwtGestureDetector>(Rc::new(self), key);
+impl From<GestureDetector> for VNode {
+    fn from(val: GestureDetector) -> Self {
+        let key = val.key.clone();
+        let comp = VComp::new::<PwtGestureDetector>(Rc::new(val), key);
         VNode::from(comp)
     }
 }
@@ -589,6 +589,5 @@ fn compute_distance(x1: i32, y1: i32, x2: i32, y2: i32) -> f64 {
     let dx = (x2 - x1) as f64;
     let dy = (y2 - y1) as f64;
 
-    let radius = (dx * dx + dy * dy).sqrt();
-    radius
+    (dx * dx + dy * dy).sqrt()
 }

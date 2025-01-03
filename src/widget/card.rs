@@ -11,6 +11,12 @@ use crate::prelude::*;
 #[derive(Debug, Clone, PartialEq, Properties)]
 pub struct Card {}
 
+impl Default for Card {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Card {
     /// Create a new instance.
     pub fn new() -> Self {
@@ -18,18 +24,18 @@ impl Card {
     }
 }
 
-impl Into<VTag> for Card {
-    fn into(self) -> VTag {
-        let attributes = self.std_props.cumulate_attributes(None::<&str>);
+impl From<Card> for VTag {
+    fn from(val: Card) -> Self {
+        let attributes = val.std_props.cumulate_attributes(None::<&str>);
 
-        let listeners = Listeners::Pending(self.listeners.listeners.into_boxed_slice());
+        let listeners = Listeners::Pending(val.listeners.listeners.into_boxed_slice());
 
-        let children = VList::with_children(self.children, None);
+        let children = VList::with_children(val.children, None);
 
         VTag::__new_other(
             Cow::Borrowed("div"),
-            self.std_props.node_ref,
-            self.std_props.key,
+            val.std_props.node_ref,
+            val.std_props.key,
             attributes,
             listeners,
             children.into(),

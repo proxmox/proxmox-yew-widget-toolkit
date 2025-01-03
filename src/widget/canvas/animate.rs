@@ -98,22 +98,22 @@ impl Animate {
     }
 }
 
-impl Into<VTag> for Animate {
-    fn into(self) -> VTag {
+impl From<Animate> for VTag {
+    fn from(val: Animate) -> Self {
         VTag::__new_other(
             "animate".into(),
             NodeRef::default(),
             None,
-            self.attributes,
+            val.attributes,
             Listeners::None,
             VList::new().into(),
         )
     }
 }
 
-impl Into<VNode> for Animate {
-    fn into(self) -> VNode {
-        let vtag: VTag = self.into();
+impl From<Animate> for VNode {
+    fn from(val: Animate) -> Self {
+        let vtag: VTag = val.into();
         VNode::from(vtag)
     }
 }

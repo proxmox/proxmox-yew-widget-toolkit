@@ -52,15 +52,12 @@ pub fn get_available_languages() -> Vec<LanguageInfo> {
         .cloned()
         .expect("cannot access available languages before they've been set");
 
-    let list = list
-        .into_iter()
+    list.into_iter()
         .map(|mut info| {
             info.translated_text = gettext(&info.english_text);
             info
         })
-        .collect();
-
-    list
+        .collect()
 }
 
 // this `thread_local!` definition should be fine as this crate is essentially WASM only where

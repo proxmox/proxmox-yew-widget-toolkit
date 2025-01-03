@@ -13,8 +13,9 @@ use crate::widget::Container;
 
 use pwt_macros::{builder, widget};
 
-#[derive(PartialEq, Clone, Copy)]
+#[derive(PartialEq, Clone, Copy, Default)]
 pub enum ButtonType {
+    #[default]
     Button,
     Submit,
     Reset,
@@ -40,12 +41,6 @@ impl FromStr for ButtonType {
             "reset" => Ok(ButtonType::Reset),
             _ => bail!("invalid button type"),
         }
-    }
-}
-
-impl Default for ButtonType {
-    fn default() -> Self {
-        ButtonType::Button
     }
 }
 
@@ -216,7 +211,7 @@ impl Component for PwtButton {
         }
 
         if let Some(text) = &props.text {
-            children.push((&*text).into());
+            children.push(text.into());
         }
 
         let (x, y, radius) = self.ripple_pos.unwrap_or((0, 0, 0));
@@ -227,7 +222,7 @@ impl Component for PwtButton {
         children.push({
             Container::new()
                 .class("pwt-button-ripple")
-                .class(self.ripple_pos.is_some().then(|| "animate"))
+                .class(self.ripple_pos.is_some().then_some("animate"))
                 .style("--pwt-ripple-x", format!("{x}px"))
                 .style("--pwt-ripple-y", format!("{y}px"))
                 .style("--pwt-ripple-radius", format!("{radius}px"))
@@ -247,10 +242,10 @@ impl Component for PwtButton {
             .children(children)
             .tag("button")
             .class("pwt-button")
-            .class(props.pressed.then(|| "pressed"))
+            .class(props.pressed.then_some("pressed"))
             .attribute("type", Some(props.button_type.to_string()))
-            .attribute("aria-disabled", props.disabled.then(|| "true"))
-            .attribute("autofocus", props.autofocus.then(|| ""))
+            .attribute("aria-disabled", props.disabled.then_some("true"))
+            .attribute("autofocus", props.autofocus.then_some(""))
             .attribute("aria-label", props.aria_label.clone())
             .attribute("tabindex", props.tabindex.map(|i| i.to_string()))
             .onpointerdown(ctx.link().callback(Msg::ShowRippleAnimation))

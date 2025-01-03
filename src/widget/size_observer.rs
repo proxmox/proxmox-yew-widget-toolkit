@@ -96,10 +96,10 @@ impl<W: WidgetBuilder + PartialEq + Clone + 'static> Component for PwtSizeObserv
     }
 }
 
-impl<W: WidgetBuilder + PartialEq + Clone + 'static> Into<VNode> for SizeObserver<W> {
-    fn into(self) -> VNode {
-        let key = self.content.as_std_props().key.clone();
-        let comp = VComp::new::<PwtSizeObserver<W>>(Rc::new(self), key);
+impl<W: WidgetBuilder + PartialEq + Clone + 'static> From<SizeObserver<W>> for VNode {
+    fn from(val: SizeObserver<W>) -> Self {
+        let key = val.content.as_std_props().key.clone();
+        let comp = VComp::new::<PwtSizeObserver<W>>(Rc::new(val), key);
         VNode::from(comp)
     }
 }

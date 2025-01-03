@@ -111,9 +111,7 @@ impl ManagedField for MenuCheckboxField {
     type Properties = MenuCheckbox;
     type ValidateClosure = ();
 
-    fn validation_args(_props: &Self::Properties) -> Self::ValidateClosure {
-        ()
-    }
+    fn validation_args(_props: &Self::Properties) -> Self::ValidateClosure {}
 
     fn setup(props: &MenuCheckbox) -> ManagedFieldState {
         let on_value = props.value.as_deref().unwrap_or("on").to_string();
@@ -229,12 +227,10 @@ impl ManagedField for MenuCheckboxField {
                 } else {
                     "fa-circle-o"
                 }
+            } else if checked {
+                "fa-check-square-o"
             } else {
-                if checked {
-                    "fa-check-square-o"
-                } else {
-                    "fa-square-o"
-                }
+                "fa-square-o"
             },
             "pwt-menu-item-icon",
         );
@@ -252,8 +248,8 @@ impl ManagedField for MenuCheckboxField {
 
         Container::new()
             .class("pwt-menu-item")
-            .attribute("tabindex", (!disabled).then(|| "-1"))
-            .attribute("aria-disabled", disabled.then(|| "true"))
+            .attribute("tabindex", (!disabled).then_some("-1"))
+            .attribute("aria-disabled", disabled.then_some("true"))
             .attribute(
                 "role",
                 if props.radio_group {
@@ -262,7 +258,7 @@ impl ManagedField for MenuCheckboxField {
                     "menuitemcheckbox"
                 },
             )
-            .attribute("aria-checked", checked.then(|| "true"))
+            .attribute("aria-checked", checked.then_some("true"))
             .onclick(onclick)
             .onkeydown(onkeydown)
             .with_child(icon)
@@ -271,9 +267,9 @@ impl ManagedField for MenuCheckboxField {
     }
 }
 
-impl Into<VNode> for MenuCheckbox {
-    fn into(self) -> VNode {
-        let comp = VComp::new::<ManagedFieldMaster<MenuCheckboxField>>(Rc::new(self), None);
+impl From<MenuCheckbox> for VNode {
+    fn from(val: MenuCheckbox) -> Self {
+        let comp = VComp::new::<ManagedFieldMaster<MenuCheckboxField>>(Rc::new(val), None);
         VNode::from(comp)
     }
 }

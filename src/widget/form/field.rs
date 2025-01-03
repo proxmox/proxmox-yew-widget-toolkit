@@ -24,7 +24,7 @@ pub type PwtField = ManagedFieldMaster<StandardField>;
 /// Valid Input types for a [Field]
 // taken from https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input
 // Commented out values would be valid, but don't make sense for the field.
-#[derive(PartialEq, Clone, Copy)]
+#[derive(PartialEq, Clone, Copy, Default)]
 pub enum InputType {
     //Button,
     //Checkbox,
@@ -44,16 +44,11 @@ pub enum InputType {
     Search,
     //Submit,
     Tel,
+    #[default]
     Text,
     Time,
     Url,
     Week,
-}
-
-impl Default for InputType {
-    fn default() -> Self {
-        InputType::Text
-    }
 }
 
 impl Display for InputType {
@@ -195,6 +190,12 @@ pub struct Field {
     pub tip: Option<AttrValue>,
 }
 
+impl Default for Field {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Field {
     /// Create a new instance.
     pub fn new() -> Self {
@@ -308,7 +309,7 @@ impl ManagedField for StandardField {
     fn validation_args(props: &Self::Properties) -> Self::ValidateClosure {
         ValidateClosure {
             required: props.input_props.required,
-            input_type: props.input_type.clone(),
+            input_type: props.input_type,
             min: props.min,
             max: props.max,
             validate: props.validate.clone(),

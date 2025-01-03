@@ -92,15 +92,15 @@ impl Meter {
     }
 }
 
-impl Into<VTag> for Meter {
-    fn into(self) -> VTag {
-        let percentage = ((self.value - self.min).max(0.0) / (self.max - self.min)).clamp(0.0, 1.0);
+impl From<Meter> for VTag {
+    fn from(val: Meter) -> Self {
+        let percentage = ((val.value - val.min).max(0.0) / (val.max - val.min)).clamp(0.0, 1.0);
 
-        let distance_to_optimum = if let Some(optimum) = self.optimum {
-            if optimum > self.value {
-                self.get_range_index(optimum) - self.get_range_index(self.value)
+        let distance_to_optimum = if let Some(optimum) = val.optimum {
+            if optimum > val.value {
+                val.get_range_index(optimum) - val.get_range_index(val.value)
             } else {
-                self.get_range_index(self.value) - self.get_range_index(optimum)
+                val.get_range_index(val.value) - val.get_range_index(optimum)
             }
         } else {
             0
@@ -109,8 +109,8 @@ impl Into<VTag> for Meter {
         let mut children = Vec::new();
         let mut class = classes!("pwt-meter");
 
-        if let Some(render_text) = &self.render_text {
-            let text = render_text.apply(&self.value);
+        if let Some(render_text) = &val.render_text {
+            let text = render_text.apply(&val.value);
             children.push(
                 Container::new()
                     .class("pwt-meter-text")
@@ -121,7 +121,7 @@ impl Into<VTag> for Meter {
             class.push("pwt-meter-small")
         }
 
-        if self.animated {
+        if val.animated {
             class.push("pwt-animated");
         }
 
@@ -133,7 +133,7 @@ impl Into<VTag> for Meter {
                 .into(),
         );
 
-        self.std_props
+        val.std_props
             .into_vtag(Cow::Borrowed("div"), Some(class), None, Some(children))
     }
 }

@@ -17,6 +17,12 @@ pub struct Circle {
     children: Option<Vec<VNode>>,
 }
 
+impl Default for Circle {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Circle {
     /// Create a new instance.
     pub fn new() -> Self {
@@ -72,13 +78,13 @@ impl Circle {
     impl_svg_presentation_attributes!();
 }
 
-impl Into<VTag> for Circle {
-    fn into(self) -> VTag {
-        self.std_props.into_vtag(
+impl From<Circle> for VTag {
+    fn from(val: Circle) -> Self {
+        val.std_props.into_vtag(
             Cow::Borrowed("circle"),
             None::<&str>,
-            Some(self.listeners),
-            self.children,
+            Some(val.listeners),
+            val.children,
         )
     }
 }

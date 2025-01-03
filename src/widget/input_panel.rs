@@ -217,7 +217,7 @@ impl InputPanel {
         let style = if visible {
             format!("grid-row: {};", row)
         } else {
-            format!("display: none;")
+            "display: none;".to_string()
         };
 
         let label_id = crate::widget::get_unique_element_id();
@@ -360,43 +360,43 @@ impl Default for InputPanel {
     }
 }
 
-impl Into<VTag> for InputPanel {
-    fn into(mut self) -> VTag {
-        if self.two_column {
-            self.add_class("pwt-form-grid-col4")
+impl From<InputPanel> for VTag {
+    fn from(mut val: InputPanel) -> Self {
+        if val.two_column {
+            val.add_class("pwt-form-grid-col4")
         } else {
-            self.add_class("pwt-form-grid-col2")
+            val.add_class("pwt-form-grid-col2")
         }
 
-        if self.label_width.is_some() || self.field_width.is_some() {
+        if val.label_width.is_some() || val.field_width.is_some() {
             let mut column_template = format!(
                 "{} {}",
-                self.label_width
+                val.label_width
                     .as_deref()
                     .unwrap_or("minmax(130px, 0.65fr)"),
-                self.field_width.as_deref().unwrap_or("minmax(200px, 1fr)")
+                val.field_width.as_deref().unwrap_or("minmax(200px, 1fr)")
             );
 
-            if self.two_column {
+            if val.two_column {
                 column_template = format!(
                     "{} calc(var(--pwt-spacer-4) * 2) {}",
                     column_template, column_template
                 );
             }
 
-            self.set_style("grid-template-columns", column_template.to_string());
+            val.set_style("grid-template-columns", column_template.to_string());
         }
 
-        let attributes = self.std_props.cumulate_attributes(None::<&str>);
+        let attributes = val.std_props.cumulate_attributes(None::<&str>);
 
-        let listeners = Listeners::Pending(self.listeners.listeners.into_boxed_slice());
+        let listeners = Listeners::Pending(val.listeners.listeners.into_boxed_slice());
 
-        let children = VList::with_children(self.children, None);
+        let children = VList::with_children(val.children, None);
 
         VTag::__new_other(
             Cow::Borrowed("div"),
-            self.std_props.node_ref,
-            self.std_props.key,
+            val.std_props.node_ref,
+            val.std_props.key,
             attributes,
             listeners,
             children.into(),

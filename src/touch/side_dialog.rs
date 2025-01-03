@@ -27,6 +27,12 @@ pub struct SideDialogController {
     state: SharedState<Vec<SideDialogControllerMsg>>,
 }
 
+impl Default for SideDialogController {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SideDialogController {
     /// Create a new instance.
     pub fn new() -> Self {
@@ -86,6 +92,12 @@ pub struct SideDialog {
 impl ContainerBuilder for SideDialog {
     fn as_children_mut(&mut self) -> &mut Vec<VNode> {
         &mut self.children
+    }
+}
+
+impl Default for SideDialog {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -179,10 +191,7 @@ impl Component for PwtSideDialog {
             .active_element()
             .and_then(|el| el.dyn_into::<HtmlElement>().ok());
 
-        let controller = props
-            .controller
-            .clone()
-            .unwrap_or(SideDialogController::new());
+        let controller = props.controller.clone().unwrap_or_default();
 
         let _controller_observer = controller
             .state
@@ -294,7 +303,7 @@ impl Component for PwtSideDialog {
             Msg::Swipe(event) => {
                 let angle = event.direction; // -180 to + 180
                 let dismiss = match props.direction {
-                    SideDialogLocation::Left => angle > 135.0 || angle < -135.0,
+                    SideDialogLocation::Left => !(-135.0..=135.0).contains(&angle),
                     SideDialogLocation::Right => angle > -45.0 && angle < 45.0,
                     SideDialogLocation::Top => angle > 45.0 && angle < 135.0,
                     SideDialogLocation::Bottom => angle > -135.0 && angle < -45.0,
@@ -420,10 +429,10 @@ impl Component for PwtSideDialog {
     }
 }
 
-impl Into<VNode> for SideDialog {
-    fn into(self) -> VNode {
-        let key = self.key.clone();
-        let comp = VComp::new::<PwtSideDialog>(Rc::new(self), key);
+impl From<SideDialog> for VNode {
+    fn from(val: SideDialog) -> Self {
+        let key = val.key.clone();
+        let comp = VComp::new::<PwtSideDialog>(Rc::new(val), key);
         VNode::from(comp)
     }
 }

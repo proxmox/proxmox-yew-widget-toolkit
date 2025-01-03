@@ -95,6 +95,12 @@ pub struct TabPanel {
     pub tab_bar_style: TabBarStyle,
 }
 
+impl Default for TabPanel {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl TabPanel {
     /// Creates a new instance.
     pub fn new() -> Self {
@@ -274,10 +280,10 @@ impl Component for PwtTabPanel {
     }
 }
 
-impl Into<VNode> for TabPanel {
-    fn into(self) -> VNode {
-        let key = self.key.clone();
-        let comp = VComp::new::<PwtTabPanel>(Rc::new(self), key);
+impl From<TabPanel> for VNode {
+    fn from(val: TabPanel) -> Self {
+        let key = val.key.clone();
+        let comp = VComp::new::<PwtTabPanel>(Rc::new(val), key);
         VNode::from(comp)
     }
 }

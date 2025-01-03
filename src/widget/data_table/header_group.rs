@@ -219,7 +219,7 @@ impl<T: 'static> IndexedHeader<T> {
         let cell_count = cells + 1;
         let colspan = span.max(1); // at least one column for the group header
 
-        let indexed_group = IndexedHeaderGroup {
+        IndexedHeaderGroup {
             parent,
             cell_idx,
             start_col,
@@ -229,9 +229,7 @@ impl<T: 'static> IndexedHeader<T> {
             key: group.key.clone(),
             hidden: group.hidden,
             children,
-        };
-
-        indexed_group
+        }
     }
 
     pub fn lookup_cell(headers: &[IndexedHeader<T>], cell_idx: usize) -> Option<&IndexedHeader<T>> {
@@ -290,7 +288,7 @@ impl<T: 'static> IndexedHeader<T> {
 
     pub fn extract_column_list(&self, list: &mut Vec<Rc<IndexedHeaderSingle<T>>>) {
         match self {
-            Self::Single(single) => list.push(Rc::clone(&single)),
+            Self::Single(single) => list.push(Rc::clone(single)),
             Self::Group(group) => group.extract_column_list(list),
         }
     }

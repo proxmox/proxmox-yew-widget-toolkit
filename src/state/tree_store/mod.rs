@@ -76,6 +76,12 @@ pub struct TreeStore<T: 'static> {
     inner: Rc<RefCell<KeyedSlabTree<T>>>,
 }
 
+impl<T: ExtractPrimaryKey + 'static> Default for TreeStore<T> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<T: ExtractPrimaryKey + 'static> TreeStore<T> {
     /// Creates a new instance for types implementing [ExtractPrimaryKey].
     ///
@@ -111,10 +117,9 @@ impl<T: 'static> TreeStore<T> {
     /// [TreeStore] object, so each clone can hold a single on_select
     /// callback.
     pub fn on_change(mut self, cb: impl IntoEventCallback<()>) -> Self {
-        self.on_change = match cb.into_event_callback() {
-            Some(cb) => Some(Rc::new(self.add_listener(cb))),
-            None => None,
-        };
+        self.on_change = cb
+            .into_event_callback()
+            .map(|cb| Rc::new(self.add_listener(cb)));
         self
     }
 
@@ -319,13 +324,13 @@ impl<T> Deref for TreeStoreWriteGuard<'_, T> {
     }
 }
 
-impl<'a, T> DerefMut for TreeStoreWriteGuard<'a, T> {
+impl<T> DerefMut for TreeStoreWriteGuard<'_, T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.tree
     }
 }
 
-impl<'a, T> Drop for TreeStoreWriteGuard<'a, T> {
+impl<T> Drop for TreeStoreWriteGuard<'_, T> {
     fn drop(&mut self) {
         if self.tree.version() != self.initial_version {
             self.tree.notify_listeners();
@@ -339,7 +344,7 @@ pub struct KeyedSlabTreeBorrowRef<'a, T: 'static> {
     tree: Ref<'a, KeyedSlabTree<T>>,
 }
 
-impl<'a, T> DataNode<T> for KeyedSlabTreeBorrowRef<'a, T> {
+impl<T> DataNode<T> for KeyedSlabTreeBorrowRef<'_, T> {
     fn record(&self) -> DataNodeDerefGuard<T> {
         let guard = Box::new(RecordGuard {
             node_id: self.node_id,

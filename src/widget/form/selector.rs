@@ -216,7 +216,7 @@ impl<S: DataStore + 'static> ManagedField for SelectorField<S> {
 
         if !props.store.is_empty() {
             if let Some(validate) = &props.validate {
-                validate.apply(&(value.clone().into(), props.store.clone()))?;
+                validate.apply(&(value.clone(), props.store.clone()))?;
             }
         } else {
             // Return Ok if we have no data (i.e. because eof load error),
@@ -303,20 +303,18 @@ impl<S: DataStore + 'static> ManagedField for SelectorField<S> {
                 let state = ctx.state();
                 let value = state.value.as_str().unwrap_or("").to_owned();
 
-                if self.load_error.is_none() {
-                    if value.is_empty() {
-                        let mut default = props.default.clone();
+                if self.load_error.is_none() && value.is_empty() {
+                    let mut default = props.default.clone();
 
-                        if default.is_none() && props.autoselect {
-                            if let Some((_pos, node)) = props.store.filtered_data().next() {
-                                default = Some(AttrValue::from(node.key().to_string()));
-                            }
+                    if default.is_none() && props.autoselect {
+                        if let Some((_pos, node)) = props.store.filtered_data().next() {
+                            default = Some(AttrValue::from(node.key().to_string()));
                         }
+                    }
 
-                        if let Some(default) = default {
-                            ctx.link().update_value(default.to_string());
-                            ctx.link().update_default(default.to_string());
-                        }
+                    if let Some(default) = default {
+                        ctx.link().update_value(default.to_string());
+                        ctx.link().update_default(default.to_string());
                     }
                 }
                 ctx.link().validate(); // re-evaluate

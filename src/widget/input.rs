@@ -10,6 +10,12 @@ use crate::props::{FieldStdProps, WidgetStdProps};
 #[derive(Clone, PartialEq, Properties)]
 pub struct Input {}
 
+impl Default for Input {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Input {
     /// Creates a new instance.
     pub fn new() -> Self {
@@ -29,11 +35,11 @@ impl Input {
     }
 }
 
-impl Into<VTag> for Input {
-    fn into(self) -> VTag {
-        let mut attributes = self.std_props.cumulate_attributes(None::<&str>);
+impl From<Input> for VTag {
+    fn from(val: Input) -> Self {
+        let mut attributes = val.std_props.cumulate_attributes(None::<&str>);
         let attr_map = attributes.get_mut_index_map();
-        self.input_props.cumulate_attributes(attr_map);
+        val.input_props.cumulate_attributes(attr_map);
 
         let value = attr_map
             .get(&AttrValue::Static("value"))
@@ -41,15 +47,15 @@ impl Into<VTag> for Input {
         let checked = attr_map
             .get(&AttrValue::Static("checked"))
             .is_some()
-            .then(|| true);
+            .then_some(true);
 
-        let listeners = Listeners::Pending(self.listeners.listeners.into_boxed_slice());
+        let listeners = Listeners::Pending(val.listeners.listeners.into_boxed_slice());
 
         VTag::__new_input(
             value,
             checked,
-            self.std_props.node_ref,
-            self.std_props.key,
+            val.std_props.node_ref,
+            val.std_props.key,
             attributes,
             listeners,
         )

@@ -180,7 +180,7 @@ impl Component for PwtDropdown {
             show: false,
             last_show: false,
             pending_change: false,
-            value: ctx.props().value.clone().unwrap_or_else(|| String::new()),
+            value: ctx.props().value.clone().unwrap_or_default(),
             focus_on_field: false,
             change_from_input: false,
             input_ref: NodeRef::default(),
@@ -333,7 +333,7 @@ impl Component for PwtDropdown {
             link: ctx.link().clone(),
         };
 
-        let data_show = self.show.then(|| "true");
+        let data_show = self.show.then_some("true");
 
         let value = props.value.clone().unwrap_or_else(|| self.value.clone());
 
@@ -362,7 +362,7 @@ impl Component for PwtDropdown {
                 .attribute("aria-expanded", if self.show { "true" } else { "false" })
                 .attribute("aria-controls", self.picker_id.clone())
                 .attribute("aria-haspopup", props.popup_type.clone())
-                .attribute("aria-required", props.input_props.required.then(|| ""))
+                .attribute("aria-required", props.input_props.required.then_some(""))
                 .attribute("aria-label", props.input_props.aria_label.clone())
                 .attribute("aria-labelledby", props.input_props.label_id.clone())
                 .attribute("aria-live", "assertive")
@@ -403,7 +403,7 @@ impl Component for PwtDropdown {
             "pwt-dropdown-icon",
             "pwt-pointer",
             if self.show { "fa-angle-up" } else { "fa-angle-down" },
-            disabled.then(|| "disabled"),
+            disabled.then_some("disabled"),
         };
 
         let mut select = Container::new()
@@ -548,10 +548,8 @@ pub fn focus_selected_element(node_ref: &NodeRef) {
             let selected_el = selected_el.dyn_into::<web_sys::HtmlElement>().unwrap();
             if element_is_focusable(&selected_el) {
                 let _ = el.focus();
-            } else {
-                if let Some(focusable_el) = get_first_focusable(selected_el.into()) {
-                    let _ = focusable_el.focus();
-                }
+            } else if let Some(focusable_el) = get_first_focusable(selected_el.into()) {
+                let _ = focusable_el.focus();
             }
         }
     }

@@ -78,13 +78,13 @@ impl TSpan {
     }
 }
 
-impl Into<VTag> for TSpan {
-    fn into(self) -> VTag {
-        self.std_props.into_vtag(
+impl From<TSpan> for VTag {
+    fn from(val: TSpan) -> Self {
+        val.std_props.into_vtag(
             Cow::Borrowed("tspan"),
             None::<&str>,
-            Some(self.listeners),
-            Some(self.children),
+            Some(val.listeners),
+            Some(val.children),
         )
     }
 }

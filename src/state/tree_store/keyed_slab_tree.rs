@@ -57,14 +57,14 @@ impl<'a, T> KeyedSlabTreeNodeMut<'a, T> {
     }
 }
 
-impl<'a, T> KeyedSlabTreeNodeMut<'a, T> {
+impl<T> KeyedSlabTreeNodeMut<'_, T> {
     impl_slab_node_ref!(KeyedSlabTreeNodeRef<T>);
     impl_slab_node_mut!(KeyedSlabTreeNodeMut<T>, KeyedSlabTree<T>);
 
     /// Iterate over children.
     pub fn children(&self) -> KeyedSlabTreeChildren<T> {
         let entry = self.tree.get(self.node_id).unwrap();
-        let pos = entry.children.is_some().then(|| 0);
+        let pos = entry.children.is_some().then_some(0);
         KeyedSlabTreeChildren {
             node_id: self.node_id,
             tree: self.tree,
@@ -75,7 +75,7 @@ impl<'a, T> KeyedSlabTreeNodeMut<'a, T> {
     /// Iterate over children (mutable).
     pub fn children_mut(&mut self) -> KeyedSlabTreeChildrenMut<T> {
         let entry = self.tree.get(self.node_id).unwrap();
-        let pos = entry.children.is_some().then(|| 0);
+        let pos = entry.children.is_some().then_some(0);
         KeyedSlabTreeChildrenMut {
             node_id: self.node_id,
             tree: self.tree,
@@ -161,13 +161,13 @@ impl<'a, T> KeyedSlabTreeNodeMut<'a, T> {
     }
 }
 
-impl<'a, T> KeyedSlabTreeNodeRef<'a, T> {
+impl<T> KeyedSlabTreeNodeRef<'_, T> {
     impl_slab_node_ref!(KeyedSlabTreeNodeRef<T>);
 
     /// Iterate over children.
     pub fn children(&self) -> KeyedSlabTreeChildren<T> {
         let entry = self.tree.get(self.node_id).unwrap();
-        let pos = entry.children.is_some().then(|| 0);
+        let pos = entry.children.is_some().then_some(0);
         KeyedSlabTreeChildren {
             node_id: self.node_id,
             tree: self.tree,
@@ -213,6 +213,12 @@ impl<'a, T> KeyedSlabTreeNodeRef<'a, T> {
 impl<T> From<KeyedSlabTree<T>> for SlabTree<T> {
     fn from(tree: KeyedSlabTree<T>) -> Self {
         tree.tree
+    }
+}
+
+impl<T: ExtractPrimaryKey> Default for KeyedSlabTree<T> {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

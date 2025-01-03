@@ -49,6 +49,12 @@ pub struct LanguageSelector {
     pub class: Classes,
 }
 
+impl Default for LanguageSelector {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl LanguageSelector {
     pub fn new() -> Self {
         yew::props!(Self {})
@@ -87,7 +93,7 @@ impl Component for PwtLanguageSelector {
 
         let mut lang = Language::load();
         if lang.is_empty() {
-            if languages.iter().find(|info| info.lang == "en").is_some() {
+            if languages.iter().any(|info| info.lang == "en") {
                 lang = "en".into();
             } else if let Some(first) = languages.first().map(|info| info.lang.clone()) {
                 lang = first;
@@ -159,9 +165,9 @@ impl Component for PwtLanguageSelector {
     }
 }
 
-impl Into<VNode> for LanguageSelector {
-    fn into(self) -> VNode {
-        let comp = VComp::new::<PwtLanguageSelector>(Rc::new(self), None);
+impl From<LanguageSelector> for VNode {
+    fn from(val: LanguageSelector) -> Self {
+        let comp = VComp::new::<PwtLanguageSelector>(Rc::new(val), None);
         VNode::from(comp)
     }
 }

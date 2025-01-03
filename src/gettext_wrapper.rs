@@ -117,7 +117,7 @@ fn convert_js_error(js_err: ::wasm_bindgen::JsValue) -> String {
     if let Ok(error) = ::wasm_bindgen::JsCast::dyn_into::<js_sys::Error>(js_err) {
         format!("{}", error.message())
     } else {
-        format!("unknown js error: error is no ERROR object")
+        "unknown js error: error is no ERROR object".to_string()
     }
 }
 
@@ -129,31 +129,28 @@ async fn fetch_catalog(url: &str) -> Result<(), String> {
     init.method("GET");
     init.signal(Some(&abort.signal()));
 
-    let request =
-        web_sys::Request::new_with_str_and_init(url, &init).map_err(|err| convert_js_error(err))?;
+    let request = web_sys::Request::new_with_str_and_init(url, &init).map_err(convert_js_error)?;
 
-    let window = web_sys::window().ok_or_else(|| format!("unable to get window object"))?;
+    let window = web_sys::window().ok_or_else(|| "unable to get window object".to_string())?;
     let promise = window.fetch_with_request(&request);
 
     let js_resp = wasm_bindgen_futures::JsFuture::from(promise)
         .await
-        .map_err(|err| convert_js_error(err))?;
+        .map_err(convert_js_error)?;
 
     let response: web_sys::Response = js_resp.into();
     let status = response.status();
 
-    if !(status >= 200 && status < 300) {
+    if !(200..300).contains(&status) {
         return Err(format!(
             "Catalog download failed -g ot HTTP status {}",
             status
         ));
     }
-    let promise = response
-        .array_buffer()
-        .map_err(|err| convert_js_error(err))?;
+    let promise = response.array_buffer().map_err(convert_js_error)?;
 
     let js_fut = wasm_bindgen_futures::JsFuture::from(promise);
-    let body = js_fut.await.map_err(|err| convert_js_error(err))?;
+    let body = js_fut.await.map_err(convert_js_error)?;
     let body = js_sys::Uint8Array::new(&body).to_vec();
 
     init_i18n_from_blob(body)?;

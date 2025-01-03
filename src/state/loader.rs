@@ -65,6 +65,12 @@ impl<T: 'static + DeserializeOwned + Serialize> LoaderState<T> {
 #[derivative(Clone(bound = ""), PartialEq(bound = ""))]
 pub struct Loader<T>(SharedState<LoaderState<T>>);
 
+impl<T: 'static + DeserializeOwned + Serialize> Default for Loader<T> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<T: 'static + DeserializeOwned + Serialize> Loader<T> {
     /// Create a new instance.
     pub fn new() -> Self {

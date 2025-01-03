@@ -153,10 +153,10 @@ impl Component for PwtFab {
     }
 }
 
-impl Into<VNode> for Fab {
-    fn into(self) -> VNode {
-        let key = self.key.clone();
-        let comp = VComp::new::<PwtFab>(Rc::new(self), key);
+impl From<Fab> for VNode {
+    fn from(val: Fab) -> Self {
+        let key = val.key.clone();
+        let comp = VComp::new::<PwtFab>(Rc::new(val), key);
         VNode::from(comp)
     }
 }

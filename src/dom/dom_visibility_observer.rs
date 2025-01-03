@@ -37,7 +37,7 @@ impl DomVisibilityObserver {
 
         let observer =
             IntersectionObserver::new(observer_closure.as_ref().unchecked_ref()).unwrap_throw();
-        observer.observe(&el);
+        observer.observe(el);
 
         Self {
             _observer_closure: observer_closure, // keep it alive

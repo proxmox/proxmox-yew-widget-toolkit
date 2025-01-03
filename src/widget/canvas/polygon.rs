@@ -17,6 +17,12 @@ pub struct Polygon {
     children: Option<Vec<VNode>>,
 }
 
+impl Default for Polygon {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Polygon {
     /// Create a new instance.
     pub fn new() -> Self {
@@ -45,13 +51,13 @@ impl Polygon {
     impl_svg_presentation_attributes!();
 }
 
-impl Into<VTag> for Polygon {
-    fn into(self) -> VTag {
-        self.std_props.into_vtag(
+impl From<Polygon> for VTag {
+    fn from(val: Polygon) -> Self {
+        val.std_props.into_vtag(
             Cow::Borrowed("polygon"),
             None::<&str>,
-            Some(self.listeners),
-            self.children,
+            Some(val.listeners),
+            val.children,
         )
     }
 }

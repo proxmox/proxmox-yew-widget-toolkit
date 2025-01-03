@@ -33,6 +33,12 @@ pub struct Hidden {
     pub on_change: Option<Callback<Value>>,
 }
 
+impl Default for Hidden {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Hidden {
     /// Creates a new instance.
     pub fn new() -> Self {
@@ -48,9 +54,7 @@ impl ManagedField for HiddenField {
     type Message = ();
     type ValidateClosure = ();
 
-    fn validation_args(_props: &Self::Properties) -> Self::ValidateClosure {
-        ()
-    }
+    fn validation_args(_props: &Self::Properties) -> Self::ValidateClosure {}
 
     fn setup(props: &Hidden) -> ManagedFieldState {
         let mut value = Value::Null;

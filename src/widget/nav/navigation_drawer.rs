@@ -249,9 +249,11 @@ impl PwtNavigationDrawer {
                 html! {<span style={format!("width: {}rem", (indent_level as f32) * 1.0)}/>}
             }))
             // add optional icon on the left
-            .with_optional_child(item.icon_class.as_ref().and_then(|icon| {
-                Some(html! { <i class={classes!(icon.to_string(), "pwt-nav-menu-icon")}/>})
-            }))
+            .with_optional_child(
+                item.icon_class.as_ref().map(
+                    |icon| html! { <i class={classes!(icon.to_string(), "pwt-nav-menu-icon")}/>},
+                ),
+            )
             // add memu label
             .with_child(html! {<div class="pwt-text-truncate pwt-flex-fill">{&item.label}</div>})
             // add optional menu-open icon
@@ -336,28 +338,25 @@ impl PwtNavigationDrawer {
 
         fn find_item_recursive<'a>(menu: &'a [MenuEntry], desired: &Key) -> Option<&'a MenuEntry> {
             for menu in menu.iter() {
-                match menu {
-                    MenuEntry::Item(item) => {
-                        if item.key.as_ref() == Some(desired) {
-                            return Some(menu);
-                        }
+                if let MenuEntry::Item(item) = menu {
+                    if item.key.as_ref() == Some(desired) {
+                        return Some(menu);
+                    }
 
-                        if let Some(submenu) = &item.submenu {
-                            let res = find_item_recursive(&submenu.children[..], desired);
-                            if res.is_some() {
-                                return res;
-                            }
+                    if let Some(submenu) = &item.submenu {
+                        let res = find_item_recursive(&submenu.children[..], desired);
+                        if res.is_some() {
+                            return res;
                         }
                     }
-                    _ => {}
                 };
             }
             None
         }
 
-        match find_item_recursive(&props.menu.children, &desired) {
+        match find_item_recursive(&props.menu.children, desired) {
             Some(entry @ MenuEntry::Item(item)) => match &item.submenu {
-                None => item.selectable.then(|| entry),
+                None => item.selectable.then_some(entry),
                 Some(submenu) => {
                     if item.selectable {
                         Some(entry)
@@ -472,7 +471,7 @@ impl Component for PwtNavigationDrawer {
                     None
                 };
 
-                if &self.active == &key {
+                if self.active == key {
                     return false;
                 }
 
@@ -485,7 +484,7 @@ impl Component for PwtNavigationDrawer {
                 }
 
                 if let Some(key) = &key {
-                    self.emit_item_activate(&key, ctx);
+                    self.emit_item_activate(key, ctx);
                 }
 
                 if let Some(on_select) = &props.on_select {
@@ -611,10 +610,10 @@ impl Component for PwtNavigationDrawer {
     }
 }
 
-impl Into<VNode> for NavigationDrawer {
-    fn into(self) -> VNode {
-        let key = self.key.clone();
-        let comp = VComp::new::<PwtNavigationDrawer>(Rc::new(self), key);
+impl From<NavigationDrawer> for VNode {
+    fn from(val: NavigationDrawer) -> Self {
+        let key = val.key.clone();
+        let comp = VComp::new::<PwtNavigationDrawer>(Rc::new(val), key);
         VNode::from(comp)
     }
 }

@@ -141,11 +141,11 @@ impl Component for PwtActionIcon {
 
         Container::from_tag("i")
             .node_ref(props.node_ref.clone())
-            .attribute("tabindex", (!disabled).then(|| tabindex))
+            .attribute("tabindex", (!disabled).then_some(tabindex))
             .attribute("role", "button")
             .attribute("aria-label", props.aria_label.clone())
             .class("pwt-action-icon")
-            .class(props.disabled.then(|| "disabled"))
+            .class(props.disabled.then_some("disabled"))
             .class(props.class.clone())
             .class(props.icon_class.clone())
             .styles(props.style.clone())
@@ -184,10 +184,10 @@ impl Component for PwtActionIcon {
     }
 }
 
-impl Into<VNode> for ActionIcon {
-    fn into(self) -> VNode {
-        let key = self.key.clone();
-        let comp = VComp::new::<PwtActionIcon>(Rc::new(self), key);
+impl From<ActionIcon> for VNode {
+    fn from(val: ActionIcon) -> Self {
+        let key = val.key.clone();
+        let comp = VComp::new::<PwtActionIcon>(Rc::new(val), key);
         VNode::from(comp)
     }
 }

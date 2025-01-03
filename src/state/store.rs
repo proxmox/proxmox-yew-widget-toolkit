@@ -65,6 +65,12 @@ impl<T: 'static> Drop for StoreObserver<T> {
     }
 }
 
+impl<T: ExtractPrimaryKey + 'static> Default for Store<T> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<T: ExtractPrimaryKey + 'static> Store<T> {
     /// Creates a new instance for types implementing [ExtractPrimaryKey].
     ///
@@ -95,10 +101,9 @@ impl<T: 'static> Store<T> {
     /// [Store] object, so each clone can hold a single on_select
     /// callback.
     pub fn on_change(mut self, cb: impl IntoEventCallback<()>) -> Self {
-        self.on_change = match cb.into_event_callback() {
-            Some(cb) => Some(Rc::new(self.add_listener(cb))),
-            None => None,
-        };
+        self.on_change = cb
+            .into_event_callback()
+            .map(|cb| Rc::new(self.add_listener(cb)));
         self
     }
 
@@ -236,13 +241,13 @@ impl<T> Deref for StoreWriteGuard<'_, T> {
     }
 }
 
-impl<'a, T> DerefMut for StoreWriteGuard<'a, T> {
+impl<T> DerefMut for StoreWriteGuard<'_, T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.state
     }
 }
 
-impl<'a, T: 'static> Drop for StoreWriteGuard<'a, T> {
+impl<T: 'static> Drop for StoreWriteGuard<'_, T> {
     fn drop(&mut self) {
         if self.update {
             self.version += 1;
@@ -270,7 +275,7 @@ pub struct StoreNodeRef<'a, T> {
     node_id: usize,
 }
 
-impl<'a, T: 'static> DataNode<T> for StoreNodeRef<'a, T> {
+impl<T: 'static> DataNode<T> for StoreNodeRef<'_, T> {
     fn record(&self) -> DataNodeDerefGuard<T> {
         let data = &self.state.data[self.node_id];
         let guard: Box<dyn Deref<Target = T>> = Box::new(data);

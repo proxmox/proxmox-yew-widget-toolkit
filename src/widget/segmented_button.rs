@@ -13,6 +13,12 @@ pub struct SegmentedButton {
     buttons: Vec<Button>,
 }
 
+impl Default for SegmentedButton {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SegmentedButton {
     /// Create a new segmented button.
     pub fn new() -> Self {

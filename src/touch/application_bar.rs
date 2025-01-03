@@ -38,6 +38,12 @@ pub struct ApplicationBar {
     pub bottom: Option<Html>,
 }
 
+impl Default for ApplicationBar {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ApplicationBar {
     /// Create a new instance.
     pub fn new() -> Self {
@@ -159,10 +165,10 @@ impl Component for PwtApplicationBar {
     }
 }
 
-impl Into<VNode> for ApplicationBar {
-    fn into(self) -> VNode {
-        let key = self.key.clone();
-        let comp = VComp::new::<PwtApplicationBar>(Rc::new(self), key);
+impl From<ApplicationBar> for VNode {
+    fn from(val: ApplicationBar) -> Self {
+        let key = val.key.clone();
+        let comp = VComp::new::<PwtApplicationBar>(Rc::new(val), key);
         VNode::from(comp)
     }
 }

@@ -67,7 +67,7 @@ impl<'a, MF: ManagedField + Sized> ManagedFieldContext<'a, MF> {
 
     /// Current field state.
     pub fn state(&self) -> &ManagedFieldState {
-        &self.comp_state
+        self.comp_state
     }
 }
 
@@ -525,7 +525,7 @@ impl<MF: ManagedField + 'static> Component for ManagedFieldMaster<MF> {
                     }) as Box<dyn Fn()>
                 });
 
-                if let Some(el) = document.get_element_by_id(&label_id) {
+                if let Some(el) = document.get_element_by_id(label_id) {
                     let _ = el.add_event_listener_with_callback(
                         "click",
                         label_clicked_closure.as_ref().unchecked_ref(),

@@ -14,6 +14,12 @@ use crate::prelude::*;
 #[derive(Debug, Clone, PartialEq, Properties)]
 pub struct Column {}
 
+impl Default for Column {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Column {
     /// Create a new instance.
     pub fn new() -> Self {
@@ -51,18 +57,18 @@ impl Column {
     }
 }
 
-impl Into<VTag> for Column {
-    fn into(self) -> VTag {
-        let attributes = self.std_props.cumulate_attributes(None::<&str>);
+impl From<Column> for VTag {
+    fn from(val: Column) -> Self {
+        let attributes = val.std_props.cumulate_attributes(None::<&str>);
 
-        let listeners = Listeners::Pending(self.listeners.listeners.into_boxed_slice());
+        let listeners = Listeners::Pending(val.listeners.listeners.into_boxed_slice());
 
-        let children = VList::with_children(self.children, None);
+        let children = VList::with_children(val.children, None);
 
         VTag::__new_other(
             Cow::Borrowed("div"),
-            self.std_props.node_ref,
-            self.std_props.key,
+            val.std_props.node_ref,
+            val.std_props.key,
             attributes,
             listeners,
             children.into(),

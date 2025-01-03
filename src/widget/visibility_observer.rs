@@ -91,10 +91,10 @@ impl<W: WidgetBuilder + PartialEq + Clone + 'static> Component for PwtVisibility
     }
 }
 
-impl<W: WidgetBuilder + PartialEq + Clone + 'static> Into<VNode> for VisibilityObserver<W> {
-    fn into(self) -> VNode {
-        let key = self.content.as_std_props().key.clone();
-        let comp = VComp::new::<PwtVisibilityObserver<W>>(Rc::new(self), key);
+impl<W: WidgetBuilder + PartialEq + Clone + 'static> From<VisibilityObserver<W>> for VNode {
+    fn from(val: VisibilityObserver<W>) -> Self {
+        let key = val.content.as_std_props().key.clone();
+        let comp = VComp::new::<PwtVisibilityObserver<W>>(Rc::new(val), key);
         VNode::from(comp)
     }
 }

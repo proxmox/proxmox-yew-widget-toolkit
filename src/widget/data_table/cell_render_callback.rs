@@ -36,7 +36,7 @@ pub struct DataTableCellRenderArgs<'a, T> {
     pub config: CellConfiguration,
 }
 
-impl<'a, T> DataTableCellRenderArgs<'a, T> {
+impl<T> DataTableCellRenderArgs<'_, T> {
     /// Return the data node.
     pub fn record(&self) -> &T {
         self.record

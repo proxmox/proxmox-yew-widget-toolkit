@@ -67,6 +67,12 @@ pub struct SnackBar {
     pub id: Option<AttrValue>,
 }
 
+impl Default for SnackBar {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SnackBar {
     /// Create a new instance.
     pub fn new() -> Self {
@@ -79,27 +85,27 @@ impl SnackBar {
     }
 }
 
-impl Into<VTag> for SnackBar {
-    fn into(self) -> VTag {
-        let attributes = self.std_props.cumulate_attributes(Some("pwt-snackbar"));
+impl From<SnackBar> for VTag {
+    fn from(val: SnackBar) -> Self {
+        let attributes = val.std_props.cumulate_attributes(Some("pwt-snackbar"));
 
-        let listeners = Listeners::Pending(self.listeners.listeners.into_boxed_slice());
+        let listeners = Listeners::Pending(val.listeners.listeners.into_boxed_slice());
 
         let mut children = Vec::new();
         children.push(
             Container::new()
                 .class("pwt-snackbar-message")
-                .with_child(self.message.clone().unwrap_or(AttrValue::Static("")))
+                .with_child(val.message.clone().unwrap_or(AttrValue::Static("")))
                 .into(),
         );
-        if let Some(action_label) = &self.action_label {
+        if let Some(action_label) = &val.action_label {
             children.push(
                 Button::new(action_label.clone())
                     .class("pwt-button-filled")
                     .class("pwt-snackbar-action")
                     .class("pwt-scheme-inverse-surface")
                     .onclick({
-                        let on_action = self.on_action.clone();
+                        let on_action = val.on_action.clone();
                         move |_| {
                             if let Some(on_action) = &on_action {
                                 on_action.emit(());
@@ -109,10 +115,10 @@ impl Into<VTag> for SnackBar {
                     .into(),
             );
         }
-        if self.show_close_icon {
+        if val.show_close_icon {
             children.push(
                 ActionIcon::new("fa fa-lg fa-close")
-                    .on_activate(self.on_close.clone())
+                    .on_activate(val.on_close.clone())
                     .into(),
             );
         }
@@ -121,8 +127,8 @@ impl Into<VTag> for SnackBar {
 
         VTag::__new_other(
             Cow::Borrowed("div"),
-            self.std_props.node_ref,
-            self.std_props.key,
+            val.std_props.node_ref,
+            val.std_props.key,
             attributes,
             listeners,
             children.into(),

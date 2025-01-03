@@ -42,11 +42,11 @@ impl Progress {
     }
 }
 
-impl Into<VTag> for Progress {
-    fn into(self) -> VTag {
-        let max = self.max.unwrap_or(1.0);
+impl From<Progress> for VTag {
+    fn from(val: Progress) -> Self {
+        let max = val.max.unwrap_or(1.0);
 
-        let bar = match self.value {
+        let bar = match val.value {
             Some(value) => {
                 let percentage = (value / max).clamp(0.0, 1.0);
                 Container::new()
@@ -57,7 +57,7 @@ impl Into<VTag> for Progress {
             None => Container::new().class("pwt-progress-infinite").into(),
         };
 
-        self.std_props.into_vtag(
+        val.std_props.into_vtag(
             Cow::Borrowed("div"),
             Some("pwt-progress"),
             None,

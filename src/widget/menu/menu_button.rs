@@ -143,7 +143,7 @@ pub struct PwtMenuButton {
 impl PwtMenuButton {
     fn restore_focus(&mut self, props: &MenuButton) {
         if let Some(node) = props.std_props.node_ref.get() {
-            if let Some(el) = node.dyn_into::<web_sys::HtmlElement>().ok() {
+            if let Ok(el) = node.dyn_into::<web_sys::HtmlElement>() {
                 let _ = el.focus();
             }
         }
@@ -230,15 +230,13 @@ impl Component for PwtMenuButton {
                         .menu_controller(self.menu_controller.clone())
                         .on_close(ctx.link().callback(|_| Msg::CloseMenu)),
                 )
-            } else if let Some(m) = &props.menu {
-                Some(
+            } else {
+                props.menu.as_ref().map(|m| {
                     m.clone()
                         .autofocus(true)
                         .menu_controller(self.menu_controller.clone())
-                        .on_close(ctx.link().callback(|_| Msg::CloseMenu)),
-                )
-            } else {
-                None
+                        .on_close(ctx.link().callback(|_| Msg::CloseMenu))
+                })
             };
 
             Container::new()
@@ -251,7 +249,7 @@ impl Component for PwtMenuButton {
         let mut button = Button::new(&props.text)
             .show_arrow(props.show_arrow)
             .attribute("aria-haspopup", "true")
-            .attribute("aria-expanded", self.show_submenu.then(|| "true"))
+            .attribute("aria-expanded", self.show_submenu.then_some("true"))
             .tabindex(props.tabindex)
             .icon_class(props.icon_class.clone());
 

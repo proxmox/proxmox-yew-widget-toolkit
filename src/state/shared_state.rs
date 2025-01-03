@@ -88,10 +88,9 @@ impl<T> SharedState<T> {
     }
 
     pub fn set_on_change(&mut self, cb: impl IntoEventCallback<SharedState<T>>) {
-        self.on_change = match cb.into_event_callback() {
-            Some(cb) => Some(Rc::new(self.add_listener(cb))),
-            None => None,
-        };
+        self.on_change = cb
+            .into_event_callback()
+            .map(|cb| Rc::new(self.add_listener(cb)));
     }
 
     /// Method to add an shared state observer.
@@ -155,7 +154,7 @@ pub struct SharedStateWriteGuard<'a, T> {
                       //initial_version: usize,
 }
 
-impl<'a, T> Deref for SharedStateWriteGuard<'a, T> {
+impl<T> Deref for SharedStateWriteGuard<'_, T> {
     type Target = SharedStateInner<T>;
 
     fn deref(&self) -> &Self::Target {
@@ -163,13 +162,13 @@ impl<'a, T> Deref for SharedStateWriteGuard<'a, T> {
     }
 }
 
-impl<'a, T> DerefMut for SharedStateWriteGuard<'a, T> {
+impl<T> DerefMut for SharedStateWriteGuard<'_, T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.borrowed_state
     }
 }
 
-impl<'a, T> Drop for SharedStateWriteGuard<'a, T> {
+impl<T> Drop for SharedStateWriteGuard<'_, T> {
     fn drop(&mut self) {
         //let changed = self.state.version != self.initial_version;
         let changed = true; // TODO: impl change detection?
@@ -187,7 +186,7 @@ pub struct SharedStateReadGuard<'a, T> {
     borrowed_state: Ref<'a, SharedStateInner<T>>,
 }
 
-impl<'a, T> Deref for SharedStateReadGuard<'a, T> {
+impl<T> Deref for SharedStateReadGuard<'_, T> {
     type Target = SharedStateInner<T>;
 
     fn deref(&self) -> &Self::Target {

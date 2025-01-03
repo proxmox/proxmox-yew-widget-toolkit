@@ -35,6 +35,12 @@ pub struct ResetButton {
     pub class: Classes,
 }
 
+impl Default for ResetButton {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ResetButton {
     /// Create a new instance.
     pub fn new() -> Self {
@@ -145,9 +151,9 @@ impl Component for PwtResetButton {
     }
 }
 
-impl Into<VNode> for ResetButton {
-    fn into(self) -> VNode {
-        let comp = VComp::new::<PwtResetButton>(Rc::new(self), None);
+impl From<ResetButton> for VNode {
+    fn from(val: ResetButton) -> Self {
+        let comp = VComp::new::<PwtResetButton>(Rc::new(val), None);
         VNode::from(comp)
     }
 }

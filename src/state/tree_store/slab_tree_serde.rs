@@ -16,7 +16,7 @@ struct ChildList<'a, T> {
     tree: &'a SlabTree<T>,
 }
 
-impl<'a, T: 'static + Serialize> Serialize for ChildList<'a, T> {
+impl<T: 'static + Serialize> Serialize for ChildList<'_, T> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -33,7 +33,7 @@ impl<'a, T: 'static + Serialize> Serialize for ChildList<'a, T> {
     }
 }
 
-impl<'a, T: 'static + Serialize> Serialize for SlabTreeNodeRef<'a, T> {
+impl<T: 'static + Serialize> Serialize for SlabTreeNodeRef<'_, T> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -93,7 +93,7 @@ struct ChildrenVisitor<'a, T> {
     tree: &'a mut SlabTree<T>,
 }
 
-impl<'a, 'de, T: Deserialize<'de>> Visitor<'de> for ChildrenVisitor<'a, T> {
+impl<'de, T: Deserialize<'de>> Visitor<'de> for ChildrenVisitor<'_, T> {
     type Value = Vec<usize>;
 
     fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
@@ -117,7 +117,7 @@ impl<'a, 'de, T: Deserialize<'de>> Visitor<'de> for ChildrenVisitor<'a, T> {
     }
 }
 
-impl<'a, 'de, T: Deserialize<'de>> DeserializeSeed<'de> for ChildrenVisitor<'a, T> {
+impl<'de, T: Deserialize<'de>> DeserializeSeed<'de> for ChildrenVisitor<'_, T> {
     type Value = Vec<usize>;
 
     fn deserialize<D: Deserializer<'de>>(self, deserializer: D) -> Result<Self::Value, D::Error> {
@@ -128,7 +128,7 @@ impl<'a, 'de, T: Deserialize<'de>> DeserializeSeed<'de> for ChildrenVisitor<'a, 
 
 static KNOWN_FIELDS: &[&str] = &["record", "expanded", "children"];
 
-impl<'a, 'de, T: Deserialize<'de>> Visitor<'de> for TreeNodeVisitor<'a, T> {
+impl<'de, T: Deserialize<'de>> Visitor<'de> for TreeNodeVisitor<'_, T> {
     type Value = usize;
 
     fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
@@ -227,7 +227,7 @@ impl<'de, T: Deserialize<'de> + ExtractPrimaryKey> Deserialize<'de> for KeyedSla
     }
 }
 
-impl<'a, 'de, T: Deserialize<'de>> DeserializeSeed<'de> for TreeNodeVisitor<'a, T> {
+impl<'de, T: Deserialize<'de>> DeserializeSeed<'de> for TreeNodeVisitor<'_, T> {
     type Value = usize;
 
     fn deserialize<D: Deserializer<'de>>(self, deserializer: D) -> Result<Self::Value, D::Error> {

@@ -19,12 +19,12 @@ impl CssStyles {
     ) {
         let key = key.into();
         #[cfg(debug_assertions)]
-        if key.contains(|x| x == ';' || x == ':') {
+        if key.contains([';', ':']) {
             panic!("invalid character in style key: '{key}'");
         }
         if let Some(value) = value.into_prop_value() {
             #[cfg(debug_assertions)]
-            if value.contains(|x| x == ';' || x == ':') {
+            if value.contains([';', ':']) {
                 panic!("invalid character in style value '{value}' for '{key}'");
             }
             self.styles

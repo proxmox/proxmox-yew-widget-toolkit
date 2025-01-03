@@ -100,7 +100,7 @@ pub fn delete_state(storage: &StorageLocation) {
         StorageLocation::Session(state_id) => (session_storage(), state_id),
     };
     if let Some(store) = store {
-        let _ = store.delete(&*state_id);
+        let _ = store.delete(state_id);
     }
 }
 
@@ -111,7 +111,7 @@ pub fn load_state<T: 'static + DeserializeOwned>(storage: &StorageLocation) -> O
     };
 
     if let Some(store) = store {
-        if let Ok(Some(item_str)) = store.get_item(&*state_id) {
+        if let Ok(Some(item_str)) = store.get_item(state_id) {
             if let Ok(data) = serde_json::from_str(&item_str) {
                 return Some(data);
             }
@@ -127,13 +127,11 @@ pub fn store_state<T: 'static + Serialize>(data: &T, storage: &StorageLocation) 
     };
     if let Some(store) = store {
         let item_str = serde_json::to_string(data).unwrap();
-        match store.set_item(&*state_id, &item_str) {
-            Err(err) => log::error!(
-                "store persistent state {} failed: {}",
-                state_id,
+        if let Err(err) = store.set_item(state_id, &item_str) {
+            log::error!(
+                "store persistent state {state_id} failed: {}",
                 crate::convert_js_error(err)
-            ),
-            Ok(_) => {}
+            )
         }
     }
 }

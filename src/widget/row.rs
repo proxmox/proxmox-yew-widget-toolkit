@@ -31,6 +31,12 @@ use crate::prelude::*;
 #[derive(Debug, Clone, PartialEq, Properties)]
 pub struct Row {}
 
+impl Default for Row {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Row {
     /// Create a new instance.
     pub fn new() -> Self {
@@ -66,18 +72,18 @@ impl Row {
     }
 }
 
-impl Into<VTag> for Row {
-    fn into(self) -> VTag {
-        let attributes = self.std_props.cumulate_attributes(None::<&str>);
+impl From<Row> for VTag {
+    fn from(val: Row) -> Self {
+        let attributes = val.std_props.cumulate_attributes(None::<&str>);
 
-        let listeners = Listeners::Pending(self.listeners.listeners.into_boxed_slice());
+        let listeners = Listeners::Pending(val.listeners.listeners.into_boxed_slice());
 
-        let children = VList::with_children(self.children, None);
+        let children = VList::with_children(val.children, None);
 
         VTag::__new_other(
             Cow::Borrowed("div"),
-            self.std_props.node_ref,
-            self.std_props.key,
+            val.std_props.node_ref,
+            val.std_props.key,
             attributes,
             listeners,
             children.into(),

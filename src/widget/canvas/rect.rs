@@ -17,6 +17,12 @@ pub struct Rect {
     children: Option<Vec<VNode>>,
 }
 
+impl Default for Rect {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Rect {
     /// Create a new instance.
     pub fn new() -> Self {
@@ -73,13 +79,13 @@ impl Rect {
     impl_svg_presentation_attributes!();
 }
 
-impl Into<VTag> for Rect {
-    fn into(self) -> VTag {
-        self.std_props.into_vtag(
+impl From<Rect> for VTag {
+    fn from(val: Rect) -> Self {
+        val.std_props.into_vtag(
             Cow::Borrowed("rect"),
             None::<&str>,
-            Some(self.listeners),
-            self.children,
+            Some(val.listeners),
+            val.children,
         )
     }
 }

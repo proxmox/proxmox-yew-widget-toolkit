@@ -62,6 +62,12 @@ pub struct ResizableHeader {
     pub menu_builder: Option<BuilderFn<Menu>>,
 }
 
+impl Default for ResizableHeader {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ResizableHeader {
     /// Create a new instance.
     pub fn new() -> Self {
@@ -191,7 +197,7 @@ impl Component for PwtResizableHeader {
         let focus_tracker = FocusTracker::new(ctx.link().callback(Msg::FocusChange));
 
         Self {
-            node_ref: props.node_ref.clone().unwrap_or(NodeRef::default()),
+            node_ref: props.node_ref.clone().unwrap_or_default(),
             rtl: None,
             width: 0.0,
             pointermove_listener: None,
@@ -287,19 +293,18 @@ impl Component for PwtResizableHeader {
             .node_ref(self.node_ref.clone())
             .attribute("role", "none")
             .class("pwt-datatable-header-item")
-            .class(self.has_focus.then(|| "focused"))
+            .class(self.has_focus.then_some("focused"))
             .class(props.class.clone())
             .attribute("id", props.id.clone())
             .onfocusin(self.focus_tracker.get_focus_callback(true))
             .onfocusout(self.focus_tracker.get_focus_callback(false))
             .onkeydown({
                 let link = ctx.link().clone();
-                move |event: KeyboardEvent| match event.key().as_str() {
-                    "ArrowDown" => {
+                move |event: KeyboardEvent| {
+                    if event.key().as_str() == "ArrowDown" {
                         event.stop_propagation();
                         link.send_message(Msg::ShowPicker);
                     }
-                    _ => {}
                 }
             })
             .with_child(
@@ -323,7 +328,7 @@ impl Component for PwtResizableHeader {
                     .autoshow_menu(true)
                     .class("pwt-datatable-header-menu-trigger pwt-button-text")
                     .class(ColorScheme::Primary)
-                    .class((self.has_focus || self.show_picker).then(|| "focused"))
+                    .class((self.has_focus || self.show_picker).then_some("focused"))
                     .icon_class("fa fa-lg fa-caret-down")
                     .ondblclick(|event: MouseEvent| event.stop_propagation())
                     .menu_builder(props.menu_builder.clone())
@@ -375,10 +380,10 @@ impl Component for PwtResizableHeader {
     }
 }
 
-impl Into<VNode> for ResizableHeader {
-    fn into(self) -> VNode {
-        let key = self.key.clone();
-        let comp = VComp::new::<PwtResizableHeader>(Rc::new(self), key);
+impl From<ResizableHeader> for VNode {
+    fn from(val: ResizableHeader) -> Self {
+        let key = val.key.clone();
+        let comp = VComp::new::<PwtResizableHeader>(Rc::new(val), key);
         VNode::from(comp)
     }
 }

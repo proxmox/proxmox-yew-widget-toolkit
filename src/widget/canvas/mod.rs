@@ -145,9 +145,9 @@ impl From<i32> for SvgLength {
     }
 }
 
-impl Into<AttrValue> for SvgLength {
-    fn into(self) -> AttrValue {
-        self.to_string().into()
+impl From<SvgLength> for AttrValue {
+    fn from(val: SvgLength) -> Self {
+        val.to_string().into()
     }
 }
 
@@ -161,6 +161,12 @@ impl IntoPropValue<Option<AttrValue>> for SvgLength {
 #[widget(pwt=crate, @element, @container)]
 #[derive(Properties, Clone, PartialEq)]
 pub struct Canvas {}
+
+impl Default for Canvas {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl Canvas {
     pub fn new() -> Self {
@@ -186,13 +192,13 @@ impl Canvas {
     }
 }
 
-impl Into<VTag> for Canvas {
-    fn into(self) -> VTag {
-        self.std_props.into_vtag(
+impl From<Canvas> for VTag {
+    fn from(val: Canvas) -> Self {
+        val.std_props.into_vtag(
             Cow::Borrowed("svg"),
             None::<&str>,
-            Some(self.listeners),
-            Some(self.children),
+            Some(val.listeners),
+            Some(val.children),
         )
     }
 }

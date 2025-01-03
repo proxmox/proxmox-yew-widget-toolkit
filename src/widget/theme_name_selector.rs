@@ -13,6 +13,12 @@ pub struct ThemeNameSelector {
     class: Classes,
 }
 
+impl Default for ThemeNameSelector {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ThemeNameSelector {
     pub fn new() -> Self {
         yew::props!(Self {})
@@ -76,7 +82,7 @@ impl Component for PwtThemeNameSelector {
         Combobox::new()
             .node_ref(self.combobox_ref.clone())
             .class(props.class.clone())
-            .on_change(ctx.link().callback(|v| Msg::SetThemeName(v)))
+            .on_change(ctx.link().callback(Msg::SetThemeName))
             .aria_label("Select Theme")
             .default(self.theme.clone())
             .required(true)
@@ -92,9 +98,9 @@ impl Component for PwtThemeNameSelector {
     }
 }
 
-impl Into<VNode> for ThemeNameSelector {
-    fn into(self) -> VNode {
-        let comp = VComp::new::<PwtThemeNameSelector>(Rc::new(self), None);
+impl From<ThemeNameSelector> for VNode {
+    fn from(val: ThemeNameSelector) -> Self {
+        let comp = VComp::new::<PwtThemeNameSelector>(Rc::new(val), None);
         VNode::from(comp)
     }
 }

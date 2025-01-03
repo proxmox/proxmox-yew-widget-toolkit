@@ -100,7 +100,7 @@ pub fn get_available_themes() -> &'static [&'static str] {
 
 fn get_default_theme_name() -> String {
     get_available_themes()
-        .get(0)
+        .first()
         .unwrap_or(&"Material")
         .to_string()
 }
@@ -123,7 +123,7 @@ impl Default for Theme {
         Self {
             mode: ThemeMode::default(),
             density: ThemeDensity::Preset, // use default from css
-            name: String::from(get_default_theme_name()),
+            name: get_default_theme_name(),
         }
     }
 }
@@ -180,7 +180,7 @@ impl Theme {
         let name = theme.name.to_lowercase();
         let themes = get_available_themes();
 
-        if themes.iter().find(|t| t.to_lowercase() == name).is_some() {
+        if themes.iter().any(|t| t.to_lowercase() == name) {
             return theme;
         }
 

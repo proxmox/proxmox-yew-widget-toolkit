@@ -30,6 +30,12 @@ pub struct SnackBarController {
     state: SharedState<Vec<SnackBarControllerMsg>>,
 }
 
+impl Default for SnackBarController {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SnackBarController {
     pub fn new() -> Self {
         Self {
@@ -93,6 +99,12 @@ pub struct SnackBarManager {
     #[builder(IntoPropValue, into_prop_value)]
     #[prop_or_default]
     pub bottom_offset: Option<u32>,
+}
+
+impl Default for SnackBarManager {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl SnackBarManager {
@@ -204,10 +216,7 @@ impl Component for PwtSnackBarManager {
 
     fn create(ctx: &Context<Self>) -> Self {
         let props = ctx.props();
-        let controller = props
-            .controller
-            .clone()
-            .unwrap_or(SnackBarController::new());
+        let controller = props.controller.clone().unwrap_or_default();
 
         let _state_observer = controller
             .state
@@ -316,10 +325,10 @@ impl Component for PwtSnackBarManager {
     }
 }
 
-impl Into<VNode> for SnackBarManager {
-    fn into(self) -> VNode {
-        let key = self.key.clone();
-        let comp = VComp::new::<PwtSnackBarManager>(Rc::new(self), key);
+impl From<SnackBarManager> for VNode {
+    fn from(val: SnackBarManager) -> Self {
+        let key = val.key.clone();
+        let comp = VComp::new::<PwtSnackBarManager>(Rc::new(val), key);
         VNode::from(comp)
     }
 }

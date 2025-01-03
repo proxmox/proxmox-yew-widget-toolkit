@@ -99,7 +99,7 @@ impl Component for PwtMask {
 
         let mut mask = Container::new()
             .class("pwt-load-mask")
-            .class(props.visible.then(|| "visible"));
+            .class(props.visible.then_some("visible"));
 
         if props.visible {
             mask.add_child(

@@ -45,6 +45,12 @@ pub struct SubmitButton {
     pub class: Classes,
 }
 
+impl Default for SubmitButton {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SubmitButton {
     /// Createa new instance.
     pub fn new() -> Self {
@@ -171,9 +177,9 @@ impl Component for PwtSubmitButton {
     }
 }
 
-impl Into<VNode> for SubmitButton {
-    fn into(self) -> VNode {
-        let comp = VComp::new::<PwtSubmitButton>(Rc::new(self), None);
+impl From<SubmitButton> for VNode {
+    fn from(val: SubmitButton) -> Self {
+        let comp = VComp::new::<PwtSubmitButton>(Rc::new(val), None);
         VNode::from(comp)
     }
 }

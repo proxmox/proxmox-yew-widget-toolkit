@@ -60,18 +60,18 @@ impl ListTile {
     }
 }
 
-impl Into<VTag> for ListTile {
-    fn into(self) -> VTag {
+impl From<ListTile> for VTag {
+    fn from(val: ListTile) -> Self {
         let classes = classes!(
             "pwt-list-tile",
-            self.interactive.then(|| "pwt-interactive"),
-            self.disabled.then(|| "disabled")
+            val.interactive.then_some("pwt-interactive"),
+            val.disabled.then_some("disabled")
         );
-        self.std_props.into_vtag(
+        val.std_props.into_vtag(
             Cow::Borrowed("div"),
             Some(classes),
-            Some(self.listeners),
-            Some(self.children),
+            Some(val.listeners),
+            Some(val.children),
         )
     }
 }

@@ -17,6 +17,12 @@ pub struct Polyline {
     children: Option<Vec<VNode>>,
 }
 
+impl Default for Polyline {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Polyline {
     /// Create a new instance.
     pub fn new() -> Self {
@@ -45,13 +51,13 @@ impl Polyline {
     impl_svg_presentation_attributes!();
 }
 
-impl Into<VTag> for Polyline {
-    fn into(self) -> VTag {
-        self.std_props.into_vtag(
+impl From<Polyline> for VTag {
+    fn from(val: Polyline) -> Self {
+        val.std_props.into_vtag(
             Cow::Borrowed("polyline"),
             None::<&str>,
-            Some(self.listeners),
-            self.children,
+            Some(val.listeners),
+            val.children,
         )
     }
 }

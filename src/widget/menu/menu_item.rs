@@ -283,13 +283,13 @@ impl Component for PwtMenuItem {
             } else {
                 "pwt-menu-item"
             })
-            .attribute("tabindex", (!props.focusable).then(|| "-1"))
-            .attribute("aria-disabled", props.disabled.then(|| "true"))
+            .attribute("tabindex", (!props.focusable).then_some("-1"))
+            .attribute("aria-disabled", props.disabled.then_some("true"))
             .attribute("role", "menuitem")
-            .attribute("aria-haspopup", has_submenu.then(|| "true"))
+            .attribute("aria-haspopup", has_submenu.then_some("true"))
             .attribute(
                 "aria-expanded",
-                has_submenu.then(|| if show_submenu { "true" } else { "false" }),
+                has_submenu.then_some(if show_submenu { "true" } else { "false" }),
             )
             .with_optional_child(icon)
             .with_child(html! {<span class="pwt-flex-fill">{props.text.clone()}</span>})
@@ -330,9 +330,9 @@ impl Component for PwtMenuItem {
     }
 }
 
-impl Into<VNode> for MenuItem {
-    fn into(self) -> VNode {
-        let comp = VComp::new::<PwtMenuItem>(Rc::new(self), None);
+impl From<MenuItem> for VNode {
+    fn from(val: MenuItem) -> Self {
+        let comp = VComp::new::<PwtMenuItem>(Rc::new(val), None);
         VNode::from(comp)
     }
 }

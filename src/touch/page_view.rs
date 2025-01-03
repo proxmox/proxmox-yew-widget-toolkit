@@ -30,6 +30,12 @@ pub struct PageView {
     pub on_page_change: Option<Callback<usize>>,
 }
 
+impl Default for PageView {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl PageView {
     /// Creates a new instance.
     pub fn new() -> Self {
@@ -148,10 +154,10 @@ impl Component for PwtPageView {
     }
 }
 
-impl Into<VNode> for PageView {
-    fn into(self) -> VNode {
-        let key = self.key.clone();
-        let comp = VComp::new::<PwtPageView>(Rc::new(self), key);
+impl From<PageView> for VNode {
+    fn from(val: PageView) -> Self {
+        let key = val.key.clone();
+        let comp = VComp::new::<PwtPageView>(Rc::new(val), key);
         VNode::from(comp)
     }
 }

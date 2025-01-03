@@ -66,6 +66,12 @@ impl Drop for SelectionObserver {
     }
 }
 
+impl Default for Selection {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Selection {
     /// Create a new instance.
     pub fn new() -> Self {
@@ -93,10 +99,9 @@ impl Selection {
     /// [Selection] object, so each clone can hold a single on_select
     /// callback.
     pub fn on_select(mut self, cb: impl IntoEventCallback<Selection>) -> Self {
-        self.on_select = match cb.into_event_callback() {
-            Some(cb) => Some(Rc::new(self.add_listener(cb))),
-            None => None,
-        };
+        self.on_select = cb
+            .into_event_callback()
+            .map(|cb| Rc::new(self.add_listener(cb)));
         self
     }
 
@@ -216,7 +221,7 @@ pub struct SelectionWriteGuard<'a> {
     initial_version: usize,
 }
 
-impl<'a> Deref for SelectionWriteGuard<'a> {
+impl Deref for SelectionWriteGuard<'_> {
     type Target = SelectionState;
 
     fn deref(&self) -> &Self::Target {
@@ -224,13 +229,13 @@ impl<'a> Deref for SelectionWriteGuard<'a> {
     }
 }
 
-impl<'a> DerefMut for SelectionWriteGuard<'a> {
+impl DerefMut for SelectionWriteGuard<'_> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.state
     }
 }
 
-impl<'a> Drop for SelectionWriteGuard<'a> {
+impl Drop for SelectionWriteGuard<'_> {
     fn drop(&mut self) {
         let changed = self.state.version != self.initial_version;
         unsafe {
@@ -247,7 +252,7 @@ pub struct SelectionReadGuard<'a> {
     state: Ref<'a, SelectionState>,
 }
 
-impl<'a> Deref for SelectionReadGuard<'a> {
+impl Deref for SelectionReadGuard<'_> {
     type Target = SelectionState;
 
     fn deref(&self) -> &Self::Target {
@@ -456,15 +461,15 @@ impl SelectionState {
             false => {
                 if let Some(current) = &self.selection {
                     self.selection = data.find_map(move |rec| {
-                        let key = extract_key.apply(&rec);
-                        (&key == current).then(|| key)
+                        let key = extract_key.apply(rec);
+                        (&key == current).then_some(key)
                     });
                 }
             }
             true => {
                 let mut new_map = HashSet::new();
                 for rec in data {
-                    let key = extract_key.apply(&rec);
+                    let key = extract_key.apply(rec);
                     if self.contains(&key) {
                         new_map.insert(key);
                     }

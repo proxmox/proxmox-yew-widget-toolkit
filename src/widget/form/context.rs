@@ -214,6 +214,12 @@ impl Drop for FieldHandle {
     }
 }
 
+impl Default for FormContext {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl FormContext {
     pub fn new() -> Self {
         Self {
@@ -229,10 +235,9 @@ impl FormContext {
     /// [FormContext] object, so each clone can hold a single on_change
     /// callback.
     pub fn on_change(mut self, cb: impl IntoEventCallback<FormContext>) -> Self {
-        self.on_change = match cb.into_event_callback() {
-            Some(cb) => Some(Rc::new(self.add_listener(cb))),
-            None => None,
-        };
+        self.on_change = cb
+            .into_event_callback()
+            .map(|cb| Rc::new(self.add_listener(cb)));
         self
     }
 
@@ -356,13 +361,13 @@ impl Deref for FormContextWriteGuard<'_> {
     }
 }
 
-impl<'a> DerefMut for FormContextWriteGuard<'a> {
+impl DerefMut for FormContextWriteGuard<'_> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.state
     }
 }
 
-impl<'a> Drop for FormContextWriteGuard<'a> {
+impl Drop for FormContextWriteGuard<'_> {
     fn drop(&mut self) {
         let changed = self.state.version != self.initial_version;
         unsafe {
@@ -539,10 +544,8 @@ impl FormContextState {
         name: impl IntoPropValue<AttrValue>,
     ) -> Option<(Value, Result<(), String>)> {
         let name = name.into_prop_value();
-        match self.find_field_slab_id(&name) {
-            Some(key) => Some(self.get_field_data_by_slab_key(key)),
-            None => None,
-        }
+        self.find_field_slab_id(&name)
+            .map(|key| self.get_field_data_by_slab_key(key))
     }
 
     /// Get the field value.
@@ -797,10 +800,7 @@ impl FormContextState {
             };
 
             // Are there radio group fields?
-            let radio_group_key = group
-                .members
-                .iter()
-                .find(|k| self.fields[**k].radio_group == true);
+            let radio_group_key = group.members.iter().find(|k| self.fields[**k].radio_group);
 
             if let Some(radio_group_key) = radio_group_key {
                 // Note: we only call set_value for one radio_group member
@@ -843,14 +843,14 @@ impl FormContextState {
                 .members
                 .iter()
                 .filter(|k| !self.fields[**k].radio_group)
-                .map(|k| *k)
+                .copied()
                 .collect();
 
             let radio_keys: Vec<usize> = group
                 .members
                 .iter()
                 .filter(|k| self.fields[**k].radio_group)
-                .map(|k| *k)
+                .copied()
                 .collect();
 
             if !radio_keys.is_empty() {
@@ -887,7 +887,7 @@ impl FormContextState {
                     match &field.submit_value {
                         None => continue,
                         Some(value) => {
-                            if !submit_empty & value_is_empty(&value) {
+                            if !submit_empty & value_is_empty(value) {
                                 continue;
                             }
                             data[name.deref()] = value.clone();
@@ -907,7 +907,7 @@ impl FormContextState {
                         match &field.submit_value {
                             None => continue,
                             Some(value) => {
-                                if !submit_empty & value_is_empty(&value) {
+                                if !submit_empty & value_is_empty(value) {
                                     continue;
                                 }
                                 list.push(value.clone());

@@ -84,13 +84,13 @@ impl Text {
     }
 }
 
-impl Into<VTag> for Text {
-    fn into(self) -> VTag {
-        self.std_props.into_vtag(
+impl From<Text> for VTag {
+    fn from(val: Text) -> Self {
+        val.std_props.into_vtag(
             Cow::Borrowed("text"),
             None::<&str>,
-            Some(self.listeners),
-            Some(self.children),
+            Some(val.listeners),
+            Some(val.children),
         )
     }
 }

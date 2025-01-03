@@ -188,9 +188,9 @@ impl Component for PwtThemeLoader {
     }
 }
 
-impl Into<VNode> for ThemeLoader {
-    fn into(self) -> VNode {
-        let comp = VComp::new::<PwtThemeLoader>(Rc::new(self), None);
+impl From<ThemeLoader> for VNode {
+    fn from(val: ThemeLoader) -> Self {
+        let comp = VComp::new::<PwtThemeLoader>(Rc::new(val), None);
         VNode::from(comp)
     }
 }
