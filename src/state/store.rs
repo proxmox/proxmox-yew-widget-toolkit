@@ -20,7 +20,11 @@ use crate::state::{optional_rc_ptr_eq, DataNode, DataNodeDerefGuard, DataStore};
 /// This hook returns a [Store] that listens to [Store] change
 /// events which trigger a redraw.
 #[hook]
-pub fn use_store<F: FnOnce() -> Store<T>, T: 'static>(init_fn: F) -> Store<T> {
+pub fn use_store<F, T>(init_fn: F) -> Store<T>
+where
+    F: FnOnce() -> Store<T>,
+    T: 'static,
+{
     let redraw = use_state(|| 0);
 
     let store = use_state(init_fn);

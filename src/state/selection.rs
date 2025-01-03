@@ -19,7 +19,10 @@ use crate::props::ExtractKeyFn;
 /// This hook returns a [Selection] that listens to change events
 /// which trigger a redraw.
 #[hook]
-pub fn use_selection<F: FnOnce() -> Selection>(init_fn: F) -> Selection {
+pub fn use_selection<F>(init_fn: F) -> Selection
+where
+    F: FnOnce() -> Selection,
+{
     let redraw = use_state(|| 0);
 
     let selection = use_state(init_fn);
