@@ -391,15 +391,11 @@ impl PwtNavigationDrawer {
     }
 
     fn emit_item_activate(&mut self, key: &Key, ctx: &Context<Self>) {
-        self.find_selectable_entry(ctx, key)
-            .map(|entry| match entry {
-                MenuEntry::Item(item) => {
-                    if let Some(on_acticate) = &item.on_activate {
-                        on_acticate.emit(());
-                    }
-                }
-                MenuEntry::Component(_) => {}
-            });
+        if let Some(MenuEntry::Item(item)) = self.find_selectable_entry(ctx, key) {
+            if let Some(on_activate) = &item.on_activate {
+                on_activate.emit(());
+            }
+        }
     }
 }
 
