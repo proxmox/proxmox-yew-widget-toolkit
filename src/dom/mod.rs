@@ -35,10 +35,7 @@ impl IntoHtmlElement for NodeRef {
 
 impl IntoHtmlElement for wasm_bindgen::JsValue {
     fn into_html_element(self) -> Option<web_sys::HtmlElement> {
-        match self.try_into() {
-            Ok(el) => Some(el),
-            Err(_) => None,
-        }
+        Some(self.into())
     }
 }
 
