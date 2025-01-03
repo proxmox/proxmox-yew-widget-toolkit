@@ -287,6 +287,9 @@ impl FormContext {
     ///
     /// The returned handle owns the registration. The registration is
     /// automatically removed when you drow the handle.
+    #[allow(clippy::too_many_arguments)]
+    // TODO: consider factoring these parameters out into a struct to avoid the
+    // `too_many_arguments` clippy lint here.
     pub fn register_field(
         &self,
         name: impl IntoPropValue<AttrValue>,
@@ -432,6 +435,9 @@ impl FormContextState {
 
     // Note: "unique" fields try to reuse existing state. We need this for MenuCheckbox.
     // There might be a better solution providing an extra state-key instead...
+    #[allow(clippy::too_many_arguments)]
+    // TODO: consider factoring these parameters out into a struct to avoid the
+    // `too_many_arguments` clippy lint here.
     fn register_field(
         &mut self,
         name: impl IntoPropValue<AttrValue>,
