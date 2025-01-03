@@ -18,7 +18,7 @@ fn get_catalog() -> Option<Catalog> {
         Err(_) => {
             log::debug!("CATALOG read-write lock is poisoined");
             None
-        },
+        }
     }
 }
 
