@@ -16,7 +16,7 @@ use super::SnackBar;
 
 /// Messages sent from the [SnackBarController] to the [SnackBarManager].
 pub enum SnackBarControllerMsg {
-    Show(SnackBar),
+    Show(Box<SnackBar>),
     Dismiss(AttrValue),
     DismissCurrent,
     DismissAll,
@@ -58,7 +58,7 @@ impl SnackBarController {
 
         self.state
             .write()
-            .push(SnackBarControllerMsg::Show(snackbar));
+            .push(SnackBarControllerMsg::Show(Box::new(snackbar)));
 
         id
     }
@@ -191,7 +191,7 @@ impl PwtSnackBarManager {
         for msg in list.into_iter() {
             match msg {
                 SnackBarControllerMsg::Show(snackbar) => {
-                    self.queue.push_back(snackbar);
+                    self.queue.push_back(*snackbar);
                 }
                 SnackBarControllerMsg::Dismiss(id) => {
                     self.queue.retain(|s| s.id.as_ref() != Some(&id));
