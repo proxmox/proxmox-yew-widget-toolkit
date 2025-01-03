@@ -65,7 +65,7 @@ impl From<Html> for MenuEntry {
     }
 }
 
-/// Messages for the menu controller ([Menu], [MenuBar] or [MenuButton])
+/// Messages for the menu controller ([Menu] or [MenuButton])
 #[doc(hidden)]
 pub enum MenuControllerMsg {
     Next,
@@ -113,20 +113,6 @@ pub struct Menu {
     pub(crate) on_close: Option<Callback<()>>,
 }
 
-/// Operating system like menu bar.
-pub struct MenuBar;
-
-impl MenuBar {
-    /// Create a new menu bar.
-    ///
-    /// Which is just a [Menu] with special horizontal layout.
-    ///
-    /// See <https://www.w3.org/WAI/ARIA/apg/patterns/menu/>.
-    pub fn new() -> Menu {
-        Menu::new().menubar(true)
-    }
-}
-
 impl Default for Menu {
     fn default() -> Self {
         Self::new()
@@ -137,6 +123,13 @@ impl Menu {
     /// Create a new instance.
     pub fn new() -> Self {
         yew::props!(Self {})
+    }
+
+    /// Create a new instance with a horizontal layout.
+    ///
+    /// See <https://www.w3.org/WAI/ARIA/apg/patterns/menubar/>
+    pub fn new_menubar() -> Self {
+        Menu::new().menubar(true)
     }
 
     /// Builder style method to add a html class.

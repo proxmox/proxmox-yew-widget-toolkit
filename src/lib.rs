@@ -150,8 +150,9 @@
 
 //! ### Menus
 //!
-//! - [widget::menu::Menu]:  A container for [MenuEntry](widget::menu::MenuEntry)s.
-//! - [widget::menu::MenuBar]: Operating system like menu bar.
+//! - [widget::menu::Menu]:  A container for [MenuEntry](widget::menu::MenuEntry)s. Can also be
+//!   used for Operating system like menu bars via the
+//!   [new_menubar()](widget::menu::Menu::new_menubar) constructor
 //! - [widget::menu::MenuButton]: A button that opens a [Menu](widget::menu::Menu).
 //! - [widget::menu::MenuCheckbox]: Checkbox/RadioGroup widget for [Menu](widget::menu::Menu)s.
 //! - [widget::nav::NavigationDrawer]: Navigation menu with routing support.
