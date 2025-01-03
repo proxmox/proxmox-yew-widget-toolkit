@@ -46,6 +46,7 @@ mod field;
 pub use field::PwtField;
 pub use field::{Field, InputType};
 
+#[allow(clippy::module_inception)]
 mod form;
 pub use form::Form;
 #[doc(hidden)]
