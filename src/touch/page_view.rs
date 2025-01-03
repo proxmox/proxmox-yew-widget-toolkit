@@ -112,13 +112,7 @@ impl Component for PwtPageView {
             .iter()
             .enumerate()
             .map(|(i, child)| {
-                let pos = if i < props.view_page {
-                    -1
-                } else if i > props.view_page {
-                    1
-                } else {
-                    0
-                };
+                let pos = i.cmp(&props.view_page) as i8;
 
                 Container::new()
                     .width(CssLength::Fraction(1.0))

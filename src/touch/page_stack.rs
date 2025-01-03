@@ -89,10 +89,10 @@ impl Component for PwtPageStack {
         let props = ctx.props();
 
         if let Some(last) = old_props.stack.last() {
-            if props.stack.len() > old_props.stack.len() {
-                self.state = ViewState::Grow(last.clone())
-            } else if props.stack.len() < old_props.stack.len() {
-                self.state = ViewState::Shrink(last.clone());
+            match props.stack.len().cmp(&old_props.stack.len()) {
+                std::cmp::Ordering::Less => self.state = ViewState::Shrink(last.clone()),
+                std::cmp::Ordering::Greater => self.state = ViewState::Grow(last.clone()),
+                _ => {}
             }
         }
 
