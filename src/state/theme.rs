@@ -192,7 +192,7 @@ impl Theme {
     /// Store the theme mode and emit the `pwt-theme-changed` event.
     pub fn store_theme_mode(mode: ThemeMode) -> Result<(), Error> {
         if let Some(store) = local_storage() {
-            if let Err(_) = store.set_item("ThemeMode", &mode.to_string()) {
+            if store.set_item("ThemeMode", &mode.to_string()).is_err() {
                 bail!("store_them_mode: set_item failed");
             }
         } else {
@@ -207,7 +207,10 @@ impl Theme {
     /// Store the theme density and emit the `pwt-theme-changed` event.
     pub fn store_theme_density(density: ThemeDensity) -> Result<(), Error> {
         if let Some(store) = local_storage() {
-            if let Err(_) = store.set_item("ThemeDensity", &density.to_string()) {
+            if store
+                .set_item("ThemeDensity", &density.to_string())
+                .is_err()
+            {
                 bail!("store_theme_density: set_item failed");
             }
         } else {
@@ -222,7 +225,7 @@ impl Theme {
     /// Store the theme name and emit the `pwt-theme-changed` event.
     pub fn store_theme_name(name: &str) -> Result<(), Error> {
         if let Some(store) = local_storage() {
-            if let Err(_) = store.set_item("ThemeName", name) {
+            if store.set_item("ThemeName", name).is_err() {
                 bail!("store_theme_name: set_item failed");
             }
         } else {
