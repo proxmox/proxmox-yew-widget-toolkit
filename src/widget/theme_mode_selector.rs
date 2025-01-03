@@ -57,7 +57,7 @@ impl Component for PwtThemeModeSelector {
         }
     }
 
-    fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
+    fn update(&mut self, _ctx: &Context<Self>, msg: Self::Message) -> bool {
         match msg {
             Msg::NextMode => {
                 let theme = match self.theme {
@@ -65,7 +65,7 @@ impl Component for PwtThemeModeSelector {
                     ThemeMode::Dark => ThemeMode::Light,
                     ThemeMode::Light => ThemeMode::System,
                 };
-                yew::Component::update(self, ctx, Msg::SetThemeMode(theme))
+                yew::Component::update(self, _ctx, Msg::SetThemeMode(theme))
             }
             Msg::SetThemeMode(theme) => {
                 if let Err(err) = Theme::store_theme_mode(theme) {
