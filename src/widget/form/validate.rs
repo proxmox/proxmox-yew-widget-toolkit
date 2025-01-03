@@ -6,6 +6,7 @@ use anyhow::Error;
 /// passed record is valid.
 ///
 /// Wraps `Rc` around `Fn` so it can be passed as a prop.
+#[allow(clippy::type_complexity)]
 pub struct ValidateFn<T>(Rc<dyn Fn(&T) -> Result<(), Error>>);
 
 /// Create a thread_local, static validation function.

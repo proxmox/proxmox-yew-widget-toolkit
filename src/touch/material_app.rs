@@ -410,7 +410,9 @@ impl From<MaterialApp> for VNode {
 #[derive(Derivative)]
 #[derivative(Clone(bound = ""), PartialEq(bound = ""))]
 pub struct PageRenderFn(
-    #[derivative(PartialEq(compare_with = "Rc::ptr_eq"))] Rc<dyn Fn(&str) -> Vec<Html>>,
+    #[allow(clippy::type_complexity)]
+    #[derivative(PartialEq(compare_with = "Rc::ptr_eq"))]
+    Rc<dyn Fn(&str) -> Vec<Html>>,
 );
 
 impl PageRenderFn {

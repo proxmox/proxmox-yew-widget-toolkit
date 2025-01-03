@@ -75,6 +75,7 @@ impl<T> DataTableRowRenderArgs<'_, T> {
 #[derive(Derivative)]
 #[derivative(Clone(bound = ""), PartialEq(bound = ""))]
 pub struct DataTableRowRenderCallback<T>(
+    #[allow(clippy::type_complexity)]
     #[derivative(PartialEq(compare_with = "Rc::ptr_eq"))]
     Rc<dyn Fn(&mut DataTableRowRenderArgs<T>)>,
 );

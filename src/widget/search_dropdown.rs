@@ -45,6 +45,7 @@ impl<S: DataStore + 'static> SearchDropdownRenderArgs<S> {
 /// The callback gets called with the current value of the dropdown input, and
 /// should return the filtered data.
 pub struct FilteredLoadCallback<T> {
+    #[allow(clippy::type_complexity)]
     callback: Rc<dyn Fn(String) -> Pin<Box<dyn Future<Output = Result<T, Error>>>>>,
 }
 

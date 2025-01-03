@@ -64,9 +64,12 @@ pub trait DataStore: Clone + PartialEq {
     fn filtered_record_pos(&self, key: &Key) -> Option<usize>;
     fn filtered_data_len(&self) -> usize;
 
+    #[allow(clippy::type_complexity)]
     fn filtered_data<'a>(
         &'a self,
     ) -> Box<dyn Iterator<Item = (usize, Box<dyn DataNode<Self::Record> + 'a>)> + 'a>;
+
+    #[allow(clippy::type_complexity)]
     fn filtered_data_range<'a>(
         &'a self,
         range: Range<usize>,

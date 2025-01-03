@@ -59,7 +59,9 @@ impl<T, F: 'static + Fn(&T) -> bool> IntoFilterFn<T> for F {
 #[derive(Derivative)]
 #[derivative(Clone(bound = ""), PartialEq(bound = ""))]
 pub struct TextFilterFn<T>(
-    #[derivative(PartialEq(compare_with = "Rc::ptr_eq"))] Rc<dyn Fn(&T, &str) -> bool>,
+    #[allow(clippy::type_complexity)]
+    #[derivative(PartialEq(compare_with = "Rc::ptr_eq"))]
+    Rc<dyn Fn(&T, &str) -> bool>,
 );
 
 impl<T> TextFilterFn<T> {

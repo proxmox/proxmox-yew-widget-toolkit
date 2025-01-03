@@ -79,6 +79,7 @@ impl<T: 'static> DataTableHeaderRenderArgs<T> {
 #[derive(Derivative)]
 #[derivative(Clone(bound = ""), PartialEq(bound = ""))]
 pub struct DataTableHeaderRenderer<T: 'static>(
+    #[allow(clippy::type_complexity)]
     #[derivative(PartialEq(compare_with = "Rc::ptr_eq"))]
     Rc<dyn Fn(&mut DataTableHeaderRenderArgs<T>) -> Html>,
 );

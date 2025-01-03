@@ -26,6 +26,7 @@ use yew::AttrValue;
 /// [LoadCallback]. You can use that to trigger atomatic reloads on
 /// change.
 pub struct LoadCallback<T> {
+    #[allow(clippy::type_complexity)]
     callback: Rc<dyn Fn() -> Pin<Box<dyn Future<Output = Result<T, Error>>>>>,
     url: Option<AttrValue>, // only used for change tracking
 }
@@ -160,6 +161,7 @@ impl<T, I: Into<LoadCallback<T>>> IntoLoadCallback<T> for Option<I> {
 }
 
 thread_local! {
+    #[allow(clippy::type_complexity)]
     static HTTP_GET: RefCell<Rc<dyn Send + Sync + Fn(String) -> Pin<Box<dyn Future<Output = Result<Value, Error>>>> >> = {
         RefCell::new(Rc::new(|url| Box::pin(http_get(url))))
     };

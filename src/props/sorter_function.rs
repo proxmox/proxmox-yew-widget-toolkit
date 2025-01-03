@@ -9,7 +9,9 @@ use derivative::Derivative;
 #[derive(Derivative)]
 #[derivative(Clone(bound = ""), PartialEq(bound = ""))]
 pub struct SorterFn<T>(
-    #[derivative(PartialEq(compare_with = "Rc::ptr_eq"))] Rc<dyn Fn(&T, &T) -> Ordering>,
+    #[allow(clippy::type_complexity)]
+    #[derivative(PartialEq(compare_with = "Rc::ptr_eq"))]
+    Rc<dyn Fn(&T, &T) -> Ordering>,
 );
 
 impl<T> SorterFn<T> {

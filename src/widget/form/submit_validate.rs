@@ -7,6 +7,7 @@ use serde_json::Value;
 /// passed record is valid, and return the value to be submitted.
 ///
 /// Wraps `Rc` around `Fn` so it can be passed as a prop.
+#[allow(clippy::type_complexity)]
 pub struct SubmitValidateFn<T>(Rc<dyn Fn(&T) -> Result<Value, Error>>);
 
 impl<T> Clone for SubmitValidateFn<T> {

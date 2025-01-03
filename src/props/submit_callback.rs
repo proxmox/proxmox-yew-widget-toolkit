@@ -11,6 +11,7 @@ use derivative::Derivative;
 #[derive(Derivative)]
 #[derivative(Clone, PartialEq)]
 pub struct SubmitCallback<T>(
+    #[allow(clippy::type_complexity)]
     #[derivative(PartialEq(compare_with = "Rc::ptr_eq"))]
     Rc<dyn Fn(T) -> Pin<Box<dyn Future<Output = Result<(), Error>>>>>,
 );
