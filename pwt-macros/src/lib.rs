@@ -35,13 +35,13 @@ use builder::*;
 ///
 /// Then there are the following available types:
 /// * `input` -  this will add an `input_props` property of type `FieldStdProps` and
-/// implement `FieldBuilder` on it
+///   implement `FieldBuilder` on it
 /// * `container` - this will add a `children` property of type `Vec<yew::Html>` and
-/// implement `ContainerBuilder`
+///   implement `ContainerBuilder`
 /// * `element` - this will add a `listeners` property of type `ListenersWrapper` and
-/// implement `EventSubscriber`
+///   implement `EventSubscriber`
 /// * `svg` - this prevents the implemntation of `pwt::props::AsClassesMut` and the
-/// `Css*Builder` traits.
+///   `Css*Builder` traits.
 ///
 /// # Syntax
 ///
