@@ -24,7 +24,7 @@ enum PaneSize {
 }
 
 impl PaneSize {
-    fn to_css_size(&self, reserve: f64) -> String {
+    fn to_css_size(self, reserve: f64) -> String {
         match self {
             Self::Fraction(ratio) => {
                 // Note: compute percentage without space used by separators.
@@ -35,7 +35,7 @@ impl PaneSize {
         }
     }
 
-    fn to_css_flex(&self, reserve: f64) -> String {
+    fn to_css_flex(self, reserve: f64) -> String {
         match self {
             Self::Fraction(ratio) => {
                 // Note: compute percentage without space used by separators.
