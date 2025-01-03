@@ -142,10 +142,7 @@ impl<T: 'static + DeserializeOwned + Serialize> Loader<T> {
     }
 
     pub fn has_valid_data(&self) -> bool {
-        match self.read().data {
-            Some(Ok(_)) => true,
-            _ => false,
-        }
+        matches!(self.read().data, Some(Ok(_)))
     }
 
     pub fn render<R: Into<Html>>(&self, render: impl Fn(Rc<T>) -> R) -> Html {

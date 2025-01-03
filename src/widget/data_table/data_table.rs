@@ -558,12 +558,7 @@ fn render_empty_row_with_sizes(widths: &[f64], column_hidden: &[bool], bordered:
         .style("border-bottom-width", "0px")
         .children(
             widths.iter().enumerate()
-                .filter(|(column_num, _)| {
-                    match column_hidden.get(*column_num) {
-                        Some(true) => false,
-                        _ => true,
-                    }
-                })
+                .filter(|(column_num, _)| column_hidden.get(*column_num).map(|e| !e).unwrap_or(true))
                 .map(|(_, width)| html!{
                     // Note: we substract the border width (1.0) here
                     <td role="none" style={format!("width:{}px;height:0px;", (width - border_width).max(0.0))}></td>
