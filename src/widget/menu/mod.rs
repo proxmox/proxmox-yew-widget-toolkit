@@ -733,20 +733,18 @@ impl From<Menu> for VNode {
 // We need to use unique element IDs instead.
 fn dom_focus_inside_submenu(event: &FocusEvent, item_id: &str) -> bool {
     let mut cur_el: Option<web_sys::Element> = event.target_dyn_into();
-    loop {
-        match cur_el {
-            Some(el) => {
-                if el.id() == item_id {
-                    break;
-                }
-                if el.tag_name() == "UL" {
-                    return true;
-                }
-                cur_el = el.parent_element();
-            }
-            None => break,
+    while let Some(el) = cur_el {
+        if el.id() == item_id {
+            break;
         }
+
+        if el.tag_name() == "UL" {
+            return true;
+        }
+
+        cur_el = el.parent_element();
     }
+
     false
 }
 

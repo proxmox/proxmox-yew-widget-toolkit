@@ -1817,37 +1817,31 @@ fn dom_find_focus_pos(el: web_sys::Element, unique_id: &str) -> Option<(Key, Opt
     let focused_el: web_sys::Node = el.clone().dyn_into().unwrap();
     let mut cur_el: Option<web_sys::Element> = Some(el);
 
-    loop {
-        match cur_el {
-            Some(el) => {
-                if el.tag_name() == "TR" {
-                    if let Some(key_str) = el.id().strip_prefix(&unique_row_prefix) {
-                        if key_str.is_empty() {
-                            break;
-                        } // stop on errors
-                          // try to find out the column_num
-                        let children = el.children();
-                        for i in 0..children.length() {
-                            let child: web_sys::HtmlElement =
-                                children.item(i).unwrap().dyn_into().unwrap();
+    while let Some(el) = cur_el {
+        if el.tag_name() == "TR" {
+            if let Some(key_str) = el.id().strip_prefix(&unique_row_prefix) {
+                if key_str.is_empty() {
+                    break;
+                } // stop on errors
+                  // try to find out the column_num
+                let children = el.children();
+                for i in 0..children.length() {
+                    let child: web_sys::HtmlElement = children.item(i).unwrap().dyn_into().unwrap();
 
-                            if child.contains(Some(&focused_el)) {
-                                if let Some(column_num_str) = child.get_attribute("data-column-num")
-                                {
-                                    if let Ok(n) = column_num_str.parse() {
-                                        column_num = Some(n);
-                                    }
-                                }
+                    if child.contains(Some(&focused_el)) {
+                        if let Some(column_num_str) = child.get_attribute("data-column-num") {
+                            if let Ok(n) = column_num_str.parse() {
+                                column_num = Some(n);
                             }
                         }
-                        return Some((Key::from(key_str), column_num));
                     }
                 }
-                cur_el = el.parent_element().map(|el| el.dyn_into().unwrap());
+                return Some((Key::from(key_str), column_num));
             }
-            None => break,
         }
+        cur_el = el.parent_element().map(|el| el.dyn_into().unwrap());
     }
+
     None
 }
 
@@ -1860,34 +1854,28 @@ fn dom_find_record_num(event: &MouseEvent, unique_id: &str) -> Option<(Key, Opti
 
     let click_x = event.client_x() as f64;
 
-    loop {
-        match cur_el {
-            Some(el) => {
-                if el.tag_name() == "TR" {
-                    if let Some(n_str) = el.id().strip_prefix(&unique_row_prefix) {
-                        // try to find out the column_num
-                        let children = el.children();
-                        for i in 0..children.length() {
-                            let child: web_sys::HtmlElement =
-                                children.item(i).unwrap().dyn_into().unwrap();
-                            let rect = child.get_bounding_client_rect();
+    while let Some(el) = cur_el {
+        if el.tag_name() == "TR" {
+            if let Some(n_str) = el.id().strip_prefix(&unique_row_prefix) {
+                // try to find out the column_num
+                let children = el.children();
+                for i in 0..children.length() {
+                    let child: web_sys::HtmlElement = children.item(i).unwrap().dyn_into().unwrap();
+                    let rect = child.get_bounding_client_rect();
 
-                            if rect.x() < click_x && click_x < (rect.x() + rect.width()) {
-                                if let Some(column_num_str) = child.get_attribute("data-column-num")
-                                {
-                                    if let Ok(n) = column_num_str.parse() {
-                                        column_num = Some(n);
-                                    }
-                                }
+                    if rect.x() < click_x && click_x < (rect.x() + rect.width()) {
+                        if let Some(column_num_str) = child.get_attribute("data-column-num") {
+                            if let Ok(n) = column_num_str.parse() {
+                                column_num = Some(n);
                             }
                         }
-                        return Some((Key::from(n_str), column_num));
                     }
                 }
-                cur_el = el.parent_element().map(|el| el.dyn_into().unwrap());
+                return Some((Key::from(n_str), column_num));
             }
-            None => break,
         }
+        cur_el = el.parent_element().map(|el| el.dyn_into().unwrap());
     }
+
     None
 }
