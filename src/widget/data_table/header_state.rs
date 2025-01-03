@@ -15,7 +15,6 @@ struct CellState {
 ///
 /// - column sort order
 /// - column hidden
-
 pub struct HeaderState<T: 'static> {
     //headers: Rc<Vec<IndexedHeader<T>>>,
     // map cell_idx => &IndexedHeader

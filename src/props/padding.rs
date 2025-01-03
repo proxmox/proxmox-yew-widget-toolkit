@@ -31,7 +31,6 @@ use crate::props::{AsClassesMut, AsCssStylesMut};
 ///    .padding_top(1)
 /// # ;
 /// ```
-
 pub trait CssPaddingBuilder: AsClassesMut + AsCssStylesMut + Sized {
     /// Builder style method to add a box padding class.
     fn padding(mut self, padding: impl IntoPropValue<Option<usize>>) -> Self {

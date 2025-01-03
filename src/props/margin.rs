@@ -31,7 +31,6 @@ use crate::props::{AsClassesMut, AsCssStylesMut};
 ///    .margin_top(1)
 /// # ;
 /// ```
-
 pub trait CssMarginBuilder: AsClassesMut + AsCssStylesMut + Sized {
     /// Builder style method to add a box margin class.
     fn margin(mut self, margin: impl IntoPropValue<Option<usize>>) -> Self {

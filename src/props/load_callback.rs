@@ -25,7 +25,6 @@ use yew::AttrValue;
 /// compared for [PartialEq]. That way you get a "trackable"
 /// [LoadCallback]. You can use that to trigger atomatic reloads on
 /// change.
-
 pub struct LoadCallback<T> {
     callback: Rc<dyn Fn() -> Pin<Box<dyn Future<Output = Result<T, Error>>>>>,
     url: Option<AttrValue>, // only used for change tracking

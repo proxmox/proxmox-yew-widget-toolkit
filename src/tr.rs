@@ -77,7 +77,6 @@ use crate::{gettext, ngettext, npgettext, pgettext};
 ///
 /// The [tr!](crate::tr!) macro combines the functionality of [gettext!], [pgettext!],
 /// [ngettext!] and [npgettext!].
-
 #[macro_export]
 macro_rules! tr {
     ($msgid:tt, $($tail:tt)* ) => {

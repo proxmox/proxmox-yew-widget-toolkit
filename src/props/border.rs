@@ -33,7 +33,6 @@ use yew::Classes;
 ///    .border_top(false)
 /// # ;
 /// ```
-
 pub trait CssBorderBuilder: AsClassesMut + Sized {
     /// Builder style method to add a box border class.
     fn border(mut self, border: impl IntoPropValue<Option<bool>>) -> Self {
