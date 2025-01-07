@@ -87,7 +87,8 @@ impl InputPanel {
             Container::from_tag("hr")
                 .key(key)
                 .class("pwt-w-100")
-                .margin_y(2),
+                .margin_y(2)
+                .into(),
         );
     }
 
@@ -99,7 +100,7 @@ impl InputPanel {
 
     /// Adds custom child in the first column
     pub fn add_custom_child(&mut self, child: impl Into<Html>) {
-        self.add_custom_child_impl(FieldPosition::Left, false, child);
+        self.add_custom_child_impl(FieldPosition::Left, false, child.into());
     }
 
     /// Builder style method to add a custom child in the second column
@@ -110,7 +111,7 @@ impl InputPanel {
 
     /// Adds custom child in the second column
     pub fn add_right_custom_child(&mut self, child: impl Into<Html>) {
-        self.add_custom_child_impl(FieldPosition::Right, false, child);
+        self.add_custom_child_impl(FieldPosition::Right, false, child.into());
     }
 
     /// Builder style method to add a large custom child
@@ -121,15 +122,10 @@ impl InputPanel {
 
     /// Adds large custom child
     pub fn add_large_custom_child(&mut self, child: impl Into<Html>) {
-        self.add_custom_child_impl(FieldPosition::Large, false, child);
+        self.add_custom_child_impl(FieldPosition::Large, false, child.into());
     }
 
-    fn add_custom_child_impl(
-        &mut self,
-        column: FieldPosition,
-        advanced: bool,
-        child: impl Into<Html>,
-    ) {
+    fn add_custom_child_impl(&mut self, column: FieldPosition, advanced: bool, child: Html) {
         let (row, start, span) = match column {
             FieldPosition::Left => {
                 self.left_count += 1;
@@ -161,7 +157,6 @@ impl InputPanel {
         };
 
         let class = classes!("pwt-align-self-center");
-        let child = child.into();
         let key = match child.key() {
             Some(key) => key.clone(),
             None => {
