@@ -1,3 +1,13 @@
+rust-pwt (0.4.7) bookworm; urgency=medium
+
+  * widget: confirm_dialog: refactor to use message box
+
+  * widget: dropdown: update picker placement after showing
+
+  * code cleanups
+
+ -- Proxmox Support Team <support@proxmox.com>  Wed, 08 Jan 2025 10:33:18 +0100
+
 rust-pwt (0.4.6) bookworm; urgency=medium
 
   * widget: input panel: use correct column for custom childs
