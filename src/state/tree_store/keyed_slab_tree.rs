@@ -354,10 +354,7 @@ impl<T> KeyedSlabTree<T> {
             None => return None,
         };
 
-        let entry = match self.get(node_id) {
-            Some(entry) => entry,
-            None => return None,
-        };
+        let entry = self.get(node_id)?;
 
         Some(self.extract_key(&entry.record))
     }
@@ -469,10 +466,7 @@ impl<T> KeyedSlabTree<T> {
     }
 
     fn find_subnode_by_key(&self, node_id: usize, key: &Key) -> Option<usize> {
-        let entry = match self.get(node_id) {
-            Some(entry) => entry,
-            None => return None,
-        };
+        let entry = self.get(node_id)?;
 
         if key == &self.extract_key(&entry.record) {
             return Some(node_id);

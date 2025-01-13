@@ -216,10 +216,7 @@ impl PwtMenu {
 
     // find the first focusable element inside an menu item
     fn get_focus_el(&self, cursor: usize) -> Option<web_sys::HtmlElement> {
-        let menu_el = match self.inner_ref.cast::<web_sys::Element>() {
-            Some(el) => el,
-            None => return None,
-        };
+        let menu_el = self.inner_ref.cast::<web_sys::Element>()?;
 
         let selector = format!(":scope > li[data-index='{}']", cursor);
         let item_el = match menu_el.query_selector(&selector) {

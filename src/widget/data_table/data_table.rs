@@ -858,10 +858,7 @@ impl<S: DataStore> PwtDataTable<S> {
     fn find_focused_cell(&self) -> Option<(Key, Option<usize>)> {
         let window = web_sys::window().unwrap();
         let document = window.document().unwrap();
-        let active_el = match document.active_element() {
-            Some(el) => el,
-            None => return None,
-        };
+        let active_el = document.active_element()?;
         dom_find_focus_pos(active_el, &self.unique_id)
     }
 

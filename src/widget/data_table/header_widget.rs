@@ -432,10 +432,7 @@ impl<T: 'static> PwtHeaderWidget<T> {
 
         let get_cell_el = |cell_idx| -> Option<web_sys::HtmlElement> {
             let id = self.unique_cell_id(cell_idx);
-            let el = match document.get_element_by_id(&id) {
-                Some(el) => el,
-                None => return None,
-            };
+            let el = document.get_element_by_id(&id)?;
             match el.dyn_into::<web_sys::HtmlElement>() {
                 Ok(el) => Some(el),
                 Err(_) => None,

@@ -56,10 +56,7 @@ impl IntoHtmlElement for web_sys::HtmlElement {
 /// Uses `getComputedStyle()` to get the inherited CSS value. Simply returns
 /// [None] on error.
 pub fn element_direction_rtl<T: IntoHtmlElement>(node: T) -> Option<bool> {
-    let el = match node.into_html_element() {
-        Some(el) => el,
-        None => return None,
-    };
+    let el = node.into_html_element()?;
 
     let window = web_sys::window().unwrap();
     if let Ok(Some(style)) = window.get_computed_style(&el) {

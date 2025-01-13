@@ -374,15 +374,9 @@ impl<T> DataNode<T> for KeyedSlabTreeBorrowRef<'_, T> {
         self.tree.tree.root_id == Some(self.node_id)
     }
     fn parent(&self) -> Option<Box<dyn DataNode<T> + '_>> {
-        let entry = match self.tree.get(self.node_id) {
-            Some(entry) => entry,
-            None => return None,
-        };
+        let entry = self.tree.get(self.node_id)?;
 
-        let parent_id = match entry.parent_id {
-            Some(parent_id) => parent_id,
-            None => return None,
-        };
+        let parent_id = entry.parent_id?;
 
         let parent = Box::new(KeyedSlabTreeBorrowRef {
             node_id: parent_id,

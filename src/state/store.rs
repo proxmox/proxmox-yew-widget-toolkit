@@ -497,10 +497,7 @@ impl<T: 'static> StoreState<T> {
             None => return None,
         };
 
-        let record = match self.data.get(n) {
-            Some(record) => record,
-            None => return None,
-        };
+        let record = self.data.get(n)?;
 
         Some(self.extract_key(record))
     }

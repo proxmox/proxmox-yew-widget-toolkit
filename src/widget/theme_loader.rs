@@ -38,15 +38,9 @@ pub struct PwtThemeLoader {
 }
 
 fn get_document_root() -> Option<web_sys::Element> {
-    let window = match web_sys::window() {
-        Some(window) => window,
-        None => return None,
-    };
+    let window = web_sys::window()?;
 
-    let document = match window.document() {
-        Some(document) => document,
-        None => return None,
-    };
+    let document = window.document()?;
 
     document.document_element()
 }
