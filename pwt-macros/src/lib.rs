@@ -60,11 +60,25 @@ use builder::*;
 /// #         #[derive(Clone, PartialEq, Default)]
 /// #         pub struct WidgetStdProps {
 /// #             pub class: yew::Classes,
+/// #             pub key: Option<yew::virtual_dom::Key>,
+/// #             pub styles: CssStyles,
+/// #         }
+/// #         pub trait FieldBuilder {
+/// #             fn as_input_props(&self) -> &FieldStdProps;
+/// #             fn as_input_props_mut(&mut self) -> &mut FieldStdProps;
 /// #         }
 /// #         #[derive(Clone, PartialEq, Default)]
 /// #         pub struct ListenersWrapper;
-/// #         pub trait WidgetBuilder {
+/// #         pub trait WidgetBuilder: Sized {
 /// #             fn as_std_props_mut(&mut self) -> &mut WidgetStdProps;
+/// #             fn as_std_props(&self) -> &WidgetStdProps;
+/// #             fn class(mut self, class: impl Into<yew::Classes>) -> Self {
+/// #                 self.add_class(class);
+/// #                 self
+/// #             }
+/// #             fn add_class(&mut self, class: impl Into<yew::Classes>) {
+/// #                 self.as_std_props_mut().class.push(class);
+/// #             }
 /// #         }
 /// #         pub trait AsClassesMut {
 /// #             fn as_classes_mut(&mut self) -> &mut yew::Classes;
@@ -72,12 +86,22 @@ use builder::*;
 /// #         pub trait CssBorderBuilder {}
 /// #         pub trait CssMarginBuilder {}
 /// #         pub trait CssPaddingBuilder {}
+/// #         pub trait AsCssStylesMut {
+/// #             fn as_css_styles_mut(&mut self) -> &mut CssStyles;
+/// #         }
+/// #         #[derive(Clone, Default, Debug, PartialEq)]
+/// #         pub struct CssStyles {}
 /// #         pub trait EventSubscriber: Sized {
 /// #             fn as_listeners_mut(&mut self) -> &mut ListenersWrapper;
+/// #
+/// #             // dummy implementation so that the test case succeeds below
 /// #             fn onclick(mut self, _cb: impl yew::html::IntoEventCallback<yew::MouseEvent>) -> Self {
 /// #                 self
 /// #             }
 /// #         }
+/// #         pub trait WidgetStyleBuilder {}
+/// #         #[derive(PartialEq, Default, Clone)]
+/// #         pub struct FieldStdProps {}
 /// #     }
 /// # }
 /// use pwt_macros::widget;
@@ -121,11 +145,24 @@ use builder::*;
 /// #         pub struct WidgetStdProps {
 /// #             pub class: yew::Classes,
 /// #             pub key: Option<yew::virtual_dom::Key>,
+/// #             pub styles: CssStyles,
+/// #         }
+/// #         pub trait FieldBuilder {
+/// #             fn as_input_props(&self) -> &FieldStdProps;
+/// #             fn as_input_props_mut(&mut self) -> &mut FieldStdProps;
 /// #         }
 /// #         #[derive(Clone, PartialEq, Default)]
 /// #         pub struct ListenersWrapper;
-/// #         pub trait WidgetBuilder {
+/// #         pub trait WidgetBuilder: Sized {
 /// #             fn as_std_props_mut(&mut self) -> &mut WidgetStdProps;
+/// #             fn as_std_props(&self) -> &WidgetStdProps;
+/// #             fn class(mut self, class: impl Into<yew::Classes>) -> Self {
+/// #                 self.add_class(class);
+/// #                 self
+/// #             }
+/// #             fn add_class(&mut self, class: impl Into<yew::Classes>) {
+/// #                 self.as_std_props_mut().class.push(class);
+/// #             }
 /// #         }
 /// #         pub trait AsClassesMut {
 /// #             fn as_classes_mut(&mut self) -> &mut yew::Classes;
@@ -133,9 +170,17 @@ use builder::*;
 /// #         pub trait CssBorderBuilder {}
 /// #         pub trait CssMarginBuilder {}
 /// #         pub trait CssPaddingBuilder {}
+/// #         pub trait AsCssStylesMut {
+/// #             fn as_css_styles_mut(&mut self) -> &mut CssStyles;
+/// #         }
+/// #         #[derive(Clone, Default, Debug, PartialEq)]
+/// #         pub struct CssStyles {}
 /// #         pub trait EventSubscriber: Sized {
 /// #             fn as_listeners_mut(&mut self) -> &mut ListenersWrapper;
 /// #         }
+/// #         pub trait WidgetStyleBuilder {}
+/// #         #[derive(PartialEq, Default, Clone)]
+/// #         pub struct FieldStdProps {}
 /// #     }
 /// # }
 /// use pwt_macros::widget;
