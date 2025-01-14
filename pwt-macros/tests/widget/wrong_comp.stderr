@@ -1,5 +1,5 @@
 error[E0412]: cannot find type `Wrong` in this scope
-  --> tests/widget/wrong_comp.rs:34:26
+  --> tests/widget/wrong_comp.rs:53:26
    |
-34 | #[widget(pwt=crate, comp=Wrong, @input, @element)]
+53 | #[widget(pwt=crate, comp=Wrong, @input, @element)]
    |                          ^^^^^ not found in this scope
