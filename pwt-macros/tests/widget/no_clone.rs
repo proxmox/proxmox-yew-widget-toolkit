@@ -11,9 +11,21 @@ mod props {
     }
     pub trait CssPaddingBuilder {}
     pub trait CssMarginBuilder {}
+    pub trait AsCssStylesMut {
+        fn as_css_styles_mut(&mut self) -> &mut CssStyles;
+    }
+
+    /// Holds the CSS styles to set on elements
+    #[derive(Clone, Default, Debug, PartialEq)]
+    pub struct CssStyles {}
+
+    pub trait WidgetStyleBuilder {}
+
     pub trait WidgetBuilder: Sized {
         fn as_std_props_mut(&mut self) -> &mut WidgetStdProps;
+        fn as_std_props(&self) -> &WidgetStdProps;
     }
+
     pub trait AsClassesMut {
         fn as_classes_mut(&mut self) -> &mut Classes;
     }
@@ -23,6 +35,7 @@ mod props {
     pub struct WidgetStdProps {
         pub key: Option<Key>,
         pub class: Classes,
+        pub styles: CssStyles,
     }
     #[derive(PartialEq, Default, Clone)]
     pub struct ListenersWrapper {}
