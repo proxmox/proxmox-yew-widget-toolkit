@@ -16,4 +16,4 @@ help: the return type of this call is `{float}` due to the type of the argument 
 6 | |     wrong_type: i32,
   | |______________^
 note: method defined here
- --> /usr/src/rustc-1.70.0/library/core/src/option.rs:971:18
+ --> /usr/src/rustc-1.84.0/library/core/src/option.rs:992:12
