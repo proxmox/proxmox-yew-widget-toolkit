@@ -89,6 +89,18 @@ impl<T: ExtractPrimaryKey + 'static> Store<T> {
     }
 }
 
+impl<T: ExtractPrimaryKey + 'static> FromIterator<T> for Store<T> {
+    fn from_iter<A>(iter: A) -> Self
+    where
+        A: IntoIterator<Item = T>,
+    {
+        let store = Self::new();
+        store.set_data(iter.into_iter().collect());
+
+        store
+    }
+}
+
 impl<T: 'static> Store<T> {
     /// Creates a new instance with the specifies extract key function.
     pub fn with_extract_key(extract_key: impl Into<ExtractKeyFn<T>>) -> Self {
