@@ -395,7 +395,7 @@ impl<S: DataStore + 'static> ManagedField for SelectorField<S> {
                 if store.is_empty() {
                     return Container::new()
                         .padding(2)
-                        .with_child("List does not contain any items.")
+                        .with_child(tr!("List does not contain any items."))
                         .into();
                 }
 

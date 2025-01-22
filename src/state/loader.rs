@@ -151,7 +151,7 @@ impl<T: 'static + DeserializeOwned + Serialize> Loader<T> {
                 .class("pwt-text-center")
                 .padding(4)
                 .with_child(Fa::new("spinner").margin_end(1).pulse())
-                .with_child("Loading...")
+                .with_child(tr!("Loading..."))
                 .into(),
             Some(Ok(ref data)) => render(Rc::clone(data)).into(),
             Some(Err(err)) => error_message(&format!("Error: {}", err)).padding(2).into(),
