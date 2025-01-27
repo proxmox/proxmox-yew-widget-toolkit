@@ -22,6 +22,7 @@ build:
 	rm -rf $(BUILDDIR)
 	mkdir $(BUILDDIR)
 	echo system >$(BUILDDIR)/rust-toolchain
+	rm -f pwt-macros/debian/control
 	debcargo package \
 	  --config "${PWD}/pwt-macros/debian/debcargo.toml" \
 	  --changelog-ready --no-overlay-write-back \
@@ -31,6 +32,7 @@ build:
 	echo "3.0 (native)" >  build/pwt-macros/debian/source/format
 	rm build/rust-pwt-macros_*.orig.tar.gz
 	cd build/pwt-macros; dpkg-buildpackage -S -us -uc -d
+	rm -f debian/control
 	debcargo package \
 	  --config "${PWD}/debian/debcargo.toml" \
 	  --changelog-ready --no-overlay-write-back \

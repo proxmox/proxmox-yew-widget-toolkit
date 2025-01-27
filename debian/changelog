@@ -1,3 +1,17 @@
+rust-pwt (0.4.8) bookworm; urgency=medium
+
+  * add new PwtSpace property for marging, padding and gap
+
+  * store: implement FromIterator
+
+  * mark missing translatable strings as such
+
+  * Makefile: add dsc target to build debian source packages
+
+  * macros: fix tests
+
+ -- Proxmox Support Team <support@proxmox.com>  Mon, 27 Jan 2025 14:25:25 +0100
+
 rust-pwt (0.4.7) bookworm; urgency=medium
 
   * widget: confirm_dialog: refactor to use message box
