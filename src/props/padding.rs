@@ -1,8 +1,9 @@
-use yew::html::IntoPropValue;
-
 use crate::props::{AsClassesMut, AsCssStylesMut};
 
-/// Defines methods to use CSS padding classes.
+use super::PwtSpace;
+
+/// Defines methods to use CSS padding classes.use yew::{html::IntoPropValue, AttrValue};
+
 ///
 /// The default CSS template defines utility classes for paddings that rely on
 /// a CSS variable that multiplies the base width of the spacer to get
@@ -31,109 +32,31 @@ use crate::props::{AsClassesMut, AsCssStylesMut};
 ///    .padding_top(1)
 /// # ;
 /// ```
+///
+///
 pub trait CssPaddingBuilder: AsClassesMut + AsCssStylesMut + Sized {
-    /// Builder style method to add a box padding class.
-    fn padding(mut self, padding: impl IntoPropValue<Option<usize>>) -> Self {
-        self.add_padding(padding);
-        self
-    }
+    generate_padding_trait_fn!(add_padding, padding, "padding", "pwt-p-{}");
 
-    /// Method to add a box padding class.
-    fn add_padding(&mut self, padding: impl IntoPropValue<Option<usize>>) {
-        if let Some(padding) = padding.into_prop_value() {
-            self.as_classes_mut().push("pwt-p");
-            self.as_css_styles_mut()
-                .set_style("--pwt-padding-factor", padding.to_string())
-        }
-    }
+    generate_padding_trait_fn!(add_padding_y, padding_y, "padding-block", "pwt-py-{}");
+    generate_padding_trait_fn!(add_padding_top, padding_top, "padding-top", "pwt-pt-{}");
+    generate_padding_trait_fn!(
+        add_padding_bottom,
+        padding_bottom,
+        "padding-bottom",
+        "pwt-pb-{}"
+    );
 
-    /// Builder style method to add a x-axis padding class.
-    fn padding_x(mut self, padding: impl IntoPropValue<Option<usize>>) -> Self {
-        self.add_padding_x(padding);
-        self
-    }
-
-    /// Method to add a x-axis padding class.
-    fn add_padding_x(&mut self, padding: impl IntoPropValue<Option<usize>>) {
-        if let Some(padding) = padding.into_prop_value() {
-            self.as_classes_mut().push("pwt-px");
-            self.as_css_styles_mut()
-                .set_style("--pwt-padding-x-factor", padding.to_string())
-        }
-    }
-
-    /// Builder style method to add a y-axis padding class.
-    fn padding_y(mut self, padding: impl IntoPropValue<Option<usize>>) -> Self {
-        self.add_padding_y(padding);
-        self
-    }
-
-    /// Method to add a y-axis padding class.
-    fn add_padding_y(&mut self, padding: impl IntoPropValue<Option<usize>>) {
-        if let Some(padding) = padding.into_prop_value() {
-            self.as_classes_mut().push("pwt-py");
-            self.as_css_styles_mut()
-                .set_style("--pwt-padding-y-factor", padding.to_string())
-        }
-    }
-
-    /// Builder style method to add a top padding class.
-    fn padding_top(mut self, padding: impl IntoPropValue<Option<usize>>) -> Self {
-        self.add_padding_top(padding);
-        self
-    }
-
-    /// Method to add a top padding class.
-    fn add_padding_top(&mut self, padding: impl IntoPropValue<Option<usize>>) {
-        if let Some(padding) = padding.into_prop_value() {
-            self.as_classes_mut().push("pwt-pt");
-            self.as_css_styles_mut()
-                .set_style("--pwt-padding-top-factor", padding.to_string())
-        }
-    }
-
-    /// Builder style method to add a bottom padding class.
-    fn padding_bottom(mut self, padding: impl IntoPropValue<Option<usize>>) -> Self {
-        self.add_padding_bottom(padding);
-        self
-    }
-
-    /// Method to add a bottom padding class.
-    fn add_padding_bottom(&mut self, padding: impl IntoPropValue<Option<usize>>) {
-        if let Some(padding) = padding.into_prop_value() {
-            self.as_classes_mut().push("pwt-pb");
-            self.as_css_styles_mut()
-                .set_style("--pwt-padding-bottom-factor", padding.to_string())
-        }
-    }
-
-    /// Builder style method to add a start padding class.
-    fn padding_start(mut self, padding: impl IntoPropValue<Option<usize>>) -> Self {
-        self.add_padding_start(padding);
-        self
-    }
-
-    /// Method to add a start padding class.
-    fn add_padding_start(&mut self, padding: impl IntoPropValue<Option<usize>>) {
-        if let Some(padding) = padding.into_prop_value() {
-            self.as_classes_mut().push("pwt-ps");
-            self.as_css_styles_mut()
-                .set_style("--pwt-padding-start-factor", padding.to_string())
-        }
-    }
-
-    /// Builder style method to add an end padding class.
-    fn padding_end(mut self, padding: impl IntoPropValue<Option<usize>>) -> Self {
-        self.add_padding_end(padding);
-        self
-    }
-
-    /// Method to add an end padding class.
-    fn add_padding_end(&mut self, padding: impl IntoPropValue<Option<usize>>) {
-        if let Some(padding) = padding.into_prop_value() {
-            self.as_classes_mut().push("pwt-pe");
-            self.as_css_styles_mut()
-                .set_style("--pwt-padding-end-factor", padding.to_string())
-        }
-    }
+    generate_padding_trait_fn!(add_padding_x, padding_x, "padding-inline", "pwt-px-{}");
+    generate_padding_trait_fn!(
+        add_padding_start,
+        padding_start,
+        "padding-inline-start",
+        "pwt-ps-{}"
+    );
+    generate_padding_trait_fn!(
+        add_padding_end,
+        padding_end,
+        "padding-inline-end",
+        "pwt-pe-{}"
+    );
 }

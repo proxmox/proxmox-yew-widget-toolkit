@@ -1,6 +1,5 @@
 use std::borrow::Cow;
 
-use yew::html::IntoPropValue;
 use yew::prelude::*;
 use yew::virtual_dom::{Listeners, VList, VTag};
 
@@ -8,6 +7,7 @@ use pwt_macros::widget;
 
 use crate::css::{Display, FlexDirection};
 use crate::prelude::*;
+use crate::props::{AsClassesMut, AsCssStylesMut, PwtSpace};
 
 /// Vertical container with flex layout.
 #[widget(pwt=crate, @element, @container)]
@@ -31,15 +31,19 @@ impl Column {
     /// Builder style method to add a CSS class to set gap between children.
     ///
     /// The default CSS template defines utility classes for gaps (`pwt-gap-{gap}`).
-    pub fn gap(mut self, gap: impl IntoPropValue<Option<usize>>) -> Self {
+    pub fn gap(mut self, gap: impl Into<PwtSpace>) -> Self {
         self.add_gap(gap);
         self
     }
 
     /// Method to add a CSS class to set gap between children.
-    pub fn add_gap(&mut self, gap: impl IntoPropValue<Option<usize>>) {
-        if let Some(gap) = gap.into_prop_value() {
-            self.add_class(format!("pwt-gap-{}", gap))
+    pub fn add_gap(&mut self, gap: impl Into<PwtSpace>) {
+        match gap.into() {
+            PwtSpace::None => {}
+            PwtSpace::Pwt(factor) if factor <= 4 => {
+                self.as_classes_mut().push(format!("pwt-gap-{}", factor));
+            }
+            space => self.as_css_styles_mut().set_style("gap", space.to_string()),
         }
     }
 

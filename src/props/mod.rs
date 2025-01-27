@@ -147,6 +147,10 @@ pub use event_subscriber::{EventSubscriber, ListenersWrapper};
 mod border;
 pub use border::CssBorderBuilder;
 
+#[macro_use]
+mod pwt_space;
+pub use pwt_space::PwtSpace;
+
 mod margin;
 pub use margin::CssMarginBuilder;
 
