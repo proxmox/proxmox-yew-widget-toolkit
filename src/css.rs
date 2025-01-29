@@ -607,7 +607,7 @@ impl From<ColorScheme> for Classes {
 
 /// CSS utility type to use shadow classes
 ///
-/// pwt-shadow0 - pwt-shadow5
+/// pwt-shadow-0 - pwt-shadow-5
 ///
 /// ```
 /// # use pwt::prelude::*;
@@ -620,7 +620,7 @@ impl From<ColorScheme> for Classes {
 pub struct Shadow(pub u8);
 impl From<Shadow> for Classes {
     fn from(value: Shadow) -> Self {
-        format!("pwt-shadow{}", value.0).into()
+        format!("pwt-shadow-{}", value.0).into()
     }
 }
 
