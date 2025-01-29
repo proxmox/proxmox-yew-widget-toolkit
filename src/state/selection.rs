@@ -151,7 +151,7 @@ impl Selection {
     /// # Panics
     ///
     /// If multiselect is false.
-    pub fn bulk_select(&mut self, map: HashSet<Key>) {
+    pub fn bulk_select(&self, map: HashSet<Key>) {
         self.inner.borrow_mut().bulk_select(map);
         self.notify_listeners();
     }
