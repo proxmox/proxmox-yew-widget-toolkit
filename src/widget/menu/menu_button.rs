@@ -248,6 +248,7 @@ impl Component for PwtMenuButton {
 
         let mut button = Button::new(&props.text)
             .show_arrow(props.show_arrow)
+            .disabled(props.disabled)
             .attribute("aria-haspopup", "true")
             .attribute("aria-expanded", self.show_submenu.then_some("true"))
             .tabindex(props.tabindex)
