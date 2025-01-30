@@ -13,7 +13,7 @@ pub enum PwtSpace {
 impl std::fmt::Display for PwtSpace {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         match self {
-            PwtSpace::Pwt(v) => write!(f, "calc({v} * var(--pwt-spacer-base-width))px"),
+            PwtSpace::Pwt(v) => write!(f, "calc({v} * var(--pwt-spacer-base-width))"),
             PwtSpace::Px(v) => write!(f, "{v}px"),
             PwtSpace::Em(v) => write!(f, "{v}em"),
             PwtSpace::Fraction(v) => write!(f, "{}%", v * 100.0),
