@@ -3,7 +3,6 @@ use crate::props::{AsClassesMut, AsCssStylesMut};
 use super::PwtSpace;
 
 /// Defines methods to use CSS padding classes.use yew::{html::IntoPropValue, AttrValue};
-
 ///
 /// The default CSS template defines utility classes for paddings that rely on
 /// a CSS variable that multiplies the base width of the spacer to get
