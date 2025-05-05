@@ -244,7 +244,7 @@ impl Component for PwtResizableHeader {
             Msg::StartResize => {
                 self.rtl = element_direction_rtl(&self.node_ref);
 
-                let window = web_sys::window().unwrap();
+                let window = gloo_utils::window();
                 let link = ctx.link();
                 let onpointermove = link.callback(|e: Event| {
                     let event = e.dyn_ref::<web_sys::PointerEvent>().unwrap_throw();

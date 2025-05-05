@@ -381,7 +381,7 @@ fn get_containing_block(element: &HtmlElement) -> Option<HtmlElement> {
             break;
         }
         if let Some(html) = node.into_html_element() {
-            if let Ok(Some(style)) = window().unwrap().get_computed_style(&html) {
+            if let Ok(Some(style)) = gloo_utils::window().get_computed_style(&html) {
                 match style.get_property_value("transform") {
                     Ok(transform) if transform != "none" => return Some(html),
                     _ => {}

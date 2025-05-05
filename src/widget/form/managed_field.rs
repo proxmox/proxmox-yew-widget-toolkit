@@ -515,9 +515,6 @@ impl<MF: ManagedField + 'static> Component for ManagedFieldMaster<MF> {
             */
 
             if let Some(label_id) = &props.label_id {
-                let window = web_sys::window().unwrap();
-                let document = window.document().unwrap();
-
                 let label_clicked_closure = Closure::wrap({
                     let link = ctx.link().clone();
                     Box::new(move || {
@@ -525,7 +522,7 @@ impl<MF: ManagedField + 'static> Component for ManagedFieldMaster<MF> {
                     }) as Box<dyn Fn()>
                 });
 
-                if let Some(el) = document.get_element_by_id(label_id) {
+                if let Some(el) = gloo_utils::document().get_element_by_id(label_id) {
                     let _ = el.add_event_listener_with_callback(
                         "click",
                         label_clicked_closure.as_ref().unchecked_ref(),

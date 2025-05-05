@@ -51,8 +51,7 @@ impl Component for PwtRtlSwitcher {
     fn update(&mut self, _ctx: &yew::Context<Self>, msg: Self::Message) -> bool {
         match msg {
             Msg::ToggleRtl => {
-                let document = web_sys::window().unwrap().document().unwrap();
-                let elements = document.get_elements_by_tag_name("html");
+                let elements = gloo_utils::document().get_elements_by_tag_name("html");
                 if let Some(html) = elements.get_with_index(0) {
                     if self.rtl {
                         if let Err(err) = html.remove_attribute("dir") {
@@ -74,8 +73,7 @@ impl Component for PwtRtlSwitcher {
     }
 
     fn create(_ctx: &yew::Context<Self>) -> Self {
-        let document = web_sys::window().unwrap().document().unwrap();
-        let elements = document.get_elements_by_tag_name("html");
+        let elements = gloo_utils::document().get_elements_by_tag_name("html");
         let rtl = elements
             .get_with_index(0)
             .and_then(|html| html.get_attribute("dir"))

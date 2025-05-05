@@ -815,9 +815,7 @@ impl<S: DataStore> PwtDataTable<S> {
 
     fn get_row_el(&self, key: &Key) -> Option<web_sys::Element> {
         let id = self.get_unique_item_id(key);
-        let window = web_sys::window().unwrap();
-        let document = window.document().unwrap();
-        document.get_element_by_id(&id)
+        gloo_utils::document().get_element_by_id(&id)
     }
 
     fn focus_cell(&mut self, key: &Key) {
@@ -856,9 +854,7 @@ impl<S: DataStore> PwtDataTable<S> {
     }
 
     fn find_focused_cell(&self) -> Option<(Key, Option<usize>)> {
-        let window = web_sys::window().unwrap();
-        let document = window.document().unwrap();
-        let active_el = document.active_element()?;
+        let active_el = gloo_utils::document().active_element()?;
         dom_find_focus_pos(active_el, &self.unique_id)
     }
 

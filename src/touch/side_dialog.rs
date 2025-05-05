@@ -185,9 +185,7 @@ impl Component for PwtSideDialog {
     fn create(ctx: &Context<Self>) -> Self {
         let props = ctx.props();
 
-        let window = web_sys::window().unwrap();
-        let document = window.document().unwrap();
-        let last_active = document
+        let last_active = gloo_utils::document()
             .active_element()
             .and_then(|el| el.dyn_into::<HtmlElement>().ok());
 

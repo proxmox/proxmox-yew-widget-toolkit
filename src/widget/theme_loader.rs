@@ -38,11 +38,7 @@ pub struct PwtThemeLoader {
 }
 
 fn get_document_root() -> Option<web_sys::Element> {
-    let window = web_sys::window()?;
-
-    let document = window.document()?;
-
-    document.document_element()
+    gloo_utils::document().document_element()
 }
 
 fn set_css_density(density: ThemeDensity) {

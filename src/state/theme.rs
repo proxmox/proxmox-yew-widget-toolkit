@@ -276,8 +276,7 @@ impl ThemeObserver {
         let theme = Theme::load();
         let system_prefer_dark = get_system_prefer_dark_mode();
 
-        let window = web_sys::window().unwrap();
-        let media_query = match window.match_media("(prefers-color-scheme: dark)") {
+        let media_query = match gloo_utils::window().match_media("(prefers-color-scheme: dark)") {
             Ok(Some(media_query)) => media_query,
             _ => panic!("window.match_media() failed!"),
         };
@@ -322,9 +321,7 @@ impl ThemeObserver {
             }) as Box<dyn Fn()>
         });
 
-        let window = web_sys::window().unwrap();
-        let document = window.document().unwrap();
-        let _ = document.add_event_listener_with_callback(
+        let _ = gloo_utils::document().add_event_listener_with_callback(
             "pwt-theme-changed",
             theme_changed_closure.as_ref().unchecked_ref(),
         );
@@ -337,9 +334,7 @@ impl ThemeObserver {
             None => return,
         };
 
-        let window = web_sys::window().unwrap();
-        let document = window.document().unwrap();
-        let _ = document.remove_event_listener_with_callback(
+        let _ = gloo_utils::document().remove_event_listener_with_callback(
             "pwt-theme-changed",
             theme_changed_closure.as_ref().unchecked_ref(),
         );

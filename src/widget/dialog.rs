@@ -5,7 +5,7 @@ use gloo_events::EventListener;
 use gloo_timers::callback::Timeout;
 use wasm_bindgen::prelude::Closure;
 use wasm_bindgen::{JsCast, UnwrapThrowExt};
-use web_sys::{window, HtmlElement};
+use web_sys::HtmlElement;
 
 use yew::html::{IntoEventCallback, IntoPropValue};
 use yew::prelude::*;
@@ -154,8 +154,7 @@ impl PwtDialog {
 impl Drop for PwtDialog {
     fn drop(&mut self) {
         if let Some(center_function) = self.center_function.take() {
-            let window = web_sys::window().unwrap();
-            window
+            gloo_utils::window()
                 .remove_event_listener_with_callback(
                     "resize",
                     center_function.as_ref().unchecked_ref(),
@@ -172,9 +171,7 @@ impl Component for PwtDialog {
     fn create(ctx: &Context<Self>) -> Self {
         ctx.link().send_message(Msg::Open);
 
-        let window = web_sys::window().unwrap();
-        let document = window.document().unwrap();
-        let last_active = document
+        let last_active = gloo_utils::document()
             .active_element()
             .and_then(|el| el.dyn_into::<HtmlElement>().ok());
 
@@ -184,7 +181,7 @@ impl Component for PwtDialog {
                 link.send_message(Msg::Center);
             });
 
-            window
+            gloo_utils::window()
                 .add_event_listener_with_callback(
                     "resize",
                     center_function.as_ref().unchecked_ref(),
@@ -253,10 +250,14 @@ impl Component for PwtDialog {
                         self.dragging_state = DragState::Dragging(
                             x,
                             y,
-                            EventListener::new(&window().unwrap(), "pointermove", move |event| {
-                                onmousemove.emit(event.clone().dyn_into().unwrap());
-                            }),
-                            EventListener::new(&window().unwrap(), "pointerup", move |event| {
+                            EventListener::new(
+                                &gloo_utils::window(),
+                                "pointermove",
+                                move |event| {
+                                    onmousemove.emit(event.clone().dyn_into().unwrap());
+                                },
+                            ),
+                            EventListener::new(&gloo_utils::window(), "pointerup", move |event| {
                                 onpointerup.emit(event.clone().dyn_into().unwrap());
                             }),
                             event.pointer_id(),
@@ -267,7 +268,7 @@ impl Component for PwtDialog {
             }
             Msg::PointerMove(event) => match &self.dragging_state {
                 DragState::Dragging(offset_x, offset_y, _, _, id) if *id == event.pointer_id() => {
-                    let window = window().unwrap();
+                    let window = gloo_utils::window();
                     let width = window.inner_width().unwrap().as_f64().unwrap();
                     let height = window.inner_height().unwrap().as_f64().unwrap();
                     let x = (event.client_x() as f64).max(0.0).min(width) - offset_x;
@@ -324,10 +325,10 @@ impl Component for PwtDialog {
                     DragState::Dragging(
                         offset.0,
                         offset.1,
-                        EventListener::new(&window().unwrap(), "pointermove", move |event| {
+                        EventListener::new(&gloo_utils::window(), "pointermove", move |event| {
                             onpointermove.emit(event.clone().dyn_into().unwrap());
                         }),
-                        EventListener::new(&window().unwrap(), "pointerup", move |event| {
+                        EventListener::new(&gloo_utils::window(), "pointerup", move |event| {
                             onpointerup.emit(event.clone().dyn_into().unwrap());
                         }),
                         event.pointer_id(),
@@ -341,10 +342,16 @@ impl Component for PwtDialog {
                         let old_width = rect.width();
                         let old_height = rect.height();
 
-                        let viewport_height =
-                            window().unwrap().inner_height().unwrap().as_f64().unwrap();
-                        let viewport_width =
-                            window().unwrap().inner_width().unwrap().as_f64().unwrap();
+                        let viewport_height = gloo_utils::window()
+                            .inner_height()
+                            .unwrap()
+                            .as_f64()
+                            .unwrap();
+                        let viewport_width = gloo_utils::window()
+                            .inner_width()
+                            .unwrap()
+                            .as_f64()
+                            .unwrap();
 
                         // restrict to viewport
                         let client_x = (event.client_x() as f64).clamp(5.0, viewport_width - 5.0);

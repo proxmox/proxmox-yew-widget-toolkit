@@ -49,10 +49,7 @@ pub fn focus_next_el(el: web_sys::HtmlElement, backwards: bool) {
             return;
         }
 
-        let window = web_sys::window().unwrap();
-        let document = window.document().unwrap();
-
-        let index = match document.active_element() {
+        let index = match gloo_utils::document().active_element() {
             Some(active_element) => list.index_of(&active_element, 0),
             None => -1,
         };
@@ -108,9 +105,7 @@ pub fn roving_tabindex_next_el(el: web_sys::HtmlElement, backwards: bool, roving
     }
 
     fn get_active_index(list: &[web_sys::HtmlElement]) -> i32 {
-        let window = web_sys::window().unwrap();
-        let document = window.document().unwrap();
-        let active_el = document.active_element();
+        let active_el = gloo_utils::document().active_element();
         let active_node: Option<&web_sys::Node> = active_el.as_deref();
 
         let mut index = 0;
@@ -157,10 +152,7 @@ pub fn focus_inside_el(el: web_sys::HtmlElement) -> bool {
             return false;
         }
 
-        let window = web_sys::window().unwrap();
-        let document = window.document().unwrap();
-
-        let index = match document.active_element() {
+        let index = match gloo_utils::document().active_element() {
             Some(active_element) => list.index_of(&active_element, 0),
             None => -1,
         };
@@ -174,10 +166,7 @@ pub fn focus_inside_el(el: web_sys::HtmlElement) -> bool {
 ///
 /// This is the case if the focused element is an input, textarea or is marked as 'contenteditable'.
 pub fn focus_inside_input() -> bool {
-    let window = web_sys::window().unwrap();
-    let document = window.document().unwrap();
-
-    match document.active_element() {
+    match gloo_utils::document().active_element() {
         Some(el) => match el.dyn_into::<web_sys::HtmlElement>() {
             Ok(el) => {
                 let tag = el.tag_name().to_lowercase();
@@ -204,10 +193,7 @@ pub fn update_roving_tabindex_el(el: web_sys::HtmlElement) {
             return;
         }
 
-        let window = web_sys::window().unwrap();
-        let document = window.document().unwrap();
-
-        let active_el = document.active_element();
+        let active_el = gloo_utils::document().active_element();
         let active_node: Option<&web_sys::Node> = active_el.as_deref();
 
         let mut index = 0;

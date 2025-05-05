@@ -540,7 +540,7 @@ impl Component for PwtSplitPane {
 
                 self.rtl = element_direction_rtl(&props.std_props.node_ref);
 
-                let window = web_sys::window().unwrap();
+                let window = gloo_utils::window();
                 let link = ctx.link();
                 let onpointermove = link.callback(move |e: Event| {
                     let event = e.dyn_ref::<web_sys::PointerEvent>().unwrap_throw();

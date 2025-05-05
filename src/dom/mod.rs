@@ -58,8 +58,7 @@ impl IntoHtmlElement for web_sys::HtmlElement {
 pub fn element_direction_rtl<T: IntoHtmlElement>(node: T) -> Option<bool> {
     let el = node.into_html_element()?;
 
-    let window = web_sys::window().unwrap();
-    if let Ok(Some(style)) = window.get_computed_style(&el) {
+    if let Ok(Some(style)) = gloo_utils::window().get_computed_style(&el) {
         if let Ok(direction) = style.get_property_value("direction") {
             return Some(direction == "rtl");
         }
@@ -70,8 +69,7 @@ pub fn element_direction_rtl<T: IntoHtmlElement>(node: T) -> Option<bool> {
 
 /// Returns if the system prefers dark mode
 pub fn get_system_prefer_dark_mode() -> bool {
-    let window = web_sys::window().unwrap();
-    if let Ok(Some(list)) = window.match_media("(prefers-color-scheme: dark)") {
+    if let Ok(Some(list)) = gloo_utils::window().match_media("(prefers-color-scheme: dark)") {
         list.matches()
     } else {
         false

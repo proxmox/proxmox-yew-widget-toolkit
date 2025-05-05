@@ -739,10 +739,7 @@ fn dom_focus_inside_submenu(event: &FocusEvent, item_id: &str) -> bool {
 }
 
 fn dom_focus_submenu(item_id: &str) {
-    let window = web_sys::window().unwrap();
-    let document = window.document().unwrap();
-
-    let el = match document.get_element_by_id(item_id) {
+    let el = match gloo_utils::document().get_element_by_id(item_id) {
         Some(el) => el,
         None => return,
     };

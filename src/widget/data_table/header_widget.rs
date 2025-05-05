@@ -427,12 +427,9 @@ impl<T: 'static> PwtHeaderWidget<T> {
     }
 
     fn focus_active_cell(&self) {
-        let window = web_sys::window().unwrap();
-        let document = window.document().unwrap();
-
         let get_cell_el = |cell_idx| -> Option<web_sys::HtmlElement> {
             let id = self.unique_cell_id(cell_idx);
-            let el = document.get_element_by_id(&id)?;
+            let el = gloo_utils::document().get_element_by_id(&id)?;
             match el.dyn_into::<web_sys::HtmlElement>() {
                 Ok(el) => Some(el),
                 Err(_) => None,
