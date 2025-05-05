@@ -511,7 +511,7 @@ impl Component for PwtDialog {
 
         let style = props.styles.compile_style_attribute(None);
 
-        html! {
+        let dialog = html! {
             <dialog class={"pwt-outer-dialog"} {onpointerdown} aria-label={props.title.clone()} ref={props.node_ref.clone()} {oncancel} {onclose} >
                 <div class={classes} {style} ref={self.inner_ref.clone()}>
                 {panel}
@@ -527,7 +527,9 @@ impl Component for PwtDialog {
                 }
                 </div>
             </dialog>
-        }
+        };
+
+        create_portal(dialog, gloo_utils::body().into())
     }
 
     fn rendered(&mut self, ctx: &Context<Self>, first_render: bool) {
