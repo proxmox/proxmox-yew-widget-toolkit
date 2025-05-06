@@ -1,3 +1,19 @@
+rust-pwt (0.4.9) bookworm; urgency=medium
+
+  * dialog: put all dialogs into a portal
+
+  * tree wide: use gloo_utils::window/document/body
+
+  * space: fix space calculation for pwt units
+
+  * state: selection: make selection interface more consistent
+
+  * widget: menu button: actually use 'disabled' property
+
+  * css: fix pwt-shadow class names
+
+ -- Proxmox Support Team <support@proxmox.com>  Tue, 06 May 2025 10:52:37 +0200
+
 rust-pwt (0.4.8) bookworm; urgency=medium
 
   * add new PwtSpace property for marging, padding and gap
