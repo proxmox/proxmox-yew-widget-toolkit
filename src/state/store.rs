@@ -3,6 +3,7 @@ use std::ops::Range;
 use std::ops::{Deref, DerefMut};
 use std::rc::Rc;
 
+use anyhow::Error;
 use derivative::Derivative;
 use slab::Slab;
 
@@ -129,12 +130,18 @@ impl<T: 'static> Store<T> {
     ///
     /// Panics if the value is currently mutably locked.
     pub fn read(&self) -> StoreReadGuard<T> {
-        StoreReadGuard {
-            state: self
-                .inner
-                .try_borrow()
-                .expect("Could not acquire read lock on store!"),
-        }
+        self.try_read()
+            .expect("Could not acquire read lock on store!")
+    }
+
+    /// Try to lock this store for read access.
+    ///
+    /// Will return an error if the lock could not be acquired due to a write lock still being in
+    /// place.
+    pub fn try_read(&self) -> Result<StoreReadGuard<T>, Error> {
+        Ok(StoreReadGuard {
+            state: self.inner.try_borrow()?,
+        })
     }
 
     /// Lock this store for write access.
@@ -145,15 +152,19 @@ impl<T: 'static> Store<T> {
     /// When the returned [StoreWriteGuard] is dropped, the store listeners
     /// are notified. To prevent that use [StoreWriteGuard::skip_update]
     pub fn write(&self) -> StoreWriteGuard<T> {
-        let state = self
-            .inner
-            .try_borrow_mut()
-            .expect("Could not acquire write lock on store!");
+        self.try_write()
+            .expect("Could not acquire write lock on store!")
+    }
 
-        StoreWriteGuard {
-            state,
+    /// Try to lock this store for write access.
+    ///
+    /// Will return an error if the lock could not be acquired due to a read or write lock still
+    /// being in place.
+    pub fn try_write(&self) -> Result<StoreWriteGuard<T>, Error> {
+        Ok(StoreWriteGuard {
+            state: self.inner.try_borrow_mut()?,
             update: true,
-        }
+        })
     }
 
     // DataStore trait implementation, so that we can use those
