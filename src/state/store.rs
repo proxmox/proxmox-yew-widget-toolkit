@@ -130,7 +130,10 @@ impl<T: 'static> Store<T> {
     /// Panics if the value is currently mutably locked.
     pub fn read(&self) -> StoreReadGuard<T> {
         StoreReadGuard {
-            state: self.inner.borrow(),
+            state: self
+                .inner
+                .try_borrow()
+                .expect("Could not acquire read lock on store!"),
         }
     }
 
@@ -142,7 +145,11 @@ impl<T: 'static> Store<T> {
     /// When the returned [StoreWriteGuard] is dropped, the store listeners
     /// are notified. To prevent that use [StoreWriteGuard::skip_update]
     pub fn write(&self) -> StoreWriteGuard<T> {
-        let state = self.inner.borrow_mut();
+        let state = self
+            .inner
+            .try_borrow_mut()
+            .expect("Could not acquire write lock on store!");
+
         StoreWriteGuard {
             state,
             update: true,
