@@ -7,7 +7,7 @@ use derivative::Derivative;
 use gloo_timers::callback::Timeout;
 use wasm_bindgen::JsCast;
 
-use yew::html::IntoPropValue;
+use yew::html::{IntoEventCallback, IntoPropValue};
 use yew::prelude::*;
 use yew::virtual_dom::{Key, VComp, VNode};
 
@@ -212,6 +212,10 @@ pub struct DataTable<S: DataStore> {
 
     #[prop_or_default]
     pub multiselect_mode: MultiSelectMode,
+
+    /// Table scroll callback
+    #[prop_or_default]
+    pub on_table_scroll: Option<Callback<Event>>,
 }
 
 impl<S: DataStore> AsClassesMut for DataTable<S> {
@@ -454,6 +458,12 @@ impl<S: DataStore> DataTable<S> {
         multiselect_mode: impl IntoPropValue<MultiSelectMode>,
     ) -> Self {
         self.set_multiselect_mode(multiselect_mode);
+        self
+    }
+
+    /// Builder style method to set the table scroll callback.
+    pub fn on_table_scroll(mut self, cb: impl IntoEventCallback<Event>) -> Self {
+        self.on_table_scroll = cb.into_event_callback();
         self
     }
 }
@@ -1602,8 +1612,18 @@ impl<S: DataStore + 'static> Component for PwtDataTable<S> {
         let column_widths =
             self.column_widths.iter().sum::<f64>() + self.scrollbar_size.unwrap_or_default();
 
+        let on_table_scroll = {
+            let on_table_scroll = props.on_table_scroll.clone();
+            move |event: Event| {
+                if let Some(on_table_scroll) = &on_table_scroll {
+                    on_table_scroll.emit(event);
+                }
+            }
+        };
+
         let viewport = Container::new()
             .node_ref(self.scroll_ref.clone())
+            .onscroll(on_table_scroll)
             .key(Key::from("table-viewport"))
             .class("pwt-flex-fill")
             .style(
