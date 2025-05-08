@@ -3,7 +3,7 @@ use std::rc::Rc;
 use pwt_macros::builder;
 use yew::html::IntoEventCallback;
 use yew::prelude::*;
-use yew::virtual_dom::{VComp, VNode};
+use yew::virtual_dom::{Key, VComp, VNode};
 
 use crate::prelude::*;
 use crate::widget::{Button, Dialog, Row, Toolbar};
@@ -12,6 +12,13 @@ use crate::widget::{Button, Dialog, Row, Toolbar};
 #[builder]
 #[derive(Clone, Properties, PartialEq)]
 pub struct MessageBox {
+    #[prop_or_default]
+    node_ref: NodeRef,
+
+    /// The yew component key.
+    #[prop_or_default]
+    pub key: Option<Key>,
+
     /// Dialog title
     #[builder]
     pub title: AttrValue,
@@ -61,6 +68,18 @@ impl MessageBox {
             title: title.into(),
             message: message.into()
         })
+    }
+
+    /// Builder style method to set the yew `node_ref`
+    pub fn node_ref(mut self, node_ref: ::yew::html::NodeRef) -> Self {
+        self.node_ref = node_ref;
+        self
+    }
+
+    /// Builder style method to set the yew `key` property
+    pub fn key(mut self, key: impl IntoOptionalKey) -> Self {
+        self.key = key.into_optional_key();
+        self
     }
 }
 
@@ -134,6 +153,7 @@ pub fn pwt_message_box(props: &MessageBox) -> Html {
     bbar.add_flex_spacer();
 
     Dialog::new(props.title.clone())
+        .node_ref(props.node_ref.clone())
         .min_width(300)
         .max_width(600)
         .draggable(props.draggable)
@@ -145,7 +165,8 @@ pub fn pwt_message_box(props: &MessageBox) -> Html {
 
 impl From<MessageBox> for VNode {
     fn from(val: MessageBox) -> Self {
-        let comp = VComp::new::<PwtMessageBox>(Rc::new(val), None);
+        let key = val.key.clone();
+        let comp = VComp::new::<PwtMessageBox>(Rc::new(val), key);
         VNode::from(comp)
     }
 }
