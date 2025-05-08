@@ -29,6 +29,9 @@ use super::{Menu, MenuEntry, MenuItem};
 #[derive(Clone, PartialEq, Properties)]
 #[builder]
 pub struct NavigationDrawer {
+    #[prop_or_default]
+    node_ref: NodeRef,
+
     /// The yew component key.
     #[prop_or_default]
     pub key: Option<Key>,
@@ -96,6 +99,12 @@ impl NavigationDrawer {
     /// Create a new instance.
     pub fn new(menu: Menu) -> Self {
         yew::props!(Self { menu })
+    }
+
+    /// Builder style method to set the yew `node_ref`
+    pub fn node_ref(mut self, node_ref: ::yew::html::NodeRef) -> Self {
+        self.node_ref = node_ref;
+        self
     }
 
     // Builder style method to set the yew `key` property.
@@ -170,7 +179,6 @@ pub struct PwtNavigationDrawer {
     active: Option<Key>,
     selection: Selection,
     menu_states: HashMap<Key, bool>, // true = open
-    menu_ref: NodeRef,
     _nav_ctx_handle: Option<ContextHandle<NavigationContext>>,
 }
 
@@ -448,7 +456,6 @@ impl Component for PwtNavigationDrawer {
             active,
             selection,
             menu_states: HashMap::new(),
-            menu_ref: NodeRef::default(),
             _nav_ctx_handle,
         }
     }
@@ -567,7 +574,7 @@ impl Component for PwtNavigationDrawer {
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
 
-        let menu_ref = self.menu_ref.clone();
+        let menu_ref = props.node_ref.clone();
         let onkeydown = Callback::from(move |event: KeyboardEvent| {
             match event.key().as_str() {
                 "ArrowDown" => {
@@ -582,7 +589,7 @@ impl Component for PwtNavigationDrawer {
         });
 
         let mut column = Column::new()
-            .node_ref(self.menu_ref.clone())
+            .node_ref(props.node_ref.clone())
             .onkeydown(onkeydown)
             // avoid https://bugzilla.mozilla.org/show_bug.cgi?id=1069739
             .attribute("tabindex", "-1")
