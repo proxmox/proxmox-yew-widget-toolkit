@@ -919,13 +919,25 @@ impl<S: DataStore> PwtDataTable<S> {
             }
         }
 
+        // keep track of keys that are displayed, to avoid duplicates
+        let mut key_set = HashSet::new();
+
         for (filtered_pos, item) in props.store.filtered_data_range(start..end) {
-            let record_key = props.store.extract_key(&*item.record());
+            let mut record_key = props.store.extract_key(&*item.record());
 
             let mut selected = false;
             if let Some(selection) = &props.selection {
                 selected = selection.contains(&record_key);
             }
+
+            if key_set.contains(&record_key) {
+                #[cfg(debug_assertions)]
+                log::error!("duplicate key found: {record_key}");
+                // avoid duplicate key by adding the row num to the key
+                record_key = Key::from(format!("{filtered_pos}-{record_key}"))
+            }
+
+            key_set.insert(record_key.clone());
 
             let active = cursor
                 .map(|cursor| cursor == filtered_pos)
