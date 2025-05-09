@@ -5,8 +5,8 @@ use yew::html::IntoEventCallback;
 use yew::prelude::*;
 use yew::virtual_dom::{Key, VComp, VNode};
 
-use crate::prelude::*;
 use crate::widget::{Button, Dialog, Row, Toolbar};
+use crate::{impl_yew_std_props_builder, prelude::*};
 
 /// Message Box - Modal window to display various messages.
 #[builder]
@@ -70,17 +70,7 @@ impl MessageBox {
         })
     }
 
-    /// Builder style method to set the yew `node_ref`
-    pub fn node_ref(mut self, node_ref: ::yew::html::NodeRef) -> Self {
-        self.node_ref = node_ref;
-        self
-    }
-
-    /// Builder style method to set the yew `key` property
-    pub fn key(mut self, key: impl IntoOptionalKey) -> Self {
-        self.key = key.into_optional_key();
-        self
-    }
+    impl_yew_std_props_builder!();
 }
 
 pub(crate) fn message(text: impl Into<Html>, icon_class: impl Into<Classes>) -> Row {
