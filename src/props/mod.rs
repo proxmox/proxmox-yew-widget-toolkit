@@ -168,3 +168,80 @@ pub use sorter_function::{IntoSorterFn, SorterFn};
 
 mod filter_function;
 pub use filter_function::{FilterFn, IntoFilterFn, IntoTextFilterFn, TextFilterFn};
+
+/// Implement builder functions for node_ref and key properties.
+///
+/// ```
+/// use pwt::prelude::*;
+/// use pwt::impl_yew_std_props_builder;
+/// use yew::virtual_dom::Key;
+/// pub struct MyComponentProps {
+///     pub node_ref: NodeRef,
+///     pub key: Option<Key>,
+/// }
+///
+/// impl MyComponentProps {
+///     impl_yew_std_props_builder!();
+///     // pub fn node_ref(mut self, node_ref: NodeRef) -> Self;
+///     // pub fn set_node_ref(&mut self, node_ref: NodeRef);
+///     // pub fn key(mut self, key: impl IntoOptionalKey) -> Self;
+///     // pub fn set_key(&mut self, key: impl IntoOptionalKey);
+/// }
+/// ```
+#[macro_export]
+macro_rules! impl_yew_std_props_builder {
+    () => {
+        /// Builder style method to set the yew `node_ref`
+        pub fn node_ref(mut self, node_ref: NodeRef) -> Self {
+            self.set_node_ref(node_ref);
+            self
+        }
+        /// Builder style method to set the yew `key` property
+        pub fn key(mut self, key: impl IntoOptionalKey) -> Self {
+            self.set_key(key);
+            self
+        }
+
+        /// Method to set the yew `node_ref`
+        pub fn set_node_ref(&mut self, node_ref: NodeRef) {
+            self.node_ref = node_ref;
+        }
+
+        /// Method to set the yew `key` property
+        pub fn set_key(&mut self, key: impl IntoOptionalKey) {
+            self.key = key.into_optional_key();
+        }
+    };
+}
+
+/// Implement builder functions for class properties.
+///
+/// ```
+/// use pwt::prelude::*;
+/// use pwt::impl_class_prop_builder;
+///
+/// pub struct MyComponentProps {
+///     class: Classes,
+/// }
+///
+/// impl MyComponentProps {
+///     impl_class_prop_builder!();
+///     // pub fn class(mut self, class: impl Into<Classes>) -> Self;
+///     // pub fn add_class(&mut self, class: impl Into<Classes>);
+/// }
+/// ```
+#[macro_export]
+macro_rules! impl_class_prop_builder {
+    () => {
+        /// Builder style method to add a html class
+        pub fn class(mut self, class: impl Into<Classes>) -> Self {
+            self.add_class(class);
+            self
+        }
+
+        /// Method to add a html class
+        pub fn add_class(&mut self, class: impl Into<Classes>) {
+            self.class.push(class);
+        }
+    };
+}
