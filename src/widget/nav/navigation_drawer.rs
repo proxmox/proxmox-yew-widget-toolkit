@@ -13,6 +13,7 @@ use crate::props::{
     EventSubscriber, IntoOptionalKey, WidgetBuilder, WidgetStyleBuilder,
 };
 use crate::state::{NavigationContext, NavigationContextExt, Selection};
+use crate::{impl_class_prop_builder, impl_yew_std_props_builder};
 
 use crate::dom::focus::roving_tabindex_next;
 use crate::widget::{Column, Container};
@@ -101,22 +102,8 @@ impl NavigationDrawer {
         yew::props!(Self { menu })
     }
 
-    /// Builder style method to set the yew `node_ref`
-    pub fn node_ref(mut self, node_ref: ::yew::html::NodeRef) -> Self {
-        self.node_ref = node_ref;
-        self
-    }
-
-    // Builder style method to set the yew `key` property.
-    pub fn key(mut self, key: impl IntoOptionalKey) -> Self {
-        self.set_key(key);
-        self
-    }
-
-    /// Method to set the yew `key` property.
-    pub fn set_key(&mut self, key: impl IntoOptionalKey) {
-        self.key = key.into_optional_key();
-    }
+    impl_yew_std_props_builder!();
+    impl_class_prop_builder!();
 
     // Builder style method to set `default_active` property.
     pub fn default_active(mut self, default_active: impl IntoOptionalKey) -> Self {
@@ -127,17 +114,6 @@ impl NavigationDrawer {
     /// Method to set the yew `default_active` property.
     pub fn set_default_active(&mut self, default_active: impl IntoOptionalKey) {
         self.default_active = default_active.into_optional_key();
-    }
-
-    /// Builder style method to add a html class.
-    pub fn class(mut self, class: impl Into<Classes>) -> Self {
-        self.add_class(class);
-        self
-    }
-
-    /// Method to add a html class.
-    pub fn add_class(&mut self, class: impl Into<Classes>) {
-        self.class.push(class);
     }
 
     // Builder style method to set the menu header.
