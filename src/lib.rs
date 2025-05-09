@@ -264,14 +264,13 @@ use wasm_bindgen::{self, prelude::*};
 extern "C" {
     fn test_alert();
 
-    //Dialog bindings
+    // Dialog bindings
     pub fn show_modal_dialog(dialog: web_sys::Node);
     pub fn show_dialog(dialog: web_sys::Node);
     pub fn close_dialog(dialog: web_sys::Node);
     pub fn show_popover(popover: web_sys::Node);
     pub fn hide_popover(popover: web_sys::Node);
     pub fn toggle_popover(popover: web_sys::Node);
-    pub fn toggle_event_is_closed(event: web_sys::Event) -> bool;
 }
 
 // Create wrapper which panics if called from target_arch!=wasm32
@@ -280,21 +279,27 @@ extern "C" {
 pub use panic_wrapper::*;
 #[cfg(not(target_arch = "wasm32"))]
 mod panic_wrapper {
+    /// Show a modal Html Dialog
     pub fn show_modal_dialog(_dialog: web_sys::Node) {
         unreachable!()
     }
+    /// Show a Html Dialog
     pub fn show_dialog(_dialog: web_sys::Node) {
         unreachable!()
     }
+    /// Close a Html Dialog
     pub fn close_dialog(_dialog: web_sys::Node) {
         unreachable!()
     }
+    /// Show a Html popover
     pub fn show_popover(_popover: web_sys::Node) {
         unreachable!()
     }
+    /// Hide a Html popover
     pub fn hide_popover(_popover: web_sys::Node) {
         unreachable!()
     }
+    /// Toggle a Html popover
     pub fn toggle_popover(_popover: web_sys::Node) {
         unreachable!()
     }
