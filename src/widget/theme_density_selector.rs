@@ -1,15 +1,23 @@
 use std::rc::Rc;
 
 use yew::prelude::*;
-use yew::virtual_dom::{VComp, VNode};
+use yew::virtual_dom::{Key, VComp, VNode};
 
 use crate::prelude::*;
 use crate::state::{Theme, ThemeDensity};
 use crate::widget::form::Combobox;
+use crate::{impl_class_prop_builder, impl_yew_std_props_builder};
 
 /// Combobox for selecting the theme density.
 #[derive(Clone, PartialEq, Properties)]
 pub struct ThemeDensitySelector {
+    #[prop_or_default]
+    node_ref: NodeRef,
+
+    /// The yew component key.
+    #[prop_or_default]
+    pub key: Option<Key>,
+
     #[prop_or_default]
     class: Classes,
 }
@@ -25,16 +33,8 @@ impl ThemeDensitySelector {
         yew::props!(Self {})
     }
 
-    /// Builder style method to add a html class
-    pub fn class(mut self, class: impl Into<Classes>) -> Self {
-        self.add_class(class);
-        self
-    }
-
-    /// Method to add a html class
-    pub fn add_class(&mut self, class: impl Into<Classes>) {
-        self.class.push(class);
-    }
+    impl_yew_std_props_builder!();
+    impl_class_prop_builder!();
 }
 
 #[doc(hidden)]
@@ -78,6 +78,7 @@ impl Component for PwtThemeDensitySelector {
         let props = ctx.props();
 
         Combobox::new()
+            .node_ref(props.node_ref.clone())
             .class(props.class.clone())
             .required(true)
             .default(self.density.to_string())
@@ -92,7 +93,8 @@ impl Component for PwtThemeDensitySelector {
 
 impl From<ThemeDensitySelector> for VNode {
     fn from(val: ThemeDensitySelector) -> Self {
-        let comp = VComp::new::<PwtThemeDensitySelector>(Rc::new(val), None);
+        let key = val.key.clone();
+        let comp = VComp::new::<PwtThemeDensitySelector>(Rc::new(val), key);
         VNode::from(comp)
     }
 }
