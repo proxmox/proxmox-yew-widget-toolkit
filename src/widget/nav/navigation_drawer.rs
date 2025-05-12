@@ -30,8 +30,9 @@ use super::{Menu, MenuEntry, MenuItem};
 #[derive(Clone, PartialEq, Properties)]
 #[builder]
 pub struct NavigationDrawer {
+    /// Yew component `ref`.
     #[prop_or_default]
-    node_ref: NodeRef,
+    pub node_ref: NodeRef,
 
     /// The yew component key.
     #[prop_or_default]
