@@ -1,17 +1,25 @@
 use std::rc::Rc;
 
-use yew::prelude::*;
-use yew::virtual_dom::{VComp, VNode};
+use yew::virtual_dom::{Key, VComp, VNode};
 
-use crate::prelude::*;
 use crate::state::{Theme, ThemeMode};
 use crate::widget::Button;
+use crate::{impl_class_prop_builder, impl_yew_std_props_builder, prelude::*};
 
 /// Round icon button to select light/dark theme.
 #[derive(Clone, PartialEq, Properties)]
 pub struct ThemeModeSelector {
+    /// Yew component `ref`.
     #[prop_or_default]
-    class: Classes,
+    pub node_ref: NodeRef,
+
+    /// Yew `key` property
+    #[prop_or_default]
+    pub key: Option<Key>,
+
+    /// CSS class
+    #[prop_or_default]
+    pub class: Classes,
 }
 
 impl Default for ThemeModeSelector {
@@ -25,16 +33,8 @@ impl ThemeModeSelector {
         yew::props!(Self {})
     }
 
-    /// Builder style method to add a html class
-    pub fn class(mut self, class: impl Into<Classes>) -> Self {
-        self.add_class(class);
-        self
-    }
-
-    /// Method to add a html class
-    pub fn add_class(&mut self, class: impl Into<Classes>) {
-        self.class.push(class);
-    }
+    impl_yew_std_props_builder!();
+    impl_class_prop_builder!();
 }
 
 #[doc(hidden)]
@@ -87,6 +87,7 @@ impl Component for PwtThemeModeSelector {
             ThemeMode::Dark => "fa fa-fw fa-moon-o",
             ThemeMode::Light => "fa fa-fw fa-sun-o",
         })
+        .node_ref(props.node_ref.clone())
         .class(props.class.clone())
         .class("circle")
         .onclick(onclick)
@@ -104,7 +105,8 @@ impl Component for PwtThemeModeSelector {
 
 impl From<ThemeModeSelector> for VNode {
     fn from(val: ThemeModeSelector) -> Self {
-        let comp = VComp::new::<PwtThemeModeSelector>(Rc::new(val), None);
+        let key = val.key.clone();
+        let comp = VComp::new::<PwtThemeModeSelector>(Rc::new(val), key);
         VNode::from(comp)
     }
 }
