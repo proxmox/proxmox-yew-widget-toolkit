@@ -6,11 +6,11 @@ use gloo_timers::callback::Timeout;
 
 use yew::html::IntoEventCallback;
 
-use yew::virtual_dom::{VComp, VNode};
+use yew::virtual_dom::{Key, VComp, VNode};
 
 use crate::dom::focus::{get_first_focusable, FocusTracker};
 use crate::widget::{get_unique_element_id, Container};
-use crate::{impl_class_prop_builder, prelude::*};
+use crate::{impl_class_prop_builder, impl_yew_std_props_builder, prelude::*};
 
 use pwt_macros::builder;
 
@@ -84,6 +84,14 @@ pub struct Menu {
     #[prop_or_default]
     children: Vec<MenuEntry>,
 
+    /// Yew component `ref`.
+    #[prop_or_default]
+    pub node_ref: NodeRef,
+
+    /// The yew component key.
+    #[prop_or_default]
+    pub key: Option<Key>,
+
     /// CSS class
     #[prop_or_default]
     pub class: Classes,
@@ -132,6 +140,7 @@ impl Menu {
         Menu::new().menubar(true)
     }
 
+    impl_yew_std_props_builder!();
     impl_class_prop_builder!();
 
     /// Builder style method to add a simple line to separate menu items.
@@ -325,7 +334,7 @@ impl Component for PwtMenu {
         Self {
             cursor: None,
             unique_id: get_unique_element_id(),
-            inner_ref: NodeRef::default(),
+            inner_ref: props.node_ref.clone(),
             menu_controller,
             inside_submenu: false,
             show_submenu: !props.menubar,
@@ -703,8 +712,9 @@ impl Component for PwtMenu {
 }
 
 impl From<Menu> for VNode {
-    fn from(val: Menu) -> Self {
-        let comp = VComp::new::<PwtMenu>(Rc::new(val), None);
+    fn from(props: Menu) -> Self {
+        let key = props.key.clone();
+        let comp = VComp::new::<PwtMenu>(Rc::new(props), key);
         VNode::from(comp)
     }
 }
