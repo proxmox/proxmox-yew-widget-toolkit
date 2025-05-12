@@ -11,15 +11,17 @@ use crate::{impl_class_prop_builder, impl_yew_std_props_builder};
 /// Combobox for selecting the theme density.
 #[derive(Clone, PartialEq, Properties)]
 pub struct ThemeDensitySelector {
+    /// Yew component `ref`.
     #[prop_or_default]
-    node_ref: NodeRef,
+    pub node_ref: NodeRef,
 
     /// The yew component key.
     #[prop_or_default]
     pub key: Option<Key>,
 
+    /// CSS class
     #[prop_or_default]
-    class: Classes,
+    pub class: Classes,
 }
 
 impl Default for ThemeDensitySelector {
