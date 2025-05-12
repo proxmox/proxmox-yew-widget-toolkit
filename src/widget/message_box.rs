@@ -12,8 +12,9 @@ use crate::{impl_yew_std_props_builder, prelude::*};
 #[builder]
 #[derive(Clone, Properties, PartialEq)]
 pub struct MessageBox {
+    /// Yew component `ref`.
     #[prop_or_default]
-    node_ref: NodeRef,
+    pub node_ref: NodeRef,
 
     /// The yew component key.
     #[prop_or_default]
