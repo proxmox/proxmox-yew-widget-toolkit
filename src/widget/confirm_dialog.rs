@@ -2,10 +2,10 @@ use std::rc::Rc;
 
 use html::{IntoEventCallback, IntoPropValue};
 use pwt_macros::builder;
-use yew::prelude::*;
-use yew::virtual_dom::{VComp, VNode};
+use yew::virtual_dom::{Key, VComp, VNode};
 
-use crate::tr;
+use crate::prelude::*;
+use crate::{impl_yew_std_props_builder, tr};
 
 use super::MessageBox;
 
@@ -13,6 +13,14 @@ use super::MessageBox;
 #[builder]
 /// A dialog that can be used to let users confirm an action before it is taken.
 pub struct ConfirmDialog {
+    /// Yew component `ref`.
+    #[prop_or_default]
+    pub node_ref: NodeRef,
+
+    /// The yew component key.
+    #[prop_or_default]
+    pub key: Option<Key>,
+
     /// The title of the dialog.
     #[prop_or_default]
     #[builder(IntoPropValue, into_prop_value)]
@@ -52,6 +60,8 @@ impl ConfirmDialog {
             confirm_message: Some(html! {confirm_message.into()})
         })
     }
+
+    impl_yew_std_props_builder!();
 }
 
 impl Default for ConfirmDialog {
@@ -59,12 +69,6 @@ impl Default for ConfirmDialog {
         yew::props!(Self {
             title: tr!("Confirm"),
         })
-    }
-}
-
-impl From<ConfirmDialog> for VNode {
-    fn from(value: ConfirmDialog) -> Self {
-        VComp::new::<PwtConfirmDialog>(Rc::new(value), None).into()
     }
 }
 
@@ -90,6 +94,7 @@ impl Component for PwtConfirmDialog {
         let on_close = props.on_close.clone();
 
         MessageBox::new(props.title.clone(), props.confirm_message.clone())
+            .node_ref(props.node_ref.clone())
             .buttons(super::MessageBoxButtons::YesNo)
             .icon_class(props.icon_class.clone())
             .on_close(ctx.link().callback(move |confirm| {
@@ -106,5 +111,12 @@ impl Component for PwtConfirmDialog {
                 }
             }))
             .into()
+    }
+}
+
+impl From<ConfirmDialog> for VNode {
+    fn from(value: ConfirmDialog) -> Self {
+        let key = value.key.clone();
+        VComp::new::<PwtConfirmDialog>(Rc::new(value), key).into()
     }
 }
