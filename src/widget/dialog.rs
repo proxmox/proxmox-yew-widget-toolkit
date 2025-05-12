@@ -7,7 +7,7 @@ use wasm_bindgen::prelude::Closure;
 use wasm_bindgen::{JsCast, UnwrapThrowExt};
 use web_sys::HtmlElement;
 
-use yew::html::{IntoEventCallback, IntoPropValue};
+use yew::html::{IntoEventCallback, IntoPropValue, Scope};
 use yew::prelude::*;
 use yew::virtual_dom::{Key, VComp, VNode};
 
@@ -15,7 +15,7 @@ use crate::dom::align::{align_to_viewport, align_to_xy, Point};
 use crate::dom::IntoHtmlElement;
 use crate::prelude::*;
 use crate::props::{AsCssStylesMut, CssStyles};
-use crate::widget::{ActionIcon, Panel};
+use crate::widget::{ActionIcon, Container, Panel};
 
 use pwt_macros::builder;
 
@@ -496,40 +496,49 @@ impl Component for PwtDialog {
 
         let resizable = props.resizable;
 
-        let west_down = link.callback(|e| Msg::ResizeStart(Point::Start, e));
-        let east_down = link.callback(|e| Msg::ResizeStart(Point::End, e));
-        let north_down = link.callback(|e| Msg::ResizeStart(Point::Top, e));
-        let south_down = link.callback(|e| Msg::ResizeStart(Point::Bottom, e));
-
-        let northwest_down = link.callback(|e| Msg::ResizeStart(Point::TopStart, e));
-        let southwest_down = link.callback(|e| Msg::ResizeStart(Point::BottomStart, e));
-        let northeast_down = link.callback(|e| Msg::ResizeStart(Point::TopEnd, e));
-        let southeast_down = link.callback(|e| Msg::ResizeStart(Point::BottomEnd, e));
-
         let is_dragging = !matches!(self.dragging_state, DragState::Idle);
         let classes = classes!("pwt-dialog", is_dragging.then_some("pwt-user-select-none"));
 
-        let style = props.styles.compile_style_attribute(None);
+        //let style = props.styles.compile_style_attribute(None);
 
-        let dialog = html! {
-            <dialog class={"pwt-outer-dialog"} {onpointerdown} aria-label={props.title.clone()} ref={props.node_ref.clone()} {oncancel} {onclose} >
-                <div class={classes} {style} ref={self.inner_ref.clone()}>
-                {panel}
-                if resizable {
-                    <div onpointerdown={west_down} class="dialog-resize-handle west"></div>
-                    <div onpointerdown={east_down} class="dialog-resize-handle east"></div>
-                    <div onpointerdown={north_down} class="dialog-resize-handle north"></div>
-                    <div onpointerdown={south_down} class="dialog-resize-handle south"></div>
-                    <div onpointerdown={northeast_down} class="dialog-resize-handle north-east"></div>
-                    <div onpointerdown={northwest_down} class="dialog-resize-handle north-west"></div>
-                    <div onpointerdown={southeast_down} class="dialog-resize-handle south-east"></div>
-                    <div onpointerdown={southwest_down} class="dialog-resize-handle south-west"></div>
-                }
-                </div>
-            </dialog>
-        };
+        let mut inner = Container::new()
+            .node_ref(self.inner_ref.clone())
+            .class(classes)
+            .styles(props.styles.clone())
+            .with_child(panel);
 
-        create_portal(dialog, gloo_utils::body().into())
+        if resizable {
+            let mut add_handle = |link: &Scope<Self>, point, direction| {
+                let callback = link.callback(move |e| Msg::ResizeStart(point, e));
+
+                inner.add_child(
+                    Container::new()
+                        .onpointerdown(callback)
+                        .class("dialog-resize-handle")
+                        .class(direction),
+                );
+            };
+
+            add_handle(&link, Point::Start, "west");
+            add_handle(&link, Point::End, "east");
+            add_handle(&link, Point::Top, "north");
+            add_handle(&link, Point::Bottom, "south");
+            add_handle(&link, Point::TopEnd, "north-east");
+            add_handle(&link, Point::TopStart, "north-west");
+            add_handle(&link, Point::BottomEnd, "south-east");
+            add_handle(&link, Point::BottomStart, "south-west");
+        }
+
+        let dialog = Container::from_tag("dialog")
+            .node_ref(props.node_ref.clone())
+            .class("pwt-outer-dialog")
+            .onpointerdown(onpointerdown)
+            .oncancel(oncancel)
+            .onclose(onclose)
+            .attribute("aria-label", props.title.clone())
+            .with_child(inner);
+
+        create_portal(dialog.into(), gloo_utils::body().into())
     }
 
     fn rendered(&mut self, ctx: &Context<Self>, first_render: bool) {
