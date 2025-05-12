@@ -6,12 +6,11 @@ use gloo_timers::callback::Timeout;
 
 use yew::html::IntoEventCallback;
 
-use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 
 use crate::dom::focus::{get_first_focusable, FocusTracker};
-use crate::prelude::*;
 use crate::widget::{get_unique_element_id, Container};
+use crate::{impl_class_prop_builder, prelude::*};
 
 use pwt_macros::builder;
 
@@ -85,6 +84,7 @@ pub struct Menu {
     #[prop_or_default]
     children: Vec<MenuEntry>,
 
+    /// CSS class
     #[prop_or_default]
     pub class: Classes,
 
@@ -132,16 +132,7 @@ impl Menu {
         Menu::new().menubar(true)
     }
 
-    /// Builder style method to add a html class.
-    pub fn class(mut self, class: impl Into<Classes>) -> Self {
-        self.add_class(class);
-        self
-    }
-
-    /// Method to add a html class.
-    pub fn add_class(&mut self, class: impl Into<Classes>) {
-        self.class.push(class);
-    }
+    impl_class_prop_builder!();
 
     /// Builder style method to add a simple line to separate menu items.
     pub fn with_separator(mut self) -> Self {
