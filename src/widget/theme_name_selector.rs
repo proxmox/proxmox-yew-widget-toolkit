@@ -1,16 +1,26 @@
 use std::rc::Rc;
 
 use yew::prelude::*;
-use yew::virtual_dom::{VComp, VNode};
+use yew::virtual_dom::{Key, VComp, VNode};
 
 use crate::prelude::*;
 use crate::state::Theme;
 use crate::widget::form::Combobox;
+use crate::{impl_class_prop_builder, impl_yew_std_props_builder};
 
 #[derive(Clone, PartialEq, Properties)]
 pub struct ThemeNameSelector {
+    /// Yew component `ref`.
     #[prop_or_default]
-    class: Classes,
+    pub node_ref: NodeRef,
+
+    /// Yew `key` property
+    #[prop_or_default]
+    pub key: Option<Key>,
+
+    /// CSS class
+    #[prop_or_default]
+    pub class: Classes,
 }
 
 impl Default for ThemeNameSelector {
@@ -24,21 +34,12 @@ impl ThemeNameSelector {
         yew::props!(Self {})
     }
 
-    /// Builder style method to add a html class
-    pub fn class(mut self, class: impl Into<Classes>) -> Self {
-        self.add_class(class);
-        self
-    }
-
-    /// Method to add a html class
-    pub fn add_class(&mut self, class: impl Into<Classes>) {
-        self.class.push(class);
-    }
+    impl_yew_std_props_builder!();
+    impl_class_prop_builder!();
 }
 
 pub struct PwtThemeNameSelector {
     theme: String,
-    combobox_ref: NodeRef,
     available_themes: Rc<Vec<AttrValue>>,
 }
 
@@ -59,7 +60,6 @@ impl Component for PwtThemeNameSelector {
 
         Self {
             theme: theme.name,
-            combobox_ref: NodeRef::default(),
             available_themes: Rc::new(available_themes),
         }
     }
@@ -80,7 +80,7 @@ impl Component for PwtThemeNameSelector {
         let props = ctx.props();
 
         Combobox::new()
-            .node_ref(self.combobox_ref.clone())
+            .node_ref(props.node_ref.clone())
             .class(props.class.clone())
             .on_change(ctx.link().callback(Msg::SetThemeName))
             .aria_label("Select Theme")
@@ -99,8 +99,9 @@ impl Component for PwtThemeNameSelector {
 }
 
 impl From<ThemeNameSelector> for VNode {
-    fn from(val: ThemeNameSelector) -> Self {
-        let comp = VComp::new::<PwtThemeNameSelector>(Rc::new(val), None);
+    fn from(props: ThemeNameSelector) -> Self {
+        let key = props.key.clone();
+        let comp = VComp::new::<PwtThemeNameSelector>(Rc::new(props), key);
         VNode::from(comp)
     }
 }
