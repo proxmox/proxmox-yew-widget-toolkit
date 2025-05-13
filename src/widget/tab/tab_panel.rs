@@ -1,8 +1,6 @@
-use std::rc::Rc;
-
 use yew::html::IntoPropValue;
 use yew::prelude::*;
-use yew::virtual_dom::{Key, VComp, VList, VNode};
+use yew::virtual_dom::{Key, VList, VNode};
 
 use crate::prelude::*;
 use crate::props::{IntoOptionalInlineHtml, IntoStorageLocation, StorageLocation};
@@ -12,7 +10,7 @@ use crate::widget::{
     TabBarStyle,
 };
 
-use pwt_macros::builder;
+use pwt_macros::{builder, widget};
 
 /// A set of layered items where only one item is displayed at a time.
 ///
@@ -49,13 +47,10 @@ use pwt_macros::builder;
 ///             )
 ///     );
 /// ```
+#[widget(pwt=crate, comp=PwtTabPanel, @element)]
 #[derive(Clone, PartialEq, Properties)]
 #[builder]
 pub struct TabPanel {
-    /// The yew component key.
-    #[prop_or_default]
-    pub key: Option<Key>,
-
     /// The content view
     view: SelectionView,
 
@@ -70,10 +65,6 @@ pub struct TabPanel {
     /// Tools, displayed right aligned in the header.
     #[prop_or_default]
     pub tools: Vec<VNode>,
-
-    /// CSS class.
-    #[prop_or_default]
-    pub class: Classes,
 
     /// Store current state (selected item).
     #[prop_or_default]
@@ -141,28 +132,6 @@ impl TabPanel {
     /// Method to add a tool
     pub fn add_tool(&mut self, tool: impl Into<VNode>) {
         self.tools.push(tool.into());
-    }
-
-    // Builder style method to set the yew `key` property.
-    pub fn key(mut self, key: impl IntoOptionalKey) -> Self {
-        self.set_key(key);
-        self
-    }
-
-    /// Method to set the yew `key` property.
-    pub fn set_key(&mut self, key: impl IntoOptionalKey) {
-        self.key = key.into_optional_key();
-    }
-
-    /// Builder style method to add a html class
-    pub fn class(mut self, class: impl Into<Classes>) -> Self {
-        self.add_class(class);
-        self
-    }
-
-    /// Method to add a html class
-    pub fn add_class(&mut self, class: impl Into<Classes>) {
-        self.class.push(class);
     }
 
     /// Builder style method to enable router functionality.
@@ -272,18 +241,10 @@ impl Component for PwtTabPanel {
         };
 
         Column::new()
+            .with_std_props(props.as_std_props())
             .class("pwt-panel")
-            .class(props.class.clone())
             .with_child(html! {<div {class}>{title}{bar}{tools}</div>})
             .with_child(props.view.clone().selection(self.selection.clone()))
             .into()
-    }
-}
-
-impl From<TabPanel> for VNode {
-    fn from(val: TabPanel) -> Self {
-        let key = val.key.clone();
-        let comp = VComp::new::<PwtTabPanel>(Rc::new(val), key);
-        VNode::from(comp)
     }
 }
