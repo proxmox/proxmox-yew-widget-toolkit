@@ -1,3 +1,5 @@
+//! Navigation Drawer widget
+
 mod navigation_drawer;
 pub use navigation_drawer::NavigationDrawer;
 #[doc(hidden)]
@@ -12,6 +14,7 @@ use pwt_macros::builder;
 use crate::props::{CssPaddingBuilder, IntoOptionalKey};
 use crate::widget::Container;
 
+/// Navigation Menu item widget with optional icon and optional submenu.
 #[derive(Clone, PartialEq, Properties)]
 #[builder]
 pub struct MenuItem {
@@ -68,9 +71,12 @@ impl MenuItem {
     }
 }
 
+/// Navigation Menu entries.
 #[derive(Clone, PartialEq)]
 pub enum MenuEntry {
+    /// Normal item with optional icon and optional submenu.
     Item(MenuItem),
+    /// Custom entry.
     Component(VNode),
 }
 
@@ -79,6 +85,8 @@ impl From<MenuItem> for MenuEntry {
         Self::Item(item)
     }
 }
+
+/// Navigation Menu - A container for [MenuEntry]s.
 
 #[derive(Clone, PartialEq, Properties)]
 pub struct Menu {
