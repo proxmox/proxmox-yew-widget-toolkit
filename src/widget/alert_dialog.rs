@@ -7,8 +7,11 @@ use crate::impl_yew_std_props_builder;
 use crate::prelude::*;
 use crate::widget::MessageBox;
 
+use pwt_macros::builder;
+
 /// Alert Dialog - Modal window to display error messages.
 #[derive(Clone, Properties, PartialEq)]
+#[builder]
 pub struct AlertDialog {
     /// Yew component `ref`.
     #[prop_or_default]
@@ -20,17 +23,20 @@ pub struct AlertDialog {
 
     /// Optional dialog title - defaults to "Alert".
     #[prop_or_default]
+    #[builder(IntoPropValue, into_prop_value)]
     pub title: Option<AttrValue>,
 
     /// The error message.
     pub message: Html,
+
     /// Close window callback.
-
     #[prop_or_default]
+    #[builder_cb(IntoEventCallback, into_event_callback, ())]
     pub on_close: Option<Callback<()>>,
-    /// Enable/disable dragging
 
+    /// Enable/disable dragging
     #[prop_or(true)]
+    #[builder]
     pub draggable: bool,
 }
 
@@ -43,34 +49,6 @@ impl AlertDialog {
     }
 
     impl_yew_std_props_builder!();
-
-    /// Builder style method to set the dialog title.
-    pub fn title(mut self, title: impl IntoPropValue<Option<AttrValue>>) -> Self {
-        self.set_title(title);
-        self
-    }
-
-    /// Method to set the dialog title.
-    pub fn set_title(&mut self, title: impl IntoPropValue<Option<AttrValue>>) {
-        self.title = title.into_prop_value();
-    }
-
-    /// Builder style method to set the window close callback.
-    pub fn on_close(mut self, cb: impl IntoEventCallback<()>) -> Self {
-        self.on_close = cb.into_event_callback();
-        self
-    }
-
-    /// Builder style method to enable/disable dragging
-    pub fn draggable(mut self, draggable: bool) -> Self {
-        self.set_draggable(draggable);
-        self
-    }
-
-    /// Enable/disable dragging
-    pub fn set_draggable(&mut self, draggable: bool) {
-        self.draggable = draggable;
-    }
 }
 
 #[function_component(PwtAlertDialog)]
