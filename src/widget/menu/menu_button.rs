@@ -38,9 +38,11 @@ pub struct MenuButton {
     /// You can then open the menu programmatically by giving the
     /// button focus.
     #[prop_or_default]
+    #[builder]
     pub autoshow_menu: bool,
 
     #[prop_or_default]
+    #[builder]
     pub disabled: bool,
 
     /// Whether to show an arrow at the end of the menu.
@@ -49,10 +51,12 @@ pub struct MenuButton {
     pub show_arrow: bool,
 
     #[prop_or_default]
+    #[builder(IntoPropValue, into_prop_value)]
     pub tabindex: Option<i32>,
 
     // Fires on menu close
     #[prop_or_default]
+    #[builder_cb(IntoEventCallback, into_event_callback, ())]
     pub on_close: Option<Callback<()>>,
 }
 
@@ -60,39 +64,6 @@ impl MenuButton {
     /// Create a new menu button
     pub fn new(text: impl Into<AttrValue>) -> Self {
         yew::props!(Self { text: text.into() })
-    }
-
-    /// Builder style method to set the autoshow_menu flag
-    pub fn autoshow_menu(mut self, autoshow_menu: bool) -> Self {
-        self.set_autoshow_menu(autoshow_menu);
-        self
-    }
-
-    /// Method to set the autoshow_menu flag
-    pub fn set_autoshow_menu(&mut self, autoshow_menu: bool) {
-        self.autoshow_menu = autoshow_menu;
-    }
-
-    /// Builder style method to set the disabled flag
-    pub fn disabled(mut self, disabled: bool) -> Self {
-        self.set_disabled(disabled);
-        self
-    }
-
-    /// Method to set the disabled flag
-    pub fn set_disabled(&mut self, disabled: bool) {
-        self.disabled = disabled;
-    }
-
-    /// Builder style method to set the html tabindex attribute
-    pub fn tabindex(mut self, index: impl IntoPropValue<Option<i32>>) -> Self {
-        self.set_tabindex(index);
-        self
-    }
-
-    /// Method to set the html tabindex attribute
-    pub fn set_tabindex(&mut self, index: impl IntoPropValue<Option<i32>>) {
-        self.tabindex = index.into_prop_value();
     }
 
     /// Builder style method to set the icon class.
@@ -115,12 +86,6 @@ impl MenuButton {
     /// Builder style method to set the menu builder.
     pub fn menu_builder(mut self, builder: impl IntoOptionalBuilderFn<Menu>) -> Self {
         self.menu_builder = builder.into_optional_builder_fn();
-        self
-    }
-
-    /// Builder style method to set the on_close callback
-    pub fn on_close(mut self, cb: impl IntoEventCallback<()>) -> Self {
-        self.on_close = cb.into_event_callback();
         self
     }
 }
