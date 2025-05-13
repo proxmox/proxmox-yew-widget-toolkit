@@ -1,9 +1,7 @@
 use wasm_bindgen::JsCast;
 
-use std::rc::Rc;
 use yew::html::{IntoEventCallback, IntoPropValue};
 use yew::prelude::*;
-use yew::virtual_dom::{VComp, VNode};
 
 use crate::props::{EventSubscriber, WidgetBuilder};
 use crate::tr;
@@ -11,13 +9,14 @@ use crate::widget::{Button, ButtonType};
 
 use super::{FormContext, FormContextObserver};
 
-use pwt_macros::builder;
+use pwt_macros::{builder, widget};
 
 /// Submit button.
 ///
 /// The button automatically listens for [FormContext] changes, and
 /// enables the button only if the form is valid and dirty (contains
 /// modified data).
+#[widget(pwt=crate, comp=crate::widget::form::PwtSubmitButton, @element)]
 #[derive(Clone, PartialEq, Properties)]
 #[builder]
 pub struct SubmitButton {
@@ -28,6 +27,7 @@ pub struct SubmitButton {
 
     /// Submit button press callback.
     #[prop_or_default]
+    #[builder_cb(IntoEventCallback, into_event_callback, FormContext)]
     pub on_submit: Option<Callback<FormContext>>,
 
     /// Button text (default "Submit").
@@ -39,10 +39,6 @@ pub struct SubmitButton {
     #[prop_or(true)]
     #[builder]
     pub check_dirty: bool,
-
-    /// CSS class
-    #[prop_or_default]
-    pub class: Classes,
 }
 
 impl Default for SubmitButton {
@@ -55,23 +51,6 @@ impl SubmitButton {
     /// Createa new instance.
     pub fn new() -> Self {
         yew::props!(Self {})
-    }
-
-    /// Builder style method to add a html class
-    pub fn class(mut self, class: impl Into<Classes>) -> Self {
-        self.add_class(class);
-        self
-    }
-
-    /// Method to add a html class
-    pub fn add_class(&mut self, class: impl Into<Classes>) {
-        self.class.push(class);
-    }
-
-    /// Builder style method to set the button press callback.
-    pub fn on_submit(mut self, cb: impl IntoEventCallback<FormContext>) -> Self {
-        self.on_submit = cb.into_event_callback();
-        self
     }
 }
 
@@ -169,17 +148,10 @@ impl Component for PwtSubmitButton {
         };
 
         Button::new(text)
+            .with_std_props(props.as_std_props())
             .button_type(ButtonType::Submit)
-            .class(props.class.clone())
             .disabled(disabled)
             .onclick(submit)
             .into()
-    }
-}
-
-impl From<SubmitButton> for VNode {
-    fn from(val: SubmitButton) -> Self {
-        let comp = VComp::new::<PwtSubmitButton>(Rc::new(val), None);
-        VNode::from(comp)
     }
 }
