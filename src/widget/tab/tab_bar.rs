@@ -5,11 +5,11 @@ use yew::virtual_dom::{Key, VComp, VNode};
 
 use crate::dom::focus::roving_tabindex_next;
 use crate::dom::{element_direction_rtl, DomSizeObserver, IntoHtmlElement};
-use crate::prelude::*;
 use crate::props::{IntoStorageLocation, StorageLocation};
 use crate::state::{NavigationContext, NavigationContextExt, PersistentState, Selection};
 use crate::web_sys_ext::{ResizeObserverBoxOptions, ResizeObserverOptions};
 use crate::widget::Container;
+use crate::{impl_class_prop_builder, impl_yew_std_props_builder, prelude::*};
 
 use super::TabBarItem;
 
@@ -28,7 +28,7 @@ use pwt_macros::builder;
 #[derive(Clone, Default, PartialEq, Properties)]
 #[builder]
 pub struct TabBar {
-    /// The yew node ref.
+    /// Yew component `ref`.
     #[prop_or_default]
     node_ref: NodeRef,
 
@@ -94,22 +94,8 @@ impl TabBar {
         yew::props!(TabBar {})
     }
 
-    /// Builder style method to set the yew `node_ref`
-    pub fn node_ref(mut self, node_ref: ::yew::html::NodeRef) -> Self {
-        self.node_ref = node_ref;
-        self
-    }
-
-    // Builder style method to set the yew `key` property.
-    pub fn key(mut self, key: impl IntoOptionalKey) -> Self {
-        self.set_key(key);
-        self
-    }
-
-    /// Method to set the yew `key` property.
-    pub fn set_key(&mut self, key: impl IntoOptionalKey) {
-        self.key = key.into_optional_key();
-    }
+    impl_yew_std_props_builder!();
+    impl_class_prop_builder!();
 
     /// Builder style method to set the persistent state ID.
     pub fn state_id(mut self, state_id: impl IntoStorageLocation) -> Self {
@@ -140,17 +126,6 @@ impl TabBar {
 
     pub fn add_item(&mut self, item: impl Into<TabBarItem>) {
         self.tabs.push(item.into());
-    }
-
-    /// Builder style method to add a html class
-    pub fn class(mut self, class: impl Into<Classes>) -> Self {
-        self.add_class(class);
-        self
-    }
-
-    /// Method to add a html class
-    pub fn add_class(&mut self, class: impl Into<Classes>) {
-        self.class.push(class);
     }
 
     fn get_default_active(&self) -> Option<Key> {
@@ -546,9 +521,9 @@ impl Component for PwtTabBar {
 }
 
 impl From<TabBar> for VNode {
-    fn from(val: TabBar) -> Self {
-        let key = val.key.clone();
-        let comp = VComp::new::<PwtTabBar>(Rc::new(val), key);
+    fn from(props: TabBar) -> Self {
+        let key = props.key.clone();
+        let comp = VComp::new::<PwtTabBar>(Rc::new(props), key);
         VNode::from(comp)
     }
 }
