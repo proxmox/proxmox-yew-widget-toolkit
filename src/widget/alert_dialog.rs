@@ -1,23 +1,35 @@
 use std::rc::Rc;
 
 use yew::html::{IntoEventCallback, IntoPropValue};
-use yew::prelude::*;
-use yew::virtual_dom::{VComp, VNode};
+use yew::virtual_dom::{Key, VComp, VNode};
 
+use crate::impl_yew_std_props_builder;
+use crate::prelude::*;
 use crate::widget::MessageBox;
 
 /// Alert Dialog - Modal window to display error messages.
 #[derive(Clone, Properties, PartialEq)]
 pub struct AlertDialog {
+    /// Yew component `ref`.
+    #[prop_or_default]
+    pub node_ref: NodeRef,
+
+    /// The yew component key.
+    #[prop_or_default]
+    pub key: Option<Key>,
+
     /// Optional dialog title - defaults to "Alert".
     #[prop_or_default]
     pub title: Option<AttrValue>,
+
     /// The error message.
     pub message: Html,
     /// Close window callback.
+
     #[prop_or_default]
     pub on_close: Option<Callback<()>>,
     /// Enable/disable dragging
+
     #[prop_or(true)]
     pub draggable: bool,
 }
@@ -29,6 +41,8 @@ impl AlertDialog {
             message: message.into()
         })
     }
+
+    impl_yew_std_props_builder!();
 
     /// Builder style method to set the dialog title.
     pub fn title(mut self, title: impl IntoPropValue<Option<AttrValue>>) -> Self {
@@ -74,14 +88,16 @@ pub fn pwt_alert_dialog(props: &AlertDialog) -> Html {
     let title = props.title.as_deref().unwrap_or("Alert").to_string();
 
     MessageBox::new(title, props.message.clone())
+        .node_ref(props.node_ref.clone())
         .icon_class("fa-exclamation-triangle")
         .on_close(onclick)
         .into()
 }
 
 impl From<AlertDialog> for VNode {
-    fn from(val: AlertDialog) -> Self {
-        let comp = VComp::new::<PwtAlertDialog>(Rc::new(val), None);
+    fn from(props: AlertDialog) -> Self {
+        let key = props.key.clone();
+        let comp = VComp::new::<PwtAlertDialog>(Rc::new(props), key);
         VNode::from(comp)
     }
 }
