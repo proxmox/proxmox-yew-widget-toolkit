@@ -19,9 +19,13 @@ use pwt_macros::{builder, widget};
 #[derive(Clone, PartialEq, Properties)]
 #[builder]
 pub struct MenuButton {
+    /// Button text.
     pub text: AttrValue,
+
+    /// Icon (CSS class).
     #[prop_or_default]
     pub icon_class: Option<Classes>,
+
     /// Optional Submenu
     #[prop_or_default]
     pub menu: Option<Menu>,
