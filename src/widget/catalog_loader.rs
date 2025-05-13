@@ -10,7 +10,7 @@ use crate::{impl_to_html, prelude::*};
 
 use pwt_macros::builder;
 
-/// Catalog loader (load I18N tralslation catalogs)
+/// Catalog loader (load I18N translation catalogs)
 ///
 /// This component uses the the language from the [Language] state, and
 /// automatically reloads the catalog on changes.
