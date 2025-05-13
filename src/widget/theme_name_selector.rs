@@ -8,6 +8,11 @@ use crate::state::Theme;
 use crate::widget::form::Combobox;
 use crate::{impl_class_prop_builder, impl_yew_std_props_builder};
 
+/// Combobox to choose the GUI theme.
+///
+/// This combobox presents the list of available themes to the user (set
+/// at application startup using [crate::state::set_available_themes]).
+///
 #[derive(Clone, PartialEq, Properties)]
 pub struct ThemeNameSelector {
     /// Yew component `ref`.

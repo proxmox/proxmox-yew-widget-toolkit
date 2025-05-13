@@ -88,12 +88,29 @@ impl TryFrom<&str> for ThemeDensity {
 
 static mut AVAILABLE_THEMES: &[&str] = &["Material"];
 
+/// Set the list of available themes
+///
+/// An app should set this at startup. Default is `["Material"]`.
+///
+/// The first item is used as default theme.
+///
+/// ```
+/// # fn main() {
+/// static THEMES: &[&str] = &["Crisp", "Desktop", "Material"];
+/// pwt::state::set_available_themes(THEMES);
+/// # }
+///
+///
+/// ```
 pub fn set_available_themes(themes: &'static [&'static str]) {
     unsafe {
         AVAILABLE_THEMES = themes;
     }
 }
 
+/// Returns the list of available themes
+///
+/// See [set_available_themes].
 pub fn get_available_themes() -> &'static [&'static str] {
     unsafe { AVAILABLE_THEMES }
 }

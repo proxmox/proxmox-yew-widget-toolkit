@@ -7,6 +7,13 @@ use yew::virtual_dom::{Key, VComp, VNode};
 use crate::impl_to_html;
 use crate::state::{Theme, ThemeDensity, ThemeObserver};
 
+/// Dynamically load selected theme
+///
+/// Displays an empty page until the first theme is successfully loaded.
+///
+/// This is usually one of the first widget inside the widget tree, and is
+/// used by scaffold widgets like [DesktopApp][crate::widget::DesktopApp]
+/// and [MaterialApp][crate::touch::MaterialApp].
 #[derive(Properties, Clone, PartialEq)]
 #[builder]
 pub struct ThemeLoader {
