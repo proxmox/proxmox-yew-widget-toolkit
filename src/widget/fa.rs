@@ -1,12 +1,10 @@
 // Fontawesome icons
 
-use std::rc::Rc;
+use yew::virtual_dom::VTag;
 
-use yew::prelude::*;
-use yew::virtual_dom::{VComp, VNode};
+use crate::prelude::*;
 
-use crate::props::{AsClassesMut, AsCssStylesMut, CssStyles, WidgetStyleBuilder};
-use crate::touch::prelude::{CssMarginBuilder, CssPaddingBuilder};
+use pwt_macros::widget;
 
 /// Font Awesome icons.
 ///
@@ -22,43 +20,21 @@ use crate::touch::prelude::{CssMarginBuilder, CssPaddingBuilder};
 /// alternative inside a `<span>` (or similar) element and include
 /// appropriate CSS to visually hide that element while keeping it
 /// accessible to assistive technologies.
+#[widget(pwt=crate, @element)]
 #[derive(Properties, PartialEq, Clone)]
-pub struct Fa {
-    #[prop_or_default]
-    #[doc(hidden)]
-    pub class: Classes,
-
-    #[prop_or_default]
-    #[doc(hidden)]
-    pub style: CssStyles,
-}
+pub struct Fa {}
 
 impl Fa {
     /// Create a new instrtance from the icon name.
     pub fn new(name: impl AsRef<str>) -> Self {
-        Self {
-            class: classes!("fa", format!("fa-{}", name.as_ref())),
-            style: Default::default(),
-        }
+        yew::props! { Self {}}
+            .class("fa")
+            .class(format!("fa-{}", name.as_ref()))
     }
 
     /// Create a new instance using the passed CSS class name.
     pub fn from_class(class: impl Into<Classes>) -> Self {
-        Self {
-            class: class.into(),
-            style: Default::default(),
-        }
-    }
-
-    /// Builder style method to add a html class
-    pub fn class(mut self, class: impl Into<Classes>) -> Self {
-        self.add_class(class);
-        self
-    }
-
-    /// Method to add a html class
-    pub fn add_class(&mut self, class: impl Into<Classes>) {
-        self.class.push(class);
+        yew::props! { Self {}}.class(class)
     }
 
     /// Rotate icon with 8 steps.
@@ -110,34 +86,11 @@ impl Fa {
     }
 }
 
-impl AsClassesMut for Fa {
-    fn as_classes_mut(&mut self) -> &mut yew::Classes {
-        &mut self.class
-    }
-}
-
-impl AsCssStylesMut for Fa {
-    fn as_css_styles_mut(&mut self) -> &mut CssStyles {
-        &mut self.style
-    }
-}
-
-impl CssPaddingBuilder for Fa {}
-impl CssMarginBuilder for Fa {}
-impl WidgetStyleBuilder for Fa {}
-
-#[function_component(PwtFa)]
-#[doc(hidden)]
-pub fn pwt_fa(props: &Fa) -> Html {
-    let style = props.style.compile_style_attribute(None);
-    html! {
-        <i class={props.class.clone()} {style} role="none"/>
-    }
-}
-
-impl From<Fa> for VNode {
-    fn from(val: Fa) -> Self {
-        let comp = VComp::new::<PwtFa>(Rc::new(val), None);
-        VNode::from(comp)
+impl From<Fa> for VTag {
+    fn from(mut props: Fa) -> Self {
+        props.set_attribute("role", "none");
+        props
+            .std_props
+            .into_vtag("i".into(), None::<&str>, Some(props.listeners), None)
     }
 }

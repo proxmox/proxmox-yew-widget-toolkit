@@ -54,8 +54,6 @@ pub use dropdown::{Dropdown, DropdownController};
 
 mod fa;
 pub use fa::Fa;
-#[doc(hidden)]
-pub use fa::PwtFa;
 
 mod file_button;
 pub use file_button::FileButton;

@@ -5,7 +5,7 @@ use yew::{
 
 use pwt_macros::{builder, widget};
 
-use crate::touch::prelude::{EventSubscriber, WidgetBuilder, WidgetStyleBuilder};
+use crate::touch::prelude::{EventSubscriber, WidgetBuilder};
 
 use super::{Container, Fa, Tooltip};
 
@@ -19,9 +19,6 @@ use super::{Container, Fa, Tooltip};
 #[derive(Clone, PartialEq, Properties)]
 #[builder]
 pub struct Trigger {
-    /// The default icon to show
-    pub icon: AttrValue,
-
     /// The callback when the trigger is clicked
     #[prop_or_default]
     #[builder_cb(IntoEventCallback, into_event_callback, yew::MouseEvent)]
@@ -35,9 +32,7 @@ pub struct Trigger {
 
 impl Trigger {
     pub fn new(icon: impl IntoPropValue<AttrValue>) -> Self {
-        yew::props!(Self {
-            icon: icon.into_prop_value()
-        })
+        yew::props!(Self {}).class(icon.into_prop_value())
     }
 }
 
@@ -57,7 +52,6 @@ impl Component for PwtTrigger {
         let icon = Container::from_tag("i")
             .with_std_props(&props.std_props)
             .tabindex(-1)
-            .class(&props.icon)
             .class(pointer_cls)
             .onclick({
                 let onclick = props.onclick.clone().into_event_callback();
@@ -78,7 +72,14 @@ impl Component for PwtTrigger {
 
 impl From<Fa> for Trigger {
     fn from(value: Fa) -> Self {
-        Trigger::new("").class(value.class).styles(value.style)
+        let Fa {
+            std_props,
+            listeners,
+        } = value;
+        yew::props!(Self {
+            std_props,
+            listeners
+        })
     }
 }
 
