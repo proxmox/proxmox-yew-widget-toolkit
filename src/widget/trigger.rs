@@ -32,7 +32,9 @@ pub struct Trigger {
 
 impl Trigger {
     pub fn new(icon: impl IntoPropValue<AttrValue>) -> Self {
-        yew::props!(Self {}).class(icon.into_prop_value())
+        yew::props!(Self {})
+            .class(icon.into_prop_value())
+            .tabindex(-1)
     }
 }
 
@@ -47,24 +49,25 @@ impl Component for PwtTrigger {
     }
 
     fn view(&self, ctx: &yew::Context<Self>) -> yew::Html {
-        let props = ctx.props();
+        let mut props = ctx.props().clone();
         let pointer_cls = props.onclick.as_ref().map(|_| "pwt-pointer");
-        let icon = Container::from_tag("i")
-            .with_std_props(&props.std_props)
-            .tabindex(-1)
-            .class(pointer_cls)
-            .onclick({
-                let onclick = props.onclick.clone().into_event_callback();
-                onclick.map(|onclick| {
-                    move |value: yew::MouseEvent| {
-                        onclick.emit(value.clone());
-                        value.prevent_default();
-                        value.stop_propagation();
-                    }
-                })
-            });
 
-        Tooltip::new(icon).tip(&props.tip).into()
+        props.set_onclick({
+            let onclick = props.onclick.clone().into_event_callback();
+            onclick.map(|onclick| {
+                move |value: yew::MouseEvent| {
+                    onclick.emit(value.clone());
+                    value.prevent_default();
+                    value.stop_propagation();
+                }
+            })
+        });
+
+        let icon = props
+            .std_props
+            .into_vtag("i".into(), pointer_cls, Some(props.listeners), None);
+
+        Tooltip::new(icon).tip(props.tip).into()
     }
 }
 
