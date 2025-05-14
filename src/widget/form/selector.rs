@@ -430,7 +430,7 @@ impl<S: DataStore + 'static> ManagedField for SelectorField<S> {
             trigger.push((
                 Trigger::new("fa fa-times")
                     .tip(tr!("Clear Value"))
-                    .onclick(ctx.link().callback(|_| Msg::DeleteKey)),
+                    .on_activate(ctx.link().callback(|_| Msg::DeleteKey)),
                 true,
             ));
         }
