@@ -1,6 +1,5 @@
 use yew::{
     html::{IntoEventCallback, IntoPropValue},
-    virtual_dom::Key,
     AttrValue, Callback, Component, Properties,
 };
 
@@ -20,9 +19,6 @@ use super::{Container, Fa, Tooltip};
 #[derive(Clone, PartialEq, Properties)]
 #[builder]
 pub struct Trigger {
-    #[prop_or_default]
-    pub key: Option<Key>,
-
     /// The default icon to show
     pub icon: AttrValue,
 
