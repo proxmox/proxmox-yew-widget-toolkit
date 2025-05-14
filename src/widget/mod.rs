@@ -2,8 +2,6 @@
 
 mod action_icon;
 pub use action_icon::ActionIcon;
-#[doc(hidden)]
-pub use action_icon::PwtActionIcon;
 
 mod alert_dialog;
 pub use alert_dialog::AlertDialog;

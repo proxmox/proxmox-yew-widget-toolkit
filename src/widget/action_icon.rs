@@ -1,44 +1,17 @@
-use std::rc::Rc;
-
 use yew::html::{IntoEventCallback, IntoPropValue};
-use yew::prelude::*;
-use yew::virtual_dom::{Key, VComp, VNode};
+use yew::virtual_dom::VTag;
 
-use crate::prelude::IntoOptionalKey;
-use crate::props::{
-    AsClassesMut, AsCssStylesMut, CssMarginBuilder, CssPaddingBuilder, CssStyles, EventSubscriber,
-    WidgetBuilder, WidgetStyleBuilder,
-};
-use crate::widget::Container;
+use crate::prelude::*;
 
-use pwt_macros::builder;
+use pwt_macros::{builder, widget};
 
 /// A clickable icon. Like [Button](super::Button) without any decoration (inline element).
 ///
 /// This component is useful in data tables because it is visually lighter than a button.
+#[widget(pwt=crate, @element)]
 #[builder]
 #[derive(Properties, PartialEq, Clone)]
 pub struct ActionIcon {
-    /// Yew component `ref`.
-    #[prop_or_default]
-    pub node_ref: NodeRef,
-
-    /// Yew `key` property
-    #[prop_or_default]
-    pub key: Option<Key>,
-
-    /// CSS class
-    #[prop_or_default]
-    pub class: Classes,
-
-    /// CSS style
-    #[prop_or_default]
-    pub style: CssStyles,
-
-    /// The CSS icon class
-    #[prop_or_default]
-    pub icon_class: Option<Classes>,
-
     /// Html tabindex (defaults to -1)
     #[builder(IntoPropValue, into_prop_value)]
     #[prop_or_default]
@@ -63,75 +36,12 @@ pub struct ActionIcon {
 impl ActionIcon {
     /// Create a new instance.
     pub fn new(icon_class: impl Into<Classes>) -> Self {
-        yew::props!(Self {
-            icon_class: icon_class.into()
-        })
-    }
-
-    /// Builder style method to set the yew `node_ref`
-    pub fn node_ref(mut self, node_ref: NodeRef) -> Self {
-        self.set_node_ref(node_ref);
-        self
-    }
-
-    /// Method to set the yew `node_ref`
-    pub fn set_node_ref(&mut self, node_ref: NodeRef) {
-        self.node_ref = node_ref;
-    }
-
-    /// Builder style method to set the yew `key` property
-    pub fn key(mut self, key: impl IntoOptionalKey) -> Self {
-        self.set_key(key);
-        self
-    }
-
-    /// Method to set the yew `key` property
-    pub fn set_key(&mut self, key: impl IntoOptionalKey) {
-        self.key = key.into_optional_key();
-    }
-
-    /// Builder style method to add a html class
-    pub fn class(mut self, class: impl Into<Classes>) -> Self {
-        self.add_class(class);
-        self
-    }
-
-    /// Method to add a html class
-    pub fn add_class(&mut self, class: impl Into<Classes>) {
-        self.class.push(class);
+        yew::props!(Self {}).class(icon_class.into())
     }
 }
 
-impl AsClassesMut for ActionIcon {
-    fn as_classes_mut(&mut self) -> &mut yew::Classes {
-        &mut self.class
-    }
-}
-
-impl AsCssStylesMut for ActionIcon {
-    fn as_css_styles_mut(&mut self) -> &mut CssStyles {
-        &mut self.style
-    }
-}
-
-impl CssPaddingBuilder for ActionIcon {}
-impl CssMarginBuilder for ActionIcon {}
-impl WidgetStyleBuilder for ActionIcon {}
-
-#[doc(hidden)]
-pub struct PwtActionIcon;
-
-impl Component for PwtActionIcon {
-    type Message = ();
-    type Properties = ActionIcon;
-
-    fn create(_ctx: &Context<Self>) -> Self {
-        Self {}
-    }
-
-    fn view(&self, ctx: &Context<Self>) -> Html {
-        let props = ctx.props();
-
+impl From<ActionIcon> for VTag {
+    fn from(mut props: ActionIcon) -> Self {
         let disabled = props.disabled;
 
         let tabindex = match props.tabindex {
@@ -139,19 +49,30 @@ impl Component for PwtActionIcon {
             None => String::from("-1"),
         };
 
-        Container::from_tag("i")
-            .node_ref(props.node_ref.clone())
-            .attribute("tabindex", (!disabled).then_some(tabindex))
-            .attribute("role", "button")
-            .attribute("aria-label", props.aria_label.clone())
-            .class("pwt-action-icon")
-            .class(props.disabled.then_some("disabled"))
-            .class(props.class.clone())
-            .class(props.icon_class.clone())
-            .styles(props.style.clone())
-            .onclick({
-                let on_activate = props.on_activate.clone();
-                move |event: MouseEvent| {
+        props.set_attribute("role", "button");
+        props.set_attribute("tabindex", (!props.disabled).then_some(tabindex));
+        props.set_attribute("aria-label", props.aria_label.clone());
+
+        props.add_class("pwt-action-icon");
+        props.add_class(disabled.then_some("disabled"));
+
+        props.set_onclick({
+            let on_activate = props.on_activate.clone();
+            move |event: MouseEvent| {
+                event.stop_propagation();
+                if disabled {
+                    return;
+                }
+                if let Some(on_activate) = &on_activate {
+                    on_activate.emit(());
+                }
+            }
+        });
+
+        props.set_onkeydown({
+            let on_activate = props.on_activate.clone();
+            move |event: KeyboardEvent| match event.key().as_ref() {
+                "Enter" | " " => {
                     event.stop_propagation();
                     if disabled {
                         return;
@@ -160,34 +81,17 @@ impl Component for PwtActionIcon {
                         on_activate.emit(());
                     }
                 }
-            })
-            .onkeydown({
-                let on_activate = props.on_activate.clone();
-                move |event: KeyboardEvent| match event.key().as_ref() {
-                    "Enter" | " " => {
-                        event.stop_propagation();
-                        if disabled {
-                            return;
-                        }
-                        if let Some(on_activate) = &on_activate {
-                            on_activate.emit(());
-                        }
-                    }
-                    _ => {}
-                }
-            })
-            // suppress double click to avoid confusion when used inside tables/trees
-            .ondblclick(move |event: MouseEvent| {
-                event.stop_propagation();
-            })
-            .into()
-    }
-}
+                _ => {}
+            }
+        });
 
-impl From<ActionIcon> for VNode {
-    fn from(val: ActionIcon) -> Self {
-        let key = val.key.clone();
-        let comp = VComp::new::<PwtActionIcon>(Rc::new(val), key);
-        VNode::from(comp)
+        // suppress double click to avoid confusion when used inside tables/trees
+        props.set_ondblclick(move |event: MouseEvent| {
+            event.stop_propagation();
+        });
+
+        props
+            .std_props
+            .into_vtag("i".into(), None::<&str>, Some(props.listeners), None)
     }
 }
