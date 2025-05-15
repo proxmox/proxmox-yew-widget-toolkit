@@ -1,3 +1,6 @@
+use serde_json::Value;
+
+use yew::html::IntoPropValue;
 use yew::{AttrValue, Properties};
 
 use pwt_macros::{builder, widget};
@@ -12,12 +15,23 @@ use crate::{
 
 pub type PwtDisplayField = ManagedFieldMaster<DisplayFieldImpl>;
 
+/// A display only text field which is not validated
 #[widget(pwt=crate, comp=ManagedFieldMaster<DisplayFieldImpl>, @input, @element)]
 #[derive(Clone, PartialEq, Properties)]
 #[builder]
 pub struct DisplayField {
-    /// The value to display.
-    pub value: AttrValue,
+    /// Force value.
+    ///
+    /// To implement controlled components (for use without a FormContext).
+    /// This is ignored if the field has a name.
+    #[builder(IntoPropValue, into_prop_value)]
+    #[prop_or_default]
+    pub value: Option<AttrValue>,
+
+    /// Default value.
+    #[builder(IntoPropValue, into_prop_value)]
+    #[prop_or_default]
+    pub default: Option<AttrValue>,
 
     /// The tooltip to display.
     #[prop_or_default]
@@ -26,10 +40,8 @@ pub struct DisplayField {
 }
 
 impl DisplayField {
-    pub fn new(value: impl Into<AttrValue>) -> Self {
-        yew::props!(Self {
-            value: value.into(),
-        })
+    pub fn new() -> Self {
+        yew::props!(Self {})
     }
 }
 
@@ -44,10 +56,17 @@ impl ManagedField for DisplayFieldImpl {
     fn validation_args(_props: &Self::Properties) -> Self::ValidateClosure {}
 
     fn setup(props: &Self::Properties) -> super::ManagedFieldState {
+        let value: Value = match &props.value {
+            Some(value) => value.to_string().into(),
+            None => Value::Null,
+        };
+
+        let default = props.default.as_deref().unwrap_or("").into();
+
         ManagedFieldState {
-            value: serde_json::Value::Null,
+            value,
             valid: Ok(()),
-            default: props.value.to_string().into(),
+            default,
             radio_group: false,
             unique: false,
         }
@@ -59,13 +78,23 @@ impl ManagedField for DisplayFieldImpl {
 
     fn view(&self, ctx: &super::ManagedFieldContext<Self>) -> yew::Html {
         let props = ctx.props();
+        let input_props = &props.input_props;
+
         let state = ctx.state();
-        let value = state.value.as_str().unwrap_or(&props.value);
+        let value = state
+            .value
+            .as_str()
+            .unwrap_or(props.default.as_deref().unwrap_or(""));
+
+        let tabindex = input_props.tabindex.unwrap_or(0).to_string();
+
         Tooltip::new(Container::from_tag("span").with_child(value))
             .with_std_props(&props.std_props)
             .class("pwt-input-display")
             .tip(&props.tip)
-            .attribute("tabindex", "0")
+            .attribute("tabindex", tabindex)
+            .attribute("aria-label", input_props.aria_label.clone())
+            .attribute("aria-labelledby", input_props.label_id.clone())
             .into()
     }
 }
