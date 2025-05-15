@@ -100,7 +100,10 @@ impl FromStr for InputType {
     }
 }
 
-/// Checkbox input element, which stores values as boolean
+/// Standard Html input element, which stores values as text
+///
+/// Note: Value is always text, even if you set input type to number
+/// or date.
 #[widget(pwt=crate, comp=ManagedFieldMaster<StandardField>, @input, @element)]
 #[derive(Clone, PartialEq, Properties)]
 #[builder]
