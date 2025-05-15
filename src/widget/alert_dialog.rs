@@ -54,7 +54,7 @@ impl AlertDialog {
 #[function_component(PwtAlertDialog)]
 #[doc(hidden)]
 pub fn pwt_alert_dialog(props: &AlertDialog) -> Html {
-    let onclick = Callback::from({
+    let on_close = Callback::from({
         let on_close = props.on_close.clone();
         move |_| {
             if let Some(on_close) = &on_close {
@@ -68,7 +68,7 @@ pub fn pwt_alert_dialog(props: &AlertDialog) -> Html {
     MessageBox::new(title, props.message.clone())
         .node_ref(props.node_ref.clone())
         .icon_class("fa-exclamation-triangle")
-        .on_close(onclick)
+        .on_close(on_close)
         .into()
 }
 
