@@ -2,9 +2,9 @@ use std::fmt::Display;
 use std::str::FromStr;
 
 use anyhow::bail;
-use web_sys::HtmlElement;
+use web_sys::{HtmlElement, MouseEvent};
 
-use yew::html::IntoPropValue;
+use yew::html::{IntoEventCallback, IntoPropValue};
 
 use crate::dom::IntoHtmlElement;
 use crate::prelude::*;
@@ -96,6 +96,15 @@ pub struct Button {
     #[builder(IntoPropValue, into_prop_value)]
     #[prop_or_default]
     pub button_type: ButtonType,
+
+    /// Activate callback (click, enter, space)
+    ///
+    /// Note: this is basically the same as an "onclick" handler. Buttons
+    /// elements have a default keyboard handler that raise an "onclick"
+    /// for keyboard enter/space events).
+    #[builder_cb(IntoEventCallback, into_event_callback, MouseEvent)]
+    #[prop_or_default]
+    pub on_activate: Option<Callback<MouseEvent>>,
 }
 
 impl Button {
@@ -237,6 +246,11 @@ impl Component for PwtButton {
         }
 
         let listeners = (!props.disabled).then_some(props.listeners.clone());
+        let on_activate = if props.disabled {
+            None
+        } else {
+            props.on_activate.clone()
+        };
 
         Container::from_widget_props(props.std_props.clone(), listeners)
             .children(children)
@@ -249,6 +263,7 @@ impl Component for PwtButton {
             .attribute("aria-label", props.aria_label.clone())
             .attribute("tabindex", props.tabindex.map(|i| i.to_string()))
             .onpointerdown(ctx.link().callback(Msg::ShowRippleAnimation))
+            .onclick(on_activate)
             .into()
     }
 }
