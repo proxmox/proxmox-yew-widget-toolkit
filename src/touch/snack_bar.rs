@@ -118,7 +118,11 @@ impl From<SnackBar> for VTag {
         if val.show_close_icon {
             children.push(
                 ActionIcon::new("fa fa-lg fa-close")
-                    .on_activate(val.on_close.clone())
+                    .on_activate(
+                        val.on_close
+                            .clone()
+                            .map(|on_close| move |_| on_close.emit(())),
+                    )
                     .into(),
             );
         }

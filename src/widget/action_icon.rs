@@ -1,3 +1,6 @@
+use wasm_bindgen::JsCast;
+use web_sys::Event;
+
 use yew::html::{IntoEventCallback, IntoPropValue};
 use yew::virtual_dom::VTag;
 
@@ -28,9 +31,9 @@ pub struct ActionIcon {
     pub disabled: bool,
 
     /// Activate callback (click, enter, space)
-    #[builder_cb(IntoEventCallback, into_event_callback, ())]
+    #[builder_cb(IntoEventCallback, into_event_callback, Event)]
     #[prop_or_default]
-    pub on_activate: Option<Callback<()>>,
+    pub on_activate: Option<Callback<Event>>,
 }
 
 impl ActionIcon {
@@ -64,7 +67,7 @@ impl From<ActionIcon> for VTag {
                     return;
                 }
                 if let Some(on_activate) = &on_activate {
-                    on_activate.emit(());
+                    on_activate.emit(event.unchecked_into());
                 }
             }
         });
@@ -78,7 +81,7 @@ impl From<ActionIcon> for VTag {
                         return;
                     }
                     if let Some(on_activate) = &on_activate {
-                        on_activate.emit(());
+                        on_activate.emit(event.unchecked_into());
                     }
                 }
                 _ => {}
