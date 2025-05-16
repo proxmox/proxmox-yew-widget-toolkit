@@ -59,7 +59,7 @@ impl From<ActionIcon> for VTag {
         props.add_class("pwt-action-icon");
         props.add_class(disabled.then_some("disabled"));
 
-        props.set_onclick({
+        props.add_onclick({
             let on_activate = props.on_activate.clone();
             move |event: MouseEvent| {
                 event.stop_propagation();
@@ -72,7 +72,7 @@ impl From<ActionIcon> for VTag {
             }
         });
 
-        props.set_onkeydown({
+        props.add_onkeydown({
             let on_activate = props.on_activate.clone();
             move |event: KeyboardEvent| match event.key().as_ref() {
                 "Enter" | " " => {
@@ -89,7 +89,7 @@ impl From<ActionIcon> for VTag {
         });
 
         // suppress double click to avoid confusion when used inside tables/trees
-        props.set_ondblclick(move |event: MouseEvent| {
+        props.add_ondblclick(move |event: MouseEvent| {
             event.stop_propagation();
         });
 

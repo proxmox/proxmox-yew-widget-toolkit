@@ -51,7 +51,7 @@ impl Component for PwtTrigger {
     fn view(&self, ctx: &yew::Context<Self>) -> yew::Html {
         let mut props = ctx.props().clone();
         if let Some(on_activate) = props.on_activate.clone() {
-            props.set_onclick(move |value: yew::MouseEvent| {
+            props.add_onclick(move |value: yew::MouseEvent| {
                 on_activate.emit(value.clone());
                 value.prevent_default();
                 value.stop_propagation();
