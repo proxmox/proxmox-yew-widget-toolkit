@@ -1,3 +1,79 @@
+rust-pwt (0.5.0) bookworm; urgency=medium
+
+  * DisplayField: cleanup property definition and use
+
+  * ActionIcon: pass Event to on_activate callback
+
+  * Button: add on_activate callback
+
+  * AlertDialog: cleanup: fix callback name
+
+  * AlertDialog: add node_ref and key properties
+
+  * ActionIcon: use widget macro
+
+  * Trigger: rename onclick to on_activate
+
+  * Trigger: cleanup: use into_vtag
+
+  * Trigger: remove duplicate key property
+
+  * EventSubscriber: add add_XXX methods
+
+  * Fa: use widget macro
+
+  * TabPanel: use widget macro
+
+  * TabBar: use macros to implement builders
+
+  * ResetButton: use widget macro
+
+  * SubmitButton: use widget macro
+
+  * ThemeNameSelector: add node_ref and key properties
+
+  * GridPicker: use impl_yew_std_props_builder macro
+
+  * MenuItem: use builder macro
+
+  * MenuButton: cleanup - use builder macro
+
+  * Menu: add node_ref and key properties
+
+  * ThemeModeSelector: add node_ref and key properties
+
+  * ConfirmDialog: add node_ref and key properties
+
+  * ThemeDensitySelector: add node_ref and key properties
+
+  * NavigationDrawer: make node_ref pub
+
+  * MessageBox: make node_ref pub
+
+  * MessageBox: use macros to impl property builders
+
+  * MessageBox: add key and node_ref properties
+
+  * Dialog: use builder pattern instead of html macro
+
+  * widget: data table: prevent duplicate yew keys for rows
+
+  * widget: data table: add table scroll callback
+
+  * NavigationDrawer: use macros to impl property builders
+
+  * add macros to create builders for class, key and node_ref
+
+  * NavigationDrawer: expose node_ref property
+
+  * store: add try_read() and try_write() functions
+
+  * store: use try_borrow and expect for better error messages
+  
+  * improve docs
+
+ -- Proxmox Support Team <support@proxmox.com>  Fri, 16 May 2025 10:02:19 +0200
+
 rust-pwt (0.4.9) bookworm; urgency=medium
 
   * dialog: put all dialogs into a portal
