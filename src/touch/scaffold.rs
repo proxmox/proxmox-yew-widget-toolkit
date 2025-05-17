@@ -4,7 +4,7 @@ use yew::html::IntoPropValue;
 use yew::prelude::*;
 use yew::virtual_dom::{Key, VComp, VNode};
 
-use crate::props::{ContainerBuilder, WidgetBuilder};
+use crate::props::{ContainerBuilder, WidgetBuilder, WidgetStyleBuilder};
 use crate::widget::{Column, Container};
 
 use super::NavigationBar;
@@ -100,7 +100,8 @@ impl Component for PwtScaffold {
         let positioned_fab = props.favorite_action_button.clone().map(|fab| {
             Container::new()
                 .class("pwt-position-absolute")
-                .class("pwt-right-2 pwt-bottom-2")
+                .style("right", "var(--pwt-spacer-2)")
+                .style("bottom", "var(--pwt-spacer-2)")
                 .with_child(fab)
         });
 
