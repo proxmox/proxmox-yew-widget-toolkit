@@ -352,19 +352,19 @@ impl Component for PwtSideDialog {
             match props.direction {
                 SideDialogLocation::Left => {
                     let delta_x = delta_x.min(0.0);
-                    transform = Some(format!("translateX({delta_x}px);"));
+                    transform = Some(format!("translateX({delta_x}px)"));
                 }
                 SideDialogLocation::Right => {
                     let delta_x = delta_x.max(0.0);
-                    transform = Some(format!("translateX({delta_x}px);",));
+                    transform = Some(format!("translateX({delta_x}px)",));
                 }
                 SideDialogLocation::Top => {
                     let delta_y = delta_y.min(0.0);
-                    transform = Some(format!("translateY({delta_y}px);",));
+                    transform = Some(format!("translateY({delta_y}px)",));
                 }
                 SideDialogLocation::Bottom => {
                     let delta_y = delta_y.max(0.0);
-                    transform = Some(format!("translateY({delta_y}px);",));
+                    transform = Some(format!("translateY({delta_y}px)",));
                 }
             }
         }
