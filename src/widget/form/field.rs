@@ -497,8 +497,8 @@ impl ManagedField for StandardField {
             } else {
                 None
             };
+
         let mut input_container = Container::new()
-            .with_std_props(&props.std_props)
             .listeners(&props.listeners)
             .class("pwt-input")
             .class(format!("pwt-input-type-{}", props.input_type))
@@ -527,7 +527,8 @@ impl ManagedField for StandardField {
         }
         input_container.add_optional_child(peek_icon);
 
-        let mut tooltip = Tooltip::new(input_container);
+        let mut tooltip = Tooltip::new(input_container)
+           .with_std_props(&props.std_props);
 
         if let Err(msg) = &valid {
             tooltip.set_tip(msg.clone())
