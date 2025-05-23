@@ -498,7 +498,8 @@ impl ManagedField for StandardField {
                 None
             };
 
-        let mut input_container = Container::new()
+        let mut input_container = Tooltip::empty()
+            .with_std_props(&props.std_props)
             .listeners(&props.listeners)
             .class("pwt-input")
             .class(format!("pwt-input-type-{}", props.input_type))
@@ -527,18 +528,15 @@ impl ManagedField for StandardField {
         }
         input_container.add_optional_child(peek_icon);
 
-        let mut tooltip = Tooltip::new(input_container)
-           .with_std_props(&props.std_props);
-
         if let Err(msg) = &valid {
-            tooltip.set_tip(msg.clone())
+            input_container.set_tip(msg.clone())
         } else if let Some(tip) = &props.tip {
             if !disabled {
-                tooltip.set_tip(tip.clone())
+                input_container.set_tip(tip.clone())
             }
         }
 
-        tooltip.into()
+        input_container.into()
     }
 
     fn rendered(&mut self, ctx: &ManagedFieldContext<Self>, first_render: bool) {

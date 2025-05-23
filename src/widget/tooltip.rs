@@ -9,11 +9,10 @@ use crate::widget::Container;
 
 use pwt_macros::widget;
 
-#[widget(pwt=crate, comp=PwtTooltip, @element)]
+/// Tooltip Container
+#[widget(pwt=crate, comp=PwtTooltip, @element, @container)]
 #[derive(Properties, PartialEq, Clone)]
 pub struct Tooltip {
-    content: VNode,
-
     /// The tooltip content/message.
     #[prop_or_default]
     pub tip: Option<Html>,
@@ -23,10 +22,16 @@ pub struct Tooltip {
 }
 
 impl Tooltip {
+    /// Creates a new tooltip for the provided content.
     pub fn new(content: impl Into<VNode>) -> Self {
-        yew::props!(Self {
-            content: content.into()
-        })
+        yew::props!(Self {}).with_child(content.into())
+    }
+
+    /// Create an empty toolkit container.
+    ///
+    /// To add content, use the [ContainerBuilder] functions.
+    pub fn empty() -> Self {
+        yew::props!(Self {})
     }
 
     /// Builder style method to set the tooltip
@@ -159,7 +164,7 @@ impl Component for PwtTooltip {
         Container::new()
             .with_std_props(&props.std_props)
             .listeners(&props.listeners)
-            .with_child(props.content.clone())
+            .children(props.children.clone())
             .onmouseenter(ctx.link().callback(|_| Msg::Show))
             .onmouseleave(ctx.link().callback(|_| Msg::Hide))
             .onfocus(ctx.link().callback(|_| Msg::Show))

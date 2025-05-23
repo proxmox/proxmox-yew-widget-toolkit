@@ -657,7 +657,7 @@ impl<T: NumberTypeInfo> ManagedField for NumberField<T> {
             })
             .into();
 
-        let input_container = Container::new()
+        let mut input_container = Tooltip::empty()
             .with_std_props(&props.std_props)
             .listeners(&props.listeners)
             .class("pwt-input")
@@ -695,13 +695,11 @@ impl<T: NumberTypeInfo> ManagedField for NumberField<T> {
                     ),
             );
 
-        let mut tooltip = Tooltip::new(input_container);
-
         if let Err(msg) = &valid {
-            tooltip.set_tip(msg.clone())
+            input_container.set_tip(msg.clone())
         }
 
-        tooltip.into()
+        input_container.into()
     }
 
     fn rendered(&mut self, ctx: &ManagedFieldContext<Self>, first_render: bool) {
