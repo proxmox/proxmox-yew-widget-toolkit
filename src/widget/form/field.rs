@@ -15,7 +15,7 @@ use super::{
     ValidateFn,
 };
 use crate::props::{ContainerBuilder, EventSubscriber, WidgetBuilder};
-use crate::widget::{Container, Input, Tooltip, Trigger};
+use crate::widget::{Input, Tooltip, Trigger};
 
 use crate::tr;
 
