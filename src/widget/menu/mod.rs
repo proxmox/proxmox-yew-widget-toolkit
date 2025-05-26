@@ -33,6 +33,11 @@ pub use menu_button::MenuButton;
 #[doc(hidden)]
 pub use menu_button::PwtMenuButton;
 
+mod split_button;
+#[doc(hidden)]
+pub use split_button::PwtSplitButton;
+pub use split_button::SplitButton;
+
 /// Menu entries.
 #[derive(Clone, PartialEq)]
 pub enum MenuEntry {
