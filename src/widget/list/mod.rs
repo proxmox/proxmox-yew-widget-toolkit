@@ -409,6 +409,15 @@ impl Component for PwtList {
         }
     }
 
+    fn changed(&mut self, ctx: &Context<Self>, old_props: &Self::Properties) -> bool {
+        let props = ctx.props();
+
+        if (props.item_count != old_props.item_count) {
+            self.update_scroll_info(props);
+        }
+        true
+    }
+
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
 
