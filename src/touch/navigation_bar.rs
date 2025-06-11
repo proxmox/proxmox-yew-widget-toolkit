@@ -232,7 +232,7 @@ impl Component for PwtNavigationBar {
             }
             // Handle internal selection changes
             Msg::Select(key, update_route) => {
-                log::info!("select {:?}", key);
+                // log::info!("select {:?}", key);
 
                 let key = get_active_or_default(props, &key);
                 if self.active == key {
