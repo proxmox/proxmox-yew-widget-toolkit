@@ -49,6 +49,10 @@ pub struct NavigationBar {
     #[prop_or_default]
     pub default_active: Option<Key>,
 
+    /// Force active key.
+    #[prop_or_default]
+    pub active: Option<Key>,
+
     /// Enable router functionality.
     ///
     /// Save/Load state from parent NavigationContainer
@@ -72,6 +76,17 @@ impl NavigationBar {
     /// Method to set the yew `key` property.
     pub fn set_key(&mut self, key: impl IntoOptionalKey) {
         self.key = key.into_optional_key();
+    }
+
+    // Builder style method to set `active` property.
+    pub fn active(mut self, active: impl IntoOptionalKey) -> Self {
+        self.set_active(active);
+        self
+    }
+
+    /// Method to set the yew `active` property.
+    pub fn set_active(&mut self, active: impl IntoOptionalKey) {
+        self.active = active.into_optional_key();
     }
 
     // Builder style method to set `default_active` property.
@@ -113,6 +128,9 @@ pub struct PwtNavigationBar {
 }
 
 fn get_active_or_default(props: &NavigationBar, active: &Option<Key>) -> Option<Key> {
+    if let Some(active) = &props.active {
+        return Some(active.clone());
+    }
     if let Some(active_key) = active.as_deref() {
         if !active_key.is_empty() && active_key != "_" {
             return active.clone();
