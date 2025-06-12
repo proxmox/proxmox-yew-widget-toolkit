@@ -5,6 +5,8 @@ use yew::html::IntoPropValue;
 use yew::prelude::*;
 use yew::virtual_dom::{Key, VComp, VNode};
 
+use crate::impl_class_prop_builder;
+use crate::impl_yew_std_props_builder;
 use crate::prelude::*;
 use crate::props::{ContainerBuilder, EventSubscriber, WidgetBuilder};
 use crate::state::{NavigationContext, NavigationContextExt, Selection};
@@ -22,20 +24,28 @@ use pwt_macros::builder;
 /// a [NavigationContainer](crate::state::NavigationContainer) and
 /// set the router flag.
 
-// Note: This is Similatr to TabBar without keyboard support.
+// Note: This is Similar to TabBar without keyboard support.
 #[derive(Properties, Clone, PartialEq)]
 #[builder]
 pub struct NavigationBar {
+    /// Yew component `ref`.
+    #[prop_or_default]
+    node_ref: NodeRef,
+
     /// The yew component key.
     #[prop_or_default]
     pub key: Option<Key>,
+
+    /// CSS class.
+    #[prop_or_default]
+    pub class: Classes,
 
     /// Navigation bar items.
     items: Vec<TabBarItem>,
 
     /// Selection object to store the currently selected tab key.
     ///
-    /// The optional selction object allows you to control and observe the state from outside.
+    /// The optional selection object allows you to control and observe the state from outside.
     #[builder(IntoPropValue, into_prop_value)]
     #[prop_or_default]
     pub selection: Option<Selection>,
@@ -67,16 +77,8 @@ impl NavigationBar {
         yew::props!(Self { items })
     }
 
-    // Builder style method to set the yew `key` property.
-    pub fn key(mut self, key: impl IntoOptionalKey) -> Self {
-        self.set_key(key);
-        self
-    }
-
-    /// Method to set the yew `key` property.
-    pub fn set_key(&mut self, key: impl IntoOptionalKey) {
-        self.key = key.into_optional_key();
-    }
+    impl_yew_std_props_builder!();
+    impl_class_prop_builder!();
 
     // Builder style method to set `active` property.
     pub fn active(mut self, active: impl IntoOptionalKey) -> Self {
@@ -325,7 +327,9 @@ impl Component for PwtNavigationBar {
         });
 
         Container::new()
+            .node_ref(props.node_ref.clone())
             .class("pwt-navigation-bar")
+            .class(props.class.clone())
             .children(children)
             .into()
     }
