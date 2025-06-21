@@ -226,6 +226,13 @@ impl MaterialApp {
     }
 }
 
+/// Data passed to the page render function.
+pub struct MaterialAppRouteContext {
+    pub history: AnyHistory,
+    pub snackbar_controller: SnackBarController,
+    pub page_controller: PageController,
+}
+
 pub enum Msg {
     PageController,
     HistoryChange,
@@ -369,7 +376,13 @@ impl Component for PwtMaterialApp {
 
         let mut page_stack = Vec::new();
 
-        page_stack.extend(props.render_route.apply(&path));
+        let app_context = MaterialAppRouteContext {
+            history: self.history.clone(),
+            snackbar_controller: self.snackbar_controller.clone(),
+            page_controller: self.page_controller.clone(),
+        };
+
+        page_stack.extend(props.render_route.apply(&app_context, &path));
 
         page_stack.extend(self.page_stack.clone());
 
@@ -412,7 +425,7 @@ impl From<MaterialApp> for VNode {
 pub struct PageRenderFn(
     #[allow(clippy::type_complexity)]
     #[derivative(PartialEq(compare_with = "Rc::ptr_eq"))]
-    Rc<dyn Fn(&str) -> Vec<Html>>,
+    Rc<dyn Fn(&MaterialAppRouteContext, &str) -> Vec<Html>>,
 );
 
 impl PageRenderFn {
@@ -421,12 +434,12 @@ impl PageRenderFn {
         renderer.into()
     }
     /// Apply the render function
-    pub fn apply(&self, path: &str) -> Vec<Html> {
-        (self.0)(path)
+    pub fn apply(&self, ctx: &MaterialAppRouteContext, path: &str) -> Vec<Html> {
+        (self.0)(ctx, path)
     }
 }
 
-impl<F: 'static + Fn(&str) -> Vec<Html>> From<F> for PageRenderFn {
+impl<F: 'static + Fn(&MaterialAppRouteContext, &str) -> Vec<Html>> From<F> for PageRenderFn {
     fn from(renderer: F) -> Self {
         PageRenderFn(Rc::new(renderer))
     }
