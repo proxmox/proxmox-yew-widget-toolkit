@@ -447,3 +447,14 @@ fn strip_basename<'a>(basename: &Option<AttrValue>, path: Cow<'a, str>) -> Cow<'
         None => path,
     }
 }
+
+pub trait MaterialAppScopeExt {
+    fn page_controller(&self) -> Option<PageController>;
+}
+
+impl<COMP: Component> MaterialAppScopeExt for yew::html::Scope<COMP> {
+    fn page_controller(&self) -> Option<PageController> {
+        self.context::<PageController>(Callback::from(|_| {}))
+            .map(|(c, _)| c)
+    }
+}
