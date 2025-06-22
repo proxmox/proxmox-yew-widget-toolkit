@@ -126,7 +126,7 @@ impl PageController {
 /// This is just a convenient way to set up the following things:
 ///
 /// - Provide a yew_router::HashRouter and [NavigationContainer]
-/// - uses [ThemeLoader] to load the material design theme (dark/light)
+/// - uses [ThemeLoader] to load themes (dark/light)
 /// - Provides a [SnackBarController], and display snackbars using [SnackBarManager]
 /// - Uses [PageStack] to dislay/animate overlapping pages.
 /// - Provides a [PageController] to navigate and control the [PageStack].
@@ -308,9 +308,6 @@ impl Component for PwtMaterialApp {
 
     fn create(ctx: &Context<Self>) -> Self {
         let props = ctx.props();
-
-        static THEMES: &[&str] = &["Material"];
-        crate::state::set_available_themes(THEMES);
 
         let history = props
             .history
