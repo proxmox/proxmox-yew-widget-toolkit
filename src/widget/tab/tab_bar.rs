@@ -64,6 +64,10 @@ pub struct TabBar {
     #[prop_or_default]
     pub default_active: Option<Key>,
 
+    /// Force active key.
+    #[prop_or_default]
+    pub active: Option<Key>,
+
     /// Enable router functionality.
     ///
     /// Save/Load state from parent NavigationContainer
@@ -106,6 +110,17 @@ impl TabBar {
     /// Method to set the persistent state ID.
     pub fn set_state_id(&mut self, state_id: impl IntoStorageLocation) {
         self.state_id = state_id.into_storage_location();
+    }
+
+    // Builder style method to set `active` property.
+    pub fn active(mut self, active: impl IntoOptionalKey) -> Self {
+        self.set_active(active);
+        self
+    }
+
+    /// Method to set the yew `active` property.
+    pub fn set_active(&mut self, active: impl IntoOptionalKey) {
+        self.active = active.into_optional_key();
     }
 
     // Builder style method to set `default_active` property.
@@ -164,6 +179,10 @@ pub struct PwtTabBar {
 }
 
 fn get_active_or_default(props: &TabBar, active: &Option<Key>) -> Option<Key> {
+    if let Some(active) = &props.active {
+        return Some(active.clone());
+    }
+
     if let Some(active_key) = active.as_deref() {
         if !active_key.is_empty() && active_key != "_" {
             return active.clone();
