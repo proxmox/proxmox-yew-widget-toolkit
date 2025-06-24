@@ -4,6 +4,7 @@ use yew::html::IntoEventCallback;
 use yew::prelude::*;
 use yew::virtual_dom::{Key, VComp, VNode};
 
+use crate::impl_class_prop_builder;
 use crate::props::{ContainerBuilder, EventSubscriber, WidgetBuilder};
 use crate::widget::{Container, Fa};
 
@@ -44,6 +45,8 @@ impl SlidableAction {
         })
     }
 
+    impl_class_prop_builder!();
+
     /// Builder style method to set the icon CSS class.
     pub fn icon_class(mut self, icon_class: impl Into<Classes>) -> Self {
         self.set_icon_class(icon_class);
@@ -59,17 +62,6 @@ impl SlidableAction {
     pub fn on_activate(mut self, cb: impl IntoEventCallback<SlidableActionMouseEvent>) -> Self {
         self.on_activate = cb.into_event_callback();
         self
-    }
-
-    /// Builder style method to add a CSS class.
-    pub fn class(mut self, class: impl Into<Classes>) -> Self {
-        self.add_class(class);
-        self
-    }
-
-    /// Method to add a CSS class.
-    pub fn add_class(&mut self, class: impl Into<Classes>) {
-        self.class.push(class.into());
     }
 }
 
