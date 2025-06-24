@@ -4,7 +4,7 @@ use yew::html::{IntoEventCallback, IntoPropValue};
 use yew::prelude::*;
 use yew::virtual_dom::{Key, VComp, VNode};
 
-use crate::props::{AsClassesMut, EventSubscriber, WidgetBuilder};
+use crate::props::{AsClassesMut, WidgetBuilder};
 use crate::widget::Button;
 
 /// Favorite action button.
@@ -31,7 +31,7 @@ pub struct Fab {
 
     /// Click callback
     #[prop_or_default]
-    pub on_click: Option<Callback<MouseEvent>>,
+    pub on_activate: Option<Callback<MouseEvent>>,
 }
 
 impl AsClassesMut for Fab {
@@ -104,9 +104,9 @@ impl Fab {
         self.text = text.into_prop_value();
     }
 
-    /// Builder style method to set the on_click callback.
-    pub fn on_click(mut self, cb: impl IntoEventCallback<MouseEvent>) -> Self {
-        self.on_click = cb.into_event_callback();
+    /// Builder style method to set the on_activate callback.
+    pub fn on_activate(mut self, cb: impl IntoEventCallback<MouseEvent>) -> Self {
+        self.on_activate = cb.into_event_callback();
         self
     }
 }
@@ -141,11 +141,11 @@ impl Component for PwtFab {
         button
             .class(class)
             .attribute("style", props.style.clone())
-            .onclick(Callback::from({
-                let on_click = props.on_click.clone();
+            .on_activate(Callback::from({
+                let on_activate = props.on_activate.clone();
                 move |event: MouseEvent| {
-                    if let Some(on_click) = &on_click {
-                        on_click.emit(event);
+                    if let Some(on_activate) = &on_activate {
+                        on_activate.emit(event);
                     }
                 }
             }))

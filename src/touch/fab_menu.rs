@@ -204,7 +204,7 @@ impl Component for PwtFabMenu {
 
         let main_button = Fab::new(main_icon_class)
             .class(props.main_button_class.clone())
-            .on_click(ctx.link().callback(|_| Msg::Toggle));
+            .on_activate(ctx.link().callback(|_| Msg::Toggle));
 
         container.add_child(main_button);
 
@@ -213,20 +213,19 @@ impl Component for PwtFabMenu {
                 log::error!("FabMenu only supports 5 child buttons.");
                 break;
             }
-            let orig_on_click = child.on_click.clone();
+            let orig_on_activate = child.on_activate.clone();
             let link = ctx.link().clone();
 
-            let child_button =
-                child
-                    .clone()
-                    .small()
-                    .class("pwt-fab-menu-item")
-                    .on_click(move |event| {
-                        link.send_message(Msg::Toggle);
-                        if let Some(on_click) = &orig_on_click {
-                            on_click.emit(event);
-                        }
-                    });
+            let child_button = child
+                .clone()
+                .small()
+                .class("pwt-fab-menu-item")
+                .on_activate(move |event| {
+                    link.send_message(Msg::Toggle);
+                    if let Some(on_activate) = &orig_on_activate {
+                        on_activate.emit(event);
+                    }
+                });
             container.add_child(child_button);
         }
 
