@@ -434,17 +434,14 @@ impl Component for PwtSlidable {
             .with_child(right_container)
             .ontransitionend(ctx.link().callback(|_| Msg::TransitionEnd));
 
-        yew::props!(Container {
-            std_props: props.std_props.clone(),
-            listeners: props.listeners.clone(),
-        })
-        .class("pwt-slidable")
-        .with_child(html! {
-            <ContextProvider<SlidableController> context={self.controller.clone()}>
-                {row}
-            </ContextProvider<SlidableController>>
-        })
-        .into()
+        Container::from_widget_props(props.std_props.clone(), Some(props.listeners.clone()))
+            .class("pwt-slidable")
+            .with_child(html! {
+                <ContextProvider<SlidableController> context={self.controller.clone()}>
+                    {row}
+                </ContextProvider<SlidableController>>
+            })
+            .into()
     }
 
     fn rendered(&mut self, ctx: &Context<Self>, first_render: bool) {
