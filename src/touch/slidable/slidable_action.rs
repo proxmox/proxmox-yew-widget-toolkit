@@ -11,7 +11,7 @@ use super::{SlidableActionMouseEvent, SlidableController};
 
 /// A button which automatically connects to the [SlidableController].
 ///
-/// The [on_click](Self::on_click) handler gets an [SlidableActionMouseEvent] argument,
+/// The [on_activate](Self::on_activate) handler gets an [SlidableActionMouseEvent] argument,
 /// which lets you collapse or dismiss the slidable.
 #[derive(Properties, Clone, PartialEq)]
 pub struct SlidableAction {
@@ -30,7 +30,7 @@ pub struct SlidableAction {
     ///
     /// Emited when the user clicks on the entry.
     #[prop_or_default]
-    pub on_click: Option<Callback<SlidableActionMouseEvent>>,
+    pub on_activate: Option<Callback<SlidableActionMouseEvent>>,
 }
 
 impl SlidableAction {
@@ -51,9 +51,9 @@ impl SlidableAction {
         self.icon_class = Some(icon_class.into());
     }
 
-    /// Builder style method to set the on_click callback.
-    pub fn on_click(mut self, cb: impl IntoEventCallback<SlidableActionMouseEvent>) -> Self {
-        self.on_click = cb.into_event_callback();
+    /// Builder style method to set the on_activate callback.
+    pub fn on_activate(mut self, cb: impl IntoEventCallback<SlidableActionMouseEvent>) -> Self {
+        self.on_activate = cb.into_event_callback();
         self
     }
 }
@@ -102,11 +102,11 @@ impl Component for PwtSlidableAction {
 
         let onclick = Callback::from({
             let controller = self.controller.clone();
-            let on_click = props.on_click.clone();
+            let on_activate = props.on_activate.clone();
             move |event: MouseEvent| {
-                if let Some(on_click) = &on_click {
+                if let Some(on_activate) = &on_activate {
                     let event = SlidableActionMouseEvent::new(event);
-                    on_click.emit(event.clone());
+                    on_activate.emit(event.clone());
                     if let Some(controller) = &controller {
                         if event.get_dismiss() {
                             controller.dismiss();
@@ -115,7 +115,7 @@ impl Component for PwtSlidableAction {
                         }
                     }
                 } else {
-                    // Always collabse if action is without on_click callback
+                    // Always collapse if action is without on_activate callback
                     if let Some(controller) = &controller {
                         controller.collapse();
                     }
