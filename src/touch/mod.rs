@@ -5,9 +5,7 @@ mod application_bar;
 pub use application_bar::{ApplicationBar, PwtApplicationBar};
 
 mod gesture_detector;
-pub use gesture_detector::{
-    GestureDetector, GestureDragEvent, GestureSwipeEvent, PwtGestureDetector,
-};
+pub use gesture_detector::{GestureDetector, GestureSwipeEvent, InputEvent, PwtGestureDetector};
 
 mod fab;
 pub use fab::{Fab, PwtFab};

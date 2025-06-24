@@ -12,7 +12,7 @@ use crate::prelude::*;
 use crate::state::{SharedState, SharedStateObserver};
 use crate::widget::Container;
 
-use super::{GestureDetector, GestureDragEvent, GestureSwipeEvent};
+use super::{GestureDetector, GestureSwipeEvent, InputEvent};
 
 // Messages sent from the [SideDialogController].
 pub enum SideDialogControllerMsg {
@@ -125,9 +125,9 @@ pub enum Msg {
     Close,
     Dismiss, // Slide out, then close
     SliderAnimationEnd,
-    DragStart(GestureDragEvent),
-    DragEnd(GestureDragEvent),
-    Drag(GestureDragEvent),
+    DragStart(InputEvent),
+    DragEnd(InputEvent),
+    Drag(InputEvent),
     Swipe(GestureSwipeEvent),
     Controller,
 }
@@ -390,11 +390,11 @@ impl Component for PwtSideDialog {
             .on_tap({
                 let slider_ref = self.slider_ref.clone();
                 let link = ctx.link().clone();
-                move |event: PointerEvent| {
+                move |event: InputEvent| {
                     if let Some(element) = slider_ref.clone().into_html_element() {
                         let rect = element.get_bounding_client_rect();
-                        let x = event.client_x() as f64;
-                        let y = event.client_y() as f64;
+                        let x = event.x() as f64;
+                        let y = event.y() as f64;
 
                         if (rect.left() < x)
                             && (x < rect.right())

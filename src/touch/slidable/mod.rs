@@ -15,7 +15,7 @@ use yew::virtual_dom::VNode;
 use crate::dom::DomSizeObserver;
 use crate::prelude::*;
 use crate::props::CssLength;
-use crate::touch::{GestureDetector, GestureDragEvent, GestureSwipeEvent};
+use crate::touch::{GestureDetector, GestureSwipeEvent, InputEvent};
 use crate::widget::{Container, Row};
 
 use pwt_macros::widget;
@@ -116,9 +116,9 @@ pub struct PwtSlidable {
 
 pub enum Msg {
     StartDismissTransition,
-    Drag(GestureDragEvent),
-    DragStart(GestureDragEvent),
-    DragEnd(GestureDragEvent),
+    Drag(InputEvent),
+    DragStart(InputEvent),
+    DragEnd(InputEvent),
     Swipe(GestureSwipeEvent),
     LeftResize(f64),
     RightResize(f64),

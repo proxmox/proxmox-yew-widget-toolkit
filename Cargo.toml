@@ -50,6 +50,7 @@ web-sys = { version = "0.3", features = [
   "IntersectionObserver",
   "IntersectionObserverEntry",
   "KeyboardEventInit",
+  "Touch",
 ] }
 js-sys = "0.3"
 log = "0.4.6"

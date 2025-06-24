@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use std::rc::Rc;
 
 use gloo_timers::callback::Timeout;
+use web_sys::Touch;
 use yew::html::IntoEventCallback;
 use yew::prelude::*;
 use yew::virtual_dom::{Key, VComp, VNode};
@@ -11,39 +12,64 @@ use crate::impl_to_html;
 use crate::props::{ContainerBuilder, EventSubscriber, WidgetBuilder, WidgetStyleBuilder};
 use crate::widget::Container;
 
-/// Like [PointerEvent](web_sys::PointerEvent) (currently no additional features)
-pub struct GestureDragEvent {
-    event: PointerEvent,
+/// An event that can happen from a [`PointerEvent`] or a [`Touch`]
+///
+/// For convenience, expose the most important values from the underlying events
+pub enum InputEvent {
+    PointerEvent(PointerEvent),
+    Touch(Touch),
 }
 
-impl GestureDragEvent {
-    fn new(event: PointerEvent) -> Self {
-        Self { event }
+impl InputEvent {
+    pub fn x(&self) -> i32 {
+        match self {
+            InputEvent::PointerEvent(pointer_event) => pointer_event.client_x(),
+            InputEvent::Touch(touch) => touch.client_x(),
+        }
+    }
+
+    pub fn y(&self) -> i32 {
+        match self {
+            InputEvent::PointerEvent(pointer_event) => pointer_event.client_y(),
+            InputEvent::Touch(touch) => touch.client_y(),
+        }
+    }
+
+    pub fn id(&self) -> i32 {
+        match self {
+            InputEvent::PointerEvent(pointer_event) => pointer_event.pointer_id(),
+            InputEvent::Touch(touch) => touch.identifier(),
+        }
     }
 }
 
-impl Deref for GestureDragEvent {
-    type Target = PointerEvent;
-    fn deref(&self) -> &Self::Target {
-        &self.event
+impl From<PointerEvent> for InputEvent {
+    fn from(event: PointerEvent) -> Self {
+        Self::PointerEvent(event)
+    }
+}
+
+impl From<Touch> for InputEvent {
+    fn from(touch: Touch) -> Self {
+        Self::Touch(touch)
     }
 }
 
 /// Like [PointerEvent](web_sys::PointerEvent), but includes the swipe direction
 pub struct GestureSwipeEvent {
-    event: PointerEvent,
+    event: InputEvent,
     /// Direction angle (from -180 to +180 degree)
     pub direction: f64,
 }
 
 impl GestureSwipeEvent {
-    fn new(event: PointerEvent, direction: f64) -> Self {
+    fn new(event: InputEvent, direction: f64) -> Self {
         Self { event, direction }
     }
 }
 
 impl Deref for GestureSwipeEvent {
-    type Target = PointerEvent;
+    type Target = InputEvent;
     fn deref(&self) -> &Self::Target {
         &self.event
     }
@@ -98,20 +124,20 @@ pub struct GestureDetector {
 
     /// Callback for tap events.
     #[prop_or_default]
-    pub on_tap: Option<Callback<PointerEvent>>,
+    pub on_tap: Option<Callback<InputEvent>>,
     /// Callback for long-tap events.
     #[prop_or_default]
     pub on_long_press: Option<Callback<()>>,
 
     /// Callback for drag-start events.
     #[prop_or_default]
-    pub on_drag_start: Option<Callback<GestureDragEvent>>,
+    pub on_drag_start: Option<Callback<InputEvent>>,
     /// Callback for drag-start events.
     #[prop_or_default]
-    pub on_drag_update: Option<Callback<GestureDragEvent>>,
+    pub on_drag_update: Option<Callback<InputEvent>>,
     /// Callback for drag-start events.
     #[prop_or_default]
-    pub on_drag_end: Option<Callback<GestureDragEvent>>,
+    pub on_drag_end: Option<Callback<InputEvent>>,
 
     #[prop_or_default]
     pub on_swipe: Option<Callback<GestureSwipeEvent>>,
@@ -132,7 +158,7 @@ impl GestureDetector {
     }
 
     /// Builder style method to set the on_tap callback
-    pub fn on_tap(mut self, cb: impl IntoEventCallback<PointerEvent>) -> Self {
+    pub fn on_tap(mut self, cb: impl IntoEventCallback<InputEvent>) -> Self {
         self.on_tap = cb.into_event_callback();
         self
     }
@@ -144,19 +170,19 @@ impl GestureDetector {
     }
 
     /// Builder style method to set the on_drag_start callback
-    pub fn on_drag_start(mut self, cb: impl IntoEventCallback<GestureDragEvent>) -> Self {
+    pub fn on_drag_start(mut self, cb: impl IntoEventCallback<InputEvent>) -> Self {
         self.on_drag_start = cb.into_event_callback();
         self
     }
 
     /// Builder style method to set the on_drag_update callback
-    pub fn on_drag_update(mut self, cb: impl IntoEventCallback<GestureDragEvent>) -> Self {
+    pub fn on_drag_update(mut self, cb: impl IntoEventCallback<InputEvent>) -> Self {
         self.on_drag_update = cb.into_event_callback();
         self
     }
 
     /// Builder style method to set the on_drag_end callback
-    pub fn on_drag_end(mut self, cb: impl IntoEventCallback<GestureDragEvent>) -> Self {
+    pub fn on_drag_end(mut self, cb: impl IntoEventCallback<InputEvent>) -> Self {
         self.on_drag_end = cb.into_event_callback();
         self
     }
@@ -365,7 +391,7 @@ impl PwtGestureDetector {
                     if !pointer_state.got_tap_timeout && distance < props.tap_tolerance {
                         if let Some(on_tap) = &props.on_tap {
                             //log::info!("tap {} {}", event.x(), event.y());
-                            on_tap.emit(event);
+                            on_tap.emit(event.into());
                         }
                     }
                 }
@@ -387,8 +413,7 @@ impl PwtGestureDetector {
                         self.state = DetectionState::Drag;
                         self.capture_pointer(event.pointer_id());
                         if let Some(on_drag_start) = &props.on_drag_start {
-                            let event = GestureDragEvent::new(event);
-                            on_drag_start.emit(event);
+                            on_drag_start.emit(event.into());
                         }
                     }
                 }
@@ -417,8 +442,7 @@ impl PwtGestureDetector {
                 self.state = DetectionState::Double;
                 //log::info!("DRAG END");
                 if let Some(on_drag_end) = &props.on_drag_end {
-                    let event = GestureDragEvent::new(event);
-                    on_drag_end.emit(event);
+                    on_drag_end.emit(event.into());
                 }
             }
             Msg::PointerUp(event) => {
@@ -437,8 +461,7 @@ impl PwtGestureDetector {
                     let speed = distance / time_diff;
                     //log::info!("DRAG END {time_diff} {speed}");
                     if let Some(on_drag_end) = &props.on_drag_end {
-                        let event = GestureDragEvent::new(event.clone());
-                        on_drag_end.emit(event);
+                        on_drag_end.emit(event.clone().into());
                     }
 
                     if let Some(on_swipe) = &props.on_swipe {
@@ -453,7 +476,7 @@ impl PwtGestureDetector {
                                 event.y(),
                             );
 
-                            let event = GestureSwipeEvent::new(event, direction);
+                            let event = GestureSwipeEvent::new(event.into(), direction);
                             on_swipe.emit(event)
                         }
                     }
@@ -473,8 +496,7 @@ impl PwtGestureDetector {
                     if distance >= props.tap_tolerance || pointer_state.got_tap_timeout {
                         //log::info!("DRAG TO {} {}", event.x(), event.y());
                         if let Some(on_drag_update) = &props.on_drag_update {
-                            let event = GestureDragEvent::new(event);
-                            on_drag_update.emit(event);
+                            on_drag_update.emit(event.into());
                         }
                     }
                 }
@@ -486,8 +508,7 @@ impl PwtGestureDetector {
                     self.state = DetectionState::Initial;
                     //log::info!("DRAG END");
                     if let Some(on_drag_end) = &props.on_drag_end {
-                        let event = GestureDragEvent::new(event);
-                        on_drag_end.emit(event);
+                        on_drag_end.emit(event.into());
                     }
                 }
             }
