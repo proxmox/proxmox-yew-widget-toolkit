@@ -43,6 +43,12 @@ pub struct Slidable {
     /// Without a callback, dismiss is disabled on slidables without actions.
     #[prop_or_default]
     pub on_dismiss: Option<Callback<()>>,
+
+    #[prop_or_default]
+    /// Tap callback.
+    ///
+    /// Called when the main item is tapped.
+    pub on_tap: Option<Callback<InputEvent>>,
 }
 
 impl Slidable {
@@ -79,6 +85,17 @@ impl Slidable {
     pub fn on_dismiss(mut self, cb: impl IntoEventCallback<()>) -> Self {
         self.on_dismiss = cb.into_event_callback();
         self
+    }
+
+    /// Builder style method to set the `on_tap` callback.
+    pub fn on_tap(mut self, cb: impl IntoEventCallback<InputEvent>) -> Self {
+        self.set_on_tap(cb);
+        self
+    }
+
+    /// Method to set the `on_tap` callback.
+    pub fn set_on_tap(&mut self, cb: impl IntoEventCallback<InputEvent>) {
+        self.on_tap = cb.into_event_callback();
     }
 }
 
@@ -125,6 +142,7 @@ pub enum Msg {
     ContentResize(f64, f64),
     TransitionEnd,
     Controller(SlidableControllerMsg),
+    OnTap(InputEvent),
 }
 
 impl PwtSlidable {
@@ -320,6 +338,11 @@ impl Component for PwtSlidable {
                     }
                 }
             },
+            Msg::OnTap(pointer_event) => {
+                if let Some(on_tap) = &ctx.props().on_tap {
+                    on_tap.emit(pointer_event);
+                }
+            }
         }
         let pos = self.start_pos - (self.drag_pos.unwrap_or(0) as f64);
         if pos > 0f64 {
@@ -361,6 +384,7 @@ impl Component for PwtSlidable {
         .on_drag_start(ctx.link().callback(Msg::DragStart))
         .on_drag_end(ctx.link().callback(Msg::DragEnd))
         .on_drag_update(ctx.link().callback(Msg::Drag))
+        .on_tap(ctx.link().callback(Msg::OnTap))
         .on_swipe(ctx.link().callback(Msg::Swipe));
 
         let left_container = Container::new()
