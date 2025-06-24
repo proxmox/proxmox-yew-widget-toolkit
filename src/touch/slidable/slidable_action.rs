@@ -26,6 +26,10 @@ pub struct SlidableAction {
     #[prop_or_default]
     pub icon_class: Option<Classes>,
 
+    #[prop_or_default]
+    /// Optional additional CSS classes
+    pub class: Classes,
+
     /// Click callback.
     ///
     /// Emited when the user clicks on the entry.
@@ -55,6 +59,17 @@ impl SlidableAction {
     pub fn on_activate(mut self, cb: impl IntoEventCallback<SlidableActionMouseEvent>) -> Self {
         self.on_activate = cb.into_event_callback();
         self
+    }
+
+    /// Builder style method to add a CSS class.
+    pub fn class(mut self, class: impl Into<Classes>) -> Self {
+        self.add_class(class);
+        self
+    }
+
+    /// Method to add a CSS class.
+    pub fn add_class(&mut self, class: impl Into<Classes>) {
+        self.class.push(class.into());
     }
 }
 
@@ -125,6 +140,7 @@ impl Component for PwtSlidableAction {
 
         Container::new()
             .class("pwt-slidable-action")
+            .class(props.class.clone())
             .with_optional_child(icon)
             .with_child(props.label.clone())
             .onclick(onclick)
