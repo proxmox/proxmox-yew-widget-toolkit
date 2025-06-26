@@ -71,6 +71,16 @@ pub struct SelectionView {
     #[prop_or_default]
     #[builder]
     pub page_cache: bool,
+
+    /// Whether the views should be rendered dynamically or should be rendered all at once.
+    /// All rendered views that are not currently selected will be hidden via the `display: none`
+    /// CSS property.
+    ///
+    /// This is useful when using a SelectionView in a [`crate::widget::form::Form`] as all fields
+    /// in all views need to be rendered for proper registration.
+    #[prop_or_default]
+    #[builder]
+    pub force_render_all: bool,
 }
 
 impl Default for SelectionView {
@@ -136,9 +146,15 @@ impl Component for PwtSelectionView {
             .context(ctx.link().callback(Msg::VisibilityChanged))
             .unzip();
 
+        let mut render_set = IndexSet::new();
+
+        if props.force_render_all {
+            render_set.extend(props.builders.keys().cloned());
+        }
+
         Self {
             active: None,
-            render_set: IndexSet::new(),
+            render_set,
             _selection_observer,
             visibility: visibility.unwrap_or_default(),
             _visibility_handle,

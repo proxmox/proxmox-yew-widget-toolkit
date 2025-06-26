@@ -84,6 +84,16 @@ pub struct TabPanel {
     #[prop_or_default]
     #[builder]
     pub tab_bar_style: TabBarStyle,
+
+    /// Whether the tabs should be rendered dynamically or should be rendered all at once.
+    /// All rendered tabs that are not currently selected will be hidden via the `display: none`
+    /// CSS property.
+    ///
+    /// This is useful when using a TabPanel in a [`crate::widget::form::Form`] as all fields
+    /// in all tabs need to be rendered for proper registration.
+    #[prop_or_default]
+    #[builder]
+    pub force_render_all: bool,
 }
 
 impl Default for TabPanel {
@@ -240,11 +250,17 @@ impl Component for PwtTabPanel {
             (None, tools)
         };
 
+        let view = props
+            .view
+            .clone()
+            .force_render_all(props.force_render_all)
+            .selection(self.selection.clone());
+
         Column::new()
             .with_std_props(props.as_std_props())
             .class("pwt-panel")
             .with_child(html! {<div {class}>{title}{bar}{tools}</div>})
-            .with_child(props.view.clone().selection(self.selection.clone()))
+            .with_child(view)
             .into()
     }
 }
