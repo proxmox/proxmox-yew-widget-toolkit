@@ -14,10 +14,10 @@ use super::{
     IntoValidateFn, ManagedField, ManagedFieldContext, ManagedFieldMaster, ManagedFieldState,
     ValidateFn,
 };
+use crate::props::WidgetStyleBuilder;
 use crate::props::{ContainerBuilder, EventSubscriber, WidgetBuilder};
-use crate::widget::{Input, Tooltip, Trigger};
-
 use crate::tr;
+use crate::widget::{Container, Input, Tooltip, Trigger};
 
 pub type PwtField = ManagedFieldMaster<StandardField>;
 
@@ -511,22 +511,32 @@ impl ManagedField for StandardField {
                 "is-invalid"
             });
 
+        // Note: Always create 3 children to avoid vdom change triggers
+
+        let mut left_triggers = Container::new().style("display", "contents");
+
         for (trigger, right) in &props.trigger {
             if !right {
                 let outer_class = "pwt-flex-fill-first-child pwt-d-flex pwt-align-self-center";
-                input_container.add_child(html! {<div class={outer_class}>{trigger}</div>});
+                left_triggers.add_child(html! {<div class={outer_class}>{trigger}</div>});
             }
         }
 
+        input_container.add_child(left_triggers);
         input_container.add_child(input);
+
+        let mut right_triggers = Container::new().style("display", "contents");
 
         for (trigger, right) in &props.trigger {
             if *right {
                 let outer_class = "pwt-flex-fill-first-child pwt-d-flex pwt-align-self-center";
-                input_container.add_child(html! {<div class={outer_class}>{trigger}</div>});
+                right_triggers.add_child(html! {<div class={outer_class}>{trigger}</div>});
             }
         }
-        input_container.add_optional_child(peek_icon);
+
+        right_triggers.add_optional_child(peek_icon);
+
+        input_container.add_child(right_triggers);
 
         if let Err(msg) = &valid {
             input_container.set_tip(msg.clone())
