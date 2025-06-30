@@ -4,6 +4,7 @@ use yew::html::IntoPropValue;
 use yew::prelude::*;
 use yew::virtual_dom::{Key, VComp, VNode};
 
+use crate::css::FlexFit;
 use crate::props::{ContainerBuilder, WidgetBuilder, WidgetStyleBuilder};
 use crate::widget::{Column, Container};
 
@@ -107,7 +108,7 @@ impl Component for PwtScaffold {
 
         let body = Column::new()
             .class("pwt-position-relative")
-            .class("pwt-flex-fill")
+            .class(FlexFit)
             .with_optional_child(props.body.clone())
             .with_optional_child(positioned_fab);
 
