@@ -65,6 +65,9 @@ pub use field_label::FieldLabel;
 #[doc(hidden)]
 pub use field_label::PwtFieldLabel;
 
+mod image;
+pub use image::Image;
+
 mod input;
 pub use input::Input;
 
