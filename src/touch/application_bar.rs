@@ -174,12 +174,14 @@ impl From<ApplicationBar> for VNode {
 }
 
 fn create_back_button(page_controller: Option<PageController>) -> ActionIcon {
-    ActionIcon::new("fa fa-lg fa-arrow-left").on_activate({
-        let page_controller = page_controller.clone();
-        move |_| {
-            if let Some(page_controller) = &page_controller {
-                page_controller.last_page();
+    ActionIcon::new("fa fa-lg fa-arrow-left")
+        .class("pwt-application-bar-back")
+        .on_activate({
+            let page_controller = page_controller.clone();
+            move |_| {
+                if let Some(page_controller) = &page_controller {
+                    page_controller.last_page();
+                }
             }
-        }
-    })
+        })
 }
