@@ -1,11 +1,9 @@
-use std::rc::Rc;
-
-use yew::html::IntoPropValue;
 use yew::prelude::*;
-use yew::virtual_dom::{Key, VComp, VNode};
 
 use crate::props::{ContainerBuilder, EventSubscriber, WidgetBuilder};
 use crate::widget::Container;
+
+use pwt_macros::{builder, widget};
 
 use super::Fab;
 
@@ -27,12 +25,10 @@ pub enum FabMenuAlign {
 }
 
 /// Favorite actions button Menu.
+#[widget(pwt=crate, comp=PwtFabMenu, @element)]
 #[derive(Properties, Clone, PartialEq)]
+#[builder]
 pub struct FabMenu {
-    /// The yew component key.
-    #[prop_or_default]
-    pub key: Option<Key>,
-
     /// Main button Icon (CSS class).
     #[prop_or_default]
     pub main_icon_class: Option<Classes>,
@@ -43,11 +39,13 @@ pub struct FabMenu {
 
     /// Menu popup direction
     #[prop_or(FabMenuDirection::Up)]
+    #[builder]
     pub direction: FabMenuDirection,
 
     /// Menu alignment
     ///
     #[prop_or(FabMenuAlign::Center)]
+    #[builder]
     pub align: FabMenuAlign,
 
     /// Child buttons, which popup when main button is pressed.
@@ -67,17 +65,6 @@ impl FabMenu {
     /// Create a new instance.
     pub fn new() -> Self {
         yew::props!(Self {})
-    }
-
-    /// Builder style method to set the yew `key` property
-    pub fn key(mut self, key: impl IntoPropValue<Option<Key>>) -> Self {
-        self.set_key(key);
-        self
-    }
-
-    /// Method to set the yew `key` property
-    pub fn set_key(&mut self, key: impl IntoPropValue<Option<Key>>) {
-        self.key = key.into_prop_value();
     }
 
     /// Builder style method to set the icon class for the main button.
@@ -104,28 +91,6 @@ impl FabMenu {
         } else {
             self.main_button_class = Some(class.into());
         }
-    }
-
-    /// Builder style method to set the popup alignment
-    pub fn align(mut self, align: FabMenuAlign) -> Self {
-        self.set_align(align);
-        self
-    }
-
-    /// Method to set the popup alignment
-    pub fn set_align(&mut self, align: FabMenuAlign) {
-        self.align = align;
-    }
-
-    /// Builder style method to set the popup direction
-    pub fn direction(mut self, direction: FabMenuDirection) -> Self {
-        self.set_direction(direction);
-        self
-    }
-
-    /// Method to set the popup direction
-    pub fn set_direction(&mut self, direction: FabMenuDirection) {
-        self.direction = direction;
     }
 
     /// Builder style method to add a child button
@@ -180,6 +145,8 @@ impl Component for PwtFabMenu {
         };
 
         let mut container = Container::new()
+            .with_std_props(&props.std_props)
+            .listeners(&props.listeners)
             .class("pwt-fab-menu-container")
             .class(match props.align {
                 FabMenuAlign::Start => Some("pwt-fab-align-start"),
@@ -230,13 +197,5 @@ impl Component for PwtFabMenu {
         }
 
         container.into()
-    }
-}
-
-impl From<FabMenu> for VNode {
-    fn from(val: FabMenu) -> Self {
-        let key = val.key.clone();
-        let comp = VComp::new::<PwtFabMenu>(Rc::new(val), key);
-        VNode::from(comp)
     }
 }
