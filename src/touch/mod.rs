@@ -8,7 +8,7 @@ mod gesture_detector;
 pub use gesture_detector::{GestureDetector, GestureSwipeEvent, InputEvent, PwtGestureDetector};
 
 mod fab;
-pub use fab::{Fab, PwtFab};
+pub use fab::{Fab, FabSize, PwtFab};
 
 mod fab_menu;
 pub use fab_menu::{FabMenu, FabMenuAlign, FabMenuDirection, PwtFabMenu};

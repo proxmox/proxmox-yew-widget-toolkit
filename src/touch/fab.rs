@@ -7,12 +7,24 @@ use yew::virtual_dom::{Key, VComp, VNode};
 use crate::props::{AsClassesMut, WidgetBuilder};
 use crate::widget::Button;
 
+#[derive(Clone, Copy, PartialEq, Eq, Default)]
+pub enum FabSize {
+    Small,
+    #[default]
+    Standard,
+    Large,
+}
+
 /// Favorite action button.
 #[derive(Properties, Clone, PartialEq)]
 pub struct Fab {
     /// The yew component key.
     #[prop_or_default]
     pub key: Option<Key>,
+
+    /// The size of the FAB
+    #[prop_or_default]
+    pub size: FabSize,
 
     /// Icon (CSS class).
     pub icon_class: Classes,
@@ -83,14 +95,25 @@ impl Fab {
 
     /// Builder style method to add the "pwt-fab-small" class
     pub fn small(mut self) -> Self {
-        self.add_class("pwt-fab-small");
+        self.size = FabSize::Small;
         self
     }
 
     /// Builder style method to add the "pwt-fab-large" class
     pub fn large(mut self) -> Self {
-        self.add_class("pwt-fab-large");
+        self.size = FabSize::Large;
         self
+    }
+
+    /// Builder method to set the FAB size.
+    pub fn size(mut self, size: FabSize) -> Self {
+        self.set_size(size);
+        self
+    }
+
+    /// Method to set the FAB size.
+    pub fn set_size(&mut self, size: FabSize) {
+        self.size = size;
     }
 
     /// Builder style method to set the button text
@@ -130,6 +153,16 @@ impl Component for PwtFab {
 
         let mut class = props.class.clone();
         class.push("pwt-fab");
+
+        match props.size {
+            FabSize::Small => {
+                class.push("pwt-fab-small");
+            }
+            FabSize::Standard => {}
+            FabSize::Large => {
+                class.push("pwt-fab-large");
+            }
+        }
 
         let button = match &props.text {
             Some(text) => Button::new(text)
