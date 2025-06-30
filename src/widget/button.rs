@@ -214,7 +214,7 @@ impl Component for PwtButton {
             if !icon_class.is_empty() {
                 // Chromium fires onclick from nested elements, so we need to suppress that manually here
                 children.push(html!{
-                    <span class="pwt-font-label-large" onclick={suppress_onclick.clone()}><i role="none" class={icon_class.clone()}></i></span>
+                    <span onclick={suppress_onclick.clone()}><i role="none" class={icon_class.clone()}></i></span>
                 });
             }
         }
