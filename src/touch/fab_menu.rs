@@ -1,10 +1,12 @@
 use yew::prelude::*;
 
+use crate::css::ColorScheme;
 use crate::props::{ContainerBuilder, EventSubscriber, WidgetBuilder};
-use crate::widget::Container;
+use crate::widget::{Button, Container};
 
 use pwt_macros::{builder, widget};
 
+use super::fab::FabSize;
 use super::Fab;
 
 /// [FabMenu] direction.
@@ -12,16 +14,46 @@ use super::Fab;
 pub enum FabMenuDirection {
     Up,
     Down,
-    Left,
-    Right,
 }
 
 /// [FabMenu] alignment.
 #[derive(Copy, Clone, PartialEq)]
 pub enum FabMenuAlign {
     Start,
-    Center,
     End,
+}
+
+/// An entry for a [FabMenu]
+#[derive(PartialEq, Clone)]
+pub struct FabMenuEntry {
+    pub text: AttrValue,
+    pub icon: AttrValue,
+    pub on_activate: Callback<MouseEvent>,
+}
+
+impl FabMenuEntry {
+    pub fn new(
+        text: impl Into<AttrValue>,
+        icon: impl Into<AttrValue>,
+        on_activate: impl Into<Callback<MouseEvent>>,
+    ) -> Self {
+        Self {
+            text: text.into(),
+            icon: icon.into(),
+            on_activate: on_activate.into(),
+        }
+    }
+}
+
+/// [FabMenu] Color
+///
+/// Determines the color of the [Fab] and the [FabMenuEntry].
+#[derive(Clone, Copy, PartialEq, Eq, Default)]
+pub enum FabMenuColor {
+    #[default]
+    Primary,
+    Secondary,
+    Tertiary,
 }
 
 /// Favorite actions button Menu.
@@ -29,6 +61,16 @@ pub enum FabMenuAlign {
 #[derive(Properties, Clone, PartialEq)]
 #[builder]
 pub struct FabMenu {
+    /// The size of the [Fab]
+    #[prop_or_default]
+    #[builder]
+    pub size: FabSize,
+
+    /// The color scheme to apply on the [Fab] and the [FabMenuEntry]
+    #[prop_or_default]
+    #[builder]
+    pub color: FabMenuColor,
+
     /// Main button Icon (CSS class).
     #[prop_or_default]
     pub main_icon_class: Option<Classes>,
@@ -44,7 +86,7 @@ pub struct FabMenu {
 
     /// Menu alignment
     ///
-    #[prop_or(FabMenuAlign::Center)]
+    #[prop_or(FabMenuAlign::End)]
     #[builder]
     pub align: FabMenuAlign,
 
@@ -52,7 +94,7 @@ pub struct FabMenu {
     ///
     /// We currently support up to 5 children.
     #[prop_or_default]
-    pub children: Vec<Fab>,
+    pub children: Vec<FabMenuEntry>,
 }
 
 impl Default for FabMenu {
@@ -94,13 +136,13 @@ impl FabMenu {
     }
 
     /// Builder style method to add a child button
-    pub fn with_child(mut self, child: impl Into<Fab>) -> Self {
+    pub fn with_child(mut self, child: impl Into<FabMenuEntry>) -> Self {
         self.add_child(child);
         self
     }
 
     /// Method to add a child button
-    pub fn add_child(&mut self, child: impl Into<Fab>) {
+    pub fn add_child(&mut self, child: impl Into<FabMenuEntry>) {
         self.children.push(child.into());
     }
 }
@@ -139,26 +181,33 @@ impl Component for PwtFabMenu {
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
 
-        let main_icon_class = match &props.main_icon_class {
-            Some(class) => class.clone(),
-            None => classes!("fa", "fa-plus"),
+        let main_icon_class = match (self.show_items, &props.main_icon_class) {
+            (false, Some(class)) => class.clone(),
+            (false, None) => classes!("fa", "fa-plus"),
+            (true, _) => classes!("fa", "fa-times"),
         };
+
+        let (close_color, color) = match props.color {
+            FabMenuColor::Primary => (ColorScheme::Primary, ColorScheme::PrimaryContainer),
+            FabMenuColor::Secondary => (ColorScheme::Secondary, ColorScheme::SecondaryContainer),
+            FabMenuColor::Tertiary => (ColorScheme::Tertiary, ColorScheme::TertiaryContainer),
+        };
+
+        let main_button = Fab::new(main_icon_class)
+            .size(if self.show_items {
+                FabSize::Small
+            } else {
+                props.size
+            })
+            .class(props.main_button_class.clone())
+            .class(if self.show_items { close_color } else { color })
+            .class(self.show_items.then_some("rounded"))
+            .on_activate(ctx.link().callback(|_| Msg::Toggle));
 
         let mut container = Container::new()
             .with_std_props(&props.std_props)
             .listeners(&props.listeners)
             .class("pwt-fab-menu-container")
-            .class(match props.align {
-                FabMenuAlign::Start => Some("pwt-fab-align-start"),
-                FabMenuAlign::End => Some("pwt-fab-align-end"),
-                FabMenuAlign::Center => None,
-            })
-            .class(match props.direction {
-                FabMenuDirection::Up => "pwt-fab-direction-up",
-                FabMenuDirection::Down => "pwt-fab-direction-down",
-                FabMenuDirection::Left => "pwt-fab-direction-left",
-                FabMenuDirection::Right => "pwt-fab-direction-right",
-            })
             .class(self.show_items.then_some("active"))
             .onkeydown({
                 let link = ctx.link().clone();
@@ -169,33 +218,50 @@ impl Component for PwtFabMenu {
                 }
             });
 
-        let main_button = Fab::new(main_icon_class)
-            .class(props.main_button_class.clone())
-            .on_activate(ctx.link().callback(|_| Msg::Toggle));
-
-        container.add_child(main_button);
-
         for (i, child) in props.children.iter().enumerate() {
             if i >= 5 {
                 log::error!("FabMenu only supports 5 child buttons.");
                 break;
             }
-            let orig_on_activate = child.on_activate.clone();
+
+            let on_activate = child.on_activate.clone();
             let link = ctx.link().clone();
 
-            let child_button = child
-                .clone()
-                .small()
+            let child = Button::new(child.text.clone())
+                .icon_class(child.icon.clone())
+                .class("medium")
+                .class(color)
                 .class("pwt-fab-menu-item")
                 .on_activate(move |event| {
                     link.send_message(Msg::Toggle);
-                    if let Some(on_activate) = &orig_on_activate {
-                        on_activate.emit(event);
-                    }
+                    on_activate.emit(event);
                 });
-            container.add_child(child_button);
+            container.add_child(child);
         }
 
-        container.into()
+        Container::new()
+            .with_std_props(&props.std_props)
+            .listeners(&props.listeners)
+            .class("pwt-fab-menu-outer")
+            .class(match props.align {
+                FabMenuAlign::Start => Some("pwt-fab-align-start"),
+                FabMenuAlign::End => Some("pwt-fab-align-end"),
+            })
+            .class(match props.direction {
+                FabMenuDirection::Up => "pwt-fab-direction-up",
+                FabMenuDirection::Down => "pwt-fab-direction-down",
+            })
+            .with_child(
+                Container::new()
+                    .class("pwt-fab-menu-main")
+                    .class(match props.size {
+                        FabSize::Small => "small",
+                        FabSize::Standard => "",
+                        FabSize::Large => "large",
+                    })
+                    .with_child(main_button),
+            )
+            .with_child(container)
+            .into()
     }
 }

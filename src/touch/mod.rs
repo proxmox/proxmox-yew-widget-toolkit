@@ -11,7 +11,9 @@ mod fab;
 pub use fab::{Fab, FabSize, PwtFab};
 
 mod fab_menu;
-pub use fab_menu::{FabMenu, FabMenuAlign, FabMenuDirection, PwtFabMenu};
+pub use fab_menu::{
+    FabMenu, FabMenuAlign, FabMenuColor, FabMenuDirection, FabMenuEntry, PwtFabMenu,
+};
 
 mod material_app;
 pub use material_app::PageController;
