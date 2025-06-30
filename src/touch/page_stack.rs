@@ -1,5 +1,6 @@
 use std::rc::Rc;
 
+use yew::html::IntoPropValue;
 use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 //use yew::html::IntoEventCallback;
@@ -41,8 +42,8 @@ pub struct PageStack {
     #[prop_or_default]
     stack: Vec<Html>,
 
-    #[prop_or(PageAnimationStyle::Push)]
-    animation_style: PageAnimationStyle,
+    #[prop_or_default]
+    animation_style: Option<PageAnimationStyle>,
 }
 
 impl PageStack {
@@ -50,8 +51,11 @@ impl PageStack {
         yew::props!(Self { stack: pages })
     }
 
-    pub fn animation_style(mut self, style: PageAnimationStyle) -> Self {
-        self.animation_style = style;
+    pub fn animation_style(
+        mut self,
+        style: impl IntoPropValue<Option<PageAnimationStyle>>,
+    ) -> Self {
+        self.animation_style = style.into_prop_value();
         self
     }
 }
@@ -112,10 +116,12 @@ impl Component for PwtPageStack {
         let props = ctx.props();
 
         if let Some(last) = self.stack.last() {
-            match props.stack.len().cmp(&self.stack.len()) {
-                std::cmp::Ordering::Less => self.state = ViewState::Shrink(last.clone()),
-                std::cmp::Ordering::Greater => self.state = ViewState::Grow(last.clone()),
-                _ => {}
+            if props.animation_style.is_some() {
+                match props.stack.len().cmp(&self.stack.len()) {
+                    std::cmp::Ordering::Less => self.state = ViewState::Shrink(last.clone()),
+                    std::cmp::Ordering::Greater => self.state = ViewState::Grow(last.clone()),
+                    _ => {}
+                }
             }
         }
 
