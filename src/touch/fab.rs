@@ -1,11 +1,10 @@
-use std::rc::Rc;
-
 use yew::html::{IntoEventCallback, IntoPropValue};
 use yew::prelude::*;
-use yew::virtual_dom::{Key, VComp, VNode};
 
-use crate::props::{AsClassesMut, WidgetBuilder};
+use crate::props::{EventSubscriber, WidgetBuilder};
 use crate::widget::Button;
+
+use pwt_macros::{builder, widget};
 
 #[derive(Clone, Copy, PartialEq, Eq, Default)]
 pub enum FabSize {
@@ -16,14 +15,13 @@ pub enum FabSize {
 }
 
 /// Favorite action button.
+#[widget(pwt=crate, comp=PwtFab, @element)]
 #[derive(Properties, Clone, PartialEq)]
+#[builder]
 pub struct Fab {
-    /// The yew component key.
-    #[prop_or_default]
-    pub key: Option<Key>,
-
     /// The size of the FAB
     #[prop_or_default]
+    #[builder]
     pub size: FabSize,
 
     /// Icon (CSS class).
@@ -31,25 +29,13 @@ pub struct Fab {
 
     /// Optional Button text (for small buttons)
     #[prop_or_default]
+    #[builder(IntoPropValue, into_prop_value)]
     pub text: Option<AttrValue>,
-
-    /// CSS class.
-    #[prop_or_default]
-    pub class: Classes,
-
-    /// Style attribute (use this to set button position)
-    #[prop_or_default]
-    pub style: Option<AttrValue>,
 
     /// Click callback
     #[prop_or_default]
+    #[builder_cb(IntoEventCallback, into_event_callback, MouseEvent)]
     pub on_activate: Option<Callback<MouseEvent>>,
-}
-
-impl AsClassesMut for Fab {
-    fn as_classes_mut(&mut self) -> &mut yew::Classes {
-        &mut self.class
-    }
 }
 
 impl Fab {
@@ -58,39 +44,6 @@ impl Fab {
         yew::props!(Self {
             icon_class: icon_class.into(),
         })
-    }
-
-    /// Builder style method to set the yew `key` property
-    pub fn key(mut self, key: impl IntoPropValue<Option<Key>>) -> Self {
-        self.set_key(key);
-        self
-    }
-
-    /// Method to set the yew `key` property
-    pub fn set_key(&mut self, key: impl IntoPropValue<Option<Key>>) {
-        self.key = key.into_prop_value();
-    }
-
-    /// Builder style method to add a html class
-    pub fn class(mut self, class: impl Into<Classes>) -> Self {
-        self.add_class(class);
-        self
-    }
-
-    /// Method to add a html class.
-    pub fn add_class(&mut self, class: impl Into<Classes>) {
-        self.class.push(class);
-    }
-
-    /// Builder style method to set the html style
-    pub fn style(mut self, style: impl IntoPropValue<Option<AttrValue>>) -> Self {
-        self.set_style(style);
-        self
-    }
-
-    /// Method to set the html style
-    pub fn set_style(&mut self, style: impl IntoPropValue<Option<AttrValue>>) {
-        self.style = style.into_prop_value();
     }
 
     /// Builder style method to add the "pwt-fab-small" class
@@ -102,34 +55,6 @@ impl Fab {
     /// Builder style method to add the "pwt-fab-large" class
     pub fn large(mut self) -> Self {
         self.size = FabSize::Large;
-        self
-    }
-
-    /// Builder method to set the FAB size.
-    pub fn size(mut self, size: FabSize) -> Self {
-        self.set_size(size);
-        self
-    }
-
-    /// Method to set the FAB size.
-    pub fn set_size(&mut self, size: FabSize) {
-        self.size = size;
-    }
-
-    /// Builder style method to set the button text
-    pub fn text(mut self, text: impl IntoPropValue<Option<AttrValue>>) -> Self {
-        self.set_text(text);
-        self
-    }
-
-    /// Method to set the button text
-    pub fn set_text(&mut self, text: impl IntoPropValue<Option<AttrValue>>) {
-        self.text = text.into_prop_value();
-    }
-
-    /// Builder style method to set the on_activate callback.
-    pub fn on_activate(mut self, cb: impl IntoEventCallback<MouseEvent>) -> Self {
-        self.on_activate = cb.into_event_callback();
         self
     }
 }
@@ -151,8 +76,7 @@ impl Component for PwtFab {
         let mut icon_class = props.icon_class.clone();
         icon_class.push("pwt-fab-icon");
 
-        let mut class = props.class.clone();
-        class.push("pwt-fab");
+        let mut class = classes!("pwt-fab");
 
         match props.size {
             FabSize::Small => {
@@ -164,16 +88,15 @@ impl Component for PwtFab {
             }
         }
 
-        let button = match &props.text {
-            Some(text) => Button::new(text)
-                .icon_class(icon_class)
-                .class("pwt-fab-extended"),
-            None => Button::new_icon(icon_class),
-        };
+        if props.text.is_some() {
+            class.push("pwt-fab-extended");
+        }
 
-        button
+        Button::new(&props.text)
+            .icon_class(icon_class)
+            .with_std_props(&props.std_props)
+            .listeners(&props.listeners)
             .class(class)
-            .attribute("style", props.style.clone())
             .on_activate(Callback::from({
                 let on_activate = props.on_activate.clone();
                 move |event: MouseEvent| {
@@ -183,13 +106,5 @@ impl Component for PwtFab {
                 }
             }))
             .into()
-    }
-}
-
-impl From<Fab> for VNode {
-    fn from(val: Fab) -> Self {
-        let key = val.key.clone();
-        let comp = VComp::new::<PwtFab>(Rc::new(val), key);
-        VNode::from(comp)
     }
 }
