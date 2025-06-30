@@ -13,7 +13,7 @@ use pwt_macros::builder;
 
 use crate::prelude::*;
 use crate::state::{NavigationContainer, SharedState, SharedStateObserver};
-use crate::touch::{SnackBarController, SnackBarManager};
+use crate::touch::{PageAnimationStyle, SnackBarController, SnackBarManager};
 use crate::widget::{Container, ThemeLoader};
 
 use super::{PageStack, SideDialog, SideDialogController, SideDialogLocation};
@@ -207,6 +207,11 @@ pub struct MaterialApp {
     #[builder(IntoPropValue, into_prop_value)]
     #[prop_or_default]
     pub history: Option<AnyHistory>,
+
+    /// Page animation style used when switching between pages
+    #[builder(IntoPropValue, into_prop_value)]
+    #[prop_or_default]
+    pub page_animation: Option<PageAnimationStyle>,
 }
 
 impl MaterialApp {
@@ -372,7 +377,7 @@ impl Component for PwtMaterialApp {
 
         let app = Container::new()
             .class("pwt-viewport")
-            .with_child(PageStack::new(page_stack))
+            .with_child(PageStack::new(page_stack).animation_style(props.page_animation))
             .with_child(
                 SnackBarManager::new()
                     .controller(self.snackbar_controller.clone())
