@@ -45,18 +45,6 @@ impl Fab {
             icon_class: icon_class.into(),
         })
     }
-
-    /// Builder style method to add the "pwt-fab-small" class
-    pub fn small(mut self) -> Self {
-        self.size = FabSize::Small;
-        self
-    }
-
-    /// Builder style method to add the "pwt-fab-large" class
-    pub fn large(mut self) -> Self {
-        self.size = FabSize::Large;
-        self
-    }
 }
 
 #[doc(hidden)]
