@@ -35,6 +35,10 @@ pub struct SubmitButton {
     #[builder(IntoPropValue, into_prop_value)]
     pub text: Option<AttrValue>,
 
+    /// Icon (CSS class).
+    #[prop_or_default]
+    pub icon_class: Option<Classes>,
+
     /// Disable submit button if there are no changes.
     #[prop_or(true)]
     #[builder]
@@ -48,9 +52,20 @@ impl Default for SubmitButton {
 }
 
 impl SubmitButton {
-    /// Createa new instance.
+    /// Create a new instance.
     pub fn new() -> Self {
         yew::props!(Self {})
+    }
+
+    /// Builder style method to set the icon CSS class.
+    pub fn icon_class(mut self, icon_class: impl Into<Classes>) -> Self {
+        self.set_icon_class(icon_class);
+        self
+    }
+
+    /// Method to set the icon CSS class.
+    pub fn set_icon_class(&mut self, icon_class: impl Into<Classes>) {
+        self.icon_class = Some(icon_class.into());
     }
 }
 
@@ -151,6 +166,7 @@ impl Component for PwtSubmitButton {
             .with_std_props(props.as_std_props())
             .button_type(ButtonType::Submit)
             .disabled(disabled)
+            .icon_class(props.icon_class.clone())
             .onclick(submit)
             .into()
     }
