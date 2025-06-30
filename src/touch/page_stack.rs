@@ -15,6 +15,9 @@ use crate::widget::Container;
 pub enum PageAnimationStyle {
     Push,
     Fade,
+    FadeFromRight,
+    FadeFromBottom,
+    Flip,
     Cover,
 }
 
@@ -23,6 +26,9 @@ impl From<PageAnimationStyle> for Classes {
         match val {
             PageAnimationStyle::Push => "pwt-page-animation-push",
             PageAnimationStyle::Fade => "pwt-page-animation-fade",
+            PageAnimationStyle::FadeFromRight => "pwt-page-animation-fade-from-right",
+            PageAnimationStyle::FadeFromBottom => "pwt-page-animation-fade-from-bottom",
+            PageAnimationStyle::Flip => "pwt-page-animation-flip",
             PageAnimationStyle::Cover => "pwt-page-animation-cover",
         }
         .into()
@@ -206,6 +212,7 @@ impl Component for PwtPageStack {
         Container::new()
             .class("pwt-position-relative")
             .class("pwt-overflow-hidden")
+            .class("pwt-page-outer")
             .width(CssLength::Fraction(1.0))
             .height(CssLength::Fraction(1.0))
             .children(children)
