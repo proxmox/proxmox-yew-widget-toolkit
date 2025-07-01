@@ -76,7 +76,7 @@ impl PageController {
     pub fn show_drawer(&self, drawer: impl Into<VNode>) {
         self.show_side_dialog(
             SideDialog::new()
-                .direction(SideDialogLocation::Left)
+                .location(SideDialogLocation::Left)
                 .with_child(drawer.into()),
         );
     }
@@ -87,7 +87,7 @@ impl PageController {
     pub fn show_end_drawer(&self, drawer: impl Into<VNode>) {
         self.show_side_dialog(
             SideDialog::new()
-                .direction(SideDialogLocation::Right)
+                .location(SideDialogLocation::Right)
                 .with_child(drawer.into()),
         );
     }
@@ -98,7 +98,7 @@ impl PageController {
     pub fn show_modal_bottom_sheet(&self, bottom_sheet: impl Into<VNode>) {
         self.show_side_dialog(
             SideDialog::new()
-                .direction(SideDialogLocation::Bottom)
+                .location(SideDialogLocation::Bottom)
                 .with_child(bottom_sheet.into()),
         );
     }

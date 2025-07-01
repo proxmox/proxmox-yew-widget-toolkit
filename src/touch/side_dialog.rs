@@ -86,7 +86,7 @@ pub struct SideDialog {
 
     #[prop_or(SideDialogLocation::Left)]
     #[builder]
-    pub direction: SideDialogLocation,
+    pub location: SideDialogLocation,
 }
 
 impl ContainerBuilder for SideDialog {
@@ -274,7 +274,7 @@ impl Component for PwtSideDialog {
                 let mut dismiss = false;
                 let threshold = 100.0;
                 if let Some((delta_x, delta_y)) = self.drag_delta {
-                    dismiss = match props.direction {
+                    dismiss = match props.location {
                         SideDialogLocation::Left => delta_x < -threshold,
                         SideDialogLocation::Right => delta_x > threshold,
                         SideDialogLocation::Top => delta_y < -threshold,
@@ -300,7 +300,7 @@ impl Component for PwtSideDialog {
             }
             Msg::Swipe(event) => {
                 let angle = event.direction; // -180 to + 180
-                let dismiss = match props.direction {
+                let dismiss = match props.location {
                     SideDialogLocation::Left => !(-135.0..=135.0).contains(&angle),
                     SideDialogLocation::Right => angle > -45.0 && angle < 45.0,
                     SideDialogLocation::Top => angle > 45.0 && angle < 135.0,
@@ -338,7 +338,7 @@ impl Component for PwtSideDialog {
             SliderState::Visible | SliderState::SlideIn => "visible",
         };
 
-        let slider_direction_class = match props.direction {
+        let slider_direction_class = match props.location {
             SideDialogLocation::Left => "pwt-side-dialog-left",
             SideDialogLocation::Right => "pwt-side-dialog-right",
             SideDialogLocation::Top => "pwt-side-dialog-top",
@@ -349,7 +349,7 @@ impl Component for PwtSideDialog {
         let mut transition = None;
         if let Some((delta_x, delta_y)) = self.drag_delta {
             transition = Some("none");
-            match props.direction {
+            match props.location {
                 SideDialogLocation::Left => {
                     let delta_x = delta_x.min(0.0);
                     transform = Some(format!("translateX({delta_x}px)"));
