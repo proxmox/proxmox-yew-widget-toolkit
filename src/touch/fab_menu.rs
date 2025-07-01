@@ -1,13 +1,23 @@
 use yew::prelude::*;
 
-use crate::css::ColorScheme;
-use crate::props::{ContainerBuilder, EventSubscriber, WidgetBuilder};
-use crate::widget::{Button, Container};
+use crate::css::{self, ColorScheme};
+use crate::props::{ContainerBuilder, CssPaddingBuilder, EventSubscriber, WidgetBuilder};
+use crate::touch::{SideDialog, SideDialogController};
+use crate::tr;
+use crate::widget::{Button, Column, Container};
 
 use pwt_macros::{builder, widget};
 
 use super::fab::FabSize;
 use super::Fab;
+
+/// [FabMenu] variant
+#[derive(Copy, Clone, PartialEq, Debug, Default)]
+pub enum FabMenuVariant {
+    #[default]
+    Sheet,
+    Material3,
+}
 
 /// [FabMenu] direction.
 #[derive(Copy, Clone, PartialEq)]
@@ -89,6 +99,11 @@ pub struct FabMenu {
     #[prop_or(FabMenuAlign::End)]
     #[builder]
     pub align: FabMenuAlign,
+
+    /// Menu variant
+    #[prop_or_default]
+    #[builder]
+    pub variant: FabMenuVariant,
 
     /// Child buttons, which popup when main button is pressed.
     ///
@@ -193,51 +208,85 @@ impl Component for PwtFabMenu {
             FabMenuColor::Tertiary => (ColorScheme::Tertiary, ColorScheme::TertiaryContainer),
         };
 
+        let (fab_size, fab_classes) = match (props.variant, self.show_items) {
+            (FabMenuVariant::Material3, true) => (FabSize::Small, classes!(close_color, "rounded")),
+            (_, false) | (FabMenuVariant::Sheet, true) => (props.size, classes!()),
+        };
+
         let main_button = Fab::new(main_icon_class)
-            .size(if self.show_items {
-                FabSize::Small
-            } else {
-                props.size
-            })
+            .size(fab_size)
             .class(props.main_button_class.clone())
-            .class(if self.show_items { close_color } else { color })
-            .class(self.show_items.then_some("rounded"))
+            .class(fab_classes)
             .on_activate(ctx.link().callback(|_| Msg::Toggle));
 
-        let mut container = Container::new()
-            .with_std_props(&props.std_props)
-            .listeners(&props.listeners)
-            .class("pwt-fab-menu-container")
-            .class(self.show_items.then_some("active"))
-            .onkeydown({
-                let link = ctx.link().clone();
-                move |event: KeyboardEvent| {
-                    if event.key() == "Escape" {
-                        link.send_message(Msg::Close)
-                    }
-                }
-            });
+        let btn_class = match props.variant {
+            FabMenuVariant::Sheet => classes!("pwt-button-text"),
+            FabMenuVariant::Material3 => classes!(color, "pwt-fab-menu-item", "medium"),
+        };
 
-        for (i, child) in props.children.iter().enumerate() {
+        let children = props.children.iter().enumerate().filter_map(|(i, child)| {
             if i >= 5 {
                 log::error!("FabMenu only supports 5 child buttons.");
-                break;
+                return None;
             }
 
             let on_activate = child.on_activate.clone();
             let link = ctx.link().clone();
 
-            let child = Button::new(child.text.clone())
-                .icon_class(child.icon.clone())
-                .class("medium")
-                .class(color)
-                .class("pwt-fab-menu-item")
-                .on_activate(move |event| {
-                    link.send_message(Msg::Toggle);
-                    on_activate.emit(event);
-                });
-            container.add_child(child);
-        }
+            Some(
+                Button::new(child.text.clone())
+                    .icon_class(child.icon.clone())
+                    .class(btn_class.clone())
+                    .on_activate(move |event| {
+                        link.send_message(Msg::Toggle);
+                        on_activate.emit(event);
+                    })
+                    .into(),
+            )
+        });
+
+        let container: Option<Html> = match props.variant {
+            FabMenuVariant::Sheet => {
+                let controller = SideDialogController::new();
+                self.show_items.then_some(
+                    SideDialog::new()
+                        .controller(controller.clone())
+                        .location(crate::touch::SideDialogLocation::Bottom)
+                        .on_close(ctx.link().callback(|_| Msg::Toggle))
+                        .with_child(
+                            Column::new()
+                                .class(css::FlexFit)
+                                .padding(2)
+                                .gap(1)
+                                .children(children)
+                                .with_child(html!(<hr />))
+                                .with_child(
+                                    Button::new(tr!("Cancel"))
+                                        .class("pwt-button-text")
+                                        .on_activate(move |_| controller.close_dialog()),
+                                ),
+                        )
+                        .into(),
+                )
+            }
+            FabMenuVariant::Material3 => Some(
+                Container::new()
+                    .with_std_props(&props.std_props)
+                    .listeners(&props.listeners)
+                    .class("pwt-fab-menu-container")
+                    .class(self.show_items.then_some("active"))
+                    .onkeydown({
+                        let link = ctx.link().clone();
+                        move |event: KeyboardEvent| {
+                            if event.key() == "Escape" {
+                                link.send_message(Msg::Close)
+                            }
+                        }
+                    })
+                    .children(children)
+                    .into(),
+            ),
+        };
 
         Container::new()
             .with_std_props(&props.std_props)
@@ -261,7 +310,7 @@ impl Component for PwtFabMenu {
                     })
                     .with_child(main_button),
             )
-            .with_child(container)
+            .with_optional_child(container)
             .into()
     }
 }
