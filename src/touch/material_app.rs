@@ -210,7 +210,7 @@ pub struct MaterialApp {
 
     /// Page animation style used when switching between pages
     #[builder(IntoPropValue, into_prop_value)]
-    #[prop_or_default]
+    #[prop_or(Some(PageAnimationStyle::FadeFromRight))]
     pub page_animation: Option<PageAnimationStyle>,
 }
 
