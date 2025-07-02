@@ -529,12 +529,21 @@ impl Component for PwtDialog {
             add_handle(&link, Point::BottomStart, "south-west");
         }
 
+        // Make sure we do not send touch event to other dialogs (as chrome, does by default)
+        let cancel_event = Callback::from(|event: TouchEvent| {
+            event.stop_propagation();
+        });
+
         let dialog = Container::from_tag("dialog")
             .node_ref(props.node_ref.clone())
             .class("pwt-outer-dialog")
             .onpointerdown(onpointerdown)
             .oncancel(oncancel)
             .onclose(onclose)
+            .ontouchstart(cancel_event.clone())
+            .ontouchend(cancel_event.clone())
+            .ontouchmove(cancel_event.clone())
+            .ontouchcancel(cancel_event.clone())
             .attribute("aria-label", props.title.clone())
             .with_child(inner);
 
