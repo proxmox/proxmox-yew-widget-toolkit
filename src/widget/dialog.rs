@@ -455,15 +455,11 @@ impl Component for PwtDialog {
         let props = ctx.props();
         let link = ctx.link().clone();
 
-        let on_close = link.callback(|_| Msg::Close);
-
-        let oncancel = link.callback(|event: Event| {
+        let onclose = link.callback(|event: Event| {
             event.stop_propagation();
             event.prevent_default();
             Msg::Close
         });
-
-        let onclose = oncancel.clone();
 
         let mut panel = Panel::new()
             .class("pwt-overflow-auto")
@@ -481,7 +477,7 @@ impl Component for PwtDialog {
             panel.add_tool(
                 ActionIcon::new("fa fa-close")
                     .aria_label("Close Dialog")
-                    .on_activate(on_close),
+                    .on_activate(link.callback(|_| Msg::Close)),
             );
         };
 
@@ -538,7 +534,6 @@ impl Component for PwtDialog {
             .node_ref(props.node_ref.clone())
             .class("pwt-outer-dialog")
             .onpointerdown(onpointerdown)
-            .oncancel(oncancel)
             .onclose(onclose)
             .ontouchstart(cancel_event.clone())
             .ontouchend(cancel_event.clone())
