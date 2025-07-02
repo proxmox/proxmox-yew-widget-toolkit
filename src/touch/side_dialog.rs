@@ -374,6 +374,7 @@ impl Component for PwtSideDialog {
             .class("pwt-side-dialog")
             .class(slider_state_class)
             .oncancel(oncancel)
+            .onclose(link.callback(|_| Msg::Close))
             .with_child(
                 Container::new()
                     .node_ref(self.slider_ref.clone())
