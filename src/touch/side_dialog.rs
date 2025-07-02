@@ -413,11 +413,14 @@ impl Component for PwtSideDialog {
             .on_drag_update(ctx.link().callback(Msg::Drag))
             .on_swipe(ctx.link().callback(Msg::Swipe));
 
-        html! {
+        let controller_context = html! {
             <ContextProvider<SideDialogController> context={self.controller.clone()}>
             {view}
             </ContextProvider<SideDialogController>>
-        }
+        };
+
+        // avoid problems with nested form
+        create_portal(controller_context, gloo_utils::body().into())
     }
 
     fn rendered(&mut self, ctx: &Context<Self>, first_render: bool) {
