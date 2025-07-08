@@ -1,6 +1,6 @@
 [package]
 name = "pwt"
-version = "0.5.0"
+version = "0.6.0"
 edition = "2021"
 authors = [
   "Dietmar Maurer <dietmar@proxmox.com>",
@@ -71,4 +71,4 @@ url = "2.1"
 percent-encoding = "2.1"
 gettext = "0.4"
 
-pwt-macros = { version = "0.3", path = "pwt-macros" }
+pwt-macros = { version = "0.4", path = "pwt-macros" }

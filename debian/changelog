@@ -1,3 +1,103 @@
+rust-pwt (0.6.0) trixie; urgency=medium
+
+  * touch: scaffold: fix css positioning
+
+  * Field: set standard props on top level element
+
+  * SideDialog: fix css style
+
+  * Tooltip: allow to create empty toolkit container
+
+  * add new SplitButton widget
+
+  * cleanup: avoid compiler warning
+
+  * List: compute scroll_info when item_count changes
+
+  * cleanup: avoid compiler warning
+
+  * navigation_bar: add property to force active item
+
+  * navigation_bar: disable debug log
+
+  * NavigationBar: add class and node_ref property
+
+  * PageStack: assign unique key to all children
+
+  * MaterialApp: pass context to render method
+
+  * MaterialApp: do not force theme
+
+  * Revert "MaterialApp: pass context to render method"
+
+  * add scope extension to access material app page controller.
+
+  * TabBar: allow to force active tab
+
+  * touch: gesture detector: introduce `InputEvent`
+
+  * touch: gesture detector: implement a touch only mode
+
+  * touch: fab: rename on_click to on_activate
+
+  * touch: slidable action: rename on_click to on_activate
+
+  * touch: slidable action: add css classes property
+
+  * cleanup: use impl_class_prop_builder!() macro
+
+  * touch: slidable: add on_tap callback
+
+  * touch: slidable: cleanup unnecessary macro use
+
+  * Field: avoid state loss when adding additional triggers
+
+  * widget: implement Image widget
+
+  * widget: button: don't hardcode icons font size
+
+  * touch: page stack: add more animations
+
+  * touch: application bar: set custom class on back button
+
+  * touch: page stack: don't use animation by default
+
+  * touch: material app: allow pass through of page animation style
+
+  * touch: scaffold: fix overflow setting for body
+
+  * touch: scaffold: use direction independent positioning for the FAB
+
+  * touch: fab: add size option
+
+  * touch: fab: convert to widget macro
+
+  * touch: fab menu: convert to widget macro
+
+  * touch: fab menu: rework fab menu
+
+  * Fab: remove small/large builder function
+
+  * TabPanel/SelectionView: add an option to force rendering all tabs/views
+
+  * SubmitButton: add icon_class property
+
+  * touch: side dialog: rename 'direction' to 'location'
+
+  * touch: fab menu: intoduce sheet variant
+
+  * SideDialog: use a portal like we do in Dialog
+
+  * Dialog: stop touch event propagation
+
+  * SideDialog: make sure to trigger on_close
+
+  * Dialog: only listen to onclose
+
+  * touch: material app: change default animation to 'FadeFromRight'
+
+ -- Proxmox Support Team <support@proxmox.com>  Tue, 08 Jul 2025 13:27:47 +0200
+
 rust-pwt (0.5.0) bookworm; urgency=medium
 
   * DisplayField: cleanup property definition and use
