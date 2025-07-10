@@ -212,6 +212,11 @@ pub struct MaterialApp {
     #[builder(IntoPropValue, into_prop_value)]
     #[prop_or(Some(PageAnimationStyle::FadeFromRight))]
     pub page_animation: Option<PageAnimationStyle>,
+
+    #[builder]
+    #[prop_or_default]
+    /// The directory prefix for the css files. (E.g. "/css/")
+    pub theme_dir_prefix: AttrValue,
 }
 
 impl MaterialApp {
@@ -385,11 +390,14 @@ impl Component for PwtMaterialApp {
             )
             .with_optional_child(self.dialog.as_ref().map(|(_, dialog)| dialog.clone()));
 
+        let theme_loader = ThemeLoader::new(NavigationContainer::new().with_child(app))
+            .dir_prefix(props.theme_dir_prefix.clone());
+
         html! {
             <Router history={self.history.clone()} basename={props.basename.clone()}>
                 <ContextProvider<SnackBarController> context={self.snackbar_controller.clone()}>
                     <ContextProvider<PageController> context={self.page_controller.clone()}>
-                    { ThemeLoader::new(NavigationContainer::new().with_child(app))}
+                    { theme_loader }
                     </ContextProvider<PageController>>
                 </ContextProvider<SnackBarController>>
             </Router>
