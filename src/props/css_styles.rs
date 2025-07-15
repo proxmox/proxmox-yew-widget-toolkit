@@ -50,6 +50,16 @@ impl CssStyles {
 
         AttrValue::from(style)
     }
+
+    /// Return the number of key-value pairs in the map.
+    pub fn len(&self) -> usize {
+        self.styles.len()
+    }
+
+    /// Returns true if the map contains no elements.
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
 }
 
 // not completely spec compliant, since we ignore 'at-rules', but there are
