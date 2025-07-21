@@ -1,3 +1,11 @@
+rust-pwt (0.6.1) trixie; urgency=medium
+
+  * touch: material app: add option for the theme dir prefix
+
+  * avoid empty style attribute
+
+ -- Proxmox Support Team <support@proxmox.com>  Mon, 21 Jul 2025 11:15:19 +0200
+
 rust-pwt (0.6.0) trixie; urgency=medium
 
   * touch: scaffold: fix css positioning
