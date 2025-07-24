@@ -12,9 +12,10 @@ use yew_router::{history::History, Router};
 use pwt_macros::builder;
 
 use crate::prelude::*;
+use crate::props::{IntoOptionalTextRenderFn, TextRenderFn};
 use crate::state::{NavigationContainer, SharedState, SharedStateObserver};
 use crate::touch::{PageAnimationStyle, SnackBarController, SnackBarManager};
-use crate::widget::{Container, ThemeLoader};
+use crate::widget::{Container, CatalogLoader, ThemeLoader};
 
 use super::{PageStack, SideDialog, SideDialogController, SideDialogLocation};
 
@@ -127,6 +128,7 @@ impl PageController {
 ///
 /// - Provide a yew_router::HashRouter and [NavigationContainer]
 /// - uses [ThemeLoader] to load themes (dark/light)
+/// - uses [CatalogLoader] to load the I18N tranlation catalog.
 /// - Provides a [SnackBarController], and display snackbars using [SnackBarManager]
 /// - Uses [PageStack] to dislay/animate overlapping pages.
 /// - Provides a [PageController] to navigate and control the [PageStack].
@@ -217,6 +219,11 @@ pub struct MaterialApp {
     #[prop_or_default]
     /// The directory prefix for the css files. (E.g. "/css/")
     pub theme_dir_prefix: AttrValue,
+
+    /// Convert ISO 639-1 language code to server side catalog URLs (see [CatalogLoader]).
+    #[builder_cb(IntoOptionalTextRenderFn, into_optional_text_render_fn, String)]
+    #[prop_or_default]
+    pub catalog_url_builder: Option<TextRenderFn<String>>,
 }
 
 impl MaterialApp {
@@ -390,14 +397,15 @@ impl Component for PwtMaterialApp {
             )
             .with_optional_child(self.dialog.as_ref().map(|(_, dialog)| dialog.clone()));
 
-        let theme_loader = ThemeLoader::new(NavigationContainer::new().with_child(app))
+        let body = ThemeLoader::new(NavigationContainer::new().with_child(app))
             .dir_prefix(props.theme_dir_prefix.clone());
+        let body = CatalogLoader::new(body).url_builder(props.catalog_url_builder.clone());
 
         html! {
             <Router history={self.history.clone()} basename={props.basename.clone()}>
                 <ContextProvider<SnackBarController> context={self.snackbar_controller.clone()}>
                     <ContextProvider<PageController> context={self.page_controller.clone()}>
-                    { theme_loader }
+                    { body }
                     </ContextProvider<PageController>>
                 </ContextProvider<SnackBarController>>
             </Router>
