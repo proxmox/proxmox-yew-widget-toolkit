@@ -44,6 +44,11 @@ pub struct DesktopApp {
     #[builder_cb(IntoOptionalTextRenderFn, into_optional_text_render_fn, String)]
     #[prop_or_default]
     pub catalog_url_builder: Option<TextRenderFn<String>>,
+
+    /// Default language (skip catalog loading for this language)
+    #[builder(IntoPropValue, into_prop_value)]
+    #[prop_or(AttrValue::Static("en"))]
+    pub default_lang: AttrValue,
 }
 
 impl DesktopApp {
@@ -82,7 +87,9 @@ impl Component for PwtDesktopApp {
         let props = ctx.props();
 
         let body = ThemeLoader::new(props.body.clone());
-        let body = CatalogLoader::new(body).url_builder(props.catalog_url_builder.clone());
+        let body = CatalogLoader::new(body)
+            .default_lang(props.default_lang.clone())
+            .url_builder(props.catalog_url_builder.clone());
         let body = NavigationContainer::new().with_child(body);
         html! {
             <Router history={self.history.clone()} basename={props.basename.clone()}>{body}</Router>

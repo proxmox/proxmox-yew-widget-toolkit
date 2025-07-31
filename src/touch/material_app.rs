@@ -15,7 +15,7 @@ use crate::prelude::*;
 use crate::props::{IntoOptionalTextRenderFn, TextRenderFn};
 use crate::state::{NavigationContainer, SharedState, SharedStateObserver};
 use crate::touch::{PageAnimationStyle, SnackBarController, SnackBarManager};
-use crate::widget::{Container, CatalogLoader, ThemeLoader};
+use crate::widget::{CatalogLoader, Container, ThemeLoader};
 
 use super::{PageStack, SideDialog, SideDialogController, SideDialogLocation};
 
@@ -224,6 +224,11 @@ pub struct MaterialApp {
     #[builder_cb(IntoOptionalTextRenderFn, into_optional_text_render_fn, String)]
     #[prop_or_default]
     pub catalog_url_builder: Option<TextRenderFn<String>>,
+
+    /// Default language (skip catalog loading for this language)
+    #[builder(IntoPropValue, into_prop_value)]
+    #[prop_or(AttrValue::Static("en"))]
+    pub default_lang: AttrValue,
 }
 
 impl MaterialApp {
@@ -399,7 +404,9 @@ impl Component for PwtMaterialApp {
 
         let body = ThemeLoader::new(NavigationContainer::new().with_child(app))
             .dir_prefix(props.theme_dir_prefix.clone());
-        let body = CatalogLoader::new(body).url_builder(props.catalog_url_builder.clone());
+        let body = CatalogLoader::new(body)
+            .default_lang(props.default_lang.clone())
+            .url_builder(props.catalog_url_builder.clone());
 
         html! {
             <Router history={self.history.clone()} basename={props.basename.clone()}>

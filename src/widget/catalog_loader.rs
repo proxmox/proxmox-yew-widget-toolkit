@@ -37,6 +37,11 @@ pub struct CatalogLoader {
     #[builder_cb(IntoOptionalTextRenderFn, into_optional_text_render_fn, String)]
     #[prop_or_default]
     pub url_builder: Option<TextRenderFn<String>>,
+
+    /// Default language (skip catalog loading for this language)
+    #[builder(IntoPropValue, into_prop_value)]
+    #[prop_or(AttrValue::Static("en"))]
+    pub default_lang: AttrValue,
 }
 
 impl CatalogLoader {
@@ -147,9 +152,15 @@ impl Component for PwtCatalogLoader {
                     if self.last_url != url {
                         self.state = LoadState::Loading;
                         let link = ctx.link().clone();
-                        crate::init_i18n_from_url(&url, move |url| {
+
+                        if self.lang == props.default_lang {
+                            crate::init_i18n(Catalog::empty());
                             link.send_message(Msg::LoadFinished(url));
-                        });
+                        } else {
+                            crate::init_i18n_from_url(&url, move |url| {
+                                link.send_message(Msg::LoadFinished(url));
+                            });
+                        }
                     }
                 } else {
                     crate::init_i18n(Catalog::empty());
