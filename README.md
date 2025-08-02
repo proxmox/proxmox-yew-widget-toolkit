@@ -15,7 +15,9 @@ The [Whitepaper](Whitepaper.md) contains more details on this.
 
 We provide a separate repository with usage examples:
 
-https://git.proxmox.com/ui/proxmox-yew-wiget-toolkit-examples.git
+https://git.proxmox.com/?p=ui/proxmox-yew-widget-toolkit-examples.git;a=tree
+
+ git clone git://git.proxmox.com/git/ui/proxmox-yew-widget-toolkit-examples.git
 
 # Contributions
 
