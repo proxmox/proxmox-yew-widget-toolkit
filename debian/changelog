@@ -1,3 +1,11 @@
+rust-pwt (0.6.4) trixie; urgency=medium
+
+  * theme loader: use theme_url_builder instead of dir_prefix
+
+  * readme: fix example URL and provide git clone one
+
+ -- Proxmox Support Team <support@proxmox.com>  Tue, 05 Aug 2025 09:54:16 +0200
+
 rust-pwt (0.6.3) trixie; urgency=medium
 
   * fix tab panel layout when scroll_mode is None
