@@ -215,10 +215,10 @@ pub struct MaterialApp {
     #[prop_or(Some(PageAnimationStyle::FadeFromRight))]
     pub page_animation: Option<PageAnimationStyle>,
 
-    #[builder]
+    /// Returns the server side CSS URLs (see [ThenmeLoader]).
+    #[builder_cb(IntoOptionalTextRenderFn, into_optional_text_render_fn, String)]
     #[prop_or_default]
-    /// The directory prefix for the css files. (E.g. "/css/")
-    pub theme_dir_prefix: AttrValue,
+    pub theme_url_builder: Option<TextRenderFn<String>>,
 
     /// Convert ISO 639-1 language code to server side catalog URLs (see [CatalogLoader]).
     #[builder_cb(IntoOptionalTextRenderFn, into_optional_text_render_fn, String)]
@@ -403,7 +403,7 @@ impl Component for PwtMaterialApp {
             .with_optional_child(self.dialog.as_ref().map(|(_, dialog)| dialog.clone()));
 
         let body = ThemeLoader::new(NavigationContainer::new().with_child(app))
-            .dir_prefix(props.theme_dir_prefix.clone());
+            .theme_url_builder(props.theme_url_builder.clone());
         let body = CatalogLoader::new(body)
             .default_lang(props.default_lang.clone())
             .url_builder(props.catalog_url_builder.clone());

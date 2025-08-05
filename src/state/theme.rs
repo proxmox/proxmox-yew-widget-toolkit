@@ -253,11 +253,6 @@ impl Theme {
 
         Ok(())
     }
-
-    /// Generate a CSS file name: `{name}-yew-style-{mode}.css`
-    pub fn get_css_filename(&self, prefix: &str) -> String {
-        format!("{}{}-yew-style.css", prefix, self.name.to_lowercase(),)
-    }
 }
 
 fn use_dark_mode(theme: &Theme, system_prefer_dark_mode: bool) -> bool {

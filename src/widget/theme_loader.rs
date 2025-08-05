@@ -5,6 +5,7 @@ use yew::prelude::*;
 use yew::virtual_dom::{Key, VComp, VNode};
 
 use crate::impl_to_html;
+use crate::props::{IntoOptionalTextRenderFn, TextRenderFn};
 use crate::state::{Theme, ThemeDensity, ThemeObserver};
 
 /// Dynamically load selected theme
@@ -19,10 +20,12 @@ use crate::state::{Theme, ThemeDensity, ThemeObserver};
 pub struct ThemeLoader {
     body: VNode,
 
+    /// Returns the server side CSS URL (full path)
+    ///
+    /// Default is "{lc(theme_name)}-yew-style.css".
+    #[builder_cb(IntoOptionalTextRenderFn, into_optional_text_render_fn, String)]
     #[prop_or_default]
-    #[builder]
-    /// The directory prefix for the css files. (E.g. "/css/")
-    pub dir_prefix: AttrValue,
+    pub theme_url_builder: Option<TextRenderFn<String>>,
 }
 
 impl ThemeLoader {
@@ -94,8 +97,21 @@ fn set_dark_mode(dark: bool) {
 }
 
 impl PwtThemeLoader {
-    fn update_theme(&mut self, theme: Theme, dark_mode: bool, loaded: bool, prefix: &str) -> bool {
-        let new_css = theme.get_css_filename(prefix);
+    fn get_css_filename(props: &ThemeLoader, theme: &Theme) -> String {
+        match &props.theme_url_builder {
+            Some(theme_url_builder) => theme_url_builder.apply(&theme.name),
+            None => format!("{}-yew-style.css", theme.name.to_lowercase()),
+        }
+    }
+
+    fn update_theme(
+        &mut self,
+        props: &ThemeLoader,
+        theme: &Theme,
+        dark_mode: bool,
+        loaded: bool,
+    ) -> bool {
+        let new_css = Self::get_css_filename(props, theme);
 
         if self.theme_css != new_css && self.new_theme_css.is_none() {
             self.new_theme_css = Some(new_css);
@@ -138,22 +154,18 @@ impl Component for PwtThemeLoader {
         Self {
             theme_observer,
             loadstate: LoadState::Initial,
-            theme_css: theme.get_css_filename(props.dir_prefix.as_str()),
+            theme_css: Self::get_css_filename(props, &theme),
             new_theme_css: None,
         }
     }
 
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
-        let prefix = ctx.props().dir_prefix.as_str();
+        let props = ctx.props();
+        let theme = self.theme_observer.theme();
         match msg {
-            Msg::Loaded => self.update_theme(
-                self.theme_observer.theme(),
-                self.theme_observer.dark_mode(),
-                true,
-                prefix,
-            ),
+            Msg::Loaded => self.update_theme(props, &theme, self.theme_observer.dark_mode(), true),
             Msg::ThemeChanged((theme, dark_mode)) => {
-                self.update_theme(theme, dark_mode, false, prefix)
+                self.update_theme(props, &theme, dark_mode, false)
             }
         }
     }
