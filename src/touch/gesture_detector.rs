@@ -5,7 +5,7 @@ use std::rc::Rc;
 use gloo_timers::callback::Timeout;
 use gloo_utils::window;
 use wasm_bindgen::JsValue;
-use web_sys::Touch;
+use web_sys::{EventTarget, Touch};
 use yew::html::IntoEventCallback;
 use yew::prelude::*;
 use yew::virtual_dom::{Key, VComp, VNode};
@@ -41,6 +41,13 @@ impl InputEvent {
         match self {
             InputEvent::PointerEvent(pointer_event) => pointer_event.pointer_id(),
             InputEvent::Touch(touch) => touch.identifier(),
+        }
+    }
+
+    pub fn target(&self) -> Option<EventTarget> {
+        match self {
+            InputEvent::PointerEvent(pointer_event) => pointer_event.target(),
+            InputEvent::Touch(touch) => touch.target(),
         }
     }
 }

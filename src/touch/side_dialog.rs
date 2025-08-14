@@ -393,6 +393,17 @@ impl Component for PwtSideDialog {
                 let link = ctx.link().clone();
                 move |event: InputEvent| {
                     if let Some(element) = slider_ref.clone().into_html_element() {
+                        if let Some(target) = event.target() {
+                            if let Ok(target) = target.dyn_into::<web_sys::Node>() {
+                                if element.contains(Some(&target)) {
+                                    // click target inside dialog
+                                    // Note: This can be outside of element.get_bounding_client_rect(), i.e.
+                                    // if we open dropdowns/menus inside a dialog.
+                                    return;
+                                }
+                            }
+                        }
+
                         let rect = element.get_bounding_client_rect();
                         let x = event.x() as f64;
                         let y = event.y() as f64;
