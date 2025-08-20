@@ -300,7 +300,7 @@ impl<T: 'static> DataTableColumn<T> {
 
     /// Builder style method to set a get_property_fn for renderer and sorter
     /// the given fn must return a reference
-    pub fn get_property<E: Ord + std::fmt::Display>(
+    pub fn get_property<E: Ord + std::fmt::Display + ?Sized>(
         self,
         get_property_fn: impl 'static + Fn(&T) -> &E,
     ) -> Self {
