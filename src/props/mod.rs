@@ -11,6 +11,12 @@ use yew::virtual_dom::Key;
 ///
 /// We use this for properties lite panel titles, where you usually just want text.
 /// This adds the ability to add simple inline markup.
+///
+/// Note: It is still possible to use arbitrary html (we implement it for Html and Option<Html>)
+///
+/// Note: There are several implementations for 'Option<T>', so it requires type annotation
+/// for 'None', i.e. 'None::<&str>'. To avoid that, we implement it for the null type.
+/// Simply use '()' instead of 'None::<&str>'.
 pub trait IntoOptionalInlineHtml {
     fn into_optional_inline_html(self) -> Option<Html>;
 }
@@ -24,6 +30,12 @@ impl IntoOptionalInlineHtml for Html {
 impl IntoOptionalInlineHtml for Option<Html> {
     fn into_optional_inline_html(self) -> Option<Html> {
         self
+    }
+}
+
+impl IntoOptionalInlineHtml for () {
+    fn into_optional_inline_html(self) -> Option<Html> {
+        None
     }
 }
 
