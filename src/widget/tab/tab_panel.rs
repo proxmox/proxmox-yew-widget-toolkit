@@ -225,13 +225,13 @@ impl Component for PwtTabPanel {
             .selection(self.selection.clone())
             .style(props.tab_bar_style)
             .state_id(props.state_id.clone())
-            .class(props.scroll_mode.is_none().then(|| "pwt-flex-fill"))
+            .class(crate::css::Flex::Fill)
             .into();
 
         if let Some(scroll_mode) = props.scroll_mode {
             bar = MiniScroll::new(bar)
                 .scroll_mode(scroll_mode)
-                .class("pwt-flex-fill")
+                .class(crate::css::Flex::Fill)
                 .into();
         }
 
