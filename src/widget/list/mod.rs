@@ -3,7 +3,7 @@ use html::IntoPropValue;
 
 use crate::prelude::*;
 
-use crate::props::{EventSubscriber, WidgetBuilder};
+use crate::props::{EventSubscriber, PwtSpace, WidgetBuilder};
 
 use crate::widget::Container;
 
@@ -73,6 +73,50 @@ pub struct List {
     #[prop_or(AttrValue::Static("1fr"))]
     #[builder(IntoPropValue, into_prop_value)]
     pub grid_template_columns: AttrValue,
+
+    /// The list uses a html grid layout, and you can set the 'column-gap' property.
+    ///
+    ///  ```
+    /// # use pwt::prelude::*;
+    /// # use pwt::widget::{List, ListTile};
+    /// # fn create_list_tile() -> List {
+    ///     List::new(100, |pos| {
+    ///         ListTile::new()
+    ///             .with_child(html!{<span>{format!("{pos}")}</span>})
+    ///             .with_child(html!{<span>{"A simple list tile"}</span>})
+    ///     })
+    ///     // Use a two column layout.
+    ///     .grid_template_columns("auto 1fr")
+    ///     .column_gap(1)
+    /// # }
+    /// ```
+    ///
+    /// see: <https://developer.mozilla.org/en-US/docs/Web/CSS/column-gap>
+    #[prop_or(PwtSpace::None)]
+    #[builder(Into, into)]
+    pub column_gap: PwtSpace,
+
+    /// The list uses a html grid layout, and you can set the 'row-gap' property.
+    ///
+    ///  ```
+    /// # use pwt::prelude::*;
+    /// # use pwt::widget::{List, ListTile};
+    /// # fn create_list_tile() -> List {
+    ///     List::new(100, |pos| {
+    ///         ListTile::new()
+    ///             .with_child(html!{<span>{format!("{pos}")}</span>})
+    ///             .with_child(html!{<span>{"A simple list tile"}</span>})
+    ///     })
+    ///     // Use a two column layout.
+    ///     .grid_template_columns("auto 1fr")
+    ///     .row_gap(1)
+    /// # }
+    /// ```
+    ///
+    /// see: <https://developer.mozilla.org/en-US/docs/Web/CSS/row-gap>
+    #[prop_or(PwtSpace::None)]
+    #[builder(Into, into)]
+    pub row_gap: PwtSpace,
 
     /// Virtual Scroll
     ///
@@ -270,6 +314,20 @@ impl PwtList {
             .attribute("data-list-offset", self.scroll_info.offset.to_string())
             .style("display", "grid")
             .style("grid-template-columns", &props.grid_template_columns)
+            .style(
+                "column-gap",
+                match props.column_gap {
+                    PwtSpace::None => None,
+                    other => Some(AttrValue::from(other)),
+                },
+            )
+            .style(
+                "row-gap",
+                match props.row_gap {
+                    PwtSpace::None => None,
+                    other => Some(AttrValue::from(other)),
+                },
+            )
             .style("--pwt-list-tile-min-height", min_height)
             .style("position", "relative")
             .style("top", format!("{}px", self.scroll_info.offset));
