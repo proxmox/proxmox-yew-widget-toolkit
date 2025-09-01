@@ -38,6 +38,12 @@ pub trait IntoSubmitCallback<T> {
     fn into_submit_callback(self) -> Option<SubmitCallback<T>>;
 }
 
+impl<T> IntoSubmitCallback<T> for SubmitCallback<T> {
+    fn into_submit_callback(self) -> Option<SubmitCallback<T>> {
+        Some(self)
+    }
+}
+
 impl<T> IntoSubmitCallback<T> for Option<SubmitCallback<T>> {
     fn into_submit_callback(self) -> Option<SubmitCallback<T>> {
         self
