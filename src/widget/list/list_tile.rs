@@ -46,6 +46,8 @@ pub struct ListTile {
     force_height: Option<u32>,
 
     /// Activate callback (click, enter, space)
+    ///
+    /// This also sets the tabindex property to "0" to enable keyboard focus.
     #[builder_cb(IntoEventCallback, into_event_callback, Event)]
     #[prop_or_default]
     on_activate: Option<Callback<Event>>,
