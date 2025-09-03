@@ -28,10 +28,6 @@ use pwt_macros::builder;
 #[derive(Clone, Default, PartialEq, Properties)]
 #[builder]
 pub struct TabBar {
-    /// Yew component `ref`.
-    #[prop_or_default]
-    node_ref: NodeRef,
-
     /// The yew component key.
     #[prop_or_default]
     pub key: Option<Key>,
@@ -172,6 +168,7 @@ pub struct PwtTabBar {
     rtl: Option<bool>,
     _nav_ctx_handle: Option<ContextHandle<NavigationContext>>,
     selection: Selection,
+    node_ref: NodeRef,
     indicator_ref: NodeRef,
     active_ref: NodeRef,
     size_ref: NodeRef,
@@ -284,6 +281,7 @@ impl Component for PwtTabBar {
             selection,
             rtl: None,
             _nav_ctx_handle,
+            node_ref: NodeRef::default(),
             indicator_ref: NodeRef::default(),
             active_ref: NodeRef::default(),
             size_ref: NodeRef::default(),
@@ -295,7 +293,7 @@ impl Component for PwtTabBar {
         let props = ctx.props();
         match msg {
             Msg::FocusIn => {
-                self.rtl = element_direction_rtl(&props.node_ref);
+                self.rtl = element_direction_rtl(&self.node_ref);
                 true
             }
             // Handle external selection changes
@@ -477,7 +475,7 @@ impl Component for PwtTabBar {
             })
             .collect::<Html>();
 
-        let tabs_ref = props.node_ref.clone();
+        let tabs_ref = self.node_ref.clone();
         let rtl = self.rtl.unwrap_or(false);
 
         let (variant_class, indicator_class) = match ctx.props().style {
@@ -500,7 +498,6 @@ impl Component for PwtTabBar {
         });
 
         Container::new()
-            .node_ref(props.node_ref.clone())
             .class(variant_class)
             .class(props.class.clone())
             .with_child(tabs)
@@ -518,7 +515,7 @@ impl Component for PwtTabBar {
                 event.prevent_default();
             })
             .onfocusin(ctx.link().callback(|_| Msg::FocusIn))
-            .into()
+            .into_html_with_ref(self.node_ref.clone())
     }
 
     fn rendered(&mut self, ctx: &Context<Self>, _first_render: bool) {

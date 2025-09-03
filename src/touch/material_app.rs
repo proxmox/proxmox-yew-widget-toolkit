@@ -215,7 +215,7 @@ pub struct MaterialApp {
     #[prop_or(Some(PageAnimationStyle::FadeFromRight))]
     pub page_animation: Option<PageAnimationStyle>,
 
-    /// Returns the server side CSS URLs (see [ThenmeLoader]).
+    /// Returns the server side CSS URLs (see [ThemeLoader]).
     #[builder_cb(IntoOptionalTextRenderFn, into_optional_text_render_fn, String)]
     #[prop_or_default]
     pub theme_url_builder: Option<TextRenderFn<String>>,

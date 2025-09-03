@@ -3,7 +3,7 @@ use std::borrow::Cow;
 use yew::prelude::*;
 use yew::virtual_dom::VTag;
 
-use crate::props::{ListenersWrapper, WidgetStdProps};
+use crate::props::{IntoVTag, ListenersWrapper, WidgetStdProps};
 
 use pwt_macros::widget;
 
@@ -46,13 +46,14 @@ impl Container {
     }
 }
 
-impl From<Container> for VTag {
-    fn from(val: Container) -> Self {
-        val.std_props.into_vtag(
-            val.tag,
+impl IntoVTag for Container {
+    fn into_vtag_with_ref(self, node_ref: NodeRef) -> VTag {
+        self.std_props.into_vtag(
+            self.tag,
+            node_ref,
             None::<&str>,
-            Some(val.listeners),
-            Some(val.children),
+            Some(self.listeners),
+            Some(self.children),
         )
     }
 }

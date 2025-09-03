@@ -24,18 +24,18 @@ impl Card {
     }
 }
 
-impl From<Card> for VTag {
-    fn from(val: Card) -> Self {
-        let attributes = val.std_props.cumulate_attributes(None::<&str>);
+impl IntoVTag for Card {
+    fn into_vtag_with_ref(self, node_ref: NodeRef) -> VTag {
+        let attributes = self.std_props.cumulate_attributes(None::<&str>);
 
-        let listeners = Listeners::Pending(val.listeners.listeners.into_boxed_slice());
+        let listeners = Listeners::Pending(self.listeners.listeners.into_boxed_slice());
 
-        let children = VList::with_children(val.children, None);
+        let children = VList::with_children(self.children, None);
 
         VTag::__new_other(
             Cow::Borrowed("div"),
-            val.std_props.node_ref,
-            val.std_props.key,
+            node_ref,
+            self.std_props.key,
             attributes,
             listeners,
             children.into(),

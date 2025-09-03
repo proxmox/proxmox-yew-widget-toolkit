@@ -99,7 +99,7 @@ use yew::html::IntoPropValue;
 use yew::prelude::*;
 use yew::virtual_dom::VTag;
 
-use crate::props::WidgetBuilder;
+use crate::props::{IntoVTag, WidgetBuilder};
 
 use pwt_macros::widget;
 
@@ -192,13 +192,14 @@ impl Canvas {
     }
 }
 
-impl From<Canvas> for VTag {
-    fn from(val: Canvas) -> Self {
-        val.std_props.into_vtag(
+impl IntoVTag for Canvas {
+    fn into_vtag_with_ref(self, node_ref: NodeRef) -> VTag {
+        self.std_props.into_vtag(
             Cow::Borrowed("svg"),
+            node_ref,
             None::<&str>,
-            Some(val.listeners),
-            Some(val.children),
+            Some(self.listeners),
+            Some(self.children),
         )
     }
 }

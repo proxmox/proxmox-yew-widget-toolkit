@@ -5,7 +5,7 @@ use yew::virtual_dom::{VNode, VTag};
 
 use pwt_macros::widget;
 
-use crate::props::WidgetBuilder;
+use crate::props::{IntoVTag, WidgetBuilder};
 
 use super::{Hyperlink, SvgLength};
 
@@ -78,13 +78,14 @@ impl TSpan {
     }
 }
 
-impl From<TSpan> for VTag {
-    fn from(val: TSpan) -> Self {
-        val.std_props.into_vtag(
+impl IntoVTag for TSpan {
+    fn into_vtag_with_ref(self, node_ref: NodeRef) -> VTag {
+        self.std_props.into_vtag(
             Cow::Borrowed("tspan"),
+            node_ref,
             None::<&str>,
-            Some(val.listeners),
-            Some(val.children),
+            Some(self.listeners),
+            Some(self.children),
         )
     }
 }

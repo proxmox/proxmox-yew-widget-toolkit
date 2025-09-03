@@ -482,7 +482,6 @@ impl Component for PwtList {
         let content = self.render_content(ctx, props);
 
         Container::from_widget_props(props.std_props.clone(), Some(props.listeners.clone()))
-            .node_ref(self.viewport_ref.clone())
             .class("pwt-list")
             .attribute("role", "list")
             .style("overflow-anchor", "none")
@@ -491,7 +490,7 @@ impl Component for PwtList {
                 target.map(|el| Msg::ScrollTo(el.scroll_left(), el.scroll_top()))
             }))
             .with_child(content)
-            .into()
+            .into_html_with_ref(self.viewport_ref.clone())
     }
 
     fn rendered(&mut self, ctx: &Context<Self>, first_render: bool) {

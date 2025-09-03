@@ -13,10 +13,6 @@ use super::MessageBox;
 #[builder]
 /// A dialog that can be used to let users confirm an action before it is taken.
 pub struct ConfirmDialog {
-    /// Yew component `ref`.
-    #[prop_or_default]
-    pub node_ref: NodeRef,
-
     /// The yew component key.
     #[prop_or_default]
     pub key: Option<Key>,
@@ -94,7 +90,6 @@ impl Component for PwtConfirmDialog {
         let on_close = props.on_close.clone();
 
         MessageBox::new(props.title.clone(), props.confirm_message.clone())
-            .node_ref(props.node_ref.clone())
             .buttons(super::MessageBoxButtons::YesNo)
             .icon_class(props.icon_class.clone())
             .on_close(ctx.link().callback(move |confirm| {

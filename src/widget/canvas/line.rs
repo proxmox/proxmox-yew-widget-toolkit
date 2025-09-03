@@ -5,7 +5,7 @@ use yew::virtual_dom::{VNode, VTag};
 
 use pwt_macros::widget;
 
-use crate::props::WidgetBuilder;
+use crate::props::{IntoVTag, WidgetBuilder};
 
 use super::SvgLength;
 
@@ -34,13 +34,14 @@ impl Line {
     impl_svg_presentation_attributes!();
 }
 
-impl From<Line> for VTag {
-    fn from(val: Line) -> Self {
-        val.std_props.into_vtag(
+impl IntoVTag for Line {
+    fn into_vtag_with_ref(self, node_ref: NodeRef) -> VTag {
+        self.std_props.into_vtag(
             Cow::Borrowed("line"),
+            node_ref,
             None::<&str>,
-            Some(val.listeners),
-            val.children,
+            Some(self.listeners),
+            self.children,
         )
     }
 }

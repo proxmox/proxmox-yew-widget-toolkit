@@ -16,7 +16,7 @@ use super::{
     IntoValidateFn, ManagedField, ManagedFieldContext, ManagedFieldMaster, ManagedFieldState,
     ValidateFn,
 };
-use crate::props::{ContainerBuilder, EventSubscriber, WidgetBuilder};
+use crate::props::{ContainerBuilder, EventSubscriber, IntoVTag, WidgetBuilder};
 use crate::widget::{Column, Container, Input, Tooltip};
 
 use crate::tr;
@@ -627,7 +627,6 @@ impl<T: NumberTypeInfo> ManagedField for NumberField<T> {
 
         let disabled = props.input_props.disabled;
         let input: Html = Input::new()
-            .node_ref(self.input_ref.clone())
             .with_input_props(&props.input_props)
             .class("pwt-flex-fill")
             .attribute("type", "text") // important (text, not number)
@@ -655,7 +654,7 @@ impl<T: NumberTypeInfo> ManagedField for NumberField<T> {
                     event.prevent_default();
                 }
             })
-            .into();
+            .into_html_with_ref(self.input_ref.clone());
 
         let mut input_container = Tooltip::empty()
             .with_std_props(&props.std_props)

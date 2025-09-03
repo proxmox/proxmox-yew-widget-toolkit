@@ -288,7 +288,7 @@ fn derive_widget(setup: &WidgetSetup, widget: DeriveInput) -> Result<proc_macro2
         output.extend(quote!{
             impl #impl_generics From<#ident #ty_generics> for ::yew::virtual_dom::VNode #where_clause {
                 fn from(value: #ident #ty_generics) -> Self {
-                    let vtag: ::yew::virtual_dom::VTag = value.into();
+                    let vtag: ::yew::virtual_dom::VTag = #pwt::props::IntoVTag::into_vtag(value);
                     ::yew::virtual_dom::VNode::from(vtag)
                 }
             }

@@ -4,11 +4,12 @@ use std::rc::Rc;
 
 use gloo_timers::callback::Timeout;
 
-use yew::html::IntoEventCallback;
+use yew::html::{IntoEventCallback, IntoPropValue};
 
 use yew::virtual_dom::{Key, VComp, VNode};
 
 use crate::dom::focus::{get_first_focusable, FocusTracker};
+use crate::state::{SharedState, SharedStateObserver};
 use crate::widget::{get_unique_element_id, Container};
 use crate::{impl_class_prop_builder, impl_yew_std_props_builder, prelude::*};
 
@@ -75,6 +76,42 @@ pub enum MenuControllerMsg {
     Next,
     Previous,
     Collapse,
+    Open,
+}
+
+/// Monu controller
+#[derive(Clone, PartialEq)]
+pub struct MenuController {
+    state: SharedState<Vec<MenuControllerMsg>>,
+}
+
+impl MenuController {
+    /// Create a new instance.
+    pub fn new() -> Self {
+        Self {
+            state: SharedState::new(Vec::new()),
+        }
+    }
+
+    /// Collapse/Close the menu.
+    pub fn collapse(&self) {
+        self.state.write().push(MenuControllerMsg::Collapse);
+    }
+
+    /// Show/Open the menu.
+    pub fn open(&self) {
+        self.state.write().push(MenuControllerMsg::Open);
+    }
+
+    /// Select next menu item
+    pub fn select_next(&self) {
+        self.state.write().push(MenuControllerMsg::Next);
+    }
+
+    /// Collapse/Close the menu.
+    pub fn select_previous(&self) {
+        self.state.write().push(MenuControllerMsg::Previous);
+    }
 }
 
 /// Menu - A container for [MenuEntry]s.
@@ -117,9 +154,9 @@ pub struct Menu {
     #[builder]
     pub(crate) menubar_child: bool,
 
-    #[builder_cb(IntoEventCallback, into_event_callback, MenuControllerMsg)]
+    #[builder_cb(IntoPropValue, into_prop_value, Option<MenuController>)]
     #[prop_or_default]
-    pub(crate) menu_controller: Option<Callback<MenuControllerMsg>>,
+    pub(crate) menu_controller: Option<MenuController>,
 
     #[builder_cb(IntoEventCallback, into_event_callback, ())]
     #[prop_or_default]
@@ -196,13 +233,15 @@ pub enum Msg {
     ShowSubmenu(bool, bool),
     SubmenuClose,
     Redraw,
+    Controller, // MenuController has new messages
 }
 
 #[doc(hidden)]
 pub struct PwtMenu {
     unique_id: String,
     inner_ref: NodeRef,
-    menu_controller: Option<Callback<MenuControllerMsg>>,
+    menu_controller: MenuController,
+    _menu_controller_observer: SharedStateObserver<Vec<MenuControllerMsg>>,
     cursor: Option<usize>,
     inside_submenu: bool,
     show_submenu: bool,
@@ -314,6 +353,32 @@ impl PwtMenu {
             }
         }
     }
+
+    fn handle_controller_messages(&mut self, ctx: &Context<Self>) {
+        let count = self.menu_controller.state.read().len();
+        if count == 0 {
+            return;
+        } // Note: avoid endless loop
+
+        let list = self.menu_controller.state.write().split_off(0);
+
+        for msg in list.into_iter() {
+            match msg {
+                MenuControllerMsg::Open => {
+                    ctx.link().send_message(Msg::ShowSubmenu(true, true));
+                }
+                MenuControllerMsg::Collapse => {
+                    ctx.link().send_message(Msg::Collapse);
+                }
+                MenuControllerMsg::Next => {
+                    ctx.link().send_message(Msg::Next);
+                }
+                MenuControllerMsg::Previous => {
+                    ctx.link().send_message(Msg::Previous);
+                }
+            }
+        }
+    }
 }
 
 impl Component for PwtMenu {
@@ -323,24 +388,23 @@ impl Component for PwtMenu {
     fn create(ctx: &Context<Self>) -> Self {
         let props = ctx.props();
 
-        let menu_controller = if props.menubar {
-            let link = ctx.link().clone();
-            Some(Callback::from(move |msg: MenuControllerMsg| match msg {
-                MenuControllerMsg::Next => link.send_message(Msg::Next),
-                MenuControllerMsg::Previous => link.send_message(Msg::Previous),
-                MenuControllerMsg::Collapse => link.send_message(Msg::Collapse),
-            }))
-        } else {
-            props.menu_controller.clone()
-        };
+        let menu_controller = props
+            .menu_controller
+            .clone()
+            .unwrap_or_else(|| MenuController::new());
+
+        let _menu_controller_observer = menu_controller
+            .state
+            .add_listener(ctx.link().callback(|_| Msg::Controller));
 
         let focus_tracker = FocusTracker::new(ctx.link().callback(Msg::FocusChange));
 
-        Self {
+        let mut me = Self {
             cursor: None,
             unique_id: get_unique_element_id(),
             inner_ref: props.node_ref.clone(),
             menu_controller,
+            _menu_controller_observer,
             inside_submenu: false,
             show_submenu: !props.menubar,
             collapsed: true,
@@ -349,7 +413,10 @@ impl Component for PwtMenu {
             move_timeout: None,
             active_submenu: None,
             submenu_timer: None,
-        }
+        };
+
+        me.handle_controller_messages(ctx);
+        me
     }
 
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
@@ -358,6 +425,10 @@ impl Component for PwtMenu {
             timeout.cancel();
         }
         match msg {
+            Msg::Controller => {
+                self.handle_controller_messages(ctx);
+                true
+            }
             // Note: only used by menubar
             Msg::FocusChange(has_focus) => {
                 self.has_focus = has_focus;
@@ -553,7 +624,6 @@ impl Component for PwtMenu {
         let focus_on_over = !props.menubar || self.has_focus;
 
         let menu = Container::from_tag("ul")
-            .node_ref(self.inner_ref.clone())
             .attribute("role", if props.menubar { "menubar" } else { "menu" })
             .attribute("id", self.unique_id.clone())
             .class(if props.menubar {
@@ -631,9 +701,7 @@ impl Component for PwtMenu {
                                     }
                                     "ArrowRight" => {
                                         if !has_submenu {
-                                            if let Some(menu_controller) = &menu_controller {
-                                                menu_controller.emit(MenuControllerMsg::Next);
-                                            }
+                                            menu_controller.select_next();
                                         } else {
                                             link.send_message(Msg::ShowSubmenu(true, true));
                                         }
@@ -641,9 +709,7 @@ impl Component for PwtMenu {
                                     "ArrowLeft" => {
                                         link.send_message(Msg::ShowSubmenu(false, true));
                                         if menubar_child {
-                                            if let Some(menu_controller) = &menu_controller {
-                                                menu_controller.emit(MenuControllerMsg::Previous);
-                                            }
+                                            menu_controller.select_previous();
                                         }
                                     }
                                     _ => return,
@@ -681,9 +747,9 @@ impl Component for PwtMenu {
         if props.menubar {
             menu.onfocusin(self.focus_tracker.get_focus_callback(true))
                 .onfocusout(self.focus_tracker.get_focus_callback(false))
-                .into()
+                .into_html_with_ref(self.inner_ref.clone())
         } else {
-            menu.into()
+            menu.into_html_with_ref(self.inner_ref.clone())
         }
     }
 

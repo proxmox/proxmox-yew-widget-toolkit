@@ -4,7 +4,7 @@ use yew::html::{IntoEventCallback, IntoPropValue};
 use yew::prelude::*;
 use yew::virtual_dom::{Listeners, VList, VTag};
 
-use crate::props::{ContainerBuilder, EventSubscriber, WidgetBuilder};
+use crate::props::{ContainerBuilder, EventSubscriber, IntoVTag, WidgetBuilder};
 use crate::widget::{ActionIcon, Button, Container};
 
 use pwt_macros::builder;
@@ -85,27 +85,27 @@ impl SnackBar {
     }
 }
 
-impl From<SnackBar> for VTag {
-    fn from(val: SnackBar) -> Self {
-        let attributes = val.std_props.cumulate_attributes(Some("pwt-snackbar"));
+impl IntoVTag for SnackBar {
+    fn into_vtag_with_ref(self, node_ref: NodeRef) -> VTag {
+        let attributes = self.std_props.cumulate_attributes(Some("pwt-snackbar"));
 
-        let listeners = Listeners::Pending(val.listeners.listeners.into_boxed_slice());
+        let listeners = Listeners::Pending(self.listeners.listeners.into_boxed_slice());
 
         let mut children = Vec::new();
         children.push(
             Container::new()
                 .class("pwt-snackbar-message")
-                .with_child(val.message.clone().unwrap_or(AttrValue::Static("")))
+                .with_child(self.message.clone().unwrap_or(AttrValue::Static("")))
                 .into(),
         );
-        if let Some(action_label) = &val.action_label {
+        if let Some(action_label) = &self.action_label {
             children.push(
                 Button::new(action_label.clone())
                     .class("pwt-button-filled")
                     .class("pwt-snackbar-action")
                     .class("pwt-scheme-inverse-surface")
                     .onclick({
-                        let on_action = val.on_action.clone();
+                        let on_action = self.on_action.clone();
                         move |_| {
                             if let Some(on_action) = &on_action {
                                 on_action.emit(());
@@ -115,11 +115,11 @@ impl From<SnackBar> for VTag {
                     .into(),
             );
         }
-        if val.show_close_icon {
+        if self.show_close_icon {
             children.push(
                 ActionIcon::new("fa fa-lg fa-close")
                     .on_activate(
-                        val.on_close
+                        self.on_close
                             .clone()
                             .map(|on_close| move |_| on_close.emit(())),
                     )
@@ -131,8 +131,8 @@ impl From<SnackBar> for VTag {
 
         VTag::__new_other(
             Cow::Borrowed("div"),
-            val.std_props.node_ref,
-            val.std_props.key,
+            node_ref,
+            self.std_props.key,
             attributes,
             listeners,
             children.into(),

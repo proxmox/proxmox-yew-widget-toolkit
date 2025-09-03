@@ -14,8 +14,9 @@ use super::{
     IntoValidateFn, ManagedField, ManagedFieldContext, ManagedFieldMaster, ManagedFieldState,
     ValidateFn,
 };
-use crate::props::WidgetStyleBuilder;
-use crate::props::{ContainerBuilder, EventSubscriber, WidgetBuilder};
+use crate::props::{
+    ContainerBuilder, EventSubscriber, IntoVTag, WidgetBuilder, WidgetStyleBuilder,
+};
 use crate::tr;
 use crate::widget::{Container, Input, Tooltip, Trigger};
 
@@ -462,7 +463,6 @@ impl ManagedField for StandardField {
 
         let disabled = props.input_props.disabled;
         let input: Html = Input::new()
-            .node_ref(self.input_ref.clone())
             .with_input_props(&props.input_props)
             .class("pwt-flex-fill")
             .attribute("type", Some(input_type.to_string()))
@@ -471,7 +471,7 @@ impl ManagedField for StandardField {
             .attribute("max", props.max.map(|v| v.to_string()))
             .attribute("step", props.step.map(|v| v.to_string()))
             .oninput((!disabled).then_some(oninput))
-            .into();
+            .into_html_with_ref(self.input_ref.clone());
 
         let peek_icon =
             if self.password_state != PasswordState::NotAPassword && props.show_peek_icon {

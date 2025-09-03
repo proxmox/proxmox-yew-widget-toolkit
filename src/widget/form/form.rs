@@ -96,7 +96,7 @@ impl Component for PwtForm {
 
         let form = VNode::from(VTag::__new_other(
             Cow::from("form"),
-            props.std_props.node_ref,
+            NodeRef::default(),
             None,
             attributes,
             listeners,

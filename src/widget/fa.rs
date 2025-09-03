@@ -86,11 +86,15 @@ impl Fa {
     }
 }
 
-impl From<Fa> for VTag {
-    fn from(mut props: Fa) -> Self {
-        props.set_attribute("role", "none");
-        props
-            .std_props
-            .into_vtag("i".into(), None::<&str>, Some(props.listeners), None)
+impl IntoVTag for Fa {
+    fn into_vtag_with_ref(mut self, node_ref: NodeRef) -> VTag {
+        self.set_attribute("role", "none");
+        self.std_props.into_vtag(
+            "i".into(),
+            node_ref,
+            None::<&str>,
+            Some(self.listeners),
+            None,
+        )
     }
 }

@@ -10,9 +10,9 @@ use yew::html::Scope;
 use yew::prelude::*;
 use yew::virtual_dom::{Key, VComp, VNode};
 
-use crate::prelude::*;
 use crate::widget::menu::{Menu, MenuCheckbox, MenuEvent, MenuItem};
 use crate::widget::{get_unique_element_id, Container, Fa};
+use crate::{impl_yew_std_props_builder, prelude::*};
 
 use super::{
     DataTableHeaderKeyboardEvent, DataTableHeaderRenderArgs, DataTableHeaderTableLink, HeaderMsg,
@@ -24,8 +24,6 @@ use super::{
 #[derivative(Clone(bound = ""), PartialEq(bound = ""))]
 #[doc(hidden)] // only used inside this crate
 pub struct HeaderWidget<T: 'static> {
-    #[prop_or_default]
-    pub node_ref: Option<NodeRef>,
     #[prop_or_default]
     pub key: Option<Key>,
 
@@ -57,18 +55,7 @@ impl<T: 'static> HeaderWidget<T> {
         })
     }
 
-    /*
-    pub fn key(mut self, key: impl Into<Key>) -> Self {
-        self.key = Some(key.into());
-        self
-    }
-
-    /// Builder style method to set the yew `node_ref`
-    pub fn node_ref(mut self, node_ref: impl IntoPropValue<Option<NodeRef>>) -> Self {
-        self.node_ref = node_ref.into_prop_value();
-        self
-    }
-     */
+    impl_yew_std_props_builder!();
 
     /// Builder style method to set the focusable flag.
     pub fn focusable(mut self, focusable: bool) -> Self {
@@ -480,7 +467,7 @@ impl<T: 'static> Component for PwtHeaderWidget<T> {
 
         Self {
             unique_id: get_unique_element_id(),
-            node_ref: props.node_ref.clone().unwrap_or_default(),
+            node_ref: NodeRef::default(),
             state,
             cursor: None,
             observed_widths,
@@ -602,7 +589,6 @@ impl<T: 'static> Component for PwtHeaderWidget<T> {
 
         Container::from_tag("table")
             .attribute("role", "row")
-            .node_ref(self.node_ref.clone())
             .class("pwt-d-grid")
             .style("user-select", "none")
             .style("display", "grid")
@@ -619,7 +605,7 @@ impl<T: 'static> Component for PwtHeaderWidget<T> {
                     event.prevent_default();
                 }
             })
-            .into()
+            .into_html_with_ref(self.node_ref.clone())
     }
 }
 

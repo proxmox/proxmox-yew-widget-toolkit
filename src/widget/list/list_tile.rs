@@ -5,7 +5,7 @@ use yew::html::{IntoEventCallback, IntoPropValue};
 use yew::prelude::*;
 use yew::virtual_dom::VTag;
 
-use crate::props::{EventSubscriber, ListenersWrapper, WidgetBuilder, WidgetStdProps};
+use crate::props::{EventSubscriber, IntoVTag, ListenersWrapper, WidgetBuilder, WidgetStdProps};
 
 use pwt_macros::{builder, widget};
 
@@ -68,25 +68,25 @@ impl ListTile {
     }
 }
 
-impl From<ListTile> for VTag {
-    fn from(mut val: ListTile) -> Self {
+impl IntoVTag for ListTile {
+    fn into_vtag_with_ref(mut self, node_ref: NodeRef) -> VTag {
         let classes = classes!(
             "pwt-list-tile",
-            val.interactive.then_some("pwt-interactive"),
-            val.disabled.then_some("disabled")
+            self.interactive.then_some("pwt-interactive"),
+            self.disabled.then_some("disabled")
         );
 
-        if !val.disabled {
-            if let Some(on_activate) = val.on_activate.clone() {
-                val.set_tabindex(0);
-                val.add_onclick({
+        if !self.disabled {
+            if let Some(on_activate) = self.on_activate.clone() {
+                self.set_tabindex(0);
+                self.add_onclick({
                     let on_activate = on_activate.clone();
                     move |event: MouseEvent| {
                         event.stop_propagation();
                         on_activate.emit(event.unchecked_into());
                     }
                 });
-                val.add_onkeydown({
+                self.add_onkeydown({
                     let on_activate = on_activate.clone();
                     move |event: KeyboardEvent| match event.key().as_str() {
                         "Enter" | " " => {
@@ -99,11 +99,12 @@ impl From<ListTile> for VTag {
             }
         }
 
-        val.std_props.into_vtag(
+        self.std_props.into_vtag(
             Cow::Borrowed("div"),
+            node_ref,
             Some(classes),
-            Some(val.listeners),
-            Some(val.children),
+            Some(self.listeners),
+            Some(self.children),
         )
     }
 }

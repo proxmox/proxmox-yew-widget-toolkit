@@ -110,8 +110,6 @@ pub enum MultiSelectMode {
 #[derive(Properties, Derivative)]
 #[derivative(Clone(bound = ""), PartialEq(bound = ""))]
 pub struct DataTable<S: DataStore> {
-    #[prop_or_default]
-    node_ref: NodeRef,
     /// Yew key property.
     #[prop_or_default]
     pub key: Option<Key>,
@@ -245,28 +243,8 @@ impl<S: DataStore> DataTable<S> {
         yew::props!(DataTable<S> { headers, store })
     }
 
-    /// Builder style method to set the yew `node_ref`.
-    pub fn node_ref(mut self, node_ref: ::yew::html::NodeRef) -> Self {
-        self.node_ref = node_ref;
-        self
-    }
-
-    /// Builder style method to set the yew `key` property.
-    pub fn key(mut self, key: impl IntoOptionalKey) -> Self {
-        self.key = key.into_optional_key();
-        self
-    }
-
-    /// Builder style method to add a html class.
-    pub fn class(mut self, class: impl Into<Classes>) -> Self {
-        self.add_class(class);
-        self
-    }
-
-    /// Method to add a html class.
-    pub fn add_class(&mut self, class: impl Into<Classes>) {
-        self.class.push(class);
-    }
+    crate::impl_yew_std_props_builder!();
+    crate::impl_class_prop_builder!();
 
     /// Builder style method to set the configuration for cells.
     pub fn cell_configuration(mut self, config: impl Into<CellConfiguration>) -> Self {
@@ -902,7 +880,6 @@ impl<S: DataStore> PwtDataTable<S> {
             .class(props.striped.then_some("table-striped"))
             .class(props.bordered.then_some("table-bordered"))
             .class(props.borderless.then_some("table-borderless"))
-            .node_ref(self.table_ref.clone())
             .style("display", "table")
             .style("table-layout", fixed_mode.then_some("fixed"))
             .style("width", fixed_mode.then_some("1px")) // required by table-layout fixed
@@ -967,7 +944,7 @@ impl<S: DataStore> PwtDataTable<S> {
             table.add_child(row);
         }
 
-        table.into()
+        table.into_html_with_ref(self.table_ref.clone())
     }
 
     fn render_scroll_content(&self, props: &DataTable<S>) -> Html {
@@ -1634,7 +1611,6 @@ impl<S: DataStore + 'static> Component for PwtDataTable<S> {
         };
 
         let viewport = Container::new()
-            .node_ref(self.scroll_ref.clone())
             .onscroll(on_table_scroll)
             .key(Key::from("table-viewport"))
             .class("pwt-flex-fill")
@@ -1695,7 +1671,8 @@ impl<S: DataStore + 'static> Component for PwtDataTable<S> {
                         link.send_message(Msg::ItemClick(row_num, col_num, event, true));
                     }
                 }
-            });
+            })
+            .into_html_with_ref(self.scroll_ref.clone());
 
         let multiselect = props
             .selection
@@ -1723,7 +1700,6 @@ impl<S: DataStore + 'static> Component for PwtDataTable<S> {
             .with_child(
                 Container::new() // scollable for header
                     .key(Key::from("table-header"))
-                    .node_ref(self.header_scroll_ref.clone())
                     .attribute("role", "rowgroup")
                     .attribute("aria-label", "table header")
                     .style("flex", "0 0 auto")
@@ -1741,7 +1717,8 @@ impl<S: DataStore + 'static> Component for PwtDataTable<S> {
                             .selection_status(self.selection_status)
                             .header_class(header_class)
                             .reserve_scroll_space(self.scrollbar_size.unwrap_or_default()),
-                    ),
+                    )
+                    .into_html_with_ref(self.header_scroll_ref.clone()),
             )
             .with_child(viewport)
             .into()

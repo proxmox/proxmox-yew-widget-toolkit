@@ -9,7 +9,7 @@ use crate::widget::Container;
 
 use pwt_macros::builder;
 
-use super::{Menu, MenuControllerMsg, MenuEvent, MenuPopper};
+use super::{Menu, MenuController, MenuEvent, MenuPopper};
 
 /// Menu item widget with optional icon and optional submenu.
 #[derive(Clone, PartialEq, Properties)]
@@ -64,9 +64,9 @@ pub struct MenuItem {
     #[builder_cb(IntoEventCallback, into_event_callback, ())]
     pub(crate) on_close: Option<Callback<()>>,
 
+    #[builder_cb(IntoPropValue, into_prop_value, Option<MenuController>)]
     #[prop_or_default]
-    #[builder_cb(IntoEventCallback, into_event_callback, MenuControllerMsg)]
-    pub(crate) menu_controller: Option<Callback<MenuControllerMsg>>,
+    pub(crate) menu_controller: Option<MenuController>,
 
     /// Select callback.
     ///
@@ -154,13 +154,13 @@ impl Component for PwtMenuItem {
                     on_select.emit(event.clone());
                     if !event.get_keep_open() {
                         if let Some(menu_controller) = &props.menu_controller {
-                            menu_controller.emit(MenuControllerMsg::Collapse);
+                            menu_controller.collapse();
                         }
                     }
                 } else {
                     // Always close menus without on_select callback
                     if let Some(menu_controller) = &props.menu_controller {
-                        menu_controller.emit(MenuControllerMsg::Collapse);
+                        menu_controller.collapse();
                     }
                 }
                 false
@@ -176,7 +176,6 @@ impl Component for PwtMenuItem {
         let mut submenu: Option<Html> = None;
         if let Some(menu) = &props.menu {
             let sub = Container::new()
-                .node_ref(self.submenu_ref.clone())
                 .class("pwt-submenu")
                 .attribute("role", "none")
                 .with_optional_child(show_submenu.then(|| {
@@ -187,7 +186,7 @@ impl Component for PwtMenuItem {
                         .autofocus(props.focus_submenu)
                         .on_close(props.on_close.clone())
                 }))
-                .into();
+                .into_html_with_ref(self.submenu_ref.clone());
 
             submenu = Some(sub);
         }
@@ -223,7 +222,6 @@ impl Component for PwtMenuItem {
 
         let disabled = props.disabled;
         Container::new()
-            .node_ref(self.content_ref.clone())
             .class(if props.inside_menubar {
                 "pwt-menubar-item"
             } else {
@@ -262,7 +260,7 @@ impl Component for PwtMenuItem {
                     };
                 }
             }))
-            .into()
+            .into_html_with_ref(self.content_ref.clone())
     }
 
     fn rendered(&mut self, ctx: &Context<Self>, _first_render: bool) {

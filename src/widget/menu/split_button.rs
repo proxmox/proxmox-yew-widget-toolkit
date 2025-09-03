@@ -6,6 +6,8 @@ use yew::prelude::*;
 use crate::dom::focus::FocusTracker;
 use crate::prelude::*;
 use crate::props::{BuilderFn, IntoOptionalBuilderFn};
+use crate::state::SharedStateObserver;
+use crate::widget::menu::MenuController;
 use crate::widget::{Button, Container};
 
 use super::{Menu, MenuControllerMsg, MenuPopper};
@@ -56,6 +58,10 @@ pub struct SplitButton {
     #[builder_cb(IntoEventCallback, into_event_callback, MouseEvent)]
     #[prop_or_default]
     pub on_activate: Option<Callback<MouseEvent>>,
+
+    #[builder_cb(IntoPropValue, into_prop_value, Option<MenuController>)]
+    #[prop_or_default]
+    pub(crate) menu_controller: Option<MenuController>,
 }
 
 impl SplitButton {
@@ -93,23 +99,48 @@ pub enum Msg {
     ShowMenu,
     CloseMenu,
     FocusChange(bool),
+    Controller, // MenuController has new messages
 }
 
 #[doc(hidden)]
 pub struct PwtSplitButton {
+    node_ref: NodeRef,
     submenu_ref: NodeRef,
     trigger_ref: NodeRef,
     popper: MenuPopper,
-    menu_controller: Callback<MenuControllerMsg>,
+    menu_controller: MenuController,
+    _menu_controller_observer: SharedStateObserver<Vec<MenuControllerMsg>>,
     show_submenu: bool,
     focus_tracker: FocusTracker,
 }
 
 impl PwtSplitButton {
-    fn restore_focus(&mut self, props: &SplitButton) {
-        if let Some(node) = props.std_props.node_ref.get() {
+    fn restore_focus(&mut self, _props: &SplitButton) {
+        if let Some(node) = self.node_ref.get() {
             if let Ok(el) = node.dyn_into::<web_sys::HtmlElement>() {
                 let _ = el.focus();
+            }
+        }
+    }
+
+    fn handle_controller_messages(&mut self, ctx: &Context<Self>) {
+        let count = self.menu_controller.state.read().len();
+        if count == 0 {
+            return;
+        } // Note: avoid endless loop
+
+        let list = self.menu_controller.state.write().split_off(0);
+
+        for msg in list.into_iter() {
+            match msg {
+                MenuControllerMsg::Open => {
+                    ctx.link().send_message(Msg::ShowMenu);
+                }
+                MenuControllerMsg::Collapse => {
+                    ctx.link().send_message(Msg::CloseMenu);
+                }
+                MenuControllerMsg::Next => { /* ignore */ }
+                MenuControllerMsg::Previous => { /* ignore  */ }
             }
         }
     }
@@ -120,32 +151,38 @@ impl Component for PwtSplitButton {
     type Properties = SplitButton;
 
     fn create(ctx: &Context<Self>) -> Self {
+        let props = ctx.props();
+
+        let node_ref = NodeRef::default();
         let submenu_ref = NodeRef::default();
         let trigger_ref = NodeRef::default();
 
         let popper = MenuPopper::new(trigger_ref.clone(), submenu_ref.clone(), true);
 
-        let menu_controller = {
-            let link = ctx.link().clone();
-            Callback::from(move |msg: MenuControllerMsg| {
-                match msg {
-                    MenuControllerMsg::Next => { /* ignore */ }
-                    MenuControllerMsg::Previous => { /* ignore */ }
-                    MenuControllerMsg::Collapse => link.send_message(Msg::CloseMenu),
-                }
-            })
-        };
+        let menu_controller = props
+            .menu_controller
+            .clone()
+            .unwrap_or_else(|| MenuController::new());
+
+        let _menu_controller_observer = menu_controller
+            .state
+            .add_listener(ctx.link().callback(|_| Msg::Controller));
 
         let focus_tracker = FocusTracker::new(ctx.link().callback(Msg::FocusChange));
 
-        Self {
+        let mut me = Self {
+            node_ref,
             submenu_ref,
             trigger_ref,
             popper,
             menu_controller,
+            _menu_controller_observer,
             show_submenu: false,
             focus_tracker,
-        }
+        };
+
+        me.handle_controller_messages(ctx);
+        me
     }
 
     fn changed(&mut self, _ctx: &Context<Self>, _old_props: &Self::Properties) -> bool {
@@ -158,6 +195,10 @@ impl Component for PwtSplitButton {
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
         let props = ctx.props();
         match msg {
+            Msg::Controller => {
+                self.handle_controller_messages(ctx);
+                true
+            }
             Msg::ShowMenu => {
                 self.show_submenu = true;
                 true
@@ -209,9 +250,9 @@ impl Component for PwtSplitButton {
 
             Container::new()
                 .attribute("role", "none")
-                .node_ref(self.submenu_ref.clone())
                 .class("pwt-submenu")
                 .with_optional_child(menu)
+                .into_html_with_ref(self.submenu_ref.clone())
         });
 
         let mut button = Button::new(&props.text)
@@ -259,7 +300,7 @@ impl Component for PwtSplitButton {
             .with_child(button)
             .with_child(trigger)
             .with_optional_child(submenu)
-            .into()
+            .into_html_with_ref(self.node_ref.clone())
     }
 
     fn rendered(&mut self, _ctx: &Context<Self>, _first_render: bool) {

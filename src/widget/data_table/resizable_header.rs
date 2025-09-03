@@ -12,20 +12,14 @@ use crate::css::ColorScheme;
 use crate::dom::element_direction_rtl;
 use crate::dom::focus::FocusTracker;
 use crate::dom::DomSizeObserver;
-use crate::prelude::*;
 use crate::props::{BuilderFn, IntoOptionalBuilderFn};
-use crate::widget::menu::{Menu, MenuButton};
+use crate::widget::menu::{Menu, MenuButton, MenuController};
 use crate::widget::{Container, Row};
-
-// Note about node_ref property: make it optional, and generate an
-// unique one in Component::create(). That way we can clone Properies without
-// generating NodeRef duplicates!
+use crate::{impl_class_prop_builder, impl_yew_std_props_builder, prelude::*};
 
 #[derive(Clone, PartialEq, Properties)]
 #[doc(hidden)] // only used inside this crate
 pub struct ResizableHeader {
-    #[prop_or_default]
-    pub node_ref: Option<NodeRef>,
     #[prop_or_default]
     pub key: Option<Key>,
 
@@ -74,21 +68,13 @@ impl ResizableHeader {
         yew::props!(Self {})
     }
 
+    impl_yew_std_props_builder!();
+    impl_class_prop_builder!();
+
     /// Builder style method to set the element id
     pub fn id(mut self, id: impl IntoPropValue<Option<String>>) -> Self {
         self.id = id.into_prop_value();
         self
-    }
-
-    /// Builder style method to add a html class
-    pub fn class(mut self, class: impl Into<Classes>) -> Self {
-        self.add_class(class);
-        self
-    }
-
-    /// Method to add a html class
-    pub fn add_class(&mut self, class: impl Into<Classes>) {
-        self.class.push(class);
     }
 
     /// Builder stzyle method to set additional html attributes.
@@ -173,7 +159,7 @@ pub struct PwtResizableHeader {
     pointerup_listener: Option<EventListener>,
     size_observer: Option<DomSizeObserver>,
     has_focus: bool,
-    picker_ref: NodeRef,
+    menu_controller: MenuController,
     show_picker: bool,
     focus_tracker: FocusTracker,
 }
@@ -193,18 +179,17 @@ impl Component for PwtResizableHeader {
     type Properties = ResizableHeader;
 
     fn create(ctx: &Context<Self>) -> Self {
-        let props = ctx.props();
         let focus_tracker = FocusTracker::new(ctx.link().callback(Msg::FocusChange));
 
         Self {
-            node_ref: props.node_ref.clone().unwrap_or_default(),
+            node_ref: NodeRef::default(),
             rtl: None,
             width: 0.0,
             pointermove_listener: None,
             pointerup_listener: None,
             size_observer: None,
             has_focus: false,
-            picker_ref: NodeRef::default(),
+            menu_controller: MenuController::new(),
             show_picker: false,
             focus_tracker,
         }
@@ -270,17 +255,16 @@ impl Component for PwtResizableHeader {
                 true
             }
             Msg::HidePicker => {
-                //log::info!("HidePicker");
-                self.show_picker = false;
+                if self.show_picker {
+                    self.show_picker = false;
+                    self.menu_controller.collapse();
+                }
                 self.restore_focus();
                 true
             }
             Msg::ShowPicker => {
                 self.show_picker = true;
-                //log::info!("ShowPicker {}", self.show_picker);
-                if let Some(el) = self.picker_ref.cast::<web_sys::HtmlElement>() {
-                    let _ = el.focus();
-                }
+                self.menu_controller.open();
                 true
             }
         }
@@ -290,7 +274,6 @@ impl Component for PwtResizableHeader {
         let props = ctx.props();
 
         let mut row = Row::new()
-            .node_ref(self.node_ref.clone())
             .attribute("role", "none")
             .class("pwt-datatable-header-item")
             .class(self.has_focus.then_some("focused"))
@@ -323,7 +306,7 @@ impl Component for PwtResizableHeader {
         if props.show_menu {
             anchor.add_child(
                 MenuButton::new("")
-                    .node_ref(self.picker_ref.clone())
+                    .menu_controller(self.menu_controller.clone())
                     .tabindex(-1)
                     .autoshow_menu(true)
                     .class("pwt-datatable-header-menu-trigger pwt-button-text")
@@ -362,7 +345,7 @@ impl Component for PwtResizableHeader {
             row.add_child(anchor);
         }
 
-        row.into()
+        row.into_html_with_ref(self.node_ref.clone())
     }
 
     fn rendered(&mut self, ctx: &Context<Self>, first_render: bool) {

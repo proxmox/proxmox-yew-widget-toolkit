@@ -26,9 +26,6 @@ use pwt_macros::builder;
 #[derive(Properties, Clone, PartialEq)]
 #[builder]
 pub struct Dialog {
-    #[prop_or_default]
-    node_ref: NodeRef,
-
     /// The yew component key.
     #[prop_or_default]
     pub key: Option<Key>,
@@ -97,21 +94,7 @@ impl Dialog {
         })
     }
 
-    /// Builder style method to set the yew `node_ref`
-    pub fn node_ref(mut self, node_ref: ::yew::html::NodeRef) -> Self {
-        self.node_ref = node_ref;
-        self
-    }
-
-    /// Builder style method to set the yew `key` property
-    pub fn key(mut self, key: impl IntoOptionalKey) -> Self {
-        self.key = key.into_optional_key();
-        self
-    }
-
-    pub fn html(self) -> VNode {
-        self.into()
-    }
+    crate::impl_yew_std_props_builder!();
 }
 
 pub enum Msg {
@@ -140,6 +123,7 @@ pub struct PwtDialog {
     last_active: Option<web_sys::HtmlElement>, // last focused element
     resizer_state: HashMap<Point, DragState>,
     center_function: Option<Closure<dyn FnMut()>>,
+    node_ref: NodeRef,
     inner_ref: NodeRef,
 }
 
@@ -197,7 +181,8 @@ impl Component for PwtDialog {
             resizer_state: HashMap::new(),
             last_active,
             center_function,
-            inner_ref: Default::default(),
+            node_ref: NodeRef::default(),
+            inner_ref: NodeRef::default(),
         }
     }
 
@@ -207,7 +192,7 @@ impl Component for PwtDialog {
         match msg {
             Msg::Open => {
                 if !self.open {
-                    if let Some(dialog_node) = props.node_ref.get() {
+                    if let Some(dialog_node) = self.node_ref.get() {
                         crate::show_modal_dialog(dialog_node);
                         self.open = true;
                     }
@@ -216,7 +201,7 @@ impl Component for PwtDialog {
             Msg::Close => {
                 if self.open {
                     if let Some(on_close) = &props.on_close {
-                        if let Some(dialog_node) = props.node_ref.get() {
+                        if let Some(dialog_node) = self.node_ref.get() {
                             crate::close_dialog(dialog_node);
                         }
 
@@ -237,7 +222,7 @@ impl Component for PwtDialog {
                 }
 
                 if props.draggable && is_draggable {
-                    if let Some(element) = props.node_ref.clone().into_html_element() {
+                    if let Some(element) = self.node_ref.clone().into_html_element() {
                         let client = element.get_bounding_client_rect();
                         let x = event.client_x() as f64 - client.x();
                         let y = event.client_y() as f64 - client.y();
@@ -273,7 +258,7 @@ impl Component for PwtDialog {
                     let height = window.inner_height().unwrap().as_f64().unwrap();
                     let x = (event.client_x() as f64).max(0.0).min(width) - offset_x;
                     let y = (event.client_y() as f64).max(0.0).min(height) - offset_y;
-                    if let Err(err) = align_to_xy(props.node_ref.clone(), (x, y), Point::TopStart) {
+                    if let Err(err) = align_to_xy(self.node_ref.clone(), (x, y), Point::TopStart) {
                         log::error!("align_to_xy failed: {}", err.to_string());
                     }
                 }
@@ -416,7 +401,7 @@ impl Component for PwtDialog {
 
                         if pos.0 != rect.x() || pos.1 != rect.y() {
                             if let Err(err) =
-                                align_to_xy(props.node_ref.clone(), pos, Point::TopStart)
+                                align_to_xy(self.node_ref.clone(), pos, Point::TopStart)
                             {
                                 log::error!("could not align dialog: {}", err.to_string())
                             }
@@ -433,7 +418,7 @@ impl Component for PwtDialog {
             },
             Msg::Center => {
                 if let Err(err) =
-                    align_to_viewport(props.node_ref.clone(), Point::Center, Point::Center)
+                    align_to_viewport(self.node_ref.clone(), Point::Center, Point::Center)
                 {
                     log::error!("err: {}", err.to_string());
                 }
@@ -442,10 +427,9 @@ impl Component for PwtDialog {
         false
     }
 
-    fn destroy(&mut self, ctx: &Context<Self>) {
-        let props = ctx.props();
+    fn destroy(&mut self, _ctx: &Context<Self>) {
         // always close the dialog before restoring the focus
-        if let Some(dialog_node) = props.node_ref.get() {
+        if let Some(dialog_node) = self.node_ref.get() {
             crate::close_dialog(dialog_node);
         }
         self.restore_focus();
@@ -498,7 +482,6 @@ impl Component for PwtDialog {
         //let style = props.styles.compile_style_attribute(None);
 
         let mut inner = Container::new()
-            .node_ref(self.inner_ref.clone())
             .class(classes)
             .styles(props.styles.clone())
             .with_child(panel);
@@ -531,7 +514,6 @@ impl Component for PwtDialog {
         });
 
         let dialog = Container::from_tag("dialog")
-            .node_ref(props.node_ref.clone())
             .class("pwt-outer-dialog")
             .onpointerdown(onpointerdown)
             .onclose(onclose)
@@ -540,9 +522,10 @@ impl Component for PwtDialog {
             .ontouchmove(cancel_event.clone())
             .ontouchcancel(cancel_event.clone())
             .attribute("aria-label", props.title.clone())
-            .with_child(inner);
+            .with_child(inner.into_html_with_ref(self.inner_ref.clone()))
+            .into_html_with_ref(self.node_ref.clone());
 
-        create_portal(dialog.into(), gloo_utils::body().into())
+        create_portal(dialog, gloo_utils::body().into())
     }
 
     fn rendered(&mut self, ctx: &Context<Self>, first_render: bool) {

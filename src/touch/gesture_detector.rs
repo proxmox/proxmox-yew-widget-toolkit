@@ -11,7 +11,9 @@ use yew::prelude::*;
 use yew::virtual_dom::{Key, VComp, VNode};
 
 use crate::impl_to_html;
-use crate::props::{ContainerBuilder, EventSubscriber, WidgetBuilder, WidgetStyleBuilder};
+use crate::props::{
+    ContainerBuilder, EventSubscriber, IntoVTag, WidgetBuilder, WidgetStyleBuilder,
+};
 use crate::widget::Container;
 
 /// An event that can happen from a [`PointerEvent`] or a [`Touch`]
@@ -794,7 +796,6 @@ impl Component for PwtGestureDetector {
         let props = ctx.props();
 
         let mut container = Container::new()
-            .node_ref(self.node_ref.clone())
             .class("pwt-d-contents")
             .style("touch-action", "none")
             .with_child(props.content.clone());
@@ -811,7 +812,7 @@ impl Component for PwtGestureDetector {
             container.add_onpointercancel(ctx.link().callback(Msg::PointerCancel));
             container.add_onpointerleave(ctx.link().callback(Msg::PointerLeave));
         }
-        container.into()
+        container.into_html_with_ref(self.node_ref.clone())
     }
 }
 

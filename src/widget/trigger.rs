@@ -1,6 +1,6 @@
 use yew::{
     html::{IntoEventCallback, IntoPropValue},
-    AttrValue, Callback, Component, Properties,
+    AttrValue, Callback, Component, NodeRef, Properties,
 };
 
 use pwt_macros::{builder, widget};
@@ -60,9 +60,13 @@ impl Component for PwtTrigger {
 
         let pointer_cls = props.on_activate.as_ref().map(|_| "pwt-pointer");
 
-        let icon = props
-            .std_props
-            .into_vtag("i".into(), pointer_cls, Some(props.listeners), None);
+        let icon = props.std_props.into_vtag(
+            "i".into(),
+            NodeRef::default(),
+            pointer_cls,
+            Some(props.listeners),
+            None,
+        );
 
         Tooltip::new(icon).tip(props.tip).into()
     }

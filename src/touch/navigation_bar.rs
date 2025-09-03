@@ -28,10 +28,6 @@ use pwt_macros::builder;
 #[derive(Properties, Clone, PartialEq)]
 #[builder]
 pub struct NavigationBar {
-    /// Yew component `ref`.
-    #[prop_or_default]
-    node_ref: NodeRef,
-
     /// The yew component key.
     #[prop_or_default]
     pub key: Option<Key>,
@@ -327,7 +323,6 @@ impl Component for PwtNavigationBar {
         });
 
         Container::new()
-            .node_ref(props.node_ref.clone())
             .class("pwt-navigation-bar")
             .class(props.class.clone())
             .children(children)

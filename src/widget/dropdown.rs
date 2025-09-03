@@ -133,6 +133,7 @@ pub struct PwtDropdown {
     change_from_input: bool,
     focus_on_field: bool,
 
+    node_ref: NodeRef,
     input_ref: NodeRef,
     picker_ref: NodeRef,
     dropdown_ref: NodeRef,
@@ -143,8 +144,8 @@ pub struct PwtDropdown {
 
 impl PwtDropdown {
     // focus the input elelent (after closing the dropdown popover)
-    fn restore_focus(&mut self, props: &Dropdown) {
-        if let Some(el) = props.std_props.node_ref.cast::<web_sys::HtmlElement>() {
+    fn restore_focus(&mut self) {
+        if let Some(el) = self.node_ref.cast::<web_sys::HtmlElement>() {
             let _ = el.focus();
         }
     }
@@ -183,6 +184,7 @@ impl Component for PwtDropdown {
             value: ctx.props().value.clone().unwrap_or_default(),
             focus_on_field: false,
             change_from_input: false,
+            node_ref: NodeRef::default(),
             input_ref: NodeRef::default(),
             picker_ref: NodeRef::default(),
             dropdown_ref: NodeRef::default(),
@@ -215,7 +217,7 @@ impl Component for PwtDropdown {
                     crate::hide_popover(popover_node);
                 }
                 self.show = false;
-                self.restore_focus(props);
+                self.restore_focus();
                 if self.pending_change {
                     self.pending_change = false;
                     //log::info!("Pending Change {}", self.value);
@@ -349,7 +351,6 @@ impl Component for PwtDropdown {
             };
 
             Container::new()
-                .node_ref(self.input_ref.clone())
                 .listeners(&props.listeners)
                 .class("pwt-flex-fill")
                 .class("pwt-input-content")
@@ -377,10 +378,9 @@ impl Component for PwtDropdown {
                         .attribute("type", "hidden"),
                 )
                 .onkeydown(onkeydown)
-                .into()
+                .into_html_with_ref(self.input_ref.clone())
         } else {
             Input::new()
-                .node_ref(self.input_ref.clone())
                 .with_input_props(&props.input_props)
                 .listeners(&props.listeners)
                 .class("pwt-flex-fill")
@@ -395,7 +395,7 @@ impl Component for PwtDropdown {
                 .oninput(oninput)
                 .onpointerdown(ctx.link().callback(|_| Msg::MouseDownInput))
                 .onkeydown(onkeydown)
-                .into()
+                .into_html_with_ref(self.input_ref.clone())
         };
 
         let trigger_cls = classes! {
@@ -407,8 +407,6 @@ impl Component for PwtDropdown {
         };
 
         let mut select = Container::new()
-            // overwrite node_ref, becaus AutoFloatingPlacement needs stable ref
-            .node_ref(self.dropdown_ref.clone())
             .class("pwt-input")
             .class("pwt-input-type-text")
             .class(self.show.then_some("picker-open"))
@@ -443,7 +441,7 @@ impl Component for PwtDropdown {
         let dropdown = Container::new()
             .onfocusin(self.focus_tracker.get_focus_callback(true))
             .onfocusout(self.focus_tracker.get_focus_callback(false))
-            .with_child(select)
+            .with_child(select.into_html_with_ref(self.dropdown_ref.clone()))
             .with_child(
                 Container::new()
                     .attribute("popover", "manual")
@@ -452,7 +450,6 @@ impl Component for PwtDropdown {
                     .class("pwt-dropdown")
                     .attribute("id", self.picker_id.clone())
                     .attribute("data-show", data_show)
-                    .node_ref(self.picker_ref.clone())
                     .onkeydown(ctx.link().batch_callback(|event: KeyboardEvent| {
                         if event.key() == "Escape" {
                             // handle escape ourselves since it's a non modal popover
@@ -468,7 +465,8 @@ impl Component for PwtDropdown {
                         event.prevent_default();
                         Msg::HidePicker
                     }))
-                    .with_optional_child(self.show.then(|| props.picker.apply(&controller))),
+                    .with_optional_child(self.show.then(|| props.picker.apply(&controller)))
+                    .into_html_with_ref(self.picker_ref.clone()),
             );
 
         let mut tooltip = Tooltip::new(dropdown).with_std_props(&props.std_props);
@@ -485,16 +483,6 @@ impl Component for PwtDropdown {
         if let Some(popover) = self.picker_ref.get() {
             crate::hide_popover(popover);
         }
-    }
-
-    fn changed(&mut self, ctx: &Context<Self>, old_props: &Self::Properties) -> bool {
-        let props = ctx.props();
-
-        if props.std_props.node_ref != old_props.std_props.node_ref {
-            self.update_picker_placer(props);
-        }
-
-        true
     }
 
     fn rendered(&mut self, ctx: &Context<Self>, first_render: bool) {

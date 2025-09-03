@@ -5,7 +5,7 @@ use yew::virtual_dom::{VNode, VTag};
 
 use pwt_macros::widget;
 
-use crate::props::WidgetBuilder;
+use crate::props::{IntoVTag, WidgetBuilder};
 
 use super::{Hyperlink, SvgLength, TSpan};
 
@@ -84,13 +84,14 @@ impl Text {
     }
 }
 
-impl From<Text> for VTag {
-    fn from(val: Text) -> Self {
-        val.std_props.into_vtag(
+impl IntoVTag for Text {
+    fn into_vtag_with_ref(self, node_ref: NodeRef) -> VTag {
+        self.std_props.into_vtag(
             Cow::Borrowed("text"),
+            node_ref,
             None::<&str>,
-            Some(val.listeners),
-            Some(val.children),
+            Some(self.listeners),
+            Some(self.children),
         )
     }
 }

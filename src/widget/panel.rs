@@ -72,27 +72,27 @@ impl Panel {
     }
 }
 
-impl From<Panel> for VTag {
-    fn from(mut val: Panel) -> Self {
-        val.add_class("pwt-panel");
+impl IntoVTag for Panel {
+    fn into_vtag_with_ref(mut self, node_ref: NodeRef) -> VTag {
+        self.add_class("pwt-panel");
 
-        if val.title.is_some() || !val.tools.is_empty() {
-            let header = create_panel_title(val.title, val.tools)
+        if self.title.is_some() || !self.tools.is_empty() {
+            let header = create_panel_title(self.title, self.tools)
                 .class("pwt-panel-header")
-                .class(val.header_class);
-            val.children.insert(0, header.into());
+                .class(self.header_class);
+            self.children.insert(0, header.into());
         }
 
-        let attributes = val.std_props.cumulate_attributes(None::<&str>);
+        let attributes = self.std_props.cumulate_attributes(None::<&str>);
 
-        let listeners = Listeners::Pending(val.listeners.listeners.into_boxed_slice());
+        let listeners = Listeners::Pending(self.listeners.listeners.into_boxed_slice());
 
-        let children = VList::with_children(val.children, None);
+        let children = VList::with_children(self.children, None);
 
         VTag::__new_other(
             Cow::Borrowed("div"),
-            val.std_props.node_ref,
-            val.std_props.key,
+            node_ref,
+            self.std_props.key,
             attributes,
             listeners,
             children.into(),

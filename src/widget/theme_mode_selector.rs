@@ -9,10 +9,6 @@ use crate::{impl_class_prop_builder, impl_yew_std_props_builder, prelude::*};
 /// Round icon button to select light/dark theme.
 #[derive(Clone, PartialEq, Properties)]
 pub struct ThemeModeSelector {
-    /// Yew component `ref`.
-    #[prop_or_default]
-    pub node_ref: NodeRef,
-
     /// Yew `key` property
     #[prop_or_default]
     pub key: Option<Key>,
@@ -87,7 +83,6 @@ impl Component for PwtThemeModeSelector {
             ThemeMode::Dark => "fa fa-fw fa-moon-o",
             ThemeMode::Light => "fa fa-fw fa-sun-o",
         })
-        .node_ref(props.node_ref.clone())
         .class(props.class.clone())
         .class("circle")
         .onclick(onclick)

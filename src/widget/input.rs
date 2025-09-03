@@ -3,7 +3,7 @@ use yew::virtual_dom::{Listeners, VTag};
 
 use pwt_macros::widget;
 
-use crate::props::{FieldStdProps, WidgetStdProps};
+use crate::props::{FieldStdProps, IntoVTag, WidgetStdProps};
 
 /// Html Input element.
 #[widget(pwt=crate, @input, @element)]
@@ -35,11 +35,11 @@ impl Input {
     }
 }
 
-impl From<Input> for VTag {
-    fn from(val: Input) -> Self {
-        let mut attributes = val.std_props.cumulate_attributes(None::<&str>);
+impl IntoVTag for Input {
+    fn into_vtag_with_ref(self, node_ref: NodeRef) -> VTag {
+        let mut attributes = self.std_props.cumulate_attributes(None::<&str>);
         let attr_map = attributes.get_mut_index_map();
-        val.input_props.cumulate_attributes(attr_map);
+        self.input_props.cumulate_attributes(attr_map);
 
         let value = attr_map
             .get(&AttrValue::Static("value"))
@@ -49,13 +49,13 @@ impl From<Input> for VTag {
             .is_some()
             .then_some(true);
 
-        let listeners = Listeners::Pending(val.listeners.listeners.into_boxed_slice());
+        let listeners = Listeners::Pending(self.listeners.listeners.into_boxed_slice());
 
         VTag::__new_input(
             value,
             checked,
-            val.std_props.node_ref,
-            val.std_props.key,
+            node_ref,
+            self.std_props.key,
             attributes,
             listeners,
         )

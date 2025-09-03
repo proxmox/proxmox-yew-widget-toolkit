@@ -5,7 +5,7 @@ use yew::virtual_dom::{VNode, VTag};
 
 use pwt_macros::widget;
 
-use crate::props::WidgetBuilder;
+use crate::props::{IntoVTag, WidgetBuilder};
 
 use super::SvgLength;
 
@@ -67,12 +67,13 @@ impl Ellipse {
     impl_svg_presentation_attributes!();
 }
 
-impl From<Ellipse> for VTag {
-    fn from(val: Ellipse) -> Self {
-        val.std_props.into_vtag(
+impl IntoVTag for Ellipse {
+    fn into_vtag_with_ref(self, node_ref: NodeRef) -> VTag {
+        self.std_props.into_vtag(
             Cow::Borrowed("ellipse"),
+            node_ref,
             None::<&str>,
-            Some(val.listeners),
+            Some(self.listeners),
             None,
         )
     }

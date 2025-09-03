@@ -8,9 +8,9 @@ use yew::prelude::*;
 use yew::virtual_dom::{Key, VComp, VNode};
 
 use crate::dom::IntoHtmlElement;
-use crate::prelude::*;
 use crate::state::{SharedState, SharedStateObserver};
 use crate::widget::Container;
+use crate::{impl_yew_std_props_builder, prelude::*};
 
 use super::{GestureDetector, GestureSwipeEvent, InputEvent};
 
@@ -65,9 +65,6 @@ use pwt_macros::builder;
 #[derive(Properties, Clone, PartialEq)]
 #[builder]
 pub struct SideDialog {
-    #[prop_or_default]
-    node_ref: NodeRef,
-
     /// The yew component key.
     #[prop_or_default]
     pub key: Option<Key>,
@@ -107,17 +104,7 @@ impl SideDialog {
         yew::props!(Self {})
     }
 
-    /// Builder style method to set the yew `node_ref`
-    pub fn node_ref(mut self, node_ref: ::yew::html::NodeRef) -> Self {
-        self.node_ref = node_ref;
-        self
-    }
-
-    /// Builder style method to set the yew `key` property
-    pub fn key(mut self, key: impl IntoOptionalKey) -> Self {
-        self.key = key.into_optional_key();
-        self
-    }
+    impl_yew_std_props_builder!();
 }
 
 pub enum Msg {
@@ -144,6 +131,7 @@ enum SliderState {
 pub struct PwtSideDialog {
     open: bool,
     last_active: Option<web_sys::HtmlElement>, // last focused element
+    node_ref: NodeRef,
     slider_ref: NodeRef,
     slider_state: SliderState,
     drag_start: Option<(f64, f64)>,
@@ -198,6 +186,7 @@ impl Component for PwtSideDialog {
         Self {
             open: false,
             last_active,
+            node_ref: NodeRef::default(),
             slider_ref: NodeRef::default(),
             slider_state: SliderState::Hidden,
             drag_start: None,
@@ -215,7 +204,7 @@ impl Component for PwtSideDialog {
                 if !self.open {
                     self.slider_state = SliderState::SlideIn;
 
-                    if let Some(dialog_node) = props.node_ref.get() {
+                    if let Some(dialog_node) = self.node_ref.get() {
                         crate::show_modal_dialog(dialog_node);
                         self.open = true;
                     }
@@ -225,7 +214,7 @@ impl Component for PwtSideDialog {
             Msg::Close => {
                 if self.open {
                     if let Some(on_close) = &props.on_close {
-                        if let Some(dialog_node) = props.node_ref.get() {
+                        if let Some(dialog_node) = self.node_ref.get() {
                             crate::close_dialog(dialog_node);
                         }
 
@@ -314,10 +303,9 @@ impl Component for PwtSideDialog {
         }
     }
 
-    fn destroy(&mut self, ctx: &Context<Self>) {
-        let props = ctx.props();
+    fn destroy(&mut self, _ctx: &Context<Self>) {
         // always close the dialog before restoring the focus
-        if let Some(dialog_node) = props.node_ref.get() {
+        if let Some(dialog_node) = self.node_ref.get() {
             crate::close_dialog(dialog_node);
         }
         self.restore_focus();
@@ -370,24 +358,23 @@ impl Component for PwtSideDialog {
         }
 
         let dialog = Container::from_tag("dialog")
-            .node_ref(props.node_ref.clone())
             .class("pwt-side-dialog")
             .class(slider_state_class)
             .oncancel(oncancel)
             .onclose(link.callback(|_| Msg::Close))
             .with_child(
                 Container::new()
-                    .node_ref(self.slider_ref.clone())
                     .class("pwt-side-dialog-slider")
                     .class(slider_direction_class)
                     .class(slider_state_class)
                     .style("transition", transition)
                     .style("transform", transform)
                     .ontransitionend(ctx.link().callback(|_| Msg::SliderAnimationEnd))
-                    .children(props.children.clone()),
+                    .children(props.children.clone())
+                    .into_html_with_ref(self.slider_ref.clone()),
             );
 
-        let view = GestureDetector::new(dialog)
+        let view = GestureDetector::new(dialog.into_html_with_ref(self.node_ref.clone()))
             .on_tap({
                 let slider_ref = self.slider_ref.clone();
                 let link = ctx.link().clone();

@@ -100,12 +100,16 @@ use builder::*;
 /// #             }
 /// #         }
 /// #         pub trait WidgetStyleBuilder {}
+/// #         pub trait IntoVTag: Sized {
+/// #             fn into_vtag_with_ref(self, node_ref: yew::NodeRef) -> yew::virtual_dom::VTag { todo!(); }
+/// #             fn into_vtag(self) -> yew::virtual_dom::VTag { todo!(); }
+/// #         }
 /// #         #[derive(PartialEq, Default, Clone)]
 /// #         pub struct FieldStdProps {}
 /// #     }
 /// # }
 /// use pwt_macros::widget;
-/// use pwt::props::EventSubscriber;
+/// use pwt::props::{EventSubscriber, IntoVTag};
 /// use yew::prelude::*;
 ///
 /// #[widget(@element)]
@@ -120,13 +124,16 @@ use builder::*;
 ///     }
 /// }
 ///
-/// // implementing Into<VTag> necessary without comp
+/// // implementing IntoVTag (or "From<T> for VTag") is necessary for widget
+/// // without "comp=XXX" attribute. 
 /// # use yew::virtual_dom::VTag;
-/// impl From<Foo> for VTag {
-///     //...
-/// #     fn from(value: Foo) -> VTag {
-/// #         VTag::new("foo")
-/// #     }
+/// # use yew::NodeRef;
+/// # use std::borrow::Cow;
+/// impl IntoVTag for Foo {
+///     fn into_vtag_with_ref(self, node_ref: NodeRef) -> VTag {
+///         // self.std_props.into_vtag(..)
+/// #       unreachable!();       
+///     }
 /// }
 ///
 /// // now you can use the provided methods from e.g., EventSubscriber:
@@ -199,7 +206,7 @@ use builder::*;
 ///     }
 /// }
 ///
-/// // no Into<VTag> implementing necessary here, it will use the Component for that
+/// // no IntoVTag implementing necessary here, it will use the Component for that
 ///
 /// struct Foo {}
 ///

@@ -10,7 +10,7 @@ use pwt_macros::builder;
 use crate::css::{OverflowX, OverflowY};
 use crate::props::{
     AsClassesMut, AsCssStylesMut, ContainerBuilder, CssBorderBuilder, CssPaddingBuilder, CssStyles,
-    EventSubscriber, IntoOptionalKey, WidgetBuilder, WidgetStyleBuilder,
+    EventSubscriber, IntoOptionalKey, IntoVTag, WidgetBuilder, WidgetStyleBuilder,
 };
 use crate::state::{NavigationContext, NavigationContextExt, Selection};
 use crate::{impl_class_prop_builder, impl_yew_std_props_builder};
@@ -30,10 +30,6 @@ use super::{Menu, MenuEntry, MenuItem};
 #[derive(Clone, PartialEq, Properties)]
 #[builder]
 pub struct NavigationDrawer {
-    /// Yew component `ref`.
-    #[prop_or_default]
-    pub node_ref: NodeRef,
-
     /// The yew component key.
     #[prop_or_default]
     pub key: Option<Key>,
@@ -153,6 +149,7 @@ pub enum Msg {
 
 #[doc(hidden)]
 pub struct PwtNavigationDrawer {
+    node_ref: NodeRef,
     active: Option<Key>,
     selection: Selection,
     menu_states: HashMap<Key, bool>, // true = open
@@ -430,6 +427,7 @@ impl Component for PwtNavigationDrawer {
         }
 
         Self {
+            node_ref: NodeRef::default(),
             active,
             selection,
             menu_states: HashMap::new(),
@@ -551,7 +549,7 @@ impl Component for PwtNavigationDrawer {
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
 
-        let menu_ref = props.node_ref.clone();
+        let menu_ref = self.node_ref.clone();
         let onkeydown = Callback::from(move |event: KeyboardEvent| {
             match event.key().as_str() {
                 "ArrowDown" => {
@@ -566,7 +564,6 @@ impl Component for PwtNavigationDrawer {
         });
 
         let mut column = Column::new()
-            .node_ref(props.node_ref.clone())
             .onkeydown(onkeydown)
             // avoid https://bugzilla.mozilla.org/show_bug.cgi?id=1069739
             .attribute("tabindex", "-1")
@@ -586,7 +583,7 @@ impl Component for PwtNavigationDrawer {
             self.render_menu_entry(ctx, item, &mut column, active, 0, false);
         }
 
-        column.into()
+        column.into_html_with_ref(self.node_ref.clone())
     }
 }
 

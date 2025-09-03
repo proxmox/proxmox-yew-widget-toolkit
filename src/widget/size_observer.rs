@@ -4,7 +4,7 @@ use std::rc::Rc;
 use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
 
-use crate::props::WidgetBuilder;
+use crate::props::{IntoVTag, WidgetBuilder};
 
 use crate::dom::{DomSizeObserver, IntoSizeCallback, SizeCallback};
 
@@ -12,6 +12,8 @@ use crate::dom::{DomSizeObserver, IntoSizeCallback, SizeCallback};
 ///
 /// This is a wrapper around another widget, which sets up a [DomSizeObserver]
 /// to track size changes.
+///
+/// Only work for widgets implementing IntoVTag (because we need to assign a NodeRef)
 ///
 /// ```
 /// # use pwt::widget::{Panel, SizeObserver};
@@ -25,12 +27,12 @@ use crate::dom::{DomSizeObserver, IntoSizeCallback, SizeCallback};
 /// # }
 /// ```
 #[derive(Clone, PartialEq, Properties)]
-pub struct SizeObserver<W: WidgetBuilder + PartialEq + Clone> {
+pub struct SizeObserver<W: WidgetBuilder + IntoVTag + PartialEq + Clone> {
     content: W,
     on_resize: SizeCallback,
 }
 
-impl<W: WidgetBuilder + PartialEq + Clone + 'static> SizeObserver<W> {
+impl<W: WidgetBuilder + IntoVTag + PartialEq + Clone + 'static> SizeObserver<W> {
     /// Creates a new instance.
     pub fn new<X>(content: W, on_resize: impl IntoSizeCallback<X>) -> Self {
         yew::props!(Self {
@@ -42,6 +44,7 @@ impl<W: WidgetBuilder + PartialEq + Clone + 'static> SizeObserver<W> {
 
 #[doc(hidden)]
 pub struct PwtSizeObserver<W> {
+    node_ref: NodeRef,
     observer: Option<DomSizeObserver>,
     _phantom: PhantomData<W>,
 }
@@ -50,12 +53,13 @@ pub enum Msg {
     Resize((f64, f64, f64, f64)),
 }
 
-impl<W: WidgetBuilder + PartialEq + Clone + 'static> Component for PwtSizeObserver<W> {
+impl<W: WidgetBuilder + IntoVTag + PartialEq + Clone + 'static> Component for PwtSizeObserver<W> {
     type Message = Msg;
     type Properties = SizeObserver<W>;
 
     fn create(_ctx: &Context<Self>) -> Self {
         Self {
+            node_ref: NodeRef::default(),
             observer: None,
             _phantom: PhantomData,
         }
@@ -63,9 +67,10 @@ impl<W: WidgetBuilder + PartialEq + Clone + 'static> Component for PwtSizeObserv
 
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
-        let widget = props.content.clone();
-
-        widget.into()
+        props
+            .content
+            .clone()
+            .into_html_with_ref(self.node_ref.clone())
     }
 
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
@@ -83,8 +88,7 @@ impl<W: WidgetBuilder + PartialEq + Clone + 'static> Component for PwtSizeObserv
 
     fn rendered(&mut self, ctx: &Context<Self>, first_render: bool) {
         if first_render {
-            let props = ctx.props();
-            let node_ref = props.content.as_std_props().node_ref.clone();
+            let node_ref = self.node_ref.clone();
             let el = node_ref.cast::<web_sys::Element>().unwrap();
             let link = ctx.link().clone();
             let size_observer =
@@ -96,7 +100,7 @@ impl<W: WidgetBuilder + PartialEq + Clone + 'static> Component for PwtSizeObserv
     }
 }
 
-impl<W: WidgetBuilder + PartialEq + Clone + 'static> From<SizeObserver<W>> for VNode {
+impl<W: WidgetBuilder + IntoVTag + PartialEq + Clone + 'static> From<SizeObserver<W>> for VNode {
     fn from(val: SizeObserver<W>) -> Self {
         let key = val.content.as_std_props().key.clone();
         let comp = VComp::new::<PwtSizeObserver<W>>(Rc::new(val), key);

@@ -5,7 +5,7 @@ use yew::virtual_dom::VTag;
 
 use pwt_macros::widget;
 
-use crate::props::WidgetBuilder;
+use crate::props::{IntoVTag, WidgetBuilder};
 
 use super::SvgLength;
 
@@ -30,13 +30,14 @@ impl Group {
     impl_svg_presentation_attributes!();
 }
 
-impl From<Group> for VTag {
-    fn from(val: Group) -> Self {
-        val.std_props.into_vtag(
+impl IntoVTag for Group {
+    fn into_vtag_with_ref(self, node_ref: NodeRef) -> VTag {
+        self.std_props.into_vtag(
             Cow::Borrowed("g"),
+            node_ref,
             None::<&str>,
-            Some(val.listeners),
-            Some(val.children),
+            Some(self.listeners),
+            Some(self.children),
         )
     }
 }

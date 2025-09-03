@@ -176,18 +176,17 @@ impl PwtSlidable {
         let actions = props.left_actions.clone();
 
         Row::new()
-            .node_ref(self.left_ref.clone())
             .class("pwt-w-100 pwt-h-100")
             .with_child(
                 Container::new()
-                    .node_ref(self.left_action_ref.clone())
                     .height(CssLength::Fraction(1.0))
                     .min_width(0)
                     .style("flex", "0 1 auto")
-                    .with_optional_child(actions),
+                    .with_optional_child(actions)
+                    .into_html_with_ref(self.left_action_ref.clone()),
             )
             .with_child(html! {<div style="flex: 1 1 auto;"></div>})
-            .into()
+            .into_html_with_ref(self.left_ref.clone())
     }
 
     fn right_container(&self, ctx: &Context<Self>) -> Html {
@@ -195,18 +194,17 @@ impl PwtSlidable {
         let actions = props.right_actions.clone();
 
         Row::new()
-            .node_ref(self.right_ref.clone())
             .class("pwt-w-100 pwt-h-100")
             .with_child(html! {<div style="flex: 1 1 auto;"></div>})
             .with_child(
                 Container::new()
-                    .node_ref(self.right_action_ref.clone())
                     .height(CssLength::Fraction(1.0))
                     .min_width(0)
                     .style("flex", "0 1 auto")
-                    .with_optional_child(actions),
+                    .with_optional_child(actions)
+                    .into_html_with_ref(self.right_action_ref.clone()),
             )
-            .into()
+            .into_html_with_ref(self.right_ref.clone())
     }
 }
 
@@ -373,13 +371,13 @@ impl Component for PwtSlidable {
 
         let upper = GestureDetector::new(
             Container::new()
-                .node_ref(self.content_ref.clone())
                 .class("pwt-slidable-slider")
                 .attribute(
                     "style",
                     "touch-action:none;width:100%;flex:0 0 auto;overflow:hidden;",
                 )
-                .with_child(props.content.clone()),
+                .with_child(props.content.clone())
+                .into_html_with_ref(self.content_ref.clone()),
         )
         .on_drag_start(ctx.link().callback(Msg::DragStart))
         .on_drag_end(ctx.link().callback(Msg::DragEnd))

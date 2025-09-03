@@ -39,6 +39,7 @@ impl Mask {
 #[doc(hidden)]
 pub struct PwtMask {
     last_active: Option<web_sys::HtmlElement>, // last focused element
+    node_ref: NodeRef,
 }
 
 impl PwtMask {
@@ -65,14 +66,17 @@ impl Component for PwtMask {
     type Properties = Mask;
 
     fn create(_ctx: &Context<Self>) -> Self {
-        Self { last_active: None }
+        Self {
+            last_active: None,
+            node_ref: NodeRef::default(),
+        }
     }
 
     fn rendered(&mut self, ctx: &Context<Self>, first_render: bool) {
         if first_render {
             let props = ctx.props();
             if props.visible {
-                self.save_focused_element(&props.std_props.node_ref);
+                self.save_focused_element(&self.node_ref.clone());
             }
         }
     }
@@ -82,7 +86,7 @@ impl Component for PwtMask {
         let visible = props.visible;
         if old_props.visible != visible {
             if visible {
-                self.save_focused_element(&props.std_props.node_ref);
+                self.save_focused_element(&self.node_ref.clone());
             } else {
                 self.restore_focused_element();
             }

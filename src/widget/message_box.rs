@@ -12,10 +12,6 @@ use crate::{impl_yew_std_props_builder, prelude::*};
 #[builder]
 #[derive(Clone, Properties, PartialEq)]
 pub struct MessageBox {
-    /// Yew component `ref`.
-    #[prop_or_default]
-    pub node_ref: NodeRef,
-
     /// The yew component key.
     #[prop_or_default]
     pub key: Option<Key>,
@@ -144,7 +140,6 @@ pub fn pwt_message_box(props: &MessageBox) -> Html {
     bbar.add_flex_spacer();
 
     Dialog::new(props.title.clone())
-        .node_ref(props.node_ref.clone())
         .min_width(300)
         .max_width(600)
         .draggable(props.draggable)

@@ -91,6 +91,7 @@ pub enum Msg {
 
 #[doc(hidden)]
 pub struct PwtToolbar {
+    node_ref: NodeRef,
     inner_ref: NodeRef,
     focus_tracker: FocusTracker,
     rtl: Option<bool>,
@@ -104,23 +105,23 @@ impl Component for PwtToolbar {
         let focus_tracker = FocusTracker::new(ctx.link().callback(Msg::FocusChange));
         Self {
             rtl: None,
+            node_ref: NodeRef::default(),
             inner_ref: NodeRef::default(),
             focus_tracker,
         }
     }
 
-    fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
-        let props = ctx.props();
+    fn update(&mut self, _ctx: &Context<Self>, msg: Self::Message) -> bool {
         match msg {
             Msg::FocusChange(has_focus) => {
                 if has_focus {
                     update_roving_tabindex(&self.inner_ref);
                 }
-                self.rtl = element_direction_rtl(&props.std_props.node_ref);
+                self.rtl = element_direction_rtl(&self.node_ref);
                 true
             }
             Msg::Scroll(left) => {
-                let el = match props.std_props.node_ref.cast::<web_sys::HtmlElement>() {
+                let el = match self.node_ref.cast::<web_sys::HtmlElement>() {
                     None => return false,
                     Some(el) => el,
                 };
@@ -180,7 +181,7 @@ impl Component for PwtToolbar {
 
         VTag::__new_other(
             Cow::Borrowed("div"),
-            props.std_props.node_ref,
+            self.node_ref.clone(),
             props.std_props.key,
             attributes,
             listeners,

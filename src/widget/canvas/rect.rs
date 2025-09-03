@@ -5,7 +5,7 @@ use yew::virtual_dom::{VNode, VTag};
 
 use pwt_macros::widget;
 
-use crate::props::WidgetBuilder;
+use crate::props::{IntoVTag, WidgetBuilder};
 
 use super::SvgLength;
 
@@ -79,13 +79,14 @@ impl Rect {
     impl_svg_presentation_attributes!();
 }
 
-impl From<Rect> for VTag {
-    fn from(val: Rect) -> Self {
-        val.std_props.into_vtag(
+impl IntoVTag for Rect {
+    fn into_vtag_with_ref(self, node_ref: NodeRef) -> VTag {
+        self.std_props.into_vtag(
             Cow::Borrowed("rect"),
+            node_ref,
             None::<&str>,
-            Some(val.listeners),
-            val.children,
+            Some(self.listeners),
+            self.children,
         )
     }
 }

@@ -103,6 +103,7 @@ pub enum Msg {
 #[doc(hidden)]
 pub struct PwtFileButton {
     ripple_pos: Option<(i32, i32, i32)>,
+    node_ref: NodeRef,
     input_ref: NodeRef,
 }
 
@@ -113,6 +114,7 @@ impl Component for PwtFileButton {
     fn create(_ctx: &Context<Self>) -> Self {
         Self {
             ripple_pos: None,
+            node_ref: NodeRef::default(),
             input_ref: NodeRef::default(),
         }
     }
@@ -125,7 +127,7 @@ impl Component for PwtFileButton {
                 if props.disabled {
                     return false;
                 }
-                if let Some(element) = props.std_props.node_ref.clone().into_html_element() {
+                if let Some(element) = self.node_ref.clone().into_html_element() {
                     let client = element.get_bounding_client_rect();
                     let x = event.client_x() as f64 - client.x();
                     let y = event.client_y() as f64 - client.y();
@@ -144,9 +146,8 @@ impl Component for PwtFileButton {
     }
 
     fn rendered(&mut self, ctx: &Context<Self>, first_render: bool) {
-        let props = ctx.props();
         if first_render && ctx.props().autofocus {
-            if let Some(button) = props.std_props.node_ref.cast::<HtmlElement>() {
+            if let Some(button) = self.node_ref.cast::<HtmlElement>() {
                 let _ = button.focus();
             }
         }
@@ -203,7 +204,6 @@ impl Component for PwtFileButton {
 
         children.push(
             Container::from_tag("input")
-                .node_ref(self.input_ref.clone())
                 .attribute("type", "file")
                 .attribute("accept", props.accept.clone())
                 .attribute("multiple", props.multiple.then_some(""))
@@ -220,7 +220,7 @@ impl Component for PwtFileButton {
                         }
                     }
                 })
-                .into(),
+                .into_html_with_ref(self.input_ref.clone()),
         );
 
         let listeners = (!props.disabled).then_some(props.listeners.clone());

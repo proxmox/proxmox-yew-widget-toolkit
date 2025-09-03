@@ -18,17 +18,6 @@ pub trait WidgetBuilder: Into<VNode> {
         self
     }
 
-    /// Builder style method to set the yew `node_ref`
-    fn node_ref(mut self, node_ref: NodeRef) -> Self {
-        self.set_node_ref(node_ref);
-        self
-    }
-
-    /// Method to set the yew `node_ref`
-    fn set_node_ref(&mut self, node_ref: NodeRef) {
-        self.as_std_props_mut().node_ref = node_ref;
-    }
-
     /// Builder style method to set the yew `key` property
     fn key(mut self, key: impl IntoOptionalKey) -> Self {
         self.set_key(key);

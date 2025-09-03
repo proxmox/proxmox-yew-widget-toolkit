@@ -9,9 +9,6 @@ use crate::props::{CssStyles, ListenersWrapper};
 /// Standard widget properties.
 #[derive(PartialEq, Debug, Default, Clone)]
 pub struct WidgetStdProps {
-    /// The yew node ref.
-    pub node_ref: NodeRef,
-
     /// The yew component key.
     pub key: Option<Key>,
 
@@ -104,6 +101,7 @@ impl WidgetStdProps {
     pub fn into_vtag(
         self,
         tag: Cow<'static, str>,
+        node_ref: NodeRef,
         additional_class: Option<impl Into<Classes>>,
         listeners: Option<ListenersWrapper>,
         children: Option<Vec<VNode>>,
@@ -121,13 +119,36 @@ impl WidgetStdProps {
             VList::new()
         };
 
-        VTag::__new_other(
-            tag,
-            self.node_ref,
-            self.key,
-            attributes,
-            listeners,
-            vlist.into(),
-        )
+        VTag::__new_other(tag, node_ref, self.key, attributes, listeners, vlist.into())
+    }
+}
+
+/// Like `Into<VTag>`, but allow to specify a [NodeRef].
+///
+/// This is basically an optimization to avoid an additional [NodeRef] allocation.
+pub trait IntoVTag: Sized {
+    /// Convienience helper.
+    fn into_html_with_ref(self, node_ref: NodeRef) -> VNode {
+        self.into_vtag_with_ref(node_ref).into()
+    }
+
+    /// Genertate a [VTag] with specified [NodeRef].
+    fn into_vtag_with_ref(self, node_ref: NodeRef) -> VTag;
+
+    /// Convienience helper.
+    fn into_vtag(self) -> VTag {
+        self.into_vtag_with_ref(NodeRef::default())
+    }
+}
+
+/// Provide a IntoVTag default implementation for `T: Into<VTag>`.
+///
+/// While this works, it allocate one useless NodeRef. Please implement [IntoVTag]
+/// to avoid that usless allocation.
+impl<T: Into<VTag>> IntoVTag for T {
+    fn into_vtag_with_ref(self, node_ref: NodeRef) -> VTag {
+        let mut vtag = self.into_vtag();
+        vtag.node_ref = node_ref;
+        vtag
     }
 }

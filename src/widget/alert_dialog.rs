@@ -13,10 +13,6 @@ use pwt_macros::builder;
 #[derive(Clone, Properties, PartialEq)]
 #[builder]
 pub struct AlertDialog {
-    /// Yew component `ref`.
-    #[prop_or_default]
-    pub node_ref: NodeRef,
-
     /// The yew component key.
     #[prop_or_default]
     pub key: Option<Key>,
@@ -66,7 +62,6 @@ pub fn pwt_alert_dialog(props: &AlertDialog) -> Html {
     let title = props.title.as_deref().unwrap_or("Alert").to_string();
 
     MessageBox::new(title, props.message.clone())
-        .node_ref(props.node_ref.clone())
         .icon_class("fa-exclamation-triangle")
         .on_close(on_close)
         .into()

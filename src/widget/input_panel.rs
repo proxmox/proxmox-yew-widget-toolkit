@@ -355,43 +355,43 @@ impl Default for InputPanel {
     }
 }
 
-impl From<InputPanel> for VTag {
-    fn from(mut val: InputPanel) -> Self {
-        if val.two_column {
-            val.add_class("pwt-form-grid-col4")
+impl IntoVTag for InputPanel {
+    fn into_vtag_with_ref(mut self, node_ref: NodeRef) -> VTag {
+        if self.two_column {
+            self.add_class("pwt-form-grid-col4")
         } else {
-            val.add_class("pwt-form-grid-col2")
+            self.add_class("pwt-form-grid-col2")
         }
 
-        if val.label_width.is_some() || val.field_width.is_some() {
+        if self.label_width.is_some() || self.field_width.is_some() {
             let mut column_template = format!(
                 "{} {}",
-                val.label_width
+                self.label_width
                     .as_deref()
                     .unwrap_or("minmax(130px, 0.65fr)"),
-                val.field_width.as_deref().unwrap_or("minmax(200px, 1fr)")
+                self.field_width.as_deref().unwrap_or("minmax(200px, 1fr)")
             );
 
-            if val.two_column {
+            if self.two_column {
                 column_template = format!(
                     "{} calc(var(--pwt-spacer-4) * 2) {}",
                     column_template, column_template
                 );
             }
 
-            val.set_style("grid-template-columns", column_template.to_string());
+            self.set_style("grid-template-columns", column_template.to_string());
         }
 
-        let attributes = val.std_props.cumulate_attributes(None::<&str>);
+        let attributes = self.std_props.cumulate_attributes(None::<&str>);
 
-        let listeners = Listeners::Pending(val.listeners.listeners.into_boxed_slice());
+        let listeners = Listeners::Pending(self.listeners.listeners.into_boxed_slice());
 
-        let children = VList::with_children(val.children, None);
+        let children = VList::with_children(self.children, None);
 
         VTag::__new_other(
             Cow::Borrowed("div"),
-            val.std_props.node_ref,
-            val.std_props.key,
+            node_ref,
+            self.std_props.key,
             attributes,
             listeners,
             children.into(),

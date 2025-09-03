@@ -247,7 +247,7 @@ impl ManagedField for TextAreaField {
 
         let textarea = VTag::__new_textarea(
             Some(value.into()),
-            props.std_props.node_ref.clone(),
+            NodeRef::default(),
             props.std_props.key.clone(),
             attributes,
             listeners,

@@ -12,11 +12,11 @@ use yew::virtual_dom::Key;
 /// We use this for properties lite panel titles, where you usually just want text.
 /// This adds the ability to add simple inline markup.
 ///
-/// Note: It is still possible to use arbitrary html (we implement it for Html and Option<Html>)
+/// Note: It is still possible to use arbitrary html (we implement it for Html and `Option<Html>`)
 ///
-/// Note: There are several implementations for 'Option<T>', so it requires type annotation
-/// for 'None', i.e. 'None::<&str>'. To avoid that, we implement it for the null type.
-/// Simply use '()' instead of 'None::<&str>'.
+/// Note: There are several implementations for `Option<T>`, so it requires type annotation
+/// for `None`, i.e. `None::<&str>`. To avoid that, we implement it for the null type.
+/// Simply use `()` instead of `None::<&str>`.
 pub trait IntoOptionalInlineHtml {
     fn into_optional_inline_html(self) -> Option<Html>;
 }
@@ -139,7 +139,7 @@ mod storage_location;
 pub use storage_location::{IntoStorageLocation, StorageLocation};
 
 mod widget_std_props;
-pub use widget_std_props::WidgetStdProps;
+pub use widget_std_props::{IntoVTag, WidgetStdProps};
 
 mod widget_builder;
 pub use widget_builder::WidgetBuilder;
@@ -203,20 +203,10 @@ pub use filter_function::{FilterFn, IntoFilterFn, IntoTextFilterFn, TextFilterFn
 #[macro_export]
 macro_rules! impl_yew_std_props_builder {
     () => {
-        /// Builder style method to set the yew `node_ref`
-        pub fn node_ref(mut self, node_ref: NodeRef) -> Self {
-            self.set_node_ref(node_ref);
-            self
-        }
         /// Builder style method to set the yew `key` property
         pub fn key(mut self, key: impl IntoOptionalKey) -> Self {
             self.set_key(key);
             self
-        }
-
-        /// Method to set the yew `node_ref`
-        pub fn set_node_ref(&mut self, node_ref: NodeRef) {
-            self.node_ref = node_ref;
         }
 
         /// Method to set the yew `key` property

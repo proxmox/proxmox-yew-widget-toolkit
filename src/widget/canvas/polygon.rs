@@ -5,7 +5,7 @@ use yew::virtual_dom::{VNode, VTag};
 
 use pwt_macros::widget;
 
-use crate::props::WidgetBuilder;
+use crate::props::{IntoVTag, WidgetBuilder};
 
 use super::SvgLength;
 
@@ -51,13 +51,14 @@ impl Polygon {
     impl_svg_presentation_attributes!();
 }
 
-impl From<Polygon> for VTag {
-    fn from(val: Polygon) -> Self {
-        val.std_props.into_vtag(
+impl IntoVTag for Polygon {
+    fn into_vtag_with_ref(self, node_ref: NodeRef) -> VTag {
+        self.std_props.into_vtag(
             Cow::Borrowed("polygon"),
+            node_ref,
             None::<&str>,
-            Some(val.listeners),
-            val.children,
+            Some(self.listeners),
+            self.children,
         )
     }
 }

@@ -43,24 +43,24 @@ impl ActionIcon {
     }
 }
 
-impl From<ActionIcon> for VTag {
-    fn from(mut props: ActionIcon) -> Self {
-        let disabled = props.disabled;
+impl IntoVTag for ActionIcon {
+    fn into_vtag_with_ref(mut self, node_ref: NodeRef) -> VTag {
+        let disabled = self.disabled;
 
-        let tabindex = match props.tabindex {
+        let tabindex = match self.tabindex {
             Some(tabindex) => format!("{tabindex}"),
             None => String::from("-1"),
         };
 
-        props.set_attribute("role", "button");
-        props.set_attribute("tabindex", (!props.disabled).then_some(tabindex));
-        props.set_attribute("aria-label", props.aria_label.clone());
+        self.set_attribute("role", "button");
+        self.set_attribute("tabindex", (!self.disabled).then_some(tabindex));
+        self.set_attribute("aria-label", self.aria_label.clone());
 
-        props.add_class("pwt-action-icon");
-        props.add_class(disabled.then_some("disabled"));
+        self.add_class("pwt-action-icon");
+        self.add_class(disabled.then_some("disabled"));
 
-        props.add_onclick({
-            let on_activate = props.on_activate.clone();
+        self.add_onclick({
+            let on_activate = self.on_activate.clone();
             move |event: MouseEvent| {
                 event.stop_propagation();
                 if disabled {
@@ -72,8 +72,8 @@ impl From<ActionIcon> for VTag {
             }
         });
 
-        props.add_onkeydown({
-            let on_activate = props.on_activate.clone();
+        self.add_onkeydown({
+            let on_activate = self.on_activate.clone();
             move |event: KeyboardEvent| match event.key().as_ref() {
                 "Enter" | " " => {
                     event.stop_propagation();
@@ -89,12 +89,16 @@ impl From<ActionIcon> for VTag {
         });
 
         // suppress double click to avoid confusion when used inside tables/trees
-        props.add_ondblclick(move |event: MouseEvent| {
+        self.add_ondblclick(move |event: MouseEvent| {
             event.stop_propagation();
         });
 
-        props
-            .std_props
-            .into_vtag("i".into(), None::<&str>, Some(props.listeners), None)
+        self.std_props.into_vtag(
+            "i".into(),
+            node_ref,
+            None::<&str>,
+            Some(self.listeners),
+            None,
+        )
     }
 }

@@ -11,7 +11,7 @@ use super::{
     ValidateFn,
 };
 use crate::css::AlignItems;
-use crate::props::{ContainerBuilder, CssPaddingBuilder, EventSubscriber, WidgetBuilder};
+use crate::props::{ContainerBuilder, CssPaddingBuilder, EventSubscriber, IntoVTag, WidgetBuilder};
 use crate::tr;
 use crate::widget::{Container, Fa, FieldLabel, Row, Tooltip};
 
@@ -138,7 +138,9 @@ pub enum Msg {
 }
 
 #[doc(hidden)]
-pub struct CheckboxField {}
+pub struct CheckboxField {
+    node_ref: NodeRef,
+}
 
 #[derive(PartialEq)]
 pub struct ValidateClosure {
@@ -216,7 +218,9 @@ impl ManagedField for CheckboxField {
     }
 
     fn create(_ctx: &ManagedFieldContext<Self>) -> Self {
-        Self {}
+        Self {
+            node_ref: NodeRef::default(),
+        }
     }
 
     fn label_clicked(&mut self, ctx: &ManagedFieldContext<Self>) -> bool {
@@ -322,7 +326,8 @@ impl ManagedField for CheckboxField {
                     )
                     .attribute("role", "checkbox")
                     .attribute("aria-checked", checked.then_some("true"))
-                    .onkeyup(onkeyup),
+                    .onkeyup(onkeyup)
+                    .into_html_with_ref(self.node_ref.clone()),
             );
 
         let box_label = props.box_label.clone().map(|label| label.padding_start(2));
@@ -354,7 +359,7 @@ impl ManagedField for CheckboxField {
         if first_render {
             let props = ctx.props();
             if props.input_props.autofocus {
-                if let Some(el) = props.std_props.node_ref.cast::<web_sys::HtmlElement>() {
+                if let Some(el) = self.node_ref.cast::<web_sys::HtmlElement>() {
                     let _ = el.focus();
                 }
             }

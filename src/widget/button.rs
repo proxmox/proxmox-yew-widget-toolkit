@@ -51,6 +51,11 @@ impl FromStr for ButtonType {
 #[derive(Properties, PartialEq, Clone)]
 #[builder]
 pub struct Button {
+    /// Yew node ref used for the top level button tag.
+    #[prop_or_default]
+    #[builder(IntoPropValue, into_prop_value)]
+    pub node_ref: Option<NodeRef>,
+
     /// Button text.
     #[prop_or_default]
     pub text: Option<AttrValue>,
@@ -151,6 +156,7 @@ pub enum Msg {
 
 #[doc(hidden)]
 pub struct PwtButton {
+    node_ref: NodeRef,
     ripple_pos: Option<(i32, i32, i32)>,
 }
 
@@ -158,8 +164,16 @@ impl Component for PwtButton {
     type Message = Msg;
     type Properties = Button;
 
-    fn create(_ctx: &Context<Self>) -> Self {
-        Self { ripple_pos: None }
+    fn create(ctx: &Context<Self>) -> Self {
+        let node_ref = ctx
+            .props()
+            .node_ref
+            .clone()
+            .unwrap_or_else(|| NodeRef::default());
+        Self {
+            ripple_pos: None,
+            node_ref,
+        }
     }
 
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
@@ -170,7 +184,7 @@ impl Component for PwtButton {
                 if props.disabled {
                     return false;
                 }
-                if let Some(element) = props.std_props.node_ref.clone().into_html_element() {
+                if let Some(element) = self.node_ref.clone().into_html_element() {
                     let client = element.get_bounding_client_rect();
                     let x = event.client_x() as f64 - client.x();
                     let y = event.client_y() as f64 - client.y();
@@ -188,10 +202,21 @@ impl Component for PwtButton {
         }
     }
 
-    fn rendered(&mut self, ctx: &Context<Self>, first_render: bool) {
+    fn changed(&mut self, ctx: &Context<Self>, _old_props: &Self::Properties) -> bool {
         let props = ctx.props();
+
+        if let Some(new_ref) = &props.node_ref {
+            if new_ref != &self.node_ref {
+                self.node_ref = new_ref.clone();
+            }
+        }
+
+        true
+    }
+
+    fn rendered(&mut self, ctx: &Context<Self>, first_render: bool) {
         if first_render && ctx.props().autofocus {
-            if let Some(button) = props.std_props.node_ref.cast::<HtmlElement>() {
+            if let Some(button) = self.node_ref.cast::<HtmlElement>() {
                 let _ = button.focus();
             }
         }
@@ -264,6 +289,6 @@ impl Component for PwtButton {
             .attribute("tabindex", props.tabindex.map(|i| i.to_string()))
             .onpointerdown(ctx.link().callback(Msg::ShowRippleAnimation))
             .onclick(on_activate)
-            .into()
+            .into_html_with_ref(self.node_ref.clone())
     }
 }

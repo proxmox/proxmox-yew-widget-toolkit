@@ -7,7 +7,7 @@ use yew::virtual_dom::VTag;
 use pwt_macros::{builder, widget};
 
 use crate::props::{
-    ContainerBuilder, CssLength, IntoOptionalTextRenderFn, TextRenderFn, WidgetBuilder,
+    ContainerBuilder, CssLength, IntoOptionalTextRenderFn, IntoVTag, TextRenderFn, WidgetBuilder,
     WidgetStyleBuilder,
 };
 use crate::widget::Container;
@@ -92,15 +92,15 @@ impl Meter {
     }
 }
 
-impl From<Meter> for VTag {
-    fn from(val: Meter) -> Self {
-        let percentage = ((val.value - val.min).max(0.0) / (val.max - val.min)).clamp(0.0, 1.0);
+impl IntoVTag for Meter {
+    fn into_vtag_with_ref(self, node_ref: NodeRef) -> VTag {
+        let percentage = ((self.value - self.min).max(0.0) / (self.max - self.min)).clamp(0.0, 1.0);
 
-        let distance_to_optimum = if let Some(optimum) = val.optimum {
-            if optimum > val.value {
-                val.get_range_index(optimum) - val.get_range_index(val.value)
+        let distance_to_optimum = if let Some(optimum) = self.optimum {
+            if optimum > self.value {
+                self.get_range_index(optimum) - self.get_range_index(self.value)
             } else {
-                val.get_range_index(val.value) - val.get_range_index(optimum)
+                self.get_range_index(self.value) - self.get_range_index(optimum)
             }
         } else {
             0
@@ -109,8 +109,8 @@ impl From<Meter> for VTag {
         let mut children = Vec::new();
         let mut class = classes!("pwt-meter");
 
-        if let Some(render_text) = &val.render_text {
-            let text = render_text.apply(&val.value);
+        if let Some(render_text) = &self.render_text {
+            let text = render_text.apply(&self.value);
             children.push(
                 Container::new()
                     .class("pwt-meter-text")
@@ -121,7 +121,7 @@ impl From<Meter> for VTag {
             class.push("pwt-meter-small")
         }
 
-        if val.animated {
+        if self.animated {
             class.push("pwt-animated");
         }
 
@@ -133,7 +133,12 @@ impl From<Meter> for VTag {
                 .into(),
         );
 
-        val.std_props
-            .into_vtag(Cow::Borrowed("div"), Some(class), None, Some(children))
+        self.std_props.into_vtag(
+            Cow::Borrowed("div"),
+            node_ref,
+            Some(class),
+            None,
+            Some(children),
+        )
     }
 }

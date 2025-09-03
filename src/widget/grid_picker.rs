@@ -31,9 +31,6 @@ use super::data_table::CellConfiguration;
 #[derivative(Clone(bound = ""), PartialEq(bound = ""))]
 #[builder]
 pub struct GridPicker<S: DataStore> {
-    /// Yew component `ref`.
-    #[prop_or_default]
-    node_ref: NodeRef,
     /// Yew key property.
     #[prop_or_default]
     pub key: Option<Key>,
@@ -183,9 +180,7 @@ impl<S: DataStore + 'static> Component for PwtGridPicker<S> {
             .selection(self.selection.clone())
             .into();
 
-        let mut view = Column::new()
-            .node_ref(props.node_ref.clone())
-            .class("pwt-flex-fill pwt-overflow-auto");
+        let mut view = Column::new().class("pwt-flex-fill pwt-overflow-auto");
 
         let show_filter = props
             .show_filter

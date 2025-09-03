@@ -5,7 +5,7 @@ use yew::virtual_dom::VTag;
 
 use pwt_macros::widget;
 
-use crate::props::WidgetBuilder;
+use crate::props::{IntoVTag, WidgetBuilder};
 
 /// SVG `<a>` element (hyperlink).
 ///
@@ -38,13 +38,14 @@ impl Hyperlink {
     }
 }
 
-impl From<Hyperlink> for VTag {
-    fn from(val: Hyperlink) -> Self {
-        val.std_props.into_vtag(
+impl IntoVTag for Hyperlink {
+    fn into_vtag_with_ref(self, node_ref: NodeRef) -> VTag {
+        self.std_props.into_vtag(
             Cow::Borrowed("a"),
+            node_ref,
             None::<&str>,
-            Some(val.listeners),
-            Some(val.children),
+            Some(self.listeners),
+            Some(self.children),
         )
     }
 }

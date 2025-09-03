@@ -3,7 +3,7 @@ use yew::prelude::*;
 use gloo_timers::callback::Timeout;
 
 use crate::dom::DomSizeObserver;
-use crate::props::{ContainerBuilder, EventSubscriber, WidgetBuilder};
+use crate::props::{ContainerBuilder, EventSubscriber, IntoVTag, WidgetBuilder};
 use crate::widget::Container;
 
 use pwt_macros::widget;
@@ -216,14 +216,13 @@ impl Component for PwtMiniScroll {
         let props = ctx.props();
 
         let content = Container::new()
-            .node_ref(self.content_ref.clone())
             .class("pwt-d-flex pwt-flex-fill")
-            .with_child(props.content.clone());
+            .with_child(props.content.clone())
+            .into_html_with_ref(self.content_ref.clone());
 
         let arrow_mode = props.scroll_mode == MiniScrollMode::Arrow;
 
         let scroll = Container::new()
-            .node_ref(self.scroll_ref.clone())
             .class(if arrow_mode {
                 "pwt-mini-scroll-content-arrow"
             } else {
@@ -236,7 +235,8 @@ impl Component for PwtMiniScroll {
                     event.prevent_default();
                     link.send_message(Msg::Wheel(event.delta_y()))
                 }
-            });
+            })
+            .into_html_with_ref(self.scroll_ref.clone());
 
         let arrow_visible = if arrow_mode {
             (self.width + 2.0 * self.handle_width) < self.content_width
@@ -245,14 +245,14 @@ impl Component for PwtMiniScroll {
         };
 
         let left = Container::new()
-            .node_ref(self.handle_ref.clone())
             .class("pwt-mini-scroll-left-arrow")
             .class(arrow_visible.then_some("visible"))
             .class((self.pos <= 0.0).then_some("disabled"))
             .with_child(html! {<i class="fa fa-chevron-left"/>})
             .onpointerdown(ctx.link().callback(|_| Msg::ScrollLeft))
             .onpointerout(ctx.link().callback(|_| Msg::ScrollStop))
-            .onpointerup(ctx.link().callback(|_| Msg::ScrollStop));
+            .onpointerup(ctx.link().callback(|_| Msg::ScrollStop))
+            .into_html_with_ref(self.handle_ref.clone());
 
         let right = Container::new()
             .class("pwt-mini-scroll-right-arrow")

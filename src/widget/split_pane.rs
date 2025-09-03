@@ -6,7 +6,9 @@ use gloo_events::EventListener;
 use wasm_bindgen::{JsCast, UnwrapThrowExt};
 
 use crate::css::{Display, FlexFillFirstChild, Overflow};
-use crate::props::{ContainerBuilder, EventSubscriber, WidgetBuilder, WidgetStyleBuilder};
+use crate::props::{
+    ContainerBuilder, EventSubscriber, IntoVTag, WidgetBuilder, WidgetStyleBuilder,
+};
 
 use super::Container;
 use crate::dom::element_direction_rtl;
@@ -75,8 +77,6 @@ pub struct Pane {
     // Maximal pane size
     max_size: Option<PaneSize>,
 
-    // Yew node ref.
-    node_ref: NodeRef,
     // Pane content
     content: VNode,
     // additional CSS classes
@@ -90,7 +90,6 @@ impl Pane {
             size: Some(PaneSize::Flex(1)),
             min_size: None,
             max_size: None,
-            node_ref: NodeRef::default(),
             content: content.into(),
             class: Classes::new(),
         }
@@ -262,6 +261,8 @@ pub struct PwtSplitPane {
     pointermove_listener: Option<EventListener>,
     pointerup_listener: Option<EventListener>,
     pointer_id: Option<i32>,
+    node_ref: NodeRef,
+    child_refs: Vec<NodeRef>,
 }
 
 pub enum Msg {
@@ -275,6 +276,10 @@ pub enum Msg {
 }
 
 impl PwtSplitPane {
+    fn get_child_ref(&self, index: usize) -> NodeRef {
+        self.child_refs[index].clone()
+    }
+
     fn create_splitter(&self, ctx: &Context<Self>, index: usize, fraction: Option<f64>) -> Html {
         let props = ctx.props();
         let vertical = props.vertical;
@@ -385,8 +390,7 @@ impl PwtSplitPane {
         let min_size = child.min_size.map(|s| s.to_css_size(handle_size_sum));
         let max_size = child.max_size.map(|s| s.to_css_size(handle_size_sum));
 
-        let pane = Container::new()
-            .node_ref(child.node_ref.clone())
+        Container::new()
             .style("flex", flex)
             .style(size_attr, size_style)
             .style(format!("min-{size_attr}"), min_size)
@@ -395,16 +399,16 @@ impl PwtSplitPane {
             .class(Overflow::Auto)
             .class(FlexFillFirstChild)
             .class(child.class.clone())
-            .with_child(child.content.clone());
-
-        pane.into()
+            .with_child(child.content.clone())
+            .into_html_with_ref(self.get_child_ref(index))
     }
 
     fn query_sizes(&self, props: &SplitPane) -> Option<Vec<f64>> {
         let mut sizes = Vec::new();
 
-        for child in props.children.iter() {
-            if let Some(el) = child.node_ref.cast::<web_sys::Element>() {
+        for (index, _child) in props.children.iter().enumerate() {
+            let child_ref = self.get_child_ref(index);
+            if let Some(el) = child_ref.cast::<web_sys::Element>() {
                 let rect = el.get_bounding_client_rect();
                 if props.vertical {
                     sizes.push(rect.height());
@@ -469,7 +473,10 @@ impl Component for PwtSplitPane {
     type Message = Msg;
     type Properties = SplitPane;
 
-    fn create(_ctx: &Context<Self>) -> Self {
+    fn create(ctx: &Context<Self>) -> Self {
+        let mut child_refs = Vec::new();
+        child_refs.resize_with(ctx.props().children.len(), NodeRef::default);
+
         Self {
             rtl: None,
             sizes: Vec::new(),
@@ -477,6 +484,8 @@ impl Component for PwtSplitPane {
             pointermove_listener: None,
             pointerup_listener: None,
             pointer_id: None,
+            node_ref: NodeRef::default(),
+            child_refs,
         }
     }
 
@@ -490,12 +499,12 @@ impl Component for PwtSplitPane {
         }
 
         if self.rtl.is_none() {
-            self.rtl = element_direction_rtl(&props.std_props.node_ref);
+            self.rtl = element_direction_rtl(&self.node_ref);
         }
 
         match msg {
             Msg::FocusIn => {
-                self.rtl = element_direction_rtl(&props.std_props.node_ref);
+                self.rtl = element_direction_rtl(&self.node_ref);
                 true
             }
             Msg::PointerMove(child_index, x, y, pointer_id) => {
@@ -504,9 +513,9 @@ impl Component for PwtSplitPane {
                         return false;
                     }
 
-                    let pane = &props.children[child_index];
+                    let child_ref = self.get_child_ref(child_index);
 
-                    if let Some(el) = pane.node_ref.cast::<web_sys::Element>() {
+                    if let Some(el) = child_ref.cast::<web_sys::Element>() {
                         let rect = el.get_bounding_client_rect();
 
                         let new_size = if props.vertical {
@@ -538,7 +547,7 @@ impl Component for PwtSplitPane {
             Msg::StartResize(child_index, x, y, pointer_id) => {
                 self.drag_offset = if props.vertical { y } else { x };
 
-                self.rtl = element_direction_rtl(&props.std_props.node_ref);
+                self.rtl = element_direction_rtl(&self.node_ref);
 
                 let window = gloo_utils::window();
                 let link = ctx.link();
@@ -583,6 +592,12 @@ impl Component for PwtSplitPane {
         }
     }
 
+    fn changed(&mut self, ctx: &Context<Self>, _old_props: &Self::Properties) -> bool {
+        self.child_refs
+            .resize_with(ctx.props().children.len(), NodeRef::default);
+        true
+    }
+
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
 
@@ -619,6 +634,6 @@ impl Component for PwtSplitPane {
             .style("align-items", "stretch")
             .attribute("style", style)
             .onfocusin(ctx.link().callback(|_| Msg::FocusIn))
-            .into()
+            .into_html_with_ref(self.node_ref.clone())
     }
 }
