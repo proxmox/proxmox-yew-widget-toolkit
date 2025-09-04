@@ -1,3 +1,15 @@
+rust-pwt (0.6.6) trixie; urgency=medium
+
+  * ui: list tile: implement on_activate callback
+
+  * widget: list: expose `row-gap` and 'column-gap' property for grid layout
+
+  * widget: tab panel: fix tab bar bottom border
+
+  * impl<T> IntoSubmitCallback<T> for SubmitCallback<T>
+
+ -- Proxmox Support Team <support@proxmox.com>  Thu, 04 Sep 2025 15:12:42 +0200
+
 rust-pwt (0.6.5) trixie; urgency=medium
 
   * implement IntoOptionalInlineHtml for ()
