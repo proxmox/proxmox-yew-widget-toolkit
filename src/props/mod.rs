@@ -5,7 +5,37 @@ use std::rc::Rc;
 
 use yew::html::IntoPropValue;
 use yew::prelude::*;
-use yew::virtual_dom::Key;
+use yew::virtual_dom::{Key, VNode, VTag};
+
+/// Like `Into<VTag>`, but allow to specify a [NodeRef].
+///
+/// This is basically an optimization to avoid an additional [NodeRef] allocation.
+pub trait IntoVTag: Sized {
+    /// Convienience helper.
+    fn into_html_with_ref(self, node_ref: NodeRef) -> VNode {
+        self.into_vtag_with_ref(node_ref).into()
+    }
+
+    /// Genertate a [VTag] with specified [NodeRef].
+    fn into_vtag_with_ref(self, node_ref: NodeRef) -> VTag;
+
+    /// Convienience helper.
+    fn into_vtag(self) -> VTag {
+        self.into_vtag_with_ref(NodeRef::default())
+    }
+}
+
+/// Provide a IntoVTag default implementation for `T: Into<VTag>`.
+///
+/// While this works, it allocate one useless NodeRef. Please implement [IntoVTag]
+/// to avoid that usless allocation.
+impl<T: Into<VTag>> IntoVTag for T {
+    fn into_vtag_with_ref(self, node_ref: NodeRef) -> VTag {
+        let mut vtag = self.into_vtag();
+        vtag.node_ref = node_ref;
+        vtag
+    }
+}
 
 /// Trait to generate inline Html.
 ///
@@ -139,7 +169,7 @@ mod storage_location;
 pub use storage_location::{IntoStorageLocation, StorageLocation};
 
 mod widget_std_props;
-pub use widget_std_props::{IntoVTag, WidgetStdProps};
+pub use widget_std_props::WidgetStdProps;
 
 mod widget_builder;
 pub use widget_builder::WidgetBuilder;
