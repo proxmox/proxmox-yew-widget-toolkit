@@ -224,8 +224,6 @@ pub use filter_function::{FilterFn, IntoFilterFn, IntoTextFilterFn, TextFilterFn
 ///
 /// impl MyComponentProps {
 ///     impl_yew_std_props_builder!();
-///     // pub fn node_ref(mut self, node_ref: NodeRef) -> Self;
-///     // pub fn set_node_ref(&mut self, node_ref: NodeRef);
 ///     // pub fn key(mut self, key: impl IntoOptionalKey) -> Self;
 ///     // pub fn set_key(&mut self, key: impl IntoOptionalKey);
 /// }
