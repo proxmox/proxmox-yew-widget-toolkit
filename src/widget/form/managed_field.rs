@@ -122,6 +122,14 @@ impl<MF: ManagedField + Sized> ManagedFieldLink<MF> {
         let msg = Msg::ForceValue(value.map(|v| v.into()), valid);
         self.link.send_message(msg);
     }
+
+    /// Accesses a value provided by a parent ContextProvider component of the same type.
+    pub fn context<T: Clone + PartialEq + 'static>(
+	&self,
+	callback: Callback<T>,
+    ) -> Option<(T, ContextHandle<T>)> {
+	self.link.context(callback)
+    }
 }
 
 impl<MF: ManagedField + Sized> Clone for ManagedFieldLink<MF> {
