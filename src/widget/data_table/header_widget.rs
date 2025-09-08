@@ -627,7 +627,7 @@ fn build_header_menu<T>(
 
     Menu::new()
         .with_item(
-            MenuItem::new("Sort Ascending")
+            MenuItem::new(tr!("Sort Ascending"))
                 .icon_class("fa fa-long-arrow-up")
                 .disabled(!sortable)
                 .on_select(
@@ -635,7 +635,7 @@ fn build_header_menu<T>(
                 ),
         )
         .with_item(
-            MenuItem::new("Sort Descending")
+            MenuItem::new(tr!("Sort Descending"))
                 .icon_class("fa fa-long-arrow-down")
                 .disabled(!sortable)
                 .on_select(
@@ -643,7 +643,7 @@ fn build_header_menu<T>(
                 ),
         )
         .with_separator()
-        .with_item(MenuItem::new("Columns").menu(columns_menu))
+        .with_item(MenuItem::new(tr!("Columns")).menu(columns_menu))
 }
 
 fn headers_to_menu<T>(
