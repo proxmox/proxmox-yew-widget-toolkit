@@ -100,9 +100,10 @@ pub(crate) fn render_tree_node_impl<T>(
         let onclick = {
             let key = args.record_key.clone();
             let tree_store = tree_store;
-            move |_| {
+            move |event: MouseEvent| {
                 if let Some(store) = &tree_store {
                     if let Some(mut node) = store.write().lookup_node_mut(&key) {
+                        event.stop_propagation();
                         node.set_expanded(!node.expanded());
                     }
                 }
