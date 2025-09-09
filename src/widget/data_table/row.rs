@@ -128,7 +128,11 @@ impl<T: Clone + PartialEq + 'static> Component for PwtDataTableRow<T> {
                 continue;
             }
 
-            let vertical_align = props.vertical_align.to_owned().unwrap_or("baseline".into());
+            let vertical_align = props
+                .vertical_align
+                .to_owned()
+                .or(column.vertical_align.clone())
+                .unwrap_or("baseline".into());
             let text_align = column.justify.to_owned();
 
             let cell_active = match props.active_cell {

@@ -30,6 +30,9 @@ pub struct DataTableColumn<T: 'static> {
     /// Horizontal table cell justification (start, end, left, center, right, justify).
     #[prop_or(AttrValue::Static("start"))]
     pub justify: AttrValue,
+    /// Vertical table cell align ("top", "bottom", "middle", "baseline").
+    #[prop_or_default]
+    pub vertical_align: Option<AttrValue>,
 
     // only internal, use `apply_render` instead
     render_cell: DataTableCellRenderer<T>,
@@ -194,6 +197,17 @@ impl<T: 'static> DataTableColumn<T> {
     /// Method to set the horizontal cell justification.
     pub fn set_justify(&mut self, justify: impl Into<AttrValue>) {
         self.justify = justify.into();
+    }
+
+    /// Builder style method to set the vertical cell alignment.
+    pub fn vertical_align(mut self, vertical_align: impl IntoPropValue<Option<AttrValue>>) -> Self {
+        self.set_vertical_align(vertical_align);
+        self
+    }
+
+    /// Method to set the vertical cell alignment.
+    pub fn set_vertical_align(&mut self, vertical_align: impl IntoPropValue<Option<AttrValue>>) {
+        self.vertical_align = vertical_align.into_prop_value();
     }
 
     /// Builder style method to set the render function.
