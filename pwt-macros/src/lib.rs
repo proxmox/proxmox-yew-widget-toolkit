@@ -125,14 +125,14 @@ use builder::*;
 /// }
 ///
 /// // implementing IntoVTag (or "From<T> for VTag") is necessary for widget
-/// // without "comp=XXX" attribute. 
+/// // without "comp=XXX" attribute.
 /// # use yew::virtual_dom::VTag;
 /// # use yew::NodeRef;
 /// # use std::borrow::Cow;
 /// impl IntoVTag for Foo {
 ///     fn into_vtag_with_ref(self, node_ref: NodeRef) -> VTag {
 ///         // self.std_props.into_vtag(..)
-/// #       unreachable!();       
+/// #       unreachable!();
 ///     }
 /// }
 ///
