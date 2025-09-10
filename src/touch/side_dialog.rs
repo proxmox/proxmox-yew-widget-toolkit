@@ -8,6 +8,7 @@ use yew::prelude::*;
 use yew::virtual_dom::{Key, VComp, VNode};
 
 use crate::dom::IntoHtmlElement;
+use crate::props::{AsCssStylesMut, CssStyles};
 use crate::state::{SharedState, SharedStateObserver};
 use crate::widget::Container;
 use crate::{impl_yew_std_props_builder, prelude::*};
@@ -84,7 +85,19 @@ pub struct SideDialog {
     #[prop_or(SideDialogLocation::Left)]
     #[builder]
     pub location: SideDialogLocation,
+
+    /// CSS style for the dialog window
+    #[prop_or_default]
+    pub styles: CssStyles,
 }
+
+impl AsCssStylesMut for SideDialog {
+    fn as_css_styles_mut(&mut self) -> &mut CssStyles {
+        &mut self.styles
+    }
+}
+
+impl WidgetStyleBuilder for SideDialog {}
 
 impl ContainerBuilder for SideDialog {
     fn as_children_mut(&mut self) -> &mut Vec<VNode> {
@@ -364,6 +377,7 @@ impl Component for PwtSideDialog {
             .onclose(link.callback(|_| Msg::Close))
             .with_child(
                 Container::new()
+                    .styles(props.styles.clone())
                     .class("pwt-side-dialog-slider")
                     .class(slider_direction_class)
                     .class(slider_state_class)
