@@ -1,3 +1,10 @@
+rust-pwt-macros (0.5.0) trixie; urgency=medium
+
+  * update macro to node_ref having been removed from widget standard
+    properties.
+
+ -- Proxmox Support Team <support@proxmox.com>  Wed, 10 Sep 2025 14:37:36 +0200
+
 rust-pwt-macros (0.4.0) trixie; urgency=medium
 
   * pwt-macros: test: adapt expected error
