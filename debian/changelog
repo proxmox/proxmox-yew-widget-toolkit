@@ -1,3 +1,23 @@
+rust-pwt (0.7.0) trixie; urgency=medium
+
+  * remove node_ref from widget standard properties, it's not required by
+    default and causes problems if one doesn't take special care when cloning
+    widgets.
+
+  * widget: data table: tree column: don't propagate clicks when expanding or
+    collapsing a row.
+
+  * widget: data table: column: allow setting vertical align to, e.g., allow
+    rendering non-text content centered.
+
+  * ManagedFieldLink: add access to context providers.
+
+  * slide dialog: add styles property, useful to e.g. set max-height.
+
+  * make more text translatable and other i18n related improvements.
+
+ -- Proxmox Support Team <support@proxmox.com>  Wed, 10 Sep 2025 14:53:20 +0200
+
 rust-pwt (0.6.6) trixie; urgency=medium
 
   * ui: list tile: implement on_activate callback
