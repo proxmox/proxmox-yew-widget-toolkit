@@ -40,6 +40,7 @@ pub use theme::{
 mod language;
 pub use language::{
     get_available_languages, set_available_languages, Language, LanguageInfo, LanguageObserver,
+    TextDirection,
 };
 
 use crate::props::StorageLocation;

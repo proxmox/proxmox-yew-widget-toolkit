@@ -8,12 +8,21 @@ use crate::props::ExtractPrimaryKey;
 
 use super::{PersistentState, SharedState, SharedStateObserver};
 
+/// The text direction, default is LTR
+#[derive(Default, Debug, Copy, Clone, PartialEq, Eq)]
+pub enum TextDirection {
+    #[default]
+    Ltr,
+    Rtl,
+}
+
 #[derive(Clone, PartialEq, Debug)]
 pub struct LanguageInfo {
-    pub lang: String,            // id (de, en, ...)
-    pub text: String,            // Language name (native).
-    pub english_text: String,    // English language name.
-    pub translated_text: String, // Translated language name.
+    pub lang: String,             // id (de, en, ...)
+    pub text: String,             // Language name (native).
+    pub english_text: String,     // English language name.
+    pub translated_text: String,  // Translated language name.
+    pub direction: TextDirection, // Text direction of the language
 }
 
 impl LanguageInfo {
@@ -28,7 +37,14 @@ impl LanguageInfo {
             text: text.into(),
             translated_text: gettext(&english_text),
             english_text,
+            direction: Default::default(),
         }
+    }
+
+    /// Builder style method to set the text direction
+    pub fn direction(mut self, direction: TextDirection) -> Self {
+        self.direction = direction;
+        self
     }
 }
 
