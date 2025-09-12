@@ -1,6 +1,7 @@
 use std::rc::Rc;
 
-use crate::state::{Selection, Store};
+use crate::state::{get_language_info, Selection, Store};
+use crate::widget::rtl_switcher::set_text_direction;
 use yew::html::IntoEventCallback;
 use yew::virtual_dom::{Key, VComp, VNode};
 
@@ -122,6 +123,11 @@ impl Component for PwtLanguageSelector {
                 } else {
                     Language::store(lang);
                 }
+                if let Some(info) = get_language_info(&self.lang) {
+                    if let Err(err) = set_text_direction(info.direction) {
+                        log::error!("could not set text direction: {err}");
+                    }
+                }
                 true
             }
         }
@@ -162,6 +168,16 @@ impl Component for PwtLanguageSelector {
                 }
             })
             .into()
+    }
+
+    fn rendered(&mut self, _ctx: &Context<Self>, first_render: bool) {
+        if first_render {
+            if let Some(info) = get_language_info(&self.lang) {
+                if let Err(err) = set_text_direction(info.direction) {
+                    log::error!("could not set text direction: {err}");
+                }
+            }
+        }
     }
 }
 

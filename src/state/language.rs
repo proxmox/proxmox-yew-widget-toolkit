@@ -76,6 +76,13 @@ pub fn get_available_languages() -> Vec<LanguageInfo> {
         .collect()
 }
 
+/// Get [`LanguageInfo`] by its short name.
+pub fn get_language_info(lang: &str) -> Option<LanguageInfo> {
+    get_available_languages()
+        .into_iter()
+        .find(|info| info.lang == lang)
+}
+
 // this `thread_local!` definition should be fine as this crate is essentially WASM only where
 // besides web workers and similar ways to spawn futures, there is only one thread. if this
 // assumption changes, this will need to be adapted.
