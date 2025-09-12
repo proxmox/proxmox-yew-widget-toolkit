@@ -1,8 +1,13 @@
+use anyhow::format_err;
+
 use pwt_macros::widget;
 use yew::{Classes, Component, Properties};
 
 use super::form::Checkbox;
-use crate::props::{FieldBuilder, WidgetBuilder};
+use crate::{
+    props::{FieldBuilder, WidgetBuilder},
+    state::TextDirection,
+};
 
 /// A checkbox to switch between Left-to-Right and Right-to-Left layouts
 #[widget(pwt=crate, comp=PwtRtlSwitcher, @input, @element)]
@@ -51,25 +56,23 @@ impl Component for PwtRtlSwitcher {
     fn update(&mut self, _ctx: &yew::Context<Self>, msg: Self::Message) -> bool {
         match msg {
             Msg::ToggleRtl => {
-                let elements = gloo_utils::document().get_elements_by_tag_name("html");
-                if let Some(html) = elements.get_with_index(0) {
-                    if self.rtl {
-                        if let Err(err) = html.remove_attribute("dir") {
-                            log::error!("could not remove dir attribute: {:?}", err);
-                            return false;
-                        }
-                        self.rtl = false;
-                    } else {
-                        if let Err(err) = html.set_attribute("dir", "rtl") {
-                            log::error!("could not set dir attribute: {:?}", err);
-                            return false;
-                        }
-                        self.rtl = true;
+                let direction = if self.rtl {
+                    TextDirection::Ltr
+                } else {
+                    TextDirection::Rtl
+                };
+                match set_text_direction(direction) {
+                    Err(err) => {
+                        log::error!("{err}");
+                        false
+                    }
+                    Ok(()) => {
+                        self.rtl = !self.rtl;
+                        true
                     }
                 }
             }
         }
-        true
     }
 
     fn create(_ctx: &yew::Context<Self>) -> Self {
@@ -93,4 +96,24 @@ impl Component for PwtRtlSwitcher {
             .on_change(onclick)
             .into()
     }
+}
+
+/// Sets the global text direction on the root HTML element (if possible).
+/// Otherwise returns an error.
+pub fn set_text_direction(direction: TextDirection) -> Result<(), anyhow::Error> {
+    let elements = gloo_utils::document().get_elements_by_tag_name("html");
+    let html = elements
+        .get_with_index(0)
+        .ok_or_else(|| format_err!("no html element found"))?;
+    match direction {
+        TextDirection::Ltr => {
+            html.remove_attribute("dir")
+                .map_err(|err| format_err!("could not remove dir attribute: {err:?}"))?;
+        }
+        TextDirection::Rtl => {
+            html.set_attribute("dir", "rtl")
+                .map_err(|err| format_err!("could not set dir attribute: {err:?}"))?;
+        }
+    }
+    Ok(())
 }
