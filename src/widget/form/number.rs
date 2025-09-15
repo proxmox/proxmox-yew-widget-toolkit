@@ -39,6 +39,8 @@ pub trait NumberTypeInfo:
     fn step_up(&self, step: Option<Self>) -> Self;
 
     fn clamp_value(&self, min: Option<Self>, max: Option<Self>) -> Self;
+
+    fn is_decimal() -> bool;
 }
 
 impl NumberTypeInfo for f64 {
@@ -71,6 +73,9 @@ impl NumberTypeInfo for f64 {
     }
     fn clamp_value(&self, min: Option<Self>, max: Option<Self>) -> Self {
         self.clamp(min.unwrap_or(f64::MIN), max.unwrap_or(f64::MAX))
+    }
+    fn is_decimal() -> bool {
+        true
     }
 }
 
@@ -149,6 +154,9 @@ macro_rules! signed_number_impl {
             fn clamp_value(&self, min: Option<Self>, max: Option<Self>) -> Self {
                 (*self).clamp(min.unwrap_or(<$T>::MIN), max.unwrap_or(<$T>::MAX))
             }
+            fn is_decimal() -> bool {
+                false
+            }
         }
     };
 }
@@ -224,6 +232,9 @@ macro_rules! unsigned_number_impl {
             }
             fn clamp_value(&self, min: Option<Self>, max: Option<Self>) -> Self {
                 (*self).clamp(min.unwrap_or(<$T>::MIN), max.unwrap_or(<$T>::MAX))
+            }
+            fn is_decimal() -> bool {
+                false
             }
         }
     };
@@ -625,6 +636,12 @@ impl<T: NumberTypeInfo> ManagedField for NumberField<T> {
             Msg::Update(input.value())
         });
 
+        let inputmode = if T::is_decimal() {
+            "decimal"
+        } else {
+            "numeric"
+        };
+
         let disabled = props.input_props.disabled;
         let input: Html = Input::new()
             .with_input_props(&props.input_props)
@@ -634,6 +651,7 @@ impl<T: NumberTypeInfo> ManagedField for NumberField<T> {
             .attribute("value", value_text)
             .attribute("aria-valuemin", props.min.map(|v| v.to_string()))
             .attribute("aria-valuemax", props.max.map(|v| v.to_string()))
+            .attribute("inputmode", inputmode)
             .oninput(oninput)
             .onkeydown({
                 let link = ctx.link();
