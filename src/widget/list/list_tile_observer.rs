@@ -8,26 +8,9 @@ use pwt_macros::{builder, widget};
 
 use super::{Container, CssBorderBuilder, ListTile};
 
-/// List tile. A container with grid/subgrid layout.
+/// List tile size Observer.
 ///
-/// This is meant to be used inside [List](crate::widget::List).
-///
-/// ```
-/// # use pwt::prelude::*;
-/// # use pwt::widget::{List, ListTile};
-/// # fn create_list_tile() -> List {
-///     List::new(100, |pos| {
-///         ListTile::new()
-///             .with_child(html!{<span>{format!("{pos}")}</span>})
-///             .with_child(html!{<span>{"A simple list tile"}</span>})
-///             .with_child(html!{<span>{"third column"}</span>})
-///             .interactive(true)
-///             .disabled(false)
-///             .class(pwt::css::ColorScheme::Primary)
-///     })
-///     .grid_template_columns("auto 1fr auto")
-/// # }
-/// ```
+/// This is Used by the [List] implementation to track list tile size changes.
 #[widget(pwt=crate, comp=crate::widget::PwtListTileObserver)]
 #[derive(Default, Debug, Clone, PartialEq, Properties)]
 #[builder]
