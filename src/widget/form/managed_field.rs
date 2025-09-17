@@ -125,10 +125,10 @@ impl<MF: ManagedField + Sized> ManagedFieldLink<MF> {
 
     /// Accesses a value provided by a parent ContextProvider component of the same type.
     pub fn context<T: Clone + PartialEq + 'static>(
-	&self,
-	callback: Callback<T>,
+        &self,
+        callback: Callback<T>,
     ) -> Option<(T, ContextHandle<T>)> {
-	self.link.context(callback)
+        self.link.context(callback)
     }
 }
 
@@ -242,7 +242,8 @@ impl<MF: ManagedField + 'static> ManagedFieldMaster<MF> {
     // Get current field value and validation result.
     fn get_field_data(&self) -> (Value, Result<(), String>) {
         if let Some(field_handle) = &self.field_handle {
-            field_handle.get_data()
+            let data = field_handle.get_data();
+            (data.0, data.1)
         } else {
             (self.comp_state.value.clone(), self.comp_state.valid.clone())
         }
@@ -288,7 +289,7 @@ impl<MF: ManagedField + 'static> ManagedFieldMaster<MF> {
 
         // FormContext may already have field data (i.e for unique fields), so sync back
         // data after field registration.
-        let (value, valid) = field_handle.get_data();
+        let (value, valid, _last_valid_value) = field_handle.get_data();
         self.comp_state.value = value;
         self.comp_state.valid = valid;
 

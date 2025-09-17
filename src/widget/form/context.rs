@@ -50,7 +50,9 @@ struct FieldRegistration {
     pub options: FieldOptions,
     /// Field value
     pub value: Value,
-    // Submit value (value returned by validate)
+    /// Last valid field value
+    pub last_valid: Option<Value>,
+    // Submit value (value returned by validate) - None for fields with validation error.
     submit_value: Option<Value>,
     /// Field default value.
     pub default: Value,
@@ -82,11 +84,16 @@ impl FieldRegistration {
             }
         } else {
             submit_value = Some(value.clone());
+
             valid = Ok(());
         }
+        let update_last_valid = valid.is_ok();
         self.value = value;
         self.valid = valid;
         self.submit_value = submit_value;
+        if update_last_valid {
+            self.last_valid = self.submit_value.clone();
+        }
     }
 }
 /// Shared form data ([Rc]<[RefCell]<[FormContextState]>>)
@@ -166,8 +173,8 @@ impl FieldHandle {
         self.get_data().1
     }
 
-    /// Returns the field value with the validation result.
-    pub fn get_data(&self) -> (Value, Result<(), String>) {
+    /// Returns the field value with the validation result and the last valid value.
+    pub fn get_data(&self) -> (Value, Result<(), String>, Option<Value>) {
         let key = self.key;
         self.read().get_field_data_by_slab_key(key)
     }
@@ -459,6 +466,7 @@ impl FormContextState {
             unique,
             options,
             value: Value::Null, // set by apply_value below
+            last_valid: None,
             submit_value: None, // set by apply_value below
             default: default.clone(),
             valid: Ok(()), // set by apply_value below
@@ -529,16 +537,24 @@ impl FormContextState {
             .map(|(key, _)| key)
     }
 
-    fn get_field_data_by_slab_key(&self, slab_key: usize) -> (Value, Result<(), String>) {
+    fn get_field_data_by_slab_key(
+        &self,
+        slab_key: usize,
+    ) -> (Value, Result<(), String>, Option<Value>) {
         let field = &self.fields[slab_key];
 
         if field.radio_group {
             let group = &self.groups[&field.name];
             let value = group.value.clone().unwrap_or("".into());
             let valid = Ok(()); // fixme
-            (value, valid)
+            let last_valid_value = Some(value.clone()); // fixme:
+            (value, valid, last_valid_value)
         } else {
-            (field.value.clone(), field.valid.clone())
+            (
+                field.value.clone(),
+                field.valid.clone(),
+                field.last_valid.clone(),
+            )
         }
     }
 
@@ -548,7 +564,7 @@ impl FormContextState {
     pub fn get_field_data(
         &self,
         name: impl IntoPropValue<AttrValue>,
-    ) -> Option<(Value, Result<(), String>)> {
+    ) -> Option<(Value, Result<(), String>, Option<Value>)> {
         let name = name.into_prop_value();
         self.find_field_slab_id(&name)
             .map(|key| self.get_field_data_by_slab_key(key))
@@ -559,6 +575,15 @@ impl FormContextState {
     /// Returns `None` for non-existent fields.
     pub fn get_field_value(&self, name: impl IntoPropValue<AttrValue>) -> Option<Value> {
         self.get_field_data(name).map(|data| data.0)
+    }
+
+    /// Get the field last valid value.
+    ///
+    /// Returns `None` for non-existent fields, or when the filed was never valid.
+    ///
+    /// Note: This value is verified by the verification function.
+    pub fn get_last_valid_value(&self, name: impl IntoPropValue<AttrValue>) -> Option<Value> {
+        self.get_field_data(name).map(|data| data.2).flatten()
     }
 
     /// Get the field value as string.
@@ -595,9 +620,9 @@ impl FormContextState {
     ) -> (String, Result<(), String>) {
         let name = name.into_prop_value();
         match self.get_field_data(&name) {
-            Some((Value::Number(n), valid)) => (n.to_string(), valid),
-            Some((Value::String(s), valid)) => (s.to_string(), valid),
-            Some((_, _valid)) => (
+            Some((Value::Number(n), valid, _)) => (n.to_string(), valid),
+            Some((Value::String(s), valid, _)) => (s.to_string(), valid),
+            Some((_, _valid, _)) => (
                 String::new(),
                 Err(format!("got unexpected type for field '{}'", name)),
             ),
@@ -743,6 +768,9 @@ impl FormContextState {
                 submit_value = Some(field.value.clone());
                 valid = Ok(());
             }
+
+            let update_last_valid = valid.is_ok();
+
             if valid != field.valid {
                 self.version += 1;
                 field.valid = valid;
@@ -750,6 +778,9 @@ impl FormContextState {
             if submit_value != field.submit_value {
                 self.version += 1;
                 field.submit_value = submit_value;
+            }
+            if update_last_valid {
+                field.last_valid = field.submit_value.clone();
             }
         }
     }
