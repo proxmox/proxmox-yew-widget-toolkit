@@ -61,11 +61,14 @@ impl ManagedField for DisplayFieldImpl {
             None => Value::Null,
         };
 
-        let default = props.default.as_deref().unwrap_or("").into();
+        let default: Value = props.default.as_deref().unwrap_or("").into();
+        let result = Ok(default.clone());
+        let last_valid = result.clone().ok();
 
         ManagedFieldState {
             value,
-            valid: Ok(()),
+            result,
+            last_valid,
             default,
             radio_group: false,
             unique: false,

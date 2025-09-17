@@ -174,13 +174,9 @@ impl ManagedField for RadioButtonField {
             None => default.clone(),
         };
 
-        ManagedFieldState {
-            value: value.into(),
-            valid: Ok(()),
-            default: default.into(),
-            radio_group: true,
-            unique: false,
-        }
+        let mut state = ManagedFieldState::new(value.into(), default.into());
+        state.radio_group = true;
+        state
     }
 
     fn value_changed(&mut self, ctx: &super::ManagedFieldContext<Self>) {
@@ -248,7 +244,7 @@ impl ManagedField for RadioButtonField {
         let disabled = props.input_props.disabled;
 
         let on_value = props.value.to_string();
-        let (value, valid) = (&state.value, &state.valid);
+        let (value, validation_result) = (&state.value, &state.result);
         let checked = *value == on_value;
 
         let onclick = ctx.link().callback(|_| Msg::Toggle);
@@ -272,7 +268,7 @@ impl ManagedField for RadioButtonField {
                 )
                 .class(checked.then_some("checked"))
                 .class(disabled.then_some("disabled"))
-                .class(if valid.is_ok() {
+                .class(if validation_result.is_ok() {
                     "is-valid"
                 } else {
                     "is-invalid"
@@ -301,7 +297,7 @@ impl ManagedField for RadioButtonField {
             .listeners(&props.listeners)
             .onclick(onclick);
 
-        if let Err(msg) = &valid {
+        if let Err(msg) = &validation_result {
             checkbox.set_tip(msg.clone())
         } else if let Some(tip) = &props.tip {
             if !disabled {

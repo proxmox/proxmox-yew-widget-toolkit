@@ -52,48 +52,32 @@ struct FieldRegistration {
     pub value: Value,
     /// Last valid field value
     pub last_valid: Option<Value>,
-    // Submit value (value returned by validate) - None for fields with validation error.
-    submit_value: Option<Value>,
     /// Field default value.
     pub default: Value,
-    /// Validation result.
-    pub valid: Result<(), String>,
+    /// Validation result (contains the submit value)
+    pub result: Result<Value, String>,
 }
 
 impl FieldRegistration {
     fn is_dirty(&self) -> bool {
         // we need to compare the value that will be submitted
-        match &self.submit_value {
-            Some(submit_value) => &self.default != submit_value,
-            None => true,
+        match &self.result {
+            Ok(submit_value) => &self.default != submit_value,
+            Err(_) => true,
         }
     }
 
     fn apply_value(&mut self, value: Value) {
-        let (valid, submit_value);
-        if let Some(validate) = &self.validate {
-            match validate.apply(&value).map_err(|e| e.to_string()) {
-                Ok(value) => {
-                    submit_value = Some(value);
-                    valid = Ok(());
-                }
-                Err(e) => {
-                    submit_value = None;
-                    valid = Err(e.to_string());
-                }
-            }
+        let result = if let Some(validate) = &self.validate {
+            validate.apply(&value).map_err(|e| e.to_string())
         } else {
-            submit_value = Some(value.clone());
-
-            valid = Ok(());
-        }
-        let update_last_valid = valid.is_ok();
+            Ok(value.clone())
+        };
         self.value = value;
-        self.valid = valid;
-        self.submit_value = submit_value;
-        if update_last_valid {
-            self.last_valid = self.submit_value.clone();
+        if let Ok(submit_value) = &result {
+            self.last_valid = Some(submit_value.clone());
         }
+        self.result = result;
     }
 }
 /// Shared form data ([Rc]<[RefCell]<[FormContextState]>>)
@@ -168,13 +152,13 @@ impl FieldHandle {
         self.get_data().0
     }
 
-    /// Returns the field validation status.
-    pub fn get_valid(&self) -> Result<(), String> {
+    /// Returns the field validation result.
+    pub fn get_valid(&self) -> Result<Value, String> {
         self.get_data().1
     }
 
     /// Returns the field value with the validation result and the last valid value.
-    pub fn get_data(&self) -> (Value, Result<(), String>, Option<Value>) {
+    pub fn get_data(&self) -> (Value, Result<Value, String>, Option<Value>) {
         let key = self.key;
         self.read().get_field_data_by_slab_key(key)
     }
@@ -467,9 +451,8 @@ impl FormContextState {
             options,
             value: Value::Null, // set by apply_value below
             last_valid: None,
-            submit_value: None, // set by apply_value below
             default: default.clone(),
-            valid: Ok(()), // set by apply_value below
+            result: Ok(default.clone()), // set by apply_value below
         };
 
         field.apply_value(value);
@@ -540,19 +523,19 @@ impl FormContextState {
     fn get_field_data_by_slab_key(
         &self,
         slab_key: usize,
-    ) -> (Value, Result<(), String>, Option<Value>) {
+    ) -> (Value, Result<Value, String>, Option<Value>) {
         let field = &self.fields[slab_key];
 
         if field.radio_group {
             let group = &self.groups[&field.name];
             let value = group.value.clone().unwrap_or("".into());
-            let valid = Ok(()); // fixme
+            let valid = Ok(value.clone()); // fixme
             let last_valid_value = Some(value.clone()); // fixme:
             (value, valid, last_valid_value)
         } else {
             (
                 field.value.clone(),
-                field.valid.clone(),
+                field.result.clone(),
                 field.last_valid.clone(),
             )
         }
@@ -564,7 +547,7 @@ impl FormContextState {
     pub fn get_field_data(
         &self,
         name: impl IntoPropValue<AttrValue>,
-    ) -> Option<(Value, Result<(), String>, Option<Value>)> {
+    ) -> Option<(Value, Result<Value, String>, Option<Value>)> {
         let name = name.into_prop_value();
         self.find_field_slab_id(&name)
             .map(|key| self.get_field_data_by_slab_key(key))
@@ -617,7 +600,7 @@ impl FormContextState {
     pub fn text_field_data(
         &self,
         name: impl IntoPropValue<AttrValue>,
-    ) -> (String, Result<(), String>) {
+    ) -> (String, Result<Value, String>) {
         let name = name.into_prop_value();
         match self.get_field_data(&name) {
             Some((Value::Number(n), valid, _)) => (n.to_string(), valid),
@@ -630,10 +613,11 @@ impl FormContextState {
         }
     }
 
+    /// Returns the field validation result.
     pub fn get_field_valid(
         &self,
         name: impl IntoPropValue<AttrValue>,
-    ) -> Option<Result<(), String>> {
+    ) -> Option<Result<Value, String>> {
         self.get_field_data(name).map(|data| data.1)
     }
 
@@ -734,7 +718,7 @@ impl FormContextState {
 
     pub fn is_valid(&self) -> bool {
         for (_key, field) in self.fields.iter() {
-            if field.valid.is_err() {
+            if field.result.is_err() {
                 return false;
             }
         }
@@ -752,35 +736,18 @@ impl FormContextState {
         if field.radio_group {
             // fixme: do something ?
         } else {
-            let (valid, submit_value);
-            if let Some(validate) = &field.validate {
-                match validate.apply(&field.value) {
-                    Ok(value) => {
-                        submit_value = Some(value);
-                        valid = Ok(());
-                    }
-                    Err(e) => {
-                        submit_value = None;
-                        valid = Err(e.to_string());
-                    }
-                }
+            let result = if let Some(validate) = &field.validate {
+                validate.apply(&field.value).map_err(|err| err.to_string())
             } else {
-                submit_value = Some(field.value.clone());
-                valid = Ok(());
-            }
+                Ok(field.value.clone())
+            };
 
-            let update_last_valid = valid.is_ok();
-
-            if valid != field.valid {
+            if result != field.result {
                 self.version += 1;
-                field.valid = valid;
-            }
-            if submit_value != field.submit_value {
-                self.version += 1;
-                field.submit_value = submit_value;
-            }
-            if update_last_valid {
-                field.last_valid = field.submit_value.clone();
+                if let Ok(submit_value) = &result {
+                    field.last_valid = Some(submit_value.clone());
+                }
+                field.result = result;
             }
         }
     }
@@ -802,18 +769,25 @@ impl FormContextState {
         }
     }
 
-    fn set_field_valid_by_slab_key(&mut self, slab_key: usize, valid: Result<(), String>) {
+    fn set_field_valid_by_slab_key(
+        &mut self,
+        slab_key: usize,
+        validation_result: Result<Value, String>,
+    ) {
         let field = &mut self.fields[slab_key];
-        if valid != field.valid {
+        if validation_result != field.result {
             self.version += 1;
-            field.valid = valid;
+            if let Ok(submit_value) = &validation_result {
+                field.last_valid = Some(submit_value.clone());
+            }
+            field.result = validation_result;
         }
     }
 
     pub fn set_field_valid(
         &mut self,
         name: impl IntoPropValue<AttrValue>,
-        valid: Result<(), String>,
+        valid: Result<Value, String>,
     ) {
         let name = name.into_prop_value();
         if let Some(slab_key) = self.find_field_slab_id(&name) {
@@ -919,15 +893,16 @@ impl FormContextState {
             if field_keys.len() == 1 {
                 let key = field_keys[0];
                 let field = &self.fields[key];
-                let submit_empty = field.options.submit_empty;
-                if field.valid.is_ok() && field.options.submit {
-                    match &field.submit_value {
-                        None => continue,
-                        Some(value) => {
-                            if !submit_empty & value_is_empty(value) {
+                if field.options.submit {
+                    match &field.result {
+                        Ok(value) => {
+                            if !field.options.submit_empty & value_is_empty(value) {
                                 continue;
                             }
                             data[name.deref()] = value.clone();
+                        }
+                        Err(_) => {
+                            continue; /* ignore field */
                         }
                     }
                 }
@@ -939,15 +914,16 @@ impl FormContextState {
                 let mut list = Vec::new();
                 for key in field_keys {
                     let field = &self.fields[key];
-                    let submit_empty = field.options.submit_empty;
-                    if field.valid.is_ok() && field.options.submit {
-                        match &field.submit_value {
-                            None => continue,
-                            Some(value) => {
-                                if !submit_empty & value_is_empty(value) {
+                    if field.options.submit {
+                        match &field.result {
+                            Ok(value) => {
+                                if !field.options.submit_empty & value_is_empty(value) {
                                     continue;
                                 }
                                 list.push(value.clone());
+                            }
+                            Err(_) => {
+                                continue; /* ignore field */
                             }
                         }
                     }

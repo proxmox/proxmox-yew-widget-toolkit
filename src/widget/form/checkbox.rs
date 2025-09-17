@@ -200,21 +200,13 @@ impl ManagedField for CheckboxField {
             };
         }
 
-        let valid = Ok(());
-
         let default = if props.default.unwrap_or(false) {
             props.submit_on_value.clone()
         } else {
             props.submit_off_value.clone()
         };
 
-        ManagedFieldState {
-            value,
-            valid,
-            default,
-            radio_group: false,
-            unique: false,
-        }
+        ManagedFieldState::new(value, default)
     }
 
     fn create(_ctx: &ManagedFieldContext<Self>) -> Self {
@@ -282,11 +274,8 @@ impl ManagedField for CheckboxField {
 
         let state = ctx.state();
 
-        let (value, valid) = (&state.value, &state.valid);
-        let checked = {
-            let this = &props;
-            *value == this.submit_on_value
-        };
+        let (value, validation_result) = (&state.value, &state.result);
+        let checked = *value == props.submit_on_value;
 
         let onclick = link.callback(|_| Msg::Toggle);
         let onkeyup = Callback::from({
@@ -315,7 +304,7 @@ impl ManagedField for CheckboxField {
                     )
                     .class(checked.then_some("checked"))
                     .class(disabled.then_some("disabled"))
-                    .class(if valid.is_ok() {
+                    .class(if validation_result.is_ok() {
                         "is-valid"
                     } else {
                         "is-invalid"
@@ -344,11 +333,14 @@ impl ManagedField for CheckboxField {
             .listeners(&props.listeners)
             .onclick(onclick);
 
-        if let Err(msg) = &valid {
-            checkbox.set_tip(msg.clone())
-        } else if let Some(tip) = &props.tip {
-            if !disabled {
-                checkbox.set_tip(tip.clone())
+        match validation_result {
+            Err(msg) => checkbox.set_tip(msg.clone()),
+            Ok(_) => {
+                if let Some(tip) = &props.tip {
+                    if !disabled {
+                        checkbox.set_tip(tip.clone());
+                    }
+                }
             }
         }
 

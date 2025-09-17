@@ -334,7 +334,7 @@ pub struct Number<T: NumberTypeInfo> {
     /// any result from the validation function (if any).
     #[builder(IntoPropValue, into_prop_value)]
     #[prop_or_default]
-    pub valid: Option<Result<(), String>>,
+    pub valid: Option<Result<Value, String>>,
 
     /// Default value.
     #[builder(IntoPropValue, into_prop_value)]
@@ -495,20 +495,14 @@ impl<T: NumberTypeInfo> ManagedField for NumberField<T> {
             None => Value::Null,
         };
 
-        ManagedFieldState {
-            value,
-            valid: Ok(()),
-            default,
-            radio_group: false,
-            unique: false,
-        }
+        ManagedFieldState::new(value, default)
     }
 
     fn value_changed(&mut self, ctx: &super::ManagedFieldContext<Self>) {
         let props = ctx.props();
         let state = ctx.state();
-        let data = match &state.valid {
-            Ok(()) => Some(T::value_to_number(&state.value).map_err(|err| err.to_string())),
+        let data = match &state.result {
+            Ok(value) => Some(T::value_to_number(value).map_err(|err| err.to_string())),
             Err(err) => Some(Err(err.clone())),
         };
         if let Some(on_change) = &props.on_change {
@@ -551,7 +545,7 @@ impl<T: NumberTypeInfo> ManagedField for NumberField<T> {
             }
             Msg::Up => {
                 let n = T::value_to_number(&state.value).ok();
-                let n = match (n, state.valid.is_ok()) {
+                let n = match (n, state.result.is_ok()) {
                     (None, true) => Some(T::default().clamp_value(props.min, props.max)),
                     (Some(n), _) => {
                         let next = T::step_up(&n, props.step);
@@ -571,7 +565,7 @@ impl<T: NumberTypeInfo> ManagedField for NumberField<T> {
             }
             Msg::Down => {
                 let n = T::value_to_number(&state.value).ok();
-                let n = match (n, state.valid.is_ok()) {
+                let n = match (n, state.result.is_ok()) {
                     (None, true) => Some(T::default().clamp_value(props.min, props.max)),
                     (Some(n), _) => {
                         let next = T::step_down(&n, props.step);
@@ -620,7 +614,7 @@ impl<T: NumberTypeInfo> ManagedField for NumberField<T> {
         let props = ctx.props();
         let state = ctx.state();
 
-        let (value, valid) = (&state.value, &state.valid);
+        let (value, validation_result) = (&state.value, &state.result);
         let value_text = match value {
             Value::Null => String::new(),
             Value::Number(number) => match T::value_to_number(value) {
@@ -681,7 +675,7 @@ impl<T: NumberTypeInfo> ManagedField for NumberField<T> {
             .class("pwt-input-type-number")
             .class("pwt-w-100")
             .class(disabled.then_some("disabled"))
-            .class(if valid.is_ok() {
+            .class(if validation_result.is_ok() {
                 "is-valid"
             } else {
                 "is-invalid"
@@ -712,7 +706,7 @@ impl<T: NumberTypeInfo> ManagedField for NumberField<T> {
                     ),
             );
 
-        if let Err(msg) = &valid {
+        if let Err(msg) = &validation_result {
             input_container.set_tip(msg.clone())
         }
 

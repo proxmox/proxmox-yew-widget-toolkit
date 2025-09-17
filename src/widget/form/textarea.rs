@@ -40,7 +40,7 @@ pub struct TextArea {
     /// any result from the validation function (if any).
     #[builder(IntoPropValue, into_prop_value)]
     #[prop_or_default]
-    pub valid: Option<Result<(), String>>,
+    pub valid: Option<Result<Value, String>>,
 
     /// Default value.
     #[builder(IntoPropValue, into_prop_value)]
@@ -166,13 +166,7 @@ impl ManagedField for TextAreaField {
 
         let default = props.default.as_deref().unwrap_or("").into();
 
-        ManagedFieldState {
-            value,
-            valid: Ok(()),
-            default,
-            radio_group: false,
-            unique: false,
-        }
+        ManagedFieldState::new(value, default)
     }
 
     fn value_changed(&mut self, ctx: &super::ManagedFieldContext<Self>) {
@@ -218,7 +212,7 @@ impl ManagedField for TextAreaField {
         let props = ctx.props().clone();
         let state = ctx.state();
 
-        let (value, valid) = (&state.value, &state.valid);
+        let (value, validation_result) = (&state.value, &state.result);
         let value = value_to_text(value);
 
         let oninput = ctx.link().callback(move |event: InputEvent| {
@@ -231,7 +225,7 @@ impl ManagedField for TextAreaField {
 
         let classes = classes!(
             "pwt-textarea",
-            if valid.is_ok() {
+            if validation_result.is_ok() {
                 "is-valid"
             } else {
                 "is-invalid"

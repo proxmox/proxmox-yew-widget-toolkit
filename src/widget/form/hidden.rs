@@ -62,17 +62,9 @@ impl ManagedField for HiddenField {
             value = default.clone();
         }
 
-        let valid = Ok(());
-
         let default = props.default.clone().unwrap_or(Value::Null);
 
-        ManagedFieldState {
-            value,
-            valid,
-            default,
-            radio_group: false,
-            unique: false,
-        }
+        ManagedFieldState::new(value, default)
     }
 
     fn create(_ctx: &ManagedFieldContext<Self>) -> Self {

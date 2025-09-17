@@ -229,14 +229,7 @@ impl<S: DataStore + 'static> ManagedField for SelectorField<S> {
     fn setup(props: &Self::Properties) -> ManagedFieldState {
         let default: Value = props.default.as_deref().unwrap_or("").to_string().into();
         let value = default.clone();
-
-        ManagedFieldState {
-            value,
-            valid: Ok(()),
-            default,
-            radio_group: false,
-            unique: false,
-        }
+        ManagedFieldState::new(value, default)
     }
 
     fn value_changed(&mut self, ctx: &super::ManagedFieldContext<Self>) {
@@ -361,7 +354,7 @@ impl<S: DataStore + 'static> ManagedField for SelectorField<S> {
         let state = ctx.state();
 
         let value = state.value.as_str().unwrap_or("").to_owned();
-        let valid = state.valid.clone();
+        let validation_result = &state.result;
 
         let picker = {
             let picker = props.picker.clone();
@@ -408,7 +401,7 @@ impl<S: DataStore + 'static> ManagedField for SelectorField<S> {
             }
         };
 
-        let tip = match &valid {
+        let tip = match validation_result {
             Err(msg) => Some(msg.to_string()),
             Ok(_) => None,
         };
@@ -439,7 +432,7 @@ impl<S: DataStore + 'static> ManagedField for SelectorField<S> {
             .with_std_props(&props.std_props)
             .with_input_props(&props.input_props)
             .editable(props.editable)
-            .valid(valid.is_ok())
+            .valid(validation_result.is_ok())
             .onkeydown(onkeydown)
             .on_change(ctx.link().callback(|key: String| Msg::Select(key)))
             .value(value)

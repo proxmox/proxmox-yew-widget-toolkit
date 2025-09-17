@@ -124,13 +124,10 @@ impl ManagedField for MenuCheckboxField {
             None => default.clone(),
         };
 
-        ManagedFieldState {
-            value: value.into(),
-            valid: Ok(()),
-            default: default.into(),
-            radio_group: props.radio_group,
-            unique: true,
-        }
+        let mut state = ManagedFieldState::new(value.into(), default.into());
+        state.radio_group = props.radio_group;
+        state.unique = true;
+        state
     }
 
     fn value_changed(&mut self, ctx: &ManagedFieldContext<Self>) {

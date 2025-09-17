@@ -136,13 +136,7 @@ impl ManagedField for PwtTristateBoolean {
             Some(tristate) => tristate_to_value(tristate),
         };
 
-        ManagedFieldState {
-            value,
-            valid: Ok(()),
-            default,
-            radio_group: false,
-            unique: false,
-        }
+        ManagedFieldState::new(value, default)
     }
 
     fn create(ctx: &ManagedFieldContext<Self>) -> Self {
@@ -242,7 +236,7 @@ impl ManagedField for PwtTristateBoolean {
         let props = ctx.props();
         let state = ctx.state();
 
-        let (value, valid) = (&state.value, &state.valid);
+        let (value, validation_result) = (&state.value, &state.result);
         let value_text = match value_to_tristate(value) {
             Some(tristate) => tristate_to_text(tristate),
             None => String::new(),
@@ -270,7 +264,7 @@ impl ManagedField for PwtTristateBoolean {
             }
         };
 
-        let tip = match &valid {
+        let tip = match validation_result {
             Err(msg) => Some(msg.to_string()),
             Ok(_) => None,
         };
@@ -278,7 +272,7 @@ impl ManagedField for PwtTristateBoolean {
         Dropdown::new(picker)
             .with_std_props(&props.std_props)
             .with_input_props(&props.input_props)
-            .class(if valid.is_ok() {
+            .class(if validation_result.is_ok() {
                 "is-valid"
             } else {
                 "is-invalid"

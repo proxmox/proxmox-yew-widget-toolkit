@@ -141,7 +141,7 @@ pub struct Field {
     /// any result from the validation function (if any).
     #[builder(IntoPropValue, into_prop_value)]
     #[prop_or_default]
-    pub valid: Option<Result<(), String>>,
+    pub valid: Option<Result<Value, String>>,
 
     /// Default value.
     #[builder(IntoPropValue, into_prop_value)]
@@ -378,15 +378,9 @@ impl ManagedField for StandardField {
 
         let value: Value = value.clone().into();
 
-        let default = props.default.as_deref().unwrap_or("").into();
+        let default: Value = props.default.as_deref().unwrap_or("").into();
 
-        ManagedFieldState {
-            value,
-            valid: Ok(()),
-            default,
-            radio_group: false,
-            unique: false,
-        }
+        ManagedFieldState::new(value, default)
     }
 
     fn value_changed(&mut self, ctx: &super::ManagedFieldContext<Self>) {
@@ -448,7 +442,7 @@ impl ManagedField for StandardField {
         let props = ctx.props();
         let state = ctx.state();
 
-        let (value, valid) = (&state.value, &state.valid);
+        let (value, validation_result) = (&state.value, &state.result);
         let value = value_to_text(value);
 
         let input_type = match self.password_state {
@@ -505,7 +499,7 @@ impl ManagedField for StandardField {
             .class(format!("pwt-input-type-{}", props.input_type))
             .class(disabled.then_some("disabled"))
             .class("pwt-w-100")
-            .class(if valid.is_ok() {
+            .class(if validation_result.is_ok() {
                 "is-valid"
             } else {
                 "is-invalid"
@@ -538,11 +532,14 @@ impl ManagedField for StandardField {
 
         input_container.add_child(right_triggers);
 
-        if let Err(msg) = &valid {
-            input_container.set_tip(msg.clone())
-        } else if let Some(tip) = &props.tip {
-            if !disabled {
-                input_container.set_tip(tip.clone())
+        match &validation_result {
+            Err(msg) => input_container.set_tip(msg.clone()),
+            Ok(_) => {
+                if let Some(tip) = &props.tip {
+                    if !disabled {
+                        input_container.set_tip(tip.clone())
+                    }
+                }
             }
         }
 
