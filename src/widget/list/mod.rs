@@ -155,6 +155,13 @@ impl List {
             renderer: renderer.into()
         })
     }
+
+    /// Create a new instance from a list of tiles.
+    pub fn from_tiles(tiles: Vec<ListTile>) -> Self {
+        Self::new(tiles.len() as u64, move |pos| {
+            tiles[pos as usize].clone().into()
+        })
+    }
 }
 
 #[derive(Default)]
