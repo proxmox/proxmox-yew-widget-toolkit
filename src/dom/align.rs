@@ -456,8 +456,8 @@ where
         style.remove_property("overflow")?;
     }
     let padding = 2.0 * options.viewport_padding;
-    style.set_property("max-height", &format!("calc(100vh - {padding}px)"))?;
-    style.set_property("max-width", &format!("calc(100vw - {padding}px)"))?;
+    style.set_property("max-height", &format!("calc(100dvh - {padding}px)"))?;
+    style.set_property("max-width", &format!("calc(100dvw - {padding}px)"))?;
 
     if options.align_width {
         let width = base.get_bounding_client_rect().width();
