@@ -1,3 +1,19 @@
+rust-pwt (0.7.1) trixie; urgency=medium
+
+  * dom: align: use dvh/dvw for max-{height,width}
+
+  * FormContext: store result of validation function
+
+  * FormContext: track last valid value
+
+  * List: add new constructor from_tiles
+
+  * widget: form: number: set 'inputmode' attribute
+
+  * widget: language selector: automatically set text direction from language
+
+ -- Proxmox Support Team <support@proxmox.com>  Thu, 18 Sep 2025 13:47:18 +0200
+
 rust-pwt (0.7.0) trixie; urgency=medium
 
   * remove node_ref from widget standard properties, it's not required by
