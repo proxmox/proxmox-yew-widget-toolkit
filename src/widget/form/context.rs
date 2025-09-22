@@ -718,7 +718,7 @@ impl FormContextState {
 
     pub fn is_valid(&self) -> bool {
         for (_key, field) in self.fields.iter() {
-            if field.result.is_err() {
+            if !field.options.disabled && field.result.is_err() {
                 return false;
             }
         }
