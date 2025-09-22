@@ -342,7 +342,10 @@ impl Component for PwtDropdown {
         let input: Html = if let Some(render_value) = &props.render_value {
             let rendered_value = if let Some(placeholder) = &props.input_props.placeholder {
                 if value.is_empty() {
-                    placeholder.into()
+                    Container::new()
+                        .with_child(placeholder)
+                        .class("pwt-opacity-50")
+                        .into()
                 } else {
                     render_value.apply(&AttrValue::from(value.clone()))
                 }
