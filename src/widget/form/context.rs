@@ -60,6 +60,9 @@ struct FieldRegistration {
 
 impl FieldRegistration {
     fn is_dirty(&self) -> bool {
+        if self.options.disabled {
+            return false;
+        }
         // we need to compare the value that will be submitted
         match &self.result {
             Ok(submit_value) => &self.default != submit_value,
