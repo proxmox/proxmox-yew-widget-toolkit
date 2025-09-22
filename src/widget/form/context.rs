@@ -684,6 +684,7 @@ impl FormContextState {
     fn update_field_options_by_slab_key(&mut self, slab_key: usize, options: FieldOptions) {
         let field = &mut self.fields[slab_key];
         field.options = options;
+        self.version += 1;
     }
 
     pub fn is_dirty(&self) -> bool {
