@@ -1,6 +1,7 @@
 use std::rc::Rc;
 
 use anyhow::format_err;
+use indexmap::IndexMap;
 
 use yew::html::{IntoEventCallback, IntoPropValue};
 use yew::prelude::*;
@@ -102,6 +103,30 @@ impl Combobox {
     /// Create a new instance.
     pub fn new() -> Self {
         yew::props!(Self {})
+    }
+
+    /// Create a combobox from a key-value iterator.
+    ///
+    /// You can either use a `Vec<(key,value)>`, `HashMap` or `IndexMap`.
+    pub fn from_key_value_pairs<
+        K: Into<AttrValue>,
+        V: Into<Html>,
+        I: Iterator<Item = (K, V)>,
+        T: Into<I>,
+    >(
+        iter: T,
+    ) -> Self {
+        let pairs: IndexMap<AttrValue, Html> =
+            iter.into().map(|(k, v)| (k.into(), v.into())).collect();
+        let items: Vec<AttrValue> = pairs.keys().map(|k| k.clone()).collect();
+        let render_value = Some(RenderFn::new(move |k: &AttrValue| match pairs.get(k) {
+            Some(v) => v.clone(),
+            None => k.into(),
+        }));
+        yew::props!(Self {
+            items: Rc::new(items),
+            render_value,
+        })
     }
 
     /// Builder style method to add an selectable item.
