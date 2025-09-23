@@ -1,5 +1,7 @@
 use std::rc::Rc;
 
+use anyhow::format_err;
+
 use yew::html::{IntoEventCallback, IntoPropValue};
 use yew::prelude::*;
 use yew::virtual_dom::Key;
@@ -42,6 +44,13 @@ pub struct Combobox {
     #[prop_or_default]
     #[builder]
     pub editable: bool,
+
+    /// Force selection
+    ///
+    /// Only allow known items. Other values create a validation error.
+    #[prop_or_default]
+    #[builder]
+    pub force_selection: bool,
 
     /// Item list.
     #[prop_or_default]
@@ -164,6 +173,36 @@ pub enum Msg {
 pub struct PwtCombobox {
     store: Store<AttrValue>,
     columns: Rc<Vec<DataTableHeader<AttrValue>>>,
+    validate: Option<ValidateFn<(String, Store<AttrValue>)>>,
+}
+
+impl PwtCombobox {
+    fn create_validate(props: &Combobox) -> Option<ValidateFn<(String, Store<AttrValue>)>> {
+        if props.force_selection {
+            let validate = props.validate.clone();
+            Some(ValidateFn::new(
+                move |(value, store): &(String, Store<AttrValue>)| {
+                    let found: bool = store
+                        .read()
+                        .iter()
+                        .find(|item| item.as_str() == value)
+                        .is_some();
+
+                    if !found {
+                        return Err(format_err!(tr!("no such item")));
+                    }
+
+                    if let Some(validate) = &validate {
+                        validate.apply(&(value.clone(), store.clone()))
+                    } else {
+                        Ok(())
+                    }
+                },
+            ))
+        } else {
+            props.validate.clone()
+        }
+    }
 }
 
 impl Component for PwtCombobox {
@@ -187,7 +226,11 @@ impl Component for PwtCombobox {
             .render(render_value)
             .into()]);
 
-        Self { store, columns }
+        Self {
+            store,
+            columns,
+            validate: Self::create_validate(props),
+        }
     }
 
     fn update(&mut self, _ctx: &Context<Self>, msg: Self::Message) -> bool {
@@ -205,6 +248,7 @@ impl Component for PwtCombobox {
                 self.store.clear();
             }
         }
+        self.validate = Self::create_validate(props);
         true
     }
 
@@ -251,7 +295,7 @@ impl Component for PwtCombobox {
             .with_input_props(&props.input_props)
             .editable(props.editable)
             .default(&props.default)
-            .validate(props.validate.clone())
+            .validate(self.validate.clone())
             .render_value(props.render_value.clone())
             .trigger(props.trigger.clone())
             .on_change({
