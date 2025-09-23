@@ -111,13 +111,15 @@ impl Combobox {
     pub fn from_key_value_pairs<
         K: Into<AttrValue>,
         V: Into<Html>,
-        I: Iterator<Item = (K, V)>,
-        T: Into<I>,
+        T: IntoIterator<Item = (K, V)>,
     >(
         iter: T,
     ) -> Self {
-        let pairs: IndexMap<AttrValue, Html> =
-            iter.into().map(|(k, v)| (k.into(), v.into())).collect();
+        let pairs: IndexMap<AttrValue, Html> = iter
+            //            .clone()
+            .into_iter()
+            .map(|(k, v)| (k.into(), v.into()))
+            .collect();
         let items: Vec<AttrValue> = pairs.keys().map(|k| k.clone()).collect();
         let render_value = Some(RenderFn::new(move |k: &AttrValue| match pairs.get(k) {
             Some(v) => v.clone(),
