@@ -179,9 +179,9 @@ pub fn set_http_get_method<F: 'static + Future<Output = Result<Value, Error>>>(
 
 async fn http_get(url: String) -> Result<Value, Error> {
     let abort = crate::WebSysAbortGuard::new()?;
-    let mut init = web_sys::RequestInit::new();
-    init.method("GET");
-    init.signal(Some(&abort.signal()));
+    let init = web_sys::RequestInit::new();
+    init.set_method("GET");
+    init.set_signal(Some(&abort.signal()));
 
     let js_headers = web_sys::Headers::new().map_err(|err| format_err!("{:?}", err))?;
 
@@ -189,7 +189,7 @@ async fn http_get(url: String) -> Result<Value, Error> {
         .append("content-type", "application/x-www-form-urlencoded")
         .map_err(|err| format_err!("{:?}", err))?;
 
-    init.headers(&js_headers);
+    init.set_headers(&js_headers);
     let js_req = web_sys::Request::new_with_str_and_init(&url, &init)
         .map_err(|err| format_err!("{:?}", err))?;
 

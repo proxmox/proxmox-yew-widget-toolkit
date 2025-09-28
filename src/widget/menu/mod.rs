@@ -827,11 +827,11 @@ fn dom_focus_submenu(item_id: &str) {
 pub fn dispatch_menu_close_event(event: impl AsRef<web_sys::Event>) {
     let target: web_sys::Element = event.target_unchecked_into();
 
-    let mut options = web_sys::KeyboardEventInit::new();
-    options.bubbles(true);
-    options.cancelable(true);
-    options.key("Escape");
-    options.key_code(27);
+    let options = web_sys::KeyboardEventInit::new();
+    options.set_bubbles(true);
+    options.set_cancelable(true);
+    options.set_key("Escape");
+    options.set_key_code(27);
 
     let event =
         web_sys::KeyboardEvent::new_with_keyboard_event_init_dict("keydown", &options).unwrap();
