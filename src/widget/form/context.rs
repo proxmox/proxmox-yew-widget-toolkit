@@ -845,6 +845,11 @@ impl FormContextState {
         }
     }
 
+    /// Check if the context contains a specific field name.
+    pub fn contains_field(&self, name: &str) -> bool {
+        self.groups.contains_key(name)
+    }
+
     /// Get form submit data.
     pub fn get_submit_data(&self) -> Value {
         let mut data = json!({});
