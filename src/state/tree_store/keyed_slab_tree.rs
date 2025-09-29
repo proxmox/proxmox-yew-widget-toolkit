@@ -90,7 +90,7 @@ impl<T> KeyedSlabTreeNodeMut<'_, T> {
         self.visit_children(visitor);
     }
 
-    /// Retunrs the unique record key.
+    /// Returns the unique record key.
     pub fn key(&self) -> Key {
         self.tree.extract_key(self.record())
     }
