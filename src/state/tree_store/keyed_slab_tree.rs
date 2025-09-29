@@ -449,6 +449,12 @@ impl<T> KeyedSlabTree<T> {
             .append_subtree_node(subtree, subtree_node, level, parent);
 
         let key_cache = self.calculate_cache(node_id);
+        #[cfg(debug_assertions)]
+        for key in key_cache.keys() {
+            if self.key_cache.contains_key(key) {
+                panic!("append_subtree_node: duplicate key {key:?}");
+            }
+        }
         self.key_cache.extend(key_cache);
 
         node_id
@@ -519,6 +525,10 @@ impl<T> KeyedSlabTree<T> {
     fn insert_record(&mut self, record: T, parent_id: Option<usize>) -> usize {
         let key = self.extract_key(&record);
         let node_id = self.tree.insert_record(record, parent_id);
+        #[cfg(debug_assertions)]
+        if self.key_cache.contains_key(&key) {
+            panic!("insert_record: duplicate key {key:?}");
+        }
         self.key_cache.insert(key, node_id);
         node_id
     }
