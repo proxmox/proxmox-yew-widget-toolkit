@@ -1,5 +1,5 @@
-use std::cmp::Ordering;
 use std::collections::HashSet;
+use std::{cmp::Ordering, collections::HashMap};
 
 use slab::Slab;
 
@@ -29,6 +29,8 @@ pub struct KeyedSlabTree<T> {
     filter: Option<FilterFn<T>>,
 
     listeners: Slab<Callback<()>>,
+
+    key_cache: HashMap<Key, usize>,
 
     pub(crate) view_root: bool,
 }
@@ -98,7 +100,7 @@ impl<T> KeyedSlabTreeNodeMut<'_, T> {
     /// Find a node by key.
     pub fn find_node_by_key(&self, key: &Key) -> Option<KeyedSlabTreeNodeRef<T>> {
         self.tree
-            .find_subnode_by_key(self.node_id, key)
+            .find_subnode_by_key(key)
             .map(|node_id| KeyedSlabTreeNodeRef {
                 node_id,
                 tree: self.tree,
@@ -108,7 +110,7 @@ impl<T> KeyedSlabTreeNodeMut<'_, T> {
     /// Find a node by key (mutable).
     pub fn find_node_by_key_mut(&mut self, key: &Key) -> Option<KeyedSlabTreeNodeMut<T>> {
         self.tree
-            .find_subnode_by_key(self.node_id, key)
+            .find_subnode_by_key(key)
             .map(|node_id| KeyedSlabTreeNodeMut {
                 node_id,
                 tree: self.tree,
@@ -189,7 +191,7 @@ impl<T> KeyedSlabTreeNodeRef<'_, T> {
     /// Find a node by key.
     pub fn find_node_by_key(&self, key: &Key) -> Option<KeyedSlabTreeNodeRef<T>> {
         self.tree
-            .find_subnode_by_key(self.node_id, key)
+            .find_subnode_by_key(key)
             .map(|node_id| KeyedSlabTreeNodeRef {
                 node_id,
                 tree: self.tree,
@@ -240,6 +242,7 @@ impl<T> KeyedSlabTree<T> {
             filter: None,
             listeners: Slab::new(),
             view_root: true,
+            key_cache: HashMap::new(),
         }
     }
 
@@ -374,7 +377,10 @@ impl<T> KeyedSlabTree<T> {
     ///
     /// The current tree (if any) is discarded.
     pub fn set_root(&mut self, record: T) -> KeyedSlabTreeNodeMut<T> {
+        self.key_cache.clear();
+        let key = self.extract_key(&record);
         let node = self.tree.set_root(record);
+        self.key_cache.insert(key, node.node_id);
         KeyedSlabTreeNodeMut {
             node_id: node.node_id,
             tree: self,
@@ -386,6 +392,7 @@ impl<T> KeyedSlabTree<T> {
     /// The current tree (if any) is discarded.
     pub fn set_root_tree(&mut self, data: impl Into<SlabTree<T>>) {
         self.tree.set_root_tree(data);
+        self.key_cache = self.recalculate_cache();
     }
 
     /// Set the whole tree, but safe/restore expanded state
@@ -396,7 +403,7 @@ impl<T> KeyedSlabTree<T> {
             Some(root) => root.extract_expanded_state(),
             None => HashSet::new(),
         };
-        self.tree.set_root_tree(data);
+        self.set_root_tree(data);
         if let Some(mut root) = self.root_mut() {
             root.apply_expanded_state(&expanded_state);
         }
@@ -437,15 +444,62 @@ impl<T> KeyedSlabTree<T> {
         level: usize,
         parent: usize,
     ) -> usize {
-        self.tree
-            .append_subtree_node(subtree, subtree_node, level, parent)
+        let node_id = self
+            .tree
+            .append_subtree_node(subtree, subtree_node, level, parent);
+
+        let key_cache = self.calculate_cache(node_id);
+        self.key_cache.extend(key_cache);
+
+        node_id
+    }
+
+    fn remove_subtree_from_cache(&mut self, node_id: usize) {
+        if let Some(entry) = self.tree.get(node_id) {
+            self.key_cache.remove(&self.extract_key(&entry.record));
+            if let Some(children) = entry.children.clone() {
+                for child in children {
+                    self.remove_subtree_from_cache(child);
+                }
+            }
+        }
     }
 
     fn remove_node_id(&mut self, node_id: usize) -> Option<T> {
+        self.remove_subtree_from_cache(node_id);
         self.tree.remove_node_id(node_id)
     }
 
+    fn calculate_cache(&self, node_id: usize) -> HashMap<Key, usize> {
+        let mut map = HashMap::new();
+        if let Some(node) = self.get(node_id) {
+            let key = self.extract_key(&node.record);
+            map.insert(key, node_id);
+            match node.children.clone() {
+                Some(list) => {
+                    for child_id in list {
+                        map.extend(self.calculate_cache(child_id));
+                    }
+                }
+                None => {}
+            }
+        }
+
+        map
+    }
+
+    fn recalculate_cache(&self) -> HashMap<Key, usize> {
+        match self.tree.root_id {
+            Some(root_id) => self.calculate_cache(root_id),
+            None => HashMap::new(),
+        }
+    }
+
     fn remove_tree_node_id(&mut self, node_id: usize) -> Option<KeyedSlabTree<T>> {
+        let key_cache = self.calculate_cache(node_id);
+        for key in key_cache.keys() {
+            self.key_cache.remove(key);
+        }
         match self.tree.remove_tree_node_id(node_id) {
             Some(tree) => Some(KeyedSlabTree {
                 extract_key: self.extract_key.clone(),
@@ -456,37 +510,27 @@ impl<T> KeyedSlabTree<T> {
                 filter: None,
                 listeners: Slab::new(),
                 view_root: true,
+                key_cache,
             }),
             None => None,
         }
     }
 
     fn insert_record(&mut self, record: T, parent_id: Option<usize>) -> usize {
-        self.tree.insert_record(record, parent_id)
+        let key = self.extract_key(&record);
+        let node_id = self.tree.insert_record(record, parent_id);
+        self.key_cache.insert(key, node_id);
+        node_id
     }
 
-    fn find_subnode_by_key(&self, node_id: usize, key: &Key) -> Option<usize> {
-        let entry = self.get(node_id)?;
-
-        if key == &self.extract_key(&entry.record) {
-            return Some(node_id);
-        }
-
-        if let Some(children) = &entry.children {
-            for child_id in children {
-                if let Some(pos) = self.find_subnode_by_key(*child_id, key) {
-                    return Some(pos);
-                }
-            }
-        }
-
-        None
+    fn find_subnode_by_key(&self, key: &Key) -> Option<usize> {
+        self.key_cache.get(key).copied()
     }
 
     fn find_node_by_key(&self, key: &Key) -> Option<usize> {
         match self.tree.root_id {
             None => None,
-            Some(root_id) => self.find_subnode_by_key(root_id, key),
+            Some(_root_id) => self.find_subnode_by_key(key),
         }
     }
 
