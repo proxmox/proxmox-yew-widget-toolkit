@@ -62,6 +62,14 @@ pub struct Selector<S: DataStore + 'static> {
     #[prop_or_default]
     pub default: Option<AttrValue>,
 
+    /// Force value.
+    ///
+    /// To implement controlled components (for use without a FormContext).
+    /// This is ignored if the field has a name.
+    #[builder(IntoPropValue, into_prop_value)]
+    #[prop_or_default]
+    pub value: Option<AttrValue>,
+
     /// Make the input editable.
     #[prop_or_default]
     #[builder]
@@ -228,7 +236,13 @@ impl<S: DataStore + 'static> ManagedField for SelectorField<S> {
 
     fn setup(props: &Self::Properties) -> ManagedFieldState {
         let default: Value = props.default.as_deref().unwrap_or("").to_string().into();
-        let value = default.clone();
+
+        let value = if let Some(force_value) = &props.value {
+            force_value.to_string().into()
+        } else {
+            default.clone()
+        };
+
         ManagedFieldState::new(value, default)
     }
 
@@ -340,6 +354,11 @@ impl<S: DataStore + 'static> ManagedField for SelectorField<S> {
 
         if old_props.is_disabled() && !props.is_disabled() {
             reload = true;
+        }
+
+        if props.value != old_props.value {
+            ctx.link()
+                .force_value(props.value.as_ref().map(|v| v.to_string()), None);
         }
 
         if reload {

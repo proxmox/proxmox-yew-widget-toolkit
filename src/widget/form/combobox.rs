@@ -3,6 +3,7 @@ use std::rc::Rc;
 use anyhow::format_err;
 use indexmap::IndexMap;
 
+use serde_json::Value;
 use yew::html::{IntoEventCallback, IntoPropValue};
 use yew::prelude::*;
 use yew::virtual_dom::Key;
@@ -40,6 +41,14 @@ pub struct Combobox {
     #[builder(IntoPropValue, into_prop_value)]
     #[prop_or_default]
     pub default: Option<AttrValue>,
+
+    /// Force value.
+    ///
+    /// To implement controlled components (for use without a FormContext).
+    /// This is ignored if the field has a name.
+    #[builder(IntoPropValue, into_prop_value)]
+    #[prop_or_default]
+    pub value: Option<AttrValue>,
 
     /// Make the input editable.
     #[prop_or_default]
@@ -320,6 +329,7 @@ impl Component for PwtCombobox {
         Selector::new(self.store.clone(), picker)
             .with_std_props(&props.std_props)
             .with_input_props(&props.input_props)
+            .value(&props.value)
             .editable(props.editable)
             .default(&props.default)
             .validate(self.validate.clone())
