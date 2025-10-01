@@ -3,7 +3,6 @@ use std::rc::Rc;
 use anyhow::format_err;
 use indexmap::IndexMap;
 
-use serde_json::Value;
 use yew::html::{IntoEventCallback, IntoPropValue};
 use yew::prelude::*;
 use yew::virtual_dom::Key;
