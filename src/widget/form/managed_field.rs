@@ -526,6 +526,8 @@ impl<MF: ManagedField + 'static> Component for ManagedFieldMaster<MF> {
             self.validate = validate.clone();
             if let Some(field_handle) = &mut self.field_handle {
                 field_handle.update_validate(Some(validate));
+            } else {
+                ctx.link().send_message(Msg::Validate); // re-evaluate
             }
         }
 
