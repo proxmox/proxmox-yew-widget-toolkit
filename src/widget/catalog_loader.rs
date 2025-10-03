@@ -5,7 +5,8 @@ use yew::html::IntoPropValue;
 use yew::virtual_dom::{VComp, VNode};
 
 use crate::props::{IntoOptionalTextRenderFn, TextRenderFn};
-use crate::state::{Language, LanguageObserver};
+use crate::state::{get_language_info, Language, LanguageObserver};
+use crate::widget::rtl_switcher::set_text_direction;
 use crate::{impl_to_html, prelude::*};
 
 use pwt_macros::builder;
@@ -107,6 +108,13 @@ impl Component for PwtCatalogLoader {
         let props = ctx.props();
         match msg {
             Msg::LoadDone => {
+                if let Some(info) = get_language_info(&self.lang) {
+                    if let Err(err) = set_text_direction(info.direction) {
+                        log::error!("could not set text direction: {err}");
+                    }
+                } else {
+                    log::warn!("could not load language info for '{}'", self.lang);
+                }
                 self.state = LoadState::Idle;
                 true
             }
