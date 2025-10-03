@@ -392,6 +392,7 @@ impl Deref for FormContextReadGuard<'_> {
 #[derive(Clone)]
 struct GroupState {
     value: Option<Value>,
+    default: Option<Value>,
     members: Vec<usize>,
     radio_count: usize,
 }
@@ -458,7 +459,9 @@ impl FormContextState {
             result: Ok(default.clone()), // set by apply_value below
         };
 
-        field.apply_value(value);
+        if !radio_group {
+            field.apply_value(value);
+        }
 
         let slab_key;
 
@@ -476,6 +479,7 @@ impl FormContextState {
 
         let group = self.groups.entry(name).or_insert(GroupState {
             value: None,
+            default: None,
             members: Vec::new(),
             radio_count: 0,
         });
@@ -485,6 +489,7 @@ impl FormContextState {
             if let Some(default) = default.as_str() {
                 if !default.is_empty() && group.value.is_none() {
                     group.value = Some(default.into());
+                    group.default = group.value.clone();
                 }
             }
             group.radio_count += 1;
@@ -626,7 +631,6 @@ impl FormContextState {
 
     fn set_field_value_by_slab_key(&mut self, slab_key: usize, value: Value, set_default: bool) {
         let field = &mut self.fields[slab_key];
-
         if field.radio_group {
             let group = self.groups.get_mut(&field.name).unwrap();
             let changed = match &group.value {
@@ -638,14 +642,7 @@ impl FormContextState {
                 self.version += 1;
             }
             if set_default {
-                for member in group.members.iter() {
-                    let group_field = &mut self.fields[*member];
-                    if group_field.value == value {
-                        group_field.default = value.clone();
-                    } else {
-                        group_field.default = String::new().into();
-                    }
-                }
+                group.default = Some(value.clone());
             }
         } else {
             if set_default && field.default != value {
@@ -688,9 +685,15 @@ impl FormContextState {
     }
 
     pub fn is_dirty(&self) -> bool {
-        for (_key, field) in self.fields.iter() {
-            if field.is_dirty() {
+        for (_name, group) in self.groups.clone().iter() {
+            if group.radio_count > 0 && group.default != group.value {
                 return true;
+            }
+            for member in group.members.iter() {
+                let field = &self.fields[*member];
+                if !field.radio_group && field.is_dirty() {
+                    return true;
+                }
             }
         }
         false
@@ -698,16 +701,22 @@ impl FormContextState {
 
     pub fn dirty_count(&self) -> usize {
         let mut count = 0;
-        for (_key, field) in self.fields.iter() {
-            if field.is_dirty() {
+        for (_name, group) in self.groups.clone().iter() {
+            if group.radio_count > 0 && group.default != group.value {
                 count += 1;
+            }
+            for member in group.members.iter() {
+                let field = &self.fields[*member];
+                if !field.radio_group && field.is_dirty() {
+                    count += 1;
+                }
             }
         }
         count
     }
 
     /// Reset all form fields to their default value.
-    pub fn reset_form(&mut self) {
+    pub fn reset_form_old(&mut self) {
         let mut changes = false;
         for (_key, field) in self.fields.iter_mut() {
             if field.value != field.default {
@@ -715,6 +724,49 @@ impl FormContextState {
                 field.apply_value(field.default.clone());
             }
         }
+        if changes {
+            self.version += 1;
+        }
+    }
+
+    pub fn reset_form(&mut self) {
+        let mut changes = false;
+
+        for (_name, group) in self.groups.iter_mut() {
+            if group.members.is_empty() {
+                continue;
+            }
+
+            let field_keys: Vec<usize> = group
+                .members
+                .iter()
+                .filter(|k| !self.fields[**k].radio_group)
+                .copied()
+                .collect();
+
+            let radio_keys: Vec<usize> = group
+                .members
+                .iter()
+                .filter(|k| self.fields[**k].radio_group)
+                .copied()
+                .collect();
+
+            if !radio_keys.is_empty() {
+                if group.value != group.default {
+                    group.value = group.default.clone();
+                    changes = true;
+                }
+            }
+
+            for key in field_keys {
+                let field = &mut self.fields[key];
+                if field.value != field.default {
+                    changes = true;
+                    field.apply_value(field.default.clone());
+                }
+            }
+        }
+
         if changes {
             self.version += 1;
         }
