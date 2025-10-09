@@ -53,7 +53,7 @@ pub use form::Form;
 pub use form::PwtForm;
 
 mod number;
-pub use number::Number;
+pub use number::{Number, NumberTypeInfo};
 #[doc(hidden)]
 pub use number::PwtNumber;
 
