@@ -10,7 +10,7 @@ use super::{Container, CssBorderBuilder, ListTile};
 
 /// List tile size Observer.
 ///
-/// This is Used by the [List] implementation to track list tile size changes.
+/// This is Used by the [super::List] implementation to track list tile size changes.
 #[widget(pwt=crate, comp=crate::widget::PwtListTileObserver)]
 #[derive(Default, Debug, Clone, PartialEq, Properties)]
 #[builder]

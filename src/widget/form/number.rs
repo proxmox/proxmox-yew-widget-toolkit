@@ -26,7 +26,9 @@ const SPINNER_REPEAT_INTERVAL_MS: u32 = 50;
 
 pub type PwtNumber<T> = ManagedFieldMaster<NumberField<T>>;
 
-#[doc(hidden)]
+/// Helper trait for rust number types, implements step up/down and value to number conversion.
+///
+/// Used by [Number], which is implemented for all types implementing this trait.
 pub trait NumberTypeInfo:
     Into<Value> + PartialEq + PartialOrd + Display + Default + Debug + Copy + Clone + Sized + 'static
 {
