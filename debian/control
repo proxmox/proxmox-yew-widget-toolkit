@@ -60,11 +60,10 @@ Build-Depends-Arch: cargo:native <!nocheck>,
  librust-yew-0.21+default-dev <!nocheck>,
  librust-yew-router-0.18+default-dev <!nocheck>
 Maintainer: Proxmox Support Team <support@proxmox.com>
-Standards-Version: 4.7.0
+Standards-Version: 4.7.2
 Vcs-Git: git://git.proxmox.com/git/ui/proxmox-yew-widget-toolkit.git
 Vcs-Browser: https://git.proxmox.com/?p=ui/proxmox-yew-widget-toolkit.git
 X-Cargo-Crate: pwt
-Rules-Requires-Root: no
 
 Package: librust-pwt-dev
 Architecture: any
@@ -130,7 +129,7 @@ Provides:
  librust-pwt-0+default-dev (= ${binary:Version}),
  librust-pwt-0.7-dev (= ${binary:Version}),
  librust-pwt-0.7+default-dev (= ${binary:Version}),
- librust-pwt-0.7.1-dev (= ${binary:Version}),
- librust-pwt-0.7.1+default-dev (= ${binary:Version})
+ librust-pwt-0.7.2-dev (= ${binary:Version}),
+ librust-pwt-0.7.2+default-dev (= ${binary:Version})
 Description: Widgets for yew - Rust source code
  Source code for Debianized Rust crate "pwt"

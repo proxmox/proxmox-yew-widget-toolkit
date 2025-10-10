@@ -1,3 +1,35 @@
+rust-pwt (0.7.2) trixie; urgency=medium
+
+  * form: expose NumberTypeInfo, add basic doc for NumberTypeInfo
+
+  * widget: catalog loader: set text direction after load
+
+  * form context: fix radio_group dirty/reset
+
+  * state: keyed slab tree: panic on inserting duplicate keys in debug mode
+
+  * state: keyed slab tree: add key -> node_id cache
+
+  * managed field: re-evaluate unmanaged fields after validation function update
+
+  * combobox/selector: allow to set forced value
+
+  * update to newer web-sys RequestInit interfaces
+
+  * combobox: use IntoIterator to simplify type resolution
+
+  * combobox: implement from_key_value_pairs
+
+  * form context: increase version on field option changes
+
+  * form context: disabled fields are not dirty
+
+  * dropdown: set placeholder opacity to 50%
+
+  * form context: disabled fields cannot make the form invalid
+
+ -- Proxmox Support Team <support@proxmox.com>  Fri, 10 Oct 2025 09:25:09 +0200
+
 rust-pwt (0.7.1) trixie; urgency=medium
 
   * dom: align: use dvh/dvw for max-{height,width}
