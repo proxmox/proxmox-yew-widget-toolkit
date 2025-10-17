@@ -132,4 +132,15 @@ pub trait FieldBuilder: Into<VNode> {
     fn set_placeholder(&mut self, placeholder: impl IntoPropValue<Option<AttrValue>>) {
         self.as_input_props_mut().placeholder = placeholder.into_prop_value();
     }
+
+    /// Builder style method to set the `readonly` flag
+    fn read_only(mut self, read_only: bool) -> Self {
+        self.set_read_only(read_only);
+        self
+    }
+
+    /// Method to set the `readonly` flag
+    fn set_read_only(&mut self, read_only: bool) {
+        self.as_input_props_mut().read_only = read_only;
+    }
 }

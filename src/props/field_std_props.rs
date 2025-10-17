@@ -46,6 +46,10 @@ pub struct FieldStdProps {
     /// empty.
     #[prop_or_default]
     pub submit_empty: bool,
+
+    /// Marks as a field as read-only. Allows users to still select a field, but not edit it.
+    #[prop_or_default]
+    pub read_only: bool,
 }
 
 impl Default for FieldStdProps {
@@ -86,6 +90,13 @@ impl FieldStdProps {
         if self.autofocus {
             attr_map.insert(
                 AttrValue::Static("autofocus"),
+                (AttrValue::Static(""), ApplyAttributeAs::Attribute),
+            );
+        }
+
+        if self.read_only {
+            attr_map.insert(
+                AttrValue::Static("readonly"),
                 (AttrValue::Static(""), ApplyAttributeAs::Attribute),
             );
         }
