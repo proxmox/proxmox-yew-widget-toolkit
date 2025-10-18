@@ -46,6 +46,10 @@ pub struct Dialog {
     #[prop_or_default]
     pub children: Vec<VNode>,
 
+    /// Tools, displayed right aligned in the header.
+    #[prop_or_default]
+    pub tools: Vec<VNode>,
+
     /// CSS style for the dialog window
     #[prop_or_default]
     pub styles: CssStyles,
@@ -95,6 +99,17 @@ impl Dialog {
     }
 
     crate::impl_yew_std_props_builder!();
+
+    /// Builder style method to add a tool.
+    pub fn with_tool(mut self, tool: impl Into<VNode>) -> Self {
+        self.add_tool(tool);
+        self
+    }
+
+    /// Method to add a tool.
+    pub fn add_tool(&mut self, tool: impl Into<VNode>) {
+        self.tools.push(tool.into());
+    }
 }
 
 pub enum Msg {
@@ -456,6 +471,8 @@ impl Component for PwtDialog {
             )
             .header_class(props.draggable.then_some("pwt-draggable"))
             .border(false);
+
+	panel.tools.extend(props.tools.clone());
 
         if props.on_close.is_some() {
             panel.add_tool(
