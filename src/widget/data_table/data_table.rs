@@ -882,7 +882,7 @@ impl<S: DataStore> PwtDataTable<S> {
             .class(props.borderless.then_some("table-borderless"))
             .style("display", "table")
             .style("table-layout", fixed_mode.then_some("fixed"))
-            .style("width", fixed_mode.then_some("1px")) // required by table-layout fixed
+            .style("width", if fixed_mode { "1px" } else { "100%" }) // table-layout fixed requires 1px
             .style("position", "relative")
             .style("top", format!("{offset}px"))
             .with_child(first_row);
