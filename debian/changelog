@@ -1,3 +1,17 @@
+rust-pwt (0.7.3) trixie; urgency=medium
+
+  * dialog: allow one to add tools, which get displayed right-aligned in the
+    header.
+
+  * data table: fix content width for non-fixed tables.
+
+  * field props: add readonly as standard field props and to the field
+    builder. Marking a field as `readonly` as opposed to disabled, allows
+    users to still select and copy the value, and it should not be displayed
+    as greyed out.
+
+ -- Proxmox Support Team <support@proxmox.com>  Wed, 22 Oct 2025 07:39:00 +0200
+
 rust-pwt (0.7.2) trixie; urgency=medium
 
   * form: expose NumberTypeInfo, add basic doc for NumberTypeInfo
