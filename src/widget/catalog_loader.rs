@@ -79,6 +79,7 @@ pub struct PwtCatalogLoader {
     lang: String,
     last_url: String,
     state: LoadState,
+    loaded_once: bool,
 }
 
 impl Component for PwtCatalogLoader {
@@ -101,6 +102,7 @@ impl Component for PwtCatalogLoader {
             last_url: String::new(),
             state: LoadState::Idle,
             _observer,
+            loaded_once: false,
         }
     }
 
@@ -115,6 +117,7 @@ impl Component for PwtCatalogLoader {
                 } else {
                     log::warn!("could not load language info for '{}'", self.lang);
                 }
+                self.loaded_once = true;
                 self.state = LoadState::Idle;
                 true
             }
@@ -144,7 +147,7 @@ impl Component for PwtCatalogLoader {
     fn view(&self, ctx: &yew::Context<Self>) -> yew::Html {
         let props = ctx.props();
 
-        if matches!(self.state, LoadState::LoadFinished(_)) {
+        if !self.loaded_once || matches!(self.state, LoadState::LoadFinished(_)) {
             html! {}
         } else {
             html! {props.body.clone()}
