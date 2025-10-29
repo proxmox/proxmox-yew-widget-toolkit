@@ -81,6 +81,7 @@ impl InputPanel {
             if advanced { "1" } else { "0" }
         );
 
+        let two_column = self.two_column;
         self.add_custom_child_impl(
             FieldPosition::Large,
             advanced,
@@ -90,6 +91,8 @@ impl InputPanel {
                 .margin_y(2)
                 .into(),
         );
+        // Note: do not change two_column when adding a spacer!
+        self.two_column = two_column;
     }
 
     /// Builder style method to add a custom child in the first column
