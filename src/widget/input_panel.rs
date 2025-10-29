@@ -88,7 +88,6 @@ impl InputPanel {
             Container::from_tag("hr")
                 .key(key)
                 .class("pwt-w-100")
-                .margin_y(2)
                 .into(),
         );
         // Note: do not change two_column when adding a spacer!
