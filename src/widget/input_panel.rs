@@ -8,7 +8,7 @@ use pwt_macros::{builder, widget};
 
 use crate::prelude::*;
 use crate::props::{PwtSpace, WidgetStyleBuilder};
-use crate::widget::{Container, FieldLabel};
+use crate::widget::{Container, FieldLabel, Row};
 
 pub enum FieldPosition {
     Left,
@@ -426,6 +426,42 @@ impl InputPanel {
         field: impl FieldBuilder,
     ) {
         self.add_field_impl(FieldPosition::Large, advanced, hidden, label, field)
+    }
+
+    /// Builder style method to add a single line field.
+    pub fn with_single_line_field(
+        mut self,
+        advanced: bool,
+        hidden: bool,
+        label: impl Into<FieldLabel>,
+        field: impl FieldBuilder,
+    ) -> Self {
+        self.add_single_line_field(advanced, hidden, label, field);
+        self
+    }
+
+    /// Method to add a field with label at the left column, always use a single line
+    ///
+    /// This is usefull for mobile UI to render boolean inputs.
+    ///
+    /// For desktop layout, this simple calls `add_field_with_options(FieldPosition::Left, ...)`.
+    pub fn add_single_line_field(
+        &mut self,
+        advanced: bool,
+        hidden: bool,
+        label: impl Into<FieldLabel>,
+        field: impl FieldBuilder,
+    ) {
+        if self.mobile {
+            let row = Row::new()
+                .class(crate::css::AlignItems::Center)
+                .with_child(label.into())
+                .with_flex_spacer()
+                .with_child(field);
+            self.add_custom_child_impl(FieldPosition::Left, advanced, hidden, row.into());
+        } else {
+            self.add_field_impl(FieldPosition::Left, advanced, hidden, label, field);
+        }
     }
 }
 
