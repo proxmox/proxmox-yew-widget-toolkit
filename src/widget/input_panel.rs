@@ -7,7 +7,7 @@ use yew::virtual_dom::{Key, Listeners, VList, VTag};
 use pwt_macros::{builder, widget};
 
 use crate::prelude::*;
-use crate::props::WidgetStyleBuilder;
+use crate::props::{PwtSpace, WidgetStyleBuilder};
 use crate::widget::{Container, FieldLabel};
 
 pub enum FieldPosition {
@@ -39,12 +39,21 @@ pub struct InputPanel {
     #[prop_or_default]
     #[builder(IntoPropValue, into_prop_value)]
     /// A custom label width in the grid column template.
+    ///
+    /// This is ignored by the mobile view (use field_width instead).
     pub label_width: Option<AttrValue>,
 
     #[prop_or_default]
     #[builder(IntoPropValue, into_prop_value)]
     /// A custom field width in the grid column template
     pub field_width: Option<AttrValue>,
+
+    /// Layout for mobile devices.
+    ///
+    /// This renders all fields using a single row (ignores [FieldPosition]), and positions labels above fields.
+    #[prop_or_default]
+    #[builder]
+    pub mobile: bool,
 }
 
 impl InputPanel {
@@ -161,24 +170,29 @@ impl InputPanel {
         }
 
         let style = if visible {
-            let (row, start, span) = match column {
-                FieldPosition::Left => {
-                    self.left_count += 1;
-                    (self.left_count, 1, 4)
-                }
-                FieldPosition::Right => {
-                    self.two_column = true;
-                    self.right_count += 1;
-                    (self.right_count, 4, -1)
-                }
-                FieldPosition::Large => {
-                    self.two_column = true;
+            let (row, start, span) = if self.mobile {
+                self.left_count += 1; // ignore position
+                (self.left_count, 1, -1)
+            } else {
+                match column {
+                    FieldPosition::Left => {
+                        self.left_count += 1;
+                        (self.left_count, 1, 4)
+                    }
+                    FieldPosition::Right => {
+                        self.two_column = true;
+                        self.right_count += 1;
+                        (self.right_count, 4, -1)
+                    }
+                    FieldPosition::Large => {
+                        self.two_column = true;
 
-                    let max = self.left_count.max(self.right_count);
-                    self.left_count = max + 1;
-                    self.right_count = max + 1;
+                        let max = self.left_count.max(self.right_count);
+                        self.left_count = max + 1;
+                        self.right_count = max + 1;
 
-                    (self.left_count, 1, -1)
+                        (self.left_count, 1, -1)
+                    }
                 }
             };
             format!("grid-row: {}; grid-column: {}/{};", row, start, span)
@@ -186,7 +200,6 @@ impl InputPanel {
             "display: none;".to_string()
         };
 
-        let class = classes!("pwt-align-self-center");
         let key = match child.key() {
             Some(key) => key.clone(),
             None => {
@@ -196,9 +209,22 @@ impl InputPanel {
             }
         };
 
-        self.add_child(html! {
-            <div {class} {key} {style}>{child}</div>
-        });
+        if self.mobile {
+            self.add_child(
+                Container::new()
+                    .key(key)
+                    .attribute("style", style)
+                    .with_child(child),
+            );
+        } else {
+            self.add_child(
+                Container::new()
+                    .key(key)
+                    .class("pwt-align-self-center")
+                    .attribute("style", style)
+                    .with_child(child),
+            );
+        }
     }
 
     fn add_field_impl(
@@ -215,24 +241,29 @@ impl InputPanel {
         }
 
         let (label_column, row, field_class) = if visible {
-            match column {
-                FieldPosition::Left => {
-                    self.left_count += 1;
-                    (1, self.left_count, "pwt-grid-column-2")
-                }
-                FieldPosition::Right => {
-                    self.two_column = true;
-                    self.right_count += 1;
-                    (3, self.right_count, "pwt-grid-column-4")
-                }
-                FieldPosition::Large => {
-                    self.two_column = true;
+            if self.mobile {
+                self.left_count += 1; // ignore position
+                (1, self.left_count, "pwt-single-grid-row")
+            } else {
+                match column {
+                    FieldPosition::Left => {
+                        self.left_count += 1;
+                        (1, self.left_count, "pwt-grid-column-2")
+                    }
+                    FieldPosition::Right => {
+                        self.two_column = true;
+                        self.right_count += 1;
+                        (3, self.right_count, "pwt-grid-column-4")
+                    }
+                    FieldPosition::Large => {
+                        self.two_column = true;
 
-                    let max = self.left_count.max(self.right_count);
-                    self.left_count = max + 1;
-                    self.right_count = max + 1;
+                        let max = self.left_count.max(self.right_count);
+                        self.left_count = max + 1;
+                        self.right_count = max + 1;
 
-                    (1, self.left_count, "pwt-fill-grid-row")
+                        (1, self.left_count, "pwt-fill-grid-row")
+                    }
                 }
             }
         } else {
@@ -250,15 +281,9 @@ impl InputPanel {
         if label.std_props.key.is_none() {
             label.set_key(format!("label_{}", label.label));
         }
-        let class = classes!(
-            format!("pwt-grid-column-{}", label_column),
-            "pwt-align-self-center",
-            field.is_disabled().then_some("pwt-label-disabled"),
-        );
-
-        self.add_child(label.class(class).attribute("style", style.clone()));
 
         let name = field.as_input_props().name.clone();
+        let is_disabled = field.is_disabled();
         let field = field.label_id(label_id).into();
         let key = match field.key() {
             Some(key) => key.clone(),
@@ -271,10 +296,35 @@ impl InputPanel {
             },
         };
 
-        let class = classes!(field_class, "pwt-align-self-center");
-        self.add_child(html! {
-            <div {key} {class} {style}>{field}</div>
-        });
+        if self.mobile {
+            let label_class = classes!(is_disabled.then_some("pwt-label-disabled"),);
+            let field_with_label = Container::new()
+                .key(key)
+                .class(crate::css::FlexDirection::Column)
+                .style("display", if visible { "flex" } else { "none" })
+                .style("grid-row", visible.then(|| row.to_string()))
+                .style("grid-column", "1/2")
+                .with_child(label.class(label_class).padding_bottom(PwtSpace::Em(0.3)))
+                .with_child(field);
+            self.add_child(field_with_label);
+        } else {
+            self.add_child(
+                label
+                    .class("pwt-align-self-center")
+                    .class(format!("pwt-grid-column-{}", label_column))
+                    .class(is_disabled.then_some("pwt-label-disabled"))
+                    .attribute("style", style.clone()),
+            );
+
+            self.add_child(
+                Container::new()
+                    .key(key)
+                    .class("pwt-align-self-center")
+                    .class(field_class)
+                    .attribute("style", style)
+                    .with_child(field),
+            );
+        }
     }
 
     /// Builder style method to add a field with label at the left column.
@@ -387,29 +437,39 @@ impl Default for InputPanel {
 
 impl IntoVTag for InputPanel {
     fn into_vtag_with_ref(mut self, node_ref: NodeRef) -> VTag {
-        if self.two_column {
-            self.add_class("pwt-form-grid-col4")
+        if self.mobile {
+            self.add_class("pwt-d-grid");
+            self.add_class("pwt-gap-2");
+
+            self.set_style(
+                "grid-template-columns",
+                self.field_width.clone().unwrap_or(AttrValue::Static("1fr")),
+            )
         } else {
-            self.add_class("pwt-form-grid-col2")
-        }
-
-        if self.label_width.is_some() || self.field_width.is_some() {
-            let mut column_template = format!(
-                "{} {}",
-                self.label_width
-                    .as_deref()
-                    .unwrap_or("minmax(130px, 0.65fr)"),
-                self.field_width.as_deref().unwrap_or("minmax(200px, 1fr)")
-            );
-
             if self.two_column {
-                column_template = format!(
-                    "{} calc(var(--pwt-spacer-4) * 2) {}",
-                    column_template, column_template
-                );
+                self.add_class("pwt-form-grid-col4");
+            } else {
+                self.add_class("pwt-form-grid-col2");
             }
 
-            self.set_style("grid-template-columns", column_template.to_string());
+            if self.label_width.is_some() || self.field_width.is_some() {
+                let mut column_template = format!(
+                    "{} {}",
+                    self.label_width
+                        .as_deref()
+                        .unwrap_or("minmax(130px, 0.65fr)"),
+                    self.field_width.as_deref().unwrap_or("minmax(200px, 1fr)")
+                );
+
+                if self.two_column {
+                    column_template = format!(
+                        "{} calc(var(--pwt-spacer-4) * 2) {}",
+                        column_template, column_template
+                    );
+                }
+
+                self.set_style("grid-template-columns", column_template.to_string());
+            }
         }
 
         let attributes = self.std_props.cumulate_attributes(None::<&str>);
