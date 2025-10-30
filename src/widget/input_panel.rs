@@ -85,10 +85,8 @@ impl InputPanel {
         self.add_custom_child_impl(
             FieldPosition::Large,
             advanced,
-            Container::from_tag("hr")
-                .key(key)
-                .class("pwt-w-100")
-                .into(),
+            false,
+            Container::from_tag("hr").key(key).class("pwt-w-100").into(),
         );
         // Note: do not change two_column when adding a spacer!
         self.two_column = two_column;
@@ -102,7 +100,30 @@ impl InputPanel {
 
     /// Adds custom child in the first column
     pub fn add_custom_child(&mut self, child: impl Into<Html>) {
-        self.add_custom_child_impl(FieldPosition::Left, false, child.into());
+        self.add_custom_child_impl(FieldPosition::Left, false, false, child.into());
+    }
+
+    /// Builder style method to add a custom child and options
+    pub fn with_custom_child_and_options(
+        mut self,
+        position: FieldPosition,
+        advanced: bool,
+        hidden: bool,
+        child: impl Into<Html>,
+    ) -> Self {
+        self.add_custom_child_with_options(position, advanced, hidden, child);
+        self
+    }
+
+    /// Method to add a custon child with options
+    pub fn add_custom_child_with_options(
+        &mut self,
+        position: FieldPosition,
+        advanced: bool,
+        hidden: bool,
+        child: impl Into<Html>,
+    ) {
+        self.add_custom_child_impl(position, advanced, hidden, child.into())
     }
 
     /// Builder style method to add a custom child in the second column
@@ -113,7 +134,7 @@ impl InputPanel {
 
     /// Adds custom child in the second column
     pub fn add_right_custom_child(&mut self, child: impl Into<Html>) {
-        self.add_custom_child_impl(FieldPosition::Right, false, child.into());
+        self.add_custom_child_impl(FieldPosition::Right, false, false, child.into());
     }
 
     /// Builder style method to add a large custom child
@@ -124,38 +145,45 @@ impl InputPanel {
 
     /// Adds large custom child
     pub fn add_large_custom_child(&mut self, child: impl Into<Html>) {
-        self.add_custom_child_impl(FieldPosition::Large, false, child.into());
+        self.add_custom_child_impl(FieldPosition::Large, false, false, child.into());
     }
 
-    fn add_custom_child_impl(&mut self, column: FieldPosition, advanced: bool, child: Html) {
-        let (row, start, span) = match column {
-            FieldPosition::Left => {
-                self.left_count += 1;
-                (self.left_count, 1, 4)
-            }
-            FieldPosition::Right => {
-                self.two_column = true;
-                self.right_count += 1;
-                (self.right_count, 4, -1)
-            }
-            FieldPosition::Large => {
-                self.two_column = true;
+    fn add_custom_child_impl(
+        &mut self,
+        column: FieldPosition,
+        advanced: bool,
+        hidden: bool,
+        child: Html,
+    ) {
+        let mut visible = if advanced { self.show_advanced } else { true };
+        if hidden {
+            visible = false;
+        }
 
-                let max = self.left_count.max(self.right_count);
-                self.left_count = max + 1;
-                self.right_count = max + 1;
+        let style = if visible {
+            let (row, start, span) = match column {
+                FieldPosition::Left => {
+                    self.left_count += 1;
+                    (self.left_count, 1, 4)
+                }
+                FieldPosition::Right => {
+                    self.two_column = true;
+                    self.right_count += 1;
+                    (self.right_count, 4, -1)
+                }
+                FieldPosition::Large => {
+                    self.two_column = true;
 
-                (self.left_count, 1, -1)
-            }
-        };
+                    let max = self.left_count.max(self.right_count);
+                    self.left_count = max + 1;
+                    self.right_count = max + 1;
 
-        let style = if !advanced || self.show_advanced {
+                    (self.left_count, 1, -1)
+                }
+            };
             format!("grid-row: {}; grid-column: {}/{};", row, start, span)
         } else {
-            format!(
-                "grid-row: {}; grid-column: {}/{}; display: none",
-                row, start, span
-            )
+            "display: none;".to_string()
         };
 
         let class = classes!("pwt-align-self-center");
