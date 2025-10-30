@@ -453,11 +453,21 @@ impl InputPanel {
         field: impl FieldBuilder,
     ) {
         if self.mobile {
+            let name = field
+                .as_input_props()
+                .name
+                .clone()
+                .map(|name| Key::from(name.to_string()));
+            let field = field.into();
+            let key = field.key().cloned().or(name);
+
             let row = Row::new()
+                .key(key)
                 .class(crate::css::AlignItems::Center)
                 .with_child(label.into())
                 .with_flex_spacer()
                 .with_child(field);
+
             self.add_custom_child_impl(FieldPosition::Left, advanced, hidden, row.into());
         } else {
             self.add_field_impl(FieldPosition::Left, advanced, hidden, label, field);
