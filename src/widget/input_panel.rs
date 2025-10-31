@@ -471,9 +471,23 @@ impl InputPanel {
         advanced: bool,
         hidden: bool,
         label: impl Into<FieldLabel>,
-        field: impl Labelable,
+        mut field: impl Labelable,
     ) {
         if self.mobile {
+            let label_id = crate::widget::get_unique_element_id();
+
+            let is_disabled = field.disabled();
+            let mut label: FieldLabel = label
+                .into()
+                .id(label_id.clone())
+                .class(crate::css::Flex::Fill)
+                .class(is_disabled.then_some("pwt-label-disabled"));
+            if label.std_props.key.is_none() {
+                label.set_key(format!("label_{}", label.label));
+            }
+
+            field.set_label_id(label_id.into());
+
             let name = field.name().map(|name| Key::from(name.to_string()));
             let field = field.into();
             let key = field.key().cloned().or(name);
@@ -481,8 +495,7 @@ impl InputPanel {
             let row = Row::new()
                 .key(key)
                 .class(crate::css::AlignItems::Center)
-                .with_child(label.into())
-                .with_flex_spacer()
+                .with_child(label)
                 .with_child(field);
 
             self.add_custom_child_impl(FieldPosition::Left, advanced, hidden, row.into());
