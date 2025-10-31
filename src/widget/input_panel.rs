@@ -16,6 +16,33 @@ pub enum FieldPosition {
     Large,
 }
 
+/// Allow a component te be associated with label
+///
+/// [InputPanel] `add_field` functions requires components to implement this trait. The trait
+/// is automatically implemented for standard fields (impl FieldBuilder).
+pub trait Labelable: Into<Html> {
+    /// Should return the field name (used to generate default component key)
+    fn name(&self) -> Option<AttrValue>;
+    /// Assign a label_id to the component
+    fn set_label_id(&mut self, label_id: AttrValue);
+    /// Returns if the field is diabled.
+    fn disabled(&self) -> bool;
+}
+
+impl<T: FieldBuilder> Labelable for T {
+    fn name(&self) -> Option<AttrValue> {
+        self.as_input_props().name.clone()
+    }
+
+    fn set_label_id(&mut self, label_id: AttrValue) {
+        self.set_label_id(label_id);
+    }
+
+    fn disabled(&self) -> bool {
+        self.as_input_props().disabled
+    }
+}
+
 /// Layout widget for forms with one or two columns.
 ///
 /// This container show input fields with labels at different regions
@@ -233,7 +260,8 @@ impl InputPanel {
         advanced: bool,
         hidden: bool,
         label: impl Into<FieldLabel>,
-        field: impl FieldBuilder,
+        //field: impl Labelable,
+        mut field: impl Labelable,
     ) {
         let mut visible = if advanced { self.show_advanced } else { true };
         if hidden {
@@ -282,9 +310,10 @@ impl InputPanel {
             label.set_key(format!("label_{}", label.label));
         }
 
-        let name = field.as_input_props().name.clone();
-        let is_disabled = field.is_disabled();
-        let field = field.label_id(label_id).into();
+        let name = field.name();
+        let is_disabled = field.disabled();
+        field.set_label_id(label_id.into());
+        let field = field.into();
         let key = match field.key() {
             Some(key) => key.clone(),
             None => match name {
@@ -328,7 +357,7 @@ impl InputPanel {
     }
 
     /// Builder style method to add a field with label at the left column.
-    pub fn with_field(mut self, label: impl Into<FieldLabel>, field: impl FieldBuilder) -> Self {
+    pub fn with_field(mut self, label: impl Into<FieldLabel>, field: impl Labelable) -> Self {
         self.add_field(label, field);
         self
     }
@@ -340,7 +369,7 @@ impl InputPanel {
         advanced: bool,
         hidden: bool,
         label: impl Into<FieldLabel>,
-        field: impl FieldBuilder,
+        field: impl Labelable,
     ) -> Self {
         self.add_field_with_options(position, advanced, hidden, label, field);
         self
@@ -349,14 +378,14 @@ impl InputPanel {
     pub fn with_advanced_field(
         mut self,
         label: impl Into<FieldLabel>,
-        field: impl FieldBuilder,
+        field: impl Labelable,
     ) -> Self {
         self.add_field_with_options(FieldPosition::Left, true, false, label, field);
         self
     }
 
     /// Method to add a field with label at the left column.
-    pub fn add_field(&mut self, label: impl Into<FieldLabel>, field: impl FieldBuilder) {
+    pub fn add_field(&mut self, label: impl Into<FieldLabel>, field: impl Labelable) {
         self.add_field_impl(FieldPosition::Left, false, false, label, field)
     }
 
@@ -367,17 +396,13 @@ impl InputPanel {
         advanced: bool,
         hidden: bool,
         label: impl Into<FieldLabel>,
-        field: impl FieldBuilder,
+        field: impl Labelable,
     ) {
         self.add_field_impl(position, advanced, hidden, label, field)
     }
 
     /// Builder style method to add a field with label at the right column.
-    pub fn with_right_field(
-        mut self,
-        label: impl Into<FieldLabel>,
-        field: impl FieldBuilder,
-    ) -> Self {
+    pub fn with_right_field(mut self, label: impl Into<FieldLabel>, field: impl Labelable) -> Self {
         self.add_right_field(label, field);
         self
     }
@@ -386,23 +411,19 @@ impl InputPanel {
     pub fn with_right_advanced_field(
         mut self,
         label: impl Into<FieldLabel>,
-        field: impl FieldBuilder,
+        field: impl Labelable,
     ) -> Self {
         self.add_field_with_options(FieldPosition::Right, true, false, label, field);
         self
     }
 
     /// Method to add a field with label at the right column.
-    pub fn add_right_field(&mut self, label: impl Into<FieldLabel>, field: impl FieldBuilder) {
+    pub fn add_right_field(&mut self, label: impl Into<FieldLabel>, field: impl Labelable) {
         self.add_field_impl(FieldPosition::Right, false, false, label, field)
     }
 
     /// Builder style method to add a large field spanning both columns.
-    pub fn with_large_field(
-        mut self,
-        label: impl Into<FieldLabel>,
-        field: impl FieldBuilder,
-    ) -> Self {
+    pub fn with_large_field(mut self, label: impl Into<FieldLabel>, field: impl Labelable) -> Self {
         self.add_large_field(false, false, label, field);
         self
     }
@@ -411,7 +432,7 @@ impl InputPanel {
     pub fn with_large_advanced_field(
         mut self,
         label: impl Into<FieldLabel>,
-        field: impl FieldBuilder,
+        field: impl Labelable,
     ) -> Self {
         self.add_large_field(true, false, label, field);
         self
@@ -423,7 +444,7 @@ impl InputPanel {
         advanced: bool,
         hidden: bool,
         label: impl Into<FieldLabel>,
-        field: impl FieldBuilder,
+        field: impl Labelable,
     ) {
         self.add_field_impl(FieldPosition::Large, advanced, hidden, label, field)
     }
@@ -434,7 +455,7 @@ impl InputPanel {
         advanced: bool,
         hidden: bool,
         label: impl Into<FieldLabel>,
-        field: impl FieldBuilder,
+        field: impl Labelable,
     ) -> Self {
         self.add_single_line_field(advanced, hidden, label, field);
         self
@@ -450,14 +471,10 @@ impl InputPanel {
         advanced: bool,
         hidden: bool,
         label: impl Into<FieldLabel>,
-        field: impl FieldBuilder,
+        field: impl Labelable,
     ) {
         if self.mobile {
-            let name = field
-                .as_input_props()
-                .name
-                .clone()
-                .map(|name| Key::from(name.to_string()));
+            let name = field.name().map(|name| Key::from(name.to_string()));
             let field = field.into();
             let key = field.key().cloned().or(name);
 

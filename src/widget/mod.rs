@@ -72,7 +72,7 @@ mod input;
 pub use input::Input;
 
 mod input_panel;
-pub use input_panel::{FieldPosition, InputPanel};
+pub use input_panel::{FieldPosition, InputPanel, Labelable};
 
 mod language_selector;
 pub use language_selector::LanguageSelector;
