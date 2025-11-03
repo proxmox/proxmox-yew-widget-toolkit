@@ -1,3 +1,29 @@
+rust-pwt (0.7.4) trixie; urgency=medium
+
+  * widget: navigation drawer: hide custom components when not expanded
+
+  * form context: do not return disabled field data in get_submit_data
+
+  * tree-wide: rustc lint fix: hiding a lifetime that's elided elsewhere is confusing
+
+  * input panel: new Labeable trait
+
+  * input panel: add with_single_line_field
+
+  * input panel: add mobile property
+
+  * catalog loader: defer first content rendering after language is loaded
+
+  * input panel: add method to add custom child with options
+
+  * input panel: remove margin from spacer
+
+  * input panel: do not change two_column flag when adding a spacer
+
+  * removed delete_empty_values helper because it is proxmox specific
+
+ -- Proxmox Support Team <support@proxmox.com>  Mon, 03 Nov 2025 13:54:07 +0100
+
 rust-pwt (0.7.3) trixie; urgency=medium
 
   * dialog: allow one to add tools, which get displayed right-aligned in the
