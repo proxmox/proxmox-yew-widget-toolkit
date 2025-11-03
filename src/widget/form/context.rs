@@ -954,7 +954,7 @@ impl FormContextState {
             if field_keys.len() == 1 {
                 let key = field_keys[0];
                 let field = &self.fields[key];
-                if field.options.submit {
+                if !field.options.disabled && field.options.submit {
                     match &field.result {
                         Ok(value) => {
                             if !field.options.submit_empty & value_is_empty(value) {
