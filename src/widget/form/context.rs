@@ -139,14 +139,14 @@ pub struct FieldHandle {
 
 impl FieldHandle {
     /// Lock the form context for read access.
-    pub fn read(&self) -> FormContextReadGuard {
+    pub fn read(&self) -> FormContextReadGuard<'_> {
         self.form_ctx.read()
     }
 
     /// Lock the form context for write access.
     ///
     /// Automatically notifies listeners when the guard is dropped.
-    pub fn write(&self) -> FormContextWriteGuard {
+    pub fn write(&self) -> FormContextWriteGuard<'_> {
         self.form_ctx.write()
     }
 
@@ -255,7 +255,7 @@ impl FormContext {
     }
 
     /// Lock the form context for read access.
-    pub fn read(&self) -> FormContextReadGuard {
+    pub fn read(&self) -> FormContextReadGuard<'_> {
         FormContextReadGuard {
             state: self.inner.borrow(),
         }
@@ -264,7 +264,7 @@ impl FormContext {
     /// Lock the form context for write access.
     ///
     /// Automatically notifies listeners when the guard is dropped.
-    pub fn write(&self) -> FormContextWriteGuard {
+    pub fn write(&self) -> FormContextWriteGuard<'_> {
         let cloned_self = Self {
             on_change: None,
             inner: self.inner.clone(),

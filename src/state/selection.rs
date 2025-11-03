@@ -192,7 +192,7 @@ impl Selection {
     /// # Panics
     ///
     /// Panics if the store is already locked.
-    pub fn write(&self) -> SelectionWriteGuard {
+    pub fn write(&self) -> SelectionWriteGuard<'_> {
         let cloned_self = Self {
             on_select: None,
             inner: self.inner.clone(),
@@ -210,7 +210,7 @@ impl Selection {
     /// # Panics
     ///
     /// Panics if the value is currently mutably locked.
-    pub fn read(&self) -> SelectionReadGuard {
+    pub fn read(&self) -> SelectionReadGuard<'_> {
         SelectionReadGuard {
             state: self.inner.borrow(),
         }

@@ -129,7 +129,7 @@ impl<T: 'static> Store<T> {
     /// # Panics
     ///
     /// Panics if the value is currently mutably locked.
-    pub fn read(&self) -> StoreReadGuard<T> {
+    pub fn read(&self) -> StoreReadGuard<'_, T> {
         self.try_read()
             .expect("Could not acquire read lock on store!")
     }
@@ -138,7 +138,7 @@ impl<T: 'static> Store<T> {
     ///
     /// Will return an error if the lock could not be acquired due to a write lock still being in
     /// place.
-    pub fn try_read(&self) -> Result<StoreReadGuard<T>, Error> {
+    pub fn try_read(&self) -> Result<StoreReadGuard<'_, T>, Error> {
         Ok(StoreReadGuard {
             state: self.inner.try_borrow()?,
         })
@@ -151,7 +151,7 @@ impl<T: 'static> Store<T> {
     /// Panics if the store is already locked.
     /// When the returned [StoreWriteGuard] is dropped, the store listeners
     /// are notified. To prevent that use [StoreWriteGuard::skip_update]
-    pub fn write(&self) -> StoreWriteGuard<T> {
+    pub fn write(&self) -> StoreWriteGuard<'_, T> {
         self.try_write()
             .expect("Could not acquire write lock on store!")
     }
@@ -160,7 +160,7 @@ impl<T: 'static> Store<T> {
     ///
     /// Will return an error if the lock could not be acquired due to a read or write lock still
     /// being in place.
-    pub fn try_write(&self) -> Result<StoreWriteGuard<T>, Error> {
+    pub fn try_write(&self) -> Result<StoreWriteGuard<'_, T>, Error> {
         Ok(StoreWriteGuard {
             state: self.inner.try_borrow_mut()?,
             update: true,
@@ -310,7 +310,7 @@ pub struct StoreNodeRef<'a, T> {
 }
 
 impl<T: 'static> DataNode<T> for StoreNodeRef<'_, T> {
-    fn record(&self) -> DataNodeDerefGuard<T> {
+    fn record(&self) -> DataNodeDerefGuard<'_, T> {
         let data = &self.state.data[self.node_id];
         let guard: Box<dyn Deref<Target = T>> = Box::new(data);
         DataNodeDerefGuard { guard }

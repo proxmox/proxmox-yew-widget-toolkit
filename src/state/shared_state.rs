@@ -120,7 +120,7 @@ impl<T> SharedState<T> {
     /// # Panics
     ///
     /// Panics if the store is already locked.
-    pub fn write(&self) -> SharedStateWriteGuard<T> {
+    pub fn write(&self) -> SharedStateWriteGuard<'_, T> {
         let cloned_self = Self {
             on_change: None,
             inner: self.inner.clone(),
@@ -139,7 +139,7 @@ impl<T> SharedState<T> {
     /// # Panics
     ///
     /// Panics if the shared state is currently mutably locked.
-    pub fn read(&self) -> SharedStateReadGuard<T> {
+    pub fn read(&self) -> SharedStateReadGuard<'_, T> {
         SharedStateReadGuard {
             borrowed_state: self.inner.borrow(),
         }

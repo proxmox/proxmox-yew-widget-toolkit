@@ -132,7 +132,7 @@ impl<T: 'static> TreeStore<T> {
     /// # Panics
     ///
     /// Panics if the value is currently mutably locked.
-    pub fn read(&self) -> TreeStoreReadGuard<T> {
+    pub fn read(&self) -> TreeStoreReadGuard<'_, T> {
         let tree = self.inner.borrow();
         TreeStoreReadGuard { tree }
     }
@@ -142,7 +142,7 @@ impl<T: 'static> TreeStore<T> {
     /// # Panics
     ///
     /// Panics if the store is already locked.
-    pub fn write(&self) -> TreeStoreWriteGuard<T> {
+    pub fn write(&self) -> TreeStoreWriteGuard<'_, T> {
         let tree = self.inner.borrow_mut();
 
         TreeStoreWriteGuard {
@@ -349,7 +349,7 @@ pub struct KeyedSlabTreeBorrowRef<'a, T: 'static> {
 }
 
 impl<T> DataNode<T> for KeyedSlabTreeBorrowRef<'_, T> {
-    fn record(&self) -> DataNodeDerefGuard<T> {
+    fn record(&self) -> DataNodeDerefGuard<'_, T> {
         let guard = Box::new(RecordGuard {
             node_id: self.node_id,
             tree: Ref::clone(&self.tree),

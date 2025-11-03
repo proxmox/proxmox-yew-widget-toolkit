@@ -8,7 +8,7 @@ use crate::props::{ExtractKeyFn, IntoFilterFn, IntoSorterFn};
 #[doc(hidden)]
 pub trait DataNode<T> {
     /// Access the record data.
-    fn record(&self) -> DataNodeDerefGuard<T>;
+    fn record(&self) -> DataNodeDerefGuard<'_, T>;
     /// View level. Can be different than TreeNode::level if view_root
     /// is not set (TreeNode::level - 1).
     fn level(&self) -> usize;

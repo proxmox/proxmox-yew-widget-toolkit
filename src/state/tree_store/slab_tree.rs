@@ -297,10 +297,10 @@ macro_rules! impl_slab_node_mut {
 }
 
 impl<T> SlabTreeNodeRef<'_, T> {
-    impl_slab_node_ref!(SlabTreeNodeRef<T>);
+    impl_slab_node_ref!(SlabTreeNodeRef<'_, T>);
 
     /// Iterate over children.
-    pub fn children(&self) -> SlabTreeChildren<T> {
+    pub fn children(&self) -> SlabTreeChildren<'_, T> {
         let entry = self.tree.get(self.node_id).unwrap();
         let pos = entry.children.is_some().then_some(0);
         SlabTreeChildren {
@@ -318,11 +318,11 @@ impl<T> SlabTreeNodeRef<'_, T> {
 }
 
 impl<T> SlabTreeNodeMut<'_, T> {
-    impl_slab_node_ref!(SlabTreeNodeRef<T>);
-    impl_slab_node_mut!(SlabTreeNodeMut<T>, SlabTree<T>);
+    impl_slab_node_ref!(SlabTreeNodeRef<'_, T>);
+    impl_slab_node_mut!(SlabTreeNodeMut<'_, T>, SlabTree<T>);
 
     /// Iterate over children.
-    pub fn children(&self) -> SlabTreeChildren<T> {
+    pub fn children(&self) -> SlabTreeChildren<'_, T> {
         let entry = self.tree.get(self.node_id).unwrap();
         let pos = entry.children.is_some().then_some(0);
         SlabTreeChildren {
@@ -333,7 +333,7 @@ impl<T> SlabTreeNodeMut<'_, T> {
     }
 
     /// Iterate over children (mutable).
-    pub fn children_mut(&mut self) -> SlabTreeChildrenMut<T> {
+    pub fn children_mut(&mut self) -> SlabTreeChildrenMut<'_, T> {
         let entry = self.tree.get(self.node_id).unwrap();
         let pos = entry.children.is_some().then_some(0);
         SlabTreeChildrenMut {
@@ -377,7 +377,7 @@ impl<T> SlabTree<T> {
     /// Set the root node.
     ///
     /// The current tree (if any) is discarded.
-    pub fn set_root(&mut self, record: T) -> SlabTreeNodeMut<T> {
+    pub fn set_root(&mut self, record: T) -> SlabTreeNodeMut<'_, T> {
         self.record_data_change();
 
         let last_root_id = self.root_id;
@@ -415,7 +415,7 @@ impl<T> SlabTree<T> {
     }
 
     /// Returns the root node.
-    pub fn root(&self) -> Option<SlabTreeNodeRef<T>> {
+    pub fn root(&self) -> Option<SlabTreeNodeRef<'_, T>> {
         self.root_id.map(|root_id| SlabTreeNodeRef {
             node_id: root_id,
             tree: self,
@@ -423,7 +423,7 @@ impl<T> SlabTree<T> {
     }
 
     /// Returns the mutable root node.
-    pub fn root_mut(&mut self) -> Option<SlabTreeNodeMut<T>> {
+    pub fn root_mut(&mut self) -> Option<SlabTreeNodeMut<'_, T>> {
         self.root_id.map(|root_id| SlabTreeNodeMut {
             node_id: root_id,
             tree: self,

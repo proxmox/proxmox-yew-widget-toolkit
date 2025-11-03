@@ -130,10 +130,10 @@ impl<T: 'static + DeserializeOwned + Serialize> Loader<T> {
         self.0.add_listener(move |_| cb.emit(me.clone()))
     }
 
-    pub fn read(&self) -> SharedStateReadGuard<LoaderState<T>> {
+    pub fn read(&self) -> SharedStateReadGuard<'_, LoaderState<T>> {
         self.0.read()
     }
-    pub fn write(&self) -> SharedStateWriteGuard<LoaderState<T>> {
+    pub fn write(&self) -> SharedStateWriteGuard<'_, LoaderState<T>> {
         self.0.write()
     }
 

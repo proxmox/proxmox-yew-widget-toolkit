@@ -60,11 +60,11 @@ impl<'a, T> KeyedSlabTreeNodeMut<'a, T> {
 }
 
 impl<T> KeyedSlabTreeNodeMut<'_, T> {
-    impl_slab_node_ref!(KeyedSlabTreeNodeRef<T>);
-    impl_slab_node_mut!(KeyedSlabTreeNodeMut<T>, KeyedSlabTree<T>);
+    impl_slab_node_ref!(KeyedSlabTreeNodeRef<'_, T>);
+    impl_slab_node_mut!(KeyedSlabTreeNodeMut<'_, T>, KeyedSlabTree<T>);
 
     /// Iterate over children.
-    pub fn children(&self) -> KeyedSlabTreeChildren<T> {
+    pub fn children(&self) -> KeyedSlabTreeChildren<'_, T> {
         let entry = self.tree.get(self.node_id).unwrap();
         let pos = entry.children.is_some().then_some(0);
         KeyedSlabTreeChildren {
@@ -75,7 +75,7 @@ impl<T> KeyedSlabTreeNodeMut<'_, T> {
     }
 
     /// Iterate over children (mutable).
-    pub fn children_mut(&mut self) -> KeyedSlabTreeChildrenMut<T> {
+    pub fn children_mut(&mut self) -> KeyedSlabTreeChildrenMut<'_, T> {
         let entry = self.tree.get(self.node_id).unwrap();
         let pos = entry.children.is_some().then_some(0);
         KeyedSlabTreeChildrenMut {
@@ -98,7 +98,7 @@ impl<T> KeyedSlabTreeNodeMut<'_, T> {
     }
 
     /// Find a node by key.
-    pub fn find_node_by_key(&self, key: &Key) -> Option<KeyedSlabTreeNodeRef<T>> {
+    pub fn find_node_by_key(&self, key: &Key) -> Option<KeyedSlabTreeNodeRef<'_, T>> {
         self.tree
             .find_subnode_by_key(key)
             .map(|node_id| KeyedSlabTreeNodeRef {
@@ -108,7 +108,7 @@ impl<T> KeyedSlabTreeNodeMut<'_, T> {
     }
 
     /// Find a node by key (mutable).
-    pub fn find_node_by_key_mut(&mut self, key: &Key) -> Option<KeyedSlabTreeNodeMut<T>> {
+    pub fn find_node_by_key_mut(&mut self, key: &Key) -> Option<KeyedSlabTreeNodeMut<'_, T>> {
         self.tree
             .find_subnode_by_key(key)
             .map(|node_id| KeyedSlabTreeNodeMut {
@@ -164,10 +164,10 @@ impl<T> KeyedSlabTreeNodeMut<'_, T> {
 }
 
 impl<T> KeyedSlabTreeNodeRef<'_, T> {
-    impl_slab_node_ref!(KeyedSlabTreeNodeRef<T>);
+    impl_slab_node_ref!(KeyedSlabTreeNodeRef<'_, T>);
 
     /// Iterate over children.
-    pub fn children(&self) -> KeyedSlabTreeChildren<T> {
+    pub fn children(&self) -> KeyedSlabTreeChildren<'_, T> {
         let entry = self.tree.get(self.node_id).unwrap();
         let pos = entry.children.is_some().then_some(0);
         KeyedSlabTreeChildren {
@@ -189,7 +189,7 @@ impl<T> KeyedSlabTreeNodeRef<'_, T> {
     }
 
     /// Find a node by key.
-    pub fn find_node_by_key(&self, key: &Key) -> Option<KeyedSlabTreeNodeRef<T>> {
+    pub fn find_node_by_key(&self, key: &Key) -> Option<KeyedSlabTreeNodeRef<'_, T>> {
         self.tree
             .find_subnode_by_key(key)
             .map(|node_id| KeyedSlabTreeNodeRef {
@@ -376,7 +376,7 @@ impl<T> KeyedSlabTree<T> {
     /// Set the root node.
     ///
     /// The current tree (if any) is discarded.
-    pub fn set_root(&mut self, record: T) -> KeyedSlabTreeNodeMut<T> {
+    pub fn set_root(&mut self, record: T) -> KeyedSlabTreeNodeMut<'_, T> {
         self.key_cache.clear();
         let key = self.extract_key(&record);
         let node = self.tree.set_root(record);
@@ -418,7 +418,7 @@ impl<T> KeyedSlabTree<T> {
     }
 
     /// Returns the root node.
-    pub fn root(&self) -> Option<KeyedSlabTreeNodeRef<T>> {
+    pub fn root(&self) -> Option<KeyedSlabTreeNodeRef<'_, T>> {
         self.tree.root_id.map(|root_id| KeyedSlabTreeNodeRef {
             node_id: root_id,
             tree: self,
@@ -426,7 +426,7 @@ impl<T> KeyedSlabTree<T> {
     }
 
     /// Returns the mutable root node.
-    pub fn root_mut(&mut self) -> Option<KeyedSlabTreeNodeMut<T>> {
+    pub fn root_mut(&mut self) -> Option<KeyedSlabTreeNodeMut<'_, T>> {
         self.tree.root_id.map(|root_id| KeyedSlabTreeNodeMut {
             node_id: root_id,
             tree: self,
@@ -568,7 +568,7 @@ impl<T> KeyedSlabTree<T> {
     }
 
     /// Find a node by its key.
-    pub fn lookup_node(&self, key: &Key) -> Option<KeyedSlabTreeNodeRef<T>> {
+    pub fn lookup_node(&self, key: &Key) -> Option<KeyedSlabTreeNodeRef<'_, T>> {
         self.find_node_by_key(key)
             .map(|node_id| KeyedSlabTreeNodeRef {
                 node_id,
@@ -577,7 +577,7 @@ impl<T> KeyedSlabTree<T> {
     }
 
     /// Find a node by its key (mutable).
-    pub fn lookup_node_mut(&mut self, key: &Key) -> Option<KeyedSlabTreeNodeMut<T>> {
+    pub fn lookup_node_mut(&mut self, key: &Key) -> Option<KeyedSlabTreeNodeMut<'_, T>> {
         self.find_node_by_key(key)
             .map(|node_id| KeyedSlabTreeNodeMut {
                 node_id,
