@@ -77,7 +77,7 @@ pub trait DataStore: Clone + PartialEq {
 }
 
 pub struct DataNodeDerefGuard<'a, T> {
-    pub(crate) guard: Box<(dyn Deref<Target = T> + 'a)>,
+    pub(crate) guard: Box<dyn Deref<Target = T> + 'a>,
 }
 
 impl<T> Deref for DataNodeDerefGuard<'_, T> {

@@ -24,7 +24,7 @@ pub struct FormatArguments<'a> {
     #[doc(hidden)]
     pub format: &'a str,
     #[doc(hidden)]
-    pub args: &'a [(&'static str, &'a dyn (::std::fmt::Display))],
+    pub args: &'a [(&'static str, &'a dyn ::std::fmt::Display)],
 }
 
 /// Core macro to format gettext messages (see [tr!], [gettext!], [pgettext!], [ngettext!], [npgettext!]).
