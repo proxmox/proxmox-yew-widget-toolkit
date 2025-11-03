@@ -276,7 +276,7 @@ impl PwtNavigationDrawer {
                 }
             }
             MenuEntry::Component(comp) => {
-                menu.add_child(comp.clone());
+                menu.add_optional_child((!hidden).then_some(comp.clone()));
             }
         }
     }
