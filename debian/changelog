@@ -1,3 +1,9 @@
+rust-pwt (0.7.5) trixie; urgency=medium
+
+  * catalog loader: fix behavior when no language is set
+
+ -- Proxmox Support Team <support@proxmox.com>  Tue, 04 Nov 2025 19:14:42 +0100
+
 rust-pwt (0.7.4) trixie; urgency=medium
 
   * widget: navigation drawer: hide custom components when not expanded
