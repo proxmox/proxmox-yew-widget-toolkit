@@ -1,3 +1,11 @@
+rust-pwt (0.7.6) trixie; urgency=medium
+
+  * input panel: set row height to min-content
+
+  * input panel: improve mobile layout
+
+ -- Proxmox Support Team <support@proxmox.com>  Thu, 06 Nov 2025 11:33:51 +0100
+
 rust-pwt (0.7.5) trixie; urgency=medium
 
   * catalog loader: fix behavior when no language is set
