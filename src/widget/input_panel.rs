@@ -548,6 +548,7 @@ impl IntoVTag for InputPanel {
                 self.set_style("grid-template-columns", column_template.to_string());
             }
         }
+        self.set_style("grid-auto-rows", "min-content");
 
         let attributes = self.std_props.cumulate_attributes(None::<&str>);
 
