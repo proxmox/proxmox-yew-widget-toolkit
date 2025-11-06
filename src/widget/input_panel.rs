@@ -330,6 +330,7 @@ impl InputPanel {
             let field_with_label = Container::new()
                 .key(key)
                 .class(crate::css::FlexDirection::Column)
+                .style("overflow", "hidden") // pass size constraints down
                 .style("display", if visible { "flex" } else { "none" })
                 .style("grid-row", visible.then(|| row.to_string()))
                 .style("grid-column", "1/2")
