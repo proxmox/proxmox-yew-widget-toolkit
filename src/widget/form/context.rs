@@ -464,6 +464,11 @@ impl FormContextState {
 
         if !radio_group {
             field.apply_value(value);
+            // update default to match the validated result, so dirty checking works correctly
+            // when the validator normalizes the value in above apply_value call.
+            if let Ok(submit_value) = &field.result {
+                field.default = submit_value.clone();
+            }
         }
 
         let slab_key;
