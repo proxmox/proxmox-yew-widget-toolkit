@@ -204,7 +204,10 @@ impl FieldHandle {
 
 impl Drop for FieldHandle {
     fn drop(&mut self) {
-        self.form_ctx.inner.borrow_mut().unregister_field(self.key);
+        let dirty_changed = self.form_ctx.inner.borrow_mut().unregister_field(self.key);
+        if dirty_changed {
+            self.form_ctx.notify_listeners();
+        }
     }
 }
 
@@ -498,20 +501,23 @@ impl FormContextState {
         slab_key
     }
 
-    fn unregister_field(&mut self, key: usize) {
+    fn unregister_field(&mut self, key: usize) -> bool {
         self.version += 1;
         if let Some(field) = self.fields.get(key) {
             if field.unique {
                 // log::info!("Keep Unique field data");
-                return;
+                return false;
             }
         }
+        let old_dirty = self.is_dirty();
         let field = self.fields.remove(key);
         let group = self.groups.get_mut(&field.name).unwrap();
         group.members.retain(|k| k != &key);
         if field.radio_group {
             group.radio_count = group.radio_count.saturating_sub(1);
         }
+        let dirty_changed = old_dirty != self.is_dirty();
+        dirty_changed
     }
 
     pub fn set_show_advanced(&mut self, show_advanced: bool) {
