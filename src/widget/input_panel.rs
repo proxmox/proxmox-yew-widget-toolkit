@@ -204,7 +204,7 @@ impl InputPanel {
                 match column {
                     FieldPosition::Left => {
                         self.left_count += 1;
-                        (self.left_count, 1, 4)
+                        (self.left_count, 1, 3)
                     }
                     FieldPosition::Right => {
                         self.two_column = true;
