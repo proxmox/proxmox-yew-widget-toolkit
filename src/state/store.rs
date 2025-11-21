@@ -14,7 +14,7 @@ use yew::virtual_dom::Key;
 use crate::props::{
     ExtractKeyFn, ExtractPrimaryKey, FilterFn, IntoFilterFn, IntoSorterFn, SorterFn,
 };
-use crate::state::{optional_rc_ptr_eq, DataNode, DataNodeDerefGuard, DataStore};
+use crate::state::{optional_rc_ptr_eq, DataNode, DataNodeDerefGuard, DataStore, Selection};
 
 /// Hook to use a [Store] with functional components.
 ///
@@ -99,6 +99,29 @@ impl<T: ExtractPrimaryKey + 'static> FromIterator<T> for Store<T> {
         store.set_data(iter.into_iter().collect());
 
         store
+    }
+}
+
+impl<T: Clone> Store<T> {
+    /// Returns a clone of the record that is currently selected by `selection`.
+    pub fn selected_record(&self, selection: &Selection) -> Option<T> {
+        self.read().lookup_with_selection(selection).cloned()
+    }
+
+    /// Returns a vector of clones of all records that are selected by the `selection` in
+    /// multi-select mode.
+    ///
+    /// # Note
+    ///
+    /// If a `Key` returned by `Selection::selected_keys` is not in the store, it will be filtered
+    /// from the returned vector. The vector will still contain a record for every other `Key` that
+    /// a record can be found for.
+    pub fn multi_selected_records(&self, selection: &Selection) -> Vec<T> {
+        self.read()
+            .lookup_with_multi_selection(selection)
+            .into_iter()
+            .cloned()
+            .collect()
     }
 }
 
@@ -557,6 +580,30 @@ impl<T: 'static> StoreState<T> {
     /// Find a record by its key (mutable).
     pub fn lookup_record_mut(&mut self, key: &Key) -> Option<&mut T> {
         self.record_pos(key).map(|n| &mut self.data[n])
+    }
+
+    /// Find the record that has the same key as is currently selected by `selection`.
+    pub fn lookup_with_selection(&self, selection: &Selection) -> Option<&T> {
+        if let Some(ref key) = selection.selected_key() {
+            return self.lookup_record(key);
+        }
+
+        None
+    }
+
+    /// Get all records that are selected by the `selection` in multi-select mode.
+    ///
+    /// # Note
+    ///
+    /// If a `Key` returned by `Selection::selected_keys` is not in the store, it will be filtered
+    /// from the returned vector. The vector will still contain a record for every other `Key` that
+    /// a record can be found for.
+    pub fn lookup_with_multi_selection(&self, selection: &Selection) -> Vec<&T> {
+        selection
+            .selected_keys()
+            .iter()
+            .filter_map(|k| self.lookup_record(k))
+            .collect()
     }
 }
 
