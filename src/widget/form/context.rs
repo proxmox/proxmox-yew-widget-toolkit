@@ -695,6 +695,17 @@ impl FormContextState {
         self.version += 1;
     }
 
+    /// Check if the field identified by `name` has been changed.
+    ///
+    /// If the there is no field with `name`, `None` will be returned.
+    pub fn is_field_dirty(&self, name: impl IntoPropValue<AttrValue>) -> Option<bool> {
+        let name = name.into_prop_value();
+        self.fields
+            .iter()
+            .find(|(_key, f)| &f.name == &name)
+            .map(|(_key, f)| f.is_dirty())
+    }
+
     pub fn is_dirty(&self) -> bool {
         for (_name, group) in self.groups.clone().iter() {
             if group.radio_count > 0 && group.default != group.value {
