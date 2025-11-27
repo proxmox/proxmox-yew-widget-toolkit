@@ -1,3 +1,17 @@
+rust-pwt (0.7.7) trixie; urgency=medium
+
+  * form context: notify listeners if dirty changes after removing a field.
+
+  * input panel: fix end column for left custom child.
+
+  * store: add helper methods to extract a record via a selection.
+
+  * loader: add helper to allow aborting a load.
+
+  * form: fix dirty check when validator normalizes field values.
+
+ -- Proxmox Support Team <support@proxmox.com>  Thu, 27 Nov 2025 19:06:44 +0100
+
 rust-pwt (0.7.6) trixie; urgency=medium
 
   * input panel: set row height to min-content
