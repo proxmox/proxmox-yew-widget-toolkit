@@ -182,6 +182,11 @@ impl<T: 'static + DeserializeOwned + Serialize> Loader<T> {
         drop(state);
     }
 
+    /// Abort any currently running load.
+    pub fn abort(&mut self) {
+        self.write().async_abort_guard = None;
+    }
+
     pub fn reload_button(&self) -> Button {
         let loader = self.clone();
         Button::refresh(self.loading()).onclick(move |_| loader.load())
