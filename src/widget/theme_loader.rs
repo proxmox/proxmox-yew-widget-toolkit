@@ -8,38 +8,67 @@ use crate::impl_to_html;
 use crate::props::{IntoOptionalTextRenderFn, TextRenderFn};
 use crate::state::{Theme, ThemeDensity, ThemeObserver};
 
-/// Dynamically load selected theme
+/// Dynamic theme loader component.
 ///
-/// Displays an empty page until the first theme is successfully loaded.
+/// This widget serves as the root boundary for theming in the application. It manages:
+/// - Loading the appropriate CSS file for the active theme.
+/// - Applying global CSS classes for density (e.g., `pwt-density-high`) to the document root.
+/// - Applying global CSS classes for dark/light mode (e.g., `pwt-dark-mode`) to the document root.
+/// - Handling transitions between themes by loading the new CSS before removing the old one to avoid FOUC.
+/// - Exposing the application content only after the initial theme is loaded.
 ///
-/// This is usually one of the first widget inside the widget tree, and is
-/// used by scaffold widgets like [DesktopApp][crate::widget::DesktopApp]
-/// and [MaterialApp][crate::touch::MaterialApp].
+/// It uses [ThemeObserver] internally to react to system and application-level theme changes, and
+/// displays an empty page until the first theme is successfully loaded.
+///
+/// This is typically the root of the widget tree, and is used by scaffold widgets
+/// like [DesktopApp][crate::widget::DesktopApp] and
+/// [MaterialApp][crate::touch::MaterialApp].
+///
+/// Usage:
+/// ```rust
+/// use pwt::widget::ThemeLoader;
+/// use yew::prelude::*;
+///
+/// #[function_component(App)]
+/// fn app() -> Html {
+///     ThemeLoader::new(html! {
+///         <div>{"My App Content"}</div>
+///     })
+///     .into()
+/// }
+/// ```
 #[derive(Properties, Clone, PartialEq)]
 #[builder]
 pub struct ThemeLoader {
+    // The application root content.
     body: VNode,
 
-    /// Returns the server side CSS URL (full path)
+    /// Optional custom builder for the theme CSS path.
     ///
-    /// Default is "{lc(theme_name)}-yew-style.css".
+    /// If provided, this function generates the URL for the CSS file based on the theme name.
+    ///
+    /// Default behavior: `format!("{}-yew-style.css", theme_name.to_lowercase())`
     #[builder_cb(IntoOptionalTextRenderFn, into_optional_text_render_fn, String)]
     #[prop_or_default]
     pub theme_url_builder: Option<TextRenderFn<String>>,
 }
 
 impl ThemeLoader {
-    /// Create a new instance.
+    /// Create a new instance wrapping the given content.
     pub fn new(body: impl Into<VNode>) -> Self {
         yew::props!(Self { body: body.into() })
     }
 
-    /// Set dark/light mode on document root
+    /// Set the dark/light mode class on the document root (`<html>`).
     ///
-    /// Sets the dark/light mode css classes on the document root element.
+    /// This removes any existing `pwt-dark-mode` or `pwt-light-mode` classes and adds
+    /// the appropriate one based on the `dark` argument.
     ///
-    /// This is usually called by the [ThemeLoader] component, but can also be
-    /// called directly for apps not using the [ThemeLoader].
+    /// # Static Usage
+    ///
+    /// While [ThemeLoader] calls this automatically, this function is exposed for applications
+    /// that might need to manually control the theme class on the document root, primarily
+    /// for integration with other frameworks or in scenarios without a [ThemeLoader].
     pub fn set_dark_mode_on_document_root(dark: bool) {
         let root = match get_document_root() {
             Some(root) => root,
