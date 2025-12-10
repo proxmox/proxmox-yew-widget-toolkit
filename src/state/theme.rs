@@ -122,16 +122,25 @@ fn get_default_theme_name() -> String {
         .to_string()
 }
 
-/// Theme. Combines a theme name with a theme mode ([ThemeMode])
+/// Theme configuration
 ///
-/// This struct implements methods to load and store the current theme settings in the local
-/// browser store. The theme name and theme mode can be stored and changed separately, and we emit
-/// a custom [web_sys::Event] called `pwt-theme-changed`. So it is possible to observe changes by
-/// adding an event listener to the document.
+/// This struct holds the complete theme state, including:
+/// - `mode`: The color scheme (Light, Dark, or System/Auto).
+/// - `density`: The visual density (spacing and font size).
+/// - `name`: The name of the active theme (e.g., "Material", "Crisp").
+///
+/// It provides static methods to load and store these settings in the browser's `localStorage`.
+///
+/// When settings are updated via the `store_*` methods, a custom `pwt-theme-changed` event
+/// is dispatched to the document, allowing other components to react to theme changes.
+/// This is handled automatically by the [ThemeObserver].
 #[derive(PartialEq, Debug, Clone)]
 pub struct Theme {
+    /// The current theme mode (light/dark/system).
     pub mode: ThemeMode,
+    /// The current theme density.
     pub density: ThemeDensity,
+    /// The name of the current theme.
     pub name: String,
 }
 
@@ -182,11 +191,15 @@ impl Theme {
         theme
     }
 
-    /// Load theme.
+    /// Load the current theme configuration.
     ///
-    /// Theme names are restricted by the list of available themes (see [set_available_themes]).
-    /// If the loaded value isn't in the list, we simply return the first
-    /// value from the list.
+    /// This attempts to load the theme settings from `localStorage`.
+    ///
+    /// The `name` is validated against the list of available themes (set via [set_available_themes]).
+    /// If the loaded name is invalid or not found, it falls back to the default theme (the first one
+    /// in the available themes list).
+    ///
+    /// If no settings are found in `localStorage`, default values are returned.
     ///
     /// # Note
     ///
@@ -206,7 +219,9 @@ impl Theme {
         theme
     }
 
-    /// Store the theme mode and emit the `pwt-theme-changed` event.
+    /// Store the theme mode in `localStorage` and notify listeners.
+    ///
+    /// Emits the global `pwt-theme-changed` event.
     pub fn store_theme_mode(mode: ThemeMode) -> Result<(), Error> {
         if let Some(store) = local_storage() {
             if store.set_item("ThemeMode", &mode.to_string()).is_err() {
@@ -221,7 +236,9 @@ impl Theme {
         Ok(())
     }
 
-    /// Store the theme density and emit the `pwt-theme-changed` event.
+    /// Store the theme density in `localStorage` and notify listeners.
+    ///
+    /// Emits the global `pwt-theme-changed` event.
     pub fn store_theme_density(density: ThemeDensity) -> Result<(), Error> {
         if let Some(store) = local_storage() {
             if store
@@ -239,7 +256,9 @@ impl Theme {
         Ok(())
     }
 
-    /// Store the theme name and emit the `pwt-theme-changed` event.
+    /// Store the theme name in `localStorage` and notify listeners.
+    ///
+    /// Emits the global `pwt-theme-changed` event.
     pub fn store_theme_name(name: &str) -> Result<(), Error> {
         if let Some(store) = local_storage() {
             if store.set_item("ThemeName", name).is_err() {
