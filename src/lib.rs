@@ -82,7 +82,15 @@
 //! - [widget::TabPanel]: A set of layered items where only one item is displayed at a time.
 //! - [widget::Toolbar]: Horizontal container for buttons.
 //! - [widget::MiniScroll]: Scrolled container usefull for toolbar and tab panels.
+//! - [widget::Card]: A card container.
+//! - [widget::Image]: Image component.
 //!
+//! ### Status and Indicators
+//!
+//! - [widget::Mask]: Loading mask.
+//! - [widget::Meter]: Visual meter.
+//! - [widget::Progress]: Progress bar.
+//! - [widget::Fa]: FontAwesome icon wrapper.
 
 //! ### Modal Dialogs
 //!
@@ -94,6 +102,9 @@
 //! display error messages.
 //!
 //! Dialogs are also handy for displaying input forms.
+//!
+//! - [widget::ConfirmDialog]: Dialog to confirm actions.
+//! - [widget::MessageBox]: Message box.
 
 //! ### Forms and Fields
 //!
@@ -140,11 +151,14 @@
 //!
 //! The [SearchDropdown](widget::SearchDropdown) also uses the [Dropdown](widget::Dropdown)
 //! to represent asynchrounous search results to the user.
+//!
+//! The [Trigger](widget::Trigger) is used to toggle a dropdown or action.
 
 //! ### Buttons
 //!
 //! - [widget::Button]: Standard Html Button (Text, Icon + Text, Icon only).
 //! - [widget::ActionIcon]: A clickable icon.
+//! - [widget::FileButton]: Upload button.
 //! - [widget::SegmentedButton]: List of Buttons.
 //!
 
@@ -167,6 +181,8 @@
 //!
 //! The [List](widget::List) widget also supports virtual scrolling, and allows
 //! using a html grid column layout.
+//!
+//! - [widget::SelectionView]: View for selection.
 
 //! ### Drawing Canvas
 //!
@@ -207,12 +223,22 @@
 //!
 //! - [widget::DesktopApp]: Application scaffold for desktop applications.
 //! - [touch::MaterialApp]: Helper to implement applications that uses material design guidelines.
+//! - [widget::CatalogLoader]: Loader for catalogs.
 //!
 
 //! ## DOM Helpers
 //!
 //! - [widget::SizeObserver]: Observe size changes.
 //! - [widget::VisibilityObserver]: Observe visibility changes.
+
+//!
+//! ## Theme Configuration
+//!
+//! - [widget::LanguageSelector]: Language selection.
+//! - [widget::RtlSwitcher]: Right-to-left switcher.
+//! - [widget::ThemeDensitySelector]: Theme density.
+//! - [widget::ThemeModeSelector]: Light/Dark mode.
+//! - [widget::ThemeNameSelector]: Theme name.
 //!
 
 mod async_abort_guard;

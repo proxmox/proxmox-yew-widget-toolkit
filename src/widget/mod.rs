@@ -79,10 +79,6 @@ pub use language_selector::LanguageSelector;
 #[doc(hidden)]
 pub use language_selector::PwtLanguageSelector;
 
-// Old code, no longer used.
-// mod list_simple;
-// pub use list_simple::{List, PwtList};
-
 mod list;
 pub use list::{List, ListTile, ListTileObserver};
 
