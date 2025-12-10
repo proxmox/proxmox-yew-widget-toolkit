@@ -1,4 +1,3 @@
-use std::fmt::Display;
 use std::rc::Rc;
 
 use derivative::Derivative;
@@ -10,97 +9,41 @@ use yew::Html;
 /// Wraps `Rc` around `Fn` so it can be passed as a prop.
 #[derive(Derivative)]
 #[derivative(Clone(bound = ""), PartialEq(bound = ""))]
-pub struct RenderFn<T>(
-    #[derivative(PartialEq(compare_with = "Rc::ptr_eq"))] Rc<dyn Fn(&T) -> Html>,
+pub struct RenderFn<IN, OUT = Html>(
+    #[derivative(PartialEq(compare_with = "Rc::ptr_eq"))] Rc<dyn Fn(&IN) -> OUT>,
 );
 
-impl<T> RenderFn<T> {
+impl<IN, OUT> RenderFn<IN, OUT> {
     /// Creates a new [`RenderFn`]
-    pub fn new(renderer: impl 'static + Fn(&T) -> Html) -> Self {
+    pub fn new(renderer: impl 'static + Fn(&IN) -> OUT) -> Self {
         Self(Rc::new(renderer))
     }
     /// Apply the render function
-    pub fn apply(&self, data: &T) -> Html {
+    pub fn apply(&self, data: &IN) -> OUT {
         (self.0)(data)
     }
 }
 
-impl<T, F: 'static + Fn(&T) -> Html> From<F> for RenderFn<T> {
+impl<IN, OUT, F: 'static + Fn(&IN) -> OUT> From<F> for RenderFn<IN, OUT> {
     fn from(f: F) -> Self {
         RenderFn::new(f)
     }
 }
 
 /// Helper trait to create an optional [RenderFn] property.
-pub trait IntoOptionalRenderFn<T> {
-    fn into_optional_render_fn(self) -> Option<RenderFn<T>>;
+pub trait IntoOptionalRenderFn<IN, OUT = Html> {
+    fn into_optional_render_fn(self) -> Option<RenderFn<IN, OUT>>;
 }
 
-impl<T, R: Into<RenderFn<T>>> IntoOptionalRenderFn<T> for R {
-    fn into_optional_render_fn(self) -> Option<RenderFn<T>> {
+impl<IN, OUT, R: Into<RenderFn<IN, OUT>>> IntoOptionalRenderFn<IN, OUT> for R {
+    fn into_optional_render_fn(self) -> Option<RenderFn<IN, OUT>> {
         Some(self.into())
     }
 }
 
-impl<T, R: Into<RenderFn<T>>> IntoOptionalRenderFn<T> for Option<R> {
-    fn into_optional_render_fn(self) -> Option<RenderFn<T>> {
+impl<IN, OUT, R: Into<RenderFn<IN, OUT>>> IntoOptionalRenderFn<IN, OUT> for Option<R> {
+    fn into_optional_render_fn(self) -> Option<RenderFn<IN, OUT>> {
         self.map(|me| me.into())
-    }
-}
-
-/// A [TextRenderFn] function is a callback that transforms data into [String].
-///
-/// Wraps `Rc` around `Fn` so it can be passed as a prop.
-#[derive(Derivative)]
-#[derivative(Clone(bound = ""), PartialEq(bound = ""))]
-pub struct TextRenderFn<T>(
-    #[derivative(PartialEq(compare_with = "Rc::ptr_eq"))] Rc<dyn Fn(&T) -> String>,
-);
-
-impl<T> TextRenderFn<T> {
-    /// Creates a new [TextRenderFn]
-    pub fn new(renderer: impl 'static + Fn(&T) -> String) -> Self {
-        Self(Rc::new(renderer))
-    }
-    /// Apply the render function
-    pub fn apply(&self, data: &T) -> String {
-        (self.0)(data)
-    }
-}
-
-impl<T, F: 'static + Fn(&T) -> String> From<F> for TextRenderFn<T> {
-    fn from(f: F) -> Self {
-        TextRenderFn::new(f)
-    }
-}
-
-/// Helper trait to create an optional [TextRenderFn] property.
-///
-/// For types implementing [Display], you can pass 'true' to create
-/// a render function whichs uses `to_string()`.
-pub trait IntoOptionalTextRenderFn<T> {
-    fn into_optional_text_render_fn(self) -> Option<TextRenderFn<T>>;
-}
-
-impl<T, R: Into<TextRenderFn<T>>> IntoOptionalTextRenderFn<T> for R {
-    fn into_optional_text_render_fn(self) -> Option<TextRenderFn<T>> {
-        Some(self.into())
-    }
-}
-
-impl<T, R: Into<TextRenderFn<T>>> IntoOptionalTextRenderFn<T> for Option<R> {
-    fn into_optional_text_render_fn(self) -> Option<TextRenderFn<T>> {
-        self.map(|me| me.into())
-    }
-}
-
-impl<T: Display> IntoOptionalTextRenderFn<T> for bool {
-    fn into_optional_text_render_fn(self) -> Option<TextRenderFn<T>> {
-        if self {
-            Some(TextRenderFn::new(|t: &T| t.to_string()))
-        } else {
-            None
-        }
     }
 }
 

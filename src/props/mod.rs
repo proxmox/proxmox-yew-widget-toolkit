@@ -200,10 +200,7 @@ mod padding;
 pub use padding::CssPaddingBuilder;
 
 mod render_function;
-pub use render_function::{
-    BuilderFn, IntoOptionalBuilderFn, IntoOptionalRenderFn, IntoOptionalTextRenderFn, RenderFn,
-    TextRenderFn,
-};
+pub use render_function::{BuilderFn, IntoOptionalBuilderFn, IntoOptionalRenderFn, RenderFn};
 
 mod sorter_function;
 pub use sorter_function::{IntoSorterFn, SorterFn};

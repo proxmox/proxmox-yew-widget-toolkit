@@ -7,7 +7,7 @@ use yew_router::Router;
 use gloo_history::{AnyHistory, HashHistory};
 
 use crate::prelude::*;
-use crate::props::{IntoOptionalTextRenderFn, TextRenderFn};
+use crate::props::{IntoOptionalRenderFn, RenderFn};
 use crate::state::NavigationContainer;
 use crate::widget::{CatalogLoader, ThemeLoader};
 
@@ -41,9 +41,9 @@ pub struct DesktopApp {
     pub history: Option<AnyHistory>,
 
     /// Convert ISO 639-1 language code to server side catalog URLs (see [CatalogLoader]).
-    #[builder_cb(IntoOptionalTextRenderFn, into_optional_text_render_fn, String)]
+    #[builder_cb(IntoOptionalRenderFn, into_optional_render_fn, String, String)]
     #[prop_or_default]
-    pub catalog_url_builder: Option<TextRenderFn<String>>,
+    pub catalog_url_builder: Option<RenderFn<String, String>>,
 
     /// Default language (skip catalog loading for this language)
     #[builder(IntoPropValue, into_prop_value)]

@@ -5,7 +5,7 @@ use yew::prelude::*;
 use yew::virtual_dom::{Key, VComp, VNode};
 
 use crate::impl_to_html;
-use crate::props::{IntoOptionalTextRenderFn, TextRenderFn};
+use crate::props::{IntoOptionalRenderFn, RenderFn};
 use crate::state::{Theme, ThemeDensity, ThemeObserver};
 
 /// Dynamic theme loader component.
@@ -48,9 +48,10 @@ pub struct ThemeLoader {
     /// If provided, this function generates the URL for the CSS file based on the theme name.
     ///
     /// Default behavior: `format!("{}-yew-style.css", theme_name.to_lowercase())`
-    #[builder_cb(IntoOptionalTextRenderFn, into_optional_text_render_fn, String)]
+    /// Default is "{lc(theme_name)}-yew-style.css".
+    #[builder_cb(IntoOptionalRenderFn, into_optional_render_fn, String, String)]
     #[prop_or_default]
-    pub theme_url_builder: Option<TextRenderFn<String>>,
+    pub theme_url_builder: Option<RenderFn<String, String>>,
 }
 
 impl ThemeLoader {

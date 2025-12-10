@@ -4,7 +4,7 @@ use gettext::Catalog;
 use yew::html::IntoPropValue;
 use yew::virtual_dom::{VComp, VNode};
 
-use crate::props::{IntoOptionalTextRenderFn, TextRenderFn};
+use crate::props::{IntoOptionalRenderFn, RenderFn};
 use crate::state::{get_language_info, Language, LanguageObserver};
 use crate::widget::rtl_switcher::set_text_direction;
 use crate::{impl_to_html, prelude::*};
@@ -35,9 +35,9 @@ pub struct CatalogLoader {
     /// # fn test () -> Callback<String, String> {
     ///  Callback::from(|lang: String| format!("catalog-{}.mo", lang))
     /// # }
-    #[builder_cb(IntoOptionalTextRenderFn, into_optional_text_render_fn, String)]
+    #[builder_cb(IntoOptionalRenderFn, into_optional_render_fn, String, String)]
     #[prop_or_default]
-    pub url_builder: Option<TextRenderFn<String>>,
+    pub url_builder: Option<RenderFn<String, String>>,
 
     /// Default language (skip catalog loading for this language)
     #[builder(IntoPropValue, into_prop_value)]

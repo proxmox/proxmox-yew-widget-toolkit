@@ -7,7 +7,7 @@ use yew::virtual_dom::VTag;
 use pwt_macros::{builder, widget};
 
 use crate::props::{
-    ContainerBuilder, CssLength, IntoOptionalTextRenderFn, IntoVTag, TextRenderFn, WidgetBuilder,
+    ContainerBuilder, CssLength, IntoOptionalRenderFn, IntoVTag, RenderFn, WidgetBuilder,
     WidgetStyleBuilder,
 };
 use crate::widget::Container;
@@ -64,9 +64,9 @@ pub struct Meter {
     pub value: f32,
 
     /// Show value as text.
-    #[builder_cb(IntoOptionalTextRenderFn, into_optional_text_render_fn, f32)]
+    #[builder_cb(IntoOptionalRenderFn, into_optional_render_fn, f32, String)]
     #[prop_or_default]
-    pub render_text: Option<TextRenderFn<f32>>,
+    pub render_text: Option<RenderFn<f32, String>>,
 
     /// Determines if the meter value transitions are animated (via CSS) or not.
     /// It is equivalent to setting the class `pwt-animated`.
