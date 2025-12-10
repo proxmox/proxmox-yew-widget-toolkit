@@ -29,8 +29,32 @@ pub struct ThemeLoader {
 }
 
 impl ThemeLoader {
+    /// Create a new instance.
     pub fn new(body: impl Into<VNode>) -> Self {
         yew::props!(Self { body: body.into() })
+    }
+
+    /// Set dark/light mode on document root
+    ///
+    /// Sets the dark/light mode css classes on the document root element.
+    ///
+    /// This is usually called by the [ThemeLoader] component, but can also be
+    /// called directly for apps not using the [ThemeLoader].
+    pub fn set_dark_mode_on_document_root(dark: bool) {
+        let root = match get_document_root() {
+            Some(root) => root,
+            None => return,
+        };
+
+        let class_list = root.class_list();
+
+        let _ = class_list.remove_2("pwt-dark-mode", "pwt-light-mode");
+
+        let _ = class_list.add_1(if dark {
+            "pwt-dark-mode"
+        } else {
+            "pwt-light-mode"
+        });
     }
 }
 
@@ -78,30 +102,6 @@ fn set_css_density(density: ThemeDensity) {
         ThemeDensity::Preset => { /* do nothing */ }
     };
 }
-
-/// Set dark/light mode on document root
-///
-/// Sets the dark/light mode css classes on the document root element.
-///
-/// This is usually called by the [ThemeLoader] component, but can also be
-/// called directly for apps not using the [ThemeLoader].
-pub fn set_dark_mode_on_document_root(dark: bool) {
-    let root = match get_document_root() {
-        Some(root) => root,
-        None => return,
-    };
-
-    let class_list = root.class_list();
-
-    let _ = class_list.remove_2("pwt-dark-mode", "pwt-light-mode");
-
-    let _ = class_list.add_1(if dark {
-        "pwt-dark-mode"
-    } else {
-        "pwt-light-mode"
-    });
-}
-
 impl PwtThemeLoader {
     fn get_css_filename(props: &ThemeLoader, theme: &Theme) -> String {
         match &props.theme_url_builder {
@@ -126,7 +126,7 @@ impl PwtThemeLoader {
         }
 
         set_css_density(theme.density);
-        set_dark_mode_on_document_root(dark_mode);
+        ThemeLoader::set_dark_mode_on_document_root(dark_mode);
 
         if self.new_theme_css.is_some() && loaded {
             self.theme_css = self.new_theme_css.take().unwrap();
