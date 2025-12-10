@@ -85,7 +85,7 @@ impl Parse for FieldOptions {
 struct CallbackOptions {
     into_trait: syn::Type,
     into_fn: syn::Ident,
-    inner_type: syn::Type,
+    inner_types: Vec<syn::Type>,
 }
 
 impl Parse for CallbackOptions {
@@ -105,16 +105,27 @@ impl Parse for CallbackOptions {
             .parse()
             .map_err(|err| Error::new(err.span(), format!("expected into function: {err}")))?;
 
+        let mut inner_types = Vec::new();
+
         parse_comma(&content).map_err(|err| Error::new(err.span(), "missing inner type"))?;
 
         let inner_type: syn::Type = content.parse().map_err(|err| {
             Error::new(err.span(), format!("expected inner callback type: {err}"))
         })?;
 
+        inner_types.push(inner_type);
+
+        while parse_comma(&content).is_ok() {
+            let inner_type: syn::Type = content.parse().map_err(|err| {
+                Error::new(err.span(), format!("expected inner callback type: {err}"))
+            })?;
+            inner_types.push(inner_type);
+        }
+
         Ok(Self {
             into_trait,
             into_fn,
-            inner_type,
+            inner_types,
         })
     }
 }
@@ -229,9 +240,9 @@ fn derive_builder(builder: DeriveInput) -> Result<proc_macro2::TokenStream> {
                     let options = syn::parse2::<CallbackOptions>(tokens)?;
                     let into_fn = options.into_fn;
                     let into_trait = options.into_trait;
-                    let inner_type = options.inner_type;
+                    let inner_types = options.inner_types;
                     (
-                        quote_spanned! { attr_span => impl #into_trait<#inner_type>},
+                        quote_spanned! { attr_span => impl #into_trait<#(#inner_types),*>},
                         quote_spanned! { attr_span => #field_ident.#into_fn()},
                     )
                 }
