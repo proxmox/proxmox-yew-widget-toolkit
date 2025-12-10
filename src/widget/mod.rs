@@ -163,7 +163,7 @@ pub use tab::{TabBar, TabBarItem, TabBarStyle, TabPanel};
 mod theme_loader;
 #[doc(hidden)]
 pub use theme_loader::PwtThemeLoader;
-pub use theme_loader::ThemeLoader;
+pub use theme_loader::{set_dark_mode_on_document_root, ThemeLoader};
 
 mod theme_density_selector;
 #[doc(hidden)]

@@ -79,7 +79,13 @@ fn set_css_density(density: ThemeDensity) {
     };
 }
 
-fn set_dark_mode(dark: bool) {
+/// Set dark/light mode on document root
+///
+/// Sets the dark/light mode css classes on the document root element.
+///
+/// This is usually called by the [ThemeLoader] component, but can also be
+/// called directly for apps not using the [ThemeLoader].
+pub fn set_dark_mode_on_document_root(dark: bool) {
     let root = match get_document_root() {
         Some(root) => root,
         None => return,
@@ -120,7 +126,7 @@ impl PwtThemeLoader {
         }
 
         set_css_density(theme.density);
-        set_dark_mode(dark_mode);
+        set_dark_mode_on_document_root(dark_mode);
 
         if self.new_theme_css.is_some() && loaded {
             self.theme_css = self.new_theme_css.take().unwrap();
