@@ -138,7 +138,6 @@ pub struct PwtDropdown {
     change_from_input: bool,
     focus_on_field: bool,
 
-    node_ref: NodeRef,
     input_ref: NodeRef,
     picker_ref: NodeRef,
     dropdown_ref: NodeRef,
@@ -150,7 +149,7 @@ pub struct PwtDropdown {
 impl PwtDropdown {
     // focus the input elelent (after closing the dropdown popover)
     fn restore_focus(&mut self) {
-        if let Some(el) = self.node_ref.cast::<web_sys::HtmlElement>() {
+        if let Some(el) = self.input_ref.cast::<web_sys::HtmlElement>() {
             let _ = el.focus();
         }
     }
@@ -192,7 +191,6 @@ impl Component for PwtDropdown {
             value: ctx.props().value.clone().unwrap_or_default(),
             focus_on_field: false,
             change_from_input: false,
-            node_ref: NodeRef::default(),
             input_ref: NodeRef::default(),
             picker_ref: NodeRef::default(),
             dropdown_ref: NodeRef::default(),
