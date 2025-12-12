@@ -22,6 +22,13 @@ pub fn element_is_focusable(el: &web_sys::HtmlElement) -> bool {
     matches!(el.tag_name().as_str(), "A" | "BUTTON" | "INPUT")
 }
 
+/// Focus the element referenced by the NodeRef.
+pub fn focus_node(node_ref: &NodeRef) {
+    if let Some(el) = node_ref.cast::<web_sys::HtmlElement>() {
+        let _ = el.focus();
+    }
+}
+
 /// Move focus to the next/previous focusable element (calls [focus_next_el]).
 pub fn focus_next(node_ref: &NodeRef, backwards: bool) {
     if let Some(el) = node_ref.cast::<web_sys::HtmlElement>() {
