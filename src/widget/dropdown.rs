@@ -546,7 +546,7 @@ pub fn focus_selected_element(node_ref: &NodeRef) {
         if let Ok(Some(selected_el)) = el.query_selector(".selected") {
             let selected_el = selected_el.dyn_into::<web_sys::HtmlElement>().unwrap();
             if element_is_focusable(&selected_el) {
-                let _ = el.focus();
+                let _ = selected_el.focus();
             } else if let Some(focusable_el) = get_first_focusable(selected_el.into()) {
                 let _ = focusable_el.focus();
             }
