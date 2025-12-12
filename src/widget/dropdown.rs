@@ -92,6 +92,11 @@ pub struct Dropdown {
     #[prop_or_default]
     #[builder]
     pub trigger: Vec<(Trigger, bool)>,
+
+    /// Alignment options for the picker.
+    #[builder(IntoPropValue, into_prop_value)]
+    #[prop_or_default]
+    pub align_options: Option<AlignOptions>,
 }
 
 impl Dropdown {
@@ -151,9 +156,7 @@ impl PwtDropdown {
     }
 
     fn update_picker_placer(&mut self, _props: &Dropdown) {
-        self.picker_placer = match AutoFloatingPlacement::new(
-            self.dropdown_ref.clone(),
-            self.picker_ref.clone(),
+        let align_options = _props.align_options.clone().unwrap_or(
             AlignOptions::new(
                 Point::BottomStart,
                 Point::TopStart,
@@ -161,6 +164,11 @@ impl PwtDropdown {
             )
             .viewport_padding(5.0)
             .align_width(true),
+        );
+        self.picker_placer = match AutoFloatingPlacement::new(
+            self.dropdown_ref.clone(),
+            self.picker_ref.clone(),
+            align_options,
         ) {
             Ok(placer) => Some(placer),
             Err(err) => {

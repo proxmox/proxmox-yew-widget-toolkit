@@ -49,14 +49,14 @@ impl Point {
 }
 
 /// Defines a direction in which the element is allowed to grow and move
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, PartialEq, Debug)]
 pub enum GrowDirection {
     None,
     TopBottom,
     StartEnd,
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 struct Placement {
     base: Point,
     element: Point,
@@ -86,7 +86,7 @@ struct Placement {
 /// with setting [`Self::set_align_width`].
 ///
 /// There is a builder style method for each of the options.
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub struct AlignOptions {
     placements: Vec<Placement>,
     offset: (f64, f64),
