@@ -787,11 +787,16 @@ impl<S: DataStore> PwtDataTable<S> {
 
         self.last_select_position = Some(cursor);
 
-        if !(shift || ctrl) && props.multiselect_mode != MultiSelectMode::Simple {
-            selection.clear();
+        if selection.is_multiselect() {
+            if !(shift || ctrl) && props.multiselect_mode != MultiSelectMode::Simple {
+                selection.clear();
+            }
+
+            selection.toggle(record_key.clone());
+        } else {
+            selection.select(record_key.clone());
         }
 
-        selection.toggle(record_key.clone());
         true
     }
 
