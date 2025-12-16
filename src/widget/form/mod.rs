@@ -78,3 +78,9 @@ pub use submit_validate::{IntoSubmitValidateFn, SubmitValidateFn};
 
 mod validate;
 pub use validate::{IntoValidateFn, ValidateFn};
+
+mod date_field;
+pub use date_field::DateField;
+#[doc(hidden)]
+pub use date_field::DateFieldComp;
+pub use date_field::PlainDate;
