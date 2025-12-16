@@ -243,10 +243,25 @@ pub trait NavigationContextExt {
     fn nav_context(&self) -> Option<NavigationContext>;
     /// Returns the full route to this context ("/parent_path/path").
     fn full_path(&self) -> Option<String>;
-    /// Change the current route to "/parent_path/path".
+    /// Push a new route "/parent_path/path".
     ///
     /// Only works if the scope provides a [Navigator](yew_router::navigator::Navigator).
     fn push_relative_route(&self, path: &str);
+    /// Replace the current route with "/parent_path/path".
+    ///
+    /// Only works if the scope provides a [Navigator](yew_router::navigator::Navigator).
+    fn replace_relative_route(&self, path: &str);
+}
+
+fn get_new_absolute_path<COMP: Component>(scope: &yew::html::Scope<COMP>, path: &str) -> String {
+    let path = normalize_segment(path);
+    let parent_path = scope
+        .context::<NavigationContext>(Callback::from(|_| {}))
+        .and_then(|(ctx, _)| ctx.parent_path);
+    match parent_path {
+        Some(parent_path) => format!("{}/{}", parent_path, path),
+        None => format!("/{}", path),
+    }
 }
 
 impl<COMP: Component> NavigationContextExt for yew::html::Scope<COMP> {
@@ -260,32 +275,18 @@ impl<COMP: Component> NavigationContextExt for yew::html::Scope<COMP> {
     }
 
     fn push_relative_route(&self, path: &str) {
-        let path = normalize_segment(path);
-        //log::info!("PUSH REL {}", path);
-        if let Some((nav_ctx, _handle)) = self.context::<NavigationContext>(Callback::from(|_| {}))
-        {
-            let abs_path = match &nav_ctx.parent_path {
-                Some(parent_path) => format!("{}/{}", parent_path, path),
-                None => format!("/{}", path),
-            };
-            match self.navigator() {
-                Some(navigator) => {
-                    navigator.push(&AnyRoute::new(abs_path));
-                }
-                None => {
-                    log::error!("no Navigator found");
-                }
-            }
-        } else {
-            match self.navigator() {
-                Some(navigator) => {
-                    let path = format!("/{}", path);
-                    navigator.push(&AnyRoute::new(path));
-                }
-                None => {
-                    log::error!("no Navigator found");
-                }
-            }
+        let new_path = get_new_absolute_path(self, path);
+        match self.navigator() {
+            Some(navigator) => navigator.push(&AnyRoute::new(new_path)),
+            None => log::error!("no Navigator found"),
+        }
+    }
+
+    fn replace_relative_route(&self, path: &str) {
+        let new_path = get_new_absolute_path(self, path);
+        match self.navigator() {
+            Some(navigator) => navigator.replace(&AnyRoute::new(new_path)),
+            None => log::error!("no Navigator found"),
         }
     }
 }
