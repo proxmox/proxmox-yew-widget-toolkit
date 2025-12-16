@@ -8,7 +8,7 @@ use crate::dom::{element_direction_rtl, DomSizeObserver, IntoHtmlElement};
 use crate::props::{IntoStorageLocation, StorageLocation};
 use crate::state::{NavigationContext, NavigationContextExt, PersistentState, Selection};
 use crate::web_sys_ext::{ResizeObserverBoxOptions, ResizeObserverOptions};
-use crate::widget::Container;
+use crate::widget::{Container, Tooltip};
 use crate::{impl_class_prop_builder, impl_yew_std_props_builder, prelude::*};
 
 use super::TabBarItem;
@@ -464,7 +464,7 @@ impl Component for PwtTabBar {
                 let aria_disabled = if disabled { "true" } else { "false" };
                 let style = format!("grid-column: {};", i + 1);
 
-                html! {
+                let content = html! {
                     <a ref={active_ref} aria-disabled={aria_disabled} {style} {onclick} {onkeyup} class={nav_class} {tabindex}>
                         <span ref={size_ref}>
                         if let Some(class) = &panel.icon_class {
@@ -473,6 +473,12 @@ impl Component for PwtTabBar {
                         {panel.label.as_deref().unwrap_or("")}
                         </span>
                     </a>
+                };
+
+                if let Some(tip) = panel.tip.clone() {
+                    Tooltip::new(content).rich_tip(tip).into()
+                } else {
+                    content
                 }
             })
             .collect::<Html>();
