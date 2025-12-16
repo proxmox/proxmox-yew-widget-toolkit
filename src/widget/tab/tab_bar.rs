@@ -264,8 +264,10 @@ impl Component for PwtTabBar {
 
                 if !(active.is_some() && (path.is_empty() || path == "_")) {
                     active = get_active_or_default(props, &Some(Key::from(path)));
-                } else if let Some(active) = active.as_deref() {
-                    ctx.link().push_relative_route(active);
+                } else if active != props.get_default_active() {
+                    if let Some(active) = active.as_deref() {
+                        ctx.link().replace_relative_route(active);
+                    }
                 }
             }
         }
