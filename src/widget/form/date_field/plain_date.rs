@@ -27,17 +27,32 @@ impl PlainDate {
         }
     }
 
+    /// Return a new [`js_sys::Date`] with a time value of 00:00:00.
+    pub fn to_date(&self) -> Date {
+        Date::new_with_year_month_day(self.year as u32, self.month as i32, self.day as i32)
+    }
+
     /// Convert to a timestamp (milliseconds).
     /// Returns the timestamp for 12:00:00 (Noon) local time on this date.
     pub fn to_timestamp(&self) -> f64 {
-        let d = Date::new_0();
-        d.set_full_year(self.year as u32);
-        d.set_month(self.month);
-        d.set_date(self.day);
+        let d = self.to_date();
         d.set_hours(12);
-        d.set_minutes(0);
-        d.set_seconds(0);
-        d.set_milliseconds(0);
+        d.get_time()
+    }
+
+    /// Convert to a timestamp (milliseconds).
+    /// Returns the timestamp for 00:00:00 local time on this date.
+    pub fn to_timestamp_start(&self) -> f64 {
+        self.to_date().get_time()
+    }
+
+    /// Convert to a timestamp (milliseconds).
+    /// Returns the timestamp for 23:59:59 local time on this date.
+    pub fn to_timestamp_end(&self) -> f64 {
+        let d = self.to_date();
+        d.set_hours(23);
+        d.set_minutes(59);
+        d.set_seconds(59);
         d.get_time()
     }
 
