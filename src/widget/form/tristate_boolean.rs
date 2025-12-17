@@ -12,7 +12,9 @@ use crate::state::{Selection, Store};
 use crate::widget::data_table::{DataTable, DataTableColumn, DataTableHeader};
 use crate::widget::{Dropdown, DropdownController, GridPicker};
 
-use super::{ManagedField, ManagedFieldContext, ManagedFieldMaster, ManagedFieldState};
+use super::{
+    ManagedField, ManagedFieldContext, ManagedFieldMaster, ManagedFieldScopeExt, ManagedFieldState,
+};
 
 use pwt_macros::{builder, widget};
 
@@ -73,17 +75,24 @@ pub enum Msg {
 
 #[doc(hidden)]
 pub struct PwtTristateBoolean {
+    state: ManagedFieldState,
     store: Store<AttrValue>,
     selection: Selection,
     columns: Rc<Vec<DataTableHeader<AttrValue>>>,
     render_value: RenderFn<AttrValue>,
 }
 
-fn tristate_to_value(tristate: Tristate) -> Value {
-    match tristate {
-        Tristate::Null => Value::Null,
-        Tristate::Yes => Value::Bool(true),
-        Tristate::No => Value::Bool(false),
+impl std::ops::Deref for PwtTristateBoolean {
+    type Target = ManagedFieldState;
+
+    fn deref(&self) -> &Self::Target {
+        &self.state
+    }
+}
+
+impl std::ops::DerefMut for PwtTristateBoolean {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.state
     }
 }
 
@@ -116,27 +125,6 @@ impl ManagedField for PwtTristateBoolean {
             Value::Null | Value::Bool(_) => Ok(value.clone()),
             _ => Err(Error::msg(tr!("Got wrong data type!"))),
         }
-    }
-
-    fn setup(props: &Self::Properties) -> ManagedFieldState {
-        let mut value = Value::Null;
-
-        if let Some(default) = props.default {
-            value = tristate_to_value(default);
-        }
-
-        // if let Some(force_value) = &props.value {
-        // fixme: value = force_value.to_string();
-        //}
-
-        let value: Value = value.clone();
-
-        let default = match props.default {
-            None => Value::Null,
-            Some(tristate) => tristate_to_value(tristate),
-        };
-
-        ManagedFieldState::new(value, default)
     }
 
     fn create(ctx: &ManagedFieldContext<Self>) -> Self {
@@ -188,6 +176,7 @@ impl ManagedField for PwtTristateBoolean {
         )));
 
         Self {
+            state: ManagedFieldState::new(Value::Null, Value::Null),
             store,
             selection,
             columns,
@@ -197,9 +186,7 @@ impl ManagedField for PwtTristateBoolean {
 
     fn value_changed(&mut self, ctx: &super::ManagedFieldContext<Self>) {
         let props = ctx.props();
-        let state = ctx.state();
-
-        if let Some(tristate) = value_to_tristate(&state.value) {
+        if let Some(tristate) = value_to_tristate(&self.value) {
             if let Some(on_change) = &props.on_change {
                 on_change.emit(tristate);
             }
@@ -234,9 +221,7 @@ impl ManagedField for PwtTristateBoolean {
     }
     fn view(&self, ctx: &ManagedFieldContext<Self>) -> Html {
         let props = ctx.props();
-        let state = ctx.state();
-
-        let (value, validation_result) = (&state.value, &state.result);
+        let (value, validation_result) = (&self.value, &self.result);
         let value_text = match value_to_tristate(value) {
             Some(tristate) => tristate_to_text(tristate),
             None => String::new(),

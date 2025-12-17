@@ -38,7 +38,8 @@ pub use hidden::PwtHidden;
 
 mod managed_field;
 pub use managed_field::{
-    ManagedField, ManagedFieldContext, ManagedFieldLink, ManagedFieldMaster, ManagedFieldState,
+    ManagedField, ManagedFieldContext, ManagedFieldLink, ManagedFieldMaster, ManagedFieldScopeExt,
+    ManagedFieldState,
 };
 
 mod field;

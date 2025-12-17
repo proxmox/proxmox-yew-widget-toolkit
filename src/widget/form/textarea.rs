@@ -9,8 +9,8 @@ use yew::virtual_dom::{Listeners, VTag};
 use pwt_macros::{builder, widget};
 
 use super::{
-    IntoValidateFn, ManagedField, ManagedFieldContext, ManagedFieldMaster, ManagedFieldState,
-    ValidateFn,
+    IntoValidateFn, ManagedField, ManagedFieldContext, ManagedFieldMaster, ManagedFieldScopeExt,
+    ManagedFieldState, ValidateFn,
 };
 use crate::props::EventSubscriber;
 
@@ -97,7 +97,22 @@ pub enum Msg {
 
 #[doc(hidden)]
 pub struct TextAreaField {
+    state: ManagedFieldState,
     input_ref: NodeRef,
+}
+
+impl std::ops::Deref for TextAreaField {
+    type Target = ManagedFieldState;
+
+    fn deref(&self) -> &Self::Target {
+        &self.state
+    }
+}
+
+impl std::ops::DerefMut for TextAreaField {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.state
+    }
 }
 
 // TextArea is type Value::String()
@@ -152,7 +167,8 @@ impl ManagedField for TextAreaField {
         Ok(Value::String(value))
     }
 
-    fn setup(props: &Self::Properties) -> ManagedFieldState {
+    fn create(ctx: &ManagedFieldContext<Self>) -> Self {
+        let props = ctx.props();
         let mut value = String::new();
 
         if let Some(default) = &props.default {
@@ -164,15 +180,17 @@ impl ManagedField for TextAreaField {
 
         let value: Value = value.clone().into();
 
-        let default = props.default.as_deref().unwrap_or("").into();
+        let default: Value = props.default.as_deref().unwrap_or("").into();
 
-        ManagedFieldState::new(value, default)
+        Self {
+            state: ManagedFieldState::new(value, default),
+            input_ref: NodeRef::default(),
+        }
     }
 
     fn value_changed(&mut self, ctx: &super::ManagedFieldContext<Self>) {
         let props = ctx.props();
-        let state = ctx.state();
-        let text_value = value_to_text(&state.value);
+        let text_value = value_to_text(&self.value);
         if let Some(on_change) = &props.on_change {
             on_change.emit(text_value);
         }
@@ -181,18 +199,12 @@ impl ManagedField for TextAreaField {
     fn changed(&mut self, ctx: &ManagedFieldContext<Self>, old_props: &Self::Properties) -> bool {
         let props = ctx.props();
         if props.value != old_props.value || props.valid != old_props.valid {
-            if let Some(forced_value) = &props.value {
-                ctx.link()
-                    .force_value(Some(forced_value.to_string()), props.valid.clone());
-            }
+            ctx.link().force_value(
+                props.value.as_ref().map(|v| v.to_string()),
+                props.valid.clone(),
+            );
         }
         true
-    }
-
-    fn create(_ctx: &ManagedFieldContext<Self>) -> Self {
-        Self {
-            input_ref: NodeRef::default(),
-        }
     }
 
     fn update(&mut self, ctx: &ManagedFieldContext<Self>, msg: Self::Message) -> bool {
@@ -209,10 +221,9 @@ impl ManagedField for TextAreaField {
     }
 
     fn view(&self, ctx: &ManagedFieldContext<Self>) -> Html {
-        let props = ctx.props().clone();
-        let state = ctx.state();
+        let props = ctx.props();
 
-        let (value, validation_result) = (&state.value, &state.result);
+        let (value, validation_result) = (&self.value, &self.result);
         let value = value_to_text(value);
 
         let oninput = ctx.link().callback(move |event: InputEvent| {
@@ -221,7 +232,7 @@ impl ManagedField for TextAreaField {
         });
 
         let disabled = props.input_props.disabled;
-        let props = props.oninput((!disabled).then_some(oninput));
+        let props = props.clone().oninput((!disabled).then_some(oninput));
 
         let classes = classes!(
             "pwt-textarea",

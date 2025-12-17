@@ -1,3 +1,5 @@
+use std::ops::{Deref, DerefMut};
+
 use anyhow::Error;
 use serde_json::Value;
 
@@ -5,7 +7,7 @@ use crate::dom::align::{AlignOptions, GrowDirection, Point};
 use crate::prelude::*;
 use crate::props::FieldBuilder;
 use crate::widget::form::{
-    ManagedField, ManagedFieldContext, ManagedFieldMaster, ManagedFieldState,
+    ManagedField, ManagedFieldContext, ManagedFieldMaster, ManagedFieldScopeExt, ManagedFieldState,
 };
 use crate::widget::{Dropdown, DropdownController};
 
@@ -108,7 +110,23 @@ pub enum Msg {
     ValueChange(String),
 }
 
-pub struct DateFieldComp {}
+pub struct DateFieldComp {
+    state: ManagedFieldState,
+}
+
+impl Deref for DateFieldComp {
+    type Target = ManagedFieldState;
+
+    fn deref(&self) -> &Self::Target {
+        &self.state
+    }
+}
+
+impl DerefMut for DateFieldComp {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.state
+    }
+}
 
 impl DateFieldComp {
     fn try_parse(value: &str, format: &str, alt_formats: &str) -> Option<PlainDate> {
@@ -193,7 +211,8 @@ impl ManagedField for DateFieldComp {
         }
     }
 
-    fn setup(props: &Self::Properties) -> ManagedFieldState {
+    fn create(ctx: &ManagedFieldContext<Self>) -> Self {
+        let props = ctx.props();
         let mut value = String::new();
 
         if let Some(default) = &props.default {
@@ -204,14 +223,11 @@ impl ManagedField for DateFieldComp {
         }
 
         let value: Value = value.clone().into();
-
         let default: Value = props.default.as_deref().unwrap_or("").into();
 
-        ManagedFieldState::new(value, default)
-    }
-
-    fn create(_ctx: &ManagedFieldContext<Self>) -> Self {
-        Self {}
+        Self {
+            state: ManagedFieldState::new(value, default),
+        }
     }
 
     fn update(&mut self, ctx: &ManagedFieldContext<Self>, msg: Self::Message) -> bool {
@@ -228,8 +244,7 @@ impl ManagedField for DateFieldComp {
 
     fn value_changed(&mut self, ctx: &ManagedFieldContext<Self>) {
         let props = ctx.props();
-        let state = ctx.state();
-        let value = match &state.value {
+        let value = match &self.value {
             Value::String(s) => s.clone(),
             _ => "".to_string(),
         };
@@ -250,12 +265,11 @@ impl ManagedField for DateFieldComp {
 
     fn view(&self, ctx: &ManagedFieldContext<Self>) -> Html {
         let props = ctx.props();
-        let state = ctx.state();
-        let value_str = match &state.value {
+        let value_str = match &self.value {
             Value::String(s) => s.clone(),
             _ => "".to_string(),
         };
-        let validation_result = &state.result;
+        let validation_result = &self.result;
 
         let current_value = Self::try_parse(&value_str, &props.format, &props.alt_formats);
         let props = props.clone();

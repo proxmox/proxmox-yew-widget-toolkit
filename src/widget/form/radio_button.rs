@@ -12,8 +12,8 @@ use crate::tr;
 use crate::widget::{Container, Fa, FieldLabel, Row, Tooltip};
 
 use super::{
-    IntoValidateFn, ManagedField, ManagedFieldContext, ManagedFieldMaster, ManagedFieldState,
-    ValidateFn,
+    IntoValidateFn, ManagedField, ManagedFieldContext, ManagedFieldMaster, ManagedFieldScopeExt,
+    ManagedFieldState, ValidateFn,
 };
 
 pub type PwtRadioButton = ManagedFieldMaster<RadioButtonField>;
@@ -122,7 +122,22 @@ pub enum Msg {
 
 #[doc(hidden)]
 pub struct RadioButtonField {
+    state: ManagedFieldState,
     node_ref: NodeRef,
+}
+
+impl std::ops::Deref for RadioButtonField {
+    type Target = ManagedFieldState;
+
+    fn deref(&self) -> &Self::Target {
+        &self.state
+    }
+}
+
+impl std::ops::DerefMut for RadioButtonField {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.state
+    }
 }
 
 #[derive(PartialEq)]
@@ -160,7 +175,8 @@ impl ManagedField for RadioButtonField {
         })
     }
 
-    fn setup(props: &RadioButton) -> ManagedFieldState {
+    fn create(ctx: &ManagedFieldContext<Self>) -> Self {
+        let props = ctx.props();
         let on_value = props.value.to_string();
 
         let default = match props.default {
@@ -176,20 +192,9 @@ impl ManagedField for RadioButtonField {
 
         let mut state = ManagedFieldState::new(value.into(), default.into());
         state.radio_group = true;
-        state
-    }
 
-    fn value_changed(&mut self, ctx: &super::ManagedFieldContext<Self>) {
-        let props = ctx.props();
-        let state = ctx.state();
-        let value = state.value.as_str().unwrap_or("").to_string();
-        if let Some(on_change) = &props.on_change {
-            on_change.emit(value);
-        }
-    }
-
-    fn create(_ctx: &ManagedFieldContext<Self>) -> Self {
         Self {
+            state,
             node_ref: NodeRef::default(),
         }
     }
@@ -199,9 +204,16 @@ impl ManagedField for RadioButtonField {
         false
     }
 
+    fn value_changed(&mut self, ctx: &super::ManagedFieldContext<Self>) {
+        let props = ctx.props();
+        let value = self.value.as_str().unwrap_or("").to_string();
+        if let Some(on_change) = &props.on_change {
+            on_change.emit(value);
+        }
+    }
+
     fn update(&mut self, ctx: &ManagedFieldContext<Self>, msg: Self::Message) -> bool {
         let props = ctx.props();
-        let state = ctx.state();
 
         match msg {
             Msg::Toggle => {
@@ -209,7 +221,7 @@ impl ManagedField for RadioButtonField {
                     return true;
                 }
                 let on_value = props.value.to_string();
-                let value = state.value.clone();
+                let value = self.value.clone();
 
                 let changes = value != on_value;
 
@@ -239,12 +251,11 @@ impl ManagedField for RadioButtonField {
 
     fn view(&self, ctx: &ManagedFieldContext<Self>) -> Html {
         let props = ctx.props();
-        let state = ctx.state();
 
         let disabled = props.input_props.disabled;
 
         let on_value = props.value.to_string();
-        let (value, validation_result) = (&state.value, &state.result);
+        let (value, validation_result) = (&self.value, &self.result);
         let checked = *value == on_value;
 
         let onclick = ctx.link().callback(|_| Msg::Toggle);

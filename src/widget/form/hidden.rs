@@ -47,7 +47,23 @@ impl Hidden {
 }
 
 #[doc(hidden)]
-pub struct HiddenField {}
+pub struct HiddenField {
+    state: ManagedFieldState,
+}
+
+impl std::ops::Deref for HiddenField {
+    type Target = ManagedFieldState;
+
+    fn deref(&self) -> &Self::Target {
+        &self.state
+    }
+}
+
+impl std::ops::DerefMut for HiddenField {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.state
+    }
+}
 
 impl ManagedField for HiddenField {
     type Properties = Hidden;
@@ -56,7 +72,8 @@ impl ManagedField for HiddenField {
 
     fn validation_args(_props: &Self::Properties) -> Self::ValidateClosure {}
 
-    fn setup(props: &Hidden) -> ManagedFieldState {
+    fn create(ctx: &ManagedFieldContext<Self>) -> Self {
+        let props = ctx.props();
         let mut value = Value::Null;
         if let Some(default) = &props.default {
             value = default.clone();
@@ -64,18 +81,15 @@ impl ManagedField for HiddenField {
 
         let default = props.default.clone().unwrap_or(Value::Null);
 
-        ManagedFieldState::new(value, default)
-    }
-
-    fn create(_ctx: &ManagedFieldContext<Self>) -> Self {
-        Self {}
+        Self {
+            state: ManagedFieldState::new(value, default),
+        }
     }
 
     fn value_changed(&mut self, ctx: &ManagedFieldContext<Self>) {
         let props = ctx.props();
-        let state = ctx.state();
         if let Some(on_change) = &props.on_change {
-            on_change.emit(state.value.clone());
+            on_change.emit(self.value.clone());
         }
     }
 

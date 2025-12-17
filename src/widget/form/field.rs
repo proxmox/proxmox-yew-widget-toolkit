@@ -11,8 +11,8 @@ use yew::prelude::*;
 use pwt_macros::{builder, widget};
 
 use super::{
-    IntoValidateFn, ManagedField, ManagedFieldContext, ManagedFieldMaster, ManagedFieldState,
-    ValidateFn,
+    IntoValidateFn, ManagedField, ManagedFieldContext, ManagedFieldMaster, ManagedFieldScopeExt,
+    ManagedFieldState, ValidateFn,
 };
 use crate::props::{
     ContainerBuilder, EventSubscriber, IntoVTag, WidgetBuilder, WidgetStyleBuilder,
@@ -283,8 +283,23 @@ enum PasswordState {
 
 #[doc(hidden)]
 pub struct StandardField {
+    state: ManagedFieldState,
     password_state: PasswordState,
     input_ref: NodeRef,
+}
+
+impl std::ops::Deref for StandardField {
+    type Target = ManagedFieldState;
+
+    fn deref(&self) -> &Self::Target {
+        &self.state
+    }
+}
+
+impl std::ops::DerefMut for StandardField {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.state
+    }
 }
 
 // Field are type Value::String(), but we also allow Value::Number ..
@@ -366,7 +381,14 @@ impl ManagedField for StandardField {
         Ok(Value::String(value))
     }
 
-    fn setup(props: &Self::Properties) -> ManagedFieldState {
+    fn create(ctx: &ManagedFieldContext<Self>) -> Self {
+        let props = ctx.props();
+        let password_state = if props.input_type == InputType::Password {
+            PasswordState::Hidden
+        } else {
+            PasswordState::NotAPassword
+        };
+
         let mut value = String::new();
 
         if let Some(default) = &props.default {
@@ -380,13 +402,16 @@ impl ManagedField for StandardField {
 
         let default: Value = props.default.as_deref().unwrap_or("").into();
 
-        ManagedFieldState::new(value, default)
+        Self {
+            state: ManagedFieldState::new(value, default),
+            password_state,
+            input_ref: NodeRef::default(),
+        }
     }
 
     fn value_changed(&mut self, ctx: &super::ManagedFieldContext<Self>) {
         let props = ctx.props();
-        let state = ctx.state();
-        let text_value = value_to_text(&state.value);
+        let text_value = value_to_text(&self.value);
         if let Some(on_change) = &props.on_change {
             on_change.emit(text_value);
         }
@@ -401,20 +426,6 @@ impl ManagedField for StandardField {
             );
         }
         true
-    }
-
-    fn create(ctx: &ManagedFieldContext<Self>) -> Self {
-        let props = ctx.props();
-        let password_state = if props.input_type == InputType::Password {
-            PasswordState::Hidden
-        } else {
-            PasswordState::NotAPassword
-        };
-
-        Self {
-            password_state,
-            input_ref: NodeRef::default(),
-        }
     }
 
     fn update(&mut self, ctx: &ManagedFieldContext<Self>, msg: Self::Message) -> bool {
@@ -440,9 +451,8 @@ impl ManagedField for StandardField {
 
     fn view(&self, ctx: &ManagedFieldContext<Self>) -> Html {
         let props = ctx.props();
-        let state = ctx.state();
 
-        let (value, validation_result) = (&state.value, &state.result);
+        let (value, validation_result) = (&self.value, &self.result);
         let value = value_to_text(value);
 
         let input_type = match self.password_state {

@@ -1,3 +1,5 @@
+use std::ops::DerefMut;
+
 use anyhow::Error;
 use serde_json::Value;
 use wasm_bindgen::{closure::Closure, JsCast};
@@ -7,6 +9,9 @@ use yew::prelude::*;
 
 use super::{FieldHandle, FieldOptions, FormContext, FormContextObserver, SubmitValidateFn};
 use crate::props::FieldBuilder;
+
+pub type ManagedFieldContext<MF> = Context<ManagedFieldMaster<MF>>;
+pub type ManagedFieldLink<MF> = Scope<ManagedFieldMaster<MF>>;
 
 /// Managed field state.
 ///
@@ -30,12 +35,31 @@ pub struct ManagedFieldState {
     pub default: Value,
 
     /// Radio group flag. Set when the field is part of a radio group.
+    ///
+    /// # Note
+    ///
+    /// When `radio_group` is true, multiple fields with the same name are allowed,
+    /// each representing a different radio option. Only one can be selected at a time.
     pub radio_group: bool,
 
     /// Do not allow multiple fields with the same name.
     ///
-    /// Instead, use the same state for all of those fields.
+    /// When `unique` is true, all fields with the same name share the same state.
+    /// This is useful for fields that appear in multiple places but should be synchronized.
+    ///
+    /// # Note
+    ///
+    /// This is mutually exclusive with `radio_group`.
     pub unique: bool,
+
+    form_ctx: Option<FormContext>,
+    field_handle: Option<FieldHandle>,
+    _form_ctx_handle: Option<ContextHandle<FormContext>>,
+    _form_ctx_observer: Option<FormContextObserver>,
+    label_clicked_closure: Option<Closure<dyn Fn()>>,
+
+    /// The validation function
+    validate: SubmitValidateFn<Value>,
 }
 
 impl ManagedFieldState {
@@ -47,116 +71,65 @@ impl ManagedFieldState {
             result: Ok(default.clone()),
             default,
             value,
+
+            form_ctx: None,
+            field_handle: None,
+            _form_ctx_handle: None,
+            _form_ctx_observer: None,
+            label_clicked_closure: None,
+            validate: SubmitValidateFn::new(|v: &Value| Ok(v.clone())),
         }
     }
 }
 
-/// Managed field context.
-///
-/// This is a small wrapper around Yew [Context], and gives you access
-/// to:
-///
-/// - the [ManagedFieldState] to get the field value and validity
-/// - the [ManagedFieldLink] to send messges to the update function.
-/// - the component properties.
-pub struct ManagedFieldContext<'a, MF: ManagedField + Sized + 'static> {
-    ctx: &'a Context<ManagedFieldMaster<MF>>,
-    comp_state: &'a ManagedFieldState,
-}
-
-impl<'a, MF: ManagedField + Sized> ManagedFieldContext<'a, MF> {
-    fn new(ctx: &'a Context<ManagedFieldMaster<MF>>, comp_state: &'a ManagedFieldState) -> Self {
-        ManagedFieldContext { ctx, comp_state }
-    }
-
-    /// The component’s props.
-    pub fn props(&self) -> &MF::Properties {
-        self.ctx.props()
-    }
-
-    /// The component scope (wrapped).
-    pub fn link(&self) -> ManagedFieldLink<MF> {
-        ManagedFieldLink {
-            link: self.ctx.link().clone(),
-        }
-    }
-
-    /// Current field state.
-    pub fn state(&self) -> &ManagedFieldState {
-        self.comp_state
-    }
-}
-
-pub struct ManagedFieldLink<MF: ManagedField + Sized + 'static> {
-    link: Scope<ManagedFieldMaster<MF>>,
-}
-
-impl<MF: ManagedField + Sized> ManagedFieldLink<MF> {
-    /// Send messages to the update function.
-    pub fn send_message(&self, msg: impl Into<MF::Message>) {
-        let msg = msg.into();
-        self.link.send_message(Msg::ChildMessage(msg));
-    }
-
-    /// Create a callback which sends messages to the update function.
-    pub fn callback<F, IN, M>(&self, function: F) -> Callback<IN>
-    where
-        M: Into<MF::Message>,
-        F: Fn(IN) -> M + 'static,
-    {
-        self.link.callback(move |p: IN| {
-            let msg: MF::Message = function(p).into();
-            Msg::ChildMessage(msg)
-        })
-    }
-
+pub trait ManagedFieldScopeExt<M: ManagedField> {
     /// Set value for managed fields.
     ///
-    /// Updates the value and re-check validity. The connected [FormContext] is kept in sync.
-    pub fn update_value(&self, value: impl Into<Value>) {
-        let msg = Msg::UpdateValue(value.into());
-        self.link.send_message(msg);
-    }
+    /// Updates the value and re-validates it. If the field is connected to a [FormContext],
+    /// the form's state is automatically synchronized.
+    ///
+    /// Use this for normal value updates from user interaction.
+    fn update_value(&self, value: impl Into<Value>);
 
     /// Update default value.
-    pub fn update_default(&self, default: impl Into<Value>) {
-        let msg = Msg::UpdateDefault(default.into());
-        self.link.send_message(msg);
-    }
+    ///
+    /// This updates the default value used for form resets.
+    fn update_default(&self, default: impl Into<Value>);
 
-    /// Trigger re-validation
-    pub fn validate(&self) {
-        self.link.send_message(Msg::Validate);
-    }
-
-    /// Set valus/valid for unmanaged fields
+    /// Set value/validity for unmanaged fields
     ///
     /// # Note
     ///
     /// This is ignored if the field is managed by a FormContext.
-    pub fn force_value(
+    fn force_value(
+        &self,
+        value: Option<impl Into<Value>>,
+        validation_result: Option<Result<Value, String>>,
+    );
+
+    /// Trigger re-validation
+    fn validate(&self);
+}
+
+impl<M: ManagedField> ManagedFieldScopeExt<M> for Scope<ManagedFieldMaster<M>> {
+    fn update_value(&self, value: impl Into<Value>) {
+        let msg = Msg::UpdateValue(value.into());
+        self.send_message(msg);
+    }
+    fn update_default(&self, default: impl Into<Value>) {
+        let msg = Msg::UpdateDefault(default.into());
+        self.send_message(msg);
+    }
+    fn force_value(
         &self,
         value: Option<impl Into<Value>>,
         validation_result: Option<Result<Value, String>>,
     ) {
         let msg = Msg::ForceValue(value.map(|v| v.into()), validation_result);
-        self.link.send_message(msg);
+        self.send_message(msg);
     }
-
-    /// Accesses a value provided by a parent ContextProvider component of the same type.
-    pub fn context<T: Clone + PartialEq + 'static>(
-        &self,
-        callback: Callback<T>,
-    ) -> Option<(T, ContextHandle<T>)> {
-        self.link.context(callback)
-    }
-}
-
-impl<MF: ManagedField + Sized> Clone for ManagedFieldLink<MF> {
-    fn clone(&self) -> Self {
-        Self {
-            link: self.link.clone(),
-        }
+    fn validate(&self) {
+        self.send_message(Msg::Validate);
     }
 }
 
@@ -178,7 +151,7 @@ impl<MF: ManagedField + Sized> Clone for ManagedFieldLink<MF> {
 ///
 /// There are special link function [update](ManagedFieldLink::update_value) or
 /// [force](ManagedFieldLink::force_value) field values:
-pub trait ManagedField: Sized {
+pub trait ManagedField: Sized + DerefMut<Target = ManagedFieldState> + 'static {
     type Properties: Properties + FieldBuilder;
     type Message: 'static;
     type ValidateClosure: 'static + PartialEq;
@@ -196,14 +169,6 @@ pub trait ManagedField: Sized {
     fn validator(_props: &Self::ValidateClosure, value: &Value) -> Result<Value, Error> {
         Ok(value.clone())
     }
-
-    /// Returns the initial field setup.
-    ///
-    /// # Note
-    ///
-    /// The [ManagedFieldState::result] and  [ManagedFieldState::last_valid] properties
-    /// are ignored and immediately overwritten by a call to the validation function.
-    fn setup(props: &Self::Properties) -> ManagedFieldState;
 
     /// Create the component state.
     fn create(ctx: &ManagedFieldContext<Self>) -> Self;
@@ -244,32 +209,54 @@ pub enum Msg<M> {
     FormCtxDataChange,          // Data inside FormContext changed
 }
 
+impl<CM> From<CM> for Msg<CM> {
+    fn from(child_msg: CM) -> Self {
+        Msg::ChildMessage(child_msg)
+    }
+}
+
 /// Component implementation for [ManagedField]s.
 pub struct ManagedFieldMaster<MF: ManagedField> {
-    slave: MF,
-    comp_state: ManagedFieldState,
-    form_ctx: Option<FormContext>,
-    field_handle: Option<FieldHandle>,
-    _form_ctx_handle: Option<ContextHandle<FormContext>>,
-    _form_ctx_observer: Option<FormContextObserver>,
-    label_clicked_closure: Option<Closure<dyn Fn()>>,
-
-    /// The validation function
-    validate: SubmitValidateFn<Value>,
+    state: MF,
 }
 
 impl<MF: ManagedField + 'static> ManagedFieldMaster<MF> {
-    // Get current field value with the validation result and the last valid value.
+    /// Get current field value with the validation result and the last valid value.
     fn get_field_data(&self) -> (Value, Result<Value, String>, Option<Value>) {
-        if let Some(field_handle) = &self.field_handle {
-            field_handle.get_data()
-        } else {
-            (
-                self.comp_state.value.clone(),
-                self.comp_state.result.clone(),
-                self.comp_state.last_valid.clone(),
-            )
+        if let Some(field_handle) = &self.state.field_handle {
+            return field_handle.get_data();
         }
+        (
+            self.state.value.clone(),
+            self.state.result.clone(),
+            self.state.last_valid.clone(),
+        )
+    }
+
+    /// Update field state (value, validation result, and last valid value).
+    ///
+    /// This helper method consolidates the common pattern of updating all three
+    /// state components and triggering the value_changed callback when needed.
+    fn update_field_state(
+        &mut self,
+        ctx: &Context<Self>,
+        new_value: Value,
+        new_result: Result<Value, String>,
+    ) -> bool {
+        let value_changed = new_value != self.state.value;
+        let valid_changed = new_result != self.state.result;
+
+        self.state.value = new_value;
+        self.state.result = new_result;
+        if let Ok(submit_value) = &self.state.result {
+            self.state.last_valid = Some(submit_value.clone());
+        }
+
+        if value_changed || valid_changed {
+            self.state.value_changed(ctx);
+        }
+
+        value_changed || valid_changed
     }
 
     // Register the field in the FormContext
@@ -280,15 +267,15 @@ impl<MF: ManagedField + 'static> ManagedFieldMaster<MF> {
         let name = match &input_props.name {
             Some(name) => name,
             None => {
-                self.field_handle = None;
+                self.state.field_handle = None;
                 return;
             }
         };
 
-        let form_ctx = match &self.form_ctx {
+        let form_ctx = match &self.state.form_ctx {
             Some(form_ctx) => form_ctx.clone(),
             None => {
-                self.field_handle = None;
+                self.state.field_handle = None;
                 return;
             }
         };
@@ -302,22 +289,22 @@ impl<MF: ManagedField + 'static> ManagedFieldMaster<MF> {
 
         let field_handle = form_ctx.register_field(
             name,
-            self.comp_state.value.clone(),
-            self.comp_state.default.clone(),
-            self.comp_state.radio_group,
-            Some(self.validate.clone()),
+            self.state.value.clone(),
+            self.state.default.clone(),
+            self.state.radio_group,
+            Some(self.state.validate.clone()),
             options,
-            self.comp_state.unique,
+            self.state.unique,
         );
 
         // FormContext may already have field data (i.e for unique fields), so sync back
         // data after field registration.
         let (value, result, last_valid) = field_handle.get_data();
-        self.comp_state.value = value;
-        self.comp_state.result = result;
-        self.comp_state.last_valid = last_valid;
+        self.state.value = value;
+        self.state.result = result;
+        self.state.last_valid = last_valid;
 
-        self.field_handle = Some(field_handle);
+        self.state.field_handle = Some(field_handle);
     }
 }
 
@@ -328,19 +315,18 @@ impl<MF: ManagedField + 'static> Component for ManagedFieldMaster<MF> {
     fn create(ctx: &Context<Self>) -> Self {
         let props = ctx.props();
 
+        let mut state = MF::create(&ctx);
+
         let validation_args = MF::validation_args(props);
-        let validate = SubmitValidateFn::new(move |value| MF::validator(&validation_args, value));
+        state.validate = SubmitValidateFn::new(move |value| MF::validator(&validation_args, value));
 
-        let mut comp_state = MF::setup(props);
-        comp_state.result = validate
-            .apply(&comp_state.value)
+        state.result = state
+            .validate
+            .apply(&state.value)
             .map_err(|err| err.to_string());
-        if let Ok(submit_value) = &comp_state.result {
-            comp_state.last_valid = Some(submit_value.clone())
+        if let Ok(submit_value) = &state.result {
+            state.last_valid = Some(submit_value.clone())
         }
-
-        let sub_context = ManagedFieldContext::new(ctx, &comp_state);
-        let slave = MF::create(&sub_context);
 
         let input_props = props.as_input_props();
 
@@ -348,27 +334,14 @@ impl<MF: ManagedField + 'static> Component for ManagedFieldMaster<MF> {
 
         let on_form_data_change = ctx.link().callback(|_| Msg::FormCtxDataChange);
 
-        let mut _form_ctx_handle = None;
-        let mut _form_ctx_observer = None;
-        let mut form_ctx = None;
-
         if input_props.name.is_some() {
             if let Some((form, handle)) = ctx.link().context::<FormContext>(on_form_ctx_change) {
-                _form_ctx_handle = Some(handle);
-                _form_ctx_observer = Some(form.add_listener(on_form_data_change));
-                form_ctx = Some(form);
+                state._form_ctx_handle = Some(handle);
+                state._form_ctx_observer = Some(form.add_listener(on_form_data_change));
+                state.form_ctx = Some(form);
             }
         }
-        let mut me = Self {
-            slave,
-            comp_state,
-            _form_ctx_handle,
-            _form_ctx_observer,
-            field_handle: None,
-            form_ctx,
-            label_clicked_closure: None,
-            validate,
-        };
+        let mut me = Self { state };
 
         me.register_field(ctx);
 
@@ -380,123 +353,92 @@ impl<MF: ManagedField + 'static> Component for ManagedFieldMaster<MF> {
         match msg {
             Msg::ForceValue(value, result) => {
                 if let Some(name) = &props.as_input_props().name {
-                    if self.field_handle.is_some() {
+                    if self.state.field_handle.is_some() {
                         log::error!("Field '{name}' is managed - unable to force value.");
                         return false;
                     }
                 }
 
-                let value = value.unwrap_or(self.comp_state.value.clone());
-                let result = result
-                    .unwrap_or_else(|| self.validate.apply(&value).map_err(|e| e.to_string()));
+                let value = value.unwrap_or(self.state.value.clone());
+                let result = result.unwrap_or_else(|| {
+                    self.state.validate.apply(&value).map_err(|e| e.to_string())
+                });
 
-                let value_changed = value != self.comp_state.value;
-                let valid_changed = result != self.comp_state.result;
-
-                self.comp_state.value = value;
-                self.comp_state.result = result;
-                if let Ok(submit_value) = &self.comp_state.result {
-                    self.comp_state.last_valid = Some(submit_value.clone());
-                }
-
-                if value_changed || valid_changed {
-                    let sub_context = ManagedFieldContext::new(ctx, &self.comp_state);
-                    self.slave.value_changed(&sub_context);
-                }
-                true
+                self.update_field_state(ctx, value, result)
             }
             Msg::UpdateValue(value) => {
-                let result = self.validate.apply(&value).map_err(|e| e.to_string());
+                let result = self.state.validate.apply(&value).map_err(|e| e.to_string());
 
-                let value_changed = value != self.comp_state.value;
-                let valid_changed = result != self.comp_state.result;
-
-                self.comp_state.value = value;
-                self.comp_state.result = result;
-                if let Ok(submit_value) = &self.comp_state.result {
-                    self.comp_state.last_valid = Some(submit_value.clone());
+                if let Some(field_handle) = &mut self.state.field_handle {
+                    field_handle.set_value(value.clone());
                 }
 
-                if let Some(field_handle) = &mut self.field_handle {
-                    field_handle.set_value(self.comp_state.value.clone());
-                }
-                if value_changed || valid_changed {
-                    let sub_context = ManagedFieldContext::new(ctx, &self.comp_state);
-                    self.slave.value_changed(&sub_context);
-                }
-                true
+                self.update_field_state(ctx, value, result)
             }
             Msg::Validate => {
-                if let Some(field_handle) = &mut self.field_handle {
+                if let Some(field_handle) = &mut self.state.field_handle {
                     field_handle.validate();
-                    false
-                } else {
-                    let result = self
-                        .validate
-                        .apply(&self.comp_state.value)
-                        .map_err(|e| e.to_string());
-
-                    let valid_changed = result != self.comp_state.result;
-                    self.comp_state.result = result;
-                    if let Ok(submit_value) = &self.comp_state.result {
-                        self.comp_state.last_valid = Some(submit_value.clone());
-                    }
-
-                    if valid_changed {
-                        let sub_context = ManagedFieldContext::new(ctx, &self.comp_state);
-                        self.slave.value_changed(&sub_context);
-                    }
-                    valid_changed
+                    return false;
                 }
+
+                let result = self
+                    .state
+                    .validate
+                    .apply(&self.state.value)
+                    .map_err(|e| e.to_string());
+
+                let valid_changed = result != self.state.result;
+                self.state.result = result.clone();
+                if let Ok(submit_value) = &result {
+                    self.state.last_valid = Some(submit_value.clone());
+                }
+
+                if valid_changed {
+                    self.state.value_changed(ctx);
+                }
+                valid_changed
             }
             Msg::UpdateDefault(default) => {
-                self.comp_state.default = default.clone();
-                if let Some(field_handle) = &mut self.field_handle {
+                self.state.default = default.clone();
+                if let Some(field_handle) = &mut self.state.field_handle {
                     field_handle.set_default(default);
                 }
                 true
             }
-            Msg::ChildMessage(child_msg) => {
-                let sub_context = ManagedFieldContext::new(ctx, &self.comp_state);
-                self.slave.update(&sub_context, child_msg)
-            }
+            Msg::ChildMessage(child_msg) => self.state.update(ctx, child_msg),
             Msg::FormCtxUpdate(form_ctx) => {
                 let on_form_data_change = ctx.link().callback(|_| Msg::FormCtxDataChange);
-                self._form_ctx_observer = Some(form_ctx.add_listener(on_form_data_change));
-                self.form_ctx = Some(form_ctx);
+                self.state._form_ctx_observer = Some(form_ctx.add_listener(on_form_data_change));
+                self.state.form_ctx = Some(form_ctx);
                 self.register_field(ctx);
                 true
             }
             Msg::FormCtxDataChange => {
-                if self.field_handle.is_some() {
-                    let (value, result, last_valid) = self.get_field_data();
-                    let value_changed = value != self.comp_state.value;
-                    let valid_changed = result != self.comp_state.result;
-
-                    if value_changed || valid_changed {
-                        self.comp_state.value = value;
-                        self.comp_state.result = result;
-                        self.comp_state.last_valid = last_valid;
-
-                        let sub_context = ManagedFieldContext::new(ctx, &self.comp_state);
-                        self.slave.value_changed(&sub_context);
-                    }
-
-                    return value_changed || valid_changed;
+                if self.state.field_handle.is_none() {
+                    return false;
                 }
-                false
+
+                let (value, result, last_valid) = self.get_field_data();
+                let value_changed = value != self.state.value;
+                let valid_changed = result != self.state.result;
+
+                if value_changed || valid_changed {
+                    self.state.value = value;
+                    self.state.result = result;
+                    self.state.last_valid = last_valid;
+                    self.state.value_changed(ctx);
+                }
+
+                value_changed || valid_changed
             }
-            Msg::LabelClicked => {
-                let sub_context = ManagedFieldContext::new(ctx, &self.comp_state);
-                self.slave.label_clicked(&sub_context)
-            }
+            Msg::LabelClicked => self.state.label_clicked(ctx),
         }
     }
 
     fn changed(&mut self, ctx: &Context<Self>, old_props: &Self::Properties) -> bool {
         let props = ctx.props();
         let mut refresh1 = false;
-        if let Some(field_handle) = &mut self.field_handle {
+        if let Some(field_handle) = &mut self.state.field_handle {
             let input_props = props.as_input_props();
             let old_input_props = old_props.as_input_props();
 
@@ -523,35 +465,26 @@ impl<MF: ManagedField + 'static> Component for ManagedFieldMaster<MF> {
             let validate =
                 SubmitValidateFn::new(move |value| MF::validator(&validation_args, value));
             refresh1 = true;
-            self.validate = validate.clone();
-            if let Some(field_handle) = &mut self.field_handle {
+            self.state.validate = validate.clone();
+            if let Some(field_handle) = &mut self.state.field_handle {
                 field_handle.update_validate(Some(validate));
             } else {
                 ctx.link().send_message(Msg::Validate); // re-evaluate
             }
         }
 
-        let sub_context = ManagedFieldContext::new(ctx, &self.comp_state);
-        let refresh2 = self.slave.changed(&sub_context, old_props);
+        let refresh2 = self.state.changed(ctx, old_props);
 
         refresh1 || refresh2
     }
 
     fn view(&self, ctx: &Context<Self>) -> Html {
-        let sub_context = ManagedFieldContext::new(ctx, &self.comp_state);
-        self.slave.view(&sub_context)
+        self.state.view(ctx)
     }
 
     fn rendered(&mut self, ctx: &Context<Self>, first_render: bool) {
         if first_render {
             let props = ctx.props().as_input_props();
-            /* fixme:
-            if props.autofocus {
-                if let Some(el) = props.std_props.node_ref.cast::<web_sys::HtmlElement>() {
-                    let _ = el.focus();
-                }
-            }
-            */
 
             if let Some(label_id) = &props.label_id {
                 let label_clicked_closure = Closure::wrap({
@@ -566,12 +499,12 @@ impl<MF: ManagedField + 'static> Component for ManagedFieldMaster<MF> {
                         "click",
                         label_clicked_closure.as_ref().unchecked_ref(),
                     );
-                    self.label_clicked_closure = Some(label_clicked_closure); // keep alive
+                    self.state.label_clicked_closure = Some(label_clicked_closure);
+                    // keep alive
                 }
             }
         }
 
-        let sub_context = ManagedFieldContext::new(ctx, &self.comp_state);
-        self.slave.rendered(&sub_context, first_render);
+        self.state.rendered(ctx, first_render);
     }
 }

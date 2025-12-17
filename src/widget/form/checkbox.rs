@@ -7,8 +7,8 @@ use yew::prelude::*;
 use pwt_macros::{builder, widget};
 
 use super::{
-    IntoValidateFn, ManagedField, ManagedFieldContext, ManagedFieldMaster, ManagedFieldState,
-    ValidateFn,
+    IntoValidateFn, ManagedField, ManagedFieldContext, ManagedFieldMaster, ManagedFieldScopeExt,
+    ManagedFieldState, ValidateFn,
 };
 use crate::css::AlignItems;
 use crate::props::{ContainerBuilder, CssPaddingBuilder, EventSubscriber, IntoVTag, WidgetBuilder};
@@ -139,7 +139,22 @@ pub enum Msg {
 
 #[doc(hidden)]
 pub struct CheckboxField {
+    state: ManagedFieldState,
     node_ref: NodeRef,
+}
+
+impl std::ops::Deref for CheckboxField {
+    type Target = ManagedFieldState;
+
+    fn deref(&self) -> &Self::Target {
+        &self.state
+    }
+}
+
+impl std::ops::DerefMut for CheckboxField {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.state
+    }
 }
 
 #[derive(PartialEq)]
@@ -183,7 +198,8 @@ impl ManagedField for CheckboxField {
         Ok(Value::Bool(value))
     }
 
-    fn setup(props: &Checkbox) -> ManagedFieldState {
+    fn create(ctx: &ManagedFieldContext<Self>) -> Self {
+        let props = ctx.props();
         let mut value = Value::Bool(false);
         if let Some(default) = &props.default {
             value = if *default {
@@ -206,11 +222,8 @@ impl ManagedField for CheckboxField {
             props.submit_off_value.clone()
         };
 
-        ManagedFieldState::new(value, default)
-    }
-
-    fn create(_ctx: &ManagedFieldContext<Self>) -> Self {
         Self {
+            state: ManagedFieldState::new(value, default),
             node_ref: NodeRef::default(),
         }
     }
@@ -222,13 +235,12 @@ impl ManagedField for CheckboxField {
 
     fn update(&mut self, ctx: &ManagedFieldContext<Self>, msg: Self::Message) -> bool {
         let props = ctx.props();
-        let state = ctx.state();
         match msg {
             Msg::Toggle => {
                 if props.input_props.disabled {
                     return true;
                 }
-                let checked = state.value == props.submit_on_value;
+                let checked = self.value == props.submit_on_value;
                 let new_value = if checked {
                     props.submit_off_value.clone()
                 } else {
@@ -247,8 +259,7 @@ impl ManagedField for CheckboxField {
 
     fn value_changed(&mut self, ctx: &ManagedFieldContext<Self>) {
         let props = ctx.props();
-        let state = ctx.state();
-        let checked = state.value == props.submit_on_value;
+        let checked = self.value == props.submit_on_value;
         if let Some(on_change) = &props.on_change {
             on_change.emit(checked);
         }
@@ -272,9 +283,7 @@ impl ManagedField for CheckboxField {
         let link = ctx.link();
         let disabled = props.input_props.disabled;
 
-        let state = ctx.state();
-
-        let (value, validation_result) = (&state.value, &state.result);
+        let (value, validation_result) = (&self.value, &self.result);
         let checked = *value == props.submit_on_value;
 
         let onclick = link.callback(|_| Msg::Toggle);

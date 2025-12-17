@@ -8,7 +8,7 @@ use pwt_macros::{builder, widget};
 use crate::{
     touch::prelude::{ContainerBuilder, WidgetBuilder},
     widget::{
-        form::{ManagedField, ManagedFieldMaster, ManagedFieldState},
+        form::{ManagedField, ManagedFieldContext, ManagedFieldMaster, ManagedFieldState},
         Container, Tooltip,
     },
 };
@@ -46,7 +46,23 @@ impl DisplayField {
 }
 
 #[doc(hidden)]
-pub struct DisplayFieldImpl {}
+pub struct DisplayFieldImpl {
+    state: ManagedFieldState,
+}
+
+impl std::ops::Deref for DisplayFieldImpl {
+    type Target = ManagedFieldState;
+
+    fn deref(&self) -> &Self::Target {
+        &self.state
+    }
+}
+
+impl std::ops::DerefMut for DisplayFieldImpl {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.state
+    }
+}
 
 impl ManagedField for DisplayFieldImpl {
     type Properties = DisplayField;
@@ -55,36 +71,25 @@ impl ManagedField for DisplayFieldImpl {
 
     fn validation_args(_props: &Self::Properties) -> Self::ValidateClosure {}
 
-    fn setup(props: &Self::Properties) -> super::ManagedFieldState {
+    fn create(ctx: &ManagedFieldContext<Self>) -> Self {
+        let props = ctx.props();
         let value: Value = match &props.value {
             Some(value) => value.to_string().into(),
             None => Value::Null,
         };
 
         let default: Value = props.default.as_deref().unwrap_or("").into();
-        let result = Ok(default.clone());
-        let last_valid = result.clone().ok();
 
-        ManagedFieldState {
-            value,
-            result,
-            last_valid,
-            default,
-            radio_group: false,
-            unique: false,
+        Self {
+            state: ManagedFieldState::new(value, default),
         }
-    }
-
-    fn create(_ctx: &super::ManagedFieldContext<Self>) -> Self {
-        Self {}
     }
 
     fn view(&self, ctx: &super::ManagedFieldContext<Self>) -> yew::Html {
         let props = ctx.props();
         let input_props = &props.input_props;
 
-        let state = ctx.state();
-        let value = state
+        let value = self
             .value
             .as_str()
             .unwrap_or(props.default.as_deref().unwrap_or(""));

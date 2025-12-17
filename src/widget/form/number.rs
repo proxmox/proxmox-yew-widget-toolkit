@@ -13,8 +13,8 @@ use yew::prelude::*;
 use pwt_macros::{builder, widget};
 
 use super::{
-    IntoValidateFn, ManagedField, ManagedFieldContext, ManagedFieldMaster, ManagedFieldState,
-    ValidateFn,
+    IntoValidateFn, ManagedField, ManagedFieldContext, ManagedFieldMaster, ManagedFieldScopeExt,
+    ManagedFieldState, ValidateFn,
 };
 use crate::props::{ContainerBuilder, EventSubscriber, IntoVTag, WidgetBuilder};
 use crate::widget::{Column, Container, Input, Tooltip};
@@ -407,11 +407,26 @@ pub enum Msg {
 
 #[doc(hidden)]
 pub struct NumberField<T> {
+    state: ManagedFieldState,
     input_ref: NodeRef,
     _phantom_data: PhantomData<T>,
     _spinner_start_timeout: Option<Timeout>,
     _spinner_interval: Option<Interval>,
     focus_input: bool,
+}
+
+impl<T> std::ops::Deref for NumberField<T> {
+    type Target = ManagedFieldState;
+
+    fn deref(&self) -> &Self::Target {
+        &self.state
+    }
+}
+
+impl<T> std::ops::DerefMut for NumberField<T> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.state
+    }
 }
 
 #[derive(PartialEq)]
@@ -480,7 +495,9 @@ impl<T: NumberTypeInfo> ManagedField for NumberField<T> {
         Ok(number.into())
     }
 
-    fn setup(props: &Self::Properties) -> ManagedFieldState {
+    fn create(ctx: &ManagedFieldContext<Self>) -> Self {
+        let props = ctx.props();
+
         let mut value = Value::Null;
 
         if let Some(default) = props.default {
@@ -497,13 +514,19 @@ impl<T: NumberTypeInfo> ManagedField for NumberField<T> {
             None => Value::Null,
         };
 
-        ManagedFieldState::new(value, default)
+        Self {
+            state: ManagedFieldState::new(value, default),
+            input_ref: NodeRef::default(),
+            _phantom_data: PhantomData::<T>,
+            _spinner_start_timeout: None,
+            _spinner_interval: None,
+            focus_input: false,
+        }
     }
 
     fn value_changed(&mut self, ctx: &super::ManagedFieldContext<Self>) {
         let props = ctx.props();
-        let state = ctx.state();
-        let data = match &state.result {
+        let data = match &self.result {
             Ok(value) => Some(T::value_to_number(value).map_err(|err| err.to_string())),
             Err(err) => Some(Err(err.clone())),
         };
@@ -523,19 +546,8 @@ impl<T: NumberTypeInfo> ManagedField for NumberField<T> {
         true
     }
 
-    fn create(_ctx: &ManagedFieldContext<Self>) -> Self {
-        Self {
-            input_ref: NodeRef::default(),
-            _phantom_data: PhantomData::<T>,
-            _spinner_start_timeout: None,
-            _spinner_interval: None,
-            focus_input: false,
-        }
-    }
-
     fn update(&mut self, ctx: &ManagedFieldContext<Self>, msg: Self::Message) -> bool {
         let props = ctx.props();
-        let state = ctx.state();
         match msg {
             Msg::Update(input) => {
                 ctx.link().update_value(input.clone());
@@ -546,8 +558,8 @@ impl<T: NumberTypeInfo> ManagedField for NumberField<T> {
                 true
             }
             Msg::Up => {
-                let n = T::value_to_number(&state.value).ok();
-                let n = match (n, state.result.is_ok()) {
+                let n = T::value_to_number(&self.value).ok();
+                let n = match (n, self.result.is_ok()) {
                     (None, true) => Some(T::default().clamp_value(props.min, props.max)),
                     (Some(n), _) => {
                         let next = T::step_up(&n, props.step);
@@ -566,8 +578,8 @@ impl<T: NumberTypeInfo> ManagedField for NumberField<T> {
                 true
             }
             Msg::Down => {
-                let n = T::value_to_number(&state.value).ok();
-                let n = match (n, state.result.is_ok()) {
+                let n = T::value_to_number(&self.value).ok();
+                let n = match (n, self.result.is_ok()) {
                     (None, true) => Some(T::default().clamp_value(props.min, props.max)),
                     (Some(n), _) => {
                         let next = T::step_down(&n, props.step);
@@ -586,18 +598,20 @@ impl<T: NumberTypeInfo> ManagedField for NumberField<T> {
                 true
             }
             Msg::SpinnerStart(up) => {
-                let link = ctx.link();
+                let link = ctx.link().clone();
                 ctx.link()
                     .send_message(if up { Msg::Up } else { Msg::Down });
-                self._spinner_start_timeout =
-                    Some(Timeout::new(SPINNER_START_DELAY_MS, move || {
-                        link.send_message(Msg::SpinnerStartRepeat(up))
-                    }));
+                if self._spinner_start_timeout.is_none() {
+                    self._spinner_start_timeout =
+                        Some(Timeout::new(SPINNER_START_DELAY_MS, move || {
+                            link.send_message(Msg::SpinnerStartRepeat(up));
+                        }));
+                }
                 self.focus_input = true;
                 true
             }
             Msg::SpinnerStartRepeat(up) => {
-                let link = ctx.link();
+                let link = ctx.link().clone();
                 self._spinner_interval =
                     Some(Interval::new(SPINNER_REPEAT_INTERVAL_MS, move || {
                         link.send_message(if up { Msg::Up } else { Msg::Down });
@@ -607,16 +621,16 @@ impl<T: NumberTypeInfo> ManagedField for NumberField<T> {
             Msg::SpinnerStop => {
                 self._spinner_start_timeout = None;
                 self._spinner_interval = None;
-                false
+                self.focus_input = false;
+                true
             }
         }
     }
 
     fn view(&self, ctx: &ManagedFieldContext<Self>) -> Html {
         let props = ctx.props();
-        let state = ctx.state();
 
-        let (value, validation_result) = (&state.value, &state.result);
+        let (value, validation_result) = (&self.value, &self.result);
         let value_text = match value {
             Value::Null => String::new(),
             Value::Number(number) => match T::value_to_number(value) {
@@ -627,10 +641,33 @@ impl<T: NumberTypeInfo> ManagedField for NumberField<T> {
             _ => String::new(),
         };
 
-        let oninput = ctx.link().callback(move |event: InputEvent| {
-            let input: HtmlInputElement = event.target_unchecked_into();
+        let oninput = ctx.link().callback(|input: InputEvent| {
+            let input: HtmlInputElement = input.target_unchecked_into();
             Msg::Update(input.value())
         });
+
+        let on_key_down = ctx.link().callback(|event: KeyboardEvent| {
+            let key = event.key();
+            match key.as_str() {
+                "ArrowUp" => {
+                    event.prevent_default();
+                    Msg::Up
+                }
+                "ArrowDown" => {
+                    event.prevent_default();
+                    Msg::Down
+                }
+                _ => Msg::SpinnerStop, // dummy
+            }
+        });
+
+        let on_mouse_down = ctx.link().callback(|event: MouseEvent| {
+            // prevent focus loss
+            event.prevent_default();
+            Msg::SpinnerStop // dummy
+        });
+
+        let input_props = props.input_props.clone();
 
         let inputmode = if T::is_decimal() {
             "decimal"
@@ -640,7 +677,7 @@ impl<T: NumberTypeInfo> ManagedField for NumberField<T> {
 
         let disabled = props.input_props.disabled;
         let input: Html = Input::new()
-            .with_input_props(&props.input_props)
+            .with_input_props(&input_props)
             .class("pwt-flex-fill")
             .attribute("type", "text") // important (text, not number)
             .attribute("role", "spinbutton")
@@ -649,16 +686,9 @@ impl<T: NumberTypeInfo> ManagedField for NumberField<T> {
             .attribute("aria-valuemax", props.max.map(|v| v.to_string()))
             .attribute("inputmode", inputmode)
             .oninput(oninput)
-            .onkeydown({
-                let link = ctx.link();
-                move |event: KeyboardEvent| match event.key().as_str() {
-                    "ArrowDown" => link.send_message(Msg::Down),
-                    "ArrowUp" => link.send_message(Msg::Up),
-                    _ => (),
-                }
-            })
+            .onkeydown(on_key_down)
             .onwheel({
-                let link = ctx.link();
+                let link = ctx.link().clone();
                 move |event: WheelEvent| {
                     match event.delta_y() {
                         delta if delta < 0.0 => link.send_message(Msg::Up),
@@ -668,6 +698,7 @@ impl<T: NumberTypeInfo> ManagedField for NumberField<T> {
                     event.prevent_default();
                 }
             })
+            .onmousedown(on_mouse_down)
             .into_html_with_ref(self.input_ref.clone());
 
         let mut input_container = Tooltip::empty()

@@ -7,7 +7,7 @@ use yew::virtual_dom::{VComp, VNode};
 use crate::prelude::*;
 use crate::props::FieldStdProps;
 use crate::widget::form::{
-    ManagedField, ManagedFieldContext, ManagedFieldMaster, ManagedFieldState,
+    ManagedField, ManagedFieldContext, ManagedFieldMaster, ManagedFieldScopeExt, ManagedFieldState,
 };
 use crate::widget::menu::MenuController;
 use crate::widget::Container;
@@ -101,7 +101,23 @@ pub enum Msg {
 }
 
 #[doc(hidden)]
-pub struct MenuCheckboxField {}
+pub struct MenuCheckboxField {
+    state: ManagedFieldState,
+}
+
+impl std::ops::Deref for MenuCheckboxField {
+    type Target = ManagedFieldState;
+
+    fn deref(&self) -> &Self::Target {
+        &self.state
+    }
+}
+
+impl std::ops::DerefMut for MenuCheckboxField {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.state
+    }
+}
 
 impl ManagedField for MenuCheckboxField {
     type Message = Msg;
@@ -110,7 +126,8 @@ impl ManagedField for MenuCheckboxField {
 
     fn validation_args(_props: &Self::Properties) -> Self::ValidateClosure {}
 
-    fn setup(props: &MenuCheckbox) -> ManagedFieldState {
+    fn create(ctx: &ManagedFieldContext<Self>) -> Self {
+        let props = ctx.props();
         let on_value = props.value.as_deref().unwrap_or("on").to_string();
 
         let default = match props.default {
@@ -127,13 +144,13 @@ impl ManagedField for MenuCheckboxField {
         let mut state = ManagedFieldState::new(value.into(), default.into());
         state.radio_group = props.radio_group;
         state.unique = true;
-        state
+
+        Self { state }
     }
 
     fn value_changed(&mut self, ctx: &ManagedFieldContext<Self>) {
         let props = ctx.props();
-        let state = ctx.state();
-        let value = state.value.as_str().unwrap_or("").to_string();
+        let value = self.value.as_str().unwrap_or("").to_string();
         let on_value = props.value.as_deref().unwrap_or("on").to_string();
         let checked = value == on_value;
 
@@ -144,13 +161,8 @@ impl ManagedField for MenuCheckboxField {
         }
     }
 
-    fn create(_ctx: &ManagedFieldContext<Self>) -> Self {
-        Self {}
-    }
-
     fn update(&mut self, ctx: &ManagedFieldContext<Self>, msg: Self::Message) -> bool {
         let props = ctx.props();
-        let state = ctx.state();
         match msg {
             Msg::Toggle => {
                 if props.input_props.disabled {
@@ -158,7 +170,7 @@ impl ManagedField for MenuCheckboxField {
                 }
 
                 let on_value = props.value.as_deref().unwrap_or("on").to_string();
-                let value = state.value.clone();
+                let value = self.value.clone();
                 let checked = value == on_value;
 
                 let new_value = if checked {
@@ -204,12 +216,11 @@ impl ManagedField for MenuCheckboxField {
 
     fn view(&self, ctx: &ManagedFieldContext<Self>) -> Html {
         let props = ctx.props();
-        let state = ctx.state();
 
         let disabled = props.input_props.disabled;
 
         let on_value = props.value.as_deref().unwrap_or("on").to_string();
-        let value = state.value.clone();
+        let value = self.value.clone();
         let checked = value == on_value;
 
         let icon_class = classes!(
