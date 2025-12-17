@@ -1,3 +1,35 @@
+rust-pwt (0.7.9) trixie; urgency=medium
+
+  * expose set_dark_mode_on_document_root helper to allow one setting the dark
+    mode class on the document root directly, which is useful for applications
+    that do not use the `ThemeLoader` component.
+
+  * improve Theme and ThemeLoader documentation.
+
+  * props: make RenderFn's return type generic and use that with the type
+    `String` instead of our TextRenderFn, that is now obsolete.
+
+  * widget: drop down combobox: add align_options property to allow
+    customizing the picker alignment.
+
+  * widget: data table: don't fire extra selection change event to avoid
+    multiple selection change events when a user clicks a line in the data
+    table, namely one from the clear, and one from the toggle.
+
+  * state: navigation: add 'replace_relative_route' to NavigationContextExt so
+    we can not only push new relative routes, but also replace the current
+    one.
+
+  * widget: tab panel: improve route handling on creation instead of always
+    pushing the route, replace the route, and only if the selected tab is not
+    the default one.
+
+  * form: generate DateField widget for selecting calendar dates.
+
+  * tab bar: make `TabBarItem::tip` work as intended.
+
+ -- Proxmox Support Team <support@proxmox.com>  Wed, 17 Dec 2025 16:40:24 +0100
+
 rust-pwt (0.7.8) trixie; urgency=medium
 
   * form context: add method to check dirtiness of a specific field.
