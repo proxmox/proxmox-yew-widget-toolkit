@@ -1,3 +1,12 @@
+rust-pwt-macros (0.5.1) trixie; urgency=medium
+
+  * builder: allow multiple generic types in callback variant. If there is a
+    callback type with multiple generic variants, e.g., Foo<A,B> we currently
+    can't use it since we only expect one type in the macro. Now one can also
+    use multiple generics, like `Callback<A, B>`.
+
+ -- Proxmox Support Team <support@proxmox.com>  Wed, 17 Dec 2025 16:38:27 +0100
+
 rust-pwt-macros (0.5.0) trixie; urgency=medium
 
   * update macro to node_ref having been removed from widget standard
