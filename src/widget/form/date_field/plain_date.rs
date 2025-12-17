@@ -1,5 +1,5 @@
 use js_sys::Date;
-use std::fmt;
+use std::{fmt, str::FromStr};
 
 /// A date without time information (Year, Month, Day).
 /// Months are 0-based (0 = January, 11 = December).
@@ -176,133 +176,102 @@ impl PlainDate {
     /// - d: Day with leading zeros
     /// - j: Day without leading zeros
     /// Reference: https://www.php.net/manual/en/datetime.format.php
-    pub fn from_format(input: &str, fmt: &str) -> Result<Self, String> {
+    pub fn from_format(mut input: &str, fmt: &str) -> Result<Self, String> {
         // Implementation:
-        let mut year = None;
-        let mut month = None;
-        let mut day = None;
+        let mut year: Option<i32> = None;
+        let mut month: Option<u32> = None;
+        let mut day: Option<u32> = None;
 
-        // Convert to look-ahead friendly chars
-        let fmt_chars: Vec<char> = fmt.chars().collect();
-        let input_chars: Vec<char> = input.chars().collect();
-
-        let mut f_idx = 0;
-        let mut i_idx = 0;
-
-        while f_idx < fmt_chars.len() {
-            if i_idx >= input_chars.len() {
-                return Err("Input too short".to_string());
-            }
-
-            // Check tokens
-            if fmt[f_idx..].starts_with("Y") {
-                // PHP Y: 4 digit year
-                if i_idx + 4 > input_chars.len() {
-                    return Err("Input ends before Year".into());
-                }
-                let y_str: String = input_chars[i_idx..i_idx + 4].iter().collect();
-                year = y_str.parse::<i32>().ok();
-                f_idx += 1;
-                i_idx += 4;
-            } else if fmt[f_idx..].starts_with("y") {
-                // PHP y: 2 digit year
-                if i_idx + 2 > input_chars.len() {
-                    return Err("Input ends before Year".into());
-                }
-                let y_str: String = input_chars[i_idx..i_idx + 2].iter().collect();
-                if let Ok(y2) = y_str.parse::<i32>() {
-                    // Pivot strategy: 2000-2099 defaults
-                    year = Some(2000 + y2);
-                }
-                f_idx += 1;
-                i_idx += 2;
-            } else if fmt[f_idx..].starts_with("m") {
-                // PHP m: Month with leading zeros (01-12)
-                if i_idx + 2 > input_chars.len() {
-                    return Err("Input ends before Month".into());
-                }
-                let m_str: String = input_chars[i_idx..i_idx + 2].iter().collect();
-                month = m_str.parse::<u32>().ok();
-                f_idx += 1;
-                i_idx += 2;
-            } else if fmt[f_idx..].starts_with("d") {
-                // PHP d: Day with leading zeros (01-31)
-                if i_idx + 2 > input_chars.len() {
-                    return Err("Input ends before Day".into());
-                }
-                let d_str: String = input_chars[i_idx..i_idx + 2].iter().collect();
-                day = d_str.parse::<u32>().ok();
-                f_idx += 1;
-                i_idx += 2;
-            } else if fmt[f_idx..].starts_with("n") {
-                // PHP n: Month without leading zeros (1-12)
-                let next_sep = fmt_chars.get(f_idx + 1);
-                let mut took = 0;
-                if let Some(c1) = input_chars.get(i_idx) {
-                    if c1.is_ascii_digit() {
-                        took = 1;
-                        if let Some(c2) = input_chars.get(i_idx + 1) {
-                            if c2.is_ascii_digit() {
-                                // Variable length logic
-                                if let Some(sep) = next_sep {
-                                    if *sep != *c2 {
-                                        took = 2;
-                                    }
-                                } else {
-                                    took = 2;
-                                }
-                            }
-                        }
-                    }
-                }
-                if took == 0 {
-                    return Err("Expected digit for Month".into());
-                }
-                let m_str: String = input_chars[i_idx..i_idx + took].iter().collect();
-                month = m_str.parse::<u32>().ok();
-                f_idx += 1;
-                i_idx += took;
-            } else if fmt[f_idx..].starts_with("j") {
-                // PHP j: Day without leading zeros (1-31)
-                let next_sep = fmt_chars.get(f_idx + 1);
-                let mut took = 0;
-                if let Some(c1) = input_chars.get(i_idx) {
-                    if c1.is_ascii_digit() {
-                        took = 1;
-                        if let Some(c2) = input_chars.get(i_idx + 1) {
-                            if c2.is_ascii_digit() {
-                                if let Some(sep) = next_sep {
-                                    if *sep != *c2 {
-                                        took = 2;
-                                    }
-                                } else {
-                                    took = 2;
-                                }
-                            }
-                        }
-                    }
-                }
-                if took == 0 {
-                    return Err("Expected digit for Day".into());
-                }
-                let d_str: String = input_chars[i_idx..i_idx + took].iter().collect();
-                day = d_str.parse::<u32>().ok();
-                f_idx += 1;
-                i_idx += took;
-            } else {
-                // Literal match
-                if fmt_chars[f_idx] != input_chars[i_idx] {
-                    return Err(format!(
-                        "Expected '{}', found '{}'",
-                        fmt_chars[f_idx], input_chars[i_idx]
-                    ));
-                }
-                f_idx += 1;
-                i_idx += 1;
-            }
+        fn parse_num<NUM: FromStr>(input: &str, err: String) -> Result<NUM, String> {
+            input.parse().map_err(|_| err)
         }
 
-        if i_idx != input_chars.len() {
+        fn find_num_length(input: &str) -> usize {
+            let mut chars = input.chars();
+            if let Some(c1) = chars.next() {
+                if c1.is_ascii_digit() {
+                    if ('1'..='3').contains(&c1) {
+                        if let Some(c2) = chars.next() {
+                            if c2.is_ascii_digit() {
+                                return 2;
+                            }
+                        }
+                    }
+                    return 1;
+                }
+            }
+            0
+        }
+
+        for f_char in fmt.chars() {
+            let took = match f_char {
+                'Y' => {
+                    // PHP Y: 4 digit year
+                    if input.len() < 4 {
+                        return Err("Input ends before Year".into());
+                    }
+                    year = Some(parse_num(&input[..4], "Invalid year".to_string())?);
+                    4
+                }
+                'y' => {
+                    // PHP y: 2 digit year
+                    if input.len() < 2 {
+                        return Err("Input ends before Year".into());
+                    }
+                    let y: i32 = parse_num(&input[..2], "Invalid year".to_string())?;
+                    year = Some(y + 2000);
+                    2
+                }
+                'm' => {
+                    // PHP m: Month with leading zeros (01-12)
+                    if input.len() < 2 {
+                        return Err("Input ends before Month".into());
+                    }
+                    month = Some(parse_num(&input[..2], "Invalid month".to_string())?);
+                    2
+                }
+                'd' => {
+                    // PHP d: Day with leading zeros (01-31)
+                    if input.len() < 2 {
+                        return Err("Input ends before Day".into());
+                    }
+                    day = Some(parse_num(&input[..2], "Invalid day".to_string())?);
+                    2
+                }
+                'n' => {
+                    // PHP n: Month without leading zeros (1-12)
+                    let took = find_num_length(input);
+                    if took == 0 {
+                        return Err("Expected digit for Month".into());
+                    }
+                    month = Some(parse_num(&input[..took], "Invalid month".to_string())?);
+                    took
+                }
+                'j' => {
+                    // PHP j: Day without leading zeros (1-31)
+                    let took = find_num_length(input);
+                    if took == 0 {
+                        return Err("Expected digit for Day".into());
+                    }
+                    day = Some(parse_num(&input[..took], "Invalid day".to_string())?);
+                    took
+                }
+                _ => {
+                    // Literal match
+                    if let Some(c) = input.chars().next() {
+                        if f_char != c {
+                            return Err(format!("Expected '{}', found '{}'", f_char, c));
+                        }
+                    } else {
+                        return Err("Input ends too soon.".to_string());
+                    }
+                    1
+                }
+            };
+            input = &input[took..];
+        }
+
+        if !input.is_empty() {
             return Err("Input longer than format".into());
         }
 
@@ -416,6 +385,17 @@ mod tests {
         let d4 = PlainDate::from_format("01/02/2023", "m/d/Y").unwrap();
         assert_eq!(d4.month(), 0);
         assert_eq!(d4.day(), 2);
+
+        assert!(PlainDate::from_format("01/02/zzzz", "m/d/Y").is_err());
+        assert!(PlainDate::from_format("01/yy/2023", "m/d/Y").is_err());
+        assert!(PlainDate::from_format("xx/02/zzzz", "m/d/Y").is_err());
+        assert!(PlainDate::from_format("01/yy/zzzz", "m/d/Y").is_err());
+        assert!(PlainDate::from_format("xx/02/zzzz", "m/d/Y").is_err());
+        assert!(PlainDate::from_format("xx/yy/2023", "m/d/Y").is_err());
+        assert!(PlainDate::from_format("xx/yy/zzzz", "m/d/Y").is_err());
+
+        assert!(PlainDate::from_format("xx01/02/2023", "mm/d/Y").is_err());
+        assert!(PlainDate::from_format("1022023", "nmY").is_err())
     }
 
     #[test]
