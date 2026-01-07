@@ -387,3 +387,33 @@ macro_rules! impl_to_html {
         }
     };
 }
+
+#[cfg(doc)]
+use std::ops::{Deref, DerefMut};
+
+/// Implement [Deref] to a structure member.
+#[macro_export]
+macro_rules! impl_deref_property {
+    ($ty:ty, $property_name:ident, $property_type:ty) => {
+        impl std::ops::Deref for $ty {
+            type Target = $property_type;
+
+            fn deref(&self) -> &Self::Target {
+                &self.$property_name
+            }
+        }
+    };
+}
+
+/// Implement [DerefMut] to a structure member.
+#[macro_export]
+macro_rules! impl_deref_mut_property {
+    ($ty:ty, $property_name:ident, $property_type:ty) => {
+        $crate::impl_deref_property!($ty, $property_name, $property_type);
+        impl std::ops::DerefMut for $ty {
+            fn deref_mut(&mut self) -> &mut Self::Target {
+                &mut self.$property_name
+            }
+        }
+    };
+}
