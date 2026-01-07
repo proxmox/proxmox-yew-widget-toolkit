@@ -143,19 +143,7 @@ pub struct CheckboxField {
     node_ref: NodeRef,
 }
 
-impl std::ops::Deref for CheckboxField {
-    type Target = ManagedFieldState;
-
-    fn deref(&self) -> &Self::Target {
-        &self.state
-    }
-}
-
-impl std::ops::DerefMut for CheckboxField {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.state
-    }
-}
+crate::impl_deref_mut_property!(CheckboxField, state, ManagedFieldState);
 
 #[derive(PartialEq)]
 pub struct ValidateClosure {

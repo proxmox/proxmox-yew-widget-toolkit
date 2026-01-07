@@ -1,5 +1,3 @@
-use std::ops::{Deref, DerefMut};
-
 use anyhow::Error;
 use serde_json::Value;
 
@@ -114,19 +112,7 @@ pub struct DateFieldComp {
     state: ManagedFieldState,
 }
 
-impl Deref for DateFieldComp {
-    type Target = ManagedFieldState;
-
-    fn deref(&self) -> &Self::Target {
-        &self.state
-    }
-}
-
-impl DerefMut for DateFieldComp {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.state
-    }
-}
+crate::impl_deref_mut_property!(DateFieldComp, state, ManagedFieldState);
 
 impl DateFieldComp {
     fn try_parse(value: &str, format: &str, alt_formats: &str) -> Option<PlainDate> {

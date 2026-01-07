@@ -82,19 +82,7 @@ pub struct PwtTristateBoolean {
     render_value: RenderFn<AttrValue>,
 }
 
-impl std::ops::Deref for PwtTristateBoolean {
-    type Target = ManagedFieldState;
-
-    fn deref(&self) -> &Self::Target {
-        &self.state
-    }
-}
-
-impl std::ops::DerefMut for PwtTristateBoolean {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.state
-    }
-}
+crate::impl_deref_mut_property!(PwtTristateBoolean, state, ManagedFieldState);
 
 fn tristate_to_text(tristate: Tristate) -> String {
     match tristate {

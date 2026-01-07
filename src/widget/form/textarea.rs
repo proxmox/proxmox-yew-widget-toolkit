@@ -101,19 +101,7 @@ pub struct TextAreaField {
     input_ref: NodeRef,
 }
 
-impl std::ops::Deref for TextAreaField {
-    type Target = ManagedFieldState;
-
-    fn deref(&self) -> &Self::Target {
-        &self.state
-    }
-}
-
-impl std::ops::DerefMut for TextAreaField {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.state
-    }
-}
+crate::impl_deref_mut_property!(TextAreaField, state, ManagedFieldState);
 
 // TextArea is type Value::String()
 fn value_to_text(value: &Value) -> String {

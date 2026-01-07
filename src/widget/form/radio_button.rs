@@ -126,19 +126,7 @@ pub struct RadioButtonField {
     node_ref: NodeRef,
 }
 
-impl std::ops::Deref for RadioButtonField {
-    type Target = ManagedFieldState;
-
-    fn deref(&self) -> &Self::Target {
-        &self.state
-    }
-}
-
-impl std::ops::DerefMut for RadioButtonField {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.state
-    }
-}
+crate::impl_deref_mut_property!(RadioButtonField, state, ManagedFieldState);
 
 #[derive(PartialEq)]
 pub struct ValidateClosure {

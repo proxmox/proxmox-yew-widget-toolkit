@@ -50,19 +50,7 @@ pub struct DisplayFieldImpl {
     state: ManagedFieldState,
 }
 
-impl std::ops::Deref for DisplayFieldImpl {
-    type Target = ManagedFieldState;
-
-    fn deref(&self) -> &Self::Target {
-        &self.state
-    }
-}
-
-impl std::ops::DerefMut for DisplayFieldImpl {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.state
-    }
-}
+crate::impl_deref_mut_property!(DisplayFieldImpl, state, ManagedFieldState);
 
 impl ManagedField for DisplayFieldImpl {
     type Properties = DisplayField;

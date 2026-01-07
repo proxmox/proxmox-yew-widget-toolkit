@@ -51,19 +51,7 @@ pub struct HiddenField {
     state: ManagedFieldState,
 }
 
-impl std::ops::Deref for HiddenField {
-    type Target = ManagedFieldState;
-
-    fn deref(&self) -> &Self::Target {
-        &self.state
-    }
-}
-
-impl std::ops::DerefMut for HiddenField {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.state
-    }
-}
+crate::impl_deref_mut_property!(HiddenField, state, ManagedFieldState);
 
 impl ManagedField for HiddenField {
     type Properties = Hidden;

@@ -288,19 +288,7 @@ pub struct StandardField {
     input_ref: NodeRef,
 }
 
-impl std::ops::Deref for StandardField {
-    type Target = ManagedFieldState;
-
-    fn deref(&self) -> &Self::Target {
-        &self.state
-    }
-}
-
-impl std::ops::DerefMut for StandardField {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.state
-    }
-}
+crate::impl_deref_mut_property!(StandardField, state, ManagedFieldState);
 
 // Field are type Value::String(), but we also allow Value::Number ..
 fn value_to_text(value: &Value) -> String {
