@@ -1,3 +1,11 @@
+rust-pwt (0.8.0) trixie; urgency=medium
+
+  * Refactor ManagedField trait and state management
+
+  * Add simple Deref/DerefMut macro
+
+ -- Proxmox Support Team <support@proxmox.com>  Thu, 08 Jan 2026 08:30:34 +0100
+
 rust-pwt (0.7.9) trixie; urgency=medium
 
   * expose set_dark_mode_on_document_root helper to allow one setting the dark
