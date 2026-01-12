@@ -487,13 +487,13 @@ impl Component for PwtTabBar {
         let rtl = self.rtl.unwrap_or(false);
 
         let (variant_class, indicator_class) = match ctx.props().style {
-            TabBarStyle::Pills => ("pwt-nav-pills", classes!()),
+            TabBarStyle::Pills => (classes!("pwt-nav-pills"), classes!()),
             TabBarStyle::MaterialPrimary => (
-                "pwt-tab-material",
+                classes!("pwt-tab-material", "primary"),
                 classes!("pwt-tab-active-indicator", "primary"),
             ),
             TabBarStyle::MaterialSecondary => (
-                "pwt-tab-material",
+                classes!("pwt-tab-material", "secondary"),
                 classes!("pwt-tab-active-indicator", "secondary"),
             ),
         };
