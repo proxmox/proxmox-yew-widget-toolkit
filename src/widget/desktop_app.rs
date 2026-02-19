@@ -49,6 +49,11 @@ pub struct DesktopApp {
     #[builder(IntoPropValue, into_prop_value)]
     #[prop_or(AttrValue::Static("en"))]
     pub default_lang: AttrValue,
+
+    /// Returns the server side CSS URLs (see [ThemeLoader]).
+    #[builder_cb(IntoOptionalRenderFn, into_optional_render_fn, String, String)]
+    #[prop_or_default]
+    pub theme_url_builder: Option<RenderFn<String, String>>,
 }
 
 impl DesktopApp {
@@ -86,7 +91,8 @@ impl Component for PwtDesktopApp {
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
 
-        let body = ThemeLoader::new(props.body.clone());
+        let body = ThemeLoader::new(props.body.clone())
+            .theme_url_builder(props.theme_url_builder.clone());
         let body = CatalogLoader::new(body)
             .default_lang(props.default_lang.clone())
             .url_builder(props.catalog_url_builder.clone());
