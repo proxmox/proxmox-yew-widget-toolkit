@@ -99,6 +99,11 @@ pub struct Combobox {
     #[prop_or_default]
     #[builder]
     pub trigger: Vec<(Trigger, bool)>,
+
+    /// Whether the filter should be auto-selected when the picker is displayed.
+    #[builder(IntoPropValue, into_prop_value)]
+    #[prop_or_default]
+    pub autoselect_filter: Option<bool>,
 }
 
 impl Default for Combobox {
@@ -295,6 +300,8 @@ impl Component for PwtCombobox {
             .show_filter
             .unwrap_or_else(|| self.store.data_len() > 10);
 
+        let auto_select_filter = ctx.props().autoselect_filter;
+
         let filter = props.filter.clone();
 
         let columns = Rc::clone(&self.columns);
@@ -311,6 +318,7 @@ impl Component for PwtCombobox {
                 .selection(args.selection.clone())
                 .show_filter(show_filter)
                 .filter(filter.clone())
+                .autoselect_filter(auto_select_filter)
                 .on_select(args.controller.on_select_callback());
 
             if show_filter {

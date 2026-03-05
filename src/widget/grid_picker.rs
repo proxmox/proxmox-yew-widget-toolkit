@@ -74,6 +74,11 @@ pub struct GridPicker<S: DataStore> {
     #[builder_cb(IntoTextFilterFn, into_text_filter_fn, S::Record)]
     #[prop_or_default]
     pub filter: Option<TextFilterFn<S::Record>>,
+
+    /// Whether the filter should be auto-selected when the picker is displayed.
+    #[builder(IntoPropValue, into_prop_value)]
+    #[prop_or_default]
+    pub autoselect_filter: Option<bool>,
 }
 
 impl<S: DataStore> GridPicker<S> {
@@ -196,6 +201,7 @@ impl<S: DataStore + 'static> Component for PwtGridPicker<S> {
                 .with_child(html! {<label for="testinput">{"Filter"}</label>})
                 .with_child(
                     Input::new()
+                        .autofocus(ctx.props().autoselect_filter.unwrap_or_default())
                         .attribute("autocomplete", "off")
                         .attribute("size", "1") // make size minimal
                         .class("pwt-input")
