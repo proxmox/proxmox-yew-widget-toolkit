@@ -661,12 +661,6 @@ impl<T: NumberTypeInfo> ManagedField for NumberField<T> {
             }
         });
 
-        let on_mouse_down = ctx.link().callback(|event: MouseEvent| {
-            // prevent focus loss
-            event.prevent_default();
-            Msg::SpinnerStop // dummy
-        });
-
         let input_props = props.input_props.clone();
 
         let inputmode = if T::is_decimal() {
@@ -698,7 +692,6 @@ impl<T: NumberTypeInfo> ManagedField for NumberField<T> {
                     event.prevent_default();
                 }
             })
-            .onmousedown(on_mouse_down)
             .into_html_with_ref(self.input_ref.clone());
 
         let mut input_container = Tooltip::empty()
