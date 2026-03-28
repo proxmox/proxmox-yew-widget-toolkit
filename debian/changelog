@@ -1,3 +1,14 @@
+rust-pwt (0.8.2) trixie; urgency=medium
+
+  * gridpicker, combobox: allow auto-selecting the filter field.
+
+  * widget: form: number: fix focusing the input on click by dropping the
+    unneeded .prevent_default() on the mousedown handler.
+
+  * bump serde-wasm-bindgen to 0.6.
+
+ -- Proxmox Support Team <support@proxmox.com>  Sun, 29 Mar 2026 00:15:04 +0100
+
 rust-pwt (0.8.1) trixie; urgency=medium
 
   * widget: desktop app: expose theme_url_builder property
