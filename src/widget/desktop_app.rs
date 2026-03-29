@@ -91,8 +91,8 @@ impl Component for PwtDesktopApp {
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
 
-        let body = ThemeLoader::new(props.body.clone())
-            .theme_url_builder(props.theme_url_builder.clone());
+        let body =
+            ThemeLoader::new(props.body.clone()).theme_url_builder(props.theme_url_builder.clone());
         let body = CatalogLoader::new(body)
             .default_lang(props.default_lang.clone())
             .url_builder(props.catalog_url_builder.clone());

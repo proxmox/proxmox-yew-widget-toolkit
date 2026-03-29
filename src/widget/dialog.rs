@@ -472,7 +472,7 @@ impl Component for PwtDialog {
             .header_class(props.draggable.then_some("pwt-draggable"))
             .border(false);
 
-	panel.tools.extend(props.tools.clone());
+        panel.tools.extend(props.tools.clone());
 
         if props.on_close.is_some() {
             panel.add_tool(

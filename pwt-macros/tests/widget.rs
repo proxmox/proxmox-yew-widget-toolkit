@@ -1,4 +1,3 @@
-
 #[allow(dead_code)]
 mod props {
     use yew::{virtual_dom::Key, Classes};
