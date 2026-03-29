@@ -1556,7 +1556,7 @@ impl<S: DataStore + 'static> Component for PwtDataTable<S> {
                     }
                 } else if !has_related_target {
                     // focus table again if the focused/selected cell vanished
-                    if let Some(Cursor { ref record_key, .. }) = &self.cursor {
+                    if let Some(Cursor { record_key, .. }) = &self.cursor {
                         match self.filtered_record_pos(props, record_key) {
                             None => self.focus_table = true,
                             Some(pos) if !self.scroll_info.is_visible(pos) => {
