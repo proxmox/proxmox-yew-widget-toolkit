@@ -266,6 +266,40 @@ impl Row {
 }
 ```
 
+### Forms, Validation and State Management
+
+Server management GUIs involve a lot of forms and data tables, so getting those
+right is essential.
+
+We built a form system around a shared `FormContext` that fields register with
+automatically. The context tracks values, defaults, dirty state and validation
+results in one place. On submit, it collects all registered field values and
+runs per-field validation, making it straightforward to implement complex forms
+with many interdependent fields.
+
+Individual fields implement a `ManagedField` trait, which handles value
+synchronization with the form context, validation, and rendering. This gives us
+a consistent API across all field types (text, number, checkbox, combobox, date
+picker, and others) while allowing each type to define its own parsing and
+validation logic.
+
+For data tables, we provide a `Store` and `TreeStore` abstraction that holds
+records, tracks changes, and notifies observers. Combined with `Selection` and
+virtual scrolling, this covers the common pattern of loading a list from the API
+and letting users browse, sort, filter, and act on it.
+
+For async data loading, a `Loader` helper wraps the load-display-error cycle
+into a single object with built-in caching to browser storage.
+
+
+### Internationalization
+
+We use [gettext](https://www.gnu.org/software/gettext/) for translations, with
+a `tr!()` macro for translatable strings. Message catalogs are loaded at
+runtime, and the toolkit provides widgets for switching the language and text
+direction while the application is running.
+
+
 ## Themes, Colors and Design
 
 As noted previously, our first goal was to replace existing GUIs, so we started
@@ -349,10 +383,10 @@ fn YourApp() -> Html {
 
 ## Conclusion
 
-After more than one year, I start feeling confident that we can write high
-quality user interfaces using Rust. We managed to implement quite complex
-widgets within reasonable time.
+After several years of development and production use, we are confident that
+writing high quality user interfaces in Rust is viable. The toolkit now provides
+over 70 components covering layout, forms, data tables, dialogs, navigation, and
+a dedicated set of touch-optimized widgets following material design guidelines.
 
-The next plan is to make the code available to the public in hopes that we can
-get outside people to try the code and share their ideas on how we can further
-improve the framework.
+The code is publicly available and we welcome feedback and ideas on how to
+further improve the framework.
