@@ -16,7 +16,7 @@ it's possible to write GUIs in Rust. It would give us the following advantages:
 
 - Improve code reuse (share code between back-end and front-end)
 
-- Of cause, we get all Rust language feature (type safety, ...)
+- Of course, we get all Rust language features (type safety, ...)
 
 We finally decided to give it a try by writing a prototype GUI for the backup
 server.
@@ -55,12 +55,12 @@ I started testing various Rust GUI libraries, and finally decided to use
 ## Using Yew directly.
 
 I started by writing small test apps like
-[7GUIs](https://eugenkiss.github.io/7guis/), and this worked quit well. Turns
+[7GUIs](https://eugenkiss.github.io/7guis/), and this worked quite well. Turns
 out that you can easily translate a [React](https://reactjs.org) application
 into a Yew functional component. So far so good.
 
 Things got worse when I started to rebuild the backup server GUI. It uses
-countless of complex UI elements like:
+countless complex UI elements like:
 
 - Data Tables with virtual scroll, sorting, filtering and more ...
 - Operating system like menus.
@@ -77,7 +77,7 @@ providing all that functionality.
 
 ## Writing complex components/widgets.
 
-The set of required widget was quite clear, so this was more of a trial and
+The set of required widgets was quite clear, so this was more of a trial and
 error phase to find convenient APIs and data structures for Rust.
 
 The current library is called [Proxmox Yew Widget
@@ -101,7 +101,7 @@ Yew provides a way to create components using the `html!{}` macro, i.e:
 html!{<div class="pwt-color-scheme-primary" onclick=|_| { ... }>{"Click me!"}</div>}
 ```
 
-Instead, our components provides builder function, so you can produce the same
+Instead, our components provide builder functions, so you can produce the same
 result with:
 
 ```
@@ -125,10 +125,10 @@ Row::new()
 
 The `class()` method also deserves some attention. You can pass text strings to
 specify CSS classes.  But we also provide Rust types for common classes which
-implements `Into<Classes>`. The class method directly accepts those types, so
-you can specify css classes in a type safe way.
+implement `Into<Classes>`. The class method directly accepts those types, so
+you can specify CSS classes in a type safe way.
 
-All base widgets implements a common builder API to specify classes, attributes
+All base widgets implement a common builder API to specify classes, attributes
 and event callbacks.
 
 To further simplify layout, we also defined functions to set padding, margin and
@@ -137,7 +137,7 @@ style on those widgets:
 ```
 Container::new()
    .style("color", "red")
-   .style("background-color", "white)
+   .style("background-color", "white")
    .margin(2)
    .padding(4)
 ```
@@ -186,13 +186,13 @@ relatively low at first, but would account to a large number of unhappy users,
 which can't use our products. So good ARIA support is a must have for us (Note:
 Your eyes don't get better as you get older).
 
-We tired to make all widget fully accessible by following the [ARIA Authoring
+We tried to make all widgets fully accessible by following the [ARIA Authoring
 Practices Guide](https://www.w3.org/WAI/ARIA/apg).
 
 
 ### Support for right-to-left scripts
 
-Languages like Arabic, Hebrew and Persian are left-to-right, and people expect
+Languages like Arabic, Hebrew and Persian are right-to-left, and people expect
 that row-layouts also change direction when you use such language. Fortunately,
 CSS already support switching between LTR/RTL direction, and a flexbox row
 automatically changes the direction.
@@ -211,20 +211,20 @@ make all widgets working with RTL mode.
 
 Rust is a great language, but it also has its quirks. Worst of all, we're still
 used to having things like class inheritance that just aren't available with
-Rust. Of cause, this isn't necessarily a bad thing as long as you find another
+Rust. Of course, this isn't necessarily a bad thing as long as you find another
 solution.
 
-Our widgets share a great amount of methods, and we don't want to duplicated the
+Our widgets share a great amount of methods, and we don't want to duplicate the
 code for each widget. Inheritance is not available, so we ended up using traits
-having default method implementations. For example, we want to attach html event
-listeners to widget. Let us use this example to show how we implemented code
+having default method implementations. For example, we want to attach HTML event
+listeners to widgets. Let us use this example to show how we implemented code
 sharing.
 
 Our trait is called `EventSubscriber`, and has one method which provides mutable
 access to a `Listeners` object, where we can store the callbacks. This is the
 only method without a default implementation, and once you implement it for your
 widget, you get all the other methods from the default trait implementation.
-This is also a good way to split functionality and documentations into smaller
+This is also a good way to split functionality and documentation into smaller
 parts.
 
 ```
@@ -273,7 +273,7 @@ with the same design and colors. The resulting theme is quite dense, allowing
 you to display much information on a single page.
 
 In parallel, we tried to write a second theme suitable for touch devices. Touch
-devices requires much larger buttons and inputs. Else it is too difficult to tap
+devices require much larger buttons and inputs. Otherwise it is too difficult to tap
 them accurately, leaving users frustrated and dissatisfied after making
 mistakes.
 
@@ -282,7 +282,7 @@ baseline. The resulting theme wastes a lot of space on the desktop, but is a
 requirement for mobile devices.
 
 In the end, we added another theme with spacing optimized for common desktop
-application.
+applications.
 
 All themes are written with [SASS](https://sass-lang.com), so it is relatively
 easy to modify them.
@@ -302,14 +302,14 @@ need to be large enough to be easily selected with a finger. This is a
 significant shift from desktop interfaces that primarily use a mouse cursor,
 which can select much smaller targets.
 
-Also, modern user interface on mobile devices use animations, much more than one
+Also, modern user interfaces on mobile devices use animations, much more than one
 would expect on the desktop.
 
-Fortunately, The material design guidelines from Google describes many widgets
+Fortunately, the material design guidelines from Google describe many widgets
 used by modern mobile applications, so we just needed to implement them.
 
-We ended up with a set of special widget for mobile devices, making it really
-easy write a mobile app.
+We ended up with a set of special widgets for mobile devices, making it really
+easy to write a mobile app.
 
 ```
 /// Define your routes (uses yew_router library)
