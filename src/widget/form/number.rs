@@ -108,7 +108,7 @@ macro_rules! signed_number_impl {
                         None => {
                             return Err(Error::msg(tr!(
                                 "cannot represent number as signed integer"
-                            )))
+                            )));
                         }
                     },
                     Value::String(s) => {
@@ -117,7 +117,7 @@ macro_rules! signed_number_impl {
                             Err(_) => {
                                 return Err(Error::msg(tr!(
                                     "cannot represent number as signed integer"
-                                )))
+                                )));
                             }
                         };
                         if n > (<$T>::MAX as i128) {
@@ -187,7 +187,7 @@ macro_rules! unsigned_number_impl {
                         None => {
                             return Err(Error::msg(tr!(
                                 "cannot represent number as unsigned integer"
-                            )))
+                            )));
                         }
                     },
                     Value::String(s) => {
@@ -196,7 +196,7 @@ macro_rules! unsigned_number_impl {
                             Err(_) => {
                                 return Err(Error::msg(tr!(
                                     "cannot represent number as unsigned integer"
-                                )))
+                                )));
                             }
                         };
                         if n > (<$T>::MAX as u128) {

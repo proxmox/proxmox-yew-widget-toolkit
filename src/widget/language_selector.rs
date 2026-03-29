@@ -1,12 +1,12 @@
 use std::rc::Rc;
 
-use crate::state::{get_language_info, Selection, Store};
+use crate::state::{Selection, Store, get_language_info};
 use crate::widget::rtl_switcher::set_text_direction;
 use yew::html::IntoEventCallback;
 use yew::virtual_dom::{Key, VComp, VNode};
 
 use crate::prelude::*;
-use crate::state::{get_available_languages, Language, LanguageInfo};
+use crate::state::{Language, LanguageInfo, get_available_languages};
 use crate::widget::data_table::{DataTable, DataTableColumn, DataTableHeader};
 use crate::widget::{Dropdown, GridPicker};
 

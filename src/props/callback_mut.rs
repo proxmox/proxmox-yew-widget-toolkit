@@ -2,8 +2,8 @@ use std::rc::Rc;
 
 use derivative::Derivative;
 
-use yew::html::Scope;
 use yew::BaseComponent;
+use yew::html::Scope;
 
 /// Callback wich takes a mutable argument.
 ///

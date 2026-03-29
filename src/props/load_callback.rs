@@ -3,12 +3,12 @@ use std::future::Future;
 use std::pin::Pin;
 use std::rc::Rc;
 
-use anyhow::{bail, format_err, Error};
+use anyhow::{Error, bail, format_err};
 use serde::de::DeserializeOwned;
 use serde_json::Value;
 
-use yew::html::IntoPropValue;
 use yew::AttrValue;
+use yew::html::IntoPropValue;
 
 /// Load Callback
 ///

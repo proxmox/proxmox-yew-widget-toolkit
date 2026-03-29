@@ -7,7 +7,7 @@ use std::ops::{Deref, DerefMut};
 use std::rc::Rc;
 
 use derivative::Derivative;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use slab::Slab;
 
 use yew::html::{IntoEventCallback, IntoPropValue};

@@ -1,5 +1,5 @@
 use indexmap::IndexMap;
-use yew::{html::IntoPropValue, AttrValue};
+use yew::{AttrValue, html::IntoPropValue};
 
 /// Holds the CSS styles to set on elements
 #[derive(Clone, Default, Debug, PartialEq)]

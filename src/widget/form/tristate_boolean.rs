@@ -153,10 +153,12 @@ impl ManagedField for PwtTristateBoolean {
             html! {text}
         });
 
-        let columns = Rc::new(vec![DataTableColumn::new("Value")
-            .show_menu(false)
-            .render(render_value.clone())
-            .into()]);
+        let columns = Rc::new(vec![
+            DataTableColumn::new("Value")
+                .show_menu(false)
+                .render(render_value.clone())
+                .into(),
+        ]);
 
         let selection = Selection::new();
         selection.select(Key::from(tristate_to_text(

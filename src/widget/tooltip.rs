@@ -3,7 +3,7 @@ use gloo_timers::callback::Timeout;
 use yew::html::IntoPropValue;
 use yew::virtual_dom::VNode;
 
-use crate::dom::align::{align_to, AlignOptions, GrowDirection, Point};
+use crate::dom::align::{AlignOptions, GrowDirection, Point, align_to};
 use crate::prelude::*;
 use crate::widget::Container;
 

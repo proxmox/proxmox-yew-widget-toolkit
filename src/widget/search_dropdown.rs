@@ -15,7 +15,7 @@ use crate::widget::data_table::{
     DataTable, DataTableColumn, DataTableHeader, DataTableKeyboardEvent, DataTableMouseEvent,
 };
 use crate::widget::{Dropdown, DropdownController};
-use crate::{prelude::*, AsyncAbortGuard};
+use crate::{AsyncAbortGuard, prelude::*};
 
 use pwt_macros::{builder, widget};
 
@@ -135,10 +135,12 @@ impl<S: DataStore + 'static> SearchDropdown<S> {
 
         let picker: RenderFn<SearchDropdownRenderArgs<S>> =
             RenderFn::new(move |args: &SearchDropdownRenderArgs<S>| {
-                let columns = Rc::new(vec![DataTableColumn::new("Value")
-                    .show_menu(false)
-                    .render(render.clone())
-                    .into()]);
+                let columns = Rc::new(vec![
+                    DataTableColumn::new("Value")
+                        .show_menu(false)
+                        .render(render.clone())
+                        .into(),
+                ]);
 
                 DataTable::new(columns, args.store.clone())
                     .max_height(CssLength::Em(20.0))

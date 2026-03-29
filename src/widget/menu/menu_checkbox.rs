@@ -6,11 +6,11 @@ use yew::virtual_dom::{VComp, VNode};
 
 use crate::prelude::*;
 use crate::props::FieldStdProps;
+use crate::widget::Container;
 use crate::widget::form::{
     ManagedField, ManagedFieldContext, ManagedFieldMaster, ManagedFieldScopeExt, ManagedFieldState,
 };
 use crate::widget::menu::MenuController;
-use crate::widget::Container;
 
 use super::MenuEvent;
 

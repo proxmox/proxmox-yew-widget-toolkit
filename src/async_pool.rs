@@ -4,7 +4,7 @@ use std::rc::Rc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 use derivative::Derivative;
-use futures::future::{abortable, AbortHandle};
+use futures::future::{AbortHandle, abortable};
 use std::future::Future;
 
 /// Run one or more futures, and abort them on drop.

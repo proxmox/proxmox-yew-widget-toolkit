@@ -85,7 +85,7 @@ pub fn ngettext(msg_id: &str, msg_id_plural: &str, n: u64) -> String {
                 msg_id.to_string()
             } else {
                 msg_id_plural.to_string()
-            }
+            };
         }
         Some(catalog) => catalog,
     };
@@ -103,7 +103,7 @@ pub fn npgettext(msg_context: &str, msg_id: &str, msg_id_plural: &str, n: u64) -
                 msg_id.to_string()
             } else {
                 msg_id_plural.to_string()
-            }
+            };
         }
         Some(catalog) => catalog,
     };

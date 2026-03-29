@@ -2,7 +2,7 @@ use std::ops::DerefMut;
 
 use anyhow::Error;
 use serde_json::Value;
-use wasm_bindgen::{closure::Closure, JsCast};
+use wasm_bindgen::{JsCast, closure::Closure};
 
 use yew::html::Scope;
 use yew::prelude::*;

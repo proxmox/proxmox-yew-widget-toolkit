@@ -1,6 +1,6 @@
-use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use wasm_bindgen::UnwrapThrowExt;
+use wasm_bindgen::prelude::*;
 use web_sys::{Element, IntersectionObserver, IntersectionObserverEntry};
 
 use yew::prelude::*;

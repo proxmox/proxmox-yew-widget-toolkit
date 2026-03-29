@@ -272,7 +272,7 @@ mod tr;
 #[doc(hidden)]
 pub mod web_sys_ext;
 
-use anyhow::{format_err, Error};
+use anyhow::{Error, format_err};
 
 /// Convert JS errors to [Error]
 pub fn convert_js_error(js_err: ::wasm_bindgen::JsValue) -> Error {

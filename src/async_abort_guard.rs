@@ -1,4 +1,4 @@
-use futures::future::{abortable, AbortHandle, Future};
+use futures::future::{AbortHandle, Future, abortable};
 
 /// Abort guard for async functions.
 pub struct AsyncAbortGuard {

@@ -8,9 +8,9 @@ use yew::html::{IntoEventCallback, IntoPropValue};
 
 use yew::virtual_dom::{Key, VComp, VNode};
 
-use crate::dom::focus::{get_first_focusable, FocusTracker};
+use crate::dom::focus::{FocusTracker, get_first_focusable};
 use crate::state::{SharedState, SharedStateObserver};
-use crate::widget::{get_unique_element_id, Container};
+use crate::widget::{Container, get_unique_element_id};
 use crate::{impl_class_prop_builder, impl_yew_std_props_builder, prelude::*};
 
 use pwt_macros::builder;

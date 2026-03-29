@@ -154,7 +154,7 @@ mod extract_key_function;
 pub use extract_key_function::{ExtractKeyFn, ExtractPrimaryKey, IntoExtractKeyFn};
 
 mod load_callback;
-pub use load_callback::{set_http_get_method, IntoLoadCallback, LoadCallback};
+pub use load_callback::{IntoLoadCallback, LoadCallback, set_http_get_method};
 
 mod submit_callback;
 pub use submit_callback::{IntoSubmitCallback, SubmitCallback};

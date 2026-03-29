@@ -5,7 +5,7 @@ use yew::html::IntoPropValue;
 use yew::virtual_dom::{VComp, VNode};
 
 use crate::props::{IntoOptionalRenderFn, RenderFn};
-use crate::state::{get_language_info, Language, LanguageObserver};
+use crate::state::{Language, LanguageObserver, get_language_info};
 use crate::widget::rtl_switcher::set_text_direction;
 use crate::{impl_to_html, prelude::*};
 

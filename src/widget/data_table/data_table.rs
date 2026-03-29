@@ -19,12 +19,12 @@ use crate::props::{
     SorterFn, WidgetStyleBuilder,
 };
 use crate::state::{DataStore, Selection, SelectionObserver};
-use crate::widget::{get_unique_element_id, Column, Container};
+use crate::widget::{Column, Container, get_unique_element_id};
 
 use super::{
-    create_indexed_header_list, CellConfiguration, DataTableColumn, DataTableHeader,
-    DataTableKeyboardEvent, DataTableMouseEvent, DataTableRow, DataTableRowRenderCallback,
-    HeaderWidget, IndexedHeader, IntoOptionalDataTableRowRenderCallback,
+    CellConfiguration, DataTableColumn, DataTableHeader, DataTableKeyboardEvent,
+    DataTableMouseEvent, DataTableRow, DataTableRowRenderCallback, HeaderWidget, IndexedHeader,
+    IntoOptionalDataTableRowRenderCallback, create_indexed_header_list,
 };
 
 pub enum HeaderMsg<T: 'static> {
@@ -1825,7 +1825,7 @@ fn dom_find_focus_pos(el: web_sys::Element, unique_id: &str) -> Option<(Key, Opt
                 if key_str.is_empty() {
                     break;
                 } // stop on errors
-                  // try to find out the column_num
+                // try to find out the column_num
                 let children = el.children();
                 for i in 0..children.length() {
                     let child: web_sys::HtmlElement = children.item(i).unwrap().dyn_into().unwrap();

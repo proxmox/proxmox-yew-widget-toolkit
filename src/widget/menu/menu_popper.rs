@@ -1,6 +1,6 @@
 use yew::prelude::*;
 
-use crate::dom::align::{align_to, AlignOptions, GrowDirection, Point};
+use crate::dom::align::{AlignOptions, GrowDirection, Point, align_to};
 
 pub struct MenuPopper {
     content_ref: NodeRef,

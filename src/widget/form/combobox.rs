@@ -261,10 +261,12 @@ impl Component for PwtCombobox {
             .render_value
             .clone()
             .unwrap_or_else(|| RenderFn::new(|value: &AttrValue| html! {value}));
-        let columns = Rc::new(vec![DataTableColumn::new("Value")
-            .show_menu(false)
-            .render(render_value)
-            .into()]);
+        let columns = Rc::new(vec![
+            DataTableColumn::new("Value")
+                .show_menu(false)
+                .render(render_value)
+                .into(),
+        ]);
 
         Self {
             store,

@@ -4,7 +4,7 @@ use yew::html::{IntoEventCallback, IntoPropValue};
 use yew::virtual_dom::{Key, VComp, VNode};
 
 use crate::dom::focus::roving_tabindex_next;
-use crate::dom::{element_direction_rtl, DomSizeObserver, IntoHtmlElement};
+use crate::dom::{DomSizeObserver, IntoHtmlElement, element_direction_rtl};
 use crate::props::{IntoStorageLocation, StorageLocation};
 use crate::state::{NavigationContext, NavigationContextExt, PersistentState, Selection};
 use crate::web_sys_ext::{ResizeObserverBoxOptions, ResizeObserverOptions};

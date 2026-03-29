@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use yew::{html::IntoPropValue, AttrValue};
+use yew::{AttrValue, html::IntoPropValue};
 
 use crate::props::{AsCssStylesMut, CssStyles};
 

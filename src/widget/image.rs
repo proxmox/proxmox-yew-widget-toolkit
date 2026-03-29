@@ -1,6 +1,6 @@
+use yew::AttrValue;
 use yew::html::IntoPropValue;
 use yew::prelude::*;
-use yew::AttrValue;
 
 use crate::props::{EventSubscriber, WidgetBuilder};
 use crate::state::Theme;

@@ -6,8 +6,8 @@ use slab::Slab;
 use crate::props::{
     ExtractKeyFn, ExtractPrimaryKey, FilterFn, IntoFilterFn, IntoSorterFn, SorterFn,
 };
-use yew::virtual_dom::Key;
 use yew::Callback;
+use yew::virtual_dom::Key;
 
 use super::{SlabTree, SlabTreeEntry};
 

@@ -1,4 +1,4 @@
-use yew::{html::IntoPropValue, AttrValue};
+use yew::{AttrValue, html::IntoPropValue};
 
 /// CSS length in spacer units, pixel, em or percentage.
 #[derive(Copy, Clone, PartialEq)]

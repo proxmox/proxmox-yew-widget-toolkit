@@ -8,8 +8,8 @@ use pwt_macros::{builder, widget};
 use crate::{
     touch::prelude::{ContainerBuilder, WidgetBuilder},
     widget::{
-        form::{ManagedField, ManagedFieldContext, ManagedFieldMaster, ManagedFieldState},
         Container, Tooltip,
+        form::{ManagedField, ManagedFieldContext, ManagedFieldMaster, ManagedFieldState},
     },
 };
 

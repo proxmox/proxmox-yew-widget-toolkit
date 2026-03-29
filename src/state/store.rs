@@ -14,7 +14,7 @@ use yew::virtual_dom::Key;
 use crate::props::{
     ExtractKeyFn, ExtractPrimaryKey, FilterFn, IntoFilterFn, IntoSorterFn, SorterFn,
 };
-use crate::state::{optional_rc_ptr_eq, DataNode, DataNodeDerefGuard, DataStore, Selection};
+use crate::state::{DataNode, DataNodeDerefGuard, DataStore, Selection, optional_rc_ptr_eq};
 
 /// Hook to use a [Store] with functional components.
 ///

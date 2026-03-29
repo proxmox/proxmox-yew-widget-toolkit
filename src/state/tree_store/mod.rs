@@ -24,7 +24,7 @@ use yew::prelude::*;
 use yew::virtual_dom::Key;
 
 use crate::props::{ExtractKeyFn, ExtractPrimaryKey, IntoFilterFn, IntoSorterFn};
-use crate::state::{optional_rc_ptr_eq, DataNode, DataNodeDerefGuard, DataStore};
+use crate::state::{DataNode, DataNodeDerefGuard, DataStore, optional_rc_ptr_eq};
 
 /// Hook to use a [TreeStore] with functional components.
 ///

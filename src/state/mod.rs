@@ -2,7 +2,7 @@
 
 use std::rc::Rc;
 
-use serde::{de::DeserializeOwned, Serialize};
+use serde::{Serialize, de::DeserializeOwned};
 
 mod data_store;
 pub use data_store::{DataNode, DataNodeDerefGuard, DataStore};
@@ -19,7 +19,7 @@ mod persistent_state;
 pub use persistent_state::PersistentState;
 
 mod selection;
-pub use selection::{use_selection, Selection, SelectionObserver};
+pub use selection::{Selection, SelectionObserver, use_selection};
 
 mod shared_state;
 pub use shared_state::{
@@ -34,13 +34,13 @@ pub use tree_store::*;
 
 mod theme;
 pub use theme::{
-    get_available_themes, set_available_themes, Theme, ThemeDensity, ThemeMode, ThemeObserver,
+    Theme, ThemeDensity, ThemeMode, ThemeObserver, get_available_themes, set_available_themes,
 };
 
 mod language;
 pub use language::{
-    get_available_languages, get_language_info, set_available_languages, Language, LanguageInfo,
-    LanguageObserver, TextDirection,
+    Language, LanguageInfo, LanguageObserver, TextDirection, get_available_languages,
+    get_language_info, set_available_languages,
 };
 
 use crate::props::StorageLocation;

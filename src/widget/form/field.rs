@@ -1,7 +1,7 @@
 use std::fmt::Display;
 use std::str::FromStr;
 
-use anyhow::{bail, Error};
+use anyhow::{Error, bail};
 use serde_json::Value;
 
 use web_sys::HtmlInputElement;

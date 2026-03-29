@@ -1,7 +1,7 @@
 use std::ops::{Deref, Range};
 
-use yew::virtual_dom::Key;
 use yew::Callback;
+use yew::virtual_dom::Key;
 
 use crate::props::{ExtractKeyFn, IntoFilterFn, IntoSorterFn};
 

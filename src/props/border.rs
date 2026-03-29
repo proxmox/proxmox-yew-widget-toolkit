@@ -1,6 +1,6 @@
 use super::AsClassesMut;
-use yew::html::IntoPropValue;
 use yew::Classes;
+use yew::html::IntoPropValue;
 
 /// Defines methods to use CSS border classes.
 ///

@@ -1,4 +1,4 @@
-use anyhow::{bail, Error};
+use anyhow::{Error, bail};
 use derivative::Derivative;
 use serde_json::Value;
 
@@ -10,13 +10,13 @@ use super::{
     IntoValidateFn, ManagedField, ManagedFieldContext, ManagedFieldMaster, ManagedFieldScopeExt,
     ManagedFieldState, ValidateFn,
 };
+use crate::AsyncAbortGuard;
 use crate::css;
 use crate::prelude::*;
 use crate::props::{IntoLoadCallback, IntoOptionalRenderFn, LoadCallback, RenderFn};
 use crate::state::DataStore;
 use crate::state::Selection;
-use crate::widget::{error_message, Container, Dropdown, DropdownController, Mask, Trigger};
-use crate::AsyncAbortGuard;
+use crate::widget::{Container, Dropdown, DropdownController, Mask, Trigger, error_message};
 
 use pwt_macros::{builder, widget};
 

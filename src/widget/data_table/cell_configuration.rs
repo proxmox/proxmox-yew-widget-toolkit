@@ -1,7 +1,7 @@
 use yew::{
+    AttrValue, Classes,
     html::IntoPropValue,
     virtual_dom::{ApplyAttributeAs, Attributes},
-    AttrValue, Classes,
 };
 
 use crate::props::{

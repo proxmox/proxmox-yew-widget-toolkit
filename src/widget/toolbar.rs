@@ -9,7 +9,7 @@ use pwt_macros::{builder, widget};
 use super::{MiniScroll, MiniScrollMode};
 use crate::dom::element_direction_rtl;
 use crate::dom::focus::{
-    init_roving_tabindex, roving_tabindex_next, update_roving_tabindex, FocusTracker,
+    FocusTracker, init_roving_tabindex, roving_tabindex_next, update_roving_tabindex,
 };
 use crate::prelude::*;
 

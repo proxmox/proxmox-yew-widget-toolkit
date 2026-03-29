@@ -4,9 +4,9 @@
 //! is available in all browsers we want to target:
 //! <https://developer.chrome.com/blog/anchor-positioning-api>
 use js_sys::Error;
-use web_sys::{window, HtmlElement};
+use web_sys::{HtmlElement, window};
 
-use crate::dom::{element_direction_rtl, DomSizeObserver, IntoHtmlElement};
+use crate::dom::{DomSizeObserver, IntoHtmlElement, element_direction_rtl};
 
 /// Defines a point on a rectangle
 ///

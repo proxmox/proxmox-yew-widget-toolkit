@@ -1,6 +1,6 @@
 use yew::{
-    html::{IntoEventCallback, IntoPropValue},
     AttrValue, Callback, Component, NodeRef, Properties,
+    html::{IntoEventCallback, IntoPropValue},
 };
 
 use pwt_macros::{builder, widget};

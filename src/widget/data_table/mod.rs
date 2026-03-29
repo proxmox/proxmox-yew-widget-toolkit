@@ -10,10 +10,10 @@ mod resizable_header;
 pub(crate) use resizable_header::ResizableHeader;
 
 mod header_group;
-pub(crate) use header_group::{
-    create_indexed_header_list, IndexedHeader, IndexedHeaderGroup, IndexedHeaderSingle,
-};
 pub use header_group::{DataTableHeader, DataTableHeaderGroup};
+pub(crate) use header_group::{
+    IndexedHeader, IndexedHeaderGroup, IndexedHeaderSingle, create_indexed_header_list,
+};
 
 mod row_render_callback;
 pub use row_render_callback::{

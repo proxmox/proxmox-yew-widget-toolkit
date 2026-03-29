@@ -1,7 +1,7 @@
 use std::sync::OnceLock;
 
-use yew::virtual_dom::Key;
 use yew::Callback;
+use yew::virtual_dom::Key;
 
 use crate::gettext;
 use crate::props::ExtractPrimaryKey;

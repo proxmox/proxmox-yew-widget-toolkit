@@ -7,7 +7,7 @@ use gloo_history::HistoryListener;
 use yew::html::IntoPropValue;
 use yew::virtual_dom::{Key, VComp, VNode};
 use yew_router::history::{AnyHistory, HashHistory};
-use yew_router::{history::History, Router};
+use yew_router::{Router, history::History};
 
 use pwt_macros::builder;
 

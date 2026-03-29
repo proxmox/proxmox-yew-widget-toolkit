@@ -8,8 +8,8 @@ use crate::widget::{Button, Column, Container};
 
 use pwt_macros::{builder, widget};
 
-use super::fab::FabSize;
 use super::Fab;
+use super::fab::FabSize;
 
 /// [FabMenu] variant
 #[derive(Copy, Clone, PartialEq, Debug, Default)]

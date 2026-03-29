@@ -13,7 +13,7 @@ use pwt_macros::{builder, widget};
 
 use crate::dom::align::{AlignOptions, AutoFloatingPlacement, GrowDirection, Point};
 
-use crate::dom::focus::{element_is_focusable, get_first_focusable, FocusTracker};
+use crate::dom::focus::{FocusTracker, element_is_focusable, get_first_focusable};
 
 /// Parameters passed to the [Dropdown] picker callback.
 #[derive(Clone)]

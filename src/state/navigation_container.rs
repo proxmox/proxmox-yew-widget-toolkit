@@ -4,20 +4,16 @@ use crate::impl_to_html;
 use crate::props::ContainerBuilder;
 use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
+use yew_router::AnyRoute;
 use yew_router::history::Location;
 use yew_router::scope_ext::{LocationHandle, RouterScopeExt};
-use yew_router::AnyRoute;
 
 // Note: We do not use empty path segment. Instead we use '_' for empty segments.
 // gloo::HashHistory constructs the location using (for "https://example.com#//menu2")
 // # new URL("//memu2", "https://example.com")
 // which results in total nonsense
 fn normalize_segment(segment: &str) -> &str {
-    if segment.is_empty() {
-        "_"
-    } else {
-        segment
-    }
+    if segment.is_empty() { "_" } else { segment }
 }
 
 // remove leading slash

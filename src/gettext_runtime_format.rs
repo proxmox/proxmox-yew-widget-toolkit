@@ -129,7 +129,9 @@ pub fn gettext_runtime_format_arguments_to_string(args: FormatArguments) -> Stri
                     }
                 } else {
                     if argument_index > 0 {
-                        log::error!("gettext_runtime_format error - multiple non-indexed, non-named arguments - order is implicit");
+                        log::error!(
+                            "gettext_runtime_format error - multiple non-indexed, non-named arguments - order is implicit"
+                        );
                     }
                     let arg = args.args.get(argument_index);
                     argument_index += 1;
