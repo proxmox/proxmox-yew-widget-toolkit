@@ -104,6 +104,8 @@ use crate::props::{IntoVTag, WidgetBuilder};
 use pwt_macros::widget;
 
 /// SVG length in pixel, em or percentage.
+///
+/// NOTE: implements `From<f64>` but internally only converts to `f32` with 'as f32`
 #[derive(Copy, Clone, PartialEq)]
 pub enum SvgLength {
     Px(f32),
@@ -130,6 +132,12 @@ impl Display for SvgLength {
 impl From<f32> for SvgLength {
     fn from(v: f32) -> SvgLength {
         SvgLength::Px(v)
+    }
+}
+
+impl From<f64> for SvgLength {
+    fn from(v: f64) -> SvgLength {
+        SvgLength::Px(v as f32)
     }
 }
 
