@@ -28,6 +28,8 @@ pub use catalog_loader::CatalogLoader;
 #[doc(hidden)]
 pub use catalog_loader::PwtCatalogLoader;
 
+pub mod charts;
+
 mod column;
 pub use column::Column;
 
