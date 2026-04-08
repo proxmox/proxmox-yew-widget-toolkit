@@ -3,6 +3,9 @@ use std::borrow::Cow;
 use yew::prelude::*;
 use yew::virtual_dom::VTag;
 
+// include with different name, since Properties macro generates a `StructNameBuilder`
+// already, which results here in `ContainerBuilder``
+use crate::props::ContainerBuilder as PwtContainerBuilder;
 use crate::props::{IntoVTag, ListenersWrapper, WidgetStdProps};
 
 use pwt_macros::widget;
@@ -56,4 +59,18 @@ impl IntoVTag for Container {
             Some(self.children),
         )
     }
+}
+
+/// Helper function to create a `<div>` element with a single child.
+///
+/// It's the same as `Container::new().with_child(comp)`
+pub fn div(comp: impl Into<Html>) -> Container {
+    Container::new().with_child(comp)
+}
+
+/// Helper function to create a `<span>` element with a single child.
+///
+/// It's the same as `Container::from_tag("span").with_child(comp)`
+pub fn span(comp: impl Into<Html>) -> Container {
+    Container::from_tag("span").with_child(comp)
 }

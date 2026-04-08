@@ -33,7 +33,7 @@ pub mod charts;
 mod column;
 pub use column::Column;
 
-mod container;
+pub mod container;
 pub use container::Container;
 
 mod confirm_dialog;
