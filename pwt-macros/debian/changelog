@@ -1,3 +1,9 @@
+rust-pwt-macros (0.5.2) trixie; urgency=medium
+
+  * widget: implement WidgetStyleBuilder for SVG elements.
+
+ -- Proxmox Support Team <support@proxmox.com>  Fri, 10 Apr 2026 17:31:17 +0200
+
 rust-pwt-macros (0.5.1) trixie; urgency=medium
 
   * builder: allow multiple generic types in callback variant. If there is a
