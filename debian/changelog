@@ -1,3 +1,17 @@
+rust-pwt (0.8.3) trixie; urgency=medium
+
+  * switch to Rust 2024 edition.
+
+  * add pie chart widget with gauge, pie and donut variants, supporting
+    customizable colors, tooltips, legends and segment visibility toggling.
+
+  * widget: add 'div' and 'span' convenience helpers for wrapping bare text in
+    flex layouts.
+
+  * widget: svg: allow auto conversion from f64 for SvgLength.
+
+ -- Proxmox Support Team <support@proxmox.com>  Fri, 10 Apr 2026 17:33:49 +0200
+
 rust-pwt (0.8.2) trixie; urgency=medium
 
   * gridpicker, combobox: allow auto-selecting the filter field.
