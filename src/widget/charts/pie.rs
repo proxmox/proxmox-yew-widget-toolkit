@@ -53,6 +53,12 @@ pub enum LegendPosition {
     Bottom,
 }
 
+#[derive(Debug, Clone, PartialEq)]
+enum ChartVariant {
+    Gauge,
+    Pie,
+}
+
 #[widget(pwt=crate, comp=PwtPieChart, @element)]
 #[derive(Properties, Clone, PartialEq)]
 #[builder]
@@ -63,6 +69,7 @@ pub struct PieChart {
     /// The ratio of the ring to the inner radius of the pie chart, must be between 0.01 and 1.0.
     ///
     /// 1.0 results in a pie chart, values below in a donut shaped one.
+    /// Default is 1.0 for when using [PieChart::pie], 0.3 otherwise.
     thickness_ratio: f64,
 
     // the values to show. if only one, it's assumed to be between 0.0 and 1.0
@@ -123,29 +130,45 @@ pub struct PieChart {
     #[prop_or(360.0)]
     /// The ending angle of the chart in degrees, default is 360.0,
     angle_end: f64,
+
+    variant: ChartVariant,
 }
 
 impl PieChart {
     /// Creates a new chart with a single value from 0.0 to 1.0 (smaller and larger values will
     /// be clamped).
-    pub fn new(title: impl Into<AttrValue>, value: f64) -> Self {
+    pub fn gauge(title: impl Into<AttrValue>, value: f64) -> Self {
         yew::props!(Self {
-            values: vec![(title.into(), value.clamp(0.0, 1.0))]
+            values: vec![(title.into(), value.clamp(0.0, 1.0))],
+            variant: ChartVariant::Gauge,
         })
     }
 
-    /// Creates a new chart with multiple relative values.
-    pub fn with_values(values: Vec<(impl Into<AttrValue>, f64)>) -> Self {
+    /// Creates a new pie chart with multiple relative values.
+    pub fn pie(values: Vec<(impl Into<AttrValue>, f64)>) -> Self {
         yew::props!(Self {
             values: values
                 .into_iter()
                 .map(|(title, value)| (title.into(), value))
-                .collect::<Vec<_>>()
+                .collect::<Vec<_>>(),
+            variant: ChartVariant::Pie,
+            thickness_ratio: 1.0,
+        })
+    }
+
+    /// Creates a new donut chart with multiple relative values.
+    pub fn donut(values: Vec<(impl Into<AttrValue>, f64)>) -> Self {
+        yew::props!(Self {
+            values: values
+                .into_iter()
+                .map(|(title, value)| (title.into(), value))
+                .collect::<Vec<_>>(),
+            variant: ChartVariant::Pie,
         })
     }
 
     fn segment_get_color(&self, index: usize, value: f64) -> String {
-        if self.values.len() == 1 {
+        if self.variant == ChartVariant::Gauge {
             for (threshold, color) in GAUGE_COLORS {
                 if value >= *threshold {
                     return color.to_string();
@@ -171,12 +194,9 @@ impl PieChart {
     }
 
     fn effective_legend_position(&self) -> LegendPosition {
-        self.legend.unwrap_or({
-            if self.values.len() == 1 {
-                LegendPosition::Hidden
-            } else {
-                LegendPosition::End
-            }
+        self.legend.unwrap_or(match self.variant {
+            ChartVariant::Gauge => LegendPosition::Hidden,
+            ChartVariant::Pie => LegendPosition::End,
         })
     }
 }
@@ -279,21 +299,20 @@ impl PwtPieChart {
         let props = ctx.props();
         let mut segments = Vec::with_capacity(props.values.len());
 
-        let sum = if props.values.len() == 1 {
-            1.0
-        } else {
-            props
-                .values
-                .iter()
-                .enumerate()
-                .filter_map(|(index, (_, value))| (!self.hidden.contains(&index)).then_some(value))
-                .sum()
-        };
+        let (sum, allow_highlight) = match props.variant {
+            ChartVariant::Gauge => (1.0, false),
+            ChartVariant::Pie => {
+                let sum = props
+                    .values
+                    .iter()
+                    .enumerate()
+                    .filter_map(|(index, (_, value))| {
+                        (!self.hidden.contains(&index)).then_some(value)
+                    })
+                    .sum();
 
-        let allow_highlight = if props.values.len() == 1 {
-            false
-        } else {
-            props.allow_highlight.unwrap_or(true)
+                (sum, props.allow_highlight.unwrap_or(true))
+            }
         };
 
         let mut last_value = 0.0;
@@ -443,7 +462,7 @@ impl Component for PwtPieChart {
         let mut group = Group::new().style("transform", "rotate(90deg)");
 
         // background for the 'gauge' type chart
-        if props.values.len() == 1 {
+        if props.variant == ChartVariant::Gauge {
             group.add_child(
                 Circle::new()
                     .fill("none")
