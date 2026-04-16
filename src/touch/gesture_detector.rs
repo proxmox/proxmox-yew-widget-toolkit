@@ -86,6 +86,53 @@ impl Deref for GestureSwipeEvent {
     }
 }
 
+/// Determines the phase of the Gesture
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum GesturePhase {
+    /// The gesture just started
+    Start,
+    /// The gesture is already in progress and is updated
+    Update,
+    /// The gesture ended and this is the last update
+    End,
+}
+
+/// An event that can happen when the user uses a Pinch/Zoom gesture
+#[derive(Clone, PartialEq)]
+pub struct GesturePinchZoomEvent {
+    /// The current phase of the event
+    pub phase: GesturePhase,
+
+    /// First touch/pointer [Point] of the Pinch/Zoom event
+    pub point0: PinchPoint,
+    /// Second touch/pointer [Point] of the Pinch/Zoom event
+    pub point1: PinchPoint,
+
+    /// Current angle of the gesture, relative to the starting position
+    pub angle: f64,
+
+    /// Current scale of the distance between touch points relative to the starting positions
+    pub scale: f64,
+}
+
+impl GesturePinchZoomEvent {
+    fn new(
+        phase: GesturePhase,
+        point0: PinchPoint,
+        point1: PinchPoint,
+        angle: f64,
+        scale: f64,
+    ) -> Self {
+        Self {
+            phase,
+            point0,
+            point1,
+            angle,
+            scale,
+        }
+    }
+}
+
 /// Gesture detector.
 ///
 /// You need to set the CSS attribute `touch-action: none;` on children to receive all events.
@@ -96,6 +143,7 @@ impl Deref for GestureSwipeEvent {
 /// - long press: long tab without drag.
 /// - drag: pointer move while touching the surface.
 /// - swipe: fired at the end of a fast drag.
+/// - pinch/zoom: fired when two touches/pointers move.
 ///
 /// # Note
 ///
@@ -103,7 +151,8 @@ impl Deref for GestureSwipeEvent {
 ///
 /// Nested gesture detection is currently not implemented.
 ///
-/// Scale and rotate detection is also not implemented.
+/// It might be necessary to apply 'touch-action: none' to the content element.
+///
 #[derive(Properties, Clone, PartialEq)]
 pub struct GestureDetector {
     /// The yew component key.
@@ -152,6 +201,10 @@ pub struct GestureDetector {
 
     #[prop_or_default]
     pub on_swipe: Option<Callback<GestureSwipeEvent>>,
+
+    /// Callback for Pinch/Zoom gesture event.
+    #[prop_or_default]
+    pub on_pinch_zoom: Option<Callback<GesturePinchZoomEvent>>,
 }
 
 impl GestureDetector {
@@ -203,6 +256,12 @@ impl GestureDetector {
         self.on_swipe = cb.into_event_callback();
         self
     }
+
+    /// Builder style method to set the on_pinch_zoom callback
+    pub fn on_pinch_zoom(mut self, cb: impl IntoEventCallback<GesturePinchZoomEvent>) -> Self {
+        self.on_pinch_zoom = cb.into_event_callback();
+        self
+    }
 }
 
 pub enum Msg {
@@ -227,6 +286,7 @@ enum DetectionState {
     Single,
     Drag,
     Double,
+    Multi,
     //    Error,
     Done,
 }
@@ -245,12 +305,90 @@ struct PointerState {
     direction: f64,
 }
 
+impl PointerState {
+    fn to_pinch_point(&self, id: i32) -> PinchPoint {
+        PinchPoint {
+            id,
+            x: self.x,
+            y: self.y,
+        }
+    }
+}
+
+/// Represents a single pointer or touch
+#[derive(Debug, Clone, PartialEq)]
+pub struct PinchPoint {
+    /// The numeric ID of the touch or pointer
+    pub id: i32,
+    /// The x coordinate in pixels
+    pub x: i32,
+    /// The y coordinate in pixels
+    pub y: i32,
+}
+
+impl PinchPoint {
+    /// calculates the distance in pixels to another [Point]
+    pub fn distance(&self, other: &PinchPoint) -> f64 {
+        compute_distance(self.x, self.y, other.x, other.y)
+    }
+
+    /// calculates the angle of the line to another [Point] in radians
+    pub fn angle(&self, other: &PinchPoint) -> f64 {
+        let x_diff = (other.x - self.x) as f64;
+        let y_diff = (-other.y + self.y) as f64;
+
+        y_diff.atan2(x_diff) + std::f64::consts::PI
+    }
+}
+
+#[derive(Debug, Default, Clone, PartialEq)]
+struct PinchZoomInfo {
+    start_angle: f64,
+    current_angle: f64,
+    start_distance: f64,
+    current_distance: f64,
+}
+
+impl PinchZoomInfo {
+    fn new(point0: PinchPoint, point1: PinchPoint) -> Self {
+        let angle = point0.angle(&point1);
+
+        // force a minimal distance of 1 pixel
+        let distance = point0.distance(&point1).max(1.0);
+
+        Self {
+            start_angle: angle,
+            current_angle: angle,
+            start_distance: distance,
+            current_distance: distance,
+        }
+    }
+
+    fn update(&mut self, point0: PinchPoint, point1: PinchPoint) {
+        let last_angle = self.current_angle;
+        let rotations = (last_angle / std::f64::consts::TAU).round();
+
+        let angle = point0.angle(&point1) + rotations * std::f64::consts::TAU;
+
+        if (last_angle - angle).abs() < std::f64::consts::PI {
+            self.current_angle = angle;
+        } else if last_angle > angle {
+            self.current_angle = angle + std::f64::consts::TAU;
+        } else if last_angle < angle {
+            self.current_angle = angle - std::f64::consts::TAU;
+        }
+
+        self.current_distance = point0.distance(&point1);
+    }
+}
+
 #[doc(hidden)]
 pub struct PwtGestureDetector {
     touch_only: bool,
     node_ref: NodeRef,
     state: DetectionState,
     pointers: HashMap<i32, PointerState>,
+    pinch_zoom_info: PinchZoomInfo,
 }
 
 fn now() -> f64 {
@@ -298,6 +436,10 @@ impl PwtGestureDetector {
         let start_y = event.y();
 
         self.register_pointer_state(ctx, id, start_x, start_y);
+
+        if self.pointers.len() == 2 {
+            self.start_pinch_zoom();
+        }
     }
 
     fn register_touches(&mut self, ctx: &Context<Self>, event: &TouchEvent) {
@@ -307,6 +449,20 @@ impl PwtGestureDetector {
             let y = touch.client_y();
             self.register_pointer_state(ctx, id, x, y);
         });
+
+        if self.pointers.len() == 2 {
+            self.start_pinch_zoom();
+        }
+    }
+
+    fn start_pinch_zoom(&mut self) {
+        let (point0, point1) = self.get_pinch_points();
+        self.pinch_zoom_info = PinchZoomInfo::new(point0, point1)
+    }
+
+    fn update_pinch_zoom(&mut self) {
+        let (point0, point1) = self.get_pinch_points();
+        self.pinch_zoom_info.update(point0, point1);
     }
 
     fn unregister_touches<F: FnMut(i32, Touch, PointerState)>(
@@ -330,6 +486,28 @@ impl PwtGestureDetector {
         if let Some(el) = self.node_ref.cast::<web_sys::Element>() {
             let _ = el.set_pointer_capture(pointer_id);
         }
+    }
+
+    fn get_pinch_points(&self) -> (PinchPoint, PinchPoint) {
+        let mut points: Vec<_> = self
+            .pointers
+            .iter()
+            .map(|(id, pointer)| pointer.to_pinch_point(*id))
+            .collect();
+        assert!(points.len() == 2);
+
+        // sort for stable stable order
+        points.sort_by_key(|p| p.id);
+
+        (points.remove(0), points.remove(0))
+    }
+
+    fn get_angle(&self) -> f64 {
+        self.pinch_zoom_info.current_angle - self.pinch_zoom_info.start_angle
+    }
+
+    fn get_scale(&self) -> f64 {
+        self.pinch_zoom_info.current_distance / self.pinch_zoom_info.start_distance
     }
 
     fn update_pointer_position(&mut self, id: i32, x: i32, y: i32) -> Option<&PointerState> {
@@ -382,8 +560,12 @@ impl PwtGestureDetector {
                 self.state = match self.pointers.len() {
                     0 => DetectionState::Initial,
                     1 => DetectionState::Single,
-                    // TODO implement more touches
-                    _ => DetectionState::Double,
+                    2 => {
+                        let (point0, point1) = self.get_pinch_points();
+                        self.call_on_pinch_zoom(ctx, point0, point1, GesturePhase::Start);
+                        DetectionState::Double
+                    }
+                    _ => DetectionState::Multi,
                 };
             }
             Msg::PointerUp(_event) => { /* ignore */ }
@@ -432,6 +614,8 @@ impl PwtGestureDetector {
                 assert!(pointer_count == 1);
                 self.register_pointer(ctx, &event);
                 self.state = DetectionState::Double;
+                let (point0, point1) = self.get_pinch_points();
+                self.call_on_pinch_zoom(ctx, point0, point1, GesturePhase::Start);
             }
             Msg::TouchStart(event) => {
                 let pointer_count = self.pointers.len();
@@ -440,8 +624,12 @@ impl PwtGestureDetector {
                 self.state = match self.pointers.len() {
                     0 => DetectionState::Initial,
                     1 => DetectionState::Single,
-                    // TODO implement more touches
-                    _ => DetectionState::Double,
+                    2 => {
+                        let (point0, point1) = self.get_pinch_points();
+                        self.call_on_pinch_zoom(ctx, point0, point1, GesturePhase::Start);
+                        DetectionState::Double
+                    }
+                    _ => DetectionState::Multi,
                 };
             }
             Msg::PointerUp(event) => {
@@ -560,13 +748,27 @@ impl PwtGestureDetector {
                 if let Some(on_drag_end) = &props.on_drag_end {
                     on_drag_end.emit(event.into());
                 }
+                let (point0, point1) = self.get_pinch_points();
+                self.call_on_pinch_zoom(ctx, point0, point1, GesturePhase::Start);
             }
             Msg::TouchStart(event) => {
                 let pointer_count = self.pointers.len();
                 assert!(pointer_count == 1);
                 // Abort current drags
                 self.register_touches(ctx, &event);
-                self.state = DetectionState::Double;
+                let pointer_count = self.pointers.len();
+                match pointer_count {
+                    2 => {
+                        self.state = DetectionState::Double;
+
+                        let (point0, point1) = self.get_pinch_points();
+                        self.call_on_pinch_zoom(ctx, point0, point1, GesturePhase::Start);
+                    }
+                    count if count > 2 => {
+                        self.state = DetectionState::Multi;
+                    }
+                    _ => {}
+                }
                 for_each_active_touch(&event, |touch| {
                     if self.pointers.contains_key(&touch.identifier()) {
                         if let Some(on_drag_end) = &props.on_drag_end {
@@ -717,6 +919,112 @@ impl PwtGestureDetector {
         true
     }
 
+    fn call_on_pinch_zoom(
+        &mut self,
+        ctx: &Context<Self>,
+        point0: PinchPoint,
+        point1: PinchPoint,
+        phase: GesturePhase,
+    ) {
+        if let Some(on_pinch_zoom) = &ctx.props().on_pinch_zoom {
+            on_pinch_zoom.emit(GesturePinchZoomEvent::new(
+                phase,
+                point0,
+                point1,
+                self.get_angle(),
+                self.get_scale(),
+            ))
+        }
+    }
+
+    fn update_double(&mut self, ctx: &Context<Self>, msg: Msg) -> bool {
+        match msg {
+            Msg::TapTimeout(_id) => { /* ignore */ }
+            Msg::LongPressTimeout(_id) => { /* ignore */ }
+            Msg::PointerDown(event) => {
+                let pointer_count = self.pointers.len();
+                assert!(pointer_count == 2);
+                let (point0, point1) = self.get_pinch_points();
+                self.register_pointer(ctx, &event);
+                self.state = DetectionState::Multi;
+                self.call_on_pinch_zoom(ctx, point0, point1, GesturePhase::End);
+            }
+            Msg::TouchStart(event) => {
+                let pointer_count = self.pointers.len();
+                assert!(pointer_count == 2);
+                let (point0, point1) = self.get_pinch_points();
+                self.register_touches(ctx, &event);
+                self.state = DetectionState::Multi;
+                self.call_on_pinch_zoom(ctx, point0, point1, GesturePhase::End);
+            }
+            Msg::PointerUp(event) | Msg::PointerCancel(event) | Msg::PointerLeave(event) => {
+                event.prevent_default();
+                let pointer_count = self.pointers.len();
+                assert!(pointer_count == 2);
+                let (point0, point1) = self.get_pinch_points();
+                if self.unregister_pointer(event.pointer_id()).is_some() {
+                    self.state = DetectionState::Drag;
+                }
+                self.call_on_pinch_zoom(ctx, point0, point1, GesturePhase::End);
+            }
+            Msg::TouchEnd(event) | Msg::TouchCancel(event) => {
+                let pointer_count = self.pointers.len();
+                assert!(pointer_count == 2);
+                let (point0, point1) = self.get_pinch_points();
+                let mut unregistered = 0;
+                for_each_changed_touch(&event, |touch| {
+                    if self.unregister_pointer(touch.identifier()).is_some() {
+                        unregistered += 1;
+                    }
+                });
+                let pointer_count = pointer_count.saturating_sub(unregistered);
+                if pointer_count < 2 {
+                    self.call_on_pinch_zoom(ctx, point0, point1, GesturePhase::End);
+                }
+                match pointer_count {
+                    0 => self.state = DetectionState::Initial,
+                    1 => self.state = DetectionState::Drag,
+                    2 => {}
+                    _more => self.state = DetectionState::Multi, // more touchpoints on removal?
+                }
+            }
+            Msg::PointerMove(event) => {
+                event.prevent_default();
+                let updated = self
+                    .update_pointer_position(event.pointer_id(), event.x(), event.y())
+                    .is_some();
+
+                self.update_pinch_zoom();
+
+                if updated {
+                    let (point0, point1) = self.get_pinch_points();
+                    self.call_on_pinch_zoom(ctx, point0, point1, GesturePhase::Update);
+                }
+            }
+            Msg::TouchMove(event) => {
+                let mut had_valid = false;
+                for_each_changed_touch(&event, |touch| {
+                    if self
+                        .update_pointer_position(
+                            touch.identifier(),
+                            touch.client_x(),
+                            touch.client_y(),
+                        )
+                        .is_some()
+                    {
+                        had_valid = true
+                    }
+                });
+                self.update_pinch_zoom();
+                if had_valid {
+                    let (point0, point1) = self.get_pinch_points();
+                    self.call_on_pinch_zoom(ctx, point0, point1, GesturePhase::Update);
+                }
+            }
+        }
+        true
+    }
+
     // Wait until all pointers are released
     fn update_error(&mut self, ctx: &Context<Self>, msg: Msg) -> bool {
         match msg {
@@ -777,6 +1085,7 @@ impl Component for PwtGestureDetector {
             state: DetectionState::Initial,
             pointers: HashMap::new(),
             node_ref: NodeRef::default(),
+            pinch_zoom_info: PinchZoomInfo::default(),
         }
     }
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
@@ -786,7 +1095,8 @@ impl Component for PwtGestureDetector {
             DetectionState::Initial => self.update_initial(ctx, msg),
             DetectionState::Single => self.update_single(ctx, msg),
             DetectionState::Drag => self.update_drag(ctx, msg),
-            DetectionState::Double => self.update_error(ctx, msg), // todo
+            DetectionState::Double => self.update_double(ctx, msg),
+            DetectionState::Multi => self.update_error(ctx, msg), // todo
             //DetectionState::Error => self.update_error(ctx, msg),
             DetectionState::Done => self.update_error(ctx, msg),
         }
