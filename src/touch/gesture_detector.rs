@@ -19,6 +19,7 @@ use crate::widget::Container;
 /// An event that can happen from a [`PointerEvent`] or a [`Touch`]
 ///
 /// For convenience, expose the most important values from the underlying events
+#[derive(Clone, PartialEq)]
 pub enum InputEvent {
     PointerEvent(PointerEvent),
     Touch(Touch),
@@ -67,6 +68,7 @@ impl From<Touch> for InputEvent {
 }
 
 /// Like [PointerEvent](web_sys::PointerEvent), but includes the swipe direction
+#[derive(Clone, PartialEq)]
 pub struct GestureSwipeEvent {
     event: InputEvent,
     /// Direction angle (from -180 to +180 degree)
