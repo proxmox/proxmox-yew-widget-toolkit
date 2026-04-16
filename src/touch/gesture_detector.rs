@@ -217,6 +217,7 @@ pub struct GestureDetector {
     #[prop_or_default]
     pub on_drag: Option<Callback<GestureDragEvent>>,
 
+    /// Callback for swipe events.
     #[prop_or_default]
     pub on_swipe: Option<Callback<GestureSwipeEvent>>,
 
