@@ -10,10 +10,11 @@ use yew::virtual_dom::{Key, VComp, VNode};
 use crate::dom::IntoHtmlElement;
 use crate::props::{AsCssStylesMut, CssStyles};
 use crate::state::{SharedState, SharedStateObserver};
+use crate::touch::GestureDragEvent;
 use crate::widget::Container;
 use crate::{impl_yew_std_props_builder, prelude::*};
 
-use super::{GestureDetector, GestureSwipeEvent, InputEvent};
+use super::{GestureDetector, GesturePhase, GestureSwipeEvent, InputEvent};
 
 // Messages sent from the [SideDialogController].
 pub enum SideDialogControllerMsg {
@@ -125,9 +126,7 @@ pub enum Msg {
     Close,
     Dismiss, // Slide out, then close
     SliderAnimationEnd,
-    DragStart(InputEvent),
-    DragEnd(InputEvent),
-    Drag(InputEvent),
+    Drag(GestureDragEvent),
     Swipe(GestureSwipeEvent),
     Controller,
 }
@@ -262,43 +261,44 @@ impl Component for PwtSideDialog {
                 };
                 true
             }
-            Msg::DragStart(event) => {
+            Msg::Drag(event) => {
                 let x = event.x() as f64;
                 let y = event.y() as f64;
-                if x > 0.0 && y > 0.0 {
-                    // prevent divide by zero
-                    self.drag_start = Some((x, y));
-                    self.drag_delta = Some((0.0, 0.0));
-                }
-                false
-            }
-            Msg::DragEnd(_event) => {
-                let mut dismiss = false;
-                let threshold = 100.0;
-                if let Some((delta_x, delta_y)) = self.drag_delta {
-                    dismiss = match props.location {
-                        SideDialogLocation::Left => delta_x < -threshold,
-                        SideDialogLocation::Right => delta_x > threshold,
-                        SideDialogLocation::Top => delta_y < -threshold,
-                        SideDialogLocation::Bottom => delta_y > threshold,
-                    };
-                }
-                self.drag_start = None;
-                self.drag_delta = None;
+                match event.phase {
+                    GesturePhase::Start => {
+                        if x > 0.0 && y > 0.0 {
+                            // prevent divide by zero
+                            self.drag_start = Some((x, y));
+                            self.drag_delta = Some((0.0, 0.0));
+                        }
+                        false
+                    }
+                    GesturePhase::Update => {
+                        if let Some(start) = &self.drag_start {
+                            self.drag_delta = Some((x - start.0, y - start.1));
+                        }
+                        true
+                    }
+                    GesturePhase::End => {
+                        let mut dismiss = false;
+                        let threshold = 100.0;
+                        if let Some((delta_x, delta_y)) = self.drag_delta {
+                            dismiss = match props.location {
+                                SideDialogLocation::Left => delta_x < -threshold,
+                                SideDialogLocation::Right => delta_x > threshold,
+                                SideDialogLocation::Top => delta_y < -threshold,
+                                SideDialogLocation::Bottom => delta_y > threshold,
+                            };
+                        }
+                        self.drag_start = None;
+                        self.drag_delta = None;
 
-                if dismiss {
-                    ctx.link().send_message(Msg::Dismiss);
+                        if dismiss {
+                            ctx.link().send_message(Msg::Dismiss);
+                        }
+                        true
+                    }
                 }
-                true
-            }
-            Msg::Drag(event) => {
-                if let Some(start) = &self.drag_start {
-                    let x = event.x() as f64;
-                    let y = event.y() as f64;
-
-                    self.drag_delta = Some((x - start.0, y - start.1));
-                }
-                true
             }
             Msg::Swipe(event) => {
                 let angle = event.direction; // -180 to + 180
@@ -421,9 +421,7 @@ impl Component for PwtSideDialog {
                     }
                 }
             })
-            .on_drag_start(ctx.link().callback(Msg::DragStart))
-            .on_drag_end(ctx.link().callback(Msg::DragEnd))
-            .on_drag_update(ctx.link().callback(Msg::Drag))
+            .on_drag(ctx.link().callback(Msg::Drag))
             .on_swipe(ctx.link().callback(Msg::Swipe));
 
         let controller_context = html! {

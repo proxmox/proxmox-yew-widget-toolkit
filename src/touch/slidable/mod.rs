@@ -15,7 +15,9 @@ use yew::virtual_dom::VNode;
 use crate::dom::DomSizeObserver;
 use crate::prelude::*;
 use crate::props::CssLength;
-use crate::touch::{GestureDetector, GestureSwipeEvent, InputEvent};
+use crate::touch::{
+    GestureDetector, GestureDragEvent, GesturePhase, GestureSwipeEvent, InputEvent,
+};
 use crate::widget::{Container, Row};
 
 use pwt_macros::widget;
@@ -133,9 +135,7 @@ pub struct PwtSlidable {
 
 pub enum Msg {
     StartDismissTransition,
-    Drag(InputEvent),
-    DragStart(InputEvent),
-    DragEnd(InputEvent),
+    Drag(GestureDragEvent),
     Swipe(GestureSwipeEvent),
     LeftResize(f64),
     RightResize(f64),
@@ -245,17 +245,15 @@ impl Component for PwtSlidable {
             Msg::StartDismissTransition => {
                 self.view_state = ViewState::DismissTransition;
             }
-            Msg::Drag(event) => {
-                self.drag_pos = Some(self.drag_start - event.x());
-            }
-            Msg::DragStart(event) => {
-                self.drag_start = event.x();
-            }
-            Msg::DragEnd(_event) => {
-                self.drag_start = 0;
-                self.start_pos -= self.drag_pos.take().unwrap_or(0) as f64;
-                self.finalize_drag();
-            }
+            Msg::Drag(event) => match event.phase {
+                GesturePhase::Start => self.drag_start = event.x(),
+                GesturePhase::Update => self.drag_pos = Some(self.drag_start - event.x()),
+                GesturePhase::End => {
+                    self.drag_start = 0;
+                    self.start_pos -= self.drag_pos.take().unwrap_or(0) as f64;
+                    self.finalize_drag();
+                }
+            },
             Msg::ContentResize(width, height) => {
                 if self.start_pos == 0f64 && self.drag_pos.is_none() && !self.switch_back {
                     self.content_width = width.max(0f64);
@@ -379,9 +377,7 @@ impl Component for PwtSlidable {
                 .with_child(props.content.clone())
                 .into_html_with_ref(self.content_ref.clone()),
         )
-        .on_drag_start(ctx.link().callback(Msg::DragStart))
-        .on_drag_end(ctx.link().callback(Msg::DragEnd))
-        .on_drag_update(ctx.link().callback(Msg::Drag))
+        .on_drag(ctx.link().callback(Msg::Drag))
         .on_tap(ctx.link().callback(Msg::OnTap))
         .on_swipe(ctx.link().callback(Msg::Swipe));
 

@@ -133,6 +133,28 @@ impl GesturePinchZoomEvent {
     }
 }
 
+/// An event that can happen when the user uses a drag gesture
+#[derive(Clone, PartialEq)]
+pub struct GestureDragEvent {
+    /// The current phase of the event
+    pub phase: GesturePhase,
+
+    event: InputEvent,
+}
+
+impl GestureDragEvent {
+    fn new(event: InputEvent, phase: GesturePhase) -> Self {
+        Self { event, phase }
+    }
+}
+
+impl Deref for GestureDragEvent {
+    type Target = InputEvent;
+    fn deref(&self) -> &Self::Target {
+        &self.event
+    }
+}
+
 /// Gesture detector.
 ///
 /// You need to set the CSS attribute `touch-action: none;` on children to receive all events.
@@ -189,15 +211,9 @@ pub struct GestureDetector {
     #[prop_or_default]
     pub on_long_press: Option<Callback<()>>,
 
-    /// Callback for drag-start events.
+    /// Callback for drag events.
     #[prop_or_default]
-    pub on_drag_start: Option<Callback<InputEvent>>,
-    /// Callback for drag-start events.
-    #[prop_or_default]
-    pub on_drag_update: Option<Callback<InputEvent>>,
-    /// Callback for drag-start events.
-    #[prop_or_default]
-    pub on_drag_end: Option<Callback<InputEvent>>,
+    pub on_drag: Option<Callback<GestureDragEvent>>,
 
     #[prop_or_default]
     pub on_swipe: Option<Callback<GestureSwipeEvent>>,
@@ -233,21 +249,9 @@ impl GestureDetector {
         self
     }
 
-    /// Builder style method to set the on_drag_start callback
-    pub fn on_drag_start(mut self, cb: impl IntoEventCallback<InputEvent>) -> Self {
-        self.on_drag_start = cb.into_event_callback();
-        self
-    }
-
-    /// Builder style method to set the on_drag_update callback
-    pub fn on_drag_update(mut self, cb: impl IntoEventCallback<InputEvent>) -> Self {
-        self.on_drag_update = cb.into_event_callback();
-        self
-    }
-
-    /// Builder style method to set the on_drag_end callback
-    pub fn on_drag_end(mut self, cb: impl IntoEventCallback<InputEvent>) -> Self {
-        self.on_drag_end = cb.into_event_callback();
+    /// Builder style method to set the on_drag callback
+    pub fn on_drag(mut self, cb: impl IntoEventCallback<GestureDragEvent>) -> Self {
+        self.on_drag = cb.into_event_callback();
         self
     }
 
@@ -687,8 +691,8 @@ impl PwtGestureDetector {
                         //log::info!("DRAG START {} {}", event.x(), event.y());
                         self.state = DetectionState::Drag;
                         self.capture_pointer(event.pointer_id());
-                        if let Some(on_drag_start) = &props.on_drag_start {
-                            on_drag_start.emit(event.into());
+                        if let Some(on_drag) = &props.on_drag {
+                            on_drag.emit(GestureDragEvent::new(event.into(), GesturePhase::Start));
                         }
                     }
                 }
@@ -709,8 +713,9 @@ impl PwtGestureDetector {
                         // Make sure it cannot be a TAP or LONG PRESS event
                         if distance >= props.tap_tolerance {
                             self.state = DetectionState::Drag;
-                            if let Some(on_drag_start) = &props.on_drag_start {
-                                on_drag_start.emit(touch.into());
+                            if let Some(on_drag) = &props.on_drag {
+                                on_drag
+                                    .emit(GestureDragEvent::new(touch.into(), GesturePhase::Start));
                             }
                         }
                     }
@@ -745,8 +750,8 @@ impl PwtGestureDetector {
                 self.register_pointer(ctx, &event);
                 self.state = DetectionState::Double;
                 //log::info!("DRAG END");
-                if let Some(on_drag_end) = &props.on_drag_end {
-                    on_drag_end.emit(event.into());
+                if let Some(on_drag) = &props.on_drag {
+                    on_drag.emit(GestureDragEvent::new(event.into(), GesturePhase::End));
                 }
                 let (point0, point1) = self.get_pinch_points();
                 self.call_on_pinch_zoom(ctx, point0, point1, GesturePhase::Start);
@@ -771,8 +776,8 @@ impl PwtGestureDetector {
                 }
                 for_each_active_touch(&event, |touch| {
                     if self.pointers.contains_key(&touch.identifier()) {
-                        if let Some(on_drag_end) = &props.on_drag_end {
-                            on_drag_end.emit(touch.into());
+                        if let Some(on_drag) = &props.on_drag {
+                            on_drag.emit(GestureDragEvent::new(touch.into(), GesturePhase::End));
                         }
                     }
                 });
@@ -792,8 +797,11 @@ impl PwtGestureDetector {
                     let time_diff = now() - pointer_state.start_ctime;
                     let speed = distance / time_diff;
                     //log::info!("DRAG END {time_diff} {speed}");
-                    if let Some(on_drag_end) = &props.on_drag_end {
-                        on_drag_end.emit(event.clone().into());
+                    if let Some(on_drag) = &props.on_drag {
+                        on_drag.emit(GestureDragEvent::new(
+                            event.clone().into(),
+                            GesturePhase::End,
+                        ));
                     }
 
                     if let Some(on_swipe) = &props.on_swipe {
@@ -828,8 +836,11 @@ impl PwtGestureDetector {
                         let time_diff = now() - pointer_state.start_ctime;
                         let speed = distance / time_diff;
                         //log::info!("DRAG END {time_diff} {speed}");
-                        if let Some(on_drag_end) = &props.on_drag_end {
-                            on_drag_end.emit(touch.clone().into());
+                        if let Some(on_drag) = &props.on_drag {
+                            on_drag.emit(GestureDragEvent::new(
+                                touch.clone().into(),
+                                GesturePhase::End,
+                            ));
                         }
 
                         if let Some(on_swipe) = &props.on_swipe {
@@ -865,8 +876,8 @@ impl PwtGestureDetector {
                     );
                     if distance >= props.tap_tolerance || pointer_state.got_tap_timeout {
                         //log::info!("DRAG TO {} {}", event.x(), event.y());
-                        if let Some(on_drag_update) = &props.on_drag_update {
-                            on_drag_update.emit(event.into());
+                        if let Some(on_drag) = &props.on_drag {
+                            on_drag.emit(GestureDragEvent::new(event.into(), GesturePhase::Update));
                         }
                     }
                 }
@@ -886,8 +897,11 @@ impl PwtGestureDetector {
                         );
                         if distance >= props.tap_tolerance || pointer_state.got_tap_timeout {
                             //log::info!("DRAG TO {} {}", event.x(), event.y());
-                            if let Some(on_drag_update) = &props.on_drag_update {
-                                on_drag_update.emit(touch.into());
+                            if let Some(on_drag) = &props.on_drag {
+                                on_drag.emit(GestureDragEvent::new(
+                                    touch.into(),
+                                    GesturePhase::Update,
+                                ));
                             }
                         }
                     }
@@ -899,8 +913,8 @@ impl PwtGestureDetector {
                 if let Some(_pointer_state) = self.unregister_pointer(event.pointer_id()) {
                     self.state = DetectionState::Initial;
                     //log::info!("DRAG END");
-                    if let Some(on_drag_end) = &props.on_drag_end {
-                        on_drag_end.emit(event.into());
+                    if let Some(on_drag) = &props.on_drag {
+                        on_drag.emit(GestureDragEvent::new(event.into(), GesturePhase::End));
                     }
                 }
             }
@@ -909,8 +923,8 @@ impl PwtGestureDetector {
                 assert!(pointer_count == 1);
                 self.unregister_touches(&event, |_id, touch, _pointer_state| {
                     //log::info!("DRAG END");
-                    if let Some(on_drag_end) = &props.on_drag_end {
-                        on_drag_end.emit(touch.into());
+                    if let Some(on_drag) = &props.on_drag {
+                        on_drag.emit(GestureDragEvent::new(touch.into(), GesturePhase::End));
                     }
                 });
                 self.state = DetectionState::Initial;
