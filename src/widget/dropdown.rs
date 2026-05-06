@@ -1,6 +1,10 @@
+use std::cmp;
+
 use html::Scope;
 use wasm_bindgen::JsCast;
 use web_sys::HtmlInputElement;
+
+use crate::dom::IntoHtmlElement;
 
 use yew::html::{IntoEventCallback, IntoPropValue};
 use yew::prelude::*;
@@ -19,6 +23,7 @@ use crate::dom::focus::{FocusTracker, element_is_focusable, get_first_focusable}
 #[derive(Clone)]
 pub struct DropdownController {
     link: Scope<PwtDropdown>,
+    dropup: bool,
 }
 
 impl DropdownController {
@@ -33,6 +38,12 @@ impl DropdownController {
         Callback::from(move |key: S| {
             controller.change_value(key.to_string());
         })
+    }
+
+    /// Whether the picker should be rendered in "dropup" mode, meaning it is being rendered above
+    /// the [Dropdown].
+    pub fn dropup(&self) -> bool {
+        self.dropup
     }
 }
 /// Base widget to implement [Combobox](crate::widget::form::Combobox) like widgets.
@@ -155,15 +166,18 @@ impl PwtDropdown {
     }
 
     fn update_picker_placer(&mut self, _props: &Dropdown) {
-        let align_options = _props.align_options.clone().unwrap_or(
-            AlignOptions::new(
-                Point::BottomStart,
-                Point::TopStart,
-                GrowDirection::TopBottom,
-            )
-            .viewport_padding(5.0)
-            .align_width(true),
-        );
+        let align_options =
+            AlignOptions::new(Point::BottomStart, Point::TopStart, GrowDirection::None)
+                .viewport_padding(5.0)
+                .align_width(true)
+                .with_fallback_placement(Point::TopStart, Point::BottomStart, GrowDirection::None)
+                .with_fallback_placement(
+                    Point::BottomStart,
+                    Point::TopStart,
+                    GrowDirection::TopBottom,
+                );
+
+        let align_options = _props.align_options.clone().unwrap_or(align_options);
         self.picker_placer = match AutoFloatingPlacement::new(
             self.dropdown_ref.clone(),
             self.picker_ref.clone(),
@@ -337,8 +351,44 @@ impl Component for PwtDropdown {
             Msg::Input(input.value())
         });
 
+        // intentionally fail silently here; if any of these values aren't available, falling
+        // back to the default logic is fine, this should just provide improved ui/ux.
+        let dropdown_rect = self
+            .dropdown_ref
+            .clone()
+            .into_html_element()
+            .map(|e| e.get_bounding_client_rect());
+
+        let window_height = web_sys::window()
+            .and_then(|w| w.inner_height().ok())
+            .and_then(|h| h.as_f64().map(|h| h as i64));
+
+        let mut dropup = false;
+
+        if let Some(dropdown_rect) = dropdown_rect
+            && let Some(window_height) = window_height
+        {
+            let top = dropdown_rect.y() as i64;
+            let bottom = window_height - (top + (dropdown_rect.height() as i64));
+            let height = cmp::max(top, bottom) - 5;
+
+            if let Some(picker) = self.picker_ref.clone().into_html_element() {
+                let _ = picker
+                    .style()
+                    .set_property("max-height", &format!("{height}px"))
+                    .ok();
+
+                let height = picker.get_bounding_client_rect().height() as i64;
+
+                if height > bottom && height <= top {
+                    dropup = true
+                }
+            }
+        }
+
         let controller = DropdownController {
             link: ctx.link().clone(),
+            dropup,
         };
 
         let data_show = self.show.then_some("true");
@@ -497,7 +547,6 @@ impl Component for PwtDropdown {
     fn rendered(&mut self, ctx: &Context<Self>, first_render: bool) {
         if first_render {
             let props = ctx.props();
-
             self.update_picker_placer(props);
 
             if props.input_props.autofocus {

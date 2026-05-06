@@ -321,7 +321,8 @@ impl Component for PwtCombobox {
                 .show_filter(show_filter)
                 .filter(filter.clone())
                 .autoselect_filter(auto_select_filter)
-                .on_select(args.controller.on_select_callback());
+                .on_select(args.controller.on_select_callback())
+                .filter_below(args.controller.dropup());
 
             if show_filter {
                 picker.set_on_filter_change({

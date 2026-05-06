@@ -8,10 +8,11 @@ use yew::html::{IntoEventCallback, IntoPropValue};
 use yew::prelude::*;
 use yew::virtual_dom::{Key, VComp, VNode};
 
+use crate::css::{Display, FlexDirection};
 use crate::props::{FilterFn, IntoTextFilterFn, TextFilterFn};
 use crate::state::{DataStore, Selection};
 use crate::widget::data_table::DataTable;
-use crate::widget::{Column, Input, Row};
+use crate::widget::{Container, Input, Row};
 use crate::{impl_yew_std_props_builder, prelude::*};
 
 use pwt_macros::builder;
@@ -79,6 +80,13 @@ pub struct GridPicker<S: DataStore> {
     #[builder(IntoPropValue, into_prop_value)]
     #[prop_or_default]
     pub autoselect_filter: Option<bool>,
+
+    /// Whether to render the filter above or below the table. Useful when used in a
+    /// [Dropdown](crate::widget::Dropdown) where the picker could appear above or below the
+    /// dropdown's input field.
+    #[builder(IntoPropValue, into_prop_value)]
+    #[prop_or_default]
+    pub filter_below: Option<bool>,
 }
 
 impl<S: DataStore> GridPicker<S> {
@@ -185,7 +193,15 @@ impl<S: DataStore + 'static> Component for PwtGridPicker<S> {
             .selection(self.selection.clone())
             .into();
 
-        let mut view = Column::new().class("pwt-flex-fill pwt-overflow-auto");
+        let mut view = Container::new()
+            .class(Display::Flex)
+            .class("pwt-flex-fill pwt-overflow-auto");
+
+        view = if props.filter_below == Some(true) {
+            view.class(FlexDirection::ColumnReverse)
+        } else {
+            view.class(FlexDirection::Column)
+        };
 
         let show_filter = props
             .show_filter

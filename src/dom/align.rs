@@ -456,7 +456,11 @@ where
         style.remove_property("overflow")?;
     }
     let padding = 2.0 * options.viewport_padding;
-    style.set_property("max-height", &format!("calc(100dvh - {padding}px)"))?;
+
+    if style.get_property_value("max-height")? == "" {
+        style.set_property("max-height", &format!("calc(100dvh - {padding}px)"))?;
+    }
+
     style.set_property("max-width", &format!("calc(100dvw - {padding}px)"))?;
 
     if options.align_width {
