@@ -1,6 +1,9 @@
 //! ### Widgets for Touch devices
 //!
 
+mod adaptive_scaffold;
+pub use adaptive_scaffold::{AdaptiveScaffold, PwtAdaptiveScaffold};
+
 mod application_bar;
 pub use application_bar::{ApplicationBar, PwtApplicationBar};
 
