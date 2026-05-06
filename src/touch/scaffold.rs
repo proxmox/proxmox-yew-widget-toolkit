@@ -6,9 +6,9 @@ use yew::virtual_dom::{Key, VComp, VNode};
 
 use crate::css::FlexFit;
 use crate::props::{ContainerBuilder, PwtSpace, WidgetBuilder, WidgetStyleBuilder};
-use crate::widget::{Column, Container};
+use crate::widget::{Column, Container, Row};
 
-use super::NavigationBar;
+use super::{NavigationBar, NavigationRail};
 
 use pwt_macros::builder;
 
@@ -32,6 +32,14 @@ pub struct Scaffold {
     #[builder(IntoPropValue, into_prop_value)]
     #[prop_or_default]
     pub navigation_bar: Option<NavigationBar>,
+
+    /// A side navigation rail, anchored to the inline-start side.
+    ///
+    /// Takes precedence over [navigation_bar](Self::navigation_bar) if both are set, switching the
+    /// layout from a bottom bar to a side rail with the application bar and body to its right.
+    #[builder(IntoPropValue, into_prop_value)]
+    #[prop_or_default]
+    pub navigation_rail: Option<NavigationRail>,
 
     /// Favorite action button.
     #[prop_or_default]
@@ -112,13 +120,29 @@ impl Component for PwtScaffold {
             .with_optional_child(props.body.clone())
             .with_optional_child(positioned_fab);
 
-        Column::new()
-            .class("pwt-viewport")
-            .class("pwt-position-relative")
-            .with_optional_child(props.application_bar.clone())
-            .with_child(body)
-            .with_optional_child(props.navigation_bar.clone())
-            .into()
+        // A navigation rail anchors to the inline-start side with the application bar and body to
+        // its right; a bottom navigation bar instead spans the full width below the body.
+        if let Some(rail) = props.navigation_rail.clone() {
+            Row::new()
+                .class("pwt-viewport")
+                .class("pwt-position-relative")
+                .with_child(rail)
+                .with_child(
+                    Column::new()
+                        .class(FlexFit)
+                        .with_optional_child(props.application_bar.clone())
+                        .with_child(body),
+                )
+                .into()
+        } else {
+            Column::new()
+                .class("pwt-viewport")
+                .class("pwt-position-relative")
+                .with_optional_child(props.application_bar.clone())
+                .with_child(body)
+                .with_optional_child(props.navigation_bar.clone())
+                .into()
+        }
     }
 }
 
