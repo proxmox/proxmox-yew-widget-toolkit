@@ -70,5 +70,6 @@ wasm-bindgen-futures = "0.4"
 url = "2.1"
 percent-encoding = "2.1"
 gettext = "0.4"
+geojson = "0.24"
 
 pwt-macros = { version = "0.5.2", path = "pwt-macros" }

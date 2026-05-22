@@ -8,3 +8,6 @@ pub use map::{
 
 mod pie;
 pub use pie::{LegendPosition, PieChart};
+
+mod world_map;
+pub use world_map::{Location, WorldMap, WorldPoint};
