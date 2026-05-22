@@ -297,6 +297,7 @@ extern "C" {
     pub fn show_popover(popover: web_sys::Node);
     pub fn hide_popover(popover: web_sys::Node);
     pub fn toggle_popover(popover: web_sys::Node);
+    pub fn client_to_svg_coords(svg: &web_sys::Node, x: f64, y: f64) -> Vec<f64>;
 }
 
 // Create wrapper which panics if called from target_arch!=wasm32
@@ -327,6 +328,10 @@ mod panic_wrapper {
     }
     /// Toggle a Html popover
     pub fn toggle_popover(_popover: web_sys::Node) {
+        unreachable!()
+    }
+    /// Calculate the svg coordinates from viewport ones
+    pub fn client_to_svg_coords(_svg: &web_sys::Node, _x: f64, _y: f64) -> Vec<f64> {
         unreachable!()
     }
 }
