@@ -91,6 +91,7 @@ pub enum Msg {
     Resize(f64, f64),
     Tooltip(Option<(usize, i32, i32)>),
     ToggleInfo(usize),
+    CloseInfo,
     Drag(GestureDragEvent),
 }
 
@@ -287,8 +288,8 @@ impl<T: MapPointData + 'static> yew::Component for MapComp<T> {
                     }
                 }
                 GesturePhase::End => {
+                    // re-render (fall through to `true`) so the cursor resets from "grabbing"
                     self.grab_start = None;
-                    return false;
                 }
             },
             Msg::Resize(real_width, real_height) => {
@@ -315,6 +316,12 @@ impl<T: MapPointData + 'static> yew::Component for MapComp<T> {
                     }
                 }
             }
+            Msg::CloseInfo => {
+                if self.info_visible.is_none() {
+                    return false;
+                }
+                self.info_visible = None;
+            }
         }
         true
     }
@@ -332,6 +339,12 @@ impl<T: MapPointData + 'static> yew::Component for MapComp<T> {
         let fully_zoomed = zoom_level >= props.max_zoom_level;
 
         let svg = Canvas::new()
+            .onclick({
+                // clicking the map background (anything but a point, which stops propagation)
+                // dismisses an open info card
+                let link = link.clone();
+                move |_| link.send_message(Msg::CloseInfo)
+            })
             .onwheel({
                 let link = link.clone();
                 move |event: WheelEvent| {
@@ -404,7 +417,11 @@ impl<T: MapPointData + 'static> yew::Component for MapComp<T> {
                     Msg::Tooltip(Some((index, x, y)))
                 }))
                 .onpointerleave(link.callback(move |_| Msg::Tooltip(None)))
-                .onclick(link.callback(move |_| Msg::ToggleInfo(index)));
+                .onclick(link.callback(move |event: MouseEvent| {
+                    // keep the click from reaching the background handler that closes the card
+                    event.stop_propagation();
+                    Msg::ToggleInfo(index)
+                }));
             if self.info_visible == Some(index) {
                 points.add_child(point);
                 // ref for info-box
