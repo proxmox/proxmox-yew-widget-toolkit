@@ -238,14 +238,16 @@ impl<T: MapPointData + 'static> yew::Component for MapComp<T> {
                     return false;
                 };
                 let coords = client_to_svg_coords(&svg, x as f64, y as f64);
-                if self.zoom.update_zoom(change, coords[0], coords[1]) {
-                    self.cluster_points(ctx);
+                if !self.zoom.update_zoom(change, coords[0], coords[1]) {
+                    return false;
                 }
+                self.cluster_points(ctx);
             }
             Msg::ButtonZoom(change) => {
-                if self.zoom.update_zoom(change, width / 2.0, height / 2.0) {
-                    self.cluster_points(ctx);
+                if !self.zoom.update_zoom(change, width / 2.0, height / 2.0) {
+                    return false;
                 }
+                self.cluster_points(ctx);
             }
             Msg::PinchZoom(event) => {
                 let Some(svg) = self.svg_ref.get() else {
@@ -267,11 +269,14 @@ impl<T: MapPointData + 'static> yew::Component for MapComp<T> {
                         self.zoom
                             .move_pan(x - self.pinch_last_center.x, y - self.pinch_last_center.y);
                         self.pinch_last_center = Coordinates { x, y };
-                        self.zoom.update_zoom(
+                        if self.zoom.update_zoom(
                             zoom_info::ZoomAction::Scale(self.pinch_start_scale * event.scale),
                             x,
                             y,
-                        );
+                        ) {
+                            // re-cluster on scale change, like wheel/button zoom
+                            self.cluster_points(ctx);
+                        }
                     }
                     GesturePhase::End => return false,
                 }
