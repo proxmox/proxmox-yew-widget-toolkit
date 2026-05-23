@@ -32,8 +32,13 @@ function toggle_popover(popover) {
 }
 
 function client_to_svg_coords(svg, x, y) {
+    const ctm = svg.getScreenCTM();
+    if (!ctm) {
+        // not laid out yet (detached/hidden); fall back to the input coordinates
+        return [x, y];
+    }
     const pt = new DOMPoint(x, y);
-    const svgPt = pt.matrixTransform(svg.getScreenCTM().inverse());
+    const svgPt = pt.matrixTransform(ctm.inverse());
     return [svgPt.x, svgPt.y];
 }
 
