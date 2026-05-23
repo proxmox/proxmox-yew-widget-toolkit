@@ -1,3 +1,17 @@
+rust-pwt (0.8.4) trixie; urgency=medium
+
+  * touch: gesture detector: add a pinch-zoom gesture, unify the separate
+    on_drag start/update/end callbacks into a single on_drag, and derive Clone
+    and PartialEq for gesture events.
+
+  * add interactive map and world-map chart widgets supporting zoom, pan,
+    point clustering, touch gestures and GeoJSON rendering.
+
+  * widget: segmented button: expose it as an accessible role="group" with an
+    optional aria-label.
+
+ -- Proxmox Support Team <support@proxmox.com>  Sat, 23 May 2026 22:59:44 +0200
+
 rust-pwt (0.8.3) trixie; urgency=medium
 
   * switch to Rust 2024 edition.

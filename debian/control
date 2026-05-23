@@ -9,6 +9,7 @@ Build-Depends-Arch: cargo:native <!nocheck>,
  librust-anyhow-1+default-dev <!nocheck>,
  librust-derivative-2+default-dev (>= 2.2.0-~~) <!nocheck>,
  librust-futures-0.3+std-dev <!nocheck>,
+ librust-geojson-0.24+default-dev <!nocheck>,
  librust-gettext-0.4+default-dev <!nocheck>,
  librust-gloo-events-0.2+default-dev <!nocheck>,
  librust-gloo-history-0.2+default-dev <!nocheck>,
@@ -73,6 +74,7 @@ Depends:
  librust-anyhow-1+default-dev,
  librust-derivative-2+default-dev (>= 2.2.0-~~),
  librust-futures-0.3+std-dev,
+ librust-geojson-0.24+default-dev,
  librust-gettext-0.4+default-dev,
  librust-gloo-events-0.2+default-dev,
  librust-gloo-history-0.2+default-dev,
@@ -129,7 +131,7 @@ Provides:
  librust-pwt-0+default-dev (= ${binary:Version}),
  librust-pwt-0.8-dev (= ${binary:Version}),
  librust-pwt-0.8+default-dev (= ${binary:Version}),
- librust-pwt-0.8.3-dev (= ${binary:Version}),
- librust-pwt-0.8.3+default-dev (= ${binary:Version})
+ librust-pwt-0.8.4-dev (= ${binary:Version}),
+ librust-pwt-0.8.4+default-dev (= ${binary:Version})
 Description: Widgets for yew - Rust source code
  Source code for Debianized Rust crate "pwt"
