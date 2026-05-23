@@ -114,6 +114,8 @@ pub struct MapComp<T: Clone + PartialEq> {
     info_ref: NodeRef,
     info_visible: Option<usize>,
     grab_start: Option<(f64, f64)>,
+    // set while a drag is in progress so the trailing synthetic click does not dismiss the info card
+    dragged: bool,
     clusters: Vec<Cluster>,
     _phantom_data: PhantomData<T>,
 }
@@ -181,11 +183,12 @@ impl<T: MapPointData + 'static> MapComp<T> {
         }
 
         if let Some(index) = self.info_visible {
-            // either finds the correct new index to show, or resets the info if
-            // the cluster does not exist anymore
+            // keep the open card on the same set of points across re-clustering (the center
+            // shifts with zoom, so match on membership), or reset it if that cluster is gone
+            let open_indices = &self.clusters[index].indices;
             self.info_visible = clusters
                 .iter()
-                .position(|indices| *indices == self.clusters[index]);
+                .position(|cluster| &cluster.indices == open_indices);
         }
         self.clusters = clusters;
     }
@@ -215,6 +218,7 @@ impl<T: MapPointData + 'static> yew::Component for MapComp<T> {
             info_ref: NodeRef::default(),
             info_visible: None,
             grab_start: None,
+            dragged: false,
             clusters: Vec::new(),
             _phantom_data: PhantomData::<T>,
         };
@@ -274,6 +278,9 @@ impl<T: MapPointData + 'static> yew::Component for MapComp<T> {
             }
             Msg::Drag(event) => match event.phase {
                 GesturePhase::Start => {
+                    // GestureDetector only emits drag events past its tap tolerance, so any drag
+                    // start means a real pan; remember it to suppress the trailing click below
+                    self.dragged = true;
                     self.grab_start = Some((event.x() as f64, event.y() as f64));
                 }
                 GesturePhase::Update => {
@@ -317,6 +324,11 @@ impl<T: MapPointData + 'static> yew::Component for MapComp<T> {
                 }
             }
             Msg::CloseInfo => {
+                // a pan emits a trailing click; consume it here instead of dismissing the card
+                if self.dragged {
+                    self.dragged = false;
+                    return false;
+                }
                 if self.info_visible.is_none() {
                     return false;
                 }
