@@ -258,6 +258,13 @@ impl ManagedField for DateFieldComp {
         let validation_result = &self.result;
 
         let current_value = Self::try_parse(&value_str, &props.format, &props.alt_formats);
+
+        // Show the value in display `format`, else a preloaded value renders raw until edited.
+        let display_value = match &current_value {
+            Some(date) => date.format(&props.format),
+            None => value_str,
+        };
+
         let props = props.clone();
 
         // The picker function
@@ -292,7 +299,7 @@ impl ManagedField for DateFieldComp {
             .with_std_props(&props.std_props)
             .with_input_props(&props.input_props)
             .align_options(align_options)
-            .value(value_str)
+            .value(display_value)
             .valid(is_valid)
             .tip(tip)
             .editable(props.editable)
