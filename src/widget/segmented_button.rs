@@ -3,10 +3,14 @@ use std::borrow::Cow;
 use yew::prelude::*;
 use yew::virtual_dom::{Listeners, VList, VTag};
 
+use crate::props::WidgetBuilder;
 use crate::widget::Button;
 use pwt_macros::widget;
 
-/// List of Buttons.
+/// A group of related [`Button`]s rendered as a single segmented control.
+///
+/// Renders with `role="group"`; set [`aria_label`](Self::aria_label) so assistive
+/// technology announces the buttons as one labelled control.
 #[widget(pwt=crate, comp=PwtSegmentedButton, @element)]
 #[derive(Properties, PartialEq, Clone)]
 pub struct SegmentedButton {
@@ -25,6 +29,13 @@ impl SegmentedButton {
         yew::props!(Self {
             buttons: Vec::new()
         })
+        // a segmented control is semantically one group of related buttons
+        .attribute("role", "group")
+    }
+
+    /// Builder style method to set the `aria-label` announced for the group.
+    pub fn aria_label(self, label: impl Into<AttrValue>) -> Self {
+        self.attribute("aria-label", label.into())
     }
 
     /// Builder style method to add a button
