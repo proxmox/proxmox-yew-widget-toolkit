@@ -21,7 +21,7 @@ pub fn render_point_default<T: MapPointData>(args: &PointsRenderArgs<T>) -> Grou
         .with_child(
             Circle::new()
                 .style(
-                    "--pwt-location-radius",
+                    "--pwt-map-location-radius",
                     format!("{:.3}px", args.suggested_radius),
                 )
                 .cx(args.center.x)
@@ -32,7 +32,7 @@ pub fn render_point_default<T: MapPointData>(args: &PointsRenderArgs<T>) -> Grou
                 Circle::new()
                     .class("pwt-map-location-animated")
                     .style(
-                        "--pwt-location-radius",
+                        "--pwt-map-location-radius",
                         format!("{:.3}px", args.suggested_radius),
                     )
                     .cx(args.center.x)
