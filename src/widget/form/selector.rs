@@ -378,6 +378,16 @@ impl<S: DataStore + 'static> ManagedField for SelectorField<S> {
         if props.value != old_props.value {
             ctx.link()
                 .force_value(props.value.as_ref().map(|v| v.to_string()), None);
+        } else if !props.editable && props.input_props.name.is_none() {
+            // A controlled non-editable field cleared in place stays blank if the parent maps the
+            // clear back to the same value, so re-assert. Limited to nameless fields, matching
+            // the `value` prop's documented controlled use. Relies on changed() running, which
+            // Yew only does when some other prop differs between renders.
+            if let Some(value) = &props.value {
+                if self.value.as_str().unwrap_or("").is_empty() && !value.is_empty() {
+                    ctx.link().force_value(Some(value.to_string()), None);
+                }
+            }
         }
 
         if reload {
