@@ -76,7 +76,7 @@ pub struct Combobox {
 
     /// Show filter
     ///
-    /// Defaul behavior is to show the filter for pickers with more than 10 items.
+    /// Default behavior is to show the filter for pickers with more than 10 items.
     #[builder(IntoPropValue, into_prop_value)]
     #[prop_or_default]
     pub show_filter: Option<bool>,
