@@ -1,5 +1,3 @@
-use std::cmp;
-
 use html::Scope;
 use wasm_bindgen::JsCast;
 use web_sys::HtmlInputElement;
@@ -22,6 +20,14 @@ use crate::dom::focus::{FocusTracker, element_is_focusable, get_first_focusable}
 /// Padding kept between the picker and the viewport edges, in pixels. Shared by the placement
 /// fallbacks and the picker height cap so the two stay in sync.
 const VIEWPORT_PADDING: f64 = 5.0;
+
+/// Minimum space below the input, in pixels, for the picker to still open downward; below this it
+/// opens upward instead (when there is more room above), biasing toward a normal downward dropdown.
+const MIN_SPACE_BELOW: f64 = 160.0;
+
+fn window_inner_height() -> Option<f64> {
+    web_sys::window()?.inner_height().ok()?.as_f64()
+}
 
 /// Parameters passed to the [Dropdown] picker callback.
 #[derive(Clone)]
@@ -159,6 +165,9 @@ pub struct PwtDropdown {
     picker_id: String,
     picker_placer: Option<AutoFloatingPlacement>,
     focus_tracker: FocusTracker,
+    // whether the picker opens upward; decided once at open and drives both the placement and a
+    // combobox filter's position
+    dropup: bool,
 }
 
 impl PwtDropdown {
@@ -169,8 +178,29 @@ impl PwtDropdown {
         }
     }
 
-    fn update_picker_placer(&mut self, _props: &Dropdown) {
-        let align_options =
+    // Space above and below the input within the viewport, in pixels.
+    fn dropdown_space(&self) -> Option<(f64, f64)> {
+        let dropdown = self.dropdown_ref.clone().into_html_element()?;
+        let window_height = window_inner_height()?;
+        let rect = dropdown.get_bounding_client_rect();
+        let above = rect.y();
+        let below = window_height - (rect.y() + rect.height());
+        Some((above, below))
+    }
+
+    fn update_picker_placer(&mut self, props: &Dropdown) {
+        // Primary placement is the side chosen at open (see `dropup`), so the picker opens there
+        // directly and never flips between below and above as content grows or a filter narrows.
+        let default = if self.dropup {
+            AlignOptions::new(Point::TopStart, Point::BottomStart, GrowDirection::None)
+                .viewport_padding(VIEWPORT_PADDING)
+                .align_width(true)
+                .with_fallback_placement(
+                    Point::BottomStart,
+                    Point::TopStart,
+                    GrowDirection::TopBottom,
+                )
+        } else {
             AlignOptions::new(Point::BottomStart, Point::TopStart, GrowDirection::None)
                 .viewport_padding(VIEWPORT_PADDING)
                 .align_width(true)
@@ -179,9 +209,10 @@ impl PwtDropdown {
                     Point::BottomStart,
                     Point::TopStart,
                     GrowDirection::TopBottom,
-                );
+                )
+        };
 
-        let align_options = _props.align_options.clone().unwrap_or(align_options);
+        let align_options = props.align_options.clone().unwrap_or(default);
         self.picker_placer = match AutoFloatingPlacement::new(
             self.dropdown_ref.clone(),
             self.picker_ref.clone(),
@@ -215,6 +246,7 @@ impl Component for PwtDropdown {
             picker_id: crate::widget::get_unique_element_id(),
             picker_placer: None,
             focus_tracker,
+            dropup: false,
         }
     }
 
@@ -256,8 +288,14 @@ impl Component for PwtDropdown {
                 if props.input_props.disabled {
                     return false;
                 }
+                // decide the side before the picker renders so the filter ordering is right on the
+                // first frame; only when we own the placement, as a custom align_options means the
+                // caller controls the side.
+                self.dropup = props.align_options.is_none()
+                    && self
+                        .dropdown_space()
+                        .is_some_and(|(above, below)| below < MIN_SPACE_BELOW && above > below);
                 self.show = true;
-                //log::info!("ShowPicker {}", self.show);
                 true
             }
             Msg::ChangeValue(value) => {
@@ -355,44 +393,9 @@ impl Component for PwtDropdown {
             Msg::Input(input.value())
         });
 
-        // intentionally fail silently here; if any of these values aren't available, falling
-        // back to the default logic is fine, this should just provide improved ui/ux.
-        let dropdown_rect = self
-            .dropdown_ref
-            .clone()
-            .into_html_element()
-            .map(|e| e.get_bounding_client_rect());
-
-        let window_height = web_sys::window()
-            .and_then(|w| w.inner_height().ok())
-            .and_then(|h| h.as_f64().map(|h| h as i64));
-
-        let mut dropup = false;
-
-        if let Some(dropdown_rect) = dropdown_rect
-            && let Some(window_height) = window_height
-        {
-            let top = dropdown_rect.y() as i64;
-            let bottom = window_height - (top + (dropdown_rect.height() as i64));
-            let height = cmp::max(top, bottom) - VIEWPORT_PADDING as i64;
-
-            if let Some(picker) = self.picker_ref.clone().into_html_element() {
-                let _ = picker
-                    .style()
-                    .set_property("max-height", &format!("{height}px"))
-                    .ok();
-
-                let height = picker.get_bounding_client_rect().height() as i64;
-
-                if height > bottom && height <= top {
-                    dropup = true
-                }
-            }
-        }
-
         let controller = DropdownController {
             link: ctx.link().clone(),
-            dropup,
+            dropup: self.dropup,
         };
 
         let data_show = self.show.then_some("true");
@@ -565,6 +568,23 @@ impl Component for PwtDropdown {
             if let Some(popover_node) = self.picker_ref.get() {
                 if self.show {
                     crate::show_popover(popover_node);
+
+                    // cap the height to the side it opens toward so a long list scrolls instead of
+                    // overflowing; only when we own the placement (a custom align_options sizes it)
+                    if ctx.props().align_options.is_none()
+                        && let (Some(picker), Some((above, below))) = (
+                            self.picker_ref.clone().into_html_element(),
+                            self.dropdown_space(),
+                        )
+                    {
+                        let space = if self.dropup { above } else { below };
+                        let max_height = (space - VIEWPORT_PADDING).max(0.0);
+                        let _ = picker
+                            .style()
+                            .set_property("max-height", &format!("{max_height}px"));
+                    }
+                    self.update_picker_placer(ctx.props());
+
                     if self.focus_on_field {
                         if let Some(el) = self.input_ref.cast::<web_sys::HtmlElement>() {
                             let _ = el.focus();
@@ -578,8 +598,7 @@ impl Component for PwtDropdown {
             }
         }
 
-        // update picker placement after we opened/closed to cope with a bug that only seems to
-        // affect webkit based browsers like Safari
+        // keep the placement fresh for content growth and a webkit/Safari re-align bug
         if let Some(placer) = &self.picker_placer {
             if let Err(err) = placer.update() {
                 log::error!("error updating placement: {}", err.to_string());
