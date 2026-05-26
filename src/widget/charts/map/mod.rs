@@ -446,7 +446,8 @@ impl<T: MapPointData + 'static> yew::Component for MapComp<T> {
                     Circle::new()
                         .cx(center.x)
                         .cy(center.y)
-                        .r(0)
+                        .r(1)
+                        .fill("transparent")
                         .into_html_with_ref(self.info_anchor_ref.clone()),
                 );
                 info = Some(self.create_info(&args));
