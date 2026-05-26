@@ -9,7 +9,8 @@ use pwt_macros::{builder, widget};
 use super::{MiniScroll, MiniScrollMode};
 use crate::dom::element_direction_rtl;
 use crate::dom::focus::{
-    FocusTracker, init_roving_tabindex, roving_tabindex_next, update_roving_tabindex,
+    FocusTracker, focus_inside_input, init_roving_tabindex, roving_tabindex_next,
+    update_roving_tabindex,
 };
 use crate::prelude::*;
 
@@ -21,8 +22,8 @@ use crate::prelude::*;
 ///
 /// # Note
 ///
-/// Avoid including controls whose operation requires left/right arrow
-/// keys used for toolbar navigation.
+/// Avoid including non-text controls whose operation requires left/right arrow keys (e.g. a
+/// slider); a focused text input keeps its own caret navigation and is exempt from the roving.
 ///
 /// See: <https://www.w3.org/WAI/ARIA/apg/patterns/toolbar/>.
 ///
@@ -31,10 +32,10 @@ use crate::prelude::*;
 /// * `Tab` and `Shift Tab`: Move focus into and out of the toolbar.
 ///
 /// * `Right Arrow`: Moves focus one cell to the right. If focus is on
-/// the last element, focus the first element.
+/// the last element, focus the first element. Ignored while a text input is focused.
 ///
 /// * `Left Arrow`: Moves focus one cell to the left. If focus is on
-/// the first element, focus the last element.
+/// the first element, focus the last element. Ignored while a text input is focused.
 #[widget(pwt=crate, comp=PwtToolbar, @element, @container)]
 #[derive(Properties, PartialEq, Clone)]
 #[builder]
@@ -153,6 +154,11 @@ impl Component for PwtToolbar {
                 }
             })
             .onkeydown(move |event: KeyboardEvent| {
+                // Leave caret-movement keys to a focused text input instead of using them to
+                // move between toolbar items; mirrors the same guard in DataTable.
+                if focus_inside_input() {
+                    return;
+                }
                 match event.key().as_str() {
                     "ArrowRight" => {
                         roving_tabindex_next(&inner_ref, rtl, true);
