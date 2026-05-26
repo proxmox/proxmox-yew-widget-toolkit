@@ -2,8 +2,8 @@
 
 mod map;
 pub use map::{
-    render_info_default, render_point_default, render_tooltip_default, Coordinates, Map, MapPoint,
-    MapPointData, PointsRenderArgs,
+    Coordinates, Map, MapPoint, MapPointData, PointsRenderArgs, render_info_default,
+    render_point_default, render_tooltip_default,
 };
 
 mod pie;

@@ -1,7 +1,7 @@
 use crate::prelude::*;
 use crate::widget::canvas::{Circle, Group};
 use crate::widget::charts::map::{Coordinates, MapPoint};
-use crate::widget::{container::span, Column};
+use crate::widget::{Column, container::span};
 
 /// Contains the points rendered together on the map due to clustering,
 /// and suggested properties such as the radius (calculated from clustering)

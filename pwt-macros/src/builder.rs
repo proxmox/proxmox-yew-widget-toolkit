@@ -1,10 +1,10 @@
 use proc_macro::TokenStream;
-use quote::{format_ident, quote, quote_spanned, ToTokens};
+use quote::{ToTokens, format_ident, quote, quote_spanned};
 
 use syn::spanned::Spanned;
-use syn::{parse::Parse, parse_macro_input, Data, DeriveInput, Token};
+use syn::{Data, DeriveInput, Token, parse::Parse, parse_macro_input};
 
-use syn::{parenthesized, Error, Fields, Result};
+use syn::{Error, Fields, Result, parenthesized};
 
 pub(crate) fn handle_builder_struct(input: TokenStream) -> TokenStream {
     let builder = parse_macro_input!(input as DeriveInput);
@@ -257,7 +257,7 @@ fn derive_builder(builder: DeriveInput) -> Result<proc_macro2::TokenStream> {
                     return Err(Error::new(
                         attr_span,
                         "missing 'builder_cb' parameters, maybe you want to use 'builder'?",
-                    ))
+                    ));
                 }
             }
         };

@@ -3,8 +3,8 @@ use quote::{format_ident, quote};
 use syn::ext::IdentExt;
 use syn::parse::{Parse, ParseStream};
 use syn::spanned::Spanned;
-use syn::{parse_macro_input, Data, DeriveInput};
 use syn::{Attribute, Error, Fields, Ident, Path, Result, Token};
+use syn::{Data, DeriveInput, parse_macro_input};
 
 #[derive(Debug)]
 pub(crate) struct WidgetSetup {

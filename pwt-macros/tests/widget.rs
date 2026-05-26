@@ -1,6 +1,6 @@
 #[allow(dead_code)]
 mod props {
-    use yew::{virtual_dom::Key, Classes};
+    use yew::{Classes, virtual_dom::Key};
 
     pub trait FieldBuilder {
         fn as_input_props(&self) -> &FieldStdProps;

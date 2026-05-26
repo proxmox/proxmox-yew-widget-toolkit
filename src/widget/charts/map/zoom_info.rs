@@ -165,7 +165,7 @@ impl ZoomInfo {
 #[cfg(test)]
 mod test {
     use super::ZoomInfo;
-    use crate::widget::charts::{map::zoom_info::ZoomAction, Coordinates};
+    use crate::widget::charts::{Coordinates, map::zoom_info::ZoomAction};
 
     #[test]
     fn test_zooming() {
