@@ -1,3 +1,4 @@
+use gloo_events::{EventListener, EventListenerOptions};
 use html::Scope;
 use wasm_bindgen::JsCast;
 use web_sys::HtmlInputElement;
@@ -146,6 +147,7 @@ pub enum Msg {
     Input(String),
     MouseDownInput,
     FocusChange(bool),
+    Dismiss,
 }
 
 #[doc(hidden)]
@@ -168,6 +170,8 @@ pub struct PwtDropdown {
     // whether the picker opens upward; decided once at open and drives both the placement and a
     // combobox filter's position
     dropup: bool,
+    // dismiss-on-outside-interaction listeners, present only while the picker is open
+    dismiss_listeners: Vec<EventListener>,
 }
 
 impl PwtDropdown {
@@ -247,6 +251,7 @@ impl Component for PwtDropdown {
             picker_placer: None,
             focus_tracker,
             dropup: false,
+            dismiss_listeners: Vec::new(),
         }
     }
 
@@ -339,6 +344,21 @@ impl Component for PwtDropdown {
             Msg::FocusChange(has_focus) => {
                 if !has_focus {
                     self.show = false;
+                }
+                true
+            }
+            Msg::Dismiss => {
+                if !self.show {
+                    return false;
+                }
+                self.show = false;
+                // closing by interaction elsewhere does not grab focus back to the input, unlike
+                // HidePicker; emit a pending change so a prior selection is not lost
+                if self.pending_change {
+                    self.pending_change = false;
+                    if let Some(on_change) = &ctx.props().on_change {
+                        on_change.emit(self.value.clone());
+                    }
                 }
                 true
             }
@@ -592,8 +612,52 @@ impl Component for PwtDropdown {
                     } else {
                         focus_selected_element(&self.picker_ref);
                     }
+
+                    // While open, dismiss the picker on a pointer-down outside it (such as grabbing
+                    // a dialog to move or resize it), a window resize, or a page scroll, so it is
+                    // not stranded at its open position. Capture phase so a stopped-propagation
+                    // handler cannot hide the event.
+                    let document = gloo_utils::document();
+                    let outside_pointerdown = {
+                        let link = ctx.link().clone();
+                        let picker_ref = self.picker_ref.clone();
+                        let dropdown_ref = self.dropdown_ref.clone();
+                        EventListener::new_with_options(
+                            &document,
+                            "pointerdown",
+                            EventListenerOptions::run_in_capture_phase(),
+                            move |event| {
+                                if !event_target_within(event, &[&picker_ref, &dropdown_ref]) {
+                                    link.send_message(Msg::Dismiss);
+                                }
+                            },
+                        )
+                    };
+                    let outside_scroll = {
+                        let link = ctx.link().clone();
+                        let picker_ref = self.picker_ref.clone();
+                        EventListener::new_with_options(
+                            &document,
+                            "scroll",
+                            EventListenerOptions::run_in_capture_phase(),
+                            move |event| {
+                                // ignore the picker's own list scrolling
+                                if !event_target_within(event, &[&picker_ref]) {
+                                    link.send_message(Msg::Dismiss);
+                                }
+                            },
+                        )
+                    };
+                    let on_resize = {
+                        let link = ctx.link().clone();
+                        EventListener::new(&gloo_utils::window(), "resize", move |_| {
+                            link.send_message(Msg::Dismiss);
+                        })
+                    };
+                    self.dismiss_listeners = vec![outside_pointerdown, outside_scroll, on_resize];
                 } else {
                     crate::hide_popover(popover_node);
+                    self.dismiss_listeners.clear();
                 }
             }
         }
@@ -607,6 +671,18 @@ impl Component for PwtDropdown {
 
         self.focus_on_field = false;
     }
+}
+
+fn event_target_within(event: &web_sys::Event, node_refs: &[&NodeRef]) -> bool {
+    let Some(target) = event.target() else {
+        return false;
+    };
+    let Ok(node) = target.dyn_into::<web_sys::Node>() else {
+        return false;
+    };
+    node_refs
+        .iter()
+        .any(|node_ref| node_ref.get().is_some_and(|el| el.contains(Some(&node))))
 }
 
 // Focus selected element
