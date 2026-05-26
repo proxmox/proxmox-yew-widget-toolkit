@@ -1,3 +1,25 @@
+rust-pwt (0.8.5) trixie; urgency=medium
+
+  * form: selector: re-assert a controlled selector's value after it is
+    cleared in place, so the field no longer stays blank when the parent maps
+    the clear back to the same value.
+
+  * widget: charts: map: fix the info card position on Firefox and stop the
+    invisible positioning anchor from intercepting pointer events over the
+    selected point.
+
+  * widget: charts: world map: expose the maximum zoom level and the info
+    point radius as builder options.
+
+  * widget: dropdown: open the picker above the input when there is too little
+    room below it, cap its height to the available space, and keep a
+    combobox's filter field next to the input field in that case.
+
+  * widget: toolbar: let a focused text input keep the arrow keys for caret
+    movement instead of the toolbar consuming them for navigation.
+
+ -- Proxmox Support Team <support@proxmox.com>  Tue, 26 May 2026 22:56:23 +0200
+
 rust-pwt (0.8.4) trixie; urgency=medium
 
   * touch: gesture detector: add a pinch-zoom gesture, unify the separate
