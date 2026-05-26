@@ -65,6 +65,16 @@ pub struct WorldMap<T: MapPointData + 'static> {
     /// A list of points to highlight on the map.
     points: Vec<MapPoint<T>>,
 
+    #[prop_or(30.0)]
+    #[builder]
+    /// The maximum zoom level that is allowed. Forwarded to the inner [Map].
+    max_zoom_level: f64,
+
+    #[prop_or(8.0)]
+    #[builder]
+    /// The radius for info points. Forwarded to the inner [Map].
+    info_point_radius: f64,
+
     map_data: Rc<GeoJson>,
 }
 
@@ -148,6 +158,8 @@ impl<T: MapPointData + 'static> yew::Component for WorldMapComp<T> {
         .style("background-color", "var(--pwt-color-surface)")
         .width(WIDTH)
         .height(HEIGHT)
+        .max_zoom_level(props.max_zoom_level)
+        .info_point_radius(props.info_point_radius)
         .points(props.points.clone())
         .into()
     }
