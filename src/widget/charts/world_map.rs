@@ -11,7 +11,11 @@ use pwt_macros::{builder, widget};
 
 // the constant size of the svg viewport. also use to project lon/lat to svg coordinates
 const WIDTH: f64 = 3600.0; // use 10 units per longitude
-const WIDTH_RATIO: f64 = 1.65; // use a ratio that looks a bit more like regular maps
+// Aspect ratio of the equirectangular projection; it equals 2*cos(standard parallel), the
+// latitude drawn at true proportions. 1.65 keeps that near 34 degrees, so latitudes poleward
+// of it (most of Europe) stretch east-west and those toward the equator compress. Lower the
+// ratio to move the true latitude poleward.
+const WIDTH_RATIO: f64 = 1.65;
 const HEIGHT: f64 = WIDTH / WIDTH_RATIO;
 
 /// Represents a Location in the world using the geographic coordinate system.
