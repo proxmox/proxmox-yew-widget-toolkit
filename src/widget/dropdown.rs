@@ -19,6 +19,10 @@ use crate::dom::align::{AlignOptions, AutoFloatingPlacement, GrowDirection, Poin
 
 use crate::dom::focus::{FocusTracker, element_is_focusable, get_first_focusable};
 
+/// Padding kept between the picker and the viewport edges, in pixels. Shared by the placement
+/// fallbacks and the picker height cap so the two stay in sync.
+const VIEWPORT_PADDING: f64 = 5.0;
+
 /// Parameters passed to the [Dropdown] picker callback.
 #[derive(Clone)]
 pub struct DropdownController {
@@ -168,7 +172,7 @@ impl PwtDropdown {
     fn update_picker_placer(&mut self, _props: &Dropdown) {
         let align_options =
             AlignOptions::new(Point::BottomStart, Point::TopStart, GrowDirection::None)
-                .viewport_padding(5.0)
+                .viewport_padding(VIEWPORT_PADDING)
                 .align_width(true)
                 .with_fallback_placement(Point::TopStart, Point::BottomStart, GrowDirection::None)
                 .with_fallback_placement(
@@ -370,7 +374,7 @@ impl Component for PwtDropdown {
         {
             let top = dropdown_rect.y() as i64;
             let bottom = window_height - (top + (dropdown_rect.height() as i64));
-            let height = cmp::max(top, bottom) - 5;
+            let height = cmp::max(top, bottom) - VIEWPORT_PADDING as i64;
 
             if let Some(picker) = self.picker_ref.clone().into_html_element() {
                 let _ = picker
