@@ -448,6 +448,8 @@ impl<T: MapPointData + 'static> yew::Component for MapComp<T> {
                         .cy(center.y)
                         .r(1)
                         .fill("transparent")
+                        // purely a geometry probe for aligning the card; never a hit target
+                        .attribute("pointer-events", "none")
                         .into_html_with_ref(self.info_anchor_ref.clone()),
                 );
                 info = Some(self.create_info(&args));
