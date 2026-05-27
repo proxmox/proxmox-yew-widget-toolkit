@@ -43,6 +43,12 @@ pub struct MessageBox {
     #[prop_or_default]
     #[builder(Into, into)]
     pub icon_class: Classes,
+
+    /// Autofocus the confirming button (Yes/Ok) rather than the dismissing one. Off by default,
+    /// so the safe (No/Cancel) button keeps the initial focus.
+    #[prop_or_default]
+    #[builder]
+    pub autofocus_confirm: bool,
 }
 
 #[derive(PartialEq, Clone)]
@@ -117,18 +123,22 @@ pub fn pwt_message_box(props: &MessageBox) -> Html {
         }
         MessageBoxButtons::YesNo => {
             vec![
-                Button::new(tr!("Yes")).onclick(onclick_success),
+                Button::new(tr!("Yes"))
+                    .autofocus(props.autofocus_confirm)
+                    .onclick(onclick_success),
                 Button::new(tr!("No"))
-                    .autofocus(true)
+                    .autofocus(!props.autofocus_confirm)
                     .onclick(onclick_failure),
             ]
         }
         MessageBoxButtons::CancelOk => {
             vec![
                 Button::new(tr!("Cancel"))
-                    .autofocus(true)
+                    .autofocus(!props.autofocus_confirm)
                     .onclick(onclick_failure),
-                Button::new(tr!("Ok")).onclick(onclick_success),
+                Button::new(tr!("Ok"))
+                    .autofocus(props.autofocus_confirm)
+                    .onclick(onclick_success),
             ]
         }
     };
