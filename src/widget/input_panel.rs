@@ -63,6 +63,10 @@ pub struct InputPanel {
     #[prop_or_default]
     right_count: usize,
 
+    /// Set when an advanced field or custom child has been added (autodetected).
+    #[prop_or_default]
+    has_advanced: bool,
+
     #[prop_or_default]
     #[builder(IntoPropValue, into_prop_value)]
     /// A custom label width in the grid column template.
@@ -100,6 +104,14 @@ impl InputPanel {
         self.show_advanced = show_advanced;
     }
 
+    /// Returns whether any advanced field or custom child has been added.
+    ///
+    /// A lone advanced spacer does not count. Useful to decide whether to offer an "Advanced"
+    /// toggle at all.
+    pub fn has_advanced(&self) -> bool {
+        self.has_advanced
+    }
+
     pub fn with_spacer(mut self) -> Self {
         self.add_spacer(false);
         self
@@ -118,6 +130,7 @@ impl InputPanel {
         );
 
         let two_column = self.two_column;
+        let has_advanced = self.has_advanced;
         self.add_custom_child_impl(
             FieldPosition::Large,
             advanced,
@@ -126,6 +139,8 @@ impl InputPanel {
         );
         // Note: do not change two_column when adding a spacer!
         self.two_column = two_column;
+        // a lone spacer is not advanced "content", so it must not flip has_advanced
+        self.has_advanced = has_advanced;
     }
 
     /// Builder style method to add a custom child in the first column
@@ -191,6 +206,9 @@ impl InputPanel {
         hidden: bool,
         child: Html,
     ) {
+        if advanced {
+            self.has_advanced = true;
+        }
         let mut visible = if advanced { self.show_advanced } else { true };
         if hidden {
             visible = false;
@@ -263,6 +281,9 @@ impl InputPanel {
         //field: impl Labelable,
         mut field: impl Labelable,
     ) {
+        if advanced {
+            self.has_advanced = true;
+        }
         let mut visible = if advanced { self.show_advanced } else { true };
         if hidden {
             visible = false;
@@ -564,5 +585,38 @@ impl IntoVTag for InputPanel {
             listeners,
             children.into(),
         )
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::widget::Container;
+
+    #[test]
+    fn has_advanced_tracks_only_real_advanced_content() {
+        let advanced_child = || {
+            InputPanel::new().with_custom_child_and_options(
+                FieldPosition::Left,
+                true,
+                false,
+                Container::new(),
+            )
+        };
+
+        // an empty panel has nothing advanced
+        assert!(!InputPanel::new().has_advanced());
+        // a non-advanced child does not count
+        assert!(
+            !InputPanel::new()
+                .with_custom_child(Container::new())
+                .has_advanced()
+        );
+        // a lone advanced spacer is a separator, not content
+        assert!(!InputPanel::new().with_advanced_spacer().has_advanced());
+        // an advanced field or custom child counts
+        assert!(advanced_child().has_advanced());
+        // and a trailing advanced spacer must not clear that
+        assert!(advanced_child().with_advanced_spacer().has_advanced());
     }
 }
