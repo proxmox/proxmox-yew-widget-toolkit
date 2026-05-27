@@ -107,7 +107,8 @@ impl InputPanel {
     /// Returns whether any advanced field or custom child has been added.
     ///
     /// A lone advanced spacer does not count. Useful to decide whether to offer an "Advanced"
-    /// toggle at all.
+    /// toggle at all - report it into a [FormContext](FormContext::set_has_advanced) after adding
+    /// all fields so a container can gate its toggle on it.
     pub fn has_advanced(&self) -> bool {
         self.has_advanced
     }

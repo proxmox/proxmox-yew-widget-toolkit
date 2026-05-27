@@ -325,6 +325,19 @@ impl FormContext {
         self.write().set_show_advanced(show_advanced);
     }
 
+    /// Returns the has_advanced flag, i.e. whether the form contains advanced fields.
+    ///
+    /// This is reported by [InputPanel](super::super::InputPanel) layouts that contain advanced
+    /// fields, so containers can decide whether to offer an "Advanced" toggle at all.
+    pub fn get_has_advanced(&self) -> bool {
+        self.inner.borrow().has_advanced
+    }
+
+    /// Set the has_advanced flag.
+    pub fn set_has_advanced(&self, has_advanced: bool) {
+        self.write().set_has_advanced(has_advanced);
+    }
+
     /// Load form data.
     ///
     /// This sets the form data from the provided JSON object. Also
@@ -410,6 +423,7 @@ pub struct FormContextState {
     fields: Slab<FieldRegistration>,
     groups: HashMap<AttrValue, GroupState>,
     show_advanced: bool,
+    has_advanced: bool,
 }
 
 impl FormContextState {
@@ -420,6 +434,7 @@ impl FormContextState {
             fields: Slab::new(),
             groups: HashMap::new(),
             show_advanced: false,
+            has_advanced: false,
         }
     }
 
@@ -528,6 +543,13 @@ impl FormContextState {
     pub fn set_show_advanced(&mut self, show_advanced: bool) {
         if self.show_advanced != show_advanced {
             self.show_advanced = show_advanced;
+            self.version += 1;
+        }
+    }
+
+    pub fn set_has_advanced(&mut self, has_advanced: bool) {
+        if self.has_advanced != has_advanced {
+            self.has_advanced = has_advanced;
             self.version += 1;
         }
     }
