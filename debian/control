@@ -131,7 +131,7 @@ Provides:
  librust-pwt-0+default-dev (= ${binary:Version}),
  librust-pwt-0.8-dev (= ${binary:Version}),
  librust-pwt-0.8+default-dev (= ${binary:Version}),
- librust-pwt-0.8.6-dev (= ${binary:Version}),
- librust-pwt-0.8.6+default-dev (= ${binary:Version})
+ librust-pwt-0.8.7-dev (= ${binary:Version}),
+ librust-pwt-0.8.7+default-dev (= ${binary:Version})
 Description: Widgets for yew - Rust source code
  Source code for Debianized Rust crate "pwt"

@@ -1,3 +1,20 @@
+rust-pwt (0.8.7) trixie; urgency=medium
+
+  * input panel: track whether the panel contains advanced fields via a
+    has_advanced() getter, and add a matching has_advanced flag to the
+    FormContext, so form containers can auto-show an "Advanced" toggle only
+    when there is something to toggle.
+
+  * message box: add an autofocus_confirm option to focus the confirming
+    (Yes/Ok) button instead of the dismissing (No/Cancel) one.
+
+  * confirm dialog: do not style routine confirmations as errors; default to
+    a neutral question icon with the affirmative button focused, and add a
+    dangerous() option that uses the alerting icon and keeps the safe button
+    focused for destructive actions.
+
+ -- Proxmox Support Team <support@proxmox.com>  Wed, 27 May 2026 19:29:05 +0200
+
 rust-pwt (0.8.6) trixie; urgency=medium
 
   * widget: charts: map: keep an open info card aligned with its point while
