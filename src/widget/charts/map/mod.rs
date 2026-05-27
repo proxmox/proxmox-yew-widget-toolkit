@@ -1,5 +1,8 @@
 use std::marker::PhantomData;
 
+use wasm_bindgen::prelude::Closure;
+use wasm_bindgen::{JsCast, UnwrapThrowExt};
+
 mod map_point;
 pub use map_point::{
     MapPointData, PointsRenderArgs, render_info_default, render_point_default,
@@ -93,6 +96,7 @@ pub enum Msg {
     ToggleInfo(usize),
     CloseInfo,
     Drag(GestureDragEvent),
+    UpdateInfoAlignment,
 }
 
 #[derive(PartialEq, Clone)]
@@ -117,6 +121,7 @@ pub struct MapComp<T: Clone + PartialEq> {
     // set while a drag is in progress so the trailing synthetic click does not dismiss the info card
     dragged: bool,
     clusters: Vec<Cluster>,
+    scroll_handler: Closure<dyn FnMut()>,
     _phantom_data: PhantomData<T>,
 }
 
@@ -192,6 +197,39 @@ impl<T: MapPointData + 'static> MapComp<T> {
         }
         self.clusters = clusters;
     }
+
+    fn update_info_alignment(&self, ctx: &Context<Self>) {
+        if let (Some(_), Some(anchor), Some(el)) = (
+            self.info_visible,
+            self.info_anchor_ref.get(),
+            self.info_ref.get(),
+        ) {
+            let _ = align_to(
+                anchor,
+                el,
+                Some(
+                    AlignOptions::new(
+                        crate::dom::align::Point::Top,
+                        crate::dom::align::Point::Bottom,
+                        crate::dom::align::GrowDirection::None,
+                    )
+                    .offset(0.0, ctx.props().info_point_radius * 2.0),
+                ),
+            );
+        }
+    }
+}
+
+impl<T: PartialEq + Clone> Drop for MapComp<T> {
+    fn drop(&mut self) {
+        gloo_utils::document()
+            .remove_event_listener_with_callback_and_bool(
+                "scroll",
+                self.scroll_handler.as_ref().unchecked_ref(),
+                true,
+            )
+            .unwrap_throw();
+    }
 }
 
 impl<T: MapPointData + 'static> yew::Component for MapComp<T> {
@@ -205,6 +243,22 @@ impl<T: MapPointData + 'static> yew::Component for MapComp<T> {
             ctx.props().points.iter().map(|poi| poi.coordinates),
             2.0 * props.info_point_radius,
         );
+
+        let link = ctx.link().clone();
+        let scroll_handler = Closure::new(move || {
+            link.send_message(Msg::UpdateInfoAlignment);
+        });
+
+        // capturing event handler, triggers for *all* scroll events on the page
+        // even unrelated ones, but it's still cheaper than attaching an event handler
+        // to every ancestor that might scroll
+        gloo_utils::document()
+            .add_event_listener_with_callback_and_bool(
+                "scroll",
+                scroll_handler.as_ref().unchecked_ref(),
+                true,
+            )
+            .unwrap_throw();
 
         let mut this = Self {
             zoom,
@@ -220,6 +274,7 @@ impl<T: MapPointData + 'static> yew::Component for MapComp<T> {
             grab_start: None,
             dragged: false,
             clusters: Vec::new(),
+            scroll_handler,
             _phantom_data: PhantomData::<T>,
         };
 
@@ -338,6 +393,10 @@ impl<T: MapPointData + 'static> yew::Component for MapComp<T> {
                     return false;
                 }
                 self.info_visible = None;
+            }
+            Msg::UpdateInfoAlignment => {
+                self.update_info_alignment(ctx);
+                return false;
             }
         }
         true
@@ -564,23 +623,6 @@ impl<T: MapPointData + 'static> yew::Component for MapComp<T> {
                 crate::dom::align::Point::TopStart,
             );
         }
-        if let (Some(_), Some(anchor), Some(el)) = (
-            self.info_visible,
-            self.info_anchor_ref.get(),
-            self.info_ref.get(),
-        ) {
-            let _ = align_to(
-                anchor,
-                el,
-                Some(
-                    AlignOptions::new(
-                        crate::dom::align::Point::Top,
-                        crate::dom::align::Point::Bottom,
-                        crate::dom::align::GrowDirection::None,
-                    )
-                    .offset(0.0, ctx.props().info_point_radius * 2.0),
-                ),
-            );
-        }
+        self.update_info_alignment(ctx);
     }
 }
