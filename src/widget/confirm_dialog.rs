@@ -4,6 +4,7 @@ use html::{IntoEventCallback, IntoPropValue};
 use pwt_macros::builder;
 use yew::virtual_dom::{Key, VComp, VNode};
 
+use crate::css::FontColor;
 use crate::prelude::*;
 use crate::{impl_yew_std_props_builder, tr};
 
@@ -27,8 +28,18 @@ pub struct ConfirmDialog {
     #[builder(IntoPropValue, into_prop_value)]
     pub confirm_message: Html,
 
-    /// An icon that will be shown in the dialogs message.
-    #[prop_or("fa fa-exclamation-triangle".into())]
+    /// Style the dialog for a dangerous, destructive action: an alerting icon in the error color
+    /// rather than the neutral default. A plain confirmation is not an error and should not look
+    /// like one, so this is off by default.
+    #[prop_or_default]
+    #[builder]
+    pub dangerous: bool,
+
+    /// Icon shown in the dialog's message sign.
+    ///
+    /// When left unset a neutral question mark is shown, or an alerting triangle when `dangerous`
+    /// is set. Set this to override the icon (and its color via a color class) explicitly.
+    #[prop_or_default]
     #[builder(Into, into)]
     pub icon_class: Classes,
 
@@ -89,9 +100,19 @@ impl Component for PwtConfirmDialog {
         let on_dismiss = props.on_dismiss.clone();
         let on_close = props.on_close.clone();
 
+        let icon_class = if !props.icon_class.is_empty() {
+            props.icon_class.clone()
+        } else if props.dangerous {
+            classes!("fa", "fa-exclamation-triangle", FontColor::Error)
+        } else {
+            classes!("fa", "fa-question-circle", FontColor::Primary)
+        };
+
         MessageBox::new(props.title.clone(), props.confirm_message.clone())
             .buttons(super::MessageBoxButtons::YesNo)
-            .icon_class(props.icon_class.clone())
+            // a dangerous action keeps the safe "No" focused; a routine one defaults to "Yes"
+            .autofocus_confirm(!props.dangerous)
+            .icon_class(icon_class)
             .on_close(ctx.link().callback(move |confirm| {
                 if confirm {
                     if let Some(on_confirm) = &on_confirm {
