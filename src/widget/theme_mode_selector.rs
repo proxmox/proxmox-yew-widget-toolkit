@@ -79,7 +79,7 @@ impl Component for PwtThemeModeSelector {
         let onclick = ctx.link().callback(|_| Msg::NextMode);
 
         let (icon, tip) = match self.theme {
-            ThemeMode::System => ("fa fa-fw fa-asterisk", tr!("System Theme")),
+            ThemeMode::System => ("fa fa-fw fa-desktop", tr!("System Theme")),
             ThemeMode::Dark => ("fa fa-fw fa-moon-o", tr!("Dark Mode")),
             ThemeMode::Light => ("fa fa-fw fa-sun-o", tr!("Light Mode")),
         };
