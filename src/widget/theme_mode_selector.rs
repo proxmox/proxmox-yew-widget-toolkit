@@ -3,7 +3,7 @@ use std::rc::Rc;
 use yew::virtual_dom::{Key, VComp, VNode};
 
 use crate::state::{Theme, ThemeMode};
-use crate::widget::Button;
+use crate::widget::{Button, Tooltip};
 use crate::{impl_class_prop_builder, impl_yew_std_props_builder, prelude::*};
 
 /// Round icon button to select light/dark theme.
@@ -78,15 +78,20 @@ impl Component for PwtThemeModeSelector {
 
         let onclick = ctx.link().callback(|_| Msg::NextMode);
 
-        Button::new_icon(match self.theme {
-            ThemeMode::System => "fa fa-fw fa-asterisk",
-            ThemeMode::Dark => "fa fa-fw fa-moon-o",
-            ThemeMode::Light => "fa fa-fw fa-sun-o",
-        })
-        .class(props.class.clone())
-        .class("circle")
-        .onclick(onclick)
-        .aria_label("Select Theme Mode")
+        let (icon, tip) = match self.theme {
+            ThemeMode::System => ("fa fa-fw fa-asterisk", tr!("System Theme")),
+            ThemeMode::Dark => ("fa fa-fw fa-moon-o", tr!("Dark Mode")),
+            ThemeMode::Light => ("fa fa-fw fa-sun-o", tr!("Light Mode")),
+        };
+
+        Tooltip::new(
+            Button::new_icon(icon)
+                .class(props.class.clone())
+                .class("circle")
+                .onclick(onclick)
+                .aria_label("Select Theme Mode"),
+        )
+        .tip(tip)
         .into()
     }
 
