@@ -225,8 +225,8 @@ impl Component for PwtFabMenu {
         };
 
         let children = props.children.iter().enumerate().filter_map(|(i, child)| {
-            if i >= 5 {
-                log::error!("FabMenu only supports 5 child buttons.");
+            if i >= 6 {
+                log::error!("FabMenu only supports 6 child buttons.");
                 return None;
             }
 
