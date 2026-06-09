@@ -266,8 +266,9 @@ impl Component for PwtSlidable {
                     .left_action_ref
                     .cast::<web_sys::HtmlElement>()
                     .unwrap()
-                    .offset_width()
-                    .max(0) as f64;
+                    .get_bounding_client_rect()
+                    .width()
+                    .max(0.0);
 
                 if width > (left_size + 1.0) {
                     self.left_size = left_size;
@@ -283,8 +284,9 @@ impl Component for PwtSlidable {
                     .right_action_ref
                     .cast::<web_sys::HtmlElement>()
                     .unwrap()
-                    .offset_width()
-                    .max(0) as f64;
+                    .get_bounding_client_rect()
+                    .width()
+                    .max(0.0);
 
                 if width > (right_size + 1.0) {
                     self.right_size = right_size;
