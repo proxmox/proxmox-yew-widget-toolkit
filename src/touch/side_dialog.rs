@@ -466,8 +466,12 @@ impl From<SideDialog> for VNode {
     }
 }
 
-/// Checks if there is any element in the range from `target` to `boundary` that is scrollable
-/// in the direction we would close the side dialog. (`target` must be a descendant of `boundary`).
+/// Checks if any element from `target` up to, but excluding, `boundary` can scroll in the
+/// direction we would close the side dialog.
+///
+/// Returns `false` if `target` is not a descendant of `boundary`, so a gesture starting
+/// outside the dialog content (such as on the backdrop) is not suppressed by the scroll
+/// state of unrelated ancestors.
 fn scrolling_element_in_range(
     target: Option<EventTarget>,
     boundary: NodeRef,
@@ -480,6 +484,10 @@ fn scrolling_element_in_range(
     let Some(boundary) = boundary.cast::<Element>() else {
         return false;
     };
+
+    if !boundary.contains(element.dyn_ref::<web_sys::Node>()) {
+        return false;
+    }
 
     let mut element = Some(element);
 
@@ -509,7 +517,7 @@ fn check_scrolling(el: &HtmlElement, location: SideDialogLocation) -> bool {
             }
         }
         SideDialogLocation::Top => {
-            if el.scroll_top() != el.scroll_height() - el.offset_height() {
+            if el.scroll_top() < el.scroll_height() - el.client_height() {
                 return true;
             }
         }
@@ -519,7 +527,7 @@ fn check_scrolling(el: &HtmlElement, location: SideDialogLocation) -> bool {
             }
         }
         SideDialogLocation::Left => {
-            if el.scroll_left() != el.scroll_width() - el.offset_width() {
+            if el.scroll_left() < el.scroll_width() - el.client_width() {
                 return true;
             }
         }
