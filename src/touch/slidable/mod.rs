@@ -33,13 +33,23 @@ use pwt_macros::widget;
 pub struct Slidable {
     content: VNode,
 
-    /// Widget displayed on the left side (below the slider).
+    /// Widget displayed on the left side (below the slider). Takes precedence over
+    /// `left_action_list` and `with/add_left_action`.
     #[prop_or_default]
     pub left_actions: Option<VNode>,
 
-    /// Widget displayed on the right side (below the slider).
+    /// Widget displayed on the right side (below the slider). Takes precedence over
+    /// `right_action_list` and `with/add_right_action`.
     #[prop_or_default]
     pub right_actions: Option<VNode>,
+
+    #[prop_or_default]
+    /// A list of left hand side slidable actions.
+    pub left_action_list: Vec<SlidableAction>,
+
+    #[prop_or_default]
+    /// A list of right hand side slidable actions.
+    pub right_action_list: Vec<SlidableAction>,
 
     /// Dismiss callback.
     ///
@@ -99,6 +109,28 @@ impl Slidable {
     /// Method to set the `on_tap` callback.
     pub fn set_on_tap(&mut self, cb: impl IntoEventCallback<InputEvent>) {
         self.on_tap = cb.into_event_callback();
+    }
+
+    /// Method to add a left hand side action
+    pub fn add_left_action(&mut self, action: impl Into<SlidableAction>) {
+        self.left_action_list.push(action.into());
+    }
+
+    /// Builder style method to add a left hand side action
+    pub fn with_left_action(mut self, action: impl Into<SlidableAction>) -> Self {
+        self.add_left_action(action);
+        self
+    }
+
+    /// Method to add a right hand side action
+    pub fn add_right_action(&mut self, action: impl Into<SlidableAction>) {
+        self.right_action_list.push(action.into());
+    }
+
+    /// Builder style method to add a right hand side action
+    pub fn with_right_action(mut self, action: impl Into<SlidableAction>) -> Self {
+        self.add_right_action(action);
+        self
     }
 }
 
@@ -174,16 +206,23 @@ impl PwtSlidable {
 
     fn left_container(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
-        let actions = props.left_actions.clone();
+        let actions = match props.left_actions.clone() {
+            Some(actions) => vec![actions],
+            None => props
+                .left_action_list
+                .iter()
+                .map(|action| action.clone().into())
+                .collect(),
+        };
 
         Row::new()
             .class("pwt-w-100 pwt-h-100")
             .with_child(
-                Container::new()
+                Row::new()
                     .height(CssLength::Fraction(1.0))
                     .min_width(0)
                     .style("flex", "0 1 auto")
-                    .with_optional_child(actions)
+                    .children(actions)
                     .into_html_with_ref(self.left_action_ref.clone()),
             )
             .with_child(html! {<div style="flex: 1 1 auto;"></div>})
@@ -192,17 +231,24 @@ impl PwtSlidable {
 
     fn right_container(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
-        let actions = props.right_actions.clone();
+        let actions = match props.right_actions.clone() {
+            Some(action) => vec![action],
+            None => props
+                .right_action_list
+                .iter()
+                .map(|action| action.clone().into())
+                .collect(),
+        };
 
         Row::new()
             .class("pwt-w-100 pwt-h-100")
             .with_child(html! {<div style="flex: 1 1 auto;"></div>})
             .with_child(
-                Container::new()
+                Row::new()
                     .height(CssLength::Fraction(1.0))
                     .min_width(0)
                     .style("flex", "0 1 auto")
-                    .with_optional_child(actions)
+                    .children(actions)
                     .into_html_with_ref(self.right_action_ref.clone()),
             )
             .into_html_with_ref(self.right_ref.clone())
