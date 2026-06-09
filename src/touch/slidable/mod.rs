@@ -12,6 +12,7 @@ use yew::html::{IntoEventCallback, IntoPropValue};
 use yew::prelude::*;
 use yew::virtual_dom::VNode;
 
+use crate::css;
 use crate::dom::DomSizeObserver;
 use crate::prelude::*;
 use crate::props::CssLength;
@@ -364,7 +365,7 @@ impl Component for PwtSlidable {
 
         // no animation during drag
         let transition = if self.drag_pos.is_none() {
-            "transition: width 0.1s ease-out;"
+            "width 0.1s ease-out"
         } else {
             ""
         };
@@ -372,10 +373,10 @@ impl Component for PwtSlidable {
         let upper = GestureDetector::new(
             Container::new()
                 .class("pwt-slidable-slider")
-                .attribute(
-                    "style",
-                    "touch-action:none;width:100%;flex:0 0 auto;overflow:hidden;",
-                )
+                .class(css::Overflow::Hidden)
+                .flex(0.0)
+                .width(CssLength::Fraction(1.0))
+                .style("touch-action", "none")
                 .with_child(props.content.clone())
                 .into_html_with_ref(self.content_ref.clone()),
         )
@@ -384,47 +385,39 @@ impl Component for PwtSlidable {
         .on_swipe(ctx.link().callback(Msg::Swipe));
 
         let left_container = Container::new()
-            .attribute(
-                "style",
-                format!(
-                    "width:{left}px;flex: 0 0 auto;{};overflow:hidden;",
-                    transition
-                ),
-            )
+            .width(CssLength::Px(left))
+            .flex(0.0)
+            .class(css::Overflow::Hidden)
+            .style("transition", transition)
             .with_child(self.left_container(ctx));
 
         let right_container = Container::new()
-            .attribute(
-                "style",
-                format!(
-                    "width:{right}px;flex: 0 0 auto;{};overflow:hidden;",
-                    transition
-                ),
-            )
+            .width(CssLength::Px(right))
+            .flex(0.0)
+            .class(css::Overflow::Hidden)
+            .style("transition", transition)
             .with_child(self.right_container(ctx));
 
         let row = Row::new()
-            .attribute(
-                "style",
-                format!(
-                    "width:{};overflow:hidden;justify-content:{};transition:height 0.2s ease-out;{}",
-                    if self.start_pos == 0f64 && self.drag_pos.is_none() && !self.switch_back {
-                        String::from("100%")
-                    } else {
-                        format!("{}px", self.content_width)
-                    },
-                    if self.last_action_left {
-                        "left"
-                    } else {
-                        "right"
-                    },
-                    match self.view_state {
-                        ViewState::Normal => String::new(),
-                        ViewState::DismissStart => format!("height:{}px;", self.content_height),
-                        ViewState::DismissTransition | ViewState::Dismissed => String::from("height:0px;"),
-                    }
-                ),
+            .width(
+                if self.start_pos == 0f64 && self.drag_pos.is_none() && !self.switch_back {
+                    CssLength::Fraction(1.0)
+                } else {
+                    CssLength::Px(self.content_width)
+                },
             )
+            .class(css::Overflow::Hidden)
+            .class(if self.last_action_left {
+                css::JustifyContent::Left
+            } else {
+                css::JustifyContent::Right
+            })
+            .style("transition", "height 0.2s ease-out")
+            .height(match self.view_state {
+                ViewState::Normal => CssLength::None,
+                ViewState::DismissStart => CssLength::Px(self.content_height),
+                ViewState::DismissTransition | ViewState::Dismissed => CssLength::Px(0.0),
+            })
             .with_child(left_container)
             .with_child(upper)
             .with_child(right_container)
