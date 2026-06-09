@@ -1,3 +1,26 @@
+rust-pwt (0.8.8) trixie; urgency=medium
+
+  * touch: fab menu: the Sheet variant now supports unlimited actions, listed
+    in a scrollable bottom sheet that keeps the Cancel button visible; the
+    Material 3 variant allows up to six actions, up from five.
+
+  * touch: side dialog: do not treat dragging or swiping a scrollable child as
+    a dismiss gesture, so scrolling content inside a drawer or bottom sheet no
+    longer closes it; dismissing still works once the content is scrolled to
+    its edge.
+
+  * touch: slidable widget:
+    - add with_left_action() and with_right_action() builder methods to add
+      multiple actions without wrapping them in a row manually.
+    - measure action widths via the bounding client rect to avoid sub-pixel
+      rounding that could wrap action labels.
+
+  * widget: theme mode selector: show a tooltip naming the active mode and use
+    a "desktop" icon for the system theme, which is clearer than the
+    previously used asterisk.
+
+ -- Proxmox Support Team <support@proxmox.com>  Tue, 09 Jun 2026 18:34:24 +0200
+
 rust-pwt (0.8.7) trixie; urgency=medium
 
   * input panel: track whether the panel contains advanced fields via a
