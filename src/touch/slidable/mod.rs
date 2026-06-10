@@ -218,8 +218,13 @@ impl PwtSlidable {
         Row::new()
             .class("pwt-w-100 pwt-h-100")
             .with_child(
-                Row::new()
+                Container::new()
                     .height(CssLength::Fraction(1.0))
+                    .class(if actions.len() > 1 {
+                        Some(classes!(css::FlexDirection::Row, css::Display::Flex))
+                    } else {
+                        None
+                    })
                     .min_width(0)
                     .style("flex", "0 1 auto")
                     .children(actions)
@@ -244,7 +249,12 @@ impl PwtSlidable {
             .class("pwt-w-100 pwt-h-100")
             .with_child(html! {<div style="flex: 1 1 auto;"></div>})
             .with_child(
-                Row::new()
+                Container::new()
+                    .class(if actions.len() > 1 {
+                        Some(classes!(css::FlexDirection::Row, css::Display::Flex))
+                    } else {
+                        None
+                    })
                     .height(CssLength::Fraction(1.0))
                     .min_width(0)
                     .style("flex", "0 1 auto")
