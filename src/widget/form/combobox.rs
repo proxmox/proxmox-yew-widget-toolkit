@@ -290,6 +290,18 @@ impl Component for PwtCombobox {
                 self.store.clear();
             }
         }
+        // Rebuild the column so options whose labels load asynchronously render their names; else
+        // the create()-time render_value sticks and shows raw keys.
+        let render_value = props
+            .render_value
+            .clone()
+            .unwrap_or_else(|| RenderFn::new(|value: &AttrValue| html! {value}));
+        self.columns = Rc::new(vec![
+            DataTableColumn::new("Value")
+                .show_menu(false)
+                .render(render_value)
+                .into(),
+        ]);
         self.validate = Self::create_validate(props);
         true
     }
