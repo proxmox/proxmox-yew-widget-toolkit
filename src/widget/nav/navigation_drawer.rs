@@ -236,7 +236,7 @@ impl PwtNavigationDrawer {
                     |icon| html! { <i class={classes!(icon.to_string(), "pwt-nav-menu-icon")}/>},
                 ),
             )
-            // add memu label
+            // add menu label
             .with_child(html! {<div class="pwt-text-truncate pwt-flex-fill">{&item.label}</div>})
             // add the optional trailer
             .with_optional_child(item.trailing.clone())
