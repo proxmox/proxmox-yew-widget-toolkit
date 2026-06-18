@@ -145,6 +145,7 @@ impl<S: DataStore + 'static> SearchDropdown<S> {
                 DataTable::new(columns, args.store.clone())
                     .max_height(CssLength::Em(20.0))
                     .show_header(false)
+                    .hover(true)
                     .on_row_click({
                         let args = args.clone();
                         move |event: &mut DataTableMouseEvent| {
@@ -179,6 +180,7 @@ impl<S: DataStore + 'static> SearchDropdown<S> {
                 DataTable::new(columns.clone(), args.store.clone())
                     .max_height(CssLength::Em(20.0))
                     .header_focusable(false)
+                    .hover(true)
                     .on_row_click({
                         let args = args.clone();
                         move |event: &mut DataTableMouseEvent| {
