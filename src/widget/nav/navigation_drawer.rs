@@ -16,7 +16,7 @@ use crate::state::{NavigationContext, NavigationContextExt, Selection};
 use crate::{impl_class_prop_builder, impl_yew_std_props_builder};
 
 use crate::dom::focus::roving_tabindex_next;
-use crate::widget::{Column, Container};
+use crate::widget::{Column, Container, Fa};
 
 use super::{Menu, MenuEntry, MenuItem};
 
@@ -242,13 +242,12 @@ impl PwtNavigationDrawer {
             .with_optional_child(item.trailing.clone())
             // add optional menu-open icon
             .with_optional_child(is_menu.then(|| {
-                Container::from_tag("i")
+                Fa::new("caret-down")
+                    .fixed_width()
                     .attribute("role", "none")
-                    .class("fa fa-caret-down")
                     .class("pwt-nav-menu-item-arrow")
                     .class(open.then_some("expanded"))
                     .onclick(ontoggle)
-                    .with_child("\u{00a0}")
             }))
             .into()
     }
