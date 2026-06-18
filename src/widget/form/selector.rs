@@ -165,6 +165,7 @@ pub enum Msg<S: DataStore> {
 pub struct SelectorField<S: DataStore> {
     state: ManagedFieldState,
     selection: Selection,
+    value_set: bool,
     load_error: Option<String>,
     _store_observer: S::Observer,
     abort_load_guard: Option<AsyncAbortGuard>,
@@ -278,6 +279,7 @@ impl<S: DataStore + 'static> ManagedField for SelectorField<S> {
         let mut me = Self {
             state: ManagedFieldState::new(value, default),
             selection,
+            value_set: false,
             load_error: None,
             _store_observer,
             abort_load_guard: None,
@@ -329,7 +331,7 @@ impl<S: DataStore + 'static> ManagedField for SelectorField<S> {
             Msg::DataChange => {
                 let value = self.value.as_str().unwrap_or("").to_owned();
 
-                if self.load_error.is_none() && value.is_empty() {
+                if self.load_error.is_none() && value.is_empty() && !self.value_set {
                     let mut default = props.default.clone();
 
                     if default.is_none() && props.autoselect {
@@ -341,6 +343,7 @@ impl<S: DataStore + 'static> ManagedField for SelectorField<S> {
                     if let Some(default) = default {
                         ctx.link().update_value(default.to_string());
                         ctx.link().update_default(default.to_string());
+                        self.value_set = true;
                     }
                 }
                 ctx.link().validate(); // re-evaluate
