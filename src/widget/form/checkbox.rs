@@ -316,7 +316,11 @@ impl ManagedField for CheckboxField {
                     .into_html_with_ref(self.node_ref.clone()),
             );
 
-        let box_label = props.box_label.clone().map(|label| label.padding_start(2));
+        let box_label = props.box_label.clone().map(|label| {
+            label
+                .padding_start(2)
+                .class(disabled.then_some("pwt-opacity-disabled"))
+        });
 
         let checkbox = Row::new()
             .class(AlignItems::Center)
