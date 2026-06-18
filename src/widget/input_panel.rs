@@ -215,32 +215,33 @@ impl InputPanel {
             visible = false;
         }
 
-        let style = if visible {
-            let (row, start, span) = if self.mobile {
-                self.left_count += 1; // ignore position
-                (self.left_count, 1, -1)
-            } else {
-                match column {
-                    FieldPosition::Left => {
-                        self.left_count += 1;
-                        (self.left_count, 1, 3)
-                    }
-                    FieldPosition::Right => {
-                        self.two_column = true;
-                        self.right_count += 1;
-                        (self.right_count, 4, -1)
-                    }
-                    FieldPosition::Large => {
-                        self.two_column = true;
-
-                        let max = self.left_count.max(self.right_count);
-                        self.left_count = max + 1;
-                        self.right_count = max + 1;
-
-                        (self.left_count, 1, -1)
-                    }
+        let (row, start, span) = if self.mobile {
+            self.left_count += 1; // ignore position
+            (self.left_count, 1, -1)
+        } else {
+            match column {
+                FieldPosition::Left => {
+                    self.left_count += 1;
+                    (self.left_count, 1, 3)
                 }
-            };
+                FieldPosition::Right => {
+                    self.two_column = true;
+                    self.right_count += 1;
+                    (self.right_count, 4, -1)
+                }
+                FieldPosition::Large => {
+                    self.two_column = true;
+
+                    let max = self.left_count.max(self.right_count);
+                    self.left_count = max + 1;
+                    self.right_count = max + 1;
+
+                    (self.left_count, 1, -1)
+                }
+            }
+        };
+
+        let style = if visible {
             format!("grid-row: {}; grid-column: {}/{};", row, start, span)
         } else {
             "display: none;".to_string()
@@ -251,7 +252,7 @@ impl InputPanel {
             None => {
                 #[cfg(debug_assertions)]
                 log::warn!("could not extract key from custom child, generating one");
-                yew::virtual_dom::Key::from(format!("cl_{}", self.left_count))
+                Key::from(format!("c_{}_{}_{}", start, row, advanced))
             }
         };
 
