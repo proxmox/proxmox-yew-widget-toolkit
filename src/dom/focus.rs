@@ -96,7 +96,14 @@ pub fn get_first_focusable(item_el: web_sys::Element) -> Option<web_sys::HtmlEle
 /// Move focus to the next/previous focusable child (calls [roving_tabindex_next_el]).
 pub fn roving_tabindex_next(node_ref: &NodeRef, backwards: bool, roving: bool) {
     if let Some(el) = node_ref.cast::<web_sys::HtmlElement>() {
-        roving_tabindex_next_el(el, backwards, roving);
+        roving_tabindex_next_el(el, backwards, roving, false);
+    }
+}
+
+/// Move focus to the next/previous focusable child including nested ones (calls [roving_tabindex_next_el]) .
+pub fn roving_tabindex_next_recursive(node_ref: &NodeRef, backwards: bool, roving: bool) {
+    if let Some(el) = node_ref.cast::<web_sys::HtmlElement>() {
+        roving_tabindex_next_el(el, backwards, roving, true);
     }
 }
 
@@ -104,8 +111,15 @@ pub fn roving_tabindex_next(node_ref: &NodeRef, backwards: bool, roving: bool) {
 ///
 /// If `roving` is enabled, this also sets the `tabindex` attribute for the active child to `"0"`,
 /// and to `"-1"` for all other children.
-pub fn roving_tabindex_next_el(el: web_sys::HtmlElement, backwards: bool, roving: bool) {
-    let list = roving_tabindex_members(&el);
+///
+/// If `nesting` is enabled, all nested focusable elements are included
+pub fn roving_tabindex_next_el(
+    el: web_sys::HtmlElement,
+    backwards: bool,
+    roving: bool,
+    recursive: bool,
+) {
+    let list = roving_tabindex_members(&el, recursive);
 
     if list.is_empty() {
         return;
@@ -251,7 +265,10 @@ pub fn update_roving_tabindex_el(el: web_sys::HtmlElement) {
 ///
 /// This kind of member selection makes it possible to include more complex widget like
 /// [MenuButton](crate::widget::menu::MenuButton)s inside a [Toolbar](crate::widget::Toolbar).
-pub fn roving_tabindex_members(el: &web_sys::HtmlElement) -> Vec<web_sys::HtmlElement> {
+pub fn roving_tabindex_members(
+    el: &web_sys::HtmlElement,
+    recursive: bool,
+) -> Vec<web_sys::HtmlElement> {
     let mut members: Vec<web_sys::HtmlElement> = Vec::new();
 
     if let Ok(child_list) = el.query_selector_all(":scope > *") {
@@ -263,6 +280,9 @@ pub fn roving_tabindex_members(el: &web_sys::HtmlElement) -> Vec<web_sys::HtmlEl
                 .unwrap();
             if element_is_focusable(&node) {
                 members.push(node);
+            } else if recursive {
+                let mut recursive_members = roving_tabindex_members(&node, recursive);
+                members.append(&mut recursive_members);
             } else if let Ok(Some(child)) = node.query_selector(FOCUSABLE_SELECTOR_ALL) {
                 let first_focusable_child = child.dyn_into::<web_sys::HtmlElement>().unwrap();
                 members.push(first_focusable_child);
@@ -285,7 +305,7 @@ pub fn init_roving_tabindex(node_ref: &NodeRef) {
 /// This function makes sure that exactly one element has the `tabindex` attribute set to `"0"`. All
 /// other elements get a `tabindex` of `"-1"`.
 pub fn init_roving_tabindex_el(el: web_sys::HtmlElement, take_focus: bool) {
-    let list = roving_tabindex_members(&el);
+    let list = roving_tabindex_members(&el, false);
 
     if list.is_empty() {
         return;

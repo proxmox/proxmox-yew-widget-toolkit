@@ -15,7 +15,7 @@ use crate::props::{
 use crate::state::{NavigationContext, NavigationContextExt, Selection};
 use crate::{impl_class_prop_builder, impl_yew_std_props_builder};
 
-use crate::dom::focus::roving_tabindex_next;
+use crate::dom::focus::roving_tabindex_next_recursive;
 use crate::widget::{Column, Container, Fa};
 
 use super::{Menu, MenuEntry, MenuItem};
@@ -75,6 +75,13 @@ pub struct NavigationDrawer {
     #[builder]
     #[prop_or_default]
     router: bool,
+
+    /// Enables animations
+    ///
+    /// If enabled, expanding/collapsing is animated
+    #[builder]
+    #[prop_or(true)]
+    animated: bool,
 }
 
 impl AsClassesMut for NavigationDrawer {
@@ -221,7 +228,6 @@ impl PwtNavigationDrawer {
                 (!hidden).then_some(if is_active { "0" } else { "-1" }),
             )
             .class("pwt-nav-link")
-            .class(hidden.then_some("pwt-d-none"))
             .class(crate::css::AlignItems::Baseline)
             .class(is_active.then_some("active"))
             .onclick(onclick)
@@ -271,10 +277,24 @@ impl PwtNavigationDrawer {
                 menu.add_child(self.render_single_item(ctx, child, active, level, open, hidden));
 
                 if let Some(submenu) = &child.submenu {
+                    let mut items = Column::new().min_height(0);
                     // hide children when this submenu is collapsed or an ancestor already is
                     for sub in submenu.children.iter() {
-                        self.render_menu_entry(ctx, sub, menu, active, level + 1, hidden || !open)
+                        self.render_menu_entry(
+                            ctx,
+                            sub,
+                            &mut items,
+                            active,
+                            level + 1,
+                            hidden || !open,
+                        )
                     }
+                    menu.add_child(
+                        Container::new()
+                            .class("pwt-nav-menu-animation-container")
+                            .class(open.then_some("expanded"))
+                            .with_child(items),
+                    );
                 }
             }
             MenuEntry::Component(comp) => {
@@ -555,10 +575,10 @@ impl Component for PwtNavigationDrawer {
         let onkeydown = Callback::from(move |event: KeyboardEvent| {
             match event.key().as_str() {
                 "ArrowDown" => {
-                    roving_tabindex_next(&menu_ref, false, false);
+                    roving_tabindex_next_recursive(&menu_ref, false, false);
                 }
                 "ArrowUp" => {
-                    roving_tabindex_next(&menu_ref, true, false);
+                    roving_tabindex_next_recursive(&menu_ref, true, false);
                 }
                 _ => return,
             }
@@ -572,6 +592,7 @@ impl Component for PwtNavigationDrawer {
             .attribute("role", "navigation")
             .attribute("aria-label", props.aria_label.clone())
             .class("pwt-nav-menu")
+            .class(props.animated.then_some("animated"))
             .class(OverflowX::Hidden)
             .class(OverflowY::Auto)
             .class(props.class.clone())
