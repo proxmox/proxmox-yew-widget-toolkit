@@ -1,3 +1,52 @@
+rust-pwt (0.8.9) trixie; urgency=medium
+
+  * touch: add an AdaptiveScaffold that renders the Material navigation
+    layout matching the viewport from a single tab-item list: a bottom
+    navigation bar on phones and narrow windows, a side navigation rail on
+    wider ones. It swaps layouts live as the viewport crosses the breakpoint
+    (the Material medium width by default, overridable) and preserves the
+    navigation state across the swap, so an application targeting both form
+    factors no longer needs its own switch-and-duplicate logic.
+
+  * touch: scaffold: support a side navigation rail as an alternative to the
+    bottom navigation bar, which moves the application bar and body beside the
+    rail; the rail takes precedence over the bar when both are set.
+
+  * touch: slidable: restore the simpler non-flex markup for a slidable that
+    has a single action, working around a Chrome/Chromium layout bug that
+    left the action text invisible until the next relayout.
+
+  * widget: checkbox: apply the disabled opacity to the box-label variant, so
+    a disabled checkbox using a box-label now also looks disabled.
+
+  * widget: combobox: show the correct label for options whose data loads
+    asynchronously after first paint, which previously kept rendering as raw
+    keys.
+
+  * widget: date field: show a preloaded value in the configured display
+    format right away, instead of its raw stored form until the field is first
+    edited.
+
+  * widget: input panel: generate unique keys for custom children, fixing
+    glitchy rendering when a row held a custom element on both its left and
+    right side.
+
+  * widget: navigation drawer:
+    - add an optional trailing element to menu items, for example a button or
+      status indicator shown after the label.
+    - hide nested submenu entries when an outer menu is collapsed; previously
+      only the direct children were hidden while entries nested deeper stayed
+      visible.
+
+  * widget: search dropdown: highlight the entry under the cursor on hover,
+    making it easier to see which element is currently targeted.
+
+  * widget: selector: only autoselect or apply the default value once, so
+    clearing a combobox and reopening its picker no longer snaps the value
+    back to the default instead of opening.
+
+ -- Proxmox Support Team <support@proxmox.com>  Sun, 21 Jun 2026 21:58:25 +0200
+
 rust-pwt (0.8.8) trixie; urgency=medium
 
   * touch: fab menu: the Sheet variant now supports unlimited actions, listed
