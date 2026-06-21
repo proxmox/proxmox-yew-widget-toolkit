@@ -271,8 +271,9 @@ impl PwtNavigationDrawer {
                 menu.add_child(self.render_single_item(ctx, child, active, level, open, hidden));
 
                 if let Some(submenu) = &child.submenu {
+                    // hide children when this submenu is collapsed or an ancestor already is
                     for sub in submenu.children.iter() {
-                        self.render_menu_entry(ctx, sub, menu, active, level + 1, !open)
+                        self.render_menu_entry(ctx, sub, menu, active, level + 1, hidden || !open)
                     }
                 }
             }
