@@ -774,6 +774,14 @@ impl<S: DataStore> PwtDataTable<S> {
         }
     }
 
+    // A Simple-mode multiselect toggles the row on each click. Autoselect would
+    // then toggle the row on focus or on cursor movement, which is wrong for a
+    // checkbox list, so autoselect is ignored in this mode.
+    fn simple_multiselect(props: &DataTable<S>) -> bool {
+        props.multiselect_mode == MultiSelectMode::Simple
+            && props.selection.as_ref().is_some_and(|s| s.is_multiselect())
+    }
+
     fn select_cursor(&mut self, props: &DataTable<S>, shift: bool, ctrl: bool) -> bool {
         let selection = match &props.selection {
             Some(selection) => selection,
@@ -1369,7 +1377,7 @@ impl<S: DataStore + 'static> Component for PwtDataTable<S> {
                     }
                 }
 
-                if !(shift || ctrl) && props.autoselect {
+                if !(shift || ctrl) && props.autoselect && !Self::simple_multiselect(props) {
                     self.select_cursor(props, false, false);
                 }
 
@@ -1393,7 +1401,7 @@ impl<S: DataStore + 'static> Component for PwtDataTable<S> {
                     }
                 }
 
-                if !(shift || ctrl) && props.autoselect {
+                if !(shift || ctrl) && props.autoselect && !Self::simple_multiselect(props) {
                     self.select_cursor(props, false, false);
                 }
 
@@ -1546,7 +1554,12 @@ impl<S: DataStore + 'static> Component for PwtDataTable<S> {
                         let cursor = self.filtered_record_pos(props, &row);
                         self.set_cursor(props, cursor);
                         if let Some(selection) = &props.selection {
-                            if selection.is_empty() && props.autoselect {
+                            // autoselect is ignored in Simple mode, where it would
+                            // toggle the row on focus
+                            if selection.is_empty()
+                                && props.autoselect
+                                && !Self::simple_multiselect(props)
+                            {
                                 self.select_cursor(props, false, false);
                             }
                         }
