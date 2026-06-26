@@ -181,6 +181,13 @@ pub struct DataTable<S: DataStore> {
     #[prop_or(true)]
     pub autoselect: bool,
 
+    /// In single select mode, let a mouse click on the already-selected row
+    /// deselect it. Also disables autoselect on focus, so a click that focuses
+    /// a row does not pre-select it (which would make the click read as a
+    /// re-click and deselect). Cursor-move autoselect is unaffected.
+    #[prop_or_default]
+    pub allow_deselect: bool,
+
     /// Show the header.
     #[prop_or(true)]
     pub show_header: bool,
@@ -354,6 +361,17 @@ impl<S: DataStore> DataTable<S> {
     /// Method to set the autoselect flag.
     pub fn set_autoselect(&mut self, autoselect: impl IntoPropValue<bool>) {
         self.autoselect = autoselect.into_prop_value();
+    }
+
+    /// Builder style method to set the allow_deselect flag.
+    pub fn allow_deselect(mut self, allow_deselect: impl IntoPropValue<bool>) -> Self {
+        self.set_allow_deselect(allow_deselect);
+        self
+    }
+
+    /// Method to set the allow_deselect flag.
+    pub fn set_allow_deselect(&mut self, allow_deselect: impl IntoPropValue<bool>) {
+        self.allow_deselect = allow_deselect.into_prop_value();
     }
 
     /// Builder style method to set the show_header flag.
@@ -1505,6 +1523,18 @@ impl<S: DataStore + 'static> Component for PwtDataTable<S> {
                             false,
                         );
                     }
+                } else if props.allow_deselect {
+                    // a single mouse click toggles the row, so a click on the
+                    // already-selected row deselects it; toggle() does the
+                    // single-select select-or-clear in the selection model
+                    if let Some(selection) = &props.selection {
+                        if let Some((pos, record_key)) =
+                            self.cursor.as_ref().map(|c| (c.pos, c.record_key.clone()))
+                        {
+                            self.last_select_position = Some(pos);
+                            selection.toggle(record_key);
+                        }
+                    }
                 } else {
                     self.select_cursor(props, false, ctrl);
                 }
@@ -1554,12 +1584,13 @@ impl<S: DataStore + 'static> Component for PwtDataTable<S> {
                         let cursor = self.filtered_record_pos(props, &row);
                         self.set_cursor(props, cursor);
                         if let Some(selection) = &props.selection {
-                            // autoselect is ignored in Simple mode, where it would
-                            // toggle the row on focus
-                            if selection.is_empty()
-                                && props.autoselect
-                                && !Self::simple_multiselect(props)
-                            {
+                            // autoselect is ignored in Simple mode (it would toggle
+                            // on focus), and allow_deselect keeps selection
+                            // click-driven (a focus pre-select would let the click
+                            // toggle it back off, losing the first click)
+                            let suppress =
+                                Self::simple_multiselect(props) || props.allow_deselect;
+                            if selection.is_empty() && props.autoselect && !suppress {
                                 self.select_cursor(props, false, false);
                             }
                         }
