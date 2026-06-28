@@ -31,6 +31,13 @@ pub struct TabBarItem {
     #[prop_or_default]
     pub label: Option<AttrValue>,
 
+    /// Optional status badge rendered after the label (a small count
+    /// pill or status dot). Use it to flag a tab that needs attention
+    /// without opening it; tabs with nothing to surface leave it unset.
+    #[builder(IntoPropValue, into_prop_value)]
+    #[prop_or_default]
+    pub badge: Option<VNode>,
+
     /// Optional tooltip.
     #[builder(IntoPropValue, into_prop_value)]
     #[prop_or_default]

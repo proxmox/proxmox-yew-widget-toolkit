@@ -471,6 +471,7 @@ impl Component for PwtTabBar {
                             <span class={class.to_string()} role="none"/>
                         }
                         {panel.label.as_deref().unwrap_or("")}
+                        {panel.badge.clone().unwrap_or_default()}
                         </span>
                     </a>
                 };
