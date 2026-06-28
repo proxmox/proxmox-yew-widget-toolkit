@@ -1,5 +1,5 @@
 use crate::prelude::*;
-use crate::widget::{Button, Container, Row};
+use crate::widget::{Button, Container, Row, WeekStart};
 
 use yew::html::{IntoEventCallback, IntoPropValue};
 use yew::virtual_dom::VNode;
@@ -20,13 +20,17 @@ pub struct DatePanel {
     #[builder_cb(IntoEventCallback, into_event_callback, PlainDate)]
     #[prop_or_default]
     pub on_select: Option<Callback<PlainDate>>,
-    /// The index of the first day of the week (0-based, 0 = Sunday). Defaults to 0.
-    ///
-    /// Convention varies: Monday (1) is the ISO 8601 standard, while Sunday (0) is
-    /// common in North America. Use 6 for Saturday.
+    /// The day the calendar week starts on. Defaults to [`WeekStart::Sunday`].
+    #[builder]
+    #[prop_or(WeekStart::Sunday)]
+    pub week_start: WeekStart,
+
+    /// Deprecated: prefer [`week_start`](Self::week_start). The first day of the
+    /// week as a 0-based index (0 = Sunday). When set it overrides `week_start`.
+    #[deprecated(note = "use `week_start` instead")]
     #[builder(IntoPropValue, into_prop_value)]
-    #[prop_or(0)]
-    pub start_day: u32,
+    #[prop_or_default]
+    pub start_day: Option<u32>,
 
     /// An array of days to disable, 0-based. For example, [0, 6] disables Sunday and Saturday.
     #[builder(IntoPropValue, into_prop_value)]
@@ -210,7 +214,11 @@ impl DatePanelComp {
         let selected = ctx.props().value;
         let view_year = self.view_date.year();
         let view_month = self.view_date.month(); // 0-11
-        let start_day = ctx.props().start_day % 7; // Ensure 0-6
+        // `start_day` (deprecated) overrides `week_start` when a caller still sets it.
+        let start_day = match ctx.props().start_day {
+            Some(d) => d % 7,
+            None => ctx.props().week_start.sunday_based_index(),
+        };
         let show_week_numbers = ctx.props().show_week_numbers;
 
         // Grid generation using PlainDate

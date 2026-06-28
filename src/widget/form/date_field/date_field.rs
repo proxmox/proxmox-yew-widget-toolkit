@@ -7,7 +7,7 @@ use crate::props::FieldBuilder;
 use crate::widget::form::{
     ManagedField, ManagedFieldContext, ManagedFieldMaster, ManagedFieldScopeExt, ManagedFieldState,
 };
-use crate::widget::{Dropdown, DropdownController};
+use crate::widget::{Dropdown, DropdownController, WeekStart};
 
 use yew::html::{IntoEventCallback, IntoPropValue};
 
@@ -86,10 +86,19 @@ pub struct DateField {
     #[prop_or(true)]
     pub show_week_numbers: bool,
 
-    /// The index of the first day of the week (0-based, 0 = Sunday). Defaults to 0.
+    /// The day the calendar week starts on. Defaults to [`WeekStart::Sunday`];
+    /// forwarded to the picker popup.
+    #[builder]
+    #[prop_or(WeekStart::Sunday)]
+    pub week_start: WeekStart,
+
+    /// Deprecated: prefer [`week_start`](Self::week_start). The first day of the
+    /// week as a 0-based index (0 = Sunday). When set it overrides `week_start`,
+    /// so existing callers keep working without switching to the enum.
+    #[deprecated(note = "use `week_start` instead")]
     #[builder(IntoPropValue, into_prop_value)]
-    #[prop_or(0)]
-    pub start_day: u32,
+    #[prop_or_default]
+    pub start_day: Option<u32>,
 
     /// False to hide the footer area containing the Today button and disable the keyboard
     /// handler for spacebar that selects the current date.
@@ -267,7 +276,9 @@ impl ManagedField for DateFieldComp {
 
         let props = props.clone();
 
-        // The picker function
+        // The picker function. Forwarding the deprecated `start_day` to the panel is the internal
+        // hand-off of a caller's legacy value, so allow it here; external callers still get warned.
+        #[allow(deprecated)]
         let picker = move |controller: &DropdownController| {
             let on_select = controller.on_select_callback();
 
@@ -278,6 +289,7 @@ impl ManagedField for DateFieldComp {
                 .max_value(props.max_value)
                 .disabled_dates(props.disabled_dates.clone())
                 .show_week_numbers(props.show_week_numbers)
+                .week_start(props.week_start)
                 .start_day(props.start_day)
                 .show_today(props.show_today)
                 .on_select(on_select)
