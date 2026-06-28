@@ -104,6 +104,9 @@ pub mod menu;
 mod meter;
 pub use meter::Meter;
 
+mod week_start;
+pub use week_start::WeekStart;
+
 mod split_pane;
 #[doc(hidden)]
 pub use split_pane::PwtSplitPane;
