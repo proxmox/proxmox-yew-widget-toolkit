@@ -38,6 +38,12 @@ pub struct MenuItem {
     #[prop_or_default]
     pub submenu: Option<Menu>,
 
+    /// Start this item's submenu collapsed until the user expands it or
+    /// navigates into it. Ignored for an item without a submenu.
+    #[prop_or_default]
+    #[builder]
+    pub default_collapsed: bool,
+
     /// Selectable flag.
     #[prop_or(true)]
     #[builder]

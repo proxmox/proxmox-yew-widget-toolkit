@@ -269,8 +269,16 @@ impl PwtNavigationDrawer {
     ) {
         match item {
             MenuEntry::Item(child) => {
+                // An absent state means the user has not toggled this submenu yet, so fall back
+                // to its default: open, unless the item opted into starting collapsed. A submenu
+                // on the path to the active item is force-opened by open_ancestors, so a
+                // deep-linked target stays visible even under default_collapsed.
                 let open = match &child.key {
-                    Some(key) => *self.menu_states.get(key).unwrap_or(&true),
+                    Some(key) => self
+                        .menu_states
+                        .get(key)
+                        .copied()
+                        .unwrap_or(!child.default_collapsed),
                     None => false,
                 };
 
