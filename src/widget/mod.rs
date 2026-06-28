@@ -110,6 +110,9 @@ pub use week_start::WeekStart;
 mod segmented_bar;
 pub use segmented_bar::{Segment, SegmentedBar};
 
+mod calendar_grid;
+pub use calendar_grid::{CalendarGrid, CalendarGridDay, CalendarGridView};
+
 mod split_pane;
 #[doc(hidden)]
 pub use split_pane::PwtSplitPane;
