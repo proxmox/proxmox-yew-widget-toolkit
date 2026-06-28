@@ -20,9 +20,12 @@ pub struct DatePanel {
     #[builder_cb(IntoEventCallback, into_event_callback, PlainDate)]
     #[prop_or_default]
     pub on_select: Option<Callback<PlainDate>>,
-    /// The day the calendar week starts on. Defaults to [`WeekStart::Sunday`].
+    /// The day the calendar week starts on. Defaults to [`WeekStart::Monday`].
+    ///
+    /// Monday, the ISO 8601 standard, aligns the rows with the ISO week numbers shown alongside;
+    /// pass [`WeekStart::Sunday`] for locales that start the week on Sunday.
     #[builder]
-    #[prop_or(WeekStart::Sunday)]
+    #[prop_or_default]
     pub week_start: WeekStart,
 
     /// Deprecated: prefer [`week_start`](Self::week_start). The first day of the

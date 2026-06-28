@@ -86,10 +86,10 @@ pub struct DateField {
     #[prop_or(true)]
     pub show_week_numbers: bool,
 
-    /// The day the calendar week starts on. Defaults to [`WeekStart::Sunday`];
+    /// The day the calendar week starts on. Defaults to [`WeekStart::Monday`] (ISO 8601);
     /// forwarded to the picker popup.
     #[builder]
-    #[prop_or(WeekStart::Sunday)]
+    #[prop_or_default]
     pub week_start: WeekStart,
 
     /// Deprecated: prefer [`week_start`](Self::week_start). The first day of the
