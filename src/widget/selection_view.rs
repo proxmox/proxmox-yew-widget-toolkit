@@ -146,14 +146,24 @@ impl Component for PwtSelectionView {
             .context(ctx.link().callback(Msg::VisibilityChanged))
             .unzip();
 
+        // Seed the active key from the selection's current state: a sibling TabBar selects the
+        // URL-derived key in its own create(), before this view's observer exists, so the first
+        // SelectionChange is missed. Seeding here renders a deep-linked tab on the first paint.
+        let active = props
+            .selection
+            .as_ref()
+            .and_then(|selection| selection.selected_key());
+
         let mut render_set = IndexSet::new();
 
         if props.force_render_all {
             render_set.extend(props.builders.keys().cloned());
+        } else if let Some(key) = &active {
+            render_set.insert(key.clone());
         }
 
         Self {
-            active: None,
+            active,
             render_set,
             _selection_observer,
             visibility: visibility.unwrap_or_default(),
