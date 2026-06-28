@@ -107,6 +107,9 @@ pub use meter::Meter;
 mod week_start;
 pub use week_start::WeekStart;
 
+mod segmented_bar;
+pub use segmented_bar::{Segment, SegmentedBar};
+
 mod split_pane;
 #[doc(hidden)]
 pub use split_pane::PwtSplitPane;
