@@ -374,6 +374,36 @@ impl PwtNavigationDrawer {
         }
     }
 
+    /// Open every submenu on the path to `key`, so a selected or deep-linked item is not
+    /// hidden inside a collapsed submenu.
+    fn open_ancestors(&mut self, props: &NavigationDrawer, key: &Key) {
+        fn collect(entries: &[MenuEntry], target: &Key, path: &mut Vec<Key>) -> bool {
+            for entry in entries {
+                if let MenuEntry::Item(item) = entry {
+                    if item.key.as_ref() == Some(target) {
+                        return true;
+                    }
+                    if let Some(submenu) = &item.submenu {
+                        if collect(&submenu.children, target, path) {
+                            if let Some(key) = &item.key {
+                                path.push(key.clone());
+                            }
+                            return true;
+                        }
+                    }
+                }
+            }
+            false
+        }
+
+        let mut path = Vec::new();
+        if collect(&props.menu.children, key, &mut path) {
+            for key in path {
+                self.menu_states.insert(key, true);
+            }
+        }
+    }
+
     fn init_selection(
         ctx: &Context<Self>,
         selection: Option<Selection>,
@@ -448,13 +478,20 @@ impl Component for PwtNavigationDrawer {
             on_select.emit(active.clone());
         }
 
-        Self {
+        let mut this = Self {
             node_ref: NodeRef::default(),
-            active,
+            active: active.clone(),
             selection,
             menu_states: HashMap::new(),
             _nav_ctx_handle,
+        };
+
+        // expand the path to the initially active item, so a deep-linked entry is visible
+        if let Some(active) = &active {
+            this.open_ancestors(props, active);
         }
+
+        this
     }
 
     fn update(&mut self, ctx: &yew::Context<Self>, msg: Self::Message) -> bool {
@@ -484,6 +521,7 @@ impl Component for PwtNavigationDrawer {
                 }
 
                 if let Some(key) = &key {
+                    self.open_ancestors(props, key);
                     self.emit_item_activate(key, ctx);
                 }
 
@@ -529,6 +567,7 @@ impl Component for PwtNavigationDrawer {
 
                 if let Some(key) = &key {
                     self.selection.select(key.clone());
+                    self.open_ancestors(props, key);
                     self.emit_item_activate(key, ctx);
                 } else {
                     self.selection.clear();
