@@ -1,3 +1,26 @@
+rust-pwt (0.8.10) trixie; urgency=medium
+
+  * widget: date field: type the first day of the week as a new WeekStart
+    enum and default it to Monday (ISO 8601), aligning the picker with the
+    ISO week numbers shown alongside; the numeric start_day prop is
+    deprecated but still honored.
+
+  * widget: tab bar: let a tab item carry an optional status badge rendered
+    after its label.
+
+  * widget: navigation drawer: let a menu item start its submenu collapsed,
+    and expand the submenus on the path to the active or deep-linked item so
+    it stays visible even if a parent was collapsed.
+
+  * widget: selection view: seed the active key from the selection on create,
+    so a deep-linked tab renders on the first paint.
+
+  * widget: add a CalendarGrid week/month grid widget.
+
+  * widget: add a SegmentedBar widget.
+
+ -- Proxmox Support Team <support@proxmox.com>  Mon, 29 Jun 2026 02:44:57 +0200
+
 rust-pwt (0.8.9) trixie; urgency=medium
 
   * touch: add an AdaptiveScaffold that renders the Material navigation
