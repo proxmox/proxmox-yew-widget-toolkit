@@ -1588,8 +1588,7 @@ impl<S: DataStore + 'static> Component for PwtDataTable<S> {
                             // on focus), and allow_deselect keeps selection
                             // click-driven (a focus pre-select would let the click
                             // toggle it back off, losing the first click)
-                            let suppress =
-                                Self::simple_multiselect(props) || props.allow_deselect;
+                            let suppress = Self::simple_multiselect(props) || props.allow_deselect;
                             if selection.is_empty() && props.autoselect && !suppress {
                                 self.select_cursor(props, false, false);
                             }
