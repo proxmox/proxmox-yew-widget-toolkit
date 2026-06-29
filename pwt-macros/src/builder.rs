@@ -164,24 +164,43 @@ fn derive_builder(builder: DeriveInput) -> Result<proc_macro2::TokenStream> {
     //    let mut setters = Vec::new();
     let mut builder = Vec::new();
     for field in fields.iter_mut() {
-        for (i, attr) in field.attrs.iter_mut().enumerate() {
+        let builder_type = field.attrs.iter().find_map(|attr| {
             if attr.path().is_ident("builder") {
-                let attr = attr.clone();
-                builder.push((field.clone(), attr, BuilderType::Field));
-                field.attrs.remove(i);
-                break;
+                Some(BuilderType::Field)
             } else if attr.path().is_ident("builder_cb") {
-                let attr = attr.clone();
-                builder.push((field.clone(), attr, BuilderType::Callback));
-                field.attrs.remove(i);
-                break;
+                Some(BuilderType::Callback)
+            } else {
+                None
             }
-        }
+        });
+        let Some(builder_type) = builder_type else {
+            continue;
+        };
+        let attr = field
+            .attrs
+            .iter()
+            .find(|a| a.path().is_ident("builder") || a.path().is_ident("builder_cb"))
+            .cloned()
+            .unwrap();
+        // Move a #[deprecated] from the field onto the generated builder method so callers get
+        // the warning, but strip it from the field: the generated setter assigns the field
+        // directly, which would otherwise raise the warning inside this macro's own output.
+        let deprecated = field
+            .attrs
+            .iter()
+            .find(|a| a.path().is_ident("deprecated"))
+            .cloned();
+        field.attrs.retain(|a| {
+            !a.path().is_ident("builder")
+                && !a.path().is_ident("builder_cb")
+                && !a.path().is_ident("deprecated")
+        });
+        builder.push((field.clone(), attr, builder_type, deprecated));
     }
 
     let mut quotes = quote! {};
 
-    for (field, attr, builder_type) in builder {
+    for (field, attr, builder_type, deprecated) in builder {
         let field_ident = field.ident.unwrap();
         let field_name = field_ident.to_string();
         let field_type = field.ty;
@@ -262,6 +281,11 @@ fn derive_builder(builder: DeriveInput) -> Result<proc_macro2::TokenStream> {
             }
         };
 
+        let deprecated = match deprecated {
+            Some(attr) => quote! { #attr },
+            None => quote! {},
+        };
+
         quotes.extend(quote_spanned! { attr_span =>
             #[doc = #setter_doc]
             pub fn #setter(&mut self, #field_ident: #param_type) {
@@ -269,6 +293,7 @@ fn derive_builder(builder: DeriveInput) -> Result<proc_macro2::TokenStream> {
             }
 
             #[doc = #builder_doc]
+            #deprecated
             pub fn #field_ident(mut self, #field_ident: #param_type) -> Self {
                 self.#setter(#field_ident);
                 self
