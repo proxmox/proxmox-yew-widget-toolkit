@@ -31,7 +31,7 @@ Provides:
  librust-pwt-macros-0+default-dev (= ${binary:Version}),
  librust-pwt-macros-0.5-dev (= ${binary:Version}),
  librust-pwt-macros-0.5+default-dev (= ${binary:Version}),
- librust-pwt-macros-0.5.2-dev (= ${binary:Version}),
- librust-pwt-macros-0.5.2+default-dev (= ${binary:Version})
+ librust-pwt-macros-0.5.3-dev (= ${binary:Version}),
+ librust-pwt-macros-0.5.3+default-dev (= ${binary:Version})
 Description: Rust crate "pwt-macros" - Rust source code
  Source code for Debianized Rust crate "pwt-macros"

@@ -1,3 +1,11 @@
+rust-pwt-macros (0.5.3) trixie; urgency=medium
+
+  * builder: carry a field's #[deprecated] attribute onto the generated
+    builder method, so deprecating a builder field warns its callers while
+    the macro's own field access stays quiet.
+
+ -- Proxmox Support Team <support@proxmox.com>  Mon, 29 Jun 2026 02:36:41 +0200
+
 rust-pwt-macros (0.5.2) trixie; urgency=medium
 
   * widget: implement WidgetStyleBuilder for SVG elements.

@@ -72,4 +72,4 @@ percent-encoding = "2.1"
 gettext = "0.4"
 geojson = "0.24"
 
-pwt-macros = { version = "0.5.2", path = "pwt-macros" }
+pwt-macros = { version = "0.5.3", path = "pwt-macros" }
