@@ -124,9 +124,10 @@ impl InputPanel {
     }
 
     pub fn add_spacer(&mut self, advanced: bool) {
+        // key by child position, counter-derived keys would collide for hidden children
         let key = format!(
             "sp_{}_{}",
-            self.left_count,
+            self.children.len(),
             if advanced { "1" } else { "0" }
         );
 
@@ -215,7 +216,11 @@ impl InputPanel {
             visible = false;
         }
 
-        let (row, start, span) = if self.mobile {
+        // Invisible children must not advance the row counters: every skipped row index
+        // materializes as an empty grid track that still costs one row-gap.
+        let (row, start, span) = if !visible {
+            (10000, 1, -1)
+        } else if self.mobile {
             self.left_count += 1; // ignore position
             (self.left_count, 1, -1)
         } else {
@@ -252,7 +257,8 @@ impl InputPanel {
             None => {
                 #[cfg(debug_assertions)]
                 log::warn!("could not extract key from custom child, generating one");
-                Key::from(format!("c_{}_{}_{}", start, row, advanced))
+                // key by child position, counter-derived keys would collide for hidden children
+                Key::from(format!("c_{}", self.children.len()))
             }
         };
 
