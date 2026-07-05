@@ -39,6 +39,12 @@ pub struct NavigationRail {
     #[prop_or(JustifyContent::Center)]
     pub group_alignment: JustifyContent,
 
+    /// Render the expanded (wide) rail variant with icon and label side by side, matching
+    /// Material Design's expanded navigation rail for large viewports.
+    #[builder]
+    #[prop_or_default]
+    pub expanded: bool,
+
     /// Navigation bar items.
     items: Vec<TabBarItem>,
 
@@ -311,6 +317,7 @@ impl Component for PwtNavigationRail {
 
             Container::new()
                 .class("pwt-navigation-rail-item")
+                .class(is_active.then_some("active"))
                 .with_optional_child(icon)
                 .with_optional_child(label)
                 .onclick(ctx.link().callback({
@@ -328,6 +335,7 @@ impl Component for PwtNavigationRail {
 
         Container::new()
             .class("pwt-navigation-rail")
+            .class(props.expanded.then_some("pwt-navigation-rail-expanded"))
             .with_optional_child(props.leading.clone())
             .with_child(
                 Container::new()
