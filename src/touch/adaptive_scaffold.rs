@@ -159,49 +159,52 @@ impl AdaptiveScaffold {
 
 #[doc(hidden)]
 pub enum Msg {
-    ViewportChanged(bool),
+    WideChanged(bool),
+}
+
+/// Media query subscription that reports match-state changes and unsubscribes on drop.
+struct ViewportQuery {
+    mql: MediaQueryList,
+    listener: Closure<dyn Fn()>,
+}
+
+impl ViewportQuery {
+    /// Subscribe to `query`, returning the current match state and the listener guard. The match
+    /// state defaults to `false` when the query cannot be evaluated.
+    fn subscribe(query: &str, on_change: Callback<bool>) -> (bool, Option<Self>) {
+        let mql = match window().match_media(query) {
+            Ok(Some(mql)) => mql,
+            _ => return (false, None),
+        };
+
+        let matches = mql.matches();
+
+        let listener = Closure::wrap(Box::new({
+            let mql = mql.clone();
+            move || on_change.emit(mql.matches())
+        }) as Box<dyn Fn()>);
+
+        let _ = mql.add_event_listener_with_callback("change", listener.as_ref().unchecked_ref());
+
+        (matches, Some(Self { mql, listener }))
+    }
+}
+
+impl Drop for ViewportQuery {
+    fn drop(&mut self) {
+        let _ = self
+            .mql
+            .remove_event_listener_with_callback("change", self.listener.as_ref().unchecked_ref());
+    }
 }
 
 #[doc(hidden)]
 pub struct PwtAdaptiveScaffold {
     is_wide: bool,
-    media_query: Option<MediaQueryList>,
-    listener: Option<Closure<dyn Fn()>>,
+    wide_query: Option<ViewportQuery>,
 }
 
 impl PwtAdaptiveScaffold {
-    fn install_query(&mut self, ctx: &Context<Self>, query: &str) {
-        self.remove_query();
-
-        let mql = match window().match_media(query) {
-            Ok(Some(m)) => m,
-            _ => {
-                self.is_wide = false;
-                return;
-            }
-        };
-
-        self.is_wide = mql.matches();
-
-        let link = ctx.link().clone();
-        let mql_clone = mql.clone();
-        let closure = Closure::wrap(Box::new(move || {
-            link.send_message(Msg::ViewportChanged(mql_clone.matches()));
-        }) as Box<dyn Fn()>);
-
-        let _ = mql.add_event_listener_with_callback("change", closure.as_ref().unchecked_ref());
-
-        self.media_query = Some(mql);
-        self.listener = Some(closure);
-    }
-
-    fn remove_query(&mut self) {
-        if let (Some(mql), Some(closure)) = (self.media_query.take(), self.listener.take()) {
-            let _ =
-                mql.remove_event_listener_with_callback("change", closure.as_ref().unchecked_ref());
-        }
-    }
-
     fn build_rail(props: &AdaptiveScaffold) -> NavigationRail {
         let mut rail = NavigationRail::new(props.items.clone());
         if let Some(leading) = &props.rail_leading {
@@ -234,29 +237,25 @@ impl PwtAdaptiveScaffold {
     }
 }
 
-impl Drop for PwtAdaptiveScaffold {
-    fn drop(&mut self) {
-        self.remove_query();
-    }
-}
-
 impl Component for PwtAdaptiveScaffold {
     type Message = Msg;
     type Properties = AdaptiveScaffold;
 
     fn create(ctx: &Context<Self>) -> Self {
-        let mut me = Self {
-            is_wide: false,
-            media_query: None,
-            listener: None,
-        };
-        me.install_query(ctx, ctx.props().wide_query.as_str());
-        me
+        let (is_wide, wide_query) = ViewportQuery::subscribe(
+            ctx.props().wide_query.as_str(),
+            ctx.link().callback(Msg::WideChanged),
+        );
+
+        Self {
+            is_wide,
+            wide_query,
+        }
     }
 
     fn update(&mut self, _ctx: &Context<Self>, msg: Self::Message) -> bool {
         match msg {
-            Msg::ViewportChanged(matches) => {
+            Msg::WideChanged(matches) => {
                 if self.is_wide == matches {
                     return false;
                 }
@@ -268,7 +267,10 @@ impl Component for PwtAdaptiveScaffold {
 
     fn changed(&mut self, ctx: &Context<Self>, old_props: &Self::Properties) -> bool {
         if ctx.props().wide_query != old_props.wide_query {
-            self.install_query(ctx, ctx.props().wide_query.as_str());
+            (self.is_wide, self.wide_query) = ViewportQuery::subscribe(
+                ctx.props().wide_query.as_str(),
+                ctx.link().callback(Msg::WideChanged),
+            );
         }
         true
     }
