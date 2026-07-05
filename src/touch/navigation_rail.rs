@@ -296,6 +296,10 @@ impl Component for PwtNavigationRail {
                 item.icon_class.clone()
             };
 
+            let mut badge = item.badge.as_ref().map(|badge| {
+                html! { <div class="pwt-navigation-rail-badge">{badge.clone()}</div> }
+            });
+
             let icon = match icon_class {
                 Some(icon_class) => {
                     let mut icon_class = Classes::from(icon_class.to_string());
@@ -305,7 +309,10 @@ impl Component for PwtNavigationRail {
                         "pwt-navigation-rail-icon-container",
                         is_active.then_some("active"),
                     );
-                    Some(html! {<div {class}><i class={icon_class}/></div>})
+                    // the collapsed rail anchors the badge to the icon corner, the expanded
+                    // variant places it after the label instead
+                    let corner_badge = if props.expanded { None } else { badge.take() };
+                    Some(html! {<div {class}><i class={icon_class}/>{corner_badge}</div>})
                 }
                 None => None,
             };
@@ -320,6 +327,7 @@ impl Component for PwtNavigationRail {
                 .class(is_active.then_some("active"))
                 .with_optional_child(icon)
                 .with_optional_child(label)
+                .with_optional_child(badge)
                 .onclick(ctx.link().callback({
                     let key = item.key.clone();
                     let on_activate = item.on_activate.clone();
