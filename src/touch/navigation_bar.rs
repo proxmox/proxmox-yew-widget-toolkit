@@ -286,6 +286,10 @@ impl Component for PwtNavigationBar {
                 item.icon_class.clone()
             };
 
+            let mut badge = item.badge.as_ref().map(|badge| {
+                html! { <div class="pwt-navigation-bar-badge">{badge.clone()}</div> }
+            });
+
             let icon = match icon_class {
                 Some(icon_class) => {
                     let mut icon_class = Classes::from(icon_class.to_string());
@@ -295,7 +299,9 @@ impl Component for PwtNavigationBar {
                         "pwt-navigation-bar-icon-container",
                         is_active.then_some("active"),
                     );
-                    Some(html! {<div {class}><i class={icon_class}/></div>})
+                    // the badge anchors to the icon corner; without an icon it trails the label
+                    let badge = badge.take();
+                    Some(html! {<div {class}><i class={icon_class}/>{badge}</div>})
                 }
                 None => None,
             };
@@ -309,6 +315,7 @@ impl Component for PwtNavigationBar {
                 .class("pwt-navigation-bar-item")
                 .with_optional_child(icon)
                 .with_optional_child(label)
+                .with_optional_child(badge)
                 .onclick(ctx.link().callback({
                     let key = item.key.clone();
                     let on_activate = item.on_activate.clone();
