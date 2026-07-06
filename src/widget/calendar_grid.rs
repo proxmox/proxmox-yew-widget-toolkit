@@ -273,7 +273,10 @@ impl crate::props::IntoVTag for CalendarGrid {
             let info = CalendarGridDay {
                 day: d,
                 weekday,
-                in_anchor_month: date.starts_with(&anchor_month),
+                // A week view's anchor is that week's first day, so a week straddling a month
+                // boundary would otherwise mark the days on the other side as outside the month.
+                in_anchor_month: matches!(self.view, CalendarGridView::Week)
+                    || date.starts_with(&anchor_month),
                 is_today: date == today,
                 is_weekend: weekday >= 5,
                 date,
