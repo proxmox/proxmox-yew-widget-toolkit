@@ -1,3 +1,21 @@
+rust-pwt (0.8.11) trixie; urgency=medium
+
+  * touch: navigation rail: add an expanded (wide) layout variant with icon
+    and label side by side in full-width pills, following Material Design.
+
+  * touch: adaptive scaffold: switch the rail to its expanded variant on
+    large viewports, Material's 1200px breakpoint by default, overridable.
+
+  * touch: navigation bar, rail: render the optional tab item badge on the
+    icon corner, or at the item pill's end in the expanded rail, so
+    per-destination status like counts also shows on the touch layout.
+
+  * widget: input panel: keep invisible custom children off the grid row
+    counters; each skipped row index cost one row-gap of blank space in
+    forms with many collapsed advanced or hidden rows.
+
+ -- Proxmox Support Team <support@proxmox.com>  Mon, 06 Jul 2026 04:28:37 +0200
+
 rust-pwt (0.8.10) trixie; urgency=medium
 
   * widget: date field: type the first day of the week as a new WeekStart
