@@ -114,6 +114,7 @@ impl Dialog {
 
 pub enum Msg {
     Open,
+    KeyDown(KeyboardEvent),
     Close,
     PointerDown(PointerEvent),
     PointerMove(PointerEvent),
@@ -211,6 +212,13 @@ impl Component for PwtDialog {
                         crate::show_modal_dialog(dialog_node);
                         self.open = true;
                     }
+                }
+            }
+            Msg::KeyDown(event) => {
+                // prevent autoclosing of modal windows that can't be closed
+                if event.key() == "Escape" && props.on_close.is_none() {
+                    event.stop_propagation();
+                    event.prevent_default();
                 }
             }
             Msg::Close => {
@@ -460,6 +468,8 @@ impl Component for PwtDialog {
             Msg::Close
         });
 
+        let onkeydown = link.callback(Msg::KeyDown);
+
         let mut panel = Panel::new()
             .class("pwt-overflow-auto")
             .class("pwt-flex-fill")
@@ -533,6 +543,7 @@ impl Component for PwtDialog {
         let dialog = Container::from_tag("dialog")
             .class("pwt-outer-dialog")
             .onpointerdown(onpointerdown)
+            .onkeydown(onkeydown)
             .onclose(onclose)
             .ontouchstart(cancel_event.clone())
             .ontouchend(cancel_event.clone())
