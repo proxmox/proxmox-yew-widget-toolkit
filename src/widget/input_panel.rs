@@ -27,6 +27,12 @@ pub trait Labelable: Into<Html> {
     fn set_label_id(&mut self, label_id: AttrValue);
     /// Returns if the field is diabled.
     fn disabled(&self) -> bool;
+    /// Whether the field participates in form submission. A display-only field (submit off)
+    /// has no form identity to key on, so key fallbacks treat a nameless one as intended
+    /// rather than as a field missing its name.
+    fn submits(&self) -> bool {
+        true
+    }
 }
 
 impl<T: FieldBuilder> Labelable for T {
@@ -40,6 +46,10 @@ impl<T: FieldBuilder> Labelable for T {
 
     fn disabled(&self) -> bool {
         self.as_input_props().disabled
+    }
+
+    fn submits(&self) -> bool {
+        self.as_input_props().submit
     }
 }
 
@@ -152,6 +162,10 @@ impl InputPanel {
     }
 
     /// Adds custom child in the first column
+    ///
+    /// A child without an explicit key is keyed by its position, which holds for a fixed
+    /// layout; set a key (here and in the other custom-child variants) on children that are
+    /// added or removed at runtime, so rows keep their identity across renders.
     pub fn add_custom_child(&mut self, child: impl Into<Html>) {
         self.add_custom_child_impl(FieldPosition::Left, false, false, child.into());
     }
@@ -255,8 +269,22 @@ impl InputPanel {
         let key = match child.key() {
             Some(key) => key.clone(),
             None => {
+                // A keyless custom child is the common case (an inline heading or hint built
+                // with html!), and the position-derived fallback below is stable for a fixed
+                // panel layout - only a layout whose children come and go needs explicit keys.
+                // The widget cannot see across renders to tell the two apart, so keep the
+                // pointer, but once per process and in debug builds: per child and render it
+                // buried the console under a large form.
                 #[cfg(debug_assertions)]
-                log::warn!("could not extract key from custom child, generating one");
+                {
+                    static KEYLESS_CHILD_NOTE: std::sync::Once = std::sync::Once::new();
+                    KEYLESS_CHILD_NOTE.call_once(|| {
+                        log::debug!(
+                            "InputPanel: keyless custom children fall back to positional \
+                             keys; set an explicit key on children added or removed at runtime"
+                        );
+                    });
+                }
                 // key by child position, counter-derived keys would collide for hidden children
                 Key::from(format!("c_{}", self.children.len()))
             }
@@ -341,6 +369,8 @@ impl InputPanel {
 
         let name = field.name();
         let is_disabled = field.disabled();
+        #[cfg(debug_assertions)]
+        let submits = field.submits();
         field.set_label_id(label_id.into());
         let field = field.into();
         let key = match field.key() {
@@ -348,7 +378,20 @@ impl InputPanel {
             None => match name {
                 Some(name) => Key::from(name.to_string()),
                 None => {
-                    log::warn!("could not extract key from field");
+                    // A field normally keys on its name, and a nameless one never submits -
+                    // deliberate for a display-only field, which declares that via the submit
+                    // flag, but likely a forgotten name on one still marked as submitting.
+                    // Only the latter gets the debug pointer; grid-position keys either stably
+                    // for a fixed layout. The old unconditional warn spammed release builds
+                    // on every render.
+                    #[cfg(debug_assertions)]
+                    if submits {
+                        log::debug!(
+                            "InputPanel: field without key or name falls back to a positional \
+                             key and will not submit; name it, or mark a display-only field \
+                             submit(false)"
+                        );
+                    }
                     Key::from(format!("f_{}_{}_{}", label_column, row, advanced))
                 }
             },
