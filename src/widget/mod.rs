@@ -111,7 +111,10 @@ mod segmented_bar;
 pub use segmented_bar::{Segment, SegmentedBar};
 
 mod calendar_grid;
-pub use calendar_grid::{CalendarGrid, CalendarGridDay, CalendarGridView};
+pub use calendar_grid::{
+    CalendarGrid, CalendarGridDay, CalendarGridView, CalendarSpanBar, CalendarSpanClick,
+    CalendarSpanSegment,
+};
 
 mod split_pane;
 #[doc(hidden)]
