@@ -11,7 +11,7 @@ use crate::props::{
     WidgetStyleBuilder,
 };
 use crate::tr;
-use crate::widget::{Container, WeekStart};
+use crate::widget::{Container, Tooltip, WeekStart};
 
 /// Which date window a [`CalendarGrid`] spans around its anchor date.
 #[derive(Clone, Copy, Default, PartialEq, Eq)]
@@ -58,7 +58,14 @@ pub enum CalendarGridView {
 ///   and bleed it right so the two fuse.
 /// - `pwt-calendar-span-selected`: the segment whose bar matches
 ///   [`selected_span`](CalendarGrid::selected_span).
-/// - `pwt-calendar-span-lanes`: the per-cell scroll box wrapping a day's segments.
+/// - `pwt-calendar-span-tip`: the tooltip wrapper around a segment once
+///   [`render_span_tooltip`](CalendarGrid::render_span_tooltip) is set; it, not the segment, is
+///   then the lane box's direct child, so flex-item rules belong on it.
+/// - `pwt-calendar-span-lanes`: the per-cell scroll box wrapping a day's non-pinned segments.
+/// - `pwt-calendar-span-pinned`: the per-cell fixed zone above the scroll box, wrapping the day's
+///   [`pinned`](Self::pinned) segments and their lane spacers.
+/// - `pwt-calendar-span-spacer`: an empty bar-height lane holder in the pinned zone, keeping a
+///   pinned bar at the same height across the days of its row it does not cover.
 /// - `pwt-calendar-span-icon`: the leading [`icon`](Self::icon) holder, present only on a row's
 ///   labelled segment.
 /// - `pwt-calendar-span-label`: the label holder inside a segment.
@@ -92,6 +99,19 @@ pub struct CalendarSpanBar {
     /// so it is not repeated on every covered day. Ignored when
     /// [`render_span`](CalendarGrid::render_span) takes over.
     pub icon: Option<Classes>,
+    /// Pin this bar to a fixed zone above the scrolling lanes, so it stays visible while a busy
+    /// day's other bars scroll. Pinned bars keep a stable lane across a week row (an equal-height
+    /// spacer holds a lane open on the days a pinned bar does not cover), so a multi-day pinned bar
+    /// sits at the same height in every cell it spans. The pinned zone does not scroll, so pin only
+    /// a few bars per day: enough overlapping pins to exceed the cell height are clipped, not
+    /// scrolled.
+    pub pinned: bool,
+    /// Stacking rank among [`pinned`](Self::pinned) bars: ranks the greedy lane assignment, so a
+    /// higher priority generally sits nearer the top of the pinned zone; where chains of
+    /// overlapping pins free a higher lane mid-run, a lower-priority bar can still take it - a
+    /// bar's lane holds across its whole run, which rules out exact per-day ordering. Ties fall
+    /// back to start then end date. Default `0`. Ignored for non-pinned bars, which stack by date.
+    pub priority: i32,
 }
 
 impl CalendarSpanBar {
@@ -106,6 +126,8 @@ impl CalendarSpanBar {
             class: Classes::new(),
             color: None,
             icon: None,
+            pinned: false,
+            priority: 0,
         }
     }
 
@@ -136,6 +158,18 @@ impl CalendarSpanBar {
     /// Set the leading icon class(es) shown on the bar's labelled segment.
     pub fn icon(mut self, icon: impl Into<Classes>) -> Self {
         self.icon = Some(icon.into());
+        self
+    }
+
+    /// Pin the bar above the scrolling lanes (see [`pinned`](Self::pinned)).
+    pub fn pinned(mut self, pinned: bool) -> Self {
+        self.pinned = pinned;
+        self
+    }
+
+    /// Set the pinned-stacking rank (see [`priority`](Self::priority)).
+    pub fn priority(mut self, priority: i32) -> Self {
+        self.priority = priority;
         self
     }
 }
@@ -321,6 +355,10 @@ pub struct CalendarGrid {
     #[prop_or_default]
     pub day_class: Option<RenderFn<CalendarGridDay, Classes>>,
 
+    /// Fires when a day cell is clicked. A click on a span bar reaches here too, by bubbling (see
+    /// [`on_span_click`](Self::on_span_click)); a bar activated by keyboard does not. A consumer
+    /// wanting the two fully decoupled must stop propagation in its own
+    /// [`render_span`](Self::render_span) markup.
     #[builder_cb(IntoEventCallback, into_event_callback, CalendarGridDay)]
     #[prop_or_default]
     pub on_day_click: Option<Callback<CalendarGridDay>>,
@@ -364,13 +402,24 @@ pub struct CalendarGrid {
     #[prop_or_default]
     pub selected_span: Option<AttrValue>,
 
-    /// Fires when a span's labelled (row-leading) segment is clicked or activated by keyboard. The
-    /// default markup makes those segments buttons and leaves the covered-day continuation cells
-    /// presentational; without this callback bars stay presentational. Not called when
-    /// [`render_span`](Self::render_span) takes over.
+    /// Fires when any of a span's covered days is clicked, or its labelled (row-leading) segment is
+    /// activated by keyboard - so a multi-day bar is grabbable along its whole length by mouse but
+    /// tabs and keyboard-activates as one control per row. `date` is the clicked cell's day. Without
+    /// this callback bars stay presentational; not called when [`render_span`](Self::render_span)
+    /// takes over. A mouse click also bubbles to [`on_day_click`](Self::on_day_click) (the segment
+    /// does not stop propagation); keyboard activation fires only this callback.
     #[builder_cb(IntoEventCallback, into_event_callback, CalendarSpanClick)]
     #[prop_or_default]
     pub on_span_click: Option<Callback<CalendarSpanClick>>,
+
+    /// Renders rich hover content for a bar. When set, the default markup wraps every covered cell
+    /// of the bar in a [`Tooltip`] carrying this content, so hovering or focusing anywhere along the
+    /// bar shows the same popover (approval status, dates, ...) and the plain `title` is dropped, so
+    /// the two never stack into a doubled-up hover. Ignored when [`render_span`](Self::render_span)
+    /// takes over (a full hook builds its own tooltip).
+    #[builder_cb(IntoOptionalRenderFn, into_optional_render_fn, CalendarSpanBar)]
+    #[prop_or_default]
+    pub render_span_tooltip: Option<RenderFn<CalendarSpanBar>>,
 }
 
 impl CalendarGrid {
@@ -420,10 +469,18 @@ impl CalendarGrid {
             class.push("pwt-calendar-span-selected");
         }
 
-        let mut segment = Container::from_tag("div")
-            .class(class)
-            // The full label rides the title so a clipped continuation cell still surfaces it.
-            .attribute("title", seg.bar.label.clone());
+        let mut segment = Container::from_tag("div").class(class);
+        // Tie every covered cell of a bar to its id, so a hover on any one can light the whole run
+        // (the consumer wires the cross-cell highlight in CSS keyed on this attribute).
+        if let Some(id) = &seg.bar.id {
+            segment = segment.attribute("data-span-id", id.clone());
+        }
+        // A rich render_span_tooltip covers the bar on every cell (below), so the native title would
+        // only stack a second, differently-timed hover on top; keep the title solely as the fallback
+        // for when no rich tip is set.
+        if self.render_span_tooltip.is_none() {
+            segment = segment.attribute("title", seg.bar.label.clone());
+        }
 
         if let Some(color) = &seg.bar.color {
             segment = segment.style("--pwt-calendar-span-color", color.clone());
@@ -453,17 +510,21 @@ impl CalendarGrid {
         );
 
         if let Some(on_click) = &self.on_span_click {
+            let click = CalendarSpanClick {
+                id: seg.bar.id.clone(),
+                kind: seg.bar.kind.clone(),
+                date: seg.date.clone(),
+            };
+            // Every covered day is mouse-clickable, so a multi-day bar can be grabbed anywhere
+            // along its length, not only on its labelled cell; `date` is that cell's day.
+            let onclick = {
+                let on_click = on_click.clone();
+                let click = click.clone();
+                move |_: MouseEvent| on_click.emit(click.clone())
+            };
+            segment = segment.onclick(onclick);
             if labelled {
-                let click = CalendarSpanClick {
-                    id: seg.bar.id.clone(),
-                    kind: seg.bar.kind.clone(),
-                    date: seg.date.clone(),
-                };
-                let onclick = {
-                    let on_click = on_click.clone();
-                    let click = click.clone();
-                    move |_: MouseEvent| on_click.emit(click.clone())
-                };
+                // The labelled cell is the run's single keyboard control and tab stop.
                 let onkeydown = {
                     let on_click = on_click.clone();
                     move |event: KeyboardEvent| match event.key().as_str() {
@@ -479,14 +540,25 @@ impl CalendarGrid {
                     .attribute("tabindex", "0")
                     .attribute("aria-pressed", if selected { "true" } else { "false" })
                     .attribute("aria-label", seg.label.clone())
-                    .onclick(onclick)
                     .onkeydown(onkeydown);
             } else {
+                // A covered day stays out of the tab order and the a11y tree, so the bar reads (and
+                // tabs) as one control per row even though every day of it is clickable.
                 segment = segment
                     .attribute("role", "presentation")
                     .attribute("tabindex", "-1")
                     .attribute("aria-hidden", "true");
             }
+        }
+
+        // A rich hover / focus popover on every covered cell when the caller supplied one, so the
+        // bar answers a hover the same anywhere along its run rather than the plain title on the
+        // continuation cells and the rich tip only on the labelled one.
+        if let Some(render) = &self.render_span_tooltip {
+            return Tooltip::new(segment)
+                .class("pwt-calendar-span-tip")
+                .rich_tip(render.apply(&seg.bar))
+                .into();
         }
 
         segment.into()
@@ -676,6 +748,53 @@ impl crate::props::IntoVTag for CalendarGrid {
         let mut sorted_bars: Vec<&CalendarSpanBar> = self.span_bars.iter().collect();
         sorted_bars.sort_by(|a, b| a.start.cmp(&b.start).then_with(|| a.end.cmp(&b.end)));
 
+        // Pinned bars ride a fixed zone above the scrolling lanes. Each keeps one lane for its
+        // whole run (greedy interval colouring over the sorted set), so a multi-day pinned bar
+        // sits at the same height in every cell it spans; a week row reserves its busiest cell's
+        // lane count and holds the gaps open with spacers, so the zone height (and the scroll box
+        // below it) stays uniform across the row.
+        // Higher priority stacks nearer the top of the pinned zone (a lower lane); the greedy
+        // colouring below assigns lanes in this order, so priority wins over the date order flow
+        // bars keep.
+        let mut pinned_bars: Vec<&CalendarSpanBar> =
+            sorted_bars.iter().copied().filter(|b| b.pinned).collect();
+        pinned_bars.sort_by(|a, b| {
+            b.priority
+                .cmp(&a.priority)
+                .then_with(|| a.start.cmp(&b.start))
+                .then_with(|| a.end.cmp(&b.end))
+        });
+        let flow_bars: Vec<&CalendarSpanBar> =
+            sorted_bars.iter().copied().filter(|b| !b.pinned).collect();
+        let mut lane_end: Vec<&str> = Vec::new();
+        let pinned_lane: Vec<usize> = pinned_bars
+            .iter()
+            .map(|bar| {
+                let lane = lane_end
+                    .iter()
+                    .position(|end| *end < bar.start.as_str())
+                    .unwrap_or(lane_end.len());
+                if lane == lane_end.len() {
+                    lane_end.push(bar.end.as_str());
+                } else {
+                    lane_end[lane] = bar.end.as_str();
+                }
+                lane
+            })
+            .collect();
+        let num_rows = ((count + 6) / 7) as usize;
+        let mut row_pinned_count = vec![0usize; num_rows];
+        for (i, bar) in pinned_bars.iter().enumerate() {
+            for offset in 0..count {
+                let (yy, mm, dd) = civil_from_days(start + offset);
+                let date = format!("{yy:04}-{mm:02}-{dd:02}");
+                if bar.start.as_str() <= date.as_str() && date.as_str() <= bar.end.as_str() {
+                    let row = (offset / 7) as usize;
+                    row_pinned_count[row] = row_pinned_count[row].max(pinned_lane[i] + 1);
+                }
+            }
+        }
+
         for offset in 0..count {
             let days = start + offset;
             let (y, m, d) = civil_from_days(days);
@@ -734,9 +853,45 @@ impl crate::props::IntoVTag for CalendarGrid {
                 cell = cell.with_child(render.apply(&info));
             }
 
-            if !self.span_bars.is_empty() {
-                let col = (offset % 7) as u32;
-                let segments: Vec<CalendarSpanSegment> = sorted_bars
+            let col = (offset % 7) as u32;
+
+            // The pinned zone, above the scroll box: one row of the reserved lanes, each holding
+            // its pinned bar's segment for this day or an equal-height spacer.
+            let reserved = row_pinned_count
+                .get((offset / 7) as usize)
+                .copied()
+                .unwrap_or(0);
+            if reserved > 0 {
+                let mut slots: Vec<Option<CalendarSpanSegment>> =
+                    (0..reserved).map(|_| None).collect();
+                for (i, bar) in pinned_bars.iter().enumerate() {
+                    if let Some(seg) = span_segment(bar, &info.date, col, self.span_start_marker) {
+                        // `reserved` is this row's max pinned lane + 1, so a bar covering a day in
+                        // the row always has `pinned_lane[i] < reserved`; the guard is a bounds
+                        // safety net, never a real drop.
+                        if pinned_lane[i] < reserved {
+                            slots[pinned_lane[i]] = Some(seg);
+                        }
+                    }
+                }
+                // A spacer must occupy exactly a bar's box (`--pwt-calendar-span-height` plus the
+                // `.pwt-calendar-span` vertical margin) or a pinned lane would drift between a
+                // covered and an uncovered cell; the two are tied in the theme's calendar partial.
+                let mut zone = Container::from_tag("div").class("pwt-calendar-span-pinned");
+                for slot in slots {
+                    zone = zone.with_child(match slot {
+                        Some(seg) => self.render_span_segment(seg),
+                        None => Container::from_tag("div")
+                            .class("pwt-calendar-span-spacer")
+                            .into(),
+                    });
+                }
+                cell = cell.with_child(zone);
+            }
+
+            // The scrolling zone: a day with dozens of bars scrolls this box rather than growing.
+            if !flow_bars.is_empty() {
+                let segments: Vec<CalendarSpanSegment> = flow_bars
                     .iter()
                     .filter_map(|bar| span_segment(bar, &info.date, col, self.span_start_marker))
                     .collect();
