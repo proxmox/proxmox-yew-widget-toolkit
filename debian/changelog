@@ -1,3 +1,50 @@
+rust-pwt (0.8.12) trixie; urgency=medium
+
+  * widget: calendar grid:
+    - keep a week view's days inside the anchor month, so a week straddling
+      a month boundary no longer dims the days on the far side of it.
+    - support multi-day span bars: a date range draws as one continuous bar
+      instead of a mark per day, with color, icon, selection, and click
+      handling built in; each cell scrolls its own stack, so a busy day
+      does not stretch the row.
+    - add opt-in rich hover tooltips on span bars, and pinned bars that
+      keep a fixed lane above the scrolling ones on every day they span.
+    - add an opt-in leading gutter column with an optional header label,
+      for a per-row marker like the ISO week number.
+
+  * widget: input panel: demote the keyless-child warnings to bounded
+    debug notes; they fired per child on every render, burying real ones.
+
+  * widget: dialog: prevent Escape from closing a non-closable modal and
+    leaving the widget state out of sync with the native dialog.
+
+  * form: date field: reject days past the end of the month, like a
+    February 31st, instead of validating them and letting the JS date
+    machinery silently roll them over into the next month.
+
+  * form: combobox: filter on the rendered label by default when a
+    render_value is set, so typing what one reads in the dropdown works;
+    the raw value keeps matching as well.
+
+  * widget: search dropdown: show an explicit "No results found" hint for
+    an empty result set instead of a blank strip, and surface the actual
+    load error instead of a generic "no data loaded" message.
+
+  * widget: data table: align the header text with the column's cell
+    justification, so a right-aligned numeric column carries its title
+    over the digits, and expose the live sort state to custom header
+    renderers so they can draw the sort arrow the stock header shows.
+
+  * widget: form: radio button: dim the box label while disabled and use the
+    "radio" ARIA role instead of "checkbox", matching the checkbox widget and
+    the ARIA reference.
+
+  * dom: align: fix an off-by-one in the fallback placement check that treated
+    the last placement as if it still had a fallback, so a popup near a screen
+    edge could settle on a worse position.
+
+ -- Proxmox Support Team <support@proxmox.com>  Fri, 17 Jul 2026 23:41:45 +0200
+
 rust-pwt (0.8.11) trixie; urgency=medium
 
   * touch: navigation rail: add an expanded (wide) layout variant with icon
