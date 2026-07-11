@@ -345,6 +345,30 @@ pub struct CalendarGrid {
     #[prop_or_default]
     pub render_day_header: Option<RenderFn<CalendarGridDay>>,
 
+    /// Renders each row's leading gutter cell, given that row's first day. Setting it adds a leading
+    /// column to the grid (and a matching corner to the header): a place for week numbers - the
+    /// day is enough to derive the ISO week - or any other per-row marker down the side. Unset (the
+    /// default) keeps the plain seven-column grid. The gutter emits `pwt-calendar-gutter` on the
+    /// grid and `pwt-calendar-gutter-cell` on the corner and row cells, the stable names a theme
+    /// widens the grid template and styles the column by.
+    #[builder_cb(IntoOptionalRenderFn, into_optional_render_fn, CalendarGridDay)]
+    #[prop_or_default]
+    pub render_gutter: Option<RenderFn<CalendarGridDay>>,
+
+    /// Fires when a row's gutter cell is clicked, carrying that row's first day, so a consumer can
+    /// act on the whole row (open its week, say). Only reachable while
+    /// [`render_gutter`](Self::render_gutter) draws the gutter.
+    #[builder_cb(IntoEventCallback, into_event_callback, CalendarGridDay)]
+    #[prop_or_default]
+    pub on_gutter_click: Option<Callback<CalendarGridDay>>,
+
+    /// Label for the gutter's header corner (the cell above the gutter, e.g. "Wk"), naming the
+    /// column once rather than on every row. Only shown while [`render_gutter`](Self::render_gutter)
+    /// draws the gutter; an empty corner otherwise.
+    #[builder(IntoPropValue, into_prop_value)]
+    #[prop_or_default]
+    pub gutter_header: Option<AttrValue>,
+
     /// Extra classes for a cell (holidays, highlights, ...).
     #[builder_cb(
         IntoOptionalRenderFn,
@@ -721,18 +745,26 @@ fn span_segment(
 impl crate::props::IntoVTag for CalendarGrid {
     fn into_vtag_with_ref(self, node_ref: NodeRef) -> VTag {
         let header_start = week_start_monday0(self.week_start);
-        let header: Html = (0..7u32)
-            .fold(
-                Container::from_tag("div").class("pwt-calendar-grid-header"),
-                |grid, i| {
-                    grid.with_child(
-                        Container::from_tag("div")
-                            .class("pwt-calendar-weekday")
-                            .with_child(html! { { weekday_label((header_start + i) % 7) } }),
-                    )
-                },
-            )
-            .into();
+        let mut header_row = Container::from_tag("div").class("pwt-calendar-grid-header");
+        // Corner cell over the gutter - a caller's label (e.g. "Wk") or empty - so the weekday
+        // labels stay aligned with their day columns once the gutter shifts them one column right.
+        if self.render_gutter.is_some() {
+            header_row = header_row.with_child(
+                Container::from_tag("div")
+                    .class("pwt-calendar-weekday pwt-calendar-gutter-cell")
+                    .with_optional_child(self.gutter_header.clone().map(|h| -> Html {
+                        html! { { h } }
+                    })),
+            );
+        }
+        for i in 0..7u32 {
+            header_row = header_row.with_child(
+                Container::from_tag("div")
+                    .class("pwt-calendar-weekday")
+                    .with_child(html! { { weekday_label((header_start + i) % 7) } }),
+            );
+        }
+        let header: Html = header_row.into();
 
         // An unparsable anchor renders the header over an empty grid rather than panicking deep
         // inside the view.
@@ -811,6 +843,22 @@ impl crate::props::IntoVTag for CalendarGrid {
                 is_weekend: weekday >= 5,
                 date,
             };
+
+            // Leading gutter cell, once per row before its seven days, when render_gutter opts in.
+            // It carries the row's first day, so the consumer labels it (its ISO week, say) and,
+            // via on_gutter_click, acts on the row.
+            if offset % 7 == 0
+                && let Some(render_gutter) = &self.render_gutter
+            {
+                let mut gutter = Container::from_tag("div").class("pwt-calendar-gutter-cell");
+                gutter = gutter.with_child(render_gutter.apply(&info));
+                if let Some(on_gutter) = &self.on_gutter_click {
+                    let on_gutter = on_gutter.clone();
+                    let gutter_info = info.clone();
+                    gutter = gutter.onclick(move |_| on_gutter.emit(gutter_info.clone()));
+                }
+                grid = grid.with_child(gutter);
+            }
 
             let mut cell = Container::from_tag("div").class("pwt-calendar-day");
             if !info.in_anchor_month {
@@ -912,6 +960,10 @@ impl crate::props::IntoVTag for CalendarGrid {
         let mut this = self;
         if this.fill_height {
             this.add_class("pwt-calendar-fill");
+        }
+        // Signal the extra leading column to the theme, which widens the grid template to match.
+        if this.render_gutter.is_some() {
+            this.add_class("pwt-calendar-gutter");
         }
 
         this.std_props.into_vtag(
