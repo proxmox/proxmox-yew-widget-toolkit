@@ -209,6 +209,26 @@ pub enum Msg {
     Reposition,
 }
 
+/// Collect the plain text a [VNode] renders, approximating the visible label. Child components
+/// and raw HTML cannot be inspected without rendering them and are skipped.
+fn vnode_text(node: &yew::virtual_dom::VNode, out: &mut String) {
+    use yew::virtual_dom::VNode;
+    match node {
+        VNode::VText(text) => out.push_str(&text.text),
+        VNode::VTag(tag) => {
+            if let Some(children) = tag.children() {
+                vnode_text(children, out);
+            }
+        }
+        VNode::VList(list) => {
+            for child in list.iter() {
+                vnode_text(child, out);
+            }
+        }
+        _ => {}
+    }
+}
+
 #[doc(hidden)]
 pub struct PwtCombobox {
     store: Store<AttrValue>,
@@ -316,7 +336,24 @@ impl Component for PwtCombobox {
 
         let auto_select_filter = ctx.props().autoselect_filter;
 
-        let filter = props.filter.clone();
+        // The filter should match what the user sees: with a render_value the visible label
+        // usually differs from the raw item value, and a filter that only matches the value
+        // looks broken. Still match the value too, so queries that worked before keep working.
+        let filter = match (&props.filter, &props.render_value) {
+            (None, Some(render_value)) => {
+                let render_value = render_value.clone();
+                Some(TextFilterFn::new(move |item: &AttrValue, query: &str| {
+                    let query = query.to_lowercase();
+                    if item.to_lowercase().contains(&query) {
+                        return true;
+                    }
+                    let mut label = String::new();
+                    vnode_text(&render_value.apply(item), &mut label);
+                    label.to_lowercase().contains(&query)
+                }))
+            }
+            _ => props.filter.clone(),
+        };
 
         let columns = Rc::clone(&self.columns);
         let picker = move |args: &SelectorRenderArgs<Store<AttrValue>>| {
