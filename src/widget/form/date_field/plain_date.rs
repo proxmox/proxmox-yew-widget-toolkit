@@ -86,6 +86,22 @@ impl PlainDate {
         self.day
     }
 
+    /// Number of days in the given month (0 = January) of the given year, leap years included.
+    fn days_in_month(year: i32, month: u32) -> u32 {
+        match month {
+            0 | 2 | 4 | 6 | 7 | 9 | 11 => 31,
+            3 | 5 | 8 | 10 => 30,
+            1 => {
+                if (year % 4 == 0 && year % 100 != 0) || year % 400 == 0 {
+                    29
+                } else {
+                    28
+                }
+            }
+            _ => 0,
+        }
+    }
+
     /// Get the day of the week (0 = Sunday, 6 = Saturday).
     pub fn week_day(&self) -> u32 {
         let d = Date::new(&self.to_timestamp().into());
@@ -281,7 +297,7 @@ impl PlainDate {
 
         match (year, month, day) {
             (Some(y), Some(m), Some(d)) => {
-                if m < 1 || m > 12 || d < 1 || d > 31 {
+                if m < 1 || m > 12 || d < 1 || d > Self::days_in_month(y, m - 1) {
                     Err("Invalid date values".into())
                 } else {
                     Ok(PlainDate::new(y, m - 1, d))
@@ -364,6 +380,22 @@ mod tests {
         assert!(PlainDate::from_format("2023-00-01", "Y-m-d").is_err());
         assert!(PlainDate::from_format("2023-01-32", "Y-m-d").is_err());
         assert!(PlainDate::from_format("garbage", "Y-m-d").is_err());
+    }
+
+    #[test]
+    fn test_days_beyond_month_end() {
+        assert!(PlainDate::from_format("2023-02-31", "Y-m-d").is_err());
+        assert!(PlainDate::from_format("2023-02-29", "Y-m-d").is_err());
+        assert!(PlainDate::from_format("2023-04-31", "Y-m-d").is_err());
+        assert!(PlainDate::from_format("2023-11-31", "Y-m-d").is_err());
+
+        // leap year rules: divisible by four, except centuries off the 400 grid
+        assert!(PlainDate::from_format("2024-02-29", "Y-m-d").is_ok());
+        assert!(PlainDate::from_format("2000-02-29", "Y-m-d").is_ok());
+        assert!(PlainDate::from_format("1900-02-29", "Y-m-d").is_err());
+
+        assert!(PlainDate::from_format("2023-01-31", "Y-m-d").is_ok());
+        assert!(PlainDate::from_format("2023-04-30", "Y-m-d").is_ok());
     }
     #[test]
     fn test_php_shortcuts() {
