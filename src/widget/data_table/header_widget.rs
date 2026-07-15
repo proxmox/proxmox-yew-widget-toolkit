@@ -253,6 +253,18 @@ impl<T: 'static> PwtHeaderWidget<T> {
 
         let mut attributes = IndexMap::new();
         let mut header_class = props.header_class.clone();
+
+        // Align the header with the column's cell justification; the header content inherits
+        // the text-align. Custom header renderers receive the class via the render args and can
+        // still override the alignment there.
+        match cell.column.justify.as_str() {
+            "start" => {}
+            justify @ ("end" | "left" | "right" | "center" | "justify") => {
+                header_class.push(format!("pwt-text-align-{justify}"));
+            }
+            _ => {}
+        }
+
         let header_content = match &cell.column.render_header {
             Some(render_header) => {
                 let mut args = DataTableHeaderRenderArgs {
