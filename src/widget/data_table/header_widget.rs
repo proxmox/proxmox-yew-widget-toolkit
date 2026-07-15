@@ -270,6 +270,7 @@ impl<T: 'static> PwtHeaderWidget<T> {
                 let mut args = DataTableHeaderRenderArgs {
                     column_index: column_idx,
                     selection_status: props.selection_status,
+                    sort_order,
                     link: DataTableHeaderTableLink {
                         on_message: props.on_message.clone(),
                     },

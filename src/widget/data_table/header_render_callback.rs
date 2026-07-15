@@ -28,6 +28,8 @@ pub struct DataTableHeaderRenderArgs<T: 'static> {
     pub(crate) column_index: usize,
     // Selection status from the table.
     pub(crate) selection_status: RowSelectionStatus,
+    // Current sort order of this column.
+    pub(crate) sort_order: Option<bool>,
 
     pub(crate) link: DataTableHeaderTableLink<T>,
 
@@ -47,6 +49,13 @@ impl<T: 'static> DataTableHeaderRenderArgs<T> {
     /// Row selection status from the table.
     pub fn selection_status(&self) -> RowSelectionStatus {
         self.selection_status
+    }
+
+    /// Current sort order of this column: `Some(true)` when sorted ascending, `Some(false)`
+    /// when sorted descending, `None` when unsorted. Lets a custom header renderer show the
+    /// same sort indicator the default header content renders.
+    pub fn sort_order(&self) -> Option<bool> {
+        self.sort_order
     }
 
     /// Method to set additional html attributes on the header cell
