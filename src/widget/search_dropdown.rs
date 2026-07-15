@@ -9,12 +9,13 @@ use gloo_timers::callback::Timeout;
 use yew::html::{IntoEventCallback, Scope};
 use yew::virtual_dom::Key;
 
+use crate::css::FontColor;
 use crate::props::{CssLength, FieldBuilder, RenderFn, WidgetBuilder};
 use crate::state::DataStore;
 use crate::widget::data_table::{
     DataTable, DataTableColumn, DataTableHeader, DataTableKeyboardEvent, DataTableMouseEvent,
 };
-use crate::widget::{Dropdown, DropdownController};
+use crate::widget::{Container, Dropdown, DropdownController};
 use crate::{AsyncAbortGuard, prelude::*};
 
 use pwt_macros::{builder, widget};
@@ -287,10 +288,21 @@ impl<S: DataStore + 'static> Component for PwtSearchDropdown<S> {
         let picker = props.picker.clone();
 
         Dropdown::new(move |controller: &DropdownController| -> Html {
-            if let Some(store) = &store {
-                if let Some(load_error) = &load_error {
-                    crate::widget::error_message(&format!("Error: {}", load_error))
+            // A failed load clears the store, so check the error before the store, otherwise the
+            // real message is never shown and every failure looks like "no data loaded".
+            if let Some(load_error) = &load_error {
+                crate::widget::error_message(&format!("Error: {}", load_error))
+                    .padding(2)
+                    .into()
+            } else if let Some(store) = &store {
+                if store.filtered_data_len() == 0 {
+                    // An empty result set otherwise renders the picker as a blank strip,
+                    // indistinguishable from a load failure; say explicitly that the search
+                    // worked and simply matched nothing.
+                    Container::new()
                         .padding(2)
+                        .class(FontColor::Secondary)
+                        .with_child(tr!("No results found"))
                         .into()
                 } else {
                     let args = SearchDropdownRenderArgs {
