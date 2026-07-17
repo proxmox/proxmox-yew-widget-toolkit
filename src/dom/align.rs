@@ -480,16 +480,15 @@ where
     );
 
     // try fallback placements if the first one does not fit
-    if options.placements.len() > 1 && !fits(&rect, &window_rect, &options.placements[0].direction)
-    {
-        for (idx, placement) in options.placements.iter().skip(1).enumerate() {
+    if num_placements > 1 && !fits(&rect, &window_rect, &options.placements[0].direction) {
+        for (idx, placement) in options.placements.iter().enumerate().skip(1) {
             let new_rect = try_fit_rect(
                 &base,
                 &element,
                 &window_rect,
                 placement,
                 options.offset,
-                idx < num_placements,
+                idx + 1 < num_placements,
             );
 
             if fits(&new_rect, &window_rect, &placement.direction) {
