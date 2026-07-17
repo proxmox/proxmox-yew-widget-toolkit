@@ -69,14 +69,14 @@ pub struct RadioButton {
     ///
     /// Called on user interaction:
     ///
-    /// - Click on the checkbox.
+    /// - Click on the radio button.
     /// - Click on the associated input label.
     /// - Activation by keyboard (space press).
     #[builder_cb(IntoEventCallback, into_event_callback, String)]
     #[prop_or_default]
     pub on_input: Option<Callback<String>>,
 
-    /// A right side label for the checkbox, to display additional information
+    /// A right side label for the radio button, to display additional information
     #[prop_or_default]
     pub box_label: Option<FieldLabel>,
 }
@@ -102,7 +102,7 @@ impl RadioButton {
 
     /// Method to set the box label.
     ///
-    /// A right side label for the checkbox to display additional information
+    /// A right side label for the radio button to display additional information
     pub fn set_box_label(&mut self, box_label: impl Into<FieldLabel>) {
         self.box_label = Some(box_label.into());
     }
