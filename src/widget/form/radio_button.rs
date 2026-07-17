@@ -276,7 +276,7 @@ impl ManagedField for RadioButtonField {
                     "tabindex",
                     props.input_props.tabindex.unwrap_or(0).to_string(),
                 )
-                .attribute("role", "checkbox")
+                .attribute("role", "radio")
                 .attribute("aria-checked", checked.then_some("true"))
                 .onkeyup(onkeyup)
                 .into_html_with_ref(self.node_ref.clone()),
