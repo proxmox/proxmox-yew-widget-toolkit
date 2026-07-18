@@ -13,6 +13,9 @@ pub use dom_size_observer::{DomSizeObserver, IntoSizeCallback, SizeCallback};
 mod dom_visibility_observer;
 pub use dom_visibility_observer::DomVisibilityObserver;
 
+mod viewport_query;
+pub use viewport_query::ViewportQuery;
+
 use web_sys::Node;
 use yew::prelude::*;
 

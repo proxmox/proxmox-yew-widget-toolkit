@@ -1,15 +1,12 @@
 use std::rc::Rc;
 
-use gloo_utils::window;
-use wasm_bindgen::JsCast;
-use wasm_bindgen::prelude::*;
-use web_sys::MediaQueryList;
 use yew::html::IntoEventCallback;
 use yew::html::IntoPropValue;
 use yew::virtual_dom::{Key, VComp, VNode};
 
 use pwt_macros::builder;
 
+use crate::dom::ViewportQuery;
 use crate::prelude::*;
 use crate::props::IntoOptionalKey;
 use crate::state::Selection;
@@ -173,42 +170,6 @@ impl AdaptiveScaffold {
 pub enum Msg {
     WideChanged(bool),
     LargeChanged(bool),
-}
-
-/// Media query subscription that reports match-state changes and unsubscribes on drop.
-struct ViewportQuery {
-    mql: MediaQueryList,
-    listener: Closure<dyn Fn()>,
-}
-
-impl ViewportQuery {
-    /// Subscribe to `query`, returning the current match state and the listener guard. The match
-    /// state defaults to `false` when the query cannot be evaluated.
-    fn subscribe(query: &str, on_change: Callback<bool>) -> (bool, Option<Self>) {
-        let mql = match window().match_media(query) {
-            Ok(Some(mql)) => mql,
-            _ => return (false, None),
-        };
-
-        let matches = mql.matches();
-
-        let listener = Closure::wrap(Box::new({
-            let mql = mql.clone();
-            move || on_change.emit(mql.matches())
-        }) as Box<dyn Fn()>);
-
-        let _ = mql.add_event_listener_with_callback("change", listener.as_ref().unchecked_ref());
-
-        (matches, Some(Self { mql, listener }))
-    }
-}
-
-impl Drop for ViewportQuery {
-    fn drop(&mut self) {
-        let _ = self
-            .mql
-            .remove_event_listener_with_callback("change", self.listener.as_ref().unchecked_ref());
-    }
 }
 
 #[doc(hidden)]
