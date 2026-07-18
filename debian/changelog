@@ -1,3 +1,21 @@
+rust-pwt (0.8.13) trixie; urgency=medium
+
+  * widget: add a Badge widget, a small rounded status label (badge / chip /
+    tag) with an optional icon and a color-scheme tint, for statuses, counts
+    and short tags beside the item they describe.
+
+  * dom: add a copy_to_clipboard helper wrapping the async Clipboard API, so
+    consumers stop re-implementing the navigator.clipboard.writeText dance.
+
+  * dom: promote the media-query subscription used by AdaptiveScaffold to a
+    public dom::ViewportQuery, so other adaptive widgets can reuse it.
+
+  * touch: add an AdaptiveDialog modal that renders a centered Dialog on wide
+    viewports and a slide-up bottom-sheet SideDialog on narrow ones, wrapping
+    arbitrary children so a dialog body keeps its layout across the swap.
+
+ -- Proxmox Support Team <support@proxmox.com>  Sat, 18 Jul 2026 21:00:00 +0200
+
 rust-pwt (0.8.12) trixie; urgency=medium
 
   * widget: calendar grid:
