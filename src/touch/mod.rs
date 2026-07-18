@@ -1,6 +1,9 @@
 //! ### Widgets for Touch devices
 //!
 
+mod adaptive_dialog;
+pub use adaptive_dialog::{AdaptiveDialog, PwtAdaptiveDialog};
+
 mod adaptive_scaffold;
 pub use adaptive_scaffold::{AdaptiveScaffold, PwtAdaptiveScaffold};
 
