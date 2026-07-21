@@ -159,15 +159,31 @@ impl Component for PwtAdaptiveDialog {
         true
     }
 
-    fn update(&mut self, _ctx: &Context<Self>, msg: Self::Message) -> bool {
-        match msg {
-            Msg::ViewportChanged(is_wide) => {
-                if self.is_wide == is_wide {
-                    return false;
-                }
-                self.is_wide = is_wide;
-                true
-            }
+    fn update(&mut self, _ctx: &Context<Self>, _msg: Self::Message) -> bool {
+        // STOP-GAP: the layout is chosen when the dialog opens and then frozen for its lifetime,
+        // so a viewport resize no longer restructures an open dialog.
+        //
+        // Why this is needed: the wide branch renders a centered `Dialog` and the narrow branch a
+        // bottom-sheet `SideDialog`; these are different components, so flipping `is_wide` while
+        // the dialog is open makes `view` return a structurally different tree and yew unmounts one
+        // shell and mounts the other. The body - `props.children` - is remounted along with it, and
+        // form fields drop their entry from the surrounding form context on unmount, so everything
+        // the user has typed is silently discarded. A phone rotating between portrait and landscape
+        // crosses the default breakpoint and hits this on every rotation.
+        //
+        // Why freezing is acceptable for now: a dialog is transient, so retaining its open-time
+        // layout until it closes is a fair price for never losing input, and it is strictly better
+        // than the morph-and-wipe it replaces. An explicit `wide_query` prop change still relayouts
+        // via `changed()`; only viewport-driven changes are ignored. `create()` still reads the
+        // initial layout through the subscription, which now only serves that first read.
+        //
+        // What a real fix looks like: keep `props.children` mounted across the shell swap so the
+        // dialog can adapt live without discarding input - e.g. host the body in one stable, keyed
+        // subtree that both shells share (a portal/slot both `Dialog` and `SideDialog` render into),
+        // rather than nesting a fresh copy inside each branch. That is a larger change to how those
+        // two widgets host content and wants its own design and review; until then, freeze.
+        match _msg {
+            Msg::ViewportChanged(_) => false,
         }
     }
 
