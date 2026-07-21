@@ -120,29 +120,40 @@ impl Component for PwtScaffold {
             .with_optional_child(props.body.clone())
             .with_optional_child(positioned_fab);
 
-        // A navigation rail anchors to the inline-start side with the application bar and body to
-        // its right; a bottom navigation bar instead spans the full width below the body.
-        if let Some(rail) = props.navigation_rail.clone() {
-            Row::new()
-                .class("pwt-viewport")
-                .class("pwt-position-relative")
-                .with_child(rail)
-                .with_child(
-                    Column::new()
-                        .class(FlexFit)
-                        .with_optional_child(props.application_bar.clone())
-                        .with_child(body),
-                )
-                .into()
-        } else {
-            Column::new()
-                .class("pwt-viewport")
-                .class("pwt-position-relative")
-                .with_optional_child(props.application_bar.clone())
-                .with_child(body)
-                .with_optional_child(props.navigation_bar.clone())
-                .into()
-        }
+        // Keep one layout shape for both navigators so switching between them (a viewport crossing
+        // the rail breakpoint, e.g. a phone rotating) never relocates the body in the vdom. When
+        // the body sat at a different depth per branch, yew reconciled the swap positionally and
+        // tore it down, discarding an open dialog and everything typed into it. Here the body is
+        // always `main`'s middle child, and `main` carries a stable key so it is matched across
+        // the swap even as the rail appears or vanishes beside it at the root.
+        //
+        // A rail anchors to the inline-start side with the application bar and body to its right
+        // and takes precedence over a bottom bar; the bottom bar spans the full width below the
+        // body only when no rail is shown.
+        let bottom_bar = props
+            .navigation_rail
+            .is_none()
+            .then(|| props.navigation_bar.clone())
+            .flatten();
+
+        let main = Column::new()
+            .key("pwt-scaffold-main")
+            .class(FlexFit)
+            .with_optional_child(props.application_bar.clone())
+            .with_child(body)
+            .with_optional_child(bottom_bar);
+
+        Row::new()
+            .class("pwt-viewport")
+            .class("pwt-position-relative")
+            .with_optional_child(
+                props
+                    .navigation_rail
+                    .clone()
+                    .map(|rail| rail.key("pwt-scaffold-rail")),
+            )
+            .with_child(main)
+            .into()
     }
 }
 
