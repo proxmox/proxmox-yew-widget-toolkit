@@ -597,68 +597,115 @@ impl CalendarGrid {
         week_start: WeekStart,
     ) -> Option<(String, String)> {
         let (start, count) = window(view, anchor, week_start)?;
-        Some((format_days(start), format_days(start + count - 1)))
+        Some((start.to_iso(), start.add_days(count - 1).to_iso()))
+    }
+
+    /// The visible day cells in render order, with all per-day flags resolved. Computed once per
+    /// render so the pinned-lane pre-pass and the cell loop walk exactly the same window without
+    /// re-deriving every date.
+    fn days(&self) -> Vec<CalendarGridDay> {
+        let (start, count) =
+            window(self.view, &self.anchor, self.week_start).unwrap_or((CivilDate(0), 0));
+        let anchor_month: String = self.anchor.chars().take(7).collect();
+        let today = self.today.as_deref().unwrap_or("");
+        (0..count)
+            .map(|offset| {
+                let date = start.add_days(offset);
+                let weekday = date.weekday_monday0();
+                let iso = date.to_iso();
+                CalendarGridDay {
+                    day: date.day(),
+                    weekday,
+                    // A week view's anchor is that week's first day, so a week straddling a month
+                    // boundary would otherwise mark the days on the other side as outside the month.
+                    in_anchor_month: matches!(self.view, CalendarGridView::Week)
+                        || iso.starts_with(&anchor_month),
+                    is_today: iso == today,
+                    is_weekend: weekday >= 5,
+                    date: iso,
+                }
+            })
+            .collect()
     }
 }
 
-/// First visible day count and cell count for a view, or `None` when the anchor is not a valid ISO
-/// date. Shared by [`CalendarGrid::visible_range`] and the renderer so both span the same window.
-fn window(view: CalendarGridView, anchor: &str, week_start: WeekStart) -> Option<(i64, i64)> {
-    let (y, m, d) = parse_iso_date(anchor)?;
-    let start = week_start.sunday_based_index();
-    match view {
-        CalendarGridView::Week => {
-            let days = days_from_civil(y, m, d);
-            Some((days - week_offset(days, start), 7))
-        }
-        CalendarGridView::Month => {
-            let first = days_from_civil(y, m, 1);
-            Some((first - week_offset(first, start), 42))
-        }
+/// A civil (timezone-free) calendar date as days since 1970-01-01: the one representation the
+/// grid does date arithmetic in, so the conversions live behind a type instead of a family of
+/// free functions. Parses and formats the ISO `YYYY-MM-DD` wire form; ordering is the plain
+/// integer order, which is also the lexical order of the ISO form.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+struct CivilDate(i64);
+
+impl CivilDate {
+    /// Days from the civil epoch for a (year, month, day) triple (Howard Hinnant's algorithm).
+    fn from_ymd(y: i64, m: u32, d: u32) -> Self {
+        let y = if m <= 2 { y - 1 } else { y };
+        let era = if y >= 0 { y } else { y - 399 } / 400;
+        let yoe = y - era * 400;
+        let mp = ((m + 9) % 12) as i64;
+        let doy = (153 * mp + 2) / 5 + d as i64 - 1;
+        let doe = yoe * 365 + yoe / 4 - yoe / 100 + doy;
+        Self(era * 146097 + doe - 719468)
     }
-}
 
-/// Day count of the civil date since 1970-01-01 (Howard Hinnant's algorithm),
-/// negative for earlier dates.
-fn days_from_civil(y: i64, m: u32, d: u32) -> i64 {
-    let y = if m <= 2 { y - 1 } else { y };
-    let era = if y >= 0 { y } else { y - 399 } / 400;
-    let yoe = y - era * 400;
-    let mp = ((m + 9) % 12) as i64;
-    let doy = (153 * mp + 2) / 5 + d as i64 - 1;
-    let doe = yoe * 365 + yoe / 4 - yoe / 100 + doy;
-    era * 146097 + doe - 719468
-}
+    /// Parse an ISO `YYYY-MM-DD` date, rejecting a month or day that does not exist.
+    fn from_iso(s: &str) -> Option<Self> {
+        let mut parts = s.splitn(3, '-');
+        let y: i64 = parts.next()?.parse().ok()?;
+        let m: u32 = parts.next()?.parse().ok()?;
+        let d: u32 = parts.next()?.parse().ok()?;
+        if !(1..=12).contains(&m) || d < 1 || d > days_in_month(y, m) {
+            return None;
+        }
+        Some(Self::from_ymd(y, m, d))
+    }
 
-/// Inverse of [`days_from_civil`].
-fn civil_from_days(z: i64) -> (i64, u32, u32) {
-    let z = z + 719468;
-    let era = if z >= 0 { z } else { z - 146096 } / 146097;
-    let doe = z - era * 146097;
-    let yoe = (doe - doe / 1460 + doe / 36524 - doe / 146096) / 365;
-    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
-    let mp = (5 * doy + 2) / 153;
-    let d = (doy - (153 * mp + 2) / 5 + 1) as u32;
-    let m = if mp < 10 { mp + 3 } else { mp - 9 } as u32;
-    let y = yoe + era * 400 + if m <= 2 { 1 } else { 0 };
-    (y, m, d)
-}
+    /// The (year, month, day) fields; inverse of [`from_ymd`](Self::from_ymd).
+    fn ymd(self) -> (i64, u32, u32) {
+        let z = self.0 + 719468;
+        let era = if z >= 0 { z } else { z - 146096 } / 146097;
+        let doe = z - era * 146097;
+        let yoe = (doe - doe / 1460 + doe / 36524 - doe / 146096) / 365;
+        let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
+        let mp = (5 * doy + 2) / 153;
+        let d = (doy - (153 * mp + 2) / 5 + 1) as u32;
+        let m = if mp < 10 { mp + 3 } else { mp - 9 } as u32;
+        let y = yoe + era * 400 + if m <= 2 { 1 } else { 0 };
+        (y, m, d)
+    }
 
-/// Weekday of a day count with Monday = 0 (1970-01-01 was a Thursday).
-fn weekday_monday0(days: i64) -> u32 {
-    (days + 3).rem_euclid(7) as u32
-}
+    /// The day of the month (1-31).
+    fn day(self) -> u32 {
+        self.ymd().2
+    }
 
-/// Days from `days` back to the most recent week start, with `start` in the Sunday = 0 space.
-fn week_offset(days: i64, start: u32) -> i64 {
-    // 1970-01-01 (day 0) was a Thursday, index 4 in the Sunday = 0 space.
-    let weekday = (days + 4).rem_euclid(7);
-    (weekday - start as i64).rem_euclid(7)
-}
+    /// The ISO `YYYY-MM-DD` string.
+    fn to_iso(self) -> String {
+        let (y, m, d) = self.ymd();
+        format!("{y:04}-{m:02}-{d:02}")
+    }
 
-/// The week start expressed in the Monday = 0 space used for header labels.
-fn week_start_monday0(week_start: WeekStart) -> u32 {
-    (week_start.sunday_based_index() + 6) % 7
+    /// Weekday with Monday = 0 .. Sunday = 6 (1970-01-01 was a Thursday).
+    fn weekday_monday0(self) -> u32 {
+        (self.0 + 3).rem_euclid(7) as u32
+    }
+
+    /// The date `days` after this one.
+    fn add_days(self, days: i64) -> Self {
+        Self(self.0 + days)
+    }
+
+    /// Days back to the most recent week start, with `start` in the Sunday = 0 space.
+    fn week_offset(self, start: u32) -> i64 {
+        // 1970-01-01 (day 0) was a Thursday, index 4 in the Sunday = 0 space.
+        let weekday = (self.0 + 4).rem_euclid(7);
+        (weekday - start as i64).rem_euclid(7)
+    }
+
+    /// Days from this date back to its week start in one call.
+    fn week_floor(self, start: u32) -> Self {
+        Self(self.0 - self.week_offset(start))
+    }
 }
 
 /// Number of days in a Gregorian month.
@@ -672,20 +719,23 @@ fn days_in_month(y: i64, m: u32) -> u32 {
     }
 }
 
-fn parse_iso_date(s: &str) -> Option<(i64, u32, u32)> {
-    let mut parts = s.splitn(3, '-');
-    let y: i64 = parts.next()?.parse().ok()?;
-    let m: u32 = parts.next()?.parse().ok()?;
-    let d: u32 = parts.next()?.parse().ok()?;
-    if !(1..=12).contains(&m) || d < 1 || d > days_in_month(y, m) {
-        return None;
+/// First visible day and cell count for a view, or `None` when the anchor is not a valid ISO
+/// date. Shared by [`CalendarGrid::visible_range`] and the renderer so both span the same window.
+fn window(view: CalendarGridView, anchor: &str, week_start: WeekStart) -> Option<(CivilDate, i64)> {
+    let anchor = CivilDate::from_iso(anchor)?;
+    let start = week_start.sunday_based_index();
+    match view {
+        CalendarGridView::Week => Some((anchor.week_floor(start), 7)),
+        CalendarGridView::Month => {
+            let (y, m, _) = anchor.ymd();
+            Some((CivilDate::from_ymd(y, m, 1).week_floor(start), 42))
+        }
     }
-    Some((y, m, d))
 }
 
-fn format_days(days: i64) -> String {
-    let (y, m, d) = civil_from_days(days);
-    format!("{y:04}-{m:02}-{d:02}")
+/// The week start expressed in the Monday = 0 space used for header labels.
+fn week_start_monday0(week_start: WeekStart) -> u32 {
+    (week_start.sunday_based_index() + 6) % 7
 }
 
 fn weekday_label(weekday_monday0: u32) -> String {
@@ -768,10 +818,7 @@ impl crate::props::IntoVTag for CalendarGrid {
 
         // An unparsable anchor renders the header over an empty grid rather than panicking deep
         // inside the view.
-        let (start, count) = window(self.view, &self.anchor, self.week_start).unwrap_or((0, 0));
-
-        let anchor_month: String = self.anchor.chars().take(7).collect();
-        let today = self.today.as_deref().unwrap_or("");
+        let days = self.days();
 
         let mut grid = Container::from_tag("div").class("pwt-calendar-grid");
 
@@ -814,35 +861,20 @@ impl crate::props::IntoVTag for CalendarGrid {
                 lane
             })
             .collect();
-        let num_rows = ((count + 6) / 7) as usize;
+        let num_rows = days.len().div_ceil(7);
         let mut row_pinned_count = vec![0usize; num_rows];
         for (i, bar) in pinned_bars.iter().enumerate() {
-            for offset in 0..count {
-                let (yy, mm, dd) = civil_from_days(start + offset);
-                let date = format!("{yy:04}-{mm:02}-{dd:02}");
-                if bar.start.as_str() <= date.as_str() && date.as_str() <= bar.end.as_str() {
-                    let row = (offset / 7) as usize;
+            for (offset, day) in days.iter().enumerate() {
+                if bar.start.as_str() <= day.date.as_str() && day.date.as_str() <= bar.end.as_str()
+                {
+                    let row = offset / 7;
                     row_pinned_count[row] = row_pinned_count[row].max(pinned_lane[i] + 1);
                 }
             }
         }
 
-        for offset in 0..count {
-            let days = start + offset;
-            let (y, m, d) = civil_from_days(days);
-            let date = format!("{y:04}-{m:02}-{d:02}");
-            let weekday = weekday_monday0(days);
-            let info = CalendarGridDay {
-                day: d,
-                weekday,
-                // A week view's anchor is that week's first day, so a week straddling a month
-                // boundary would otherwise mark the days on the other side as outside the month.
-                in_anchor_month: matches!(self.view, CalendarGridView::Week)
-                    || date.starts_with(&anchor_month),
-                is_today: date == today,
-                is_weekend: weekday >= 5,
-                date,
-            };
+        for (offset, info) in days.iter().enumerate() {
+            let info = info.clone();
 
             // Leading gutter cell, once per row before its seven days, when render_gutter opts in.
             // It carries the row's first day, so the consumer labels it (its ISO week, say) and,
@@ -905,13 +937,9 @@ impl crate::props::IntoVTag for CalendarGrid {
 
             // The pinned zone, above the scroll box: one row of the reserved lanes, each holding
             // its pinned bar's segment for this day or an equal-height spacer.
-            let reserved = row_pinned_count
-                .get((offset / 7) as usize)
-                .copied()
-                .unwrap_or(0);
+            let reserved = row_pinned_count.get(offset / 7).copied().unwrap_or(0);
             if reserved > 0 {
-                let mut slots: Vec<Option<CalendarSpanSegment>> =
-                    (0..reserved).map(|_| None).collect();
+                let mut slots: Vec<Option<CalendarSpanSegment>> = vec![None; reserved];
                 for (i, bar) in pinned_bars.iter().enumerate() {
                     if let Some(seg) = span_segment(bar, &info.date, col, self.span_start_marker) {
                         // `reserved` is this row's max pinned lane + 1, so a bar covering a day in
@@ -1097,15 +1125,21 @@ mod tests {
     #[test]
     fn civil_roundtrip_and_weekday() {
         // 1970-01-01 is day 0, a Thursday (Monday = 0 -> 3).
-        assert_eq!(days_from_civil(1970, 1, 1), 0);
-        assert_eq!(weekday_monday0(0), 3);
+        assert_eq!(CivilDate::from_ymd(1970, 1, 1), CivilDate(0));
+        assert_eq!(CivilDate(0).weekday_monday0(), 3);
         // 2026-06-10 is a Wednesday.
-        let days = days_from_civil(2026, 6, 10);
-        assert_eq!(weekday_monday0(days), 2);
-        assert_eq!(civil_from_days(days), (2026, 6, 10));
+        let days = CivilDate::from_ymd(2026, 6, 10);
+        assert_eq!(days.weekday_monday0(), 2);
+        assert_eq!(days.ymd(), (2026, 6, 10));
         // Leap-day round trip.
-        let leap = days_from_civil(2024, 2, 29);
-        assert_eq!(civil_from_days(leap), (2024, 2, 29));
+        let leap = CivilDate::from_ymd(2024, 2, 29);
+        assert_eq!(leap.ymd(), (2024, 2, 29));
+        // ISO parse and format round the same circle.
+        assert_eq!(
+            CivilDate::from_iso("2026-06-10").unwrap().to_iso(),
+            "2026-06-10"
+        );
+        assert!(CivilDate::from_iso("2026-02-29").is_none());
     }
 
     #[test]
