@@ -1,3 +1,16 @@
+rust-pwt (0.8.14) trixie; urgency=medium
+
+  * touch: stop an open dialog and unsaved input from being discarded when
+    the layout switches as the viewport crosses the breakpoint, for example
+    when a phone rotates:
+    - scaffold: keep the page body mounted across the switch between the
+      side navigation rail and the bottom navigation bar.
+    - adaptive dialog: hold the layout chosen when the dialog opened for its
+      lifetime instead of rebuilding it into the other shell, which had
+      remounted the form and wiped the entry.
+
+ -- Proxmox Support Team <support@proxmox.com>  Fri, 24 Jul 2026 14:05:59 +0200
+
 rust-pwt (0.8.13) trixie; urgency=medium
 
   * widget: add a Badge widget, a small rounded status label (badge / chip /
