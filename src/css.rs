@@ -232,10 +232,10 @@ pub enum UserSelect {
 impl From<UserSelect> for Classes {
     fn from(value: UserSelect) -> Self {
         match value {
-            UserSelect::Auto => "pwt-use-select-auto".into(),
-            UserSelect::None => "pwt-use-select-none".into(),
-            UserSelect::Text => "pwt-use-select-text".into(),
-            UserSelect::All => "pwt-use-select-all".into(),
+            UserSelect::Auto => "pwt-user-select-auto".into(),
+            UserSelect::None => "pwt-user-select-none".into(),
+            UserSelect::Text => "pwt-user-select-text".into(),
+            UserSelect::All => "pwt-user-select-all".into(),
         }
     }
 }
