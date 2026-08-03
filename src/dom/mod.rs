@@ -16,8 +16,30 @@ pub use dom_visibility_observer::DomVisibilityObserver;
 mod viewport_query;
 pub use viewport_query::ViewportQuery;
 
-use web_sys::Node;
+use wasm_bindgen::JsCast;
+use web_sys::{Event, KeyboardEvent, Node};
 use yew::prelude::*;
+
+/// Whether `event` can be read as a keyboard event without panicking.
+///
+/// Yew hands a listener its event through `unchecked_into`, so anything dispatched under a
+/// keyboard event type arrives typed as one. Reading a non-nullable member of it - `key`, `code` -
+/// then finds the property missing, and decoding `undefined` as a string panics, taking the whole
+/// wasm instance down with it. The page is dead until it is reloaded. Chrome's form autofill
+/// dispatches exactly such an event, and it was a login mask that found this.
+///
+/// Either it really is a keyboard event, or it at least carries a string `key` - which the
+/// synthetic events password managers and autofill dispatch usually do. An `instanceof` alone
+/// would reject those, and would also reject a genuine event constructed in another realm (an
+/// iframe, an extension content script), so the property is worth asking about rather than
+/// trusting the class alone.
+pub fn is_keyboard_event(event: &Event) -> bool {
+    event.is_instance_of::<KeyboardEvent>()
+        || js_sys::Reflect::get(event, &wasm_bindgen::JsValue::from_str("key"))
+            .ok()
+            .and_then(|value| value.as_string())
+            .is_some()
+}
 
 /// Write `text` to the system clipboard, returning whether the write succeeded.
 ///

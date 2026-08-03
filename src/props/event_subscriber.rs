@@ -59,6 +59,40 @@ macro_rules! handler {
         }
     };
 }
+/// Like [`handler!`], for the keyboard events, with the event checked before it is handed on.
+///
+/// Yew casts a listener's event with `unchecked_into`, so anything dispatched under a keyboard
+/// event type arrives typed as one. Reading a non-nullable member of it - `key`, `code` - then
+/// panics on the missing property and takes the whole wasm instance down. Chrome's form autofill
+/// dispatches such events, so this is not hypothetical: it cost a login mask.
+///
+/// Dropping the event here rather than defending inside each handler means a handler written
+/// later is safe without its author knowing any of this, and covers every member of the event
+/// rather than the one member someone remembered to guard.
+macro_rules! keyboard_handler {
+    ($id:ident, $add_id:ident) => {
+        /// Builder style method to set the callback
+        fn $id(mut self, cb: impl ::yew::html::IntoEventCallback<KeyboardEvent>) -> Self {
+            self.$add_id(cb);
+            self
+        }
+
+        /// Method to set the callback
+        fn $add_id(&mut self, cb: impl ::yew::html::IntoEventCallback<KeyboardEvent>) {
+            if let Some(cb) = cb.into_event_callback() {
+                let cb = ::yew::Callback::from(move |event: KeyboardEvent| {
+                    if $crate::dom::is_keyboard_event(&event) {
+                        cb.emit(event);
+                    }
+                });
+                let listener: ::std::rc::Rc<dyn ::yew::virtual_dom::Listener> =
+                    Rc::new(yew::html::$id::Wrapper::new(cb));
+                self.as_listeners_mut().listeners.push(Some(listener));
+            }
+        }
+    };
+}
+
 /// Defines builder methods on [ListenersWrapper].
 ///
 /// This trait defines builder method for all Html events.
@@ -84,9 +118,9 @@ pub trait EventSubscriber: Into<VNode> {
     handler!(onmouseover, add_onmouseover, MouseEvent);
     handler!(onmouseup, add_onmouseup, MouseEvent);
 
-    handler!(onkeydown, add_onkeydown, KeyboardEvent);
-    handler!(onkeyup, add_onkeyup, KeyboardEvent);
-    handler!(onkeypress, add_onkeypress, KeyboardEvent);
+    keyboard_handler!(onkeydown, add_onkeydown);
+    keyboard_handler!(onkeyup, add_onkeyup);
+    keyboard_handler!(onkeypress, add_onkeypress);
 
     handler!(oninput, add_oninput, InputEvent);
 
