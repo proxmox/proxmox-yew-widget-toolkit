@@ -356,7 +356,7 @@ impl<T: 'static> PwtHeaderWidget<T> {
                                 return;
                             }
                         }
-                        if sortable && event.key().as_str() == "Enter" {
+                        if sortable && crate::dom::event_key(&event).as_str() == "Enter" {
                             link.send_message(Msg::ColumnSortChange(
                                 cell_idx,
                                 event.ctrl_key(),
@@ -610,7 +610,7 @@ impl<T: 'static> Component for PwtHeaderWidget<T> {
             .onkeydown({
                 let link = ctx.link().clone();
                 move |event: KeyboardEvent| {
-                    match event.key().as_str() {
+                    match crate::dom::event_key(&event).as_str() {
                         "ArrowRight" => link.send_message(Msg::MoveCursor(true)),
                         "ArrowLeft" => link.send_message(Msg::MoveCursor(false)),
                         _ => return,

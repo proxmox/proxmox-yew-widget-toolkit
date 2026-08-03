@@ -114,14 +114,14 @@ impl<T: 'static> DataTableColumn<T> {
                 }
             })
             .on_header_keydown(|event: &mut DataTableHeaderKeyboardEvent<T>| {
-                if event.key() == " " {
+                if crate::dom::event_key(&event) == " " {
                     event.stop_propagation();
                     event.prevent_default();
                     event.send_toggle_select_all();
                 }
             })
             .on_cell_keydown(|event: &mut DataTableKeyboardEvent| {
-                if event.key() == " " {
+                if crate::dom::event_key(&event) == " " {
                     event.stop_propagation();
                     event.prevent_default();
                     if let Some(selection) = &event.selection {
@@ -359,7 +359,7 @@ impl<T: 'static> DataTableColumn<T> {
         let on_cell_keydown = self.on_cell_keydown.take();
         self.on_cell_keydown = Some(CallbackMut::from(
             move |event: &mut DataTableKeyboardEvent| {
-                if event.key() == " " {
+                if crate::dom::event_key(&event) == " " {
                     if let Some(store) = &store {
                         if let Some(mut node) = store.write().lookup_node_mut(&event.record_key) {
                             node.set_expanded(!node.expanded());

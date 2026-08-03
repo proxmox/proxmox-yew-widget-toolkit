@@ -647,7 +647,7 @@ impl<T: NumberTypeInfo> ManagedField for NumberField<T> {
         });
 
         let on_key_down = ctx.link().callback(|event: KeyboardEvent| {
-            let key = event.key();
+            let key = crate::dom::event_key(&event);
             match key.as_str() {
                 "ArrowUp" => {
                     event.prevent_default();

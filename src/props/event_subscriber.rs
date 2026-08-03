@@ -67,8 +67,8 @@ macro_rules! handler {
 /// dispatches such events, so this is not hypothetical: it cost a login mask.
 ///
 /// Dropping the event here rather than defending inside each handler means a handler written
-/// later is safe without its author knowing any of this, and covers every member of the event
-/// rather than the one member someone remembered to guard.
+/// later is safe without its author knowing any of this. [`crate::dom::event_key`] stays for the
+/// handlers this cannot reach - those an application registers through `html!` directly.
 macro_rules! keyboard_handler {
     ($id:ident, $add_id:ident) => {
         /// Builder style method to set the callback

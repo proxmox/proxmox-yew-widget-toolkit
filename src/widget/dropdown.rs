@@ -391,7 +391,7 @@ impl Component for PwtDropdown {
             let link = ctx.link().clone();
             let show = self.show;
             move |event: KeyboardEvent| {
-                match event.key().as_str() {
+                match crate::dom::event_key(&event).as_str() {
                     "Escape" => {
                         if !show {
                             return;
@@ -537,7 +537,7 @@ impl Component for PwtDropdown {
                     .attribute("id", self.picker_id.clone())
                     .attribute("data-show", data_show)
                     .onkeydown(ctx.link().batch_callback(|event: KeyboardEvent| {
-                        if event.key() == "Escape" {
+                        if crate::dom::event_key(&event) == "Escape" {
                             // handle escape ourselves since it's a non modal popover
                             event.prevent_default();
                             event.stop_propagation();

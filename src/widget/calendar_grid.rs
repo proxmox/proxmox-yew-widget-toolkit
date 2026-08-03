@@ -551,7 +551,7 @@ impl CalendarGrid {
                 // The labelled cell is the run's single keyboard control and tab stop.
                 let onkeydown = {
                     let on_click = on_click.clone();
-                    move |event: KeyboardEvent| match event.key().as_str() {
+                    move |event: KeyboardEvent| match crate::dom::event_key(&event).as_str() {
                         "Enter" | " " => {
                             event.prevent_default();
                             on_click.emit(click.clone());

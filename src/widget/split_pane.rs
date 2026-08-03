@@ -288,7 +288,7 @@ impl PwtSplitPane {
         let onkeydown = Callback::from({
             let link = ctx.link().clone();
             move |event: KeyboardEvent| {
-                let key: &str = &event.key();
+                let key: &str = &crate::dom::event_key(&event);
                 match key {
                     "Enter" => {
                         event.stop_propagation();

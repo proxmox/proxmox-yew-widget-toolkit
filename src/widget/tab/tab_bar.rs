@@ -450,7 +450,7 @@ impl Component for PwtTabBar {
                         let key = panel.key.clone();
                         let on_activate = panel.on_activate.clone();
                         move |event: KeyboardEvent| {
-                            if event.key() == " " {
+                            if crate::dom::event_key(&event) == " " {
                                 if let Some(on_activate) = &on_activate {
                                     on_activate.emit(());
                                 }
@@ -512,7 +512,7 @@ impl Component for PwtTabBar {
             .with_child(tabs)
             .with_optional_child(indicator)
             .onkeydown(move |event: KeyboardEvent| {
-                match event.code().as_str() {
+                match crate::dom::event_code(&event).as_str() {
                     "ArrowRight" => {
                         roving_tabindex_next(&tabs_ref, rtl, false);
                     }

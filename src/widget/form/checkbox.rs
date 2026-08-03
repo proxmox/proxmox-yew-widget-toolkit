@@ -278,7 +278,7 @@ impl ManagedField for CheckboxField {
         let onkeyup = Callback::from({
             let link = link.clone();
             move |event: KeyboardEvent| {
-                if event.key() == " " {
+                if crate::dom::event_key(&event) == " " {
                     link.send_message(Msg::Toggle);
                 }
             }

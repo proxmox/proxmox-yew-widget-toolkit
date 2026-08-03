@@ -355,7 +355,7 @@ impl DatePanelComp {
         grid.into()
     }
     fn handle_keydown(&mut self, ctx: &Context<Self>, e: KeyboardEvent) -> bool {
-        let key = e.key();
+        let key = crate::dom::event_key(&e);
 
         if key == "Enter" || key == " " {
             e.prevent_default();
@@ -591,7 +591,7 @@ impl Component for DatePanelComp {
 
         // We need to stop propagation of the keydown event
         let suppress_keydown = ctx.link().batch_callback(|e: KeyboardEvent| {
-            if e.key() == "Enter" || e.key() == " " {
+            if crate::dom::event_key(&e) == "Enter" || crate::dom::event_key(&e) == " " {
                 e.stop_propagation();
             }
             None
@@ -656,7 +656,7 @@ impl Component for DatePanelComp {
             .class("selected")
             .attribute("tabindex", "0")
             .onkeydown(ctx.link().batch_callback(move |e: KeyboardEvent| {
-                if e.key() == "Escape" && mode == ViewMode::Year {
+                if crate::dom::event_key(&e) == "Escape" && mode == ViewMode::Year {
                     e.stop_propagation();
                     e.prevent_default();
                     return Some(Msg::ToggleViewMode);

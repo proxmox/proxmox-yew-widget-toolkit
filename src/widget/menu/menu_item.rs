@@ -241,7 +241,7 @@ impl Component for PwtMenuItem {
             .with_optional_child(submenu)
             .onkeydown((!disabled).then_some({
                 let link = ctx.link().clone();
-                move |event: KeyboardEvent| match event.key().as_str() {
+                move |event: KeyboardEvent| match crate::dom::event_key(&event).as_str() {
                     "Enter" | " " => {
                         if !has_submenu {
                             event.stop_propagation();

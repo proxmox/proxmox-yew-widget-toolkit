@@ -88,7 +88,7 @@ impl IntoVTag for ListTile {
                 });
                 self.add_onkeydown({
                     let on_activate = on_activate.clone();
-                    move |event: KeyboardEvent| match event.key().as_str() {
+                    move |event: KeyboardEvent| match crate::dom::event_key(&event).as_str() {
                         "Enter" | " " => {
                             event.stop_propagation();
                             on_activate.emit(event.unchecked_into());

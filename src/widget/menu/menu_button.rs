@@ -275,7 +275,7 @@ impl Component for PwtMenuButton {
             .onkeydown({
                 let link = ctx.link().clone();
                 move |event: KeyboardEvent| {
-                    match event.key().as_str() {
+                    match crate::dom::event_key(&event).as_str() {
                         "Escape" => link.send_message(Msg::CloseMenu),
                         "ArrowDown" => link.send_message(Msg::ShowMenu),
                         _ => return,

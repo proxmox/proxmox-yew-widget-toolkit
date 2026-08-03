@@ -284,7 +284,7 @@ impl Component for PwtResizableHeader {
             .onkeydown({
                 let link = ctx.link().clone();
                 move |event: KeyboardEvent| {
-                    if event.key().as_str() == "ArrowDown" {
+                    if crate::dom::event_key(&event).as_str() == "ArrowDown" {
                         event.stop_propagation();
                         link.send_message(Msg::ShowPicker);
                     }

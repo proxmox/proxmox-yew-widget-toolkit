@@ -233,7 +233,7 @@ impl ManagedField for MenuCheckboxField {
         let onkeydown = Callback::from({
             let link = ctx.link().clone();
             move |event: KeyboardEvent| {
-                if event.key() == " " {
+                if crate::dom::event_key(&event) == " " {
                     link.send_message(Msg::Toggle);
                 }
             }

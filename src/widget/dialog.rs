@@ -216,7 +216,7 @@ impl Component for PwtDialog {
             }
             Msg::KeyDown(event) => {
                 // prevent autoclosing of modal windows that can't be closed
-                if event.key() == "Escape" && props.on_close.is_none() {
+                if crate::dom::event_key(&event) == "Escape" && props.on_close.is_none() {
                     event.stop_propagation();
                     event.prevent_default();
                 }

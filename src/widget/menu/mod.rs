@@ -680,7 +680,7 @@ impl Component for PwtMenu {
                         let link = ctx.link().clone();
                         move |event: KeyboardEvent| {
                             if menubar {
-                                match event.key().as_str() {
+                                match crate::dom::event_key(&event).as_str() {
                                     "ArrowRight" => link.send_message(Msg::Next),
                                     "ArrowLeft" => link.send_message(Msg::Previous),
                                     "Enter" | "ArrowDown" | " " => {
@@ -691,7 +691,7 @@ impl Component for PwtMenu {
                                     _ => return,
                                 }
                             } else {
-                                match event.key().as_str() {
+                                match crate::dom::event_key(&event).as_str() {
                                     "ArrowDown" => link.send_message(Msg::Next),
                                     "ArrowUp" => link.send_message(Msg::Previous),
                                     "Enter" | " " => {

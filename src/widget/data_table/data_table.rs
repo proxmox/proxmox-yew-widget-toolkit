@@ -1217,7 +1217,7 @@ impl<S: DataStore + 'static> Component for PwtDataTable<S> {
             }
             // Cursor handling
             Msg::KeyDown(event) => {
-                let key: &str = &event.key();
+                let key: &str = &crate::dom::event_key(&event);
                 let shift = event.shift_key();
                 let ctrl = event.ctrl_key();
 

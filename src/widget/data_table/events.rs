@@ -21,6 +21,14 @@ impl DataTableKeyboardEvent {
         self.selection.clone()
     }
 
+    /// The event's `key`, read defensively - see [`crate::dom::event_key`].
+    ///
+    /// Inherent, so it shadows the one reached through `Deref` rather than leaving each caller to
+    /// remember which of the two they got.
+    pub fn key(&self) -> String {
+        crate::dom::event_key(&self.inner)
+    }
+
     /// Stop Event propgagation
     pub fn stop_propagation(&mut self) {
         self.inner.stop_propagation();
@@ -73,6 +81,13 @@ pub struct DataTableHeaderKeyboardEvent<T: 'static> {
 }
 
 impl<T: 'static> DataTableHeaderKeyboardEvent<T> {
+    /// The event's `key`, read defensively - see [`crate::dom::event_key`].
+    ///
+    /// Inherent for the same reason as on [`DataTableKeyboardEvent`]: the raw getter is reachable
+    /// through `Deref` and panics on an event that carries no `key`.
+    pub fn key(&self) -> String {
+        crate::dom::event_key(&self.inner)
+    }
     /// Stop Event propgagation
     ///
     /// If set, the header widget ignores the event.

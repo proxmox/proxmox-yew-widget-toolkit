@@ -285,7 +285,7 @@ impl Component for PwtFabMenu {
                     .onkeydown({
                         let link = ctx.link().clone();
                         move |event: KeyboardEvent| {
-                            if event.key() == "Escape" {
+                            if crate::dom::event_key(&event) == "Escape" {
                                 link.send_message(Msg::Close)
                             }
                         }

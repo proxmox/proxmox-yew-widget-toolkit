@@ -204,7 +204,7 @@ impl PwtNavigationDrawer {
                     Some(key) => key,
                     None => return None,
                 };
-                match event.key().as_str() {
+                match crate::dom::event_key(&event).as_str() {
                     " " => Some(Msg::Select(Some(key.clone()), true, true)),
                     "ArrowRight" if is_menu => Some(Msg::MenuOpen(key.clone())),
                     "ArrowLeft" if is_menu => Some(Msg::MenuClose(key.clone())),
@@ -620,7 +620,7 @@ impl Component for PwtNavigationDrawer {
 
         let menu_ref = self.node_ref.clone();
         let onkeydown = Callback::from(move |event: KeyboardEvent| {
-            match event.key().as_str() {
+            match crate::dom::event_key(&event).as_str() {
                 "ArrowDown" => {
                     roving_tabindex_next_recursive(&menu_ref, false, false);
                 }

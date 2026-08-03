@@ -174,7 +174,7 @@ impl Component for PwtTooltip {
             .onkeydown(Callback::from({
                 let link = ctx.link().clone();
                 move |event: KeyboardEvent| {
-                    if show_tooltip && event.key() == "Escape" {
+                    if show_tooltip && crate::dom::event_key(&event) == "Escape" {
                         link.send_message(Msg::Hide);
                         event.prevent_default();
                     }

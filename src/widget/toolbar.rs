@@ -159,7 +159,7 @@ impl Component for PwtToolbar {
                 if focus_inside_input() {
                     return;
                 }
-                match event.key().as_str() {
+                match crate::dom::event_key(&event).as_str() {
                     "ArrowRight" => {
                         roving_tabindex_next(&inner_ref, rtl, true);
                     }
