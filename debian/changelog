@@ -1,3 +1,26 @@
+rust-pwt (0.8.15) trixie; urgency=medium
+
+  * props: stop a synthetic event from taking down the page when it reaches
+    a keyboard handler. Yew types every listener event as the one the
+    handler expects, so reading a member that such an event does not have
+    panicked and left the page dead until a reload. Autofilling the user
+    name on a login mask in Chrome triggered exactly that.
+
+  * dom: add public helpers to read the key and code members of an event
+    safely, for handlers that applications register through the html!
+    macro, which the check on the builder-registered listeners cannot
+    reach. The tab bar uses them for its keyup handler.
+
+  * widget: split pane: do not select text when dragging the divider, which
+    made resizing a master-detail layout read as selecting rows in the
+    master list rather than as moving the divider.
+
+  * css: fix the class names that the UserSelect variants map to; they
+    never matched the ones the stylesheet defines, so the property had no
+    effect at all.
+
+ -- Proxmox Support Team <support@proxmox.com>  Mon, 03 Aug 2026 23:02:01 +0200
+
 rust-pwt (0.8.14) trixie; urgency=medium
 
   * touch: stop an open dialog and unsaved input from being discarded when
