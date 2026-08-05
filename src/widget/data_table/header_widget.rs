@@ -488,6 +488,48 @@ impl<T: 'static> Component for PwtHeaderWidget<T> {
         }
     }
 
+    fn changed(&mut self, ctx: &Context<Self>, _old_props: &Self::Properties) -> bool {
+        let props = ctx.props();
+        // The state indexes cells by the column list it was built from; a parent swapping in a
+        // different column set (a conditional column appearing on a mounted table) would
+        // otherwise index the new cells against the mount-time list - out of bounds on growth,
+        // silently wrong on shrink. The change signal is the column SHAPE (the ordered column
+        // names), never Rc or structural identity: callers routinely rebuild their header
+        // vectors inside view(), whose closures compare unequal every render, and resetting on
+        // that would wipe the user's sort and dragged widths on every ordinary re-render.
+        let shape_changed = {
+            let mut new_columns = Vec::new();
+            for header in props.headers.iter() {
+                header.extract_column_list(&mut new_columns);
+            }
+            let old = self.state.columns();
+            old.len() != new_columns.len()
+                || old
+                    .iter()
+                    .zip(new_columns.iter())
+                    .any(|(a, b)| a.column.name != b.column.name)
+        };
+        if shape_changed {
+            self.state = HeaderState::new(Rc::clone(&props.headers));
+            let sorter = self.state.create_combined_sorter_fn();
+            props.on_message.emit(HeaderMsg::ChangeSort(sorter));
+            self.observed_widths = self
+                .state
+                .columns()
+                .iter()
+                .enumerate()
+                .map(|(col_idx, _)| {
+                    if self.state.get_column_hidden(col_idx) {
+                        Some(0.0)
+                    } else {
+                        None
+                    }
+                })
+                .collect();
+        }
+        true
+    }
+
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
         let props = ctx.props();
         match msg {
