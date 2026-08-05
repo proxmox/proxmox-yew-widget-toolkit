@@ -1,3 +1,15 @@
+rust-pwt (0.8.16) trixie; urgency=medium
+
+  * data table: rebuild the header's interactive state when the column set
+    changes. The header built its state once at mount, so a column that
+    appeared or disappeared on a mounted table indexed the new cells
+    against the old column list and crashed the page when the list grew.
+    The rebuild compares the ordered column names, so an ordinary
+    re-render with unchanged columns still keeps the user's sort order and
+    column widths.
+
+ -- Proxmox Support Team <support@proxmox.com>  Wed, 05 Aug 2026 17:57:44 +0200
+
 rust-pwt (0.8.15) trixie; urgency=medium
 
   * props: stop a synthetic event from taking down the page when it reaches
