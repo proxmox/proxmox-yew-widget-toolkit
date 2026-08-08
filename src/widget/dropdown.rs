@@ -574,7 +574,6 @@ impl Component for PwtDropdown {
     fn rendered(&mut self, ctx: &Context<Self>, first_render: bool) {
         if first_render {
             let props = ctx.props();
-            self.update_picker_placer(props);
 
             if props.input_props.autofocus {
                 if let Some(el) = self.input_ref.cast::<web_sys::HtmlElement>() {
@@ -658,6 +657,11 @@ impl Component for PwtDropdown {
                 } else {
                     crate::hide_popover(popover_node);
                     self.dismiss_listeners.clear();
+                    // The placer lives only while the picker shows: aligning a
+                    // hidden picker is wasted work, and its size observer would
+                    // keep realigning it on every layout change. Opening
+                    // creates a fresh one above.
+                    self.picker_placer = None;
                 }
             }
         }
