@@ -96,6 +96,12 @@ pub struct AdaptiveScaffold {
     #[prop_or_default]
     pub rail_expanded_query: Option<AttrValue>,
 
+    /// Let users switch the rail between its collapsed and expanded
+    /// layout (rail layout only, see [NavigationRail::expand_button]).
+    #[builder]
+    #[prop_or_default]
+    pub rail_expand_button: bool,
+
     /// Selection forwarded to the active navigator.
     #[builder(IntoPropValue, into_prop_value)]
     #[prop_or_default]
@@ -188,7 +194,8 @@ impl PwtAdaptiveScaffold {
         if let Some(on_select) = &props.on_select {
             rail = rail.on_select(on_select.clone());
         }
-        rail.router(props.router)
+        rail.expand_button(props.rail_expand_button)
+            .router(props.router)
     }
 
     fn build_bar(props: &AdaptiveScaffold) -> NavigationBar {

@@ -10,7 +10,8 @@ use crate::dom::ViewportQuery;
 use crate::prelude::*;
 use crate::props::{ContainerBuilder, EventSubscriber, WidgetBuilder};
 use crate::state::{NavigationContext, NavigationContextExt, Selection};
-use crate::widget::Container;
+use crate::tr;
+use crate::widget::{ActionIcon, Container};
 
 use crate::widget::TabBarItem;
 
@@ -19,6 +20,12 @@ use pwt_macros::builder;
 /// Default media query selecting the expanded layout. Mirrors Material Design's large breakpoint,
 /// where the expanded navigation rail is the recommended navigator.
 const DEFAULT_EXPANDED_QUERY: &str = "(min-width: 1200px)";
+
+/// Icon of the expand button in the collapsed layout, Material Design's menu icon.
+const EXPAND_ICON: &str = "fa fa-bars";
+
+/// Icon of the expand button in the expanded layout, Material Design's menu-open icon.
+const COLLAPSE_ICON: &str = "fa fa-outdent";
 
 /// Navigation rail
 ///
@@ -30,8 +37,9 @@ const DEFAULT_EXPANDED_QUERY: &str = "(min-width: 1200px)";
 ///
 /// # Collapsed and expanded layout.
 ///
-/// The [expanded](Self::expanded) property selects the fixed layout. Enable
+/// The [expanded](Self::expanded) property selects the property-driven layout. Enable
 /// [auto_expand](Self::auto_expand) to follow [expanded_query](Self::expanded_query) instead.
+/// Setting [expand_button](Self::expand_button) lets users override the current layout.
 
 // Note: This is similar to TabBar, but uses link semantics for primary navigation.
 #[derive(Properties, Clone, PartialEq)]
@@ -54,13 +62,14 @@ pub struct NavigationRail {
     #[prop_or(JustifyContent::Center)]
     pub group_alignment: JustifyContent,
 
-    /// Render the expanded layout with icon and label side by side.
+    /// Select the expanded layout while [`auto_expand`](Self::auto_expand) is disabled. A manual
+    /// toggle stays in effect until this property changes.
     #[builder]
     #[prop_or_default]
     pub expanded: bool,
 
     /// Select the expanded layout through [`expanded_query`](Self::expanded_query) instead of the
-    /// fixed [`expanded`](Self::expanded) property.
+    /// [`expanded`](Self::expanded) property.
     #[builder]
     #[prop_or_default]
     pub auto_expand: bool,
@@ -70,6 +79,22 @@ pub struct NavigationRail {
     #[builder(IntoPropValue, into_prop_value)]
     #[prop_or(AttrValue::Static(DEFAULT_EXPANDED_QUERY))]
     pub expanded_query: AttrValue,
+
+    /// Show a button at the top of the rail that toggles between the collapsed and the expanded
+    /// layout.
+    ///
+    /// A manual toggle stays in effect until the active layout source changes: a viewport crossing
+    /// [`expanded_query`](Self::expanded_query) in automatic mode, or an
+    /// [`expanded`](Self::expanded) property change otherwise.
+    #[builder]
+    #[prop_or_default]
+    pub expand_button: bool,
+
+    /// Callback emitted whenever the layout switches between collapsed and expanded, with `true`
+    /// meaning expanded.
+    #[builder_cb(IntoEventCallback, into_event_callback, bool)]
+    #[prop_or_default]
+    pub on_expand_change: Option<Callback<bool>>,
 
     /// Navigation bar items.
     items: Vec<TabBarItem>,
@@ -161,6 +186,7 @@ pub enum Msg {
     Select(Option<Key>, bool),
     SelectionChange(Selection),
     ExpandedQueryChange(bool),
+    ToggleExpanded,
 }
 
 #[doc(hidden)]
@@ -217,11 +243,16 @@ impl PwtNavigationRail {
         )
     }
 
-    fn set_expanded(&mut self, expanded: bool) -> bool {
+    fn set_expanded(&mut self, props: &NavigationRail, expanded: bool) -> bool {
         if self.expanded == expanded {
             return false;
         }
         self.expanded = expanded;
+
+        if let Some(on_expand_change) = &props.on_expand_change {
+            on_expand_change.emit(expanded);
+        }
+
         true
     }
 }
@@ -335,11 +366,12 @@ impl Component for PwtNavigationRail {
             Msg::ExpandedQueryChange(matches) => {
                 self.query_matches = matches;
                 if props.auto_expand {
-                    self.set_expanded(matches)
+                    self.set_expanded(props, matches)
                 } else {
                     false
                 }
             }
+            Msg::ToggleExpanded => self.set_expanded(props, !self.expanded),
         }
     }
 
@@ -353,15 +385,16 @@ impl Component for PwtNavigationRail {
         if query_changed || auto_expand_changed {
             (self.query_matches, self.expanded_query) = Self::subscribe_expanded_query(ctx, props);
         }
-        if query_changed
-            || auto_expand_changed
+        if auto_expand_changed
+            || (props.auto_expand && query_changed)
             || (!props.auto_expand && props.expanded != old_props.expanded)
         {
-            self.set_expanded(if props.auto_expand {
+            let expanded = if props.auto_expand {
                 self.query_matches
             } else {
                 props.expanded
-            });
+            };
+            self.set_expanded(props, expanded);
         }
         true
     }
@@ -453,6 +486,24 @@ impl Component for PwtNavigationRail {
                 .into()
         });
 
+        let expand_button = props.expand_button.then(|| {
+            let (icon_class, aria_label) = match self.expanded {
+                true => (COLLAPSE_ICON, tr!("Collapse the navigation rail")),
+                false => (EXPAND_ICON, tr!("Expand the navigation rail")),
+            };
+
+            // the container gives the button the same icon column as the items, so both line up
+            Container::new()
+                .class("pwt-navigation-rail-expand-button")
+                .with_child(
+                    ActionIcon::new(icon_class)
+                        .tabindex(0)
+                        .aria_label(aria_label)
+                        .attribute("aria-expanded", self.expanded.to_string())
+                        .on_activate(ctx.link().callback(|_| Msg::ToggleExpanded)),
+                )
+        });
+
         Container::from_tag("nav")
             .attribute(
                 "aria-label",
@@ -463,6 +514,7 @@ impl Component for PwtNavigationRail {
             )
             .class("pwt-navigation-rail")
             .class(self.expanded.then_some("pwt-navigation-rail-expanded"))
+            .with_optional_child(expand_button)
             .with_optional_child(props.leading.clone())
             .with_child(
                 Container::new()
