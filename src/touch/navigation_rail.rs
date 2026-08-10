@@ -6,6 +6,7 @@ use yew::prelude::*;
 use yew::virtual_dom::{Key, VComp, VNode};
 
 use crate::css::JustifyContent;
+use crate::dom::ViewportQuery;
 use crate::prelude::*;
 use crate::props::{ContainerBuilder, EventSubscriber, WidgetBuilder};
 use crate::state::{NavigationContext, NavigationContextExt, Selection};
@@ -15,6 +16,10 @@ use crate::widget::TabBarItem;
 
 use pwt_macros::builder;
 
+/// Default media query selecting the expanded layout. Mirrors Material Design's large breakpoint,
+/// where the expanded navigation rail is the recommended navigator.
+const DEFAULT_EXPANDED_QUERY: &str = "(min-width: 1200px)";
+
 /// Navigation rail
 ///
 /// # Automatic routing.
@@ -22,6 +27,11 @@ use pwt_macros::builder;
 /// [NavigationRail] supports fully automatic routing if you put the rail inside
 /// a [NavigationContainer](crate::state::NavigationContainer) and
 /// set the router flag.
+///
+/// # Collapsed and expanded layout.
+///
+/// The [expanded](Self::expanded) property selects the fixed layout. Enable
+/// [auto_expand](Self::auto_expand) to follow [expanded_query](Self::expanded_query) instead.
 
 // Note: This is similar to TabBar, but uses link semantics for primary navigation.
 #[derive(Properties, Clone, PartialEq)]
@@ -44,11 +54,22 @@ pub struct NavigationRail {
     #[prop_or(JustifyContent::Center)]
     pub group_alignment: JustifyContent,
 
-    /// Render the expanded (wide) rail variant with icon and label side by side, matching
-    /// Material Design's expanded navigation rail for large viewports.
+    /// Render the expanded layout with icon and label side by side.
     #[builder]
     #[prop_or_default]
     pub expanded: bool,
+
+    /// Select the expanded layout through [`expanded_query`](Self::expanded_query) instead of the
+    /// fixed [`expanded`](Self::expanded) property.
+    #[builder]
+    #[prop_or_default]
+    pub auto_expand: bool,
+
+    /// CSS media query that selects the expanded (wide) variant. Defaults to
+    /// `(min-width: 1200px)`, Material Design's large breakpoint.
+    #[builder(IntoPropValue, into_prop_value)]
+    #[prop_or(AttrValue::Static(DEFAULT_EXPANDED_QUERY))]
+    pub expanded_query: AttrValue,
 
     /// Navigation bar items.
     items: Vec<TabBarItem>,
@@ -139,12 +160,17 @@ impl NavigationRail {
 pub enum Msg {
     Select(Option<Key>, bool),
     SelectionChange(Selection),
+    ExpandedQueryChange(bool),
 }
 
 #[doc(hidden)]
 pub struct PwtNavigationRail {
     active: Option<Key>,
     selection: Selection,
+    expanded: bool,
+    /// Last known match state of `expanded_query`.
+    query_matches: bool,
+    expanded_query: Option<ViewportQuery>,
     _nav_ctx_handle: Option<ContextHandle<NavigationContext>>,
 }
 
@@ -176,6 +202,27 @@ impl PwtNavigationRail {
         }
 
         selection
+    }
+
+    fn subscribe_expanded_query(
+        ctx: &Context<Self>,
+        props: &NavigationRail,
+    ) -> (bool, Option<ViewportQuery>) {
+        if !props.auto_expand {
+            return (false, None);
+        }
+        ViewportQuery::subscribe(
+            props.expanded_query.as_str(),
+            ctx.link().callback(Msg::ExpandedQueryChange),
+        )
+    }
+
+    fn set_expanded(&mut self, expanded: bool) -> bool {
+        if self.expanded == expanded {
+            return false;
+        }
+        self.expanded = expanded;
+        true
     }
 }
 
@@ -215,9 +262,18 @@ impl Component for PwtNavigationRail {
             on_select.emit(active.clone());
         }
 
+        let (query_matches, expanded_query) = Self::subscribe_expanded_query(ctx, props);
+
         Self {
             selection,
             active,
+            expanded: if props.auto_expand {
+                query_matches
+            } else {
+                props.expanded
+            },
+            query_matches,
+            expanded_query,
             _nav_ctx_handle,
         }
     }
@@ -276,6 +332,14 @@ impl Component for PwtNavigationRail {
 
                 true
             }
+            Msg::ExpandedQueryChange(matches) => {
+                self.query_matches = matches;
+                if props.auto_expand {
+                    self.set_expanded(matches)
+                } else {
+                    false
+                }
+            }
         }
     }
 
@@ -283,6 +347,21 @@ impl Component for PwtNavigationRail {
         let props = ctx.props();
         if props.selection != old_props.selection {
             self.selection = Self::init_selection(ctx, props.selection.clone(), &self.active);
+        }
+        let query_changed = props.expanded_query != old_props.expanded_query;
+        let auto_expand_changed = props.auto_expand != old_props.auto_expand;
+        if query_changed || auto_expand_changed {
+            (self.query_matches, self.expanded_query) = Self::subscribe_expanded_query(ctx, props);
+        }
+        if query_changed
+            || auto_expand_changed
+            || (!props.auto_expand && props.expanded != old_props.expanded)
+        {
+            self.set_expanded(if props.auto_expand {
+                self.query_matches
+            } else {
+                props.expanded
+            });
         }
         true
     }
@@ -321,7 +400,7 @@ impl Component for PwtNavigationRail {
                     );
                     // the collapsed rail anchors the badge to the icon corner, the expanded
                     // variant places it after the label instead
-                    let corner_badge = if props.expanded { None } else { badge.take() };
+                    let corner_badge = if self.expanded { None } else { badge.take() };
                     Some(html! {<div {class}><i role="none" class={icon_class}/>{corner_badge}</div>})
                 }
                 None => None,
@@ -383,7 +462,7 @@ impl Component for PwtNavigationRail {
                     .unwrap_or_else(|| tr!("Main Navigation").into()),
             )
             .class("pwt-navigation-rail")
-            .class(props.expanded.then_some("pwt-navigation-rail-expanded"))
+            .class(self.expanded.then_some("pwt-navigation-rail-expanded"))
             .with_optional_child(props.leading.clone())
             .with_child(
                 Container::new()

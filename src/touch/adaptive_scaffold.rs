@@ -18,17 +18,11 @@ use super::{NavigationBar, NavigationRail, Scaffold};
 /// matches the value PMG, PVE and PBS dashboards use to decide between rail and bar layouts.
 const DEFAULT_WIDE_QUERY: &str = "(min-width: 768px)";
 
-/// Default media query selecting the large layout. Mirrors Material Design's large breakpoint,
-/// where the expanded navigation rail is the recommended navigator.
-const DEFAULT_LARGE_QUERY: &str = "(min-width: 1200px)";
-
 /// Material-style scaffold that adapts its primary navigator to the viewport width.
 ///
-/// Below the configured wide viewport breakpoint a [Scaffold] with a bottom [NavigationBar] is
-/// rendered (the touch-first layout used on phones and narrow windows). Above it the layout
-/// becomes a [NavigationRail] anchored to the inline-start side, with the application bar and body
-/// to its right. Above the additional large breakpoint the rail switches to its expanded variant,
-/// which places icon and label side by side and widens each item into a full-width pill.
+/// The wide viewport query selects a [NavigationRail] anchored to the inline-start side; otherwise
+/// the [Scaffold] uses a bottom [NavigationBar]. In the rail layout, the expanded query selects the
+/// rail's wide variant.
 ///
 /// Both navigators are populated from the same [TabBarItem] list and share the same selection /
 /// router wiring, so a single declaration drives both layouts. The active layout swaps at runtime
@@ -96,12 +90,11 @@ pub struct AdaptiveScaffold {
     #[prop_or(AttrValue::Static(DEFAULT_WIDE_QUERY))]
     pub wide_query: AttrValue,
 
-    /// CSS media query that selects the large layout, which renders
-    /// the [NavigationRail] in its expanded (wide) variant. Defaults
-    /// to `(min-width: 1200px)`.
+    /// CSS media query that selects the expanded rail layout. Unset uses the
+    /// [NavigationRail] default.
     #[builder(IntoPropValue, into_prop_value)]
-    #[prop_or(AttrValue::Static(DEFAULT_LARGE_QUERY))]
-    pub large_query: AttrValue,
+    #[prop_or_default]
+    pub rail_expanded_query: Option<AttrValue>,
 
     /// Selection forwarded to the active navigator.
     #[builder(IntoPropValue, into_prop_value)]
@@ -169,22 +162,22 @@ impl AdaptiveScaffold {
 #[doc(hidden)]
 pub enum Msg {
     WideChanged(bool),
-    LargeChanged(bool),
 }
 
 #[doc(hidden)]
 pub struct PwtAdaptiveScaffold {
     is_wide: bool,
-    is_large: bool,
     wide_query: Option<ViewportQuery>,
-    large_query: Option<ViewportQuery>,
 }
 
 impl PwtAdaptiveScaffold {
     fn build_rail(props: &AdaptiveScaffold) -> NavigationRail {
-        let mut rail = NavigationRail::new(props.items.clone());
+        let mut rail = NavigationRail::new(props.items.clone()).auto_expand(true);
         if let Some(leading) = &props.rail_leading {
             rail = rail.leading(leading.clone());
+        }
+        if let Some(expanded_query) = &props.rail_expanded_query {
+            rail = rail.expanded_query(expanded_query.clone());
         }
         if let Some(default_active) = &props.default_active {
             rail = rail.default_active(default_active.clone());
@@ -222,16 +215,10 @@ impl Component for PwtAdaptiveScaffold {
             ctx.props().wide_query.as_str(),
             ctx.link().callback(Msg::WideChanged),
         );
-        let (is_large, large_query) = ViewportQuery::subscribe(
-            ctx.props().large_query.as_str(),
-            ctx.link().callback(Msg::LargeChanged),
-        );
 
         Self {
             is_wide,
-            is_large,
             wide_query,
-            large_query,
         }
     }
 
@@ -244,13 +231,6 @@ impl Component for PwtAdaptiveScaffold {
                 self.is_wide = matches;
                 true
             }
-            Msg::LargeChanged(matches) => {
-                if self.is_large == matches {
-                    return false;
-                }
-                self.is_large = matches;
-                true
-            }
         }
     }
 
@@ -259,12 +239,6 @@ impl Component for PwtAdaptiveScaffold {
             (self.is_wide, self.wide_query) = ViewportQuery::subscribe(
                 ctx.props().wide_query.as_str(),
                 ctx.link().callback(Msg::WideChanged),
-            );
-        }
-        if ctx.props().large_query != old_props.large_query {
-            (self.is_large, self.large_query) = ViewportQuery::subscribe(
-                ctx.props().large_query.as_str(),
-                ctx.link().callback(Msg::LargeChanged),
             );
         }
         true
@@ -284,10 +258,8 @@ impl Component for PwtAdaptiveScaffold {
             scaffold = scaffold.favorite_action_button(fab.clone());
         }
 
-        // Only the navigator slot differs; the rail versus bar switch lives in Scaffold itself.
-        // A matching large query implies the rail layout even if the wide query is disjoint.
-        scaffold = if self.is_wide || self.is_large {
-            scaffold.navigation_rail(Self::build_rail(props).expanded(self.is_large))
+        scaffold = if self.is_wide {
+            scaffold.navigation_rail(Self::build_rail(props))
         } else {
             scaffold.navigation_bar(Self::build_bar(props))
         };
