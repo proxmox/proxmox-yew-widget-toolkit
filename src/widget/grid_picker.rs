@@ -11,7 +11,7 @@ use yew::virtual_dom::{Key, VComp, VNode};
 use crate::css::{Display, FlexDirection};
 use crate::props::{FilterFn, IntoTextFilterFn, TextFilterFn};
 use crate::state::{DataStore, Selection};
-use crate::widget::data_table::DataTable;
+use crate::widget::data_table::{DataTable, DataTableKeyboardEvent, DataTableMouseEvent};
 use crate::widget::{Container, Input, Row};
 use crate::{impl_yew_std_props_builder, prelude::*};
 
@@ -44,6 +44,9 @@ pub struct GridPicker<S: DataStore> {
     pub selection: Option<Selection>,
 
     /// Select callback.
+    ///
+    /// Called when the user picks an entry by clicking on it, or by
+    /// pressing Enter or Space with the table cursor on it.
     #[builder_cb(IntoEventCallback, into_event_callback, Key)]
     #[prop_or_default]
     pub on_select: Option<Callback<Key>>,
@@ -143,19 +146,7 @@ impl<S: DataStore + 'static> Component for PwtGridPicker<S> {
 
     fn create(ctx: &Context<Self>) -> Self {
         let props = ctx.props();
-        let on_select = props.on_select.clone();
-        let selection =
-            props
-                .selection
-                .clone()
-                .unwrap_or_default()
-                .on_select(move |s: Selection| {
-                    if let Some(key) = s.selected_key() {
-                        if let Some(on_select) = &on_select {
-                            on_select.emit(key);
-                        }
-                    }
-                });
+        let selection = props.selection.clone().unwrap_or_default();
 
         let mut me = Self {
             _phantom: PhantomData::<S>,
@@ -182,6 +173,10 @@ impl<S: DataStore + 'static> Component for PwtGridPicker<S> {
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
 
+        // Report picks from direct table interaction. The shared Selection object is no
+        // substitute: the owning field may update it programmatically (mirroring typed input),
+        // and it stays silent when the user activates the already-selected entry.
+        let on_select = props.on_select.clone();
         let table: Html = props
             .table
             .clone()
@@ -191,6 +186,22 @@ impl<S: DataStore + 'static> Component for PwtGridPicker<S> {
             .hover(true)
             .header_focusable(false)
             .selection(self.selection.clone())
+            .on_row_click({
+                let on_select = on_select.clone();
+                move |event: &mut DataTableMouseEvent| {
+                    if let Some(on_select) = &on_select {
+                        on_select.emit(event.record_key.clone());
+                    }
+                }
+            })
+            .on_row_keydown(move |event: &mut DataTableKeyboardEvent| {
+                if !matches!(event.key().as_str(), "Enter" | " ") {
+                    return;
+                }
+                if let Some(on_select) = &on_select {
+                    on_select.emit(event.record_key.clone());
+                }
+            })
             .into();
 
         let mut view = Container::new()

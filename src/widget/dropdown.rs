@@ -39,6 +39,8 @@ pub struct DropdownController {
 
 impl DropdownController {
     /// Change the [Dropdown] input element value.
+    ///
+    /// If the picker is currently shown, it is closed.
     pub fn change_value(&self, value: String) {
         self.link.send_message(Msg::ChangeValue(value));
     }
@@ -158,7 +160,6 @@ pub struct PwtDropdown {
     // fire on_change() event delayed, after the popover is closed, so that
     // other widget can grep the focus after a change (if the want)
     pending_change: bool,
-    change_from_input: bool,
     focus_on_field: bool,
 
     input_ref: NodeRef,
@@ -243,7 +244,6 @@ impl Component for PwtDropdown {
             pending_change: false,
             value: ctx.props().value.clone().unwrap_or_default(),
             focus_on_field: false,
-            change_from_input: false,
             input_ref: NodeRef::default(),
             picker_ref: NodeRef::default(),
             dropdown_ref: NodeRef::default(),
@@ -307,12 +307,7 @@ impl Component for PwtDropdown {
                 self.value = value;
                 if self.show {
                     self.pending_change = true;
-                    if !self.change_from_input {
-                        yew::Component::update(self, ctx, Msg::HidePicker)
-                    } else {
-                        self.change_from_input = false;
-                        true
-                    }
+                    yew::Component::update(self, ctx, Msg::HidePicker)
                 } else {
                     //log::info!("ChangeValue {} {}", key, value);
                     if let Some(on_change) = &ctx.props().on_change {
@@ -326,9 +321,6 @@ impl Component for PwtDropdown {
                 //log::info!("Input {}", value);
                 if props.editable {
                     self.value = value;
-                    if self.show {
-                        self.change_from_input = true;
-                    }
                     if let Some(on_change) = &ctx.props().on_change {
                         on_change.emit(self.value.clone());
                     }
