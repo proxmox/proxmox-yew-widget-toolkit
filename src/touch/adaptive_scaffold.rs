@@ -6,6 +6,7 @@ use yew::virtual_dom::{Key, VComp, VNode};
 
 use pwt_macros::builder;
 
+use crate::css::JustifyContent;
 use crate::dom::ViewportQuery;
 use crate::prelude::*;
 use crate::props::IntoOptionalKey;
@@ -102,6 +103,12 @@ pub struct AdaptiveScaffold {
     #[prop_or_default]
     pub rail_expand_button: bool,
 
+    /// Determines the navigation group alignment (rail layout only, see
+    /// [NavigationRail::group_alignment]).
+    #[builder(IntoPropValue, into_prop_value)]
+    #[prop_or_default]
+    pub rail_group_alignment: Option<JustifyContent>,
+
     /// Selection forwarded to the active navigator.
     #[builder(IntoPropValue, into_prop_value)]
     #[prop_or_default]
@@ -184,6 +191,9 @@ impl PwtAdaptiveScaffold {
         }
         if let Some(expanded_query) = &props.rail_expanded_query {
             rail = rail.expanded_query(expanded_query.clone());
+        }
+        if let Some(group_alignment) = &props.rail_group_alignment {
+            rail = rail.group_alignment(*group_alignment);
         }
         if let Some(default_active) = &props.default_active {
             rail = rail.default_active(default_active.clone());

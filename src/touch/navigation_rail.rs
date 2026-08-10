@@ -58,6 +58,7 @@ pub struct NavigationRail {
     #[prop_or_default]
     pub aria_label: Option<AttrValue>,
 
+    /// Determines the alignment of the navigation group.
     #[builder]
     #[prop_or(JustifyContent::Center)]
     pub group_alignment: JustifyContent,
