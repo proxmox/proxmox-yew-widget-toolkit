@@ -330,6 +330,15 @@ pub struct CalendarGrid {
     #[prop_or_default]
     pub week_start: WeekStart,
 
+    /// Drop Saturday and Sunday, leaving a five-column week of working days. The grid then emits
+    /// `pwt-calendar-hide-weekends` on its root, the stable name a theme narrows the grid template
+    /// by. The date window is unchanged (see [`visible_range`](Self::visible_range)), the weekend
+    /// days simply get no cell; a span bar covering them fuses across the gap, so a run from Friday
+    /// to Monday reads as one continuous bar. Off by default.
+    #[builder]
+    #[prop_or_default]
+    pub hide_weekends: bool,
+
     /// The application's current civil date (`YYYY-MM-DD`); that cell gets
     /// `pwt-calendar-day-today`.
     #[builder(IntoPropValue, into_prop_value)]
@@ -623,6 +632,9 @@ impl CalendarGrid {
     /// First and last visible date (inclusive) for a view around an anchor,
     /// for fetching data covering exactly the rendered window. `None` when
     /// the anchor is not a valid ISO date.
+    ///
+    /// [`hide_weekends`](Self::hide_weekends) does not narrow this: the window still spans whole
+    /// weeks, the weekend days just get no cell.
     pub fn visible_range(
         view: CalendarGridView,
         anchor: &str,
@@ -630,6 +642,12 @@ impl CalendarGrid {
     ) -> Option<(String, String)> {
         let (start, count) = window(view, anchor, week_start)?;
         Some((start.to_iso(), start.add_days(count - 1).to_iso()))
+    }
+
+    /// Day columns per week row: five working days once the weekend is hidden, seven otherwise.
+    /// Every row is complete, since a window always spans whole weeks.
+    fn columns(&self) -> usize {
+        if self.hide_weekends { 5 } else { 7 }
     }
 
     /// The visible day cells in render order, with all per-day flags resolved. Computed once per
@@ -657,6 +675,9 @@ impl CalendarGrid {
                     date: iso,
                 }
             })
+            // A window spans whole weeks, so dropping the weekend leaves every row with the same
+            // five working days - the fixed row width the render loop and the lane pre-pass need.
+            .filter(|day| !(self.hide_weekends && day.is_weekend))
             .collect()
     }
 }
@@ -782,24 +803,30 @@ fn weekday_label(weekday_monday0: u32) -> String {
     }
 }
 
-/// The geometry of `bar` on the cell for `date` at column `col` (0..6) within its week row, or
-/// `None` when the bar does not cover the day. ISO dates compare lexically, so no date arithmetic
-/// is needed.
+/// The geometry of `bar` on the cell for `date`, given the days of the cells left and right of it
+/// within the same week row (`None` at a row edge), or `None` when the bar does not cover the day.
+/// ISO dates compare lexically, so no date arithmetic is needed.
+///
+/// Taking the neighbouring days rather than a column index keeps the edges right when a hidden
+/// weekend makes a row's cells non-contiguous: a bar fuses with the cell actually drawn next to it,
+/// so a Friday-to-Monday run reads as one bar there just as it does across a shown weekend.
 fn span_segment(
     bar: &CalendarSpanBar,
     date: &str,
-    col: u32,
+    prev: Option<&str>,
+    next: Option<&str>,
     show_start_marker: bool,
 ) -> Option<CalendarSpanSegment> {
-    if date < bar.start.as_str() || date > bar.end.as_str() {
+    let is_covered = |day: &str| bar.start.as_str() <= day && day <= bar.end.as_str();
+    if !is_covered(date) {
         return None;
     }
     let is_start = date == bar.start;
     let is_end = date == bar.end;
-    // A cell joins its left/right neighbour only mid-span and away from a week-row edge; the row
-    // break at col 0 / col 6 squares the edge even when the span continues into the next row.
-    let continues_left = !is_start && col != 0;
-    let continues_right = !is_end && col != 6;
+    // A cell joins a neighbour only where that neighbour is a covered cell of the same row; the row
+    // break squares the edge even when the span continues into the next row.
+    let continues_left = prev.is_some_and(is_covered);
+    let continues_right = next.is_some_and(is_covered);
     // Leftmost cell of the bar in this row but not the true start (a row-break continuation): the
     // start marker stays off so the segment reads as carried over from the previous row.
     let row_continues_from_prev = !is_start && !continues_left;
@@ -952,7 +979,7 @@ fn day_activation_controls(
                 None => AttrValue::from(day.date.clone()),
             },
             tab_stop: index == tab_stop,
-            stride: 7,
+            stride: grid.columns(),
         })
         .collect()
 }
@@ -966,7 +993,7 @@ fn gutter_activation_controls(
         return Vec::new();
     }
     days.iter()
-        .step_by(7)
+        .step_by(grid.columns())
         .enumerate()
         .map(|(index, day)| ActivationControl {
             class: GUTTER_ACTIVATE_CLASS,
@@ -974,7 +1001,7 @@ fn gutter_activation_controls(
                 Some(render) => render.apply(day),
                 None => AttrValue::from(day.date.clone()),
             },
-            tab_stop: index == day_tab_stop / 7,
+            tab_stop: index == day_tab_stop / grid.columns(),
             stride: 1,
         })
         .collect()
@@ -1073,10 +1100,14 @@ impl crate::props::IntoVTag for CalendarGrid {
             );
         }
         for i in 0..7u32 {
+            let weekday = (header_start + i) % 7;
+            if self.hide_weekends && weekday >= 5 {
+                continue;
+            }
             header_row = header_row.with_child(
                 Container::from_tag("div")
                     .class("pwt-calendar-weekday")
-                    .with_child(html! { { weekday_label((header_start + i) % 7) } }),
+                    .with_child(html! { { weekday_label(weekday) } }),
             );
         }
         let header: Html = header_row.into();
@@ -1084,6 +1115,7 @@ impl crate::props::IntoVTag for CalendarGrid {
         // An unparsable anchor renders the header over an empty grid rather than panicking deep
         // inside the view.
         let days = self.days();
+        let cols = self.columns();
 
         let mut grid = Container::from_tag("div").class("pwt-calendar-grid");
 
@@ -1132,13 +1164,13 @@ impl crate::props::IntoVTag for CalendarGrid {
                 lane
             })
             .collect();
-        let num_rows = days.len().div_ceil(7);
+        let num_rows = days.len().div_ceil(cols);
         let mut row_pinned_count = vec![0usize; num_rows];
         for (i, bar) in pinned_bars.iter().enumerate() {
             for (offset, day) in days.iter().enumerate() {
                 if bar.start.as_str() <= day.date.as_str() && day.date.as_str() <= bar.end.as_str()
                 {
-                    let row = offset / 7;
+                    let row = offset / cols;
                     row_pinned_count[row] = row_pinned_count[row].max(pinned_lane[i] + 1);
                 }
             }
@@ -1150,7 +1182,7 @@ impl crate::props::IntoVTag for CalendarGrid {
             // Leading gutter cell, once per row before its seven days, when render_gutter opts in.
             // It carries the row's first day, so the consumer labels it (its ISO week, say) and,
             // via on_gutter_click, acts on the row.
-            if offset % 7 == 0
+            if offset % cols == 0
                 && let Some(render_gutter) = &self.render_gutter
             {
                 let mut gutter = Container::from_tag("div").class("pwt-calendar-gutter-cell");
@@ -1158,7 +1190,7 @@ impl crate::props::IntoVTag for CalendarGrid {
                 if let Some(on_gutter) = &self.on_gutter_click {
                     gutter = gutter
                         .style("position", "relative")
-                        .with_child(activation_control(gutter_controls[offset / 7].clone()));
+                        .with_child(activation_control(gutter_controls[offset / cols].clone()));
                     let on_gutter = on_gutter.clone();
                     let gutter_info = info.clone();
                     gutter = gutter.onclick(move |_| on_gutter.emit(gutter_info.clone()));
@@ -1207,21 +1239,26 @@ impl crate::props::IntoVTag for CalendarGrid {
 
             // The cell body sits above the span bars, so a caller can keep its own content in view
             // while the bars scroll. Bars live in their own scroll box: a day with dozens of them
-            // scrolls that cell rather than growing the row. The column index within the week row
-            // (cells flow 7 per row) decides the row-break edges. An uncovered day gets no box.
+            // scrolls that cell rather than growing the row. An uncovered day gets no box.
             if let Some(render) = &self.render_day {
                 cell = cell.with_child(render.apply(&info));
             }
 
-            let col = (offset % 7) as u32;
+            // The days of the cells drawn beside this one within the week row decide the row-break
+            // edges; a row's first and last cell have no neighbour to fuse with.
+            let in_row = offset % cols;
+            let prev = (in_row > 0).then(|| days[offset - 1].date.as_str());
+            let next = (in_row + 1 < cols).then(|| days[offset + 1].date.as_str());
 
             // The pinned zone, above the scroll box: one row of the reserved lanes, each holding
             // its pinned bar's segment for this day or an equal-height spacer.
-            let reserved = row_pinned_count.get(offset / 7).copied().unwrap_or(0);
+            let reserved = row_pinned_count.get(offset / cols).copied().unwrap_or(0);
             if reserved > 0 {
                 let mut slots: Vec<Option<CalendarSpanSegment>> = vec![None; reserved];
                 for (i, bar) in pinned_bars.iter().enumerate() {
-                    if let Some(seg) = span_segment(bar, &info.date, col, self.span_start_marker) {
+                    if let Some(seg) =
+                        span_segment(bar, &info.date, prev, next, self.span_start_marker)
+                    {
                         // `reserved` is this row's max pinned lane + 1, so a bar covering a day in
                         // the row always has `pinned_lane[i] < reserved`; the guard is a bounds
                         // safety net, never a real drop.
@@ -1249,7 +1286,9 @@ impl crate::props::IntoVTag for CalendarGrid {
             if !flow_bars.is_empty() {
                 let segments: Vec<CalendarSpanSegment> = flow_bars
                     .iter()
-                    .filter_map(|bar| span_segment(bar, &info.date, col, self.span_start_marker))
+                    .filter_map(|bar| {
+                        span_segment(bar, &info.date, prev, next, self.span_start_marker)
+                    })
                     .collect();
                 if !segments.is_empty() {
                     let mut lanes = Container::from_tag("div").class("pwt-calendar-span-lanes");
@@ -1272,6 +1311,10 @@ impl crate::props::IntoVTag for CalendarGrid {
         // Signal the extra leading column to the theme, which widens the grid template to match.
         if this.render_gutter.is_some() {
             this.add_class("pwt-calendar-gutter");
+        }
+        // Likewise for the five-column working week, which the theme narrows the template to.
+        if this.hide_weekends {
+            this.add_class("pwt-calendar-hide-weekends");
         }
 
         this.std_props.into_vtag(
@@ -1316,7 +1359,7 @@ mod tests {
             .selected_span("run-1")
             .on_span_click(|_: CalendarSpanClick| {});
 
-        let start = span_segment(&bar, "2026-06-08", 0, true).unwrap();
+        let start = span_segment(&bar, "2026-06-08", None, Some("2026-06-09"), true).unwrap();
         let attrs = segment_attrs(&grid.render_span_segment(start));
         assert_eq!(attrs.get("role").map(String::as_str), Some("button"));
         assert_eq!(attrs.get("tabindex").map(String::as_str), Some("0"));
@@ -1325,7 +1368,14 @@ mod tests {
         assert!(attrs["class"].contains("pwt-calendar-span-selected"));
         assert!(attrs["style"].contains("--pwt-calendar-span-color"));
 
-        let mid = span_segment(&bar, "2026-06-09", 1, true).unwrap();
+        let mid = span_segment(
+            &bar,
+            "2026-06-09",
+            Some("2026-06-08"),
+            Some("2026-06-10"),
+            true,
+        )
+        .unwrap();
         let mid_attrs = segment_attrs(&grid.render_span_segment(mid));
         assert_eq!(
             mid_attrs.get("role").map(String::as_str),
@@ -1344,7 +1394,7 @@ mod tests {
         // No on_span_click and no matching selection: bars carry geometry only, no role/tabindex.
         let bar = CalendarSpanBar::new("2026-06-08", "2026-06-10", "Sprint").id("run-1");
         let grid = CalendarGrid::new("2026-06-08");
-        let start = span_segment(&bar, "2026-06-08", 0, true).unwrap();
+        let start = span_segment(&bar, "2026-06-08", None, Some("2026-06-09"), true).unwrap();
         let attrs = segment_attrs(&grid.render_span_segment(start));
         assert!(!attrs.contains_key("role"));
         assert!(!attrs.contains_key("tabindex"));
@@ -1356,22 +1406,45 @@ mod tests {
         // A Mon..Wed bar in a Monday-start row (cols 0,1,2): rounded start, squared middle, rounded
         // end, fusing into one bar.
         let bar = CalendarSpanBar::new("2026-06-08", "2026-06-10", "Sprint");
-        let start = span_segment(&bar, "2026-06-08", 0, true).unwrap();
+        let start = span_segment(&bar, "2026-06-08", None, Some("2026-06-09"), true).unwrap();
         assert!(start.is_start && !start.is_end);
         assert!(!start.continues_left && start.continues_right);
         assert_eq!(start.label, "Sprint");
 
-        let mid = span_segment(&bar, "2026-06-09", 1, true).unwrap();
+        let mid = span_segment(
+            &bar,
+            "2026-06-09",
+            Some("2026-06-08"),
+            Some("2026-06-10"),
+            true,
+        )
+        .unwrap();
         assert!(!mid.is_start && !mid.is_end);
         assert!(mid.continues_left && mid.continues_right);
         assert_eq!(mid.label, ""); // titled only once per row
 
-        let end = span_segment(&bar, "2026-06-10", 2, true).unwrap();
+        let end = span_segment(
+            &bar,
+            "2026-06-10",
+            Some("2026-06-09"),
+            Some("2026-06-11"),
+            true,
+        )
+        .unwrap();
         assert!(end.is_end && end.continues_left && !end.continues_right);
 
         // Days outside the range yield no segment.
-        assert!(span_segment(&bar, "2026-06-07", 6, true).is_none());
-        assert!(span_segment(&bar, "2026-06-11", 3, true).is_none());
+        assert!(span_segment(&bar, "2026-06-07", Some("2026-06-06"), None, true).is_none());
+        assert!(
+            span_segment(
+                &bar,
+                "2026-06-11",
+                Some("2026-06-10"),
+                Some("2026-06-12"),
+                true
+            )
+            .is_none()
+        );
     }
 
     #[test]
@@ -1380,12 +1453,19 @@ mod tests {
         // no bleed, and the next row's first cell (col 0) is a continuation - no start marker, but
         // re-titled so the second row's bar is still labelled.
         let bar = CalendarSpanBar::new("2026-06-13", "2026-06-15", "Trip");
-        let sat = span_segment(&bar, "2026-06-13", 5, true).unwrap();
+        let sat = span_segment(
+            &bar,
+            "2026-06-13",
+            Some("2026-06-12"),
+            Some("2026-06-14"),
+            true,
+        )
+        .unwrap();
         assert!(sat.is_start && sat.continues_right);
-        let sun = span_segment(&bar, "2026-06-14", 6, true).unwrap();
+        let sun = span_segment(&bar, "2026-06-14", Some("2026-06-13"), None, true).unwrap();
         assert!(!sun.continues_right && sun.continues_left);
         assert!(sun.row_continues_to_next);
-        let mon = span_segment(&bar, "2026-06-15", 0, true).unwrap();
+        let mon = span_segment(&bar, "2026-06-15", None, Some("2026-06-16"), true).unwrap();
         assert!(!mon.is_start && !mon.continues_left); // row-break continuation, edge squared
         assert!(mon.row_continues_from_prev);
         assert_eq!(mon.label, "Trip"); // re-titled on the new row's leading cell
@@ -1396,10 +1476,61 @@ mod tests {
         // A bar whose true start is off the visible window: its first visible cell must read as a
         // continuation (no start marker) even at col 0.
         let bar = CalendarSpanBar::new("2026-05-28", "2026-06-03", "Leave");
-        let first_visible = span_segment(&bar, "2026-06-01", 0, true).unwrap();
+        let first_visible =
+            span_segment(&bar, "2026-06-01", None, Some("2026-06-02"), true).unwrap();
         assert!(!first_visible.is_start);
         assert!(first_visible.row_continues_from_prev);
         assert!(!first_visible.continues_left);
+    }
+
+    #[test]
+    fn hidden_weekends_leave_five_working_days_per_row() {
+        let grid = CalendarGrid::new("2026-06-10").hide_weekends(true);
+        let days = grid.days();
+        assert_eq!(grid.columns(), 5);
+        assert_eq!(days.len(), 30); // the 42-cell month window minus its six weekends
+        assert!(days.iter().all(|day| !day.is_weekend));
+        // June 2026 starts on a Monday; the second row picks up after the weekend.
+        assert_eq!(days[0].date, "2026-06-01");
+        assert_eq!(days[4].date, "2026-06-05");
+        assert_eq!(days[5].date, "2026-06-08");
+        // A week view keeps its single row, five cells wide.
+        let week = CalendarGrid::new("2026-06-10")
+            .view(CalendarGridView::Week)
+            .hide_weekends(true);
+        assert_eq!(week.days().len(), 5);
+        // The date window itself is untouched, so a consumer still fetches whole weeks.
+        assert_eq!(
+            CalendarGrid::visible_range(CalendarGridView::Week, "2026-06-10", WeekStart::Monday),
+            Some(("2026-06-08".to_string(), "2026-06-14".to_string()))
+        );
+    }
+
+    #[test]
+    fn span_fuses_across_a_hidden_weekend() {
+        // A Wednesday-start row keeps Friday and Monday in the same row once the weekend is hidden
+        // (Wed, Thu, Fri, Mon, Tue), so a bar covering the weekend must join the two cells the grid
+        // actually draws side by side instead of squaring both edges.
+        let bar = CalendarSpanBar::new("2026-06-03", "2026-06-09", "Trip");
+        let fri = span_segment(
+            &bar,
+            "2026-06-05",
+            Some("2026-06-04"),
+            Some("2026-06-08"),
+            true,
+        )
+        .unwrap();
+        assert!(fri.continues_right && !fri.row_continues_to_next);
+        let mon = span_segment(
+            &bar,
+            "2026-06-08",
+            Some("2026-06-05"),
+            Some("2026-06-09"),
+            true,
+        )
+        .unwrap();
+        assert!(mon.continues_left && !mon.row_continues_from_prev);
+        assert_eq!(mon.label, ""); // still one label for the row, no fresh title after the gap
     }
 
     #[test]
@@ -1610,6 +1741,48 @@ mod tests {
         // Without a gutter renderer there is no gutter at all, callback or not.
         let no_gutter = CalendarGrid::new("2026-06-10").on_gutter_click(|_: CalendarGridDay| {});
         assert!(controls(no_gutter, "pwt-calendar-gutter-activate").is_empty());
+    }
+
+    #[test]
+    fn hidden_weekends_keep_keyboard_rows_five_wide() {
+        // Friday 26 June is the fifth cell of the fourth working week, so its row is 19 / 5 = 3;
+        // counting seven cells per row would put the gutter's tab stop a row too high.
+        let grid = CalendarGrid::new("2026-06-10")
+            .today("2026-06-26")
+            .hide_weekends(true)
+            .render_gutter(|_: &CalendarGridDay| html! {})
+            .on_gutter_click(|_: CalendarGridDay| {})
+            .on_day_click(|_: CalendarGridDay| {});
+        let days = grid.days();
+        let tab_stop = default_day_tab_stop(&days);
+        assert!(
+            day_activation_controls(&grid, &days, tab_stop)
+                .iter()
+                .all(|control| control.stride == 5)
+        );
+        let gutters = gutter_activation_controls(&grid, &days, tab_stop);
+        let labels: Vec<&str> = gutters
+            .iter()
+            .map(|control| control.label.as_str())
+            .collect();
+        assert_eq!(
+            labels,
+            [
+                "2026-06-01",
+                "2026-06-08",
+                "2026-06-15",
+                "2026-06-22",
+                "2026-06-29",
+                "2026-07-06"
+            ]
+        );
+        let stops: Vec<usize> = gutters
+            .iter()
+            .enumerate()
+            .filter(|(_, control)| control.tab_stop)
+            .map(|(i, _)| i)
+            .collect();
+        assert_eq!(stops, vec![3]);
     }
 
     #[test]
