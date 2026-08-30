@@ -118,6 +118,8 @@ impl IntoVTag for SnackBar {
         if self.show_close_icon {
             children.push(
                 ActionIcon::new("fa fa-lg fa-close")
+                    .tabindex(0)
+                    .aria_label(crate::tr!("Close"))
                     .on_activate(
                         self.on_close
                             .clone()
