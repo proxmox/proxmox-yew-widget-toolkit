@@ -141,6 +141,7 @@ pub enum Msg {
 pub struct CheckboxField {
     state: ManagedFieldState,
     node_ref: NodeRef,
+    box_label_id: AttrValue,
 }
 
 crate::impl_deref_mut_property!(CheckboxField, state, ManagedFieldState);
@@ -213,6 +214,7 @@ impl ManagedField for CheckboxField {
         Self {
             state: ManagedFieldState::new(value, default),
             node_ref: NodeRef::default(),
+            box_label_id: crate::widget::get_unique_element_id().into(),
         }
     }
 
@@ -225,8 +227,8 @@ impl ManagedField for CheckboxField {
         let props = ctx.props();
         match msg {
             Msg::Toggle => {
-                if props.input_props.disabled {
-                    return true;
+                if props.input_props.disabled || props.input_props.read_only {
+                    return false;
                 }
                 let checked = self.value == props.submit_on_value;
                 let new_value = if checked {
@@ -275,10 +277,18 @@ impl ManagedField for CheckboxField {
         let checked = *value == props.submit_on_value;
 
         let onclick = link.callback(|_| Msg::Toggle);
+        let onkeydown = Callback::from(|event: KeyboardEvent| {
+            if crate::dom::event_key(&event) == " " {
+                // Match a native checkbox: Space activates the control instead of scrolling the
+                // page. Toggle on key-up below, once per press.
+                event.prevent_default();
+            }
+        });
         let onkeyup = Callback::from({
             let link = link.clone();
             move |event: KeyboardEvent| {
                 if crate::dom::event_key(&event) == " " {
+                    event.prevent_default();
                     link.send_message(Msg::Toggle);
                 }
             }
@@ -289,35 +299,61 @@ impl ManagedField for CheckboxField {
             false => ("pwt-checkbox", "pwt-checkbox-icon"),
         };
 
+        let tabindex = if disabled {
+            -1
+        } else {
+            props.input_props.tabindex.unwrap_or(0)
+        };
+        let mut control = Container::new()
+            .class(layout_class)
+            .with_child(
+                Container::from_tag("span")
+                    .class(inner_class)
+                    .with_child(Fa::new("check")),
+            )
+            .class(checked.then_some("checked"))
+            .class(disabled.then_some("disabled"))
+            .class(if validation_result.is_ok() {
+                "is-valid"
+            } else {
+                "is-invalid"
+            })
+            .attribute("tabindex", tabindex.to_string())
+            .attribute("role", "checkbox")
+            .attribute("aria-checked", if checked { "true" } else { "false" })
+            .attribute("aria-disabled", disabled.then_some("true"))
+            .attribute(
+                "aria-readonly",
+                props.input_props.read_only.then_some("true"),
+            )
+            .attribute(
+                "aria-required",
+                props.input_props.required.then_some("true"),
+            )
+            .onkeydown(onkeydown)
+            .onkeyup(onkeyup);
+        control = control.attribute("aria-label", props.input_props.aria_label.clone());
+        // A field label and a box label both name the control, just like two `<label for>` elements
+        // on a native checkbox. Reference both so neither is dropped from the name, which speech
+        // input needs to match against the visible text.
+        let labelled_by = match (
+            &props.input_props.label_id,
+            props.box_label.as_ref().map(|_| &self.box_label_id),
+        ) {
+            (Some(label_id), Some(box_label_id)) => {
+                Some(AttrValue::from(format!("{label_id} {box_label_id}")))
+            }
+            (Some(id), None) | (None, Some(id)) => Some(id.clone()),
+            (None, None) => None,
+        };
+        control = control.attribute("aria-labelledby", labelled_by);
         let checkbox = Container::new()
             .class((!props.switch).then_some("pwt-checkbox-state"))
-            .with_child(
-                Container::new()
-                    .class(layout_class)
-                    .with_child(
-                        Container::from_tag("span")
-                            .class(inner_class)
-                            .with_child(Fa::new("check")),
-                    )
-                    .class(checked.then_some("checked"))
-                    .class(disabled.then_some("disabled"))
-                    .class(if validation_result.is_ok() {
-                        "is-valid"
-                    } else {
-                        "is-invalid"
-                    })
-                    .attribute(
-                        "tabindex",
-                        props.input_props.tabindex.unwrap_or(0).to_string(),
-                    )
-                    .attribute("role", "checkbox")
-                    .attribute("aria-checked", checked.then_some("true"))
-                    .onkeyup(onkeyup)
-                    .into_html_with_ref(self.node_ref.clone()),
-            );
+            .with_child(control.into_html_with_ref(self.node_ref.clone()));
 
         let box_label = props.box_label.clone().map(|label| {
             label
+                .id(self.box_label_id.clone())
                 .padding_start(2)
                 .class(disabled.then_some("pwt-opacity-disabled"))
         });
