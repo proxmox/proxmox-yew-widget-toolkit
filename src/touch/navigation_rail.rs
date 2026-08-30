@@ -23,7 +23,7 @@ use pwt_macros::builder;
 /// a [NavigationContainer](crate::state::NavigationContainer) and
 /// set the router flag.
 
-// Note: This is Similatr to TabBar without keyboard support.
+// Note: This is similar to TabBar, but uses link semantics for primary navigation.
 #[derive(Properties, Clone, PartialEq)]
 #[builder]
 pub struct NavigationRail {
@@ -34,6 +34,11 @@ pub struct NavigationRail {
     /// Leading widget placed above the navigation group.
     #[prop_or_default]
     pub leading: Option<Html>,
+
+    /// Accessible name for the navigation landmark.
+    #[builder(IntoPropValue, into_prop_value)]
+    #[prop_or_default]
+    pub aria_label: Option<AttrValue>,
 
     #[builder]
     #[prop_or(JustifyContent::Center)]
@@ -117,7 +122,12 @@ impl NavigationRail {
         }
 
         for item in &self.items {
-            if let TabBarItem { key: Some(key), .. } = item {
+            if let TabBarItem {
+                key: Some(key),
+                disabled: false,
+                ..
+            } = item
+            {
                 return Some(key.clone());
             }
         }
@@ -312,7 +322,7 @@ impl Component for PwtNavigationRail {
                     // the collapsed rail anchors the badge to the icon corner, the expanded
                     // variant places it after the label instead
                     let corner_badge = if props.expanded { None } else { badge.take() };
-                    Some(html! {<div {class}><i class={icon_class}/>{corner_badge}</div>})
+                    Some(html! {<div {class}><i role="none" class={icon_class}/>{corner_badge}</div>})
                 }
                 None => None,
             };
@@ -322,26 +332,56 @@ impl Component for PwtNavigationRail {
                 }
             });
 
-            Container::new()
-                .class("pwt-navigation-rail-item")
-                .class(is_active.then_some("active"))
-                .with_optional_child(icon)
-                .with_optional_child(label)
-                .with_optional_child(badge)
-                .onclick(ctx.link().callback({
-                    let key = item.key.clone();
-                    let on_activate = item.on_activate.clone();
-                    move |_| {
+            let (onclick, onkeydown) = if item.disabled {
+                (None, None)
+            } else {
+                let key = item.key.clone();
+                let on_activate = item.on_activate.clone();
+                let onclick = ctx.link().callback(move |_| {
+                    if let Some(on_activate) = &on_activate {
+                        on_activate.emit(());
+                    }
+                    Msg::Select(key.clone(), true)
+                });
+                let key = item.key.clone();
+                let on_activate = item.on_activate.clone();
+                let link = ctx.link().clone();
+                let onkeydown = Callback::from(move |event: KeyboardEvent| {
+                    if crate::dom::event_key(&event) == "Enter" {
+                        event.prevent_default();
                         if let Some(on_activate) = &on_activate {
                             on_activate.emit(());
                         }
-                        Msg::Select(key.clone(), true)
+                        link.send_message(Msg::Select(key.clone(), true));
                     }
-                }))
+                });
+                (Some(onclick), Some(onkeydown))
+            };
+
+            Container::new()
+                .class("pwt-navigation-rail-item")
+                .class(is_active.then_some("active"))
+                .class(item.disabled.then_some("disabled"))
+                .attribute("role", "link")
+                .attribute("tabindex", if item.disabled { "-1" } else { "0" })
+                .attribute("aria-current", is_active.then_some("page"))
+                .attribute("aria-disabled", item.disabled.then_some("true"))
+                .with_optional_child(icon)
+                .with_optional_child(label)
+                .with_optional_child(badge)
+                .onclick(onclick)
+                .onkeydown(onkeydown)
                 .into()
         });
 
-        Container::new()
+        Container::from_tag("nav")
+            .attribute(
+                "aria-label",
+                props
+                    .aria_label
+                    .clone()
+                    .unwrap_or_else(|| tr!("Main Navigation").into()),
+            )
             .class("pwt-navigation-rail")
             .class(props.expanded.then_some("pwt-navigation-rail-expanded"))
             .with_optional_child(props.leading.clone())
