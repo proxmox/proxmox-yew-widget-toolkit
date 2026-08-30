@@ -209,7 +209,7 @@ impl Component for PwtAdaptiveDialog {
         // path is a no-op without one, so an unconditional button would be a dead affordance
         let close_button = props.on_close.is_some().then(|| {
             Button::new_icon("fa fa-times")
-                .attribute("aria-label", tr!("Close"))
+                .aria_label(tr!("Close"))
                 .onclick(move |_| controller.close_dialog())
         });
         let header = Row::new()

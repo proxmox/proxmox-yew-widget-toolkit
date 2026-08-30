@@ -487,7 +487,8 @@ impl Component for PwtDialog {
         if props.on_close.is_some() {
             panel.add_tool(
                 ActionIcon::new("fa fa-close")
-                    .aria_label("Close Dialog")
+                    .tabindex(0)
+                    .aria_label(tr!("Close"))
                     .on_activate(link.callback(|_| Msg::Close)),
             );
         };
