@@ -1,3 +1,43 @@
+rust-pwt (0.8.17) trixie; urgency=medium
+
+  * dropdown: create picker placement only while the picker is open, avoiding
+    synchronous layout work for closed fields.
+
+  * dropdown: close the picker after an explicit selection instead of inferring
+    one from timing. This fixes the first SearchDropdown result or editable
+    DateField calendar selection being ignored after typing. Selecting the
+    current entry now closes the picker too, and GridPicker reports selections
+    only for direct user interaction.
+
+  * touch: navigation rail: add opt-in viewport-based expansion through
+    `auto_expand` and `expanded_query`, so rails in a plain Scaffold can adapt
+    without parent-managed state. The opt-in avoids unexpectedly widening a
+    parent. AdaptiveScaffold opts in, replaces `large_query` with
+    `rail_expanded_query`, leaves navigator choice to `wide_query`, and passes
+    through `rail_group_alignment`.
+
+  * touch: navigation rail: add an optional button that lets users expand or
+    collapse the rail independently of its configured layout. AdaptiveScaffold
+    exposes it as `rail_expand_button`, and `on_expand_change` reports layout
+    changes.
+
+  * accessibility: improve keyboard and screen-reader support:
+    - checkbox: expose checked, disabled, read-only, and required state; derive
+      the accessible name from visible labels; keep disabled controls out of
+      the tab order; prevent read-only controls from toggling; and let Space
+      activate the checkbox without scrolling the page.
+    - action icons: prevent keyboard activation from scrolling the page. Give
+      dialog and snackbar close controls translated names and tab stops, and
+      let callers set an explicit accessible name on menu buttons.
+    - primary navigation: expose landmark names, link roles, current-page
+      state, and Enter-key activation. Disabled destinations remain inert and
+      are excluded from both the tab order and default selection.
+    - calendar grid: add named keyboard controls to clickable day and gutter
+      cells. Keep one control of each type in the tab order, move the tab stop
+      with arrow-key focus, and stop horizontal movement at week boundaries.
+
+ -- Proxmox Support Team <support@proxmox.com>  Sun, 30 Aug 2026 18:46:14 +0200
+
 rust-pwt (0.8.16) trixie; urgency=medium
 
   * data table: rebuild the header's interactive state when the column set
