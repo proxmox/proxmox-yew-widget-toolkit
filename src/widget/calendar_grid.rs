@@ -1,5 +1,6 @@
 use std::borrow::Cow;
 
+use wasm_bindgen::JsCast;
 use yew::html::{IntoEventCallback, IntoPropValue};
 use yew::prelude::*;
 use yew::virtual_dom::VTag;
@@ -7,7 +8,7 @@ use yew::virtual_dom::VTag;
 use pwt_macros::{builder, widget};
 
 use crate::props::{
-    ContainerBuilder, EventSubscriber, IntoOptionalRenderFn, RenderFn, WidgetBuilder,
+    ContainerBuilder, EventSubscriber, IntoOptionalRenderFn, IntoVTag, RenderFn, WidgetBuilder,
     WidgetStyleBuilder,
 };
 use crate::tr;
@@ -357,7 +358,8 @@ pub struct CalendarGrid {
 
     /// Fires when a row's gutter cell is clicked, carrying that row's first day, so a consumer can
     /// act on the whole row (open its week, say). Only reachable while
-    /// [`render_gutter`](Self::render_gutter) draws the gutter.
+    /// [`render_gutter`](Self::render_gutter) draws the gutter. Setting it also gives the cell a
+    /// keyboard control named by [`gutter_label`](Self::gutter_label).
     #[builder_cb(IntoEventCallback, into_event_callback, CalendarGridDay)]
     #[prop_or_default]
     pub on_gutter_click: Option<Callback<CalendarGridDay>>,
@@ -368,6 +370,18 @@ pub struct CalendarGrid {
     #[builder(IntoPropValue, into_prop_value)]
     #[prop_or_default]
     pub gutter_header: Option<AttrValue>,
+
+    /// Names a row's gutter cell for its keyboard control, given that row's first day. The control
+    /// exists only while [`on_gutter_click`](Self::on_gutter_click) is set, and without this hook
+    /// it is named after that day's ISO date, which says nothing about the row it opens.
+    #[builder_cb(
+        IntoOptionalRenderFn,
+        into_optional_render_fn,
+        CalendarGridDay,
+        AttrValue
+    )]
+    #[prop_or_default]
+    pub gutter_label: Option<RenderFn<CalendarGridDay, AttrValue>>,
 
     /// Extra classes for a cell (holidays, highlights, ...).
     #[builder_cb(
@@ -383,9 +397,27 @@ pub struct CalendarGrid {
     /// [`on_span_click`](Self::on_span_click)); a bar activated by keyboard does not. A consumer
     /// wanting the two fully decoupled must stop propagation in its own
     /// [`render_span`](Self::render_span) markup.
+    ///
+    /// Setting it also gives every cell a keyboard control named by
+    /// [`day_label`](Self::day_label), whose activation bubbles a click to the cell like the mouse
+    /// does. Exactly one of those controls is in the tab order and the arrow keys walk the rest,
+    /// so the day cells cost one Tab between them rather than one each. A gutter and the labeled
+    /// span segments carry their own tab stops on top of that.
     #[builder_cb(IntoEventCallback, into_event_callback, CalendarGridDay)]
     #[prop_or_default]
     pub on_day_click: Option<Callback<CalendarGridDay>>,
+
+    /// Names a day cell for its keyboard control. The control exists only while
+    /// [`on_day_click`](Self::on_day_click) is set, and without this hook it is named after the
+    /// cell's ISO date; pass the date as the application writes it for the reader.
+    #[builder_cb(
+        IntoOptionalRenderFn,
+        into_optional_render_fn,
+        CalendarGridDay,
+        AttrValue
+    )]
+    #[prop_or_default]
+    pub day_label: Option<RenderFn<CalendarGridDay, AttrValue>>,
 
     #[builder_cb(IntoEventCallback, into_event_callback, CalendarGridDay)]
     #[prop_or_default]
@@ -792,6 +824,239 @@ fn span_segment(
     })
 }
 
+const DAY_ACTIVATE_CLASS: &str = "pwt-calendar-day-activate";
+const GUTTER_ACTIVATE_CLASS: &str = "pwt-calendar-gutter-activate";
+
+#[derive(Clone, PartialEq, Properties)]
+struct ActivationControl {
+    class: &'static str,
+    label: AttrValue,
+    tab_stop: bool,
+    stride: usize,
+}
+
+struct PwtCalendarActivationControl {
+    node_ref: NodeRef,
+}
+
+impl Component for PwtCalendarActivationControl {
+    type Message = ();
+    type Properties = ActivationControl;
+
+    fn create(_ctx: &Context<Self>) -> Self {
+        Self {
+            node_ref: NodeRef::default(),
+        }
+    }
+
+    fn view(&self, ctx: &Context<Self>) -> Html {
+        let props = ctx.props();
+        let class = props.class;
+        let stride = props.stride;
+
+        Container::from_tag("button")
+            .class(class)
+            // The control covers its cell so the focus ring outlines the whole day. The theme can
+            // override the ring, while these placement rules provide a usable browser fallback.
+            .style("position", "absolute")
+            .style("inset", "0")
+            .style("appearance", "none")
+            .style("background", "none")
+            .style("border", "0")
+            .style("padding", "0")
+            .style("margin", "0")
+            .style("pointer-events", "none")
+            // Keep focus inside application-owned selection and current-day rings so both remain
+            // distinguishable.
+            .style("outline-offset", "-6px")
+            .style("z-index", "3")
+            .attribute("type", "button")
+            .attribute("aria-label", props.label.clone())
+            .attribute("tabindex", if props.tab_stop { "0" } else { "-1" })
+            .onfocus(move |event: FocusEvent| {
+                if let Some(control) = event.target_dyn_into::<web_sys::HtmlElement>() {
+                    promote_control(&control, class);
+                }
+            })
+            .onkeydown(move |event: KeyboardEvent| {
+                if walk_controls(&crate::dom::event_key(&event), class, stride) {
+                    event.prevent_default();
+                }
+            })
+            .into_html_with_ref(self.node_ref.clone())
+    }
+
+    fn rendered(&mut self, ctx: &Context<Self>, _first_render: bool) {
+        let Some(control) = self.node_ref.cast::<web_sys::HtmlElement>() else {
+            return;
+        };
+        let tab_stop = focused_peer(&control, ctx.props().class).unwrap_or(ctx.props().tab_stop);
+        let _ = control.set_attribute("tabindex", if tab_stop { "0" } else { "-1" });
+    }
+}
+
+fn activation_control(props: ActivationControl) -> Html {
+    html! { <PwtCalendarActivationControl ..props /> }
+}
+
+fn promote_control(control: &web_sys::HtmlElement, class: &str) {
+    let Some(root) = control.closest(".pwt-calendar").ok().flatten() else {
+        return;
+    };
+    let Ok(peers) = root.query_selector_all(&format!(".{class}")) else {
+        return;
+    };
+    for peer in js_sys::Array::from(&peers).iter() {
+        if let Ok(peer) = peer.dyn_into::<web_sys::Element>() {
+            let _ = peer.set_attribute("tabindex", "-1");
+        }
+    }
+    let _ = control.set_attribute("tabindex", "0");
+}
+
+fn focused_peer(control: &web_sys::HtmlElement, class: &str) -> Option<bool> {
+    let active = gloo_utils::document().active_element()?;
+    if !active.class_list().contains(class) {
+        return None;
+    }
+    let active_root = active.closest(".pwt-calendar").ok().flatten()?;
+    let control_root = control.closest(".pwt-calendar").ok().flatten()?;
+    if active_root != control_root {
+        return None;
+    }
+    let control: web_sys::Element = control.clone().unchecked_into();
+    Some(active == control)
+}
+
+fn default_day_tab_stop(days: &[CalendarGridDay]) -> usize {
+    days.iter()
+        .position(|day| day.is_today && day.in_anchor_month)
+        .or_else(|| days.iter().position(|day| day.in_anchor_month))
+        .unwrap_or(0)
+}
+
+fn day_activation_controls(
+    grid: &CalendarGrid,
+    days: &[CalendarGridDay],
+    tab_stop: usize,
+) -> Vec<ActivationControl> {
+    if grid.on_day_click.is_none() {
+        return Vec::new();
+    }
+    days.iter()
+        .enumerate()
+        .map(|(index, day)| ActivationControl {
+            class: DAY_ACTIVATE_CLASS,
+            label: match &grid.day_label {
+                Some(render) => render.apply(day),
+                None => AttrValue::from(day.date.clone()),
+            },
+            tab_stop: index == tab_stop,
+            stride: 7,
+        })
+        .collect()
+}
+
+fn gutter_activation_controls(
+    grid: &CalendarGrid,
+    days: &[CalendarGridDay],
+    day_tab_stop: usize,
+) -> Vec<ActivationControl> {
+    if grid.render_gutter.is_none() || grid.on_gutter_click.is_none() {
+        return Vec::new();
+    }
+    days.iter()
+        .step_by(7)
+        .enumerate()
+        .map(|(index, day)| ActivationControl {
+            class: GUTTER_ACTIVATE_CLASS,
+            label: match &grid.gutter_label {
+                Some(render) => render.apply(day),
+                None => AttrValue::from(day.date.clone()),
+            },
+            tab_stop: index == day_tab_stop / 7,
+            stride: 1,
+        })
+        .collect()
+}
+
+/// Which control an arrow key steps to from `index`, or `None` where the grid ends.
+///
+/// A step off an edge stays put rather than wrapping. `stride` is the row length, so a
+/// single-column gutter has no horizontal peers and Home or End traverses the whole column.
+fn step_index(key: &str, index: usize, len: usize, stride: usize, rtl: bool) -> Option<usize> {
+    let last = len.checked_sub(1)?;
+    let in_row = stride > 1;
+    // Horizontal arrows follow document direction. Home and End use document order because they
+    // target the first and last cell in the row, independent of its visual direction.
+    let (backward, forward) = match rtl {
+        true => ("ArrowRight", "ArrowLeft"),
+        false => ("ArrowLeft", "ArrowRight"),
+    };
+    match key {
+        k if in_row && k == backward && index % stride != 0 => index.checked_sub(1),
+        k if in_row && k == forward && index % stride + 1 < stride => {
+            (index + 1 < len).then_some(index + 1)
+        }
+        "ArrowUp" => index.checked_sub(stride),
+        "ArrowDown" => (index + stride < len).then_some(index + stride),
+        "Home" if in_row => Some(index - index % stride),
+        "End" if in_row => Some((index - index % stride + stride - 1).min(last)),
+        "Home" => Some(0),
+        "End" => Some(last),
+        _ => None,
+    }
+}
+
+fn walks_grid(key: &str) -> bool {
+    matches!(
+        key,
+        "ArrowLeft" | "ArrowRight" | "ArrowUp" | "ArrowDown" | "Home" | "End"
+    )
+}
+
+/// Move focus and the group's single tab stop to the adjacent control.
+fn walk_controls(key: &str, class: &str, stride: usize) -> bool {
+    if !walks_grid(key) {
+        return false;
+    }
+    let Some(active) = gloo_utils::document().active_element() else {
+        return false;
+    };
+    let Some(root) = active.closest(".pwt-calendar").ok().flatten() else {
+        return false;
+    };
+    let Ok(list) = root.query_selector_all(&format!(".{class}")) else {
+        return false;
+    };
+    let list = js_sys::Array::from(&list);
+    let len = list.length() as usize;
+    let index = list.index_of(&active, 0);
+    if len == 0 || index < 0 {
+        return false;
+    }
+    let rtl = root
+        .clone()
+        .dyn_into::<web_sys::HtmlElement>()
+        .ok()
+        .and_then(crate::dom::element_direction_rtl)
+        .unwrap_or(false);
+    let Some(next) = step_index(key, index as usize, len, stride, rtl) else {
+        return true;
+    };
+    let Ok(current) = active.dyn_into::<web_sys::HtmlElement>() else {
+        return true;
+    };
+    let Ok(next) = list.get(next as u32).dyn_into::<web_sys::HtmlElement>() else {
+        return true;
+    };
+    if next.focus().is_ok() {
+        let _ = current.set_attribute("tabindex", "-1");
+        let _ = next.set_attribute("tabindex", "0");
+    }
+    true
+}
+
 impl crate::props::IntoVTag for CalendarGrid {
     fn into_vtag_with_ref(self, node_ref: NodeRef) -> VTag {
         let header_start = week_start_monday0(self.week_start);
@@ -821,6 +1086,12 @@ impl crate::props::IntoVTag for CalendarGrid {
         let days = self.days();
 
         let mut grid = Container::from_tag("div").class("pwt-calendar-grid");
+
+        // Keep one day and one gutter in the tab order. Today is the default only when it belongs
+        // to the requested month; otherwise use the first day in that month.
+        let day_tab_stop = default_day_tab_stop(&days);
+        let day_controls = day_activation_controls(&self, &days, day_tab_stop);
+        let gutter_controls = gutter_activation_controls(&self, &days, day_tab_stop);
 
         // Start order, so an earlier bar never drops below a later one (no crossing). A bar still
         // compacts upward as the ones above it end.
@@ -885,6 +1156,9 @@ impl crate::props::IntoVTag for CalendarGrid {
                 let mut gutter = Container::from_tag("div").class("pwt-calendar-gutter-cell");
                 gutter = gutter.with_child(render_gutter.apply(&info));
                 if let Some(on_gutter) = &self.on_gutter_click {
+                    gutter = gutter
+                        .style("position", "relative")
+                        .with_child(activation_control(gutter_controls[offset / 7].clone()));
                     let on_gutter = on_gutter.clone();
                     let gutter_info = info.clone();
                     gutter = gutter.onclick(move |_| on_gutter.emit(gutter_info.clone()));
@@ -906,6 +1180,12 @@ impl crate::props::IntoVTag for CalendarGrid {
                 cell = cell.class(class_fn.apply(&info));
             }
             if let Some(on_click) = &self.on_day_click {
+                cell = cell
+                    .style("position", "relative")
+                    // The whole cell answers pointer clicks; the overlaid keyboard control does
+                    // not take pointer events.
+                    .style("cursor", "pointer")
+                    .with_child(activation_control(day_controls[offset].clone()));
                 let on_click = on_click.clone();
                 let click_info = info.clone();
                 cell = cell.onclick(move |_| on_click.emit(click_info.clone()));
@@ -1173,6 +1453,204 @@ mod tests {
             CalendarGrid::visible_range(CalendarGridView::Month, "2026-08-15", WeekStart::Monday)
                 .unwrap();
         assert_eq!((from.as_str(), to.as_str()), ("2026-07-27", "2026-09-06"));
+    }
+
+    fn day_controls(grid: CalendarGrid) -> Vec<(String, String)> {
+        controls(grid, DAY_ACTIVATE_CLASS)
+    }
+
+    fn controls(grid: CalendarGrid, class: &str) -> Vec<(String, String)> {
+        let days = grid.days();
+        let day_tab_stop = default_day_tab_stop(&days);
+        let controls = match class {
+            DAY_ACTIVATE_CLASS => day_activation_controls(&grid, &days, day_tab_stop),
+            GUTTER_ACTIVATE_CLASS => gutter_activation_controls(&grid, &days, day_tab_stop),
+            _ => Vec::new(),
+        };
+        controls
+            .into_iter()
+            .map(|control| {
+                (
+                    if control.tab_stop { "0" } else { "-1" }.to_string(),
+                    control.label.to_string(),
+                )
+            })
+            .collect()
+    }
+
+    #[test]
+    fn a_clickable_day_gets_one_keyboard_control() {
+        // No day callback, no control: a read-only grid gains neither a tab stop nor a button.
+        assert!(day_controls(CalendarGrid::new("2026-06-10")).is_empty());
+
+        let controls = day_controls(
+            CalendarGrid::new("2026-06-10")
+                .today("2026-06-10")
+                .on_day_click(|_: CalendarGridDay| {}),
+        );
+        // One control per cell of the month window, named after its ISO date without a hook.
+        assert_eq!(controls.len(), 42);
+        assert_eq!(controls[0].1, "2026-06-01");
+        // Exactly one of them is in the tab order, and it is today: the arrows reach the rest.
+        let tab_stops: Vec<usize> = controls
+            .iter()
+            .enumerate()
+            .filter(|(_, (tabindex, _))| tabindex == "0")
+            .map(|(i, _)| i)
+            .collect();
+        assert_eq!(tab_stops, vec![9]);
+        assert_eq!(controls[9].1, "2026-06-10");
+    }
+
+    #[test]
+    fn the_arrows_step_within_the_grid_and_stop_at_its_edges() {
+        // A 42-cell month has rows of seven. Sideways steps stay within their row, vertical ones
+        // jump a row, and both stop rather than wrap.
+        let step = |key, index| step_index(key, index, 42, 7, false);
+        assert_eq!(step("ArrowRight", 0), Some(1));
+        assert_eq!(step("ArrowLeft", 1), Some(0));
+        assert_eq!(step("ArrowDown", 0), Some(7));
+        assert_eq!(step("ArrowUp", 7), Some(0));
+        assert_eq!(step("ArrowLeft", 0), None);
+        assert_eq!(step("ArrowRight", 41), None);
+        assert_eq!(step("ArrowRight", 6), None);
+        assert_eq!(step("ArrowLeft", 7), None);
+        assert_eq!(step("ArrowUp", 6), None);
+        assert_eq!(step("ArrowDown", 35), None);
+        // Home and End run the row the cell is in, not the whole month.
+        assert_eq!(step("Home", 10), Some(7));
+        assert_eq!(step("End", 10), Some(13));
+        assert_eq!(step("Home", 7), Some(7));
+        assert_eq!(step("End", 13), Some(13));
+        // A key the grid does not steer by moves nothing.
+        assert_eq!(step("PageDown", 10), None);
+
+        // A week window is a single row: End is its last cell, not a seventh one past the end.
+        assert_eq!(step_index("End", 0, 7, 7, false), Some(6));
+        // A row that runs short of the stride still ends on the last cell it has.
+        assert_eq!(step_index("End", 8, 10, 7, false), Some(9));
+
+        // A single-column gutter has nothing beside a cell, and Home / End run the whole column.
+        let gutter = |key, index| step_index(key, index, 6, 1, false);
+        assert_eq!(gutter("ArrowLeft", 3), None);
+        assert_eq!(gutter("ArrowRight", 3), None);
+        assert_eq!(gutter("ArrowDown", 3), Some(4));
+        assert_eq!(gutter("ArrowUp", 3), Some(2));
+        assert_eq!(gutter("Home", 3), Some(0));
+        assert_eq!(gutter("End", 3), Some(5));
+        assert_eq!(gutter("ArrowUp", 0), None);
+        assert_eq!(gutter("ArrowDown", 5), None);
+        // An empty grid has no cell to step to, by any key, at either stride. The row arms compute
+        // from the last index, which is where a length of zero would otherwise underflow.
+        for key in [
+            "ArrowLeft",
+            "ArrowRight",
+            "ArrowUp",
+            "ArrowDown",
+            "Home",
+            "End",
+        ] {
+            assert_eq!(step_index(key, 0, 0, 7, false), None, "{key} at stride 7");
+            assert_eq!(step_index(key, 0, 0, 1, false), None, "{key} at stride 1");
+        }
+
+        // A row reads the other way in a right-to-left document, so the sideways arrows follow it
+        // while everything defined by the row's own order stays put.
+        let rtl = |key, index| step_index(key, index, 42, 7, true);
+        assert_eq!(rtl("ArrowRight", 10), Some(9));
+        assert_eq!(rtl("ArrowLeft", 10), Some(11));
+        assert_eq!(rtl("ArrowUp", 10), Some(3));
+        assert_eq!(rtl("ArrowDown", 10), Some(17));
+        assert_eq!(rtl("Home", 10), Some(7));
+        assert_eq!(rtl("End", 10), Some(13));
+        // The edges mirror with the row: the run ends where the reader sees it end.
+        assert_eq!(rtl("ArrowRight", 0), None);
+        assert_eq!(rtl("ArrowLeft", 41), None);
+        assert_eq!(rtl("ArrowRight", 7), None);
+        assert_eq!(rtl("ArrowLeft", 6), None);
+
+        // The keys that activate a control are not the grid's to steer by, or the handler would
+        // suppress the button's own activation instead of letting the click bubble to the cell.
+        assert!(!walks_grid("Enter"));
+        assert!(!walks_grid(" "));
+        // The sideways arrows belong to the grid even where they move nothing, so the page does
+        // not scroll under a reader stepping along a gutter.
+        assert!(walks_grid("ArrowLeft"));
+        assert!(walks_grid("End"));
+    }
+
+    #[test]
+    fn a_clickable_gutter_gets_its_own_tab_stop_on_the_row_the_days_open_on() {
+        let grid = || {
+            CalendarGrid::new("2026-06-10")
+                .today("2026-06-10")
+                .render_gutter(|_: &CalendarGridDay| html! {})
+        };
+        // A gutter that is only drawn, never clicked, stays out of the tab order entirely.
+        assert!(controls(grid(), "pwt-calendar-gutter-activate").is_empty());
+
+        let gutters = controls(
+            grid().on_gutter_click(|_: CalendarGridDay| {}),
+            "pwt-calendar-gutter-activate",
+        );
+        // One per week row of the month window, named after that row's first day by default.
+        assert_eq!(gutters.len(), 6);
+        assert_eq!(gutters[0].1, "2026-06-01");
+        // The tab stop sits on the row holding the day the grid would open on (today, 2026-06-10,
+        // is in the second row), so a grid with both kinds of control offers them on one row
+        // rather than a fortnight apart.
+        let stops: Vec<usize> = gutters
+            .iter()
+            .enumerate()
+            .filter(|(_, (tabindex, _))| tabindex == "0")
+            .map(|(i, _)| i)
+            .collect();
+        assert_eq!(stops, vec![1]);
+
+        // Without a gutter renderer there is no gutter at all, callback or not.
+        let no_gutter = CalendarGrid::new("2026-06-10").on_gutter_click(|_: CalendarGridDay| {});
+        assert!(controls(no_gutter, "pwt-calendar-gutter-activate").is_empty());
+    }
+
+    #[test]
+    fn a_today_outside_the_anchored_month_does_not_take_the_tab_stop() {
+        // August 2026 opens on a Saturday, so the window leads with July days. Today among them
+        // is a dimmed neighbor of the month asked for, and the tab stop belongs to August.
+        let controls = day_controls(
+            CalendarGrid::new("2026-08-15")
+                .today("2026-07-31")
+                .on_day_click(|_: CalendarGridDay| {}),
+        );
+        let stops: Vec<&str> = controls
+            .iter()
+            .filter(|(tabindex, _)| tabindex == "0")
+            .map(|(_, label)| label.as_str())
+            .collect();
+        assert_eq!(stops, vec!["2026-08-01"]);
+    }
+
+    #[test]
+    fn the_tab_stop_falls_back_to_the_anchored_month() {
+        // August 2026 opens on a Saturday, so the window leads with five July days the anchor's
+        // month does not hold. Without a today the tab stop is the 1st, not the leading cell.
+        let controls =
+            day_controls(CalendarGrid::new("2026-08-15").on_day_click(|_: CalendarGridDay| {}));
+        let tab_stops: Vec<&str> = controls
+            .iter()
+            .filter(|(tabindex, _)| tabindex == "0")
+            .map(|(_, label)| label.as_str())
+            .collect();
+        assert_eq!(tab_stops, vec!["2026-08-01"]);
+    }
+
+    #[test]
+    fn a_day_label_hook_names_the_control() {
+        let controls = day_controls(
+            CalendarGrid::new("2026-06-10")
+                .on_day_click(|_: CalendarGridDay| {})
+                .day_label(|d: &CalendarGridDay| AttrValue::from(format!("Open {}", d.day))),
+        );
+        assert_eq!(controls[0].1, "Open 1");
     }
 
     #[test]
