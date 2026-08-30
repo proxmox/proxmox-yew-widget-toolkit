@@ -28,6 +28,13 @@ pub struct MenuButton {
     #[prop_or_default]
     pub icon_class: Option<Classes>,
 
+    /// Accessible name for the button. Defaults to its text content when omitted.
+    ///
+    /// Set the name through this property instead of a standard `aria-label` attribute.
+    #[prop_or_default]
+    #[builder(IntoPropValue, into_prop_value)]
+    pub aria_label: Option<AttrValue>,
+
     /// Optional Submenu
     #[prop_or_default]
     pub menu: Option<Menu>,
@@ -246,6 +253,7 @@ impl Component for PwtMenuButton {
 
         let mut button = Button::new(&props.text)
             .node_ref(self.align_ref.clone())
+            .aria_label(props.aria_label.clone())
             .show_arrow(props.show_arrow)
             .disabled(props.disabled)
             .attribute("aria-haspopup", "true")
