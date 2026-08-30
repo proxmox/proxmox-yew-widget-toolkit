@@ -76,6 +76,7 @@ impl IntoVTag for ActionIcon {
             let on_activate = self.on_activate.clone();
             move |event: KeyboardEvent| match crate::dom::event_key(&event).as_ref() {
                 "Enter" | " " => {
+                    event.prevent_default();
                     event.stop_propagation();
                     if disabled {
                         return;
