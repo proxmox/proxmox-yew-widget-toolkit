@@ -193,7 +193,7 @@ impl<T: 'static + DeserializeOwned + Serialize> Loader<T> {
     pub fn render<R: Into<Html>>(&self, render: impl Fn(Rc<T>) -> R) -> Html {
         match &self.read().data {
             None => Container::new()
-                .class("pwt-text-center")
+                .class("pwt-text-align-center")
                 .padding(4)
                 .with_child(Fa::new("spinner").margin_end(1).pulse())
                 .with_child(tr!("Loading..."))
