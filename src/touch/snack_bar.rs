@@ -101,7 +101,6 @@ impl IntoVTag for SnackBar {
         if let Some(action_label) = &self.action_label {
             children.push(
                 Button::new(action_label.clone())
-                    .class("pwt-button-filled")
                     .class("pwt-snackbar-action")
                     .class("pwt-scheme-inverse-surface")
                     .onclick({
