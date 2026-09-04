@@ -16,7 +16,7 @@ pub enum FieldPosition {
     Large,
 }
 
-/// Allow a component te be associated with label
+/// Allow a component to be associated with label
 ///
 /// [InputPanel] `add_field` functions requires components to implement this trait. The trait
 /// is automatically implemented for standard fields (impl FieldBuilder).
@@ -25,7 +25,7 @@ pub trait Labelable: Into<Html> {
     fn name(&self) -> Option<AttrValue>;
     /// Assign a label_id to the component
     fn set_label_id(&mut self, label_id: AttrValue);
-    /// Returns if the field is diabled.
+    /// Returns if the field is disabled.
     fn disabled(&self) -> bool;
     /// Whether the field participates in form submission. A display-only field (submit off)
     /// has no form identity to key on, so key fallbacks treat a nameless one as intended
@@ -117,7 +117,7 @@ impl InputPanel {
     /// Returns whether any advanced field or custom child has been added.
     ///
     /// A lone advanced spacer does not count. Useful to decide whether to offer an "Advanced"
-    /// toggle at all - report it into a [FormContext](FormContext::set_has_advanced) after adding
+    /// toggle at all - report it into a [FormContext](crate::widget::form::FormContext::set_has_advanced) after adding
     /// all fields so a container can gate its toggle on it.
     pub fn has_advanced(&self) -> bool {
         self.has_advanced
@@ -182,7 +182,7 @@ impl InputPanel {
         self
     }
 
-    /// Method to add a custon child with options
+    /// Method to add a custom child with options
     pub fn add_custom_child_with_options(
         &mut self,
         position: FieldPosition,
@@ -536,9 +536,9 @@ impl InputPanel {
 
     /// Method to add a field with label at the left column, always use a single line
     ///
-    /// This is usefull for mobile UI to render boolean inputs.
+    /// This is useful for mobile UI to render boolean inputs.
     ///
-    /// For desktop layout, this simple calls `add_field_with_options(FieldPosition::Left, ...)`.
+    /// For desktop layout, this simply calls `add_field_with_options(FieldPosition::Left, ...)`.
     pub fn add_single_line_field(
         &mut self,
         advanced: bool,
