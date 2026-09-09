@@ -1,4 +1,4 @@
-error[E0412]: cannot find type `Wrong` in this scope
+error[E0425]: cannot find type `Wrong` in this scope
   --> tests/widget/wrong_comp.rs:53:26
    |
 53 | #[widget(pwt=crate, comp=Wrong, @input, @element)]
