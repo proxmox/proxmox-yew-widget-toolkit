@@ -1,4 +1,5 @@
 use std::cell::{Ref, RefCell, RefMut};
+use std::mem::ManuallyDrop;
 use std::ops::Range;
 use std::ops::{Deref, DerefMut};
 use std::rc::Rc;
@@ -185,7 +186,7 @@ impl<T: 'static> Store<T> {
     /// being in place.
     pub fn try_write(&self) -> Result<StoreWriteGuard<'_, T>, Error> {
         Ok(StoreWriteGuard {
-            state: self.inner.try_borrow_mut()?,
+            state: ManuallyDrop::new(self.inner.try_borrow_mut()?),
             update: true,
         })
     }
@@ -277,7 +278,7 @@ impl<T: 'static> Store<T> {
 ///
 /// Notifies store listeners when dropped, except when using [StoreWriteGuard::skip_update]
 pub struct StoreWriteGuard<'a, T: 'static> {
-    state: RefMut<'a, StoreState<T>>,
+    state: ManuallyDrop<RefMut<'a, StoreState<T>>>,
     update: bool,
 }
 
@@ -306,9 +307,22 @@ impl<T> DerefMut for StoreWriteGuard<'_, T> {
 
 impl<T: 'static> Drop for StoreWriteGuard<'_, T> {
     fn drop(&mut self) {
-        if self.update {
+        let listeners = if self.update {
             self.version += 1;
-            self.state.notify_listeners();
+            Some(self.state.clone_listeners())
+        } else {
+            None
+        };
+
+        // SAFETY: Only called once (here), and the value is not used afterwards.
+        unsafe {
+            ManuallyDrop::drop(&mut self.state);
+        }
+
+        if let Some(listeners) = listeners {
+            for (_key, listener) in listeners.iter() {
+                listener.emit(());
+            }
         }
     }
 }
@@ -495,10 +509,9 @@ impl<T: 'static> StoreState<T> {
         self.listeners.remove(key);
     }
 
-    pub(crate) fn notify_listeners(&self) {
-        for (_key, listener) in self.listeners.iter() {
-            listener.emit(());
-        }
+    /// Snapshot of the listeners, so they can be notified after releasing the borrow.
+    pub(crate) fn clone_listeners(&self) -> Slab<Callback<()>> {
+        self.listeners.clone()
     }
 
     fn set_sorter(&mut self, sorter: impl IntoSorterFn<T>) {
@@ -641,5 +654,25 @@ where
         });
 
         Some((pos, node))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::cell::Cell;
+
+    use super::*;
+
+    #[test]
+    fn listener_can_read_store_during_notification() {
+        let store = Store::with_extract_key(ExtractKeyFn::new(|v: &u32| Key::from(*v as u64)));
+        let seen = Rc::new(Cell::new(0));
+        let _observer = store.add_listener({
+            let store = store.clone();
+            let seen = Rc::clone(&seen);
+            move |()| seen.set(store.read().data().len())
+        });
+        store.set_data(vec![1, 2, 3]);
+        assert_eq!(seen.get(), 3);
     }
 }

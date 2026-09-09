@@ -14,6 +14,7 @@ pub use keyed_slab_tree::{
 mod slab_tree_serde;
 
 use std::cell::{Ref, RefCell, RefMut};
+use std::mem::ManuallyDrop;
 use std::ops::{Deref, DerefMut, Range};
 use std::rc::Rc;
 
@@ -143,7 +144,7 @@ impl<T: 'static> TreeStore<T> {
     ///
     /// Panics if the store is already locked.
     pub fn write(&self) -> TreeStoreWriteGuard<'_, T> {
-        let tree = self.inner.borrow_mut();
+        let tree = ManuallyDrop::new(self.inner.borrow_mut());
 
         TreeStoreWriteGuard {
             initial_version: tree.version(),
@@ -316,7 +317,7 @@ impl<T> Deref for TreeStoreReadGuard<'_, T> {
 
 /// A wrapper type for a mutably borrowed [TreeStore]
 pub struct TreeStoreWriteGuard<'a, T> {
-    tree: RefMut<'a, KeyedSlabTree<T>>,
+    tree: ManuallyDrop<RefMut<'a, KeyedSlabTree<T>>>,
     initial_version: usize,
 }
 
@@ -336,8 +337,22 @@ impl<T> DerefMut for TreeStoreWriteGuard<'_, T> {
 
 impl<T> Drop for TreeStoreWriteGuard<'_, T> {
     fn drop(&mut self) {
-        if self.tree.version() != self.initial_version {
-            self.tree.notify_listeners();
+        let changed = self.tree.version() != self.initial_version;
+        let listeners = if changed {
+            Some(self.tree.clone_listeners())
+        } else {
+            None
+        };
+
+        // SAFETY: Only called once (here) and value is not used afterwards.
+        unsafe {
+            ManuallyDrop::drop(&mut self.tree);
+        }
+
+        if let Some(listeners) = listeners {
+            for (_key, listener) in listeners.iter() {
+                listener.emit(());
+            }
         }
     }
 }
@@ -460,5 +475,25 @@ where
         });
 
         Some((pos, node))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::cell::Cell;
+
+    use super::*;
+
+    #[test]
+    fn listener_can_read_store_during_notification() {
+        let store = TreeStore::with_extract_key(ExtractKeyFn::new(|v: &u32| Key::from(*v as u64)));
+        let seen = Rc::new(Cell::new(false));
+        let _observer = store.add_listener({
+            let store = store.clone();
+            let seen = Rc::clone(&seen);
+            move |()| seen.set(store.read().root().is_some())
+        });
+        store.write().set_root(1);
+        assert!(seen.get());
     }
 }

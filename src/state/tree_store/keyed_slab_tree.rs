@@ -279,10 +279,9 @@ impl<T> KeyedSlabTree<T> {
         self.listeners.remove(key);
     }
 
-    pub(crate) fn notify_listeners(&self) {
-        for (_key, listener) in self.listeners.iter() {
-            listener.emit(());
-        }
+    /// Snapshot of the listeners, so they can be notified after releasing the borrow.
+    pub(crate) fn clone_listeners(&self) -> Slab<Callback<()>> {
+        self.listeners.clone()
     }
 
     pub(crate) fn set_sorter(&mut self, sorter: impl IntoSorterFn<T>) {
