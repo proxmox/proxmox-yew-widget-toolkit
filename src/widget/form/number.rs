@@ -495,6 +495,20 @@ impl<T: NumberTypeInfo> ManagedField for NumberField<T> {
         Ok(number.into())
     }
 
+    fn input_normalizer() -> Option<Callback<Value, Value>> {
+        Some(Callback::from(|value: Value| {
+            if value.is_null() || value.as_str() == Some("") {
+                Value::Null
+            } else {
+                // Parsing defines numeric input equivalence even when a range or custom validator
+                // rejects the number. Unparseable input remains distinct, including its spelling.
+                T::value_to_number(&value)
+                    .map(|number| number.number_to_value())
+                    .unwrap_or(value)
+            }
+        }))
+    }
+
     fn create(ctx: &ManagedFieldContext<Self>) -> Self {
         let props = ctx.props();
 

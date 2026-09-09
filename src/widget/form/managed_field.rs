@@ -93,7 +93,8 @@ pub trait ManagedFieldScopeExt<M: ManagedField> {
 
     /// Update default value.
     ///
-    /// This updates the default value used for form resets.
+    /// This updates the default value used for form resets and modification tracking. For managed
+    /// fields, see [`FieldHandle::set_default`].
     fn update_default(&self, default: impl Into<Value>);
 
     /// Set value/validity for unmanaged fields
@@ -168,6 +169,13 @@ pub trait ManagedField: Sized + DerefMut<Target = ManagedFieldState> + 'static {
     /// If valid, it should return the value to be submitted.
     fn validator(_props: &Self::ValidateClosure, value: &Value) -> Result<Value, Error> {
         Ok(value.clone())
+    }
+
+    /// Optional input equivalence for modification tracking, independent of validation constraints.
+    ///
+    /// See [`FieldHandle::set_input_normalizer`]. This does not normalize stored or submitted data.
+    fn input_normalizer() -> Option<Callback<Value, Value>> {
+        None
     }
 
     /// Create the component state.
@@ -287,7 +295,7 @@ impl<MF: ManagedField + 'static> ManagedFieldMaster<MF> {
             required: input_props.required,
         };
 
-        let field_handle = form_ctx.register_field(
+        let mut field_handle = form_ctx.register_field(
             name,
             self.state.value.clone(),
             self.state.default.clone(),
@@ -296,6 +304,9 @@ impl<MF: ManagedField + 'static> ManagedFieldMaster<MF> {
             options,
             self.state.unique,
         );
+        if let Some(normalizer) = MF::input_normalizer() {
+            field_handle.set_input_normalizer(normalizer);
+        }
 
         // FormContext may already have field data (i.e for unique fields), so sync back
         // data after field registration.

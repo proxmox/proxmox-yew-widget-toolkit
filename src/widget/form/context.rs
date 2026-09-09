@@ -1,5 +1,9 @@
 //! FormContext - shared form data.
 
+#[cfg(test)]
+#[path = "context_tests.rs"]
+mod tests;
+
 use std::cell::{Ref, RefCell, RefMut};
 use std::collections::HashMap;
 use std::mem::ManuallyDrop;
@@ -56,6 +60,10 @@ struct FieldRegistration {
     pub default: Value,
     /// Validation result (contains the submit value)
     pub result: Result<Value, String>,
+    input_default: Value,
+    submit_default: Value,
+    input_normalizer: Callback<Value, Value>,
+    modified: bool,
 }
 
 impl FieldRegistration {
@@ -70,6 +78,25 @@ impl FieldRegistration {
         }
     }
 
+    fn input_matches_default(&self) -> bool {
+        self.input_normalizer.emit(self.value.clone())
+            == self.input_normalizer.emit(self.input_default.clone())
+    }
+
+    fn update_modified(&mut self) {
+        self.modified = !self.input_matches_default()
+            && match &self.result {
+                Ok(value) => value != &self.submit_default,
+                Err(_) => true,
+            };
+    }
+
+    fn accept_value(&mut self) {
+        self.input_default = self.value.clone();
+        self.submit_default = self.result.as_ref().unwrap_or(&self.default).clone();
+        self.modified = false;
+    }
+
     fn apply_value(&mut self, value: Value) {
         let result = if let Some(validate) = &self.validate {
             validate.apply(&value).map_err(|e| e.to_string())
@@ -81,8 +108,19 @@ impl FieldRegistration {
             self.last_valid = Some(submit_value.clone());
         }
         self.result = result;
+        self.update_modified();
     }
 }
+
+// Scalar input widgets display both null and an empty string as blank. Do not extend this to
+// empty collections, false, or zero: those represent distinct input.
+fn normalize_input_value(value: Value) -> Value {
+    match &value {
+        Value::String(text) if text.is_empty() => Value::Null,
+        _ => value,
+    }
+}
+
 /// Shared form data ([Rc]<[RefCell]<[FormContextState]>>)
 ///
 /// This shared object can be used to control input fields. The
@@ -172,10 +210,34 @@ impl FieldHandle {
         self.write().set_field_value_by_slab_key(key, value, false);
     }
 
-    /// Set the field default value
+    /// Set the field default value.
+    ///
+    /// For non-radio fields, a changed default also replaces the modification baseline without
+    /// changing the current input. The default is in the submitted/reset representation. Setting
+    /// the same default preserves the existing input baseline. Radio defaults belong to the group;
+    /// use [`FormContext::load_form`] to replace them.
     pub fn set_default(&mut self, default: Value) {
         let key = self.key;
         self.write().set_field_default_by_slab_key(key, default);
+    }
+
+    /// Set the input normalization used only by [`FormContextState::is_modified`].
+    ///
+    /// The callback must be pure and map equivalent input representations to the same value,
+    /// independently of validation constraints. The default equates null and an empty string,
+    /// matching scalar input widgets. Use an identity callback if those are distinct inputs.
+    /// This does not change stored, submitted, or reset values.
+    pub fn set_input_normalizer(&mut self, normalizer: Callback<Value, Value>) {
+        let key = self.key;
+        let mut state = self.write();
+        let field = &mut state.fields[key];
+        let matched = field.input_matches_default();
+        field.input_normalizer = normalizer;
+        // Reinstalling equivalent normalization must not turn revalidation into an input change.
+        if matched != field.input_matches_default() {
+            field.update_modified();
+        }
+        state.version += 1;
     }
 
     /// Reset the field value
@@ -475,6 +537,10 @@ impl FormContextState {
             last_valid: None,
             default: default.clone(),
             result: Ok(default.clone()), // set by apply_value below
+            input_default: value.clone(),
+            submit_default: default.clone(),
+            input_normalizer: Callback::from(normalize_input_value),
+            modified: false,
         };
 
         if !radio_group {
@@ -484,6 +550,7 @@ impl FormContextState {
             if let Ok(submit_value) = &field.result {
                 field.default = submit_value.clone();
             }
+            field.accept_value();
         }
 
         let slab_key;
@@ -530,14 +597,14 @@ impl FormContextState {
             }
         }
         let old_dirty = self.is_dirty();
+        let old_modified = self.is_modified();
         let field = self.fields.remove(key);
         let group = self.groups.get_mut(&field.name).unwrap();
         group.members.retain(|k| k != &key);
         if field.radio_group {
             group.radio_count = group.radio_count.saturating_sub(1);
         }
-        let dirty_changed = old_dirty != self.is_dirty();
-        dirty_changed
+        old_dirty != self.is_dirty() || old_modified != self.is_modified()
     }
 
     pub fn set_show_advanced(&mut self, show_advanced: bool) {
@@ -686,6 +753,9 @@ impl FormContextState {
                 field.apply_value(value);
                 self.version += 1;
             }
+            if set_default {
+                field.accept_value();
+            }
         }
     }
 
@@ -705,9 +775,14 @@ impl FormContextState {
 
     fn reset_field_by_slab_key(&mut self, slab_key: usize) {
         let field = &mut self.fields[slab_key];
+        let was_modified = field.modified;
         if field.value != field.default {
             self.version += 1;
             field.apply_value(field.default.clone());
+        }
+        field.accept_value();
+        if was_modified {
+            self.version += 1;
         }
     }
 
@@ -743,6 +818,40 @@ impl FormContextState {
         false
     }
 
+    /// Whether enabled fields contain edits relative to their modification baseline.
+    ///
+    /// Registration and [`Self::load_form`] accept the current input as the baseline, including
+    /// invalid defaults. Resets accept the restored input; changing a field's default replaces its
+    /// baseline without accepting the current input. Missing fields in loaded data are unaffected.
+    ///
+    /// An explicit value change is unmodified if its normalized input matches the input baseline,
+    /// or if its valid submitted value matches the submitted baseline. Otherwise it is modified,
+    /// including invalid edits. By default, only null and an empty string are equivalent inputs;
+    /// fields can define their own equivalence with [`FieldHandle::set_input_normalizer`]. Number
+    /// fields compare parsed numbers independently of range and validation constraints.
+    ///
+    /// Revalidation (including externally supplied validation results) does not change this state.
+    /// It describes the last input change, not whether submission would now differ. Unlike
+    /// [`Self::is_dirty`], validation failure alone is not a modification. Submission flags do not
+    /// affect this query. Disabled fields are ignored without forgetting their edits.
+    ///
+    /// Radio selections use the group's existing default and count only while at least one radio
+    /// is enabled. Use [`Self::reset_form`] or [`Self::load_form`] for radio defaults/resets. Removed
+    /// fields do not count, except that unique fields retain their state by design.
+    pub fn is_modified(&self) -> bool {
+        self.groups.values().any(|group| {
+            group.members.iter().any(|key| {
+                let field = &self.fields[*key];
+                !field.options.disabled
+                    && if field.radio_group {
+                        group.default != group.value
+                    } else {
+                        field.modified
+                    }
+            })
+        })
+    }
+
     pub fn dirty_count(&self) -> usize {
         let mut count = 0;
         for (_name, group) in self.groups.clone().iter() {
@@ -763,10 +872,12 @@ impl FormContextState {
     pub fn reset_form_old(&mut self) {
         let mut changes = false;
         for (_key, field) in self.fields.iter_mut() {
+            changes |= field.modified;
             if field.value != field.default {
                 changes = true;
                 field.apply_value(field.default.clone());
             }
+            field.accept_value();
         }
         if changes {
             self.version += 1;
@@ -804,10 +915,12 @@ impl FormContextState {
 
             for key in field_keys {
                 let field = &mut self.fields[key];
+                changes |= field.modified;
                 if field.value != field.default {
                     changes = true;
                     field.apply_value(field.default.clone());
                 }
+                field.accept_value();
             }
         }
 
@@ -827,7 +940,13 @@ impl FormContextState {
 
     fn set_field_default_by_slab_key(&mut self, slab_key: usize, default: Value) {
         let field = &mut self.fields[slab_key];
-        field.default = default;
+        if field.default != default {
+            field.input_default = default.clone();
+            field.submit_default = default.clone();
+            field.default = default;
+            field.update_modified();
+            self.version += 1;
+        }
     }
 
     fn validate_field_by_slab_key(&mut self, slab_key: usize) {
