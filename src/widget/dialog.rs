@@ -11,8 +11,8 @@ use yew::html::{IntoEventCallback, IntoPropValue, Scope};
 use yew::prelude::*;
 use yew::virtual_dom::{Key, VComp, VNode};
 
-use crate::dom::IntoHtmlElement;
 use crate::dom::align::{Point, align_to_viewport, align_to_xy};
+use crate::dom::{DomSizeObserver, IntoHtmlElement};
 use crate::prelude::*;
 use crate::props::{AsCssStylesMut, CssStyles};
 use crate::widget::{ActionIcon, Container, Panel};
@@ -70,8 +70,8 @@ pub struct Dialog {
 
     /// Determines if the dialog should be auto centered
     ///
-    /// It will be centered on every window resize
-    /// This is enabled by default
+    /// It will be centered on every window resize. Content size changes keep the dialog within the
+    /// viewport without moving it when its current position still fits. This is enabled by default.
     #[prop_or(true)]
     #[builder]
     pub auto_center: bool,
@@ -123,6 +123,7 @@ pub enum Msg {
     ResizeMove(Point, PointerEvent),
     ResizeUp(Point, i32),
     Center,
+    ContentResize,
 }
 
 enum DragState {
@@ -141,6 +142,7 @@ pub struct PwtDialog {
     center_function: Option<Closure<dyn FnMut()>>,
     node_ref: NodeRef,
     inner_ref: NodeRef,
+    size_observer: Option<DomSizeObserver>,
 }
 
 impl PwtDialog {
@@ -199,6 +201,7 @@ impl Component for PwtDialog {
             center_function,
             node_ref: NodeRef::default(),
             inner_ref: NodeRef::default(),
+            size_observer: None,
         }
     }
 
@@ -290,6 +293,7 @@ impl Component for PwtDialog {
             Msg::PointerUp(pointer_id) => match &self.dragging_state {
                 DragState::Dragging(_, _, _, _, id) if *id == pointer_id => {
                     self.dragging_state = DragState::Idle;
+                    ctx.link().send_message(Msg::ContentResize);
                     return true;
                 }
                 _ => {}
@@ -436,9 +440,36 @@ impl Component for PwtDialog {
             Msg::ResizeUp(point, pointer_id) => match self.resizer_state.get(&point) {
                 Some(DragState::Dragging(_, _, _, _, id)) if *id == pointer_id => {
                     self.resizer_state.remove(&point);
+                    ctx.link().send_message(Msg::ContentResize);
                 }
                 _ => {}
             },
+            Msg::ContentResize => {
+                if props.auto_center
+                    && self.open
+                    && matches!(self.dragging_state, DragState::Idle)
+                    && self.resizer_state.is_empty()
+                {
+                    let window = gloo_utils::window();
+                    if let (Some(element), Ok(width), Ok(height)) = (
+                        self.node_ref.clone().into_html_element(),
+                        window.inner_width(),
+                        window.inner_height(),
+                    ) && let (Some(width), Some(height)) = (width.as_f64(), height.as_f64())
+                    {
+                        let rect = element.get_bounding_client_rect();
+                        let position = (
+                            visible_origin(rect.x(), rect.width(), width),
+                            visible_origin(rect.y(), rect.height(), height),
+                        );
+                        if position != (rect.x(), rect.y())
+                            && let Err(err) = align_to_xy(element, position, Point::TopStart)
+                        {
+                            log::error!("could not fit dialog to viewport: {}", err.to_string());
+                        }
+                    }
+                }
+            }
             Msg::Center => {
                 if let Err(err) =
                     align_to_viewport(self.node_ref.clone(), Point::Center, Point::Center)
@@ -451,6 +482,7 @@ impl Component for PwtDialog {
     }
 
     fn destroy(&mut self, _ctx: &Context<Self>) {
+        self.size_observer = None;
         // always close the dialog before restoring the focus
         if let Some(dialog_node) = self.node_ref.get() {
             crate::close_dialog(dialog_node);
@@ -559,6 +591,9 @@ impl Component for PwtDialog {
 
     fn rendered(&mut self, ctx: &Context<Self>, first_render: bool) {
         if first_render {
+            self.size_observer = self.inner_ref.cast::<web_sys::Element>().map(|element| {
+                DomSizeObserver::new(&element, ctx.link().callback(|(_, _)| Msg::ContentResize))
+            });
             let link = ctx.link().clone();
             // send the first center message in a timeout, so the browser has time to get
             // the sizes right first. The new position should be identical with
@@ -568,10 +603,39 @@ impl Component for PwtDialog {
     }
 }
 
+fn visible_origin(origin: f64, extent: f64, viewport: f64) -> f64 {
+    origin.clamp(0.0, (viewport - extent).max(0.0))
+}
+
 impl From<Dialog> for VNode {
     fn from(val: Dialog) -> Self {
         let key = val.key.clone();
         let comp = VComp::new::<PwtDialog>(Rc::new(val), key);
         VNode::from(comp)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::visible_origin;
+
+    #[test]
+    fn bounded_dialog_growth_keeps_both_edges_visible() {
+        assert_eq!(visible_origin(328.0, 900.0, 1000.0), 100.0);
+        assert_eq!(visible_origin(853.0, 768.0, 1280.0), 512.0);
+    }
+
+    #[test]
+    fn fitting_positions_survive_growth_and_shrinkage() {
+        for size in [50.0, 400.0, 700.0] {
+            assert_eq!(visible_origin(250.0, size, 1000.0), 250.0);
+        }
+    }
+
+    #[test]
+    fn oversized_or_offscreen_dialogs_keep_their_start_reachable() {
+        assert_eq!(visible_origin(-10.0, 400.0, 1000.0), 0.0);
+        assert_eq!(visible_origin(328.0, 1100.0, 1000.0), 0.0);
+        assert_eq!(visible_origin(328.0, 400.0, 0.0), 0.0);
     }
 }
