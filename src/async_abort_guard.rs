@@ -13,15 +13,21 @@ impl AsyncAbortGuard {
     where
         F: Future<Output = ()> + 'static,
     {
-        let (future, abort_handle) = abortable(future);
+        let (guard, future) = Self::new(future);
+        wasm_bindgen_futures::spawn_local(future);
+        guard
+    }
 
-        wasm_bindgen_futures::spawn_local(async move {
-            match future.await {
-                Ok(()) => { /* do nothing */ }
-                Err(futures::future::Aborted) => { /* do nothing (maybe we want to log this?) */ }
-            }
-        });
-        AsyncAbortGuard { abort_handle }
+    /// Wrap a future and return its abort guard without scheduling it.
+    pub(crate) fn new<F>(future: F) -> (Self, impl Future<Output = ()>)
+    where
+        F: Future<Output = ()>,
+    {
+        let (future, abort_handle) = abortable(future);
+        let future = async move {
+            let _ = future.await;
+        };
+        (Self { abort_handle }, future)
     }
 }
 
