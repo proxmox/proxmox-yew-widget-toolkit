@@ -1,3 +1,25 @@
+rust-pwt (0.8.18) trixie; urgency=medium
+
+  * shared state: fix a panic that could occur when removing listeners.
+
+  * loader: fix refresh buttons that remain busy after a load is canceled.
+    Cancel pending loads when the last loader handle is released.
+
+  * dialog:
+    - keep dialog buttons visible when expanded details or error messages
+      increase the dialog's size.
+    - prevent text selection while dragging side dialogs, so later drags
+      can still close them.
+    - allow applications to keep a dialog open while asking whether to
+      discard changes, preserving entered data and blocking interaction
+      with the page behind it.
+
+  * form: add a check for changed input that does not count validation
+    errors alone as edits. Applications can use it to avoid warnings about
+    unsaved changes when default values are invalid but unchanged.
+
+ -- Proxmox Support Team <support@proxmox.com>  Thu, 10 Sep 2026 00:08:24 +0200
+
 rust-pwt (0.8.17) trixie; urgency=medium
 
   * dropdown: create picker placement only while the picker is open, avoiding
