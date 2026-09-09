@@ -22,8 +22,8 @@ impl<T> SharedStateInner<T> {
         self.listeners.insert(cb)
     }
 
-    fn remove_listener(&mut self, key: usize) {
-        self.listeners.remove(key);
+    fn remove_listener(&mut self, key: usize) -> Callback<SharedState<T>> {
+        self.listeners.remove(key)
     }
 }
 
@@ -60,7 +60,10 @@ pub struct SharedStateObserver<T> {
 
 impl<T> Drop for SharedStateObserver<T> {
     fn drop(&mut self) {
-        self.inner.borrow_mut().remove_listener(self.key);
+        // Keep a named binding so the borrow ends before captured values are dropped. Using `let _`
+        // would drop the callback first, so destructors that borrow the state again could panic.
+        let callback = self.inner.borrow_mut().remove_listener(self.key);
+        drop(callback);
     }
 }
 
@@ -191,5 +194,31 @@ impl<T> Deref for SharedStateReadGuard<'_, T> {
 
     fn deref(&self) -> &Self::Target {
         &self.borrowed_state
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::cell::Cell;
+
+    use super::*;
+
+    #[test]
+    fn removing_listener_can_drop_another_observer() {
+        let state = SharedState::new(());
+        let calls = Rc::new(Cell::new(0));
+        let first = state.add_listener({
+            let calls = Rc::clone(&calls);
+            move |_| calls.set(calls.get() + 1)
+        });
+        let second = state.add_listener(move |_| {
+            let _ = &first;
+        });
+
+        drop(state.write());
+        assert_eq!(calls.get(), 1);
+        drop(second);
+        drop(state.write());
+        assert_eq!(calls.get(), 1);
     }
 }
