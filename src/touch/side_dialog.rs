@@ -80,6 +80,13 @@ pub struct SideDialog {
     #[prop_or_default]
     pub on_close: Option<Callback<()>>,
 
+    /// Check Escape, backdrop taps, dismissal gestures, or controller requests before starting the
+    /// closing animation. Return false to keep the sheet open. Direct DOM close calls and removal by
+    /// the parent are not intercepted.
+    #[builder(IntoPropValue, into_prop_value)]
+    #[prop_or_default]
+    pub before_close: Option<Callback<(), bool>>,
+
     #[prop_or_default]
     pub children: Vec<VNode>,
 
@@ -148,6 +155,7 @@ pub struct PwtSideDialog {
     slider_state: SliderState,
     drag_start: Option<(f64, f64)>,
     drag_delta: Option<(f64, f64)>,
+    drag_requested_dismissal: bool,
     controller: SideDialogController,
     _controller_observer: SharedStateObserver<Vec<SideDialogControllerMsg>>,
 }
@@ -203,6 +211,7 @@ impl Component for PwtSideDialog {
             slider_state: SliderState::Hidden,
             drag_start: None,
             drag_delta: None,
+            drag_requested_dismissal: false,
             controller,
             _controller_observer,
         }
@@ -243,7 +252,12 @@ impl Component for PwtSideDialog {
                 false
             }
             Msg::Dismiss => {
-                if self.slider_state == SliderState::Visible {
+                if self.slider_state == SliderState::Visible
+                    && props
+                        .before_close
+                        .as_ref()
+                        .is_none_or(|check| check.emit(()))
+                {
                     self.slider_state = SliderState::SlideOut;
                     true
                 } else {
@@ -262,6 +276,9 @@ impl Component for PwtSideDialog {
                 true
             }
             Msg::Drag(event) => {
+                if event.phase == GesturePhase::Start {
+                    self.drag_requested_dismissal = false;
+                }
                 if event.phase == GesturePhase::End {
                     let mut dismiss = false;
                     let threshold = 100.0;
@@ -275,6 +292,7 @@ impl Component for PwtSideDialog {
                     }
                     self.drag_start = None;
                     self.drag_delta = None;
+                    self.drag_requested_dismissal = dismiss;
 
                     if dismiss {
                         ctx.link().send_message(Msg::Dismiss);
@@ -311,6 +329,11 @@ impl Component for PwtSideDialog {
                 }
             }
             Msg::Swipe(event) => {
+                // A fast drag emits both its end and a swipe. A veto leaves the sheet visible, so
+                // slider state alone cannot prevent a second close check for that same gesture.
+                if std::mem::take(&mut self.drag_requested_dismissal) {
+                    return false;
+                }
                 if scrolling_element_in_range(
                     event.target(),
                     self.slider_ref.clone(),

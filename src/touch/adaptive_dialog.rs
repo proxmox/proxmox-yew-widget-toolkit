@@ -62,6 +62,11 @@ pub struct AdaptiveDialog {
     #[prop_or_default]
     pub on_close: Option<Callback<()>>,
 
+    /// Check a close request before closing either shell. Return false to keep its contents mounted.
+    #[builder(IntoPropValue, into_prop_value)]
+    #[prop_or_default]
+    pub before_close: Option<Callback<(), bool>>,
+
     /// Whether the wide [Dialog] can be dragged by its title bar. No effect on the bottom sheet.
     #[prop_or(true)]
     #[builder]
@@ -193,6 +198,7 @@ impl Component for PwtAdaptiveDialog {
         if self.is_wide {
             return Dialog::new(props.title.clone())
                 .on_close(props.on_close.clone())
+                .before_close(props.before_close.clone())
                 .draggable(props.draggable)
                 .resizable(props.resizable)
                 .auto_center(props.auto_center)
@@ -229,6 +235,7 @@ impl Component for PwtAdaptiveDialog {
             .location(SideDialogLocation::Bottom)
             .controller(self.side_controller.clone())
             .on_close(props.on_close.clone())
+            .before_close(props.before_close.clone())
             .style("flex-direction", "column")
             .style("max-height", "90dvh")
             .with_child(

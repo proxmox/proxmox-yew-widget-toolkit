@@ -43,6 +43,13 @@ pub struct Dialog {
     #[prop_or_default]
     pub on_close: Option<Callback<()>>,
 
+    /// Check Escape or title-bar close requests before changing native modal state. Return false to
+    /// keep the dialog open, for example while asking whether to discard unsaved input. Direct DOM
+    /// close calls and removal by the parent are not intercepted.
+    #[builder(IntoPropValue, into_prop_value)]
+    #[prop_or_default]
+    pub before_close: Option<Callback<(), bool>>,
+
     #[prop_or_default]
     pub children: Vec<VNode>,
 
@@ -115,6 +122,7 @@ impl Dialog {
 pub enum Msg {
     Open,
     KeyDown(KeyboardEvent),
+    RequestClose,
     Close,
     PointerDown(PointerEvent),
     PointerMove(PointerEvent),
@@ -222,6 +230,17 @@ impl Component for PwtDialog {
                 if crate::dom::event_key(&event) == "Escape" && props.on_close.is_none() {
                     event.stop_propagation();
                     event.prevent_default();
+                }
+            }
+            Msg::RequestClose => {
+                if self.open
+                    && props.on_close.is_some()
+                    && props
+                        .before_close
+                        .as_ref()
+                        .is_none_or(|check| check.emit(()))
+                {
+                    ctx.link().send_message(Msg::Close);
                 }
             }
             Msg::Close => {
@@ -500,6 +519,11 @@ impl Component for PwtDialog {
             Msg::Close
         });
 
+        let oncancel = link.callback(|event: Event| {
+            event.stop_propagation();
+            event.prevent_default();
+            Msg::RequestClose
+        });
         let onkeydown = link.callback(Msg::KeyDown);
 
         let mut panel = Panel::new()
@@ -521,7 +545,7 @@ impl Component for PwtDialog {
                 ActionIcon::new("fa fa-close")
                     .tabindex(0)
                     .aria_label(tr!("Close"))
-                    .on_activate(link.callback(|_| Msg::Close)),
+                    .on_activate(link.callback(|_| Msg::RequestClose)),
             );
         };
 
@@ -577,6 +601,7 @@ impl Component for PwtDialog {
             .class("pwt-outer-dialog")
             .onpointerdown(onpointerdown)
             .onkeydown(onkeydown)
+            .oncancel(oncancel)
             .onclose(onclose)
             .ontouchstart(cancel_event.clone())
             .ontouchend(cancel_event.clone())
