@@ -300,6 +300,7 @@ impl Component for PwtSideDialog {
                             // prevent divide by zero
                             self.drag_start = Some((x, y));
                             self.drag_delta = Some((0.0, 0.0));
+                            return true;
                         }
                         false
                     }
@@ -389,6 +390,7 @@ impl Component for PwtSideDialog {
 
         let dialog = Container::from_tag("dialog")
             .class("pwt-side-dialog")
+            .class(self.drag_start.is_some().then_some("pwt-user-select-none"))
             .class(slider_state_class)
             .oncancel(oncancel)
             .onclose(link.callback(|_| Msg::Close))
