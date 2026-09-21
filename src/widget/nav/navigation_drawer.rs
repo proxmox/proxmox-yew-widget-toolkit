@@ -632,7 +632,7 @@ impl Component for PwtNavigationDrawer {
             event.prevent_default();
         });
 
-        let mut column = Column::new()
+        let menu = Column::new()
             .onkeydown(onkeydown)
             // avoid https://bugzilla.mozilla.org/show_bug.cgi?id=1069739
             .attribute("tabindex", "-1")
@@ -649,11 +649,15 @@ impl Component for PwtNavigationDrawer {
         let active = get_active_or_default(props, &self.active);
         let active = active.as_deref().unwrap_or("");
 
+        // inner container that can take the full height of the children,
+        // so the outer one can scroll
+        let mut column = Column::new();
         for item in props.menu.children.iter() {
             self.render_menu_entry(ctx, item, &mut column, active, 0, false);
         }
 
-        column.into_html_with_ref(self.node_ref.clone())
+        menu.with_child(column)
+            .into_html_with_ref(self.node_ref.clone())
     }
 }
 
