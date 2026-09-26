@@ -55,9 +55,8 @@ impl MiniScroll {
 
 #[doc(hidden)]
 pub enum Msg {
-    ScrollResize(f64, f64),
+    ScrollResize,
     ContentResize(f64, f64),
-    HandleResize(f64, f64),
     Wheel(f64),
     Scroll,
     ScrollStop,
@@ -74,13 +73,12 @@ enum ScrollMode {
 #[doc(hidden)]
 pub struct PwtMiniScroll {
     handle_ref: NodeRef,
-    handle_size_observer: Option<DomSizeObserver>,
     scroll_ref: NodeRef,
     content_ref: NodeRef,
     content_size_observer: Option<DomSizeObserver>,
     scroll_size_observer: Option<DomSizeObserver>,
     width: f64,
-    handle_width: f64,
+    full_width: f64,
     content_width: f64,
     content_height: f64,
     pos: f64,
@@ -89,6 +87,13 @@ pub struct PwtMiniScroll {
 }
 
 impl PwtMiniScroll {
+    fn measured_width(node_ref: &NodeRef) -> f64 {
+        node_ref
+            .cast::<web_sys::Element>()
+            .map(|el| el.get_bounding_client_rect().width())
+            .unwrap_or_default()
+    }
+
     fn set_scroll_timeout(&mut self, ctx: &Context<Self>) {
         if self.scroll_timeout.is_some() {
             return;
@@ -109,11 +114,10 @@ impl Component for PwtMiniScroll {
             handle_ref: NodeRef::default(),
             scroll_ref: NodeRef::default(),
             content_ref: NodeRef::default(),
-            handle_size_observer: None,
             content_size_observer: None,
             scroll_size_observer: None,
             width: 0f64,
-            handle_width: 0f64,
+            full_width: 0f64,
             content_width: 0f64,
             content_height: 0f64,
             pos: 0f64,
@@ -134,17 +138,16 @@ impl Component for PwtMiniScroll {
                 self.set_scroll_timeout(ctx);
                 false
             }
-            Msg::ScrollResize(width, _height) => {
-                self.width = width;
+            Msg::ScrollResize => {
+                // The scroll area gives up the arrows' width while they are shown, so it only adds
+                // up to the full width with the arrow width read in the same layout.
+                self.width = Self::measured_width(&self.scroll_ref);
+                self.full_width = self.width + 2.0 * Self::measured_width(&self.handle_ref);
                 true
             }
             Msg::ContentResize(width, height) => {
                 self.content_width = width;
                 self.content_height = height;
-                true
-            }
-            Msg::HandleResize(width, _height) => {
-                self.handle_width = width;
                 true
             }
             Msg::Scroll => {
@@ -238,11 +241,7 @@ impl Component for PwtMiniScroll {
             })
             .into_html_with_ref(self.scroll_ref.clone());
 
-        let arrow_visible = if arrow_mode {
-            (self.width + 2.0 * self.handle_width) < self.content_width
-        } else {
-            false
-        };
+        let arrow_visible = arrow_mode && self.content_width > self.full_width;
 
         let left = Container::new()
             .class("pwt-mini-scroll-left-arrow")
@@ -278,8 +277,8 @@ impl Component for PwtMiniScroll {
         if first_render {
             if let Some(el) = self.scroll_ref.cast::<web_sys::Element>() {
                 let link = ctx.link().clone();
-                let size_observer = DomSizeObserver::new(&el, move |(width, height)| {
-                    link.send_message(Msg::ScrollResize(width, height));
+                let size_observer = DomSizeObserver::new(&el, move |_: (f64, f64)| {
+                    link.send_message(Msg::ScrollResize);
                 });
                 self.scroll_size_observer = Some(size_observer);
             }
@@ -289,13 +288,6 @@ impl Component for PwtMiniScroll {
                     link.send_message(Msg::ContentResize(width, height));
                 });
                 self.content_size_observer = Some(size_observer);
-            }
-            if let Some(el) = self.handle_ref.cast::<web_sys::Element>() {
-                let link = ctx.link().clone();
-                let size_observer = DomSizeObserver::new(&el, move |(width, height)| {
-                    link.send_message(Msg::HandleResize(width, height));
-                });
-                self.handle_size_observer = Some(size_observer);
             }
         }
     }
