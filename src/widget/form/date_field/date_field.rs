@@ -139,6 +139,7 @@ impl DateFieldComp {
 
 #[derive(Clone, PartialEq)]
 pub struct DateFieldValidationArgs {
+    pub required: bool,
     pub min_value: Option<PlainDate>,
     pub max_value: Option<PlainDate>,
     pub format: AttrValue,
@@ -155,6 +156,7 @@ impl ManagedField for DateFieldComp {
 
     fn validation_args(props: &Self::Properties) -> Self::ValidateClosure {
         DateFieldValidationArgs {
+            required: props.input_props.required,
             min_value: props.min_value,
             max_value: props.max_value,
             format: props.format.clone(),
@@ -166,6 +168,14 @@ impl ManagedField for DateFieldComp {
     }
 
     fn validator(args: &Self::ValidateClosure, value: &Value) -> Result<Value, Error> {
+        let empty = match value {
+            Value::Null => true,
+            Value::String(s) => s.is_empty(),
+            _ => false,
+        };
+        if empty && args.required {
+            return Err(anyhow::anyhow!(tr!("Field may not be empty.")));
+        }
         match value {
             Value::Null => Ok(value.clone()),
             Value::String(s) => {
@@ -318,5 +328,33 @@ impl ManagedField for DateFieldComp {
             .on_change(ctx.link().callback(move |val| Msg::ValueChange(val)))
             .with_trigger("fa fa-calendar", true)
             .into()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use serde_json::Value;
+
+    use super::*;
+
+    fn args(required: bool) -> DateFieldValidationArgs {
+        DateFieldValidationArgs {
+            required,
+            min_value: None,
+            max_value: None,
+            format: "Y-m-d".into(),
+            submit_format: None,
+            alt_formats: "".into(),
+            disabled_days: Vec::new(),
+            disabled_dates: None,
+        }
+    }
+
+    #[test]
+    fn a_required_date_refuses_to_stay_empty() {
+        for empty in [Value::Null, Value::String(String::new())] {
+            assert!(DateFieldComp::validator(&args(true), &empty).is_err());
+            assert!(DateFieldComp::validator(&args(false), &empty).is_ok());
+        }
     }
 }
