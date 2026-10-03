@@ -58,6 +58,8 @@ pub enum Msg {
     ScrollResize,
     ContentResize(f64, f64),
     Wheel(f64),
+    /// The content scrolled, by whatever moved it.
+    Scrolled,
     Scroll,
     ScrollStop,
     ScrollLeft,
@@ -92,6 +94,15 @@ impl PwtMiniScroll {
             .cast::<web_sys::Element>()
             .map(|el| el.get_bounding_client_rect().width())
             .unwrap_or_default()
+    }
+
+    /// Where the content is scrolled to, from 0 at its start to 1 at its end.
+    fn scrolled_pos(&self) -> f64 {
+        let diff = self.content_width - self.width;
+        match self.scroll_ref.cast::<web_sys::Element>() {
+            Some(el) if diff > 0.0 => (el.scroll_left() as f64 / diff).clamp(0.0, 1.0),
+            _ => 0.0,
+        }
     }
 
     fn set_scroll_timeout(&mut self, ctx: &Context<Self>) {
@@ -143,11 +154,17 @@ impl Component for PwtMiniScroll {
                 // up to the full width with the arrow width read in the same layout.
                 self.width = Self::measured_width(&self.scroll_ref);
                 self.full_width = self.width + 2.0 * Self::measured_width(&self.handle_ref);
+                if matches!(self.scroll_mode, ScrollMode::None) {
+                    self.pos = self.scrolled_pos();
+                }
                 true
             }
             Msg::ContentResize(width, height) => {
                 self.content_width = width;
                 self.content_height = height;
+                if matches!(self.scroll_mode, ScrollMode::None) {
+                    self.pos = self.scrolled_pos();
+                }
                 true
             }
             Msg::Scroll => {
@@ -201,6 +218,19 @@ impl Component for PwtMiniScroll {
                 self.scroll_timeout = None;
                 true
             }
+            Msg::Scrolled => {
+                // Keyboard focus, a scrolled-to child or the app can scroll the content too, even
+                // before it was measured; read the position back here and on every resize so the
+                // arrows reflect it. The arrows' own stepping already keeps it.
+                if !matches!(self.scroll_mode, ScrollMode::None) {
+                    return false;
+                }
+                let pos = self.scrolled_pos();
+                let ends = |pos: f64| (pos <= 0.0, pos >= 1.0);
+                let changed = ends(pos) != ends(self.pos);
+                self.pos = pos;
+                changed
+            }
             Msg::Wheel(delta_y) => {
                 let el = match self.scroll_ref.cast::<web_sys::Element>() {
                     None => return false,
@@ -239,6 +269,7 @@ impl Component for PwtMiniScroll {
                     link.send_message(Msg::Wheel(event.delta_y()))
                 }
             })
+            .onscroll(ctx.link().callback(|_| Msg::Scrolled))
             .into_html_with_ref(self.scroll_ref.clone());
 
         let arrow_visible = arrow_mode && self.content_width > self.full_width;
