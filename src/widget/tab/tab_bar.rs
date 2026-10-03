@@ -159,6 +159,8 @@ pub enum Msg {
     Select(Option<Key>, bool),
     SelectionChange(Selection),
     UpdateIndicator,
+    /// The box that scrolls the bar sideways changed width.
+    ScrollerResize,
 }
 
 #[doc(hidden)]
@@ -173,6 +175,12 @@ pub struct PwtTabBar {
     active_ref: NodeRef,
     size_ref: NodeRef,
     active_size_observer: Option<DomSizeObserver>,
+    /// The tab last kept in view, so a render without a switch leaves the reader's own scrolling
+    /// of the bar alone.
+    shown_active: Option<Key>,
+    /// Watches the box that scrolls the bar sideways, and which box it is: a mini scroll shows
+    /// its arrows only after measuring, which narrows the box and can cut off the open tab again.
+    scroller_observer: Option<(web_sys::Element, DomSizeObserver)>,
 }
 
 fn get_active_or_default(props: &TabBar, active: &Option<Key>) -> Option<Key> {
@@ -288,6 +296,8 @@ impl Component for PwtTabBar {
             active_ref: NodeRef::default(),
             size_ref: NodeRef::default(),
             active_size_observer: None,
+            shown_active: None,
+            scroller_observer: None,
         }
     }
 
@@ -347,6 +357,12 @@ impl Component for PwtTabBar {
                 }
 
                 true
+            }
+            Msg::ScrollerResize => {
+                if let Some(element) = self.active_ref.clone().into_html_element() {
+                    keep_in_view_sideways(&element);
+                }
+                false
             }
             Msg::UpdateIndicator => {
                 let use_full_width = match ctx.props().style {
@@ -528,6 +544,36 @@ impl Component for PwtTabBar {
     }
 
     fn rendered(&mut self, ctx: &Context<Self>, _first_render: bool) {
+        // The open tab as drawn, which a forced `active` decides over the bar's own record.
+        let active = get_active_or_default(ctx.props(), &self.active);
+        if self.shown_active != active {
+            // A tab that is not drawn yet is brought into view once it is.
+            if let Some(element) = self.active_ref.clone().into_html_element() {
+                keep_in_view_sideways(&element);
+                self.shown_active = active;
+            }
+        }
+        let scroller = self
+            .active_ref
+            .clone()
+            .into_html_element()
+            .and_then(|tab| sideways_scroller(&tab));
+        match scroller {
+            None => self.scroller_observer = None,
+            Some(scroller) => {
+                if self
+                    .scroller_observer
+                    .as_ref()
+                    .is_none_or(|(watched, _)| *watched != scroller)
+                {
+                    let link = ctx.link().clone();
+                    let observer = DomSizeObserver::new(&scroller, move |_: (f64, f64)| {
+                        link.send_message(Msg::ScrollerResize)
+                    });
+                    self.scroller_observer = Some((scroller, observer));
+                }
+            }
+        }
         let link = ctx.link().clone();
         if let Some(element) = self.active_ref.clone().into_html_element() {
             let mut options = ResizeObserverOptions::new();
@@ -543,6 +589,38 @@ impl Component for PwtTabBar {
             self.active_size_observer = None;
         }
     }
+}
+
+/// Scroll the nearest ancestor that scrolls sideways, such as a narrow screen's tab bar, just far
+/// enough to show `tab` whole. Only sideways: a bar further down a page must not pull the page up.
+fn keep_in_view_sideways(tab: &web_sys::HtmlElement) {
+    let Some(el) = sideways_scroller(tab) else {
+        return;
+    };
+    let (bar, item) = (
+        el.get_bounding_client_rect(),
+        tab.get_bounding_client_rect(),
+    );
+    let delta = if item.left() < bar.left() {
+        item.left() - bar.left()
+    } else if item.right() > bar.right() {
+        item.right() - bar.right()
+    } else {
+        return;
+    };
+    el.set_scroll_left(el.scroll_left() + delta.round() as i32);
+}
+
+/// The nearest ancestor of the tab whose content is wider than its box.
+fn sideways_scroller(tab: &web_sys::HtmlElement) -> Option<web_sys::Element> {
+    let mut node = tab.parent_element();
+    while let Some(el) = node {
+        if el.scroll_width() > el.client_width() {
+            return Some(el);
+        }
+        node = el.parent_element();
+    }
+    None
 }
 
 impl From<TabBar> for VNode {
