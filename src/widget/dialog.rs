@@ -77,8 +77,9 @@ pub struct Dialog {
 
     /// Determines if the dialog should be auto centered
     ///
-    /// It will be centered on every window resize. Content size changes keep the dialog within the
-    /// viewport without moving it when its current position still fits. This is enabled by default.
+    /// It will be centered on every window resize. Content size changes center it again until the
+    /// user moves or resizes it, and afterwards only move it as far as needed to keep it within the
+    /// viewport. This is enabled by default.
     #[prop_or(true)]
     #[builder]
     pub auto_center: bool,
@@ -151,6 +152,8 @@ pub struct PwtDialog {
     node_ref: NodeRef,
     inner_ref: NodeRef,
     size_observer: Option<DomSizeObserver>,
+    /// Whether the reader moved or resized the dialog, which then stays where they put it.
+    placed_by_reader: bool,
 }
 
 impl PwtDialog {
@@ -210,6 +213,7 @@ impl Component for PwtDialog {
             node_ref: NodeRef::default(),
             inner_ref: NodeRef::default(),
             size_observer: None,
+            placed_by_reader: false,
         }
     }
 
@@ -298,6 +302,7 @@ impl Component for PwtDialog {
             }
             Msg::PointerMove(event) => match &self.dragging_state {
                 DragState::Dragging(offset_x, offset_y, _, _, id) if *id == event.pointer_id() => {
+                    self.placed_by_reader = true;
                     let window = gloo_utils::window();
                     let width = window.inner_width().unwrap().as_f64().unwrap();
                     let height = window.inner_height().unwrap().as_f64().unwrap();
@@ -368,6 +373,7 @@ impl Component for PwtDialog {
             }
             Msg::ResizeMove(point, event) => match self.resizer_state.get(&point) {
                 Some(DragState::Dragging(x, y, _, _, id)) if *id == event.pointer_id() => {
+                    self.placed_by_reader = true;
                     if let Some(element) = self.inner_ref.clone().into_html_element() {
                         let rect = element.get_bounding_client_rect();
                         let old_width = rect.width();
@@ -476,11 +482,21 @@ impl Component for PwtDialog {
                         window.inner_height(),
                     ) && let (Some(width), Some(height)) = (width.as_f64(), height.as_f64())
                     {
+                        // Centered until the reader places it, so a dialog that grows after opening
+                        // grows on both sides rather than towards the bottom edge; once placed, it
+                        // only moves as far as it has to to stay in view.
                         let rect = element.get_bounding_client_rect();
-                        let position = (
-                            visible_origin(rect.x(), rect.width(), width),
-                            visible_origin(rect.y(), rect.height(), height),
-                        );
+                        let position = if self.placed_by_reader {
+                            (
+                                visible_origin(rect.x(), rect.width(), width),
+                                visible_origin(rect.y(), rect.height(), height),
+                            )
+                        } else {
+                            (
+                                ((width - rect.width()) / 2.0).max(0.0),
+                                ((height - rect.height()) / 2.0).max(0.0),
+                            )
+                        };
                         if position != (rect.x(), rect.y())
                             && let Err(err) = align_to_xy(element, position, Point::TopStart)
                         {
