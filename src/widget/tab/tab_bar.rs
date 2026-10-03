@@ -189,11 +189,18 @@ fn get_active_or_default(props: &TabBar, active: &Option<Key>) -> Option<Key> {
     }
 
     if let Some(active_key) = active.as_deref() {
-        if !active_key.is_empty() && active_key != "_" {
+        if !active_key.is_empty() && active_key != "_" && has_tab(props, active_key) {
             return active.clone();
         }
     }
     props.get_default_active()
+}
+
+/// Whether one of the bar's tabs carries `key`. A key none does, such as a stale link or a saved
+/// tab the reader may no longer see, would select no tab at all, so it falls back like an empty
+/// one. A bar without tabs yet cannot tell, and keeps the key.
+fn has_tab(props: &TabBar, key: &str) -> bool {
+    props.tabs.is_empty() || props.tabs.iter().any(|tab| tab.key.as_deref() == Some(key))
 }
 
 impl PwtTabBar {
@@ -246,7 +253,7 @@ impl Component for PwtTabBar {
 
         if let Some(active_cache) = &active_cache {
             let last_active: &str = active_cache;
-            if !last_active.is_empty() {
+            if !last_active.is_empty() && has_tab(props, last_active) {
                 active = Some(Key::from(last_active));
             }
         }
