@@ -108,6 +108,8 @@ pub enum Msg {
 #[doc(hidden)]
 pub struct PwtGridPicker<S> {
     filter: String,
+    /// The filter input's id, for its label to name it.
+    filter_id: AttrValue,
     store: S,
     _phantom: PhantomData<S>,
     selection: Selection,
@@ -151,6 +153,7 @@ impl<S: DataStore + 'static> Component for PwtGridPicker<S> {
         let mut me = Self {
             _phantom: PhantomData::<S>,
             filter: String::new(),
+            filter_id: AttrValue::from(crate::widget::get_unique_element_id()),
             store: props.table.get_store(),
             selection,
         };
@@ -225,9 +228,10 @@ impl<S: DataStore + 'static> Component for PwtGridPicker<S> {
                 .gap(2)
                 .padding(2)
                 .class("pwt-w-100 pwt-align-items-center")
-                .with_child(html! {<label for="testinput">{"Filter"}</label>})
+                .with_child(html! {<label for={self.filter_id.clone()}>{tr!("Filter")}</label>})
                 .with_child(
                     Input::new()
+                        .attribute("id", self.filter_id.clone())
                         .autofocus(ctx.props().autoselect_filter.unwrap_or_default())
                         .attribute("autocomplete", "off")
                         .attribute("size", "1") // make size minimal
