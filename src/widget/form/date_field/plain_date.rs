@@ -108,40 +108,21 @@ impl PlainDate {
         d.get_day()
     }
 
-    /// Get the ISO 8601 week number (1-53).
-    ///
-    /// The algorithm matches standard ISO week definition: the week with the year's first Thursday.
+    /// Get the ISO 8601 week number (1-53): the week belongs to the year that holds its Thursday.
     pub fn iso_week(&self) -> u32 {
-        let d = Date::new(&self.to_timestamp().into());
-        // ISO week date is determined by the Thursday of the week.
-        // Thursday is day 4 (Sunday=0 in JS Date) -> (day + 6) % 7 gives Mon=0..Sun=6.
-        // But easier: set date to nearest Thursday.
-        // Current day relative to Sunday: 0..6
-        let day = d.get_day();
-        // Adjust to Monday-based indexing: Mon=1,... Sun=7 (or similar logic)
-        // Standard Algo:
-        // 1. Find Thursday of this week.
-        //    (Sunday=0, Mon=1, ... Sat=6)
-        //    diff = 4 - (day || 7)  <-- treats Sunday as 7?
-        //    Let's stick to standard JS Date manipulation approach often used:
-        //    Target = date + (4 - (day||7)) days.
-
-        let day_n = if day == 0 { 7 } else { day }; // Sunday is 7
-        d.set_date(d.get_date() + 4 - day_n);
-
-        // Get first day of year
-        let year_start = Date::new_0();
-        year_start.set_full_year(d.get_full_year());
-        year_start.set_month(0);
-        year_start.set_date(1);
-        year_start.set_hours(0); // Ensure time is normalized
-
-        // Calculate full weeks to nearest Thursday
-        let diff_ms = d.get_time() - year_start.get_time();
-        // 86400000 ms/day
-        let day_diff = (diff_ms / 86400000.0).ceil();
-
-        ((day_diff + 1.0) / 7.0).ceil() as u32
+        // Whole days from a fixed origin, so neither a time of day nor a daylight saving change
+        // can put a fraction into the count and round it into the next week.
+        let days = days_from_civil(self.year, self.month + 1, self.day);
+        // 1970-01-01 was a Thursday; counted from Monday as 0.
+        let weekday = (days + 3).rem_euclid(7);
+        let thursday = days - weekday + 3;
+        let mut year = self.year;
+        if thursday < days_from_civil(year, 1, 1) {
+            year -= 1;
+        } else if thursday >= days_from_civil(year + 1, 1, 1) {
+            year += 1;
+        }
+        ((thursday - days_from_civil(year, 1, 1)) / 7 + 1) as u32
     }
 
     /// Format the date using the given format string.
@@ -315,6 +296,18 @@ impl fmt::Display for PlainDate {
     }
 }
 
+/// Days from 1970-01-01 to a date of the proleptic Gregorian calendar, `month` counted from 1.
+fn days_from_civil(year: i32, month: u32, day: u32) -> i64 {
+    let y = i64::from(year) - i64::from(month <= 2);
+    let era = y.div_euclid(400);
+    let year_of_era = y - era * 400;
+    let month = i64::from(month);
+    let day_of_year =
+        (153 * (if month > 2 { month - 3 } else { month + 9 }) + 2) / 5 + i64::from(day) - 1;
+    let day_of_era = year_of_era * 365 + year_of_era / 4 - year_of_era / 100 + day_of_year;
+    era * 146097 + day_of_era - 719468
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -325,6 +318,32 @@ mod tests {
         assert_eq!(d.year(), 2023);
         assert_eq!(d.month(), 0);
         assert_eq!(d.day(), 15);
+    }
+
+    #[test]
+    fn iso_week_counts_whole_days() {
+        // (year, month from 0, day, week)
+        for (year, month, day, week) in [
+            (2026, 9, 4, 40),
+            (2026, 11, 31, 53),
+            (2027, 0, 3, 53),
+            (2027, 0, 4, 1),
+            (2027, 0, 7, 1),
+            (2027, 0, 10, 1),
+            (2027, 0, 11, 2),
+            (2024, 11, 30, 1),
+            (2023, 0, 1, 52),
+            (2021, 0, 3, 53),
+            (2020, 1, 29, 9),
+            (1970, 0, 1, 1),
+        ] {
+            assert_eq!(
+                PlainDate::new(year, month, day).iso_week(),
+                week,
+                "{year}-{}-{day}",
+                month + 1
+            );
+        }
     }
 
     #[test]
