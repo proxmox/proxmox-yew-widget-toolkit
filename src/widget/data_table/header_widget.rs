@@ -289,6 +289,13 @@ impl<T: 'static> PwtHeaderWidget<T> {
             attributes.insert(AttrValue::Static("tabindex"), tabindex);
         }
         attributes.insert(AttrValue::Static("aria-label"), cell.column.name.clone());
+        // A column narrower than its name cuts the header off; the tooltip still names it, unless
+        // a header renderer says something else.
+        if !cell.column.name.is_empty() {
+            attributes
+                .entry(AttrValue::Static("title"))
+                .or_insert_with(|| cell.column.name.clone());
+        }
 
         header_row.push(
             Container::from_tag("th")
