@@ -1,3 +1,36 @@
+rust-pwt (0.8.19) trixie; urgency=medium
+
+  * mini scroll:
+    - show the scroll arrows also when the content overflows by less than
+      two arrow widths. They could stay hidden after the first render,
+      leaving the end of a tab bar or toolbar cut off with no way to scroll
+      to it.
+    - follow a scroll it did not make itself, such as keyboard focus moving
+      to an item out of view, so its arrows show the right state and the
+      next arrow step continues from the actual position.
+
+  * date field:
+    - refuse an empty value when the field is required, like the other
+      input fields do.
+    - show the correct ISO week numbers in the date picker. They could be
+      one too high, for example the first week of 2027 showed as week 2.
+
+  * dialog: keep a dialog centered while its content grows, for example
+    after loading, until the user moves or resizes it.
+
+  * tab bar:
+    - scroll the open tab into view in a bar that scrolls sideways, such as
+      a tab bar inside a mini scroll on a narrow screen.
+    - open the default tab when the requested key, for example from an old
+      link, matches no tab, instead of showing no tab as selected.
+
+  * grid picker: translate the filter label and link it to its input field.
+
+  * data table: use the column name as tooltip of its header, so a header
+    cut off by a narrow column can still be read.
+
+ -- Proxmox Support Team <support@proxmox.com>  Mon, 05 Oct 2026 07:31:52 +0200
+
 rust-pwt (0.8.18) trixie; urgency=medium
 
   * shared state: fix a panic that could occur when removing listeners.
