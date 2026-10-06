@@ -188,6 +188,9 @@ impl<S: DataStore + 'static> Component for PwtGridPicker<S> {
             .cell_configuration(CellConfiguration::new().class("pwt-datatable-cell pwt-pointer"))
             .hover(true)
             .header_focusable(false)
+            // Let the table shrink to fit the picker, so it scrolls itself and can bring the
+            // selected entry into view, instead of the whole picker scrolling.
+            .min_height(0)
             .selection(self.selection.clone())
             .on_row_click({
                 let on_select = on_select.clone();
