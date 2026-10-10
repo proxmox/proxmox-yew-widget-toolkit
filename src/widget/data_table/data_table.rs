@@ -526,11 +526,21 @@ pub struct PwtDataTable<S: DataStore> {
     table_size_observer: Option<DomSizeObserver>,
 
     row_height: f64,
+    /// The table width `row_height` was measured at.
+    row_height_width: f64,
+    /// Measure the table after the next render, as getting its column widths need not change its
+    /// size, so the size observer might not report it again.
+    measure_table: bool,
     scrollbar_size: Option<f64>,
 
     keypress_timeout: Option<Timeout>,
 
     focus_table: bool,
+}
+
+/// Whether the header has measured the columns. A hidden header measures them as 0.
+fn columns_measured(column_widths: &[f64]) -> bool {
+    column_widths.iter().sum::<f64>() > 0.0
 }
 
 // Generate first table row using the width from the column definitions.
@@ -1120,6 +1130,8 @@ impl<S: DataStore + 'static> Component for PwtDataTable<S> {
             table_height: 0.0,
 
             row_height: props.min_row_height as f64,
+            row_height_width: 0.0,
+            measure_table: false,
             scrollbar_size: None,
             keypress_timeout: None,
 
@@ -1184,17 +1196,30 @@ impl<S: DataStore + 'static> Component for PwtDataTable<S> {
 
                 true
             }
-            Msg::TableResize(_width, height) => {
+            Msg::TableResize(width, height) => {
                 let height = height.max(0.0);
-                if self.table_height == height {
+                // In fixed layout the table is 1px wide until the header has measured its columns,
+                // and its cells can wrap at every character. Wait for those widths, but still record
+                // the zero height of a hidden table, so that showing it again counts as a resize.
+                let fixed_mode = props.show_header || props.virtual_scroll.unwrap_or(true);
+                if fixed_mode && !columns_measured(&self.column_widths) && height > 0.0 {
+                    return false;
+                }
+                // A new width alone can rewrap the rows, so it counts as a resize as well.
+                if self.table_height == height && width == self.row_height_width {
                     return false;
                 };
                 self.table_height = height;
                 let visible_rows = self.scroll_info.visible_rows();
                 if (height > 0.0) && (visible_rows > 0) {
-                    let row_height = height / visible_rows as f64;
-                    if row_height > self.row_height {
+                    let row_height =
+                        (height / visible_rows as f64).max(props.min_row_height as f64);
+                    // A new width can rewrap the rows, so take their new average. At the same
+                    // width only grow: the rendered rows start at scroll_top / row_height, so
+                    // following their average could keep alternating between two estimates.
+                    if width != self.row_height_width || row_height > self.row_height {
                         self.row_height = row_height;
+                        self.row_height_width = width;
                     }
                 }
                 self.update_scroll_info(props);
@@ -1613,6 +1638,11 @@ impl<S: DataStore + 'static> Component for PwtDataTable<S> {
                 true
             }
             Msg::Header(HeaderMsg::ColumnWidthChange(column_widths)) => {
+                // The table sizes reported before the columns had widths were not taken, so take
+                // one once the new widths are laid out.
+                if !columns_measured(&self.column_widths) && columns_measured(&column_widths) {
+                    self.measure_table = true;
+                }
                 self.column_widths = column_widths;
                 true
             }
@@ -1805,6 +1835,13 @@ impl<S: DataStore + 'static> Component for PwtDataTable<S> {
                 });
                 self.table_size_observer = Some(size_observer);
             }
+        }
+        if std::mem::take(&mut self.measure_table)
+            && let Some(el) = self.table_ref.cast::<web_sys::Element>()
+        {
+            let rect = el.get_bounding_client_rect();
+            ctx.link()
+                .send_message(Msg::TableResize(rect.width(), rect.height()));
         }
         if let Some(top) = self.set_scroll_top.take() {
             // Note: we delay setting ScrollTop until we rendered the
