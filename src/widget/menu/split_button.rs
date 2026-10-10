@@ -41,6 +41,12 @@ pub struct SplitButton {
     #[prop_or_default]
     pub menu_builder: Option<BuilderFn<Menu>>,
 
+    /// Accessible name for the arrow button that opens the menu. Defaults to a translated
+    /// "More" when omitted.
+    #[prop_or_default]
+    #[builder(IntoPropValue, into_prop_value)]
+    pub menu_aria_label: Option<AttrValue>,
+
     #[prop_or_default]
     #[builder]
     pub disabled: bool,
@@ -267,6 +273,12 @@ impl Component for PwtSplitButton {
         let show_submenu = self.show_submenu;
         let trigger = Button::new_icon("fa fa-chevron-down")
             .node_ref(self.trigger_ref.clone())
+            .aria_label(
+                props
+                    .menu_aria_label
+                    .clone()
+                    .unwrap_or_else(|| tr!("More").into()),
+            )
             .attribute("aria-haspopup", "true")
             .attribute("aria-expanded", self.show_submenu.then_some("true"))
             .disabled(props.disabled)
