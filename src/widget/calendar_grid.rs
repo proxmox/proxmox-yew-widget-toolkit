@@ -62,11 +62,14 @@ pub enum CalendarGridView {
 /// - `pwt-calendar-span-tip`: the tooltip wrapper around a segment once
 ///   [`render_span_tooltip`](CalendarGrid::render_span_tooltip) is set; it, not the segment, is
 ///   then the lane box's direct child, so flex-item rules belong on it.
-/// - `pwt-calendar-span-lanes`: the per-cell scroll box wrapping a day's non-pinned segments.
+/// - `pwt-calendar-span-lanes`: the per-cell scroll box wrapping a day's non-pinned segments, and
+///   with [`stable_lanes`](CalendarGrid::stable_lanes) their lane spacers; the boxes of a week row
+///   then scroll together.
 /// - `pwt-calendar-span-pinned`: the per-cell fixed zone above the scroll box, wrapping the day's
 ///   [`pinned`](Self::pinned) segments and their lane spacers.
-/// - `pwt-calendar-span-spacer`: an empty bar-height lane holder in the pinned zone, keeping a
-///   pinned bar at the same height across the days of its row it does not cover.
+/// - `pwt-calendar-span-spacer`: an empty bar-height lane holder in the pinned zone, and with
+///   [`stable_lanes`](CalendarGrid::stable_lanes) in the scroll box as well, keeping a bar at the
+///   same height across the days of its row on which the lanes above it are empty.
 /// - `pwt-calendar-span-icon`: the leading [`icon`](Self::icon) holder, present only on a row's
 ///   labelled segment.
 /// - `pwt-calendar-span-label`: the label holder inside a segment.
@@ -439,6 +442,14 @@ pub struct CalendarGrid {
     #[builder]
     #[prop_or_default]
     pub fill_height: bool,
+
+    /// Keep each non-pinned bar in one lane on every day of a week row it covers, as pinned bars
+    /// are. The lane boxes of a row then hold all its lanes and scroll together, which leaves gaps
+    /// and takes more height. Unset, a bar moves up a lane as earlier ones end, which keeps the
+    /// cells compact, and each cell scrolls on its own.
+    #[builder]
+    #[prop_or_default]
+    pub stable_lanes: bool,
 
     /// Multi-day bars drawn across the cells their date range covers. Empty by default; a grid
     /// with no bars renders the plain day grid. Add via [`with_span_bar`](Self::with_span_bar) /
@@ -1119,14 +1130,23 @@ impl crate::props::IntoVTag for CalendarGrid {
                     .with_child(html! { { weekday_label(weekday) } }),
             );
         }
-        let header: Html = header_row.into();
+        let header: Html = header_row.key("header").into();
 
         // An unparsable anchor renders the header over an empty grid rather than panicking deep
         // inside the view.
         let days = self.days();
         let cols = self.columns();
 
-        let mut grid = Container::from_tag("div").class("pwt-calendar-grid");
+        // Keyed on its window and layout, so a change builds the cells anew. Reused cells would keep
+        // lane boxes scrolled for other dates or rows, while stable lanes need a row's boxes level.
+        let mut grid = Container::from_tag("div")
+            .class("pwt-calendar-grid")
+            .key(format!(
+                "grid-{}-{}-{}",
+                days.first().map(|day| day.date.as_str()).unwrap_or(""),
+                self.hide_weekends,
+                self.stable_lanes,
+            ));
 
         // Keep one day and one gutter in the tab order. Today is the default only when it belongs
         // to the requested month; otherwise use the first day in that month.
@@ -1155,8 +1175,11 @@ impl crate::props::IntoVTag for CalendarGrid {
                 .then_with(|| a.start.cmp(&b.start))
                 .then_with(|| a.end.cmp(&b.end))
         });
-        let flow_bars: Vec<&CalendarSpanBar> =
+        let mut flow_bars: Vec<&CalendarSpanBar> =
             sorted_bars.iter().copied().filter(|b| !b.pinned).collect();
+        if self.stable_lanes {
+            flow_bars.sort_by(|a, b| lane_order(a, b));
+        }
         let mut lane_end: Vec<&str> = Vec::new();
         let pinned_lane: Vec<usize> = pinned_bars
             .iter()
@@ -1174,6 +1197,12 @@ impl crate::props::IntoVTag for CalendarGrid {
             })
             .collect();
         let num_rows = days.len().div_ceil(cols);
+        let flow_lane = if self.stable_lanes {
+            flow_lanes(&flow_bars, &days, cols)
+        } else {
+            Vec::new()
+        };
+        let row_flow_count = row_lane_counts(&flow_lane);
         let mut row_pinned_count = vec![0usize; num_rows];
         for (i, bar) in pinned_bars.iter().enumerate() {
             for (offset, day) in days.iter().enumerate() {
@@ -1248,7 +1277,8 @@ impl crate::props::IntoVTag for CalendarGrid {
 
             // The cell body sits above the span bars, so a caller can keep its own content in view
             // while the bars scroll. Bars live in their own scroll box: a day with dozens of them
-            // scrolls that cell rather than growing the row. An uncovered day gets no box.
+            // scrolls that cell rather than growing the row. An uncovered day gets no box, and with
+            // stable lanes a row without bars.
             if let Some(render) = &self.render_day {
                 cell = cell.with_child(render.apply(&info));
             }
@@ -1292,7 +1322,37 @@ impl crate::props::IntoVTag for CalendarGrid {
             }
 
             // The scrolling zone: a day with dozens of bars scrolls this box rather than growing.
-            if !flow_bars.is_empty() {
+            if self.stable_lanes {
+                // Each bar sits in its lane of the week row. Every day of the row holds all the
+                // row's lanes, with spacers where it has no bar, so the boxes share one scroll
+                // range and stay in line as they scroll together.
+                let row = offset / cols;
+                let lanes_in_row = row_flow_count[row];
+                if lanes_in_row > 0 {
+                    let mut slots: Vec<Option<CalendarSpanSegment>> = vec![None; lanes_in_row];
+                    for (bar, lane) in flow_bars.iter().zip(&flow_lane[row]) {
+                        if let (Some(lane), Some(seg)) = (
+                            lane,
+                            span_segment(bar, &info.date, prev, next, self.span_start_marker),
+                        ) {
+                            slots[*lane] = Some(seg);
+                        }
+                    }
+                    let mut lanes = Container::from_tag("div")
+                        .class("pwt-calendar-span-lanes")
+                        .attribute("data-calendar-row", row.to_string())
+                        .onscroll(scroll_row_together);
+                    for slot in slots {
+                        lanes = lanes.with_child(match slot {
+                            Some(seg) => self.render_span_segment(seg),
+                            None => Container::from_tag("div")
+                                .class("pwt-calendar-span-spacer")
+                                .into(),
+                        });
+                    }
+                    cell = cell.with_child(lanes);
+                }
+            } else if !flow_bars.is_empty() {
                 let segments: Vec<CalendarSpanSegment> = flow_bars
                     .iter()
                     .filter_map(|bar| {
@@ -1333,6 +1393,108 @@ impl crate::props::IntoVTag for CalendarGrid {
             None,
             Some(children),
         )
+    }
+}
+
+/// The lane of each flow bar in each week row of `days`, `cols` cells wide, `None` where the bar
+/// misses the row.
+///
+/// Greedy interval colouring over the bars in start order, per row: a bar keeps one lane on every
+/// day of a row it covers, so it never continues in the lane another bar held the day before, and
+/// a lane frees up for the next bar once its bar has ended.
+fn flow_lanes(
+    flow_bars: &[&CalendarSpanBar],
+    days: &[CalendarGridDay],
+    cols: usize,
+) -> Vec<Vec<Option<usize>>> {
+    days.chunks(cols)
+        .map(|week| {
+            let mut lane_end: Vec<&str> = Vec::new();
+            flow_bars
+                .iter()
+                .map(|bar| {
+                    // Only a day the row draws counts: with the weekend hidden, a bar on just
+                    // Saturday and Sunday has no cell in the row to hold a lane in.
+                    let drawn = week.iter().any(|day| {
+                        bar.start.as_str() <= day.date.as_str()
+                            && day.date.as_str() <= bar.end.as_str()
+                    });
+                    if !drawn {
+                        return None;
+                    }
+                    let lane = lane_end
+                        .iter()
+                        .position(|end| *end < bar.start.as_str())
+                        .unwrap_or(lane_end.len());
+                    if lane == lane_end.len() {
+                        lane_end.push(bar.end.as_str());
+                    } else {
+                        lane_end[lane] = bar.end.as_str();
+                    }
+                    Some(lane)
+                })
+                .collect()
+        })
+        .collect()
+}
+
+/// The order bars take their lanes in: by start, the longer bar first on a shared start day. A bar
+/// takes the first lane free when it starts and keeps it while it continues, so this keeps a bar
+/// that goes on above the ones ending that day.
+fn lane_order(a: &CalendarSpanBar, b: &CalendarSpanBar) -> std::cmp::Ordering {
+    a.start.cmp(&b.start).then_with(|| b.end.cmp(&a.end))
+}
+
+/// The number of flow lanes each week row needs: one more than the highest lane a bar holds in it.
+fn row_lane_counts(flow_lane: &[Vec<Option<usize>>]) -> Vec<usize> {
+    flow_lane
+        .iter()
+        .map(|row| row.iter().flatten().map(|lane| lane + 1).max().unwrap_or(0))
+        .collect()
+}
+
+/// Scroll the other lane boxes of a week row along with the one scrolled, so the lanes stay in line
+/// across the row and a bar keeps its height in every cell it spans. That holds while the boxes of
+/// a row are equally tall: one that its day's own content shortens can scroll further than the
+/// others.
+fn scroll_row_together(event: Event) {
+    let Some(scrolled) = event.target_dyn_into::<web_sys::Element>() else {
+        return;
+    };
+    let (Some(row), Some(grid)) = (
+        scrolled.get_attribute("data-calendar-row"),
+        scrolled.closest(".pwt-calendar-grid").ok().flatten(),
+    ) else {
+        return;
+    };
+    let top = scrolled.scroll_top();
+    // A box moved here to follow another reports that as its own scroll. It brings no new position,
+    // and as it arrives a frame late during a smooth scroll, spreading it would pull the box being
+    // scrolled back.
+    if let Some(followed) = scrolled.get_attribute("data-calendar-followed") {
+        let _ = scrolled.remove_attribute("data-calendar-followed");
+        if followed == top.to_string() {
+            return;
+        }
+    }
+    let selector = format!(".pwt-calendar-span-lanes[data-calendar-row=\"{row}\"]");
+    if let Ok(others) = grid.query_selector_all(&selector) {
+        for i in 0..others.length() {
+            if let Some(other) = others
+                .item(i)
+                .and_then(|node| node.dyn_into::<web_sys::Element>().ok())
+                .filter(|other| *other != scrolled && other.scroll_top() != top)
+            {
+                let before = other.scroll_top();
+                other.set_scroll_top(top);
+                // Mark the position the box took, which is less than asked where its own content
+                // leaves it less room, and only if it moved, as only then does it report a scroll.
+                let followed = other.scroll_top();
+                if followed != before {
+                    let _ = other.set_attribute("data-calendar-followed", &followed.to_string());
+                }
+            }
+        }
     }
 }
 
@@ -1849,6 +2011,69 @@ mod tests {
                 .day_label(|d: &CalendarGridDay| AttrValue::from(format!("Open {}", d.day))),
         );
         assert_eq!(controls[0].1, "Open 1");
+    }
+
+    #[test]
+    fn a_flow_bar_keeps_its_lane_across_a_week_row() {
+        // June 2026: the month window starts on Monday June 1, so the second row is June 8-14.
+        let days = CalendarGrid::new("2026-06-10").days();
+        let a = CalendarSpanBar::new("2026-06-08", "2026-06-10", "A");
+        let b = CalendarSpanBar::new("2026-06-09", "2026-06-11", "B");
+        let c = CalendarSpanBar::new("2026-06-11", "2026-06-11", "C");
+        let late = CalendarSpanBar::new("2026-06-22", "2026-06-23", "late");
+        let lanes = flow_lanes(&[&a, &b, &c, &late], &days, 7);
+        // B stays in the second lane on Thursday although A ended the day before; the lane A left
+        // free goes to C.
+        assert_eq!(lanes[1], vec![Some(0), Some(1), Some(0), None]);
+        assert_eq!(lanes[0], vec![None, None, None, None]);
+        assert_eq!(lanes[3], vec![None, None, None, Some(0)]);
+        // Every day of a row holds all its lanes, so their boxes scroll in line; a row without
+        // bars holds none.
+        assert_eq!(row_lane_counts(&lanes), vec![0, 2, 0, 1, 0, 0]);
+    }
+
+    #[test]
+    fn a_longer_bar_takes_the_upper_lane_on_a_shared_start_day() {
+        let days = CalendarGrid::new("2026-06-10").days();
+        let day = CalendarSpanBar::new("2026-06-08", "2026-06-08", "day");
+        let week = CalendarSpanBar::new("2026-06-08", "2026-06-12", "week");
+        let mut bars = vec![&day, &week];
+        bars.sort_by(|a, b| lane_order(a, b));
+        // The week-long bar stays on top from Monday on, rather than below the bar ending Monday.
+        assert_eq!(bars[0].end, week.end);
+        assert_eq!(flow_lanes(&bars, &days, 7)[1], vec![Some(0), Some(1)]);
+    }
+
+    #[test]
+    fn a_bar_over_two_rows_takes_a_lane_in_each() {
+        let days = CalendarGrid::new("2026-06-10").days();
+        let long = CalendarSpanBar::new("2026-06-02", "2026-06-12", "long");
+        let short = CalendarSpanBar::new("2026-06-01", "2026-06-03", "short");
+        // Start order puts the short bar first in the first row; in the second row, where the
+        // short bar is gone, the long one moves up to the first lane.
+        let lanes = flow_lanes(&[&short, &long], &days, 7);
+        assert_eq!(lanes[0], vec![Some(0), Some(1)]);
+        assert_eq!(lanes[1], vec![None, Some(0)]);
+    }
+
+    #[test]
+    fn a_weekend_only_bar_takes_no_lane_with_the_weekend_hidden() {
+        // With a Wednesday start the weekend falls inside a row: Wed 3 to Tue 9 June, drawn as
+        // Wed, Thu, Fri, Mon, Tue. A bar on just that Saturday and Sunday has no cell there.
+        let grid = CalendarGrid::new("2026-06-10")
+            .week_start(WeekStart::Wednesday)
+            .hide_weekends(true);
+        let days = grid.days();
+        let weekend = CalendarSpanBar::new("2026-06-06", "2026-06-07", "weekend");
+        let trip = CalendarSpanBar::new("2026-06-05", "2026-06-08", "trip");
+        let row = days
+            .iter()
+            .position(|day| day.date == "2026-06-03")
+            .unwrap()
+            / 5;
+        let lanes = flow_lanes(&[&trip, &weekend], &days, 5);
+        assert_eq!(lanes[row], vec![Some(0), None]);
+        assert_eq!(row_lane_counts(&lanes)[row], 1);
     }
 
     #[test]
