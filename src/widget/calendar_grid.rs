@@ -334,7 +334,8 @@ pub struct CalendarGrid {
     /// `pwt-calendar-hide-weekends` on its root, the stable name a theme narrows the grid template
     /// by. The date window is unchanged (see [`visible_range`](Self::visible_range)), the weekend
     /// days simply get no cell; a span bar covering them fuses across the gap, so a run from Friday
-    /// to Monday reads as one continuous bar. Off by default.
+    /// to Monday reads as one continuous bar. A month starting on a weekend opens on its first
+    /// working week. Off by default.
     #[builder]
     #[prop_or_default]
     pub hide_weekends: bool,
@@ -634,7 +635,8 @@ impl CalendarGrid {
     /// the anchor is not a valid ISO date.
     ///
     /// [`hide_weekends`](Self::hide_weekends) does not narrow this: the window still spans whole
-    /// weeks, the weekend days just get no cell.
+    /// weeks, the weekend days just get no cell, nor does a leading week with no working day of the
+    /// month.
     pub fn visible_range(
         view: CalendarGridView,
         anchor: &str,
@@ -658,7 +660,7 @@ impl CalendarGrid {
             window(self.view, &self.anchor, self.week_start).unwrap_or((CivilDate(0), 0));
         let anchor_month: String = self.anchor.chars().take(7).collect();
         let today = self.today.as_deref().unwrap_or("");
-        (0..count)
+        let mut days = (0..count)
             .map(|offset| {
                 let date = start.add_days(offset);
                 let weekday = date.weekday_monday0();
@@ -678,7 +680,14 @@ impl CalendarGrid {
             // A window spans whole weeks, so dropping the weekend leaves every row with the same
             // five working days - the fixed row width the render loop and the lane pre-pass need.
             .filter(|day| !(self.hide_weekends && day.is_weekend))
-            .collect()
+            .collect::<Vec<_>>();
+        // Without the weekend, a month starting on a Saturday or Sunday would open on a row of the
+        // previous month alone, which fills a phone's first screen with greyed days.
+        let cols = self.columns();
+        if days.len() >= cols && days[..cols].iter().all(|day| !day.in_anchor_month) {
+            days.drain(..cols);
+        }
+        days
     }
 }
 
@@ -1504,6 +1513,22 @@ mod tests {
             CalendarGrid::visible_range(CalendarGridView::Week, "2026-06-10", WeekStart::Monday),
             Some(("2026-06-08".to_string(), "2026-06-14".to_string()))
         );
+    }
+
+    #[test]
+    fn hidden_weekends_open_a_month_on_its_first_working_week() {
+        // August 2026 starts on a Saturday: the window's first week, 27 to 31 July, holds no day
+        // of August once the weekend is gone, so the grid starts on Monday 3 August.
+        let days = CalendarGrid::new("2026-08-15").hide_weekends(true).days();
+        assert_eq!(days[0].date, "2026-08-03");
+        assert_eq!(days.len(), 25);
+        // With the weekend shown, the first row keeps the 1st and its leading July days.
+        assert_eq!(CalendarGrid::new("2026-08-15").days()[0].date, "2026-07-27");
+        // A week view has no anchor month to compare against and keeps its row.
+        let week = CalendarGrid::new("2026-08-01")
+            .view(CalendarGridView::Week)
+            .hide_weekends(true);
+        assert_eq!(week.days().len(), 5);
     }
 
     #[test]
