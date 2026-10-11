@@ -1,3 +1,28 @@
+rust-pwt (0.8.20) trixie; urgency=medium
+
+  * calendar grid: add the hide_weekends option, which leaves out Saturday
+    and Sunday so the five working days share the full width. A bar running
+    over a hidden weekend continues as one bar from Friday to Monday, and a
+    month starting on a weekend opens on its first working week.
+
+  * calendar grid: add the stable_lanes option, which keeps each bar in one
+    lane on all days of a week row it covers and scrolls the cells of a row
+    together. It is off by default, as it leaves gaps and takes more height;
+    bars then still move up a lane as earlier ones end.
+
+  * data table: base the row height estimate on the actual layout. A table
+    laid out before its header reported the column widths could estimate
+    rows hundreds of pixels tall, which made the scroll area far too long
+    and left blank areas while scrolling.
+
+  * grid picker: open with the selected entry in view, also in long lists
+    such as the time zone selector, which always opened at the top.
+
+  * split button: give the menu arrow an accessible name, "More" by default,
+    and add the menu_aria_label property to set a more specific one.
+
+ -- Proxmox Support Team <support@proxmox.com>  Sun, 11 Oct 2026 14:59:09 +0200
+
 rust-pwt (0.8.19) trixie; urgency=medium
 
   * mini scroll:
