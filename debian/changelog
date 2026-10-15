@@ -1,3 +1,20 @@
+rust-pwt (0.8.21) trixie; urgency=medium
+
+  * navigation drawer:
+    - fix #8057: keep the menu scrollable in Firefox when submenus make it
+      taller than the window. Firefox shrank the submenus instead, so their
+      entries were cut off and could not be reached.
+    - open a submenu that starts collapsed on the first click of its arrow,
+      not only on the second.
+    - add the state_id option, which stores which submenus are open, so they
+      keep their last state across page loads.
+
+  * store, tree store: fix a panic when a change listener accesses the
+    store. Listeners were notified while the store was still locked by
+    the write that triggered them.
+
+ -- Proxmox Support Team <support@proxmox.com>  Thu, 15 Oct 2026 15:51:54 +0200
+
 rust-pwt (0.8.20) trixie; urgency=medium
 
   * calendar grid: add the hide_weekends option, which leaves out Saturday
