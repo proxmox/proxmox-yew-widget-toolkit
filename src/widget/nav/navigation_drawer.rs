@@ -154,6 +154,17 @@ pub enum Msg {
     MenuOpen(Key),
 }
 
+fn find_menu_item<'a>(entries: &'a [MenuEntry], key: &Key) -> Option<&'a MenuItem> {
+    entries.iter().find_map(|entry| match entry {
+        MenuEntry::Item(item) if item.key.as_ref() == Some(key) => Some(item),
+        MenuEntry::Item(item) => item
+            .submenu
+            .as_ref()
+            .and_then(|submenu| find_menu_item(&submenu.children, key)),
+        _ => None,
+    })
+}
+
 #[doc(hidden)]
 pub struct PwtNavigationDrawer {
     node_ref: NodeRef,
@@ -382,6 +393,13 @@ impl PwtNavigationDrawer {
         }
     }
 
+    /// Whether the submenu of `key` shows: the last toggle, else the item's default.
+    fn menu_open(&self, props: &NavigationDrawer, key: &Key) -> bool {
+        self.menu_states.get(key).copied().unwrap_or_else(|| {
+            !find_menu_item(&props.menu.children, key).is_some_and(|item| item.default_collapsed)
+        })
+    }
+
     /// Open every submenu on the path to `key`, so a selected or deep-linked item is not
     /// hidden inside a collapsed submenu.
     fn open_ancestors(&mut self, props: &NavigationDrawer, key: &Key) {
@@ -562,9 +580,8 @@ impl Component for PwtNavigationDrawer {
                             self.emit_item_activate(&key, ctx);
                         }
                         if toggle {
-                            let entry =
-                                *self.menu_states.entry(key.clone()).or_insert_with(|| true);
-                            self.menu_states.insert(key, !entry);
+                            let open = self.menu_open(props, &key);
+                            self.menu_states.insert(key, !open);
                         }
                     }
                     return true;
@@ -592,8 +609,8 @@ impl Component for PwtNavigationDrawer {
                 true
             }
             Msg::MenuToggle(key) => {
-                let entry = *self.menu_states.entry(key.clone()).or_insert_with(|| true);
-                self.menu_states.insert(key, !entry);
+                let open = self.menu_open(props, &key);
+                self.menu_states.insert(key, !open);
                 true
             }
             Msg::MenuClose(key) => {
@@ -666,5 +683,24 @@ impl From<NavigationDrawer> for VNode {
         let key = val.key.clone();
         let comp = VComp::new::<PwtNavigationDrawer>(Rc::new(val), key);
         VNode::from(comp)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn nested_items_are_found_with_their_default_state() {
+        let menu = Menu::new().with_item(
+            MenuItem::new("Website")
+                .key("website")
+                .default_collapsed(true)
+                .submenu(Menu::new().with_item(MenuItem::new("Partners").key("partners"))),
+        );
+        let find = |key: &str| find_menu_item(&menu.children, &Key::from(key));
+        assert!(find("website").is_some_and(|item| item.default_collapsed));
+        assert!(find("partners").is_some_and(|item| !item.default_collapsed));
+        assert!(find("missing").is_none());
     }
 }
