@@ -1160,10 +1160,10 @@ impl crate::props::IntoVTag for CalendarGrid {
         sorted_bars.sort_by(|a, b| a.start.cmp(&b.start).then_with(|| a.end.cmp(&b.end)));
 
         // Pinned bars ride a fixed zone above the scrolling lanes. Each keeps one lane for its
-        // whole run (greedy interval colouring over the sorted set), so a multi-day pinned bar
-        // sits at the same height in every cell it spans; a week row reserves its busiest cell's
-        // lane count and holds the gaps open with spacers, so the zone height (and the scroll box
-        // below it) stays uniform across the row.
+        // whole run (see `pinned_lanes`), so a multi-day pinned bar sits at the same height in
+        // every cell it spans; a week row reserves its busiest cell's lane count and holds the
+        // gaps open with spacers, so the zone height (and the scroll box below it) stays uniform
+        // across the row.
         // Higher priority stacks nearer the top of the pinned zone (a lower lane); the greedy
         // colouring below assigns lanes in this order, so priority wins over the date order flow
         // bars keep.
@@ -1180,22 +1180,7 @@ impl crate::props::IntoVTag for CalendarGrid {
         if self.stable_lanes {
             flow_bars.sort_by(|a, b| lane_order(a, b));
         }
-        let mut lane_end: Vec<&str> = Vec::new();
-        let pinned_lane: Vec<usize> = pinned_bars
-            .iter()
-            .map(|bar| {
-                let lane = lane_end
-                    .iter()
-                    .position(|end| *end < bar.start.as_str())
-                    .unwrap_or(lane_end.len());
-                if lane == lane_end.len() {
-                    lane_end.push(bar.end.as_str());
-                } else {
-                    lane_end[lane] = bar.end.as_str();
-                }
-                lane
-            })
-            .collect();
+        let pinned_lane = pinned_lanes(&pinned_bars);
         let num_rows = days.len().div_ceil(cols);
         let flow_lane = if self.stable_lanes {
             flow_lanes(&flow_bars, &days, cols)
@@ -1438,6 +1423,32 @@ fn flow_lanes(
         .collect()
 }
 
+/// The lane each pinned bar holds over its whole run: the lowest one that no bar placed before it
+/// occupies on any of its days.
+///
+/// The bars come in priority order before date order, so a lane's runs are not in date order and
+/// its last end says nothing about the days before it. Tracking every run of a lane lets a bar
+/// share it with a higher-priority bar on other days, such as an event on Thursday with a holiday
+/// on Monday of the same week, instead of opening a lane for the whole month.
+fn pinned_lanes(pinned_bars: &[&CalendarSpanBar]) -> Vec<usize> {
+    let mut lanes: Vec<Vec<(&str, &str)>> = Vec::new();
+    pinned_bars
+        .iter()
+        .map(|bar| {
+            let (start, end) = (bar.start.as_str(), bar.end.as_str());
+            let lane = lanes
+                .iter()
+                .position(|runs| runs.iter().all(|(s, e)| *e < start || end < *s))
+                .unwrap_or(lanes.len());
+            if lane == lanes.len() {
+                lanes.push(Vec::new());
+            }
+            lanes[lane].push((start, end));
+            lane
+        })
+        .collect()
+}
+
 /// The order bars take their lanes in: by start, the longer bar first on a shared start day. A bar
 /// takes the first lane free when it starts and keeps it while it continues, so this keeps a bar
 /// that goes on above the ones ending that day.
@@ -1516,6 +1527,45 @@ mod tests {
                 .collect(),
             other => panic!("span segment is not a VTag: {other:?}"),
         }
+    }
+
+    /// Pinned bars in the order the grid places them: priority first, then by date.
+    fn placed(bars: &[CalendarSpanBar]) -> Vec<usize> {
+        let mut sorted: Vec<&CalendarSpanBar> = bars.iter().collect();
+        sorted.sort_by(|a, b| {
+            b.priority
+                .cmp(&a.priority)
+                .then_with(|| a.start.cmp(&b.start))
+                .then_with(|| a.end.cmp(&b.end))
+        });
+        let lanes = pinned_lanes(&sorted);
+        bars.iter()
+            .map(|bar| lanes[sorted.iter().position(|s| std::ptr::eq(*s, bar)).unwrap()])
+            .collect()
+    }
+
+    #[test]
+    fn pinned_bars_on_other_days_share_a_lane_whatever_their_priority() {
+        // A holiday on Monday and Christmas Day, with the higher priority, and an event on
+        // Thursday of the first week: the event fits the holidays' lane, as nothing holds it then.
+        let bars = [
+            CalendarSpanBar::new("2026-12-07", "2026-12-07", "Holiday").priority(2),
+            CalendarSpanBar::new("2026-12-25", "2026-12-25", "Christmas").priority(2),
+            CalendarSpanBar::new("2026-12-10", "2026-12-10", "Party"),
+        ];
+        assert_eq!(placed(&bars), vec![0, 0, 0]);
+    }
+
+    #[test]
+    fn a_higher_priority_pin_keeps_the_top_lane_where_bars_meet() {
+        // The event covers the holiday's day, so the holiday keeps the top lane and the event,
+        // placed later, takes the next one for its whole run.
+        let bars = [
+            CalendarSpanBar::new("2026-12-07", "2026-12-11", "Offsite"),
+            CalendarSpanBar::new("2026-12-08", "2026-12-08", "Holiday").priority(2),
+            CalendarSpanBar::new("2026-12-14", "2026-12-14", "Party"),
+        ];
+        assert_eq!(placed(&bars), vec![1, 0, 0]);
     }
 
     #[test]
