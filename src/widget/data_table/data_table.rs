@@ -583,6 +583,15 @@ fn render_empty_row_with_sizes(widths: &[f64], column_hidden: &[bool], bordered:
         .into()
 }
 
+// Cells get the default class, unless the configuration sets its own.
+fn cell_config(config: &CellConfiguration) -> Rc<CellConfiguration> {
+    Rc::new(if config.class.is_empty() {
+        CellConfiguration::new().class("pwt-datatable-cell")
+    } else {
+        config.clone()
+    })
+}
+
 impl<S: DataStore> PwtDataTable<S> {
     // avoid slow search by lookup up keys nearby cursor first
     fn filtered_record_pos(&self, props: &DataTable<S>, key: &Key) -> Option<usize> {
@@ -1091,12 +1100,6 @@ impl<S: DataStore + 'static> Component for PwtDataTable<S> {
     fn create(ctx: &Context<Self>) -> Self {
         let props = ctx.props();
 
-        let cell_config = if props.cell_configuration.class.is_empty() {
-            CellConfiguration::new().class("pwt-datatable-cell")
-        } else {
-            props.cell_configuration.clone()
-        };
-
         let _store_observer = props
             .store
             .add_listener(ctx.link().callback(|_| Msg::DataChange));
@@ -1123,7 +1126,7 @@ impl<S: DataStore + 'static> Component for PwtDataTable<S> {
             column_widths: Vec::new(),
             column_hidden: Rc::new(Vec::new()),
             scroll_info: VirtualScrollInfo::default(),
-            cell_config: Rc::new(cell_config),
+            cell_config: cell_config(&props.cell_configuration),
             scroll_top: 0,
             set_scroll_top: None,
             viewport_height: 0.0,
@@ -1828,6 +1831,10 @@ impl<S: DataStore + 'static> Component for PwtDataTable<S> {
 
         if props.headers != old_props.headers {
             self.init_headers(props);
+        }
+
+        if props.cell_configuration != old_props.cell_configuration {
+            self.cell_config = cell_config(&props.cell_configuration);
         }
 
         true
