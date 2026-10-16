@@ -193,6 +193,21 @@ impl<T: 'static> PwtHeaderWidget<T> {
         span
     }
 
+    fn cell_visible(&self, cell_idx: usize) -> bool {
+        cell_idx < self.state.cell_count() && !self.state.get_cell_hidden(cell_idx)
+    }
+
+    // The cell that gets focus when tabbing into the header. Hidden cells are not rendered, so
+    // fall back to the first visible one.
+    fn tab_stop(&self) -> Option<usize> {
+        match self.cursor {
+            Some(cursor) if self.cell_visible(cursor) => Some(cursor),
+            Some(_) | None => {
+                (0..self.state.cell_count()).find(|cell_idx| self.cell_visible(*cell_idx))
+            }
+        }
+    }
+
     fn unique_cell_id(&self, cell_idx: usize) -> String {
         format!("{}-cell-{}", self.unique_id, cell_idx)
     }
@@ -208,11 +223,7 @@ impl<T: 'static> PwtHeaderWidget<T> {
     ) {
         let column_idx = cell.start_col;
         let cell_idx = cell.cell_idx;
-        let active = self
-            .cursor
-            .map(|cursor| cursor == cell_idx)
-            .unwrap_or(false);
-        let tabindex = if active || (self.cursor.is_none() && (cell_idx == 0)) {
+        let tabindex = if self.tab_stop() == Some(cell_idx) {
             AttrValue::Static("0")
         } else {
             AttrValue::Static("-1")
@@ -387,11 +398,7 @@ impl<T: 'static> PwtHeaderWidget<T> {
         header_row: &mut Vec<Html>,
     ) -> usize {
         let cell_idx = group.cell_idx;
-        let active = self
-            .cursor
-            .map(|cursor| cursor == cell_idx)
-            .unwrap_or(false);
-        let tabindex = if active || (self.cursor.is_none() && (cell_idx == 0)) {
+        let tabindex = if self.tab_stop() == Some(cell_idx) {
             "0"
         } else {
             "-1"
@@ -593,28 +600,22 @@ impl<T: 'static> Component for PwtHeaderWidget<T> {
                 true
             }
             Msg::MoveCursor(direction) => {
-                let last = self.state.cell_count().saturating_sub(1);
+                let count = self.state.cell_count();
                 let cursor = match self.cursor {
                     Some(cursor) => cursor,
                     None => return false,
                 };
-                self.cursor = Some(match direction {
-                    false => {
-                        if cursor > 0 {
-                            cursor - 1
-                        } else {
-                            last
-                        }
-                    }
-                    true => {
-                        if (cursor + 1) <= last {
-                            cursor + 1
-                        } else {
-                            0
-                        }
-                    }
-                });
-                self.focus_active_cell();
+                // Wrap around at either end and skip hidden cells, as they are not rendered.
+                let next = (1..count)
+                    .map(|step| match direction {
+                        true => (cursor + step) % count,
+                        false => (cursor + count - step) % count,
+                    })
+                    .find(|cell_idx| self.cell_visible(*cell_idx));
+                if let Some(next) = next {
+                    self.cursor = Some(next);
+                    self.focus_active_cell();
+                }
                 true
             }
         }
