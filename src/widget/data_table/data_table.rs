@@ -1813,8 +1813,17 @@ impl<S: DataStore + 'static> Component for PwtDataTable<S> {
         let props = ctx.props();
 
         if props.store != old_props.store {
-            // store changed
+            self._store_observer = props
+                .store
+                .add_listener(ctx.link().callback(|_| Msg::DataChange));
             self.update_scroll_info(props);
+        }
+
+        if props.selection != old_props.selection {
+            self._selection_observer = props.selection.as_ref().map(|selection| {
+                selection.add_listener(ctx.link().callback(|_| Msg::SelectionChange))
+            });
+            self.update_selection_status(props);
         }
 
         if props.headers != old_props.headers {
