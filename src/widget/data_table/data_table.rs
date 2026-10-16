@@ -1067,13 +1067,20 @@ impl<S: DataStore> PwtDataTable<S> {
         for header in props.headers.iter() {
             header.extract_column_list(&mut columns);
         }
-        let mut column_hidden = Vec::new();
-        for column in columns.iter() {
-            column_hidden.push(column.hidden);
+        // Like the header widget, keep the hidden state while the column names stay the same.
+        // Callers sometimes recreate the headers on every render, and resetting it here would show
+        // columns in the rows that the user hid in the header.
+        let same_columns = self.columns.len() == columns.len()
+            && self
+                .columns
+                .iter()
+                .zip(columns.iter())
+                .all(|(old, new)| old.name == new.name);
+        if !same_columns {
+            self.column_hidden = Rc::new(columns.iter().map(|column| column.hidden).collect());
         }
         self.headers = Rc::new(headers);
         self.columns = Rc::new(columns);
-        self.column_hidden = Rc::new(column_hidden);
     }
 }
 
