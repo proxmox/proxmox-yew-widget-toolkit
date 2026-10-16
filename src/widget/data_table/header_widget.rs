@@ -425,6 +425,7 @@ impl<T: 'static> PwtHeaderWidget<T> {
                     format!("grid-column: {} / span {}", start_col + 1, span,),
                 )
                 .with_child(group.name.clone())
+                .onfocusin(link.callback(move |_| Msg::FocusCell(cell_idx)))
                 .into(),
         );
 
