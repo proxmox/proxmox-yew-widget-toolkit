@@ -43,6 +43,12 @@ pub struct HeaderWidget<T: 'static> {
     pub focusable: bool,
 
     reserve_scroll_space: f64,
+
+    /// Invisible content per visible column, used to size the column tracks. Contains
+    /// the visible column index, the `colspan` value and the content.
+    #[prop_or_default]
+    #[derivative(PartialEq(compare_with = "Rc::ptr_eq"))]
+    pub column_sizers: Rc<Vec<(usize, usize, Html)>>,
 }
 
 impl<T: 'static> HeaderWidget<T> {
@@ -94,6 +100,17 @@ impl<T: 'static> HeaderWidget<T> {
     /// Method to set if space should be reserved for the scroller.
     pub fn set_reserve_scroll_space(&mut self, reserve_scroll_space: f64) {
         self.reserve_scroll_space = reserve_scroll_space;
+    }
+
+    /// Builder style method to set the column sizers.
+    pub fn column_sizers(mut self, column_sizers: Rc<Vec<(usize, usize, Html)>>) -> Self {
+        self.set_column_sizers(column_sizers);
+        self
+    }
+
+    /// Method to set the column sizers.
+    pub fn set_column_sizers(&mut self, column_sizers: Rc<Vec<(usize, usize, Html)>>) {
+        self.column_sizers = column_sizers;
     }
 }
 
@@ -636,6 +653,36 @@ impl<T: 'static> Component for PwtHeaderWidget<T> {
         );
 
         let column_count = self.state.visible_column_count();
+
+        // Put the sizers into their column tracks, so that content based track sizes account for
+        // them. They have no height and are invisible, so they do not change the header layout.
+        // Header cells end at row line 10, so use the row after that to avoid interfering with
+        // the auto placed group headers.
+        for (i, (grid_start, colspan, sizer)) in props.column_sizers.iter().enumerate() {
+            if *grid_start >= column_count {
+                continue;
+            }
+            let cols_left = column_count - grid_start;
+            let colspan = (*colspan).min(cols_left);
+
+            header_row.push(
+                Container::new()
+                    .key(Key::from(format!("sizer-{i}")))
+                    .class("pwt-datatable-content")
+                    .attribute("role", "none")
+                    .attribute("aria-hidden", "true")
+                    .style("height", "0px")
+                    .style("overflow", "clip")
+                    .style("visibility", "hidden")
+                    .style("grid-row", "10")
+                    .style(
+                        "grid-column",
+                        format!("{} / span {}", grid_start + 1, colspan),
+                    )
+                    .with_child(sizer.clone())
+                    .into(),
+            );
+        }
 
         // add some space at the end to make room for the tables vertical scrollbar
         let scrollbar_size = ctx.props().reserve_scroll_space;

@@ -5,6 +5,8 @@ use crate::widget::data_table::{CellConfiguration, DataTableCellRenderArgs, Data
 /// Contains the rendered cell contents plus meta info to properly show it in the data table
 pub(crate) struct RenderedCell<'a, T: 'static> {
     pub column_num: usize,
+    pub col_index: usize,
+    pub colspan: usize,
     pub config: CellConfiguration,
     pub content: Html,
     pub column: &'a DataTableColumn<T>,
@@ -46,6 +48,8 @@ pub(crate) fn render_row_cells<'a, T>(
 
         res.push(RenderedCell {
             column_num,
+            col_index,
+            colspan,
             config: args.config,
             content,
             column,

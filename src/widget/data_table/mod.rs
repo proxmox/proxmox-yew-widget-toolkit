@@ -48,7 +48,7 @@ mod data_table;
 pub(crate) use data_table::HeaderMsg;
 #[doc(hidden)]
 pub use data_table::PwtDataTable;
-pub use data_table::{DataTable, MultiSelectMode, RowSelectionStatus};
+pub use data_table::{DataTable, MultiSelectMode, RowSelectionStatus, VIRTUAL_SCROLL_TRIGGER};
 
 use yew::prelude::*;
 

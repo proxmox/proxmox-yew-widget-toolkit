@@ -21,10 +21,13 @@ use crate::props::{
 use crate::state::{DataStore, Selection, SelectionObserver};
 use crate::widget::{Column, Container, get_unique_element_id};
 
+use pwt_macros::builder;
+
 use super::{
-    CellConfiguration, DataTableColumn, DataTableHeader, DataTableKeyboardEvent,
-    DataTableMouseEvent, DataTableRow, DataTableRowRenderCallback, HeaderWidget, IndexedHeader,
-    IntoOptionalDataTableRowRenderCallback, create_indexed_header_list,
+    CellConfiguration, DataTableCellRenderArgs, DataTableColumn, DataTableHeader,
+    DataTableKeyboardEvent, DataTableMouseEvent, DataTableRow, DataTableRowRenderCallback,
+    HeaderWidget, IndexedHeader, IntoOptionalDataTableRowRenderCallback,
+    create_indexed_header_list, render_row_cells,
 };
 
 pub enum HeaderMsg<T: 'static> {
@@ -109,6 +112,7 @@ pub enum MultiSelectMode {
 /// * `End`: moves focus to the last cell in the row that contains focus.
 #[derive(Properties, Derivative)]
 #[derivative(Clone(bound = ""), PartialEq(bound = ""))]
+#[builder]
 pub struct DataTable<S: DataStore> {
     /// Yew key property.
     #[prop_or_default]
@@ -172,6 +176,21 @@ pub struct DataTable<S: DataStore> {
     /// of visible rows.
     #[prop_or(22)]
     pub min_row_height: usize,
+
+    /// Sample store used for sizing the columns.
+    ///
+    /// Default column widths are computed from the header, because the table rows are rendered
+    /// separately (and only partially with virtual scrolling). These records are rendered
+    /// invisibly inside the header, using the column render functions, so content based widths
+    /// like "auto" or "max-content" account for them. For flex widths, they act as minimum width.
+    ///
+    /// The sample store data should be static and not change during runtime. (Changes are not
+    /// monitored.)
+    ///
+    /// NOTE: Only up to [`VIRTUAL_SCROLL_TRIGGER`] records are supported for performance reasons.
+    #[prop_or_default]
+    #[builder(IntoPropValue, into_prop_value)]
+    pub sample_store: Option<S>,
 
     /// Selection object.
     #[prop_or_default]
@@ -240,7 +259,9 @@ impl<S: DataStore> CssPaddingBuilder for DataTable<S> {}
 impl<S: DataStore> CssMarginBuilder for DataTable<S> {}
 impl<S: DataStore> WidgetStyleBuilder for DataTable<S> {}
 
-static VIRTUAL_SCROLL_TRIGGER: usize = 30;
+/// The automatic cut-off for virtual scrolling. When the DataTable can be scrolled
+/// and there are more rows than this limit, virtual scrolling is automatically enabled.
+pub const VIRTUAL_SCROLL_TRIGGER: usize = 30;
 
 impl<S: DataStore> DataTable<S> {
     /// Create a new instance.
@@ -536,6 +557,9 @@ pub struct PwtDataTable<S: DataStore> {
     keypress_timeout: Option<Timeout>,
 
     focus_table: bool,
+
+    /// Cached column sizers so recalculation does not happen too frequently.
+    column_sizers: Rc<Vec<(usize, usize, Html)>>,
 }
 
 /// Whether the header has measured the columns. A hidden header measures them as 0.
@@ -1068,6 +1092,74 @@ impl<S: DataStore> PwtDataTable<S> {
         };
     }
 
+    // Calculate and render the cells of the sizing records with the column renderers, wrapped like
+    // table cells, so that they get the same font and padding when the header measures them.
+    fn calculate_column_sizers(&mut self, props: &DataTable<S>) {
+        let Some(store) = props.sample_store.clone() else {
+            self.column_sizers = Rc::new(Vec::new());
+            return;
+        };
+
+        if store.is_empty() {
+            self.column_sizers = Rc::new(Vec::new());
+            return;
+        }
+
+        debug_assert!(
+            store.filtered_data_len() <= VIRTUAL_SCROLL_TRIGGER,
+            "More than {VIRTUAL_SCROLL_TRIGGER} sample records can have a negative performance \
+             impact. Anything more than that will not be rendered."
+        );
+
+        let len = store.filtered_data_len();
+
+        let records = store.filtered_data().take(VIRTUAL_SCROLL_TRIGGER);
+
+        let mut res = Vec::with_capacity(len.min(VIRTUAL_SCROLL_TRIGGER) * self.columns.len());
+
+        for (row_index, node) in records {
+            let record = node.record();
+            let record_key = store.extract_key(&record);
+            let rendered_cells =
+                render_row_cells(&self.columns, &self.column_hidden, |column_index| {
+                    DataTableCellRenderArgs {
+                        selection: props.selection.clone(),
+                        record: &record,
+                        record_key: &record_key,
+                        row_index,
+                        column_index,
+                        selected: false,
+                        config: (*self.cell_config).clone(),
+                        is_expanded: false,
+                        is_leaf: node.is_leaf(),
+                        level: node.level(),
+                    }
+                });
+
+            for cell in rendered_cells {
+                let mut cell_container = Container::new()
+                    .class(cell.config.class)
+                    .styles(cell.config.style)
+                    .style("white-space", "nowrap")
+                    // cell widths get reduced by the border width, see
+                    // render_empty_row_with_sizes
+                    .style(
+                        "border-inline-end",
+                        props.bordered.then_some("1px solid transparent"),
+                    )
+                    .with_child(html! {<div role="none">{cell.content}</div>});
+
+                cell_container
+                    .as_std_props_mut()
+                    .add_attributes(cell.config.attributes);
+
+                res.push((cell.col_index, cell.colspan, cell_container.into()));
+            }
+        }
+
+        self.column_sizers = Rc::new(res);
+    }
+
     fn init_headers(&mut self, props: &DataTable<S>) {
         let headers = create_indexed_header_list(&props.headers);
 
@@ -1146,12 +1238,16 @@ impl<S: DataStore + 'static> Component for PwtDataTable<S> {
             keypress_timeout: None,
 
             focus_table: false,
+            column_sizers: Rc::new(Vec::new()),
         };
         me.init_headers(props);
 
         me.update_scroll_info(props);
         // fixme: remove unknown keys from selection
         me.update_selection_status(props);
+
+        me.calculate_column_sizers(props);
+
         me
     }
 
@@ -1663,6 +1759,7 @@ impl<S: DataStore + 'static> Component for PwtDataTable<S> {
             }
             Msg::Header(HeaderMsg::ColumnHiddenChange(column_hidden)) => {
                 self.column_hidden = Rc::new(column_hidden);
+                self.calculate_column_sizers(props);
                 true
             }
             Msg::Header(HeaderMsg::ToggleSelectAll) => {
@@ -1804,7 +1901,8 @@ impl<S: DataStore + 'static> Component for PwtDataTable<S> {
                             .focusable(props.header_focusable && props.show_header)
                             .selection_status(self.selection_status)
                             .header_class(header_class)
-                            .reserve_scroll_space(self.scrollbar_size.unwrap_or_default()),
+                            .reserve_scroll_space(self.scrollbar_size.unwrap_or_default())
+                            .column_sizers(self.column_sizers.clone()),
                     )
                     .into_html_with_ref(self.header_scroll_ref.clone()),
             )
@@ -1822,19 +1920,32 @@ impl<S: DataStore + 'static> Component for PwtDataTable<S> {
             self.update_scroll_info(props);
         }
 
+        let mut recalculate_sizers = false;
+
         if props.selection != old_props.selection {
             self._selection_observer = props.selection.as_ref().map(|selection| {
                 selection.add_listener(ctx.link().callback(|_| Msg::SelectionChange))
             });
             self.update_selection_status(props);
-        }
-
-        if props.headers != old_props.headers {
-            self.init_headers(props);
+            recalculate_sizers = true;
         }
 
         if props.cell_configuration != old_props.cell_configuration {
             self.cell_config = cell_config(&props.cell_configuration);
+            recalculate_sizers = true;
+        }
+
+        if props.headers != old_props.headers {
+            self.init_headers(props);
+            recalculate_sizers = true;
+        }
+
+        if props.sample_store != old_props.sample_store || props.bordered != old_props.bordered {
+            recalculate_sizers = true;
+        }
+
+        if recalculate_sizers || props.sample_store != old_props.sample_store {
+            self.calculate_column_sizers(props);
         }
 
         true
