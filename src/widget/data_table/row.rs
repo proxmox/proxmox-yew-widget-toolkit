@@ -13,7 +13,7 @@ use crate::widget::Container;
 
 use super::{
     CellConfiguration, DataTableCellRenderArgs, DataTableColumn, DataTableRowRenderArgs,
-    DataTableRowRenderCallback,
+    DataTableRowRenderCallback, render_row_cells,
 };
 
 /// DataTable row properties.
@@ -119,28 +119,8 @@ impl<T: Clone + PartialEq + 'static> Component for PwtDataTableRow<T> {
         let minheight_cell_style =
             AttrValue::Rc(format!("vertical-align:top;height: {}px;", props.min_row_height).into());
 
-        let mut col_index = 0;
-        let mut column_num = 0;
-
-        while let Some(column) = props.columns.get(column_num) {
-            if let Some(true) = props.column_hidden.get(column_num) {
-                column_num += 1;
-                continue;
-            }
-
-            let vertical_align = props
-                .vertical_align
-                .to_owned()
-                .or(column.vertical_align.clone())
-                .unwrap_or("baseline".into());
-            let text_align = column.justify.to_owned();
-
-            let cell_active = match props.active_cell {
-                Some(active_cell) => active_cell == column_num,
-                None => false,
-            };
-
-            let mut args = DataTableCellRenderArgs {
+        let rendered_cells = render_row_cells(&props.columns, &props.column_hidden, |col_index| {
+            DataTableCellRenderArgs {
                 selection: props.selection.clone(),
                 record: &props.record,
                 record_key: &props.record_key,
@@ -151,37 +131,35 @@ impl<T: Clone + PartialEq + 'static> Component for PwtDataTableRow<T> {
                 is_expanded: props.is_expanded,
                 is_leaf: props.is_leaf,
                 level: props.level,
+            }
+        });
+
+        for cell in rendered_cells {
+            let column = cell.column;
+            let vertical_align = props
+                .vertical_align
+                .to_owned()
+                .or(column.vertical_align.clone())
+                .unwrap_or("baseline".into());
+            let text_align = column.justify.to_owned();
+
+            let cell_active = match props.active_cell {
+                Some(active_cell) => active_cell == cell.column_num,
+                None => false,
             };
 
-            let cell = column.apply_render(&mut args);
-
             let mut td = Container::from_tag("td")
-                .class(args.config.class)
+                .class(cell.config.class)
                 .class((cell_active && props.has_focus).then_some("cell-cursor"))
-                .styles(args.config.style)
+                .styles(cell.config.style)
                 .style("vertical-align", vertical_align)
                 .style("text-align", text_align)
                 .attribute("role", "gridcell")
-                .attribute("data-column-num", column_num.to_string())
+                .attribute("data-column-num", cell.column_num.to_string())
                 .attribute("tabindex", if cell_active { "0" } else { "-1" })
-                .with_child(html! {<div role="none">{cell}</div>});
+                .with_child(html! {<div role="none">{cell.content}</div>});
 
-            let mut colspan = 1;
-
-            for (attr_name, attr_value) in args.config.attributes.iter() {
-                if attr_name == "colspan" {
-                    if let Ok(n) = attr_value.parse::<usize>() {
-                        if n > 0 {
-                            colspan = n
-                        }
-                    }
-                }
-            }
-
-            td.as_std_props_mut().add_attributes(args.config.attributes);
-
-            col_index += colspan;
-            column_num += colspan;
+            td.as_std_props_mut().add_attributes(cell.config.attributes);
 
             row.add_child(td);
         }
