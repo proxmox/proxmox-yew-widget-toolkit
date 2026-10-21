@@ -73,6 +73,10 @@ pub enum CalendarGridView {
 /// - `pwt-calendar-span-icon`: the leading [`icon`](Self::icon) holder, present only on a row's
 ///   labelled segment.
 /// - `pwt-calendar-span-label`: the label holder inside a segment.
+/// - `pwt-calendar-span-label-detail`: the label holder when the bar has a [`detail`](Self::detail);
+///   it then holds `pwt-calendar-span-text` with the label and `pwt-calendar-span-detail` with the
+///   detail. Style the detail to show only while it fits beside the text, and the text to shorten
+///   with an ellipsis as the plain label does.
 /// - `--pwt-calendar-span-color`: custom property carrying [`color`](Self::color); derive the fill,
 ///   border, and text color from it.
 #[derive(Clone, PartialEq)]
@@ -83,6 +87,10 @@ pub struct CalendarSpanBar {
     pub end: String,
     /// Text drawn on the bar's first segment of each week row.
     pub label: String,
+    /// Secondary text drawn after the label, such as an event's hours. It is only worth showing
+    /// whole, so the theme shows it only while it fits beside the label and the label keeps its
+    /// room. Ignored when [`render_span`](CalendarGrid::render_span) takes over.
+    pub detail: Option<String>,
     /// Optional caller token (event vs leave, severity, ...). The grid does not interpret it; it is
     /// handed back on every [`CalendarSpanSegment`] so a [`render_span`](CalendarGrid::render_span)
     /// hook can branch on it, and rides [`CalendarSpanClick::kind`].
@@ -125,6 +133,7 @@ impl CalendarSpanBar {
             start: start.into(),
             end: end.into(),
             label: label.into(),
+            detail: None,
             kind: None,
             id: None,
             class: Classes::new(),
@@ -133,6 +142,12 @@ impl CalendarSpanBar {
             pinned: false,
             priority: 0,
         }
+    }
+
+    /// Set the secondary text drawn after the label (see [`detail`](Self::detail)).
+    pub fn detail(mut self, detail: impl Into<String>) -> Self {
+        self.detail = Some(detail.into());
+        self
     }
 
     /// Set the caller token handed back on every segment.
@@ -545,6 +560,17 @@ impl CalendarGrid {
         if selected {
             class.push("pwt-calendar-span-selected");
         }
+        // The detail is named wherever the label is, as a hover or a screen reader would otherwise
+        // never learn a detail the bar had no room to show.
+        let detail = seg
+            .bar
+            .detail
+            .as_deref()
+            .filter(|detail| !detail.is_empty());
+        let full_label = |label: &str| match detail {
+            Some(detail) => format!("{label}, {detail}"),
+            None => label.to_string(),
+        };
 
         let mut segment = Container::from_tag("div").class(class);
         // Tie every covered cell of a bar to its id, so a hover on any one can light the whole run
@@ -556,7 +582,7 @@ impl CalendarGrid {
         // only stack a second, differently-timed hover on top; keep the title solely as the fallback
         // for when no rich tip is set.
         if self.render_span_tooltip.is_none() {
-            segment = segment.attribute("title", seg.bar.label.clone());
+            segment = segment.attribute("title", full_label(&seg.bar.label));
         }
 
         if let Some(color) = &seg.bar.color {
@@ -575,16 +601,24 @@ impl CalendarGrid {
 
         // A non-breaking space keeps a continuation cell at bar height so the row does not
         // collapse.
-        let text = if labelled {
-            seg.label.clone()
-        } else {
-            "\u{00a0}".to_string()
+        let label = Container::from_tag("span").class("pwt-calendar-span-label");
+        let label = match (labelled, detail) {
+            (true, Some(detail)) => label
+                .class("pwt-calendar-span-label-detail")
+                .with_child(
+                    Container::from_tag("span")
+                        .class("pwt-calendar-span-text")
+                        .with_child(seg.label.clone()),
+                )
+                .with_child(
+                    Container::from_tag("span")
+                        .class("pwt-calendar-span-detail")
+                        .with_child(detail.to_string()),
+                ),
+            (true, None) => label.with_child(seg.label.clone()),
+            (false, _) => label.with_child("\u{00a0}"),
         };
-        segment = segment.with_child(
-            Container::from_tag("span")
-                .class("pwt-calendar-span-label")
-                .with_child(html! { { text } }),
-        );
+        segment = segment.with_child(label);
 
         if let Some(on_click) = &self.on_span_click {
             let click = CalendarSpanClick {
@@ -616,7 +650,7 @@ impl CalendarGrid {
                     .attribute("role", "button")
                     .attribute("tabindex", "0")
                     .attribute("aria-pressed", if selected { "true" } else { "false" })
-                    .attribute("aria-label", seg.label.clone())
+                    .attribute("aria-label", full_label(&seg.label))
                     .onkeydown(onkeydown);
             } else {
                 // A covered day stays out of the tab order and the a11y tree, so the bar reads (and
@@ -1566,6 +1600,27 @@ mod tests {
             CalendarSpanBar::new("2026-12-14", "2026-12-14", "Party"),
         ];
         assert_eq!(placed(&bars), vec![1, 0, 0]);
+    }
+
+    #[test]
+    fn a_detail_is_named_with_the_label() {
+        // The theme may hide a detail that does not fit, so the accessible name and the plain hover
+        // carry it whole.
+        let bar =
+            CalendarSpanBar::new("2026-06-08", "2026-06-08", "Team dinner").detail("18:30 - 22:30");
+        let segment = span_segment(&bar, "2026-06-08", None, None, true).unwrap();
+        let attrs =
+            segment_attrs(&CalendarGrid::new("2026-06-08").render_span_segment(segment.clone()));
+        assert_eq!(
+            attrs.get("title").map(String::as_str),
+            Some("Team dinner, 18:30 - 22:30")
+        );
+        let clickable = CalendarGrid::new("2026-06-08").on_span_click(|_: CalendarSpanClick| {});
+        let attrs = segment_attrs(&clickable.render_span_segment(segment));
+        assert_eq!(
+            attrs.get("aria-label").map(String::as_str),
+            Some("Team dinner, 18:30 - 22:30")
+        );
     }
 
     #[test]
