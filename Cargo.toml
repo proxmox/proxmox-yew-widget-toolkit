@@ -75,3 +75,11 @@ gettext = "0.4"
 geojson = "0.24"
 
 pwt-macros = { version = "0.5.3", path = "pwt-macros" }
+
+[profile.dev]
+# Full DWARF made up most of each debug test binary and wasm module, and wasm-bindgen strips it
+# again unless told to keep it. Line tables keep file and line numbers in backtraces.
+debug = "line-tables-only"
+
+[profile.dev.package."*"]
+debug = false
