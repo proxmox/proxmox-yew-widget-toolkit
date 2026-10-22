@@ -243,7 +243,11 @@ impl Component for PwtMenuButton {
                 .into_html_with_ref(self.submenu_ref.clone())
         });
 
-        let mut button = Button::new(&props.text)
+        let mut button = Button::new(&props.text);
+        button.std_props = props.std_props.clone();
+        button.listeners = props.listeners.clone();
+
+        let button = button
             .node_ref(self.align_ref.clone())
             .aria_label(props.aria_label.clone())
             .show_arrow(props.show_arrow)
@@ -252,9 +256,6 @@ impl Component for PwtMenuButton {
             .attribute("aria-expanded", self.show_submenu.then_some("true"))
             .tabindex(props.tabindex)
             .icon_class(props.icon_class.clone());
-
-        button.std_props = props.std_props.clone();
-        button.listeners = props.listeners.clone();
 
         let show_submenu = self.show_submenu;
         let autoshow_menu = props.autoshow_menu;
