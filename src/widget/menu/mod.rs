@@ -112,6 +112,31 @@ impl MenuController {
     pub fn select_previous(&self) {
         self.state.write().push(MenuControllerMsg::Previous);
     }
+
+    /// Take the queued messages without notifying the listeners again.
+    pub(crate) fn take_messages(&self) -> Vec<MenuControllerMsg> {
+        let mut state = self.state.write();
+        state.notify = false;
+        state.split_off(0)
+    }
+
+    /// Hand the queued messages to the first listener as soon as they are queued.
+    ///
+    /// The root of a menu tree subscribes before the menus it opens, so it receives every
+    /// message. Reading the queue in a component update instead would hand the messages to
+    /// whichever listener Yew updates first. A click on an item also schedules an update of the
+    /// menu holding it, so that menu would take the collapse and its menu button would stay open.
+    pub(crate) fn add_listener(
+        &self,
+        on_messages: Callback<Vec<MenuControllerMsg>>,
+    ) -> SharedStateObserver<Vec<MenuControllerMsg>> {
+        self.state.add_listener(move |state| {
+            let list = MenuController { state }.take_messages();
+            if !list.is_empty() {
+                on_messages.emit(list);
+            }
+        })
+    }
 }
 
 /// Menu - A container for [MenuEntry]s.
@@ -233,7 +258,7 @@ pub enum Msg {
     ShowSubmenu(bool, bool),
     SubmenuClose,
     Redraw,
-    Controller, // MenuController has new messages
+    Controller(Vec<MenuControllerMsg>),
 }
 
 #[doc(hidden)]
@@ -354,14 +379,7 @@ impl PwtMenu {
         }
     }
 
-    fn handle_controller_messages(&mut self, ctx: &Context<Self>) {
-        let count = self.menu_controller.state.read().len();
-        if count == 0 {
-            return;
-        } // Note: avoid endless loop
-
-        let list = self.menu_controller.state.write().split_off(0);
-
+    fn handle_controller_messages(&mut self, ctx: &Context<Self>, list: Vec<MenuControllerMsg>) {
         for msg in list.into_iter() {
             match msg {
                 MenuControllerMsg::Open => {
@@ -393,11 +411,12 @@ impl Component for PwtMenu {
             .clone()
             .unwrap_or_else(|| MenuController::new());
 
-        let _menu_controller_observer = menu_controller
-            .state
-            .add_listener(ctx.link().callback(|_| Msg::Controller));
+        let _menu_controller_observer =
+            menu_controller.add_listener(ctx.link().callback(Msg::Controller));
 
         let focus_tracker = FocusTracker::new(ctx.link().callback(Msg::FocusChange));
+
+        let pending = menu_controller.take_messages();
 
         let mut me = Self {
             cursor: None,
@@ -415,7 +434,7 @@ impl Component for PwtMenu {
             submenu_timer: None,
         };
 
-        me.handle_controller_messages(ctx);
+        me.handle_controller_messages(ctx, pending);
         me
     }
 
@@ -425,8 +444,8 @@ impl Component for PwtMenu {
             timeout.cancel();
         }
         match msg {
-            Msg::Controller => {
-                self.handle_controller_messages(ctx);
+            Msg::Controller(list) => {
+                self.handle_controller_messages(ctx, list);
                 true
             }
             // Note: only used by menubar

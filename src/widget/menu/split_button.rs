@@ -105,7 +105,7 @@ pub enum Msg {
     ShowMenu,
     CloseMenu,
     FocusChange(bool),
-    Controller, // MenuController has new messages
+    Controller(Vec<MenuControllerMsg>),
 }
 
 #[doc(hidden)]
@@ -129,14 +129,7 @@ impl PwtSplitButton {
         }
     }
 
-    fn handle_controller_messages(&mut self, ctx: &Context<Self>) {
-        let count = self.menu_controller.state.read().len();
-        if count == 0 {
-            return;
-        } // Note: avoid endless loop
-
-        let list = self.menu_controller.state.write().split_off(0);
-
+    fn handle_controller_messages(&mut self, ctx: &Context<Self>, list: Vec<MenuControllerMsg>) {
         for msg in list.into_iter() {
             match msg {
                 MenuControllerMsg::Open => {
@@ -170,11 +163,12 @@ impl Component for PwtSplitButton {
             .clone()
             .unwrap_or_else(|| MenuController::new());
 
-        let _menu_controller_observer = menu_controller
-            .state
-            .add_listener(ctx.link().callback(|_| Msg::Controller));
+        let _menu_controller_observer =
+            menu_controller.add_listener(ctx.link().callback(Msg::Controller));
 
         let focus_tracker = FocusTracker::new(ctx.link().callback(Msg::FocusChange));
+
+        let pending = menu_controller.take_messages();
 
         let mut me = Self {
             node_ref,
@@ -187,7 +181,7 @@ impl Component for PwtSplitButton {
             focus_tracker,
         };
 
-        me.handle_controller_messages(ctx);
+        me.handle_controller_messages(ctx, pending);
         me
     }
 
@@ -201,8 +195,8 @@ impl Component for PwtSplitButton {
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
         let props = ctx.props();
         match msg {
-            Msg::Controller => {
-                self.handle_controller_messages(ctx);
+            Msg::Controller(list) => {
+                self.handle_controller_messages(ctx, list);
                 true
             }
             Msg::ShowMenu => {
