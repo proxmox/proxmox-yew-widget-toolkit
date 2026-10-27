@@ -1,3 +1,33 @@
+rust-pwt (0.8.22) trixie; urgency=medium
+
+  * data table:
+    - add a sample store, whose records are rendered invisibly to size
+      columns without an explicit width, such as an action column whose
+      icons should always fit in every theme and density.
+    - keep a column hidden through the header menu when the parent creates
+      the headers anew on each render, as the running tasks list does.
+    - follow a store, selection or cell configuration passed after the
+      table was created, instead of only the first ones.
+    - header: let the arrow keys move from a group header, and skip hidden
+      columns.
+
+  * loader: center the loading placeholder, which sat left-aligned.
+
+  * menu: close a menu button's menu after a mouse click on an item, as a
+    keyboard pick already did. Split buttons and menubars use the same
+    mechanism and are fixed as well.
+
+  * menu button: keep the aria-haspopup and aria-expanded attributes, so
+    assistive technology announces it as a button that opens a menu.
+
+  * calendar grid:
+    - let pinned bars share a lane across priorities, so a week no longer
+      reserves an empty lane for its bars below a higher-priority one.
+    - add an optional detail to span bars, drawn after the label, such as
+      an event's hours, which a theme can show only while it fits.
+
+ -- Proxmox Support Team <support@proxmox.com>  Tue, 27 Oct 2026 15:12:41 +0100
+
 rust-pwt (0.8.21) trixie; urgency=medium
 
   * navigation drawer:
