@@ -620,25 +620,14 @@ impl<S: DataStore> PwtDataTable<S> {
     // avoid slow search by lookup up keys nearby cursor first
     fn filtered_record_pos(&self, props: &DataTable<S>, key: &Key) -> Option<usize> {
         if let Some(Cursor { pos, .. }) = &self.cursor {
-            let test_pos = *pos;
-            if let Some(record_key) = props.store.lookup_filtered_record_key(test_pos) {
-                if &record_key == key {
+            for test_pos in [Some(*pos), pos.checked_add(1), pos.checked_sub(1)]
+                .into_iter()
+                .flatten()
+            {
+                if let Some(record_key) = props.store.lookup_filtered_record_key(test_pos)
+                    && &record_key == key
+                {
                     return Some(test_pos);
-                }
-            }
-
-            let test_pos = pos + 1;
-            if let Some(record_key) = props.store.lookup_filtered_record_key(test_pos) {
-                if &record_key == key {
-                    return Some(test_pos);
-                }
-            }
-            if *pos > 0 {
-                let test_pos = pos - 1;
-                if let Some(record_key) = props.store.lookup_filtered_record_key(test_pos) {
-                    if &record_key == key {
-                        return Some(test_pos);
-                    }
                 }
             }
         }
