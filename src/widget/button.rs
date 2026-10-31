@@ -126,14 +126,18 @@ impl Button {
     }
 
     /// Create a Refresh/Reload button.
+    ///
+    /// It shows only an icon, so its translated name serves as accessible label and as tooltip.
     pub fn refresh(loading: bool) -> Self {
         let icon_class = if loading {
             "fa fa-fw fa-refresh fa-spin"
         } else {
             "fa fa-fw fa-refresh"
         };
+        let label = tr!("Refresh");
         Self::new_icon(icon_class)
-            .aria_label("Refresh")
+            .aria_label(label.clone())
+            .attribute("title", label)
             .disabled(loading)
     }
 
