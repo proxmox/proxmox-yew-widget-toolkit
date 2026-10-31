@@ -23,6 +23,10 @@ use crate::widget::{Column, Container, get_unique_element_id};
 
 use pwt_macros::builder;
 
+#[path = "selection_state.rs"]
+mod selection_state;
+use selection_state::TableSelection;
+
 use super::{
     CellConfiguration, DataTableCellRenderArgs, DataTableColumn, DataTableHeader,
     DataTableKeyboardEvent, DataTableMouseEvent, DataTableRow, DataTableRowRenderCallback,
@@ -193,6 +197,10 @@ pub struct DataTable<S: DataStore> {
     pub sample_store: Option<S>,
 
     /// Selection object.
+    ///
+    /// Only the table's select-all action opts into selecting newly shown rows. Programmatically
+    /// selecting every current key does not establish that intent. An empty view, a clear,
+    /// deselection, or replacement of this object cancels it.
     #[prop_or_default]
     pub selection: Option<Selection>,
 
@@ -517,7 +525,7 @@ pub struct PwtDataTable<S: DataStore> {
     active_column: usize, // which colums has focus?
     cursor: Option<Cursor>,
     last_select_position: Option<usize>,
-    selection_status: RowSelectionStatus,
+    selection_state: TableSelection,
 
     _selection_observer: Option<SelectionObserver>,
 
@@ -743,83 +751,6 @@ impl<S: DataStore> PwtDataTable<S> {
                 self.last_select_position = Some(end);
             } else {
                 self.select_position(props, selection, new_cursor, shift, ctrl);
-            }
-        }
-    }
-
-    fn select_all(&mut self, props: &DataTable<S>) {
-        let selection = match &props.selection {
-            Some(selection) => selection,
-            None => {
-                self.selection_status = RowSelectionStatus::Nothing;
-                return;
-            }
-        };
-        let record_count = props.store.filtered_data_len();
-        // use write lock to avoid multiple notification
-        let mut selection = selection.write();
-        if !selection.is_multiselect() {
-            return;
-        }
-
-        let mut keys: HashSet<Key> = HashSet::new();
-        for pos in 0..record_count {
-            if let Some(key) = props.store.lookup_filtered_record_key(pos) {
-                keys.insert(key);
-            }
-        }
-        selection.bulk_select(keys);
-        self.selection_status = RowSelectionStatus::All;
-    }
-
-    fn clear_selection(&mut self, props: &DataTable<S>) {
-        if let Some(selection) = &props.selection {
-            selection.clear();
-        }
-    }
-
-    fn update_selection_status(&mut self, props: &DataTable<S>) {
-        let selection = match &props.selection {
-            Some(selection) => selection,
-            None => {
-                self.selection_status = RowSelectionStatus::Nothing;
-                return;
-            }
-        };
-
-        let record_count = props.store.filtered_data_len();
-        if record_count == 0 {
-            self.selection_status = RowSelectionStatus::Nothing;
-            return;
-        }
-
-        let selection_len = selection.len();
-        if record_count == selection_len {
-            self.selection_status = RowSelectionStatus::All;
-        } else if selection_len > 0 {
-            self.selection_status = RowSelectionStatus::Some;
-        } else {
-            self.selection_status = RowSelectionStatus::Nothing;
-        }
-    }
-
-    // remove stale keys from selection
-    fn cleanup_selection(&mut self, props: &DataTable<S>) {
-        if let Some(selection) = &props.selection {
-            let mut selection = selection.write();
-            if selection.is_multiselect() {
-                let mut keys: HashSet<Key> = HashSet::new();
-                for (_pos, node) in props.store.filtered_data() {
-                    let key = props.store.extract_key(&node.record());
-                    if selection.contains(&key) {
-                        keys.insert(key);
-                    }
-                }
-                selection.bulk_select(keys);
-            } else if let Some(key) = selection.selected_key() {
-                if props.store.filtered_record_pos(&key).is_none() {
-                    selection.clear();
-                }
             }
         }
     }
@@ -1199,7 +1130,7 @@ impl<S: DataStore + 'static> Component for PwtDataTable<S> {
             take_focus: false,
             cursor: None,
             last_select_position: None,
-            selection_status: RowSelectionStatus::Nothing,
+            selection_state: TableSelection::default(),
             _selection_observer,
 
             active_column: 0,
@@ -1233,7 +1164,7 @@ impl<S: DataStore + 'static> Component for PwtDataTable<S> {
 
         me.update_scroll_info(props);
         // fixme: remove unknown keys from selection
-        me.update_selection_status(props);
+        me.selection_state.update_status(props);
 
         me.calculate_column_sizers(props);
 
@@ -1244,7 +1175,7 @@ impl<S: DataStore + 'static> Component for PwtDataTable<S> {
         let props = ctx.props();
         match msg {
             Msg::SelectionChange => {
-                self.update_selection_status(props);
+                self.selection_state.update_status(props);
                 true
             }
             Msg::DataChange => {
@@ -1259,12 +1190,7 @@ impl<S: DataStore + 'static> Component for PwtDataTable<S> {
                 }
                 self.update_scroll_info(props);
 
-                if self.selection_status == RowSelectionStatus::All {
-                    self.select_all(props);
-                } else {
-                    self.cleanup_selection(props);
-                }
-                self.update_selection_status(props);
+                self.selection_state.data_changed(props);
 
                 true
             }
@@ -1752,10 +1678,10 @@ impl<S: DataStore + 'static> Component for PwtDataTable<S> {
                 true
             }
             Msg::Header(HeaderMsg::ToggleSelectAll) => {
-                if self.selection_status == RowSelectionStatus::All {
-                    self.clear_selection(props);
+                if self.selection_state.status == RowSelectionStatus::All {
+                    self.selection_state.clear(props);
                 } else {
-                    self.select_all(props);
+                    self.selection_state.select_all(props);
                 }
                 false
             }
@@ -1888,7 +1814,7 @@ impl<S: DataStore + 'static> Component for PwtDataTable<S> {
                     .with_child(
                         HeaderWidget::new(self.headers.clone(), ctx.link().callback(Msg::Header))
                             .focusable(props.header_focusable && props.show_header)
-                            .selection_status(self.selection_status)
+                            .selection_status(self.selection_state.status)
                             .header_class(header_class)
                             .reserve_scroll_space(self.scrollbar_size.unwrap_or_default())
                             .column_sizers(self.column_sizers.clone()),
@@ -1915,7 +1841,7 @@ impl<S: DataStore + 'static> Component for PwtDataTable<S> {
             self._selection_observer = props.selection.as_ref().map(|selection| {
                 selection.add_listener(ctx.link().callback(|_| Msg::SelectionChange))
             });
-            self.update_selection_status(props);
+            self.selection_state.replace(props);
             recalculate_sizers = true;
         }
 
