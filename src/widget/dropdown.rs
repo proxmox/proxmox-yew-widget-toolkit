@@ -152,6 +152,24 @@ pub enum Msg {
     Dismiss,
 }
 
+fn input_key_action(
+    key: &str,
+    show: bool,
+    is_composing: bool,
+    key_code: u32,
+) -> Option<(Msg, bool)> {
+    // Some IMEs report the confirmation key outside composition but still use key code 229.
+    if is_composing || key_code == 229 {
+        return None;
+    }
+    match key {
+        "Escape" | "Enter" if show => Some((Msg::HidePicker, true)),
+        "Tab" if show => Some((Msg::Dismiss, false)),
+        "ArrowDown" => Some((Msg::ShowPicker, true)),
+        _ => None,
+    }
+}
+
 #[doc(hidden)]
 pub struct PwtDropdown {
     show: bool,
@@ -383,20 +401,24 @@ impl Component for PwtDropdown {
             let link = ctx.link().clone();
             let show = self.show;
             move |event: KeyboardEvent| {
-                match crate::dom::event_key(&event).as_str() {
-                    "Escape" => {
-                        if !show {
-                            return;
-                        } // allow default (close popover)
-                        link.send_message(Msg::HidePicker);
+                // Keyboard-like synthetic events need not provide composition properties.
+                let is_composing = js_sys::Reflect::get(&event, &"isComposing".into())
+                    .ok()
+                    .and_then(|value| value.as_bool())
+                    .unwrap_or(false);
+                let key_code = js_sys::Reflect::get(&event, &"keyCode".into())
+                    .ok()
+                    .and_then(|value| value.as_f64())
+                    .unwrap_or_default() as u32;
+                if let Some((message, cancel)) =
+                    input_key_action(&crate::dom::event_key(&event), show, is_composing, key_code)
+                {
+                    link.send_message(message);
+                    if cancel {
+                        event.prevent_default();
+                        event.stop_propagation();
                     }
-                    "ArrowDown" => {
-                        link.send_message(Msg::ShowPicker);
-                    }
-                    _ => return,
                 }
-                event.prevent_default();
-                event.stop_propagation();
             }
         });
 
@@ -679,6 +701,35 @@ fn event_target_within(event: &web_sys::Event, node_refs: &[&NodeRef]) -> bool {
     node_refs
         .iter()
         .any(|node_ref| node_ref.get().is_some_and(|el| el.contains(Some(&node))))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{Msg, input_key_action};
+
+    #[test]
+    fn composition_keys_do_not_command_or_cancel() {
+        for key in ["Enter", "Escape", "Tab", "ArrowDown"] {
+            for show in [false, true] {
+                assert!(input_key_action(key, show, true, 13).is_none());
+                assert!(input_key_action(key, show, false, 229).is_none());
+            }
+        }
+        assert!(matches!(
+            input_key_action("Enter", true, false, 13),
+            Some((Msg::HidePicker, true))
+        ));
+        assert!(input_key_action("Enter", false, false, 13).is_none());
+    }
+
+    #[test]
+    fn tab_dismisses_without_canceling_focus_movement() {
+        assert!(matches!(
+            input_key_action("Tab", true, false, 9),
+            Some((Msg::Dismiss, false))
+        ));
+        assert!(input_key_action("Tab", false, false, 9).is_none());
+    }
 }
 
 // Focus selected element
