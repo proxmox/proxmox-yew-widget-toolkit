@@ -1,6 +1,8 @@
 use std::borrow::Cow;
 
+use gloo_events::{EventListener, EventListenerOptions};
 use wasm_bindgen::JsCast;
+use wasm_bindgen::prelude::Closure;
 use yew::html::{IntoEventCallback, IntoPropValue};
 use yew::prelude::*;
 use yew::virtual_dom::VTag;
@@ -12,6 +14,9 @@ use crate::props::{
     WidgetStyleBuilder,
 };
 use crate::tr;
+use crate::web_sys_ext::{
+    ResizeObserver, ResizeObserverBoxOptions, ResizeObserverEntry, ResizeObserverOptions,
+};
 use crate::widget::{Container, Tooltip, WeekStart};
 
 /// Which date window a [`CalendarGrid`] spans around its anchor date.
@@ -79,6 +84,8 @@ pub enum CalendarGridView {
 ///   with an ellipsis as the plain label does.
 /// - `--pwt-calendar-span-color`: custom property carrying [`color`](Self::color); derive the fill,
 ///   border, and text color from it.
+/// - `data-bars-below`: with [`mark_hidden_bars`](CalendarGrid::mark_hidden_bars), on a
+///   `pwt-calendar-day` whose scroll box hides bars below its visible part, carrying their number.
 #[derive(Clone, PartialEq)]
 pub struct CalendarSpanBar {
     /// First covered day, inclusive ISO `YYYY-MM-DD`.
@@ -483,6 +490,10 @@ pub struct CalendarGrid {
     /// add the application's own colors, tooltips, or click handling; the [`CalendarSpanSegment`]
     /// carries the geometry (start/end, continuation edges) so the hook can style without
     /// re-deriving it. Without a hook the grid emits the default `pwt-calendar-span*` markup.
+    ///
+    /// With [`mark_hidden_bars`](Self::mark_hidden_bars), return one root element per segment whose
+    /// box encloses the visible bar. Fragments, `display: contents`, and overflowing children do not
+    /// provide a single measurable bar box.
     #[builder_cb(IntoOptionalRenderFn, into_optional_render_fn, CalendarSpanSegment)]
     #[prop_or_default]
     pub render_span: Option<RenderFn<CalendarSpanSegment>>,
@@ -512,6 +523,17 @@ pub struct CalendarGrid {
     #[builder_cb(IntoOptionalRenderFn, into_optional_render_fn, CalendarSpanBar)]
     #[prop_or_default]
     pub render_span_tooltip: Option<RenderFn<CalendarSpanBar>>,
+
+    /// Mark each day whose scroll box hides some of its bars: the day cell carries the number of
+    /// bars below the box's visible part as `data-bars-below`, kept current as the box scrolls or
+    /// changes size, for the theme to show. Overlay scrollbars only show on hover or while
+    /// scrolling, so without a mark a busy day reads as if its visible bars were all it holds. A
+    /// bar counts as hidden once its middle is below the visible part. Changes to rendered bar
+    /// sizes and replacements of their elements also refresh the marks. Disabling the option
+    /// removes the marks from this grid.
+    #[builder]
+    #[prop_or_default]
+    pub mark_hidden_bars: bool,
 }
 
 impl CalendarGrid {
@@ -1390,7 +1412,12 @@ impl crate::props::IntoVTag for CalendarGrid {
             grid = grid.with_child(cell);
         }
 
-        let children = vec![header, grid.into()];
+        let mut children = vec![header, grid.into()];
+        if self.mark_hidden_bars {
+            children.push(html! {
+                <PwtCalendarHiddenBars key="hidden-bars" />
+            });
+        }
 
         let mut this = self;
         if this.fill_height {
@@ -1498,6 +1525,214 @@ fn row_lane_counts(flow_lane: &[Vec<Option<usize>>]) -> Vec<usize> {
         .collect()
 }
 
+const LANES_CLASS: &str = "pwt-calendar-span-lanes";
+const BARS_BELOW_ATTRIBUTE: &str = "data-bars-below";
+
+/// How many bars lie below the visible part of their box, from each bar's top and bottom edge. A
+/// bar counts once its middle is below, so a bar cut in half still reads as shown.
+fn bars_below(visible_bottom: f64, bars: impl IntoIterator<Item = (f64, f64)>) -> usize {
+    bars.into_iter()
+        .filter(|(top, bottom)| (top + bottom) / 2.0 > visible_bottom)
+        .count()
+}
+
+fn elements(root: &web_sys::Element, selector: &str) -> Vec<web_sys::Element> {
+    let Ok(nodes) = root.query_selector_all(selector) else {
+        return Vec::new();
+    };
+    (0..nodes.length())
+        .filter_map(|i| nodes.item(i))
+        .filter_map(|node| node.dyn_into::<web_sys::Element>().ok())
+        .filter(|element| element.closest(".pwt-calendar").ok().flatten().as_ref() == Some(root))
+        .collect()
+}
+
+fn clear_hidden_bars(root: &web_sys::Element) {
+    for cell in elements(root, &format!("[{BARS_BELOW_ATTRIBUTE}]")) {
+        set_bars_below(&cell, 0);
+    }
+}
+
+/// The day cell of a scroll box and the number of its bars below the visible part. Only reads
+/// layout.
+fn measure_lanes(lanes: &web_sys::Element) -> Option<(web_sys::Element, usize)> {
+    let cell = lanes.closest(".pwt-calendar-day").ok()??;
+    let visible = lanes.get_bounding_client_rect();
+    let bars = lanes.children();
+    let edges = (0..bars.length())
+        .filter_map(|i| bars.item(i))
+        // stable lanes hold gaps open with spacers, which are no bars
+        .filter(|bar| !bar.class_list().contains("pwt-calendar-span-spacer"))
+        .map(|bar| {
+            let rect = bar.get_bounding_client_rect();
+            (rect.top(), rect.bottom())
+        });
+    Some((cell, bars_below(visible.bottom(), edges)))
+}
+
+fn set_bars_below(cell: &web_sys::Element, below: usize) {
+    let mark = (below > 0).then(|| below.to_string());
+    if cell.get_attribute(BARS_BELOW_ATTRIBUTE) == mark {
+        return;
+    }
+    let _ = match mark {
+        Some(mark) => cell.set_attribute(BARS_BELOW_ATTRIBUTE, &mark),
+        None => cell.remove_attribute(BARS_BELOW_ATTRIBUTE),
+    };
+}
+
+/// Mark every day below `root`, measuring all scroll boxes before writing any mark, so a whole
+/// month costs one layout instead of one per day.
+fn mark_hidden_bars(root: &web_sys::Element) {
+    let marked = elements(root, &format!("[{BARS_BELOW_ATTRIBUTE}]"));
+    let measured: Vec<(web_sys::Element, usize)> = elements(root, &format!(".{LANES_CLASS}"))
+        .iter()
+        .filter_map(measure_lanes)
+        .collect();
+    // a day that lost its scroll box loses its mark
+    for cell in marked {
+        if !measured.iter().any(|(measured, _)| *measured == cell) {
+            set_bars_below(&cell, 0);
+        }
+    }
+    for (cell, below) in &measured {
+        set_bars_below(cell, *below);
+    }
+}
+
+type ResizeClosure = Closure<dyn Fn(Vec<ResizeObserverEntry>)>;
+type MutationClosure = Closure<dyn Fn(js_sys::Array)>;
+
+/// Observes bar boxes as well as their viewports: custom content can grow without resizing the
+/// fixed-height grid or lane. Child-list mutations refresh the observed boxes even when a custom
+/// component replaces its own root without rendering the calendar again.
+struct PwtCalendarHiddenBars {
+    node_ref: NodeRef,
+    root: Option<web_sys::Element>,
+    observer: Option<(ResizeObserver, ResizeClosure)>,
+    mutations: Option<(web_sys::MutationObserver, MutationClosure)>,
+    _on_scroll: Option<EventListener>,
+}
+
+impl PwtCalendarHiddenBars {
+    fn clear_root(&mut self) {
+        if let Some((observer, _)) = self.observer.take() {
+            observer.disconnect();
+        }
+        if let Some((observer, _)) = self.mutations.take() {
+            observer.disconnect();
+        }
+        self._on_scroll = None;
+        if let Some(root) = self.root.take() {
+            clear_hidden_bars(&root);
+        }
+    }
+
+    fn refresh(&self) {
+        let Some(root) = &self.root else {
+            return;
+        };
+        if let Some((observer, _)) = &self.observer {
+            observer.disconnect();
+            let mut options = ResizeObserverOptions::new();
+            options.box_(ResizeObserverBoxOptions::BorderBox);
+            observer.observe_with_options(root, &options);
+            for lanes in elements(root, &format!(".{LANES_CLASS}")) {
+                observer.observe_with_options(&lanes, &options);
+                let children = lanes.children();
+                for i in 0..children.length() {
+                    if let Some(bar) = children.item(i) {
+                        // Spacers also move later bars when their height changes.
+                        observer.observe_with_options(&bar, &options);
+                    }
+                }
+            }
+        }
+        mark_hidden_bars(root);
+    }
+}
+
+impl Component for PwtCalendarHiddenBars {
+    type Message = ();
+    type Properties = ();
+
+    fn create(_ctx: &Context<Self>) -> Self {
+        Self {
+            node_ref: NodeRef::default(),
+            root: None,
+            observer: None,
+            mutations: None,
+            _on_scroll: None,
+        }
+    }
+
+    fn update(&mut self, _ctx: &Context<Self>, _msg: ()) -> bool {
+        self.refresh();
+        false
+    }
+
+    fn view(&self, _ctx: &Context<Self>) -> Html {
+        html! { <div ref={self.node_ref.clone()} style="display: none;" /> }
+    }
+
+    fn rendered(&mut self, ctx: &Context<Self>, _first_render: bool) {
+        let Some(root) = self
+            .node_ref
+            .cast::<web_sys::Element>()
+            .and_then(|node| node.closest(".pwt-calendar").ok().flatten())
+        else {
+            return;
+        };
+        if self.root.as_ref() != Some(&root) {
+            self.clear_root();
+            let scroll_root = root.clone();
+            // scroll does not bubble, so listen in the capture phase for every box below
+            self._on_scroll = Some(EventListener::new_with_options(
+                &root,
+                "scroll",
+                EventListenerOptions::run_in_capture_phase(),
+                move |event| {
+                    if let Some((cell, below)) = event
+                        .target()
+                        .and_then(|target| target.dyn_into::<web_sys::Element>().ok())
+                        .filter(|target| target.class_list().contains(LANES_CLASS))
+                        .filter(|target| {
+                            target.closest(".pwt-calendar").ok().flatten().as_ref()
+                                == Some(&scroll_root)
+                        })
+                        .and_then(|lanes| measure_lanes(&lanes))
+                    {
+                        set_bars_below(&cell, below);
+                    }
+                },
+            ));
+            let link = ctx.link().clone();
+            let closure: MutationClosure = Closure::new(move |_| link.send_message(()));
+            let options = web_sys::MutationObserverInit::new();
+            options.set_child_list(true);
+            options.set_subtree(true);
+            self.mutations = web_sys::MutationObserver::new(closure.as_ref().unchecked_ref())
+                .ok()
+                .map(|observer| {
+                    let _ = observer.observe_with_options(&root, &options);
+                    (observer, closure)
+                });
+            let marked_root = root.clone();
+            let closure: ResizeClosure =
+                Closure::new(move |_: Vec<ResizeObserverEntry>| mark_hidden_bars(&marked_root));
+            self.observer = ResizeObserver::new(closure.as_ref().unchecked_ref())
+                .ok()
+                .map(|observer| (observer, closure));
+            self.root = Some(root.clone());
+        }
+        self.refresh();
+    }
+
+    fn destroy(&mut self, _ctx: &Context<Self>) {
+        self.clear_root();
+    }
+}
+
 /// Scroll the other lane boxes of a week row along with the one scrolled, so the lanes stay in line
 /// across the row and a bar keeps its height in every cell it spans. That holds while the boxes of
 /// a row are equally tall: one that its day's own content shortens can scroll further than the
@@ -1546,6 +1781,17 @@ fn scroll_row_together(event: Event) {
 #[cfg(test)]
 mod tests {
     use std::collections::HashMap;
+
+    /// A bar counts as hidden once more than half of it is below the visible part.
+    #[test]
+    fn a_bar_is_hidden_once_its_middle_is_below() {
+        let bars = [(0.0, 20.0), (20.0, 40.0), (40.0, 60.0), (60.0, 80.0)];
+        assert_eq!(super::bars_below(80.0, bars), 0);
+        assert_eq!(super::bars_below(51.0, bars), 1);
+        assert_eq!(super::bars_below(49.0, bars), 2);
+        assert_eq!(super::bars_below(0.0, bars), 4);
+        assert_eq!(super::bars_below(10.0, []), 0);
+    }
 
     use yew::virtual_dom::VNode;
 

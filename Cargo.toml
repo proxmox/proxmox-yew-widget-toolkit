@@ -35,6 +35,8 @@ web-sys = { version = "0.3", features = [
   "HtmlCollection",
   'Headers',
   "NodeList",
+  "MutationObserver",
+  "MutationObserverInit",
   "Storage",
   'Request',
   'RequestInit',
