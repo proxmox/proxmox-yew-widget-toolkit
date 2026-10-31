@@ -48,6 +48,16 @@ pub struct DateField {
     #[prop_or_default]
     pub on_change: Option<Callback<Option<PlainDate>>>,
 
+    /// Input callback
+    ///
+    /// This callback is emitted when the user types or picks a date, with the entered text and
+    /// the date it reads as. Unlike [`on_change`](Self::on_change), it tells a cleared field
+    /// (empty text) from one whose text is not a date yet, which a controlled field needs to keep
+    /// the text as typed.
+    #[builder_cb(IntoEventCallback, into_event_callback, (String, Option<PlainDate>))]
+    #[prop_or_default]
+    pub on_input: Option<Callback<(String, Option<PlainDate>)>>,
+
     /// Days of the week to disable in the calendar (0 = Sunday, 6 = Saturday).
     #[builder(IntoPropValue, into_prop_value)]
     #[prop_or_default]
@@ -238,11 +248,13 @@ impl ManagedField for DateFieldComp {
     fn update(&mut self, ctx: &ManagedFieldContext<Self>, msg: Self::Message) -> bool {
         match msg {
             Msg::ValueChange(val) => {
-                ctx.link().update_value(val);
+                ctx.link().update_value(val.clone());
+                if let Some(on_input) = &ctx.props().on_input {
+                    let props = ctx.props();
+                    let date = Self::try_parse(&val, &props.format, &props.alt_formats);
+                    on_input.emit((val, date));
+                }
                 true
-                //if let Some(on_input) = &ctx.props().on_input {
-                //    on_input.emit(None);
-                //}
             }
         }
     }
