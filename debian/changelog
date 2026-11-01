@@ -1,3 +1,32 @@
+rust-pwt (0.8.23) trixie; urgency=medium
+
+  * button: translate the refresh button's accessible name and also show it
+    as its tooltip, so applications no longer set both on every refresh
+    button.
+
+  * date field: add an input callback with the entered text and the date it
+    reads as, so a component that controls the value can keep a partly typed
+    date instead of clearing it.
+
+  * data table: extend the selection to rows added later only after the
+    table's own select-all. Selecting the single row a filter left could
+    select every row once the filter widened. Selecting all current keys
+    programmatically no longer opts into extending the selection.
+
+  * calendar grid: optionally mark days whose bars do not all show, with the
+    number of bars below the visible part for the theme to display, since
+    overlay scrollbars do not reveal that a day holds more.
+
+  * dropdown: close the picker on Tab, and on Enter while it is open instead
+    of submitting the surrounding form. Keys that accept an input method
+    candidate are left alone.
+
+  * use the ResizeObserver bindings from web-sys instead of an own copy.
+    DomSizeObserver::new_with_options now takes web_sys::ResizeObserverOptions,
+    and the doc-hidden web_sys_ext module is gone.
+
+ -- Proxmox Support Team <support@proxmox.com>  Sun, 01 Nov 2026 23:04:28 +0100
+
 rust-pwt (0.8.22) trixie; urgency=medium
 
   * data table:
