@@ -3,6 +3,9 @@ use std::borrow::Cow;
 use gloo_events::{EventListener, EventListenerOptions};
 use wasm_bindgen::JsCast;
 use wasm_bindgen::prelude::Closure;
+use web_sys::{
+    ResizeObserver, ResizeObserverBoxOptions, ResizeObserverEntry, ResizeObserverOptions,
+};
 use yew::html::{IntoEventCallback, IntoPropValue};
 use yew::prelude::*;
 use yew::virtual_dom::VTag;
@@ -14,9 +17,6 @@ use crate::props::{
     WidgetStyleBuilder,
 };
 use crate::tr;
-use crate::web_sys_ext::{
-    ResizeObserver, ResizeObserverBoxOptions, ResizeObserverEntry, ResizeObserverOptions,
-};
 use crate::widget::{Container, Tooltip, WeekStart};
 
 /// Which date window a [`CalendarGrid`] spans around its anchor date.
@@ -1634,8 +1634,8 @@ impl PwtCalendarHiddenBars {
         };
         if let Some((observer, _)) = &self.observer {
             observer.disconnect();
-            let mut options = ResizeObserverOptions::new();
-            options.box_(ResizeObserverBoxOptions::BorderBox);
+            let options = ResizeObserverOptions::new();
+            options.set_box(ResizeObserverBoxOptions::BorderBox);
             observer.observe_with_options(root, &options);
             for lanes in elements(root, &format!(".{LANES_CLASS}")) {
                 observer.observe_with_options(&lanes, &options);

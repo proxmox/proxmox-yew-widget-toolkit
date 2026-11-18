@@ -1,5 +1,6 @@
 use std::rc::Rc;
 
+use web_sys::{ResizeObserverBoxOptions, ResizeObserverOptions};
 use yew::html::{IntoEventCallback, IntoPropValue};
 use yew::virtual_dom::{Key, VComp, VNode};
 
@@ -7,7 +8,6 @@ use crate::dom::focus::roving_tabindex_next;
 use crate::dom::{DomSizeObserver, IntoHtmlElement, element_direction_rtl};
 use crate::props::{IntoStorageLocation, StorageLocation};
 use crate::state::{NavigationContext, NavigationContextExt, PersistentState, Selection};
-use crate::web_sys_ext::{ResizeObserverBoxOptions, ResizeObserverOptions};
 use crate::widget::{Container, Tooltip};
 use crate::{impl_class_prop_builder, impl_yew_std_props_builder, prelude::*};
 
@@ -583,8 +583,8 @@ impl Component for PwtTabBar {
         }
         let link = ctx.link().clone();
         if let Some(element) = self.active_ref.clone().into_html_element() {
-            let mut options = ResizeObserverOptions::new();
-            options.box_(ResizeObserverBoxOptions::BorderBox);
+            let options = ResizeObserverOptions::new();
+            options.set_box(ResizeObserverBoxOptions::BorderBox);
             self.active_size_observer = Some(DomSizeObserver::new_with_options(
                 &element,
                 move |(_, _)| {

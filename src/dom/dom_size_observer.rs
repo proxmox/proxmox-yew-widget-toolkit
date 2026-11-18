@@ -1,9 +1,7 @@
 use wasm_bindgen::JsCast;
 use wasm_bindgen::UnwrapThrowExt;
 use wasm_bindgen::prelude::*;
-use web_sys::Element;
-
-use crate::web_sys_ext::{ResizeObserver, ResizeObserverEntry, ResizeObserverOptions};
+use web_sys::{Element, ResizeObserver, ResizeObserverEntry, ResizeObserverOptions};
 
 use yew::prelude::*;
 

@@ -269,9 +269,6 @@ pub use gettext_wrapper::{
 
 mod tr;
 
-#[doc(hidden)]
-pub mod web_sys_ext;
-
 use anyhow::{Error, format_err};
 
 /// Convert JS errors to [Error]
