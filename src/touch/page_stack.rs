@@ -7,7 +7,7 @@ use yew::virtual_dom::{VComp, VNode};
 use yew::virtual_dom::Key;
 
 use crate::props::{
-    ContainerBuilder, CssLength, EventSubscriber, WidgetBuilder, WidgetStyleBuilder,
+    ContainerBuilder, CssLength, EventSubscriber, IntoVTag, WidgetBuilder, WidgetStyleBuilder,
 };
 use crate::widget::Container;
 
@@ -73,6 +73,7 @@ pub enum Msg {
 #[doc(hidden)]
 pub struct PwtPageStack {
     state: ViewState,
+    outer_ref: NodeRef,
 
     // tracked copy of props.stack, in order to assign a key to each pages
     stack: Vec<(Key, Html)>,
@@ -99,6 +100,7 @@ impl Component for PwtPageStack {
 
         Self {
             state: ViewState::Normal,
+            outer_ref: NodeRef::default(),
             stack,
         }
     }
@@ -209,7 +211,16 @@ impl Component for PwtPageStack {
                 .class(animation.clone())
                 .class(child_class)
                 .key(child_key)
-                .onanimationend(ctx.link().callback(|_| Msg::AnimationEnd))
+                .onanimationend(ctx.link().batch_callback({
+                    let outer_ref = self.outer_ref.clone();
+                    // Animations inside a page, like a button ripple, bubble up as well. Yew
+                    // delegates events, so the current target is not the page container.
+                    move |event: AnimationEvent| {
+                        let target = event.target_dyn_into::<web_sys::Node>()?;
+                        let parent = target.parent_node()?;
+                        (Some(parent) == outer_ref.get()).then_some(Msg::AnimationEnd)
+                    }
+                }))
                 .with_child(child);
 
             children.push(page.into())
@@ -222,7 +233,7 @@ impl Component for PwtPageStack {
             .width(CssLength::Fraction(1.0))
             .height(CssLength::Fraction(1.0))
             .children(children)
-            .into()
+            .into_html_with_ref(self.outer_ref.clone())
     }
 }
 
