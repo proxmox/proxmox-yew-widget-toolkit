@@ -19,7 +19,8 @@ use crate::widget::Container;
 /// Which style fits depends on how the pages relate:
 ///
 /// - Going deeper into a hierarchy and back, like from a list to a detail page:
-///   [FadeFromRight](Self::FadeFromRight) looks like current Android.
+///   [FadeFromRight](Self::FadeFromRight) looks like current Android, [Parallax](Self::Parallax)
+///   like iOS.
 /// - Moving sideways between pages of the same level, like wizard steps or swipeable pages:
 ///   [Push](Self::Push) shows them side by side, like a strip that scrolls by one page.
 /// - Opening a page for a short task on top of the current one, like a form for a new item:
@@ -41,6 +42,8 @@ pub enum PageAnimationStyle {
     Flip,
     /// The new page slides in over the old one, which shrinks into the background.
     Cover,
+    /// The new page slides over the old one, which moves slower and darkens, like on iOS.
+    Parallax,
 }
 
 impl From<PageAnimationStyle> for Classes {
@@ -52,6 +55,7 @@ impl From<PageAnimationStyle> for Classes {
             PageAnimationStyle::FadeFromBottom => "pwt-page-animation-fade-from-bottom",
             PageAnimationStyle::Flip => "pwt-page-animation-flip",
             PageAnimationStyle::Cover => "pwt-page-animation-cover",
+            PageAnimationStyle::Parallax => "pwt-page-animation-parallax",
         }
         .into()
     }
