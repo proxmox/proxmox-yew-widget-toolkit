@@ -110,8 +110,30 @@ impl NavigationContext {
     }
 }
 
-fn location_to_nav_ctx(loc: &Option<Location>) -> NavigationContext {
-    NavigationContext::from_path(loc.as_ref().map(|loc| loc.path()).unwrap_or(""))
+/// Removes the router basename from a location path, like `yew_router` does for its routes.
+pub(crate) fn strip_basename(basename: Option<&str>, path: &str) -> String {
+    let Some(basename) = basename.map(|base| base.strip_suffix('/').unwrap_or(base)) else {
+        return path.to_string();
+    };
+    let path = path.strip_prefix(basename).unwrap_or(path);
+    if path.starts_with('/') {
+        path.to_string()
+    } else {
+        format!("/{path}")
+    }
+}
+
+fn location_to_nav_ctx<COMP: Component>(
+    scope: &yew::html::Scope<COMP>,
+    loc: &Option<Location>,
+) -> NavigationContext {
+    // Routes are pushed through the navigator, which adds the basename again.
+    let navigator = scope.navigator();
+    let basename = navigator
+        .as_ref()
+        .and_then(|navigator| navigator.basename());
+    let path = loc.as_ref().map(|loc| loc.path()).unwrap_or("");
+    NavigationContext::from_path(&strip_basename(basename, path))
 }
 
 /// Simple way to create a router using nested components.
@@ -178,7 +200,7 @@ impl Component for PwtNavigationContainer {
         } else {
             let on_loc_update = ctx.link().callback(Msg::LocationUpdate);
             if let Some(loc_handle) = ctx.link().add_location_listener(on_loc_update) {
-                nav_ctx = location_to_nav_ctx(&ctx.link().location());
+                nav_ctx = location_to_nav_ctx(ctx.link(), &ctx.link().location());
                 parent_context_handle = None;
                 location_context_handle = Some(loc_handle);
             } else {
@@ -199,14 +221,14 @@ impl Component for PwtNavigationContainer {
         }
     }
 
-    fn update(&mut self, _ctx: &Context<Self>, msg: Self::Message) -> bool {
+    fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
         match msg {
             Msg::NavCtxUpdate(parent_nav_ctx) => {
                 self.nav_ctx = parent_nav_ctx.child_context();
                 true
             }
             Msg::LocationUpdate(location) => {
-                self.nav_ctx = location_to_nav_ctx(&Some(location));
+                self.nav_ctx = location_to_nav_ctx(ctx.link(), &Some(location));
                 true
             }
         }
@@ -282,5 +304,33 @@ impl<COMP: Component> NavigationContextExt for yew::html::Scope<COMP> {
             Some(navigator) => navigator.replace(&AnyRoute::new(new_path)),
             None => log::error!("no Navigator found"),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::strip_basename;
+
+    #[test]
+    fn strip_basename_without_basename() {
+        assert_eq!(strip_basename(None, "/a/b"), "/a/b");
+        assert_eq!(strip_basename(Some("/"), "/a/b"), "/a/b");
+    }
+
+    #[test]
+    fn strip_basename_removes_prefix() {
+        assert_eq!(strip_basename(Some("/app"), "/app/a/b"), "/a/b");
+        assert_eq!(strip_basename(Some("/app/"), "/app/a"), "/a");
+    }
+
+    #[test]
+    fn strip_basename_keeps_root() {
+        assert_eq!(strip_basename(Some("/app"), "/app"), "/");
+        assert_eq!(strip_basename(Some("/app"), "/app/"), "/");
+    }
+
+    #[test]
+    fn strip_basename_leaves_other_paths() {
+        assert_eq!(strip_basename(Some("/app"), "/other/a"), "/other/a");
     }
 }
