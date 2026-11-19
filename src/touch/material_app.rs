@@ -13,7 +13,7 @@ use pwt_macros::builder;
 
 use crate::prelude::*;
 use crate::props::{IntoOptionalRenderFn, RenderFn};
-use crate::state::{NavigationContainer, SharedState, SharedStateObserver};
+use crate::state::{NavigationContainer, NavigationContext, SharedState, SharedStateObserver};
 use crate::touch::{PageAnimationStyle, SnackBarController, SnackBarManager};
 use crate::widget::{CatalogLoader, Container, ThemeLoader};
 
@@ -137,6 +137,12 @@ impl PageController {
 /// More specifically, each route can reeturn a stack of pages.
 /// Internally, this stack is passed to a [PageStack] widget that provides
 /// animations when switching between pages.
+///
+/// Each page gets the [NavigationContext] of the route it was rendered for, so
+/// a page leaving the stack does not follow the new route while it animates out.
+/// Pages should therefore get their route from the render function or that
+/// context, and not from the `yew_router` location (`Switch`, `use_location`),
+/// which is always the current one.
 ///
 /// First, one usually defines a routable enum to express routes using
 /// static rust types. Then you define you render functions to map the
@@ -394,7 +400,11 @@ impl Component for PwtMaterialApp {
 
         let app = Container::new()
             .class("pwt-viewport")
-            .with_child(PageStack::new(page_stack).animation_style(props.page_animation))
+            .with_child(
+                PageStack::new(page_stack)
+                    .animation_style(props.page_animation)
+                    .navigation_context(NavigationContext::from_path(&path)),
+            )
             .with_child(
                 SnackBarManager::new()
                     .controller(self.snackbar_controller.clone())
