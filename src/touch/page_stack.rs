@@ -13,13 +13,33 @@ use crate::state::NavigationContext;
 use crate::widget::Container;
 
 /// Page animation style.
+///
+/// The animations come from the theme CSS. Without a style, pages switch without animation.
+///
+/// Which style fits depends on how the pages relate:
+///
+/// - Going deeper into a hierarchy and back, like from a list to a detail page:
+///   [FadeFromRight](Self::FadeFromRight) looks like current Android.
+/// - Moving sideways between pages of the same level, like wizard steps or swipeable pages:
+///   [Push](Self::Push) shows them side by side, like a strip that scrolls by one page.
+/// - Opening a page for a short task on top of the current one, like a form for a new item:
+///   [FadeFromBottom](Self::FadeFromBottom) or [Cover](Self::Cover).
+/// - Switching between unrelated pages, like top level sections: [Fade](Self::Fade).
+/// - [Flip](Self::Flip) is a special effect, like turning a card.
 #[derive(Copy, Clone, PartialEq)]
 pub enum PageAnimationStyle {
+    /// The new page pushes the old one out, both move by the full width.
     Push,
+    /// The pages cross-fade without moving.
     Fade,
+    /// Both pages move by a quarter of the width, the old one fades out quickly and the new one
+    /// fades in, like on Android 14 and later.
     FadeFromRight,
+    /// Like [FadeFromRight](Self::FadeFromRight), but both pages move up by a tenth of the height.
     FadeFromBottom,
+    /// The page turns around its vertical axis like a card, with the new page on its back.
     Flip,
+    /// The new page slides in over the old one, which shrinks into the background.
     Cover,
 }
 
