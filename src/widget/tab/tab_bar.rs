@@ -367,7 +367,7 @@ impl Component for PwtTabBar {
             }
             Msg::ScrollerResize => {
                 if let Some(element) = self.active_ref.clone().into_html_element() {
-                    keep_in_view_sideways(&element);
+                    keep_in_view_sideways(&element, &self.node_ref);
                 }
                 false
             }
@@ -556,7 +556,7 @@ impl Component for PwtTabBar {
         if self.shown_active != active {
             // A tab that is not drawn yet is brought into view once it is.
             if let Some(element) = self.active_ref.clone().into_html_element() {
-                keep_in_view_sideways(&element);
+                keep_in_view_sideways(&element, &self.node_ref);
                 self.shown_active = active;
             }
         }
@@ -564,7 +564,7 @@ impl Component for PwtTabBar {
             .active_ref
             .clone()
             .into_html_element()
-            .and_then(|tab| sideways_scroller(&tab));
+            .and_then(|tab| sideways_scroller(&tab, &self.node_ref));
         match scroller {
             None => self.scroller_observer = None,
             Some(scroller) => {
@@ -600,8 +600,8 @@ impl Component for PwtTabBar {
 
 /// Scroll the nearest ancestor that scrolls sideways, such as a narrow screen's tab bar, just far
 /// enough to show `tab` whole. Only sideways: a bar further down a page must not pull the page up.
-fn keep_in_view_sideways(tab: &web_sys::HtmlElement) {
-    let Some(el) = sideways_scroller(tab) else {
+fn keep_in_view_sideways(tab: &web_sys::HtmlElement, bar_ref: &NodeRef) {
+    let Some(el) = sideways_scroller(tab, bar_ref) else {
         return;
     };
     let (bar, item) = (
@@ -618,11 +618,15 @@ fn keep_in_view_sideways(tab: &web_sys::HtmlElement) {
     el.set_scroll_left(el.scroll_left() + delta.round() as i32);
 }
 
-/// The nearest ancestor of the tab whose content is wider than its box.
-fn sideways_scroller(tab: &web_sys::HtmlElement) -> Option<web_sys::Element> {
+/// The nearest ancestor of the tab whose content is wider than its box, because the bar does not
+/// fit into it. Other content can make an ancestor overflow too, like a page sliding in from the
+/// side of a page stack, which must not be scrolled.
+fn sideways_scroller(tab: &web_sys::HtmlElement, bar_ref: &NodeRef) -> Option<web_sys::Element> {
+    let bar_width = bar_ref.cast::<web_sys::Element>()?.scroll_width();
     let mut node = tab.parent_element();
     while let Some(el) = node {
-        if el.scroll_width() > el.client_width() {
+        let width = el.client_width();
+        if el.scroll_width() > width && bar_width > width {
             return Some(el);
         }
         node = el.parent_element();
