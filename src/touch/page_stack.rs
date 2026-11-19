@@ -26,7 +26,8 @@ use crate::widget::Container;
 /// - Opening a page for a short task on top of the current one, like a form for a new item:
 ///   [FadeFromBottom](Self::FadeFromBottom) or [Cover](Self::Cover).
 /// - Switching between unrelated pages, like top level sections: [Fade](Self::Fade).
-/// - [Flip](Self::Flip) is a special effect, like turning a card.
+/// - [Zoom](Self::Zoom) looks like older Android versions, [Flip](Self::Flip) is a special effect,
+///   like turning a card.
 #[derive(Copy, Clone, PartialEq)]
 pub enum PageAnimationStyle {
     /// The new page pushes the old one out, both move by the full width.
@@ -44,6 +45,8 @@ pub enum PageAnimationStyle {
     Cover,
     /// The new page slides over the old one, which moves slower and darkens, like on iOS.
     Parallax,
+    /// The new page fades in while growing to full size, like on Android 10 to 13.
+    Zoom,
 }
 
 impl From<PageAnimationStyle> for Classes {
@@ -56,6 +59,7 @@ impl From<PageAnimationStyle> for Classes {
             PageAnimationStyle::Flip => "pwt-page-animation-flip",
             PageAnimationStyle::Cover => "pwt-page-animation-cover",
             PageAnimationStyle::Parallax => "pwt-page-animation-parallax",
+            PageAnimationStyle::Zoom => "pwt-page-animation-zoom",
         }
         .into()
     }
