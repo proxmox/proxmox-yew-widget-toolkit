@@ -11,6 +11,7 @@ mod loader;
 pub use loader::{Loader, LoaderState};
 
 mod navigation_container;
+pub(crate) use navigation_container::strip_basename;
 pub use navigation_container::{
     NavigationContainer, NavigationContext, NavigationContextExt, PwtNavigationContainer,
 };

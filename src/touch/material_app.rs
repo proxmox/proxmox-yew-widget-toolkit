@@ -1,4 +1,3 @@
-use std::borrow::Cow;
 use std::rc::Rc;
 
 use derivative::Derivative;
@@ -13,7 +12,9 @@ use pwt_macros::builder;
 
 use crate::prelude::*;
 use crate::props::{IntoOptionalRenderFn, RenderFn};
-use crate::state::{NavigationContainer, NavigationContext, SharedState, SharedStateObserver};
+use crate::state::{
+    NavigationContainer, NavigationContext, SharedState, SharedStateObserver, strip_basename,
+};
 use crate::touch::{PageAnimationStyle, SnackBarController, SnackBarManager};
 use crate::widget::{CatalogLoader, Container, ThemeLoader};
 
@@ -392,9 +393,8 @@ impl Component for PwtMaterialApp {
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
 
-        let basename: Option<AttrValue> = None;
         let location = self.history.location();
-        let path = strip_basename(&basename, location.path().into());
+        let path = strip_basename(props.basename.as_deref(), location.path());
 
         let mut page_stack = Vec::new();
 
@@ -468,25 +468,6 @@ impl PageRenderFn {
 impl<F: 'static + Fn(&str) -> Vec<Html>> From<F> for PageRenderFn {
     fn from(renderer: F) -> Self {
         PageRenderFn(Rc::new(renderer))
-    }
-}
-
-// copied from yew_router::Router, because its not acessible from outside
-fn strip_basename<'a>(basename: &Option<AttrValue>, path: Cow<'a, str>) -> Cow<'a, str> {
-    match basename.as_deref() {
-        Some(m) => {
-            let mut path = path
-                .strip_prefix(m)
-                .map(|m| Cow::from(m.to_owned()))
-                .unwrap_or(path);
-
-            if !path.starts_with('/') {
-                path = format!("/{m}").into();
-            }
-
-            path
-        }
-        None => path,
     }
 }
 
