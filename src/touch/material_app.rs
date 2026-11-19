@@ -144,6 +144,10 @@ impl PageController {
 /// context, and not from the `yew_router` location (`Switch`, `use_location`),
 /// which is always the current one.
 ///
+/// Give a page a key if it takes values from the route as properties, like the ID of
+/// the item it shows. It is then updated when the route changes, instead of created
+/// again, which would lose its state.
+///
 /// First, one usually defines a routable enum to express routes using
 /// static rust types. Then you define you render functions to map the
 /// routes to a page stack.

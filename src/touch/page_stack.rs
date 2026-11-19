@@ -73,6 +73,10 @@ impl From<PageAnimationStyle> for Classes {
 /// [NavigationBar](super::NavigationBar)) do not switch to the new route. This
 /// does not apply to the location provided by `yew_router` (`Switch`, `use_location`),
 /// which is always the current one.
+///
+/// A page that is still at the same position after a change is kept, if it has the same key as
+/// before, even if its properties changed, so it is updated instead of created again. A page
+/// without a key is only kept if it did not change at all.
 #[derive(Clone, PartialEq, Properties)]
 pub struct PageStack {
     #[prop_or_default]
@@ -144,6 +148,15 @@ pub struct PwtPageStack {
     stack: Vec<PageEntry>,
 }
 
+// Pages with a key are the same page as long as the key is, pages without one only if nothing
+// changed.
+fn same_page(new: &Html, old: &Html) -> bool {
+    match (new.key(), old.key()) {
+        (Some(new_key), Some(old_key)) => new_key == old_key,
+        _ => new == old,
+    }
+}
+
 impl Component for PwtPageStack {
     type Message = Msg;
     type Properties = PageStack;
@@ -195,13 +208,13 @@ impl Component for PwtPageStack {
         let mut new_stack = Vec::new();
         for i in 0..min_len {
             let new_page = &props.stack[i];
-            let changed = new_page != &self.stack[i].page;
-            if changed {
-                new_stack.push(PageEntry::new(new_page.clone(), nav_ctx.clone()));
-            } else {
+            if same_page(new_page, &self.stack[i].page) {
                 let mut entry = self.stack[i].clone();
+                entry.page = new_page.clone();
                 entry.nav_ctx = nav_ctx.clone();
                 new_stack.push(entry);
+            } else {
+                new_stack.push(PageEntry::new(new_page.clone(), nav_ctx.clone()));
             }
         }
 
@@ -309,5 +322,49 @@ impl From<PageStack> for VNode {
     fn from(val: PageStack) -> Self {
         let comp = VComp::new::<PwtPageStack>(Rc::new(val), None);
         VNode::from(comp)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[derive(Clone, PartialEq, Properties)]
+    struct PageProps {
+        value: u32,
+    }
+
+    #[function_component]
+    fn Page(props: &PageProps) -> Html {
+        html! {{props.value}}
+    }
+
+    #[test]
+    fn keyed_page_stays_with_new_properties() {
+        let old = html! {<Page key="item" value={1}/>};
+        let new = html! {<Page key="item" value={2}/>};
+        assert!(same_page(&new, &old));
+    }
+
+    #[test]
+    fn page_with_other_key_is_new() {
+        let old = html! {<Page key="item-1" value={1}/>};
+        let new = html! {<Page key="item-2" value={1}/>};
+        assert!(!same_page(&new, &old));
+    }
+
+    #[test]
+    fn unkeyed_page_stays_only_unchanged() {
+        let old = html! {<Page value={1}/>};
+        assert!(same_page(&html! {<Page value={1}/>}, &old));
+        assert!(!same_page(&html! {<Page value={2}/>}, &old));
+    }
+
+    #[test]
+    fn adding_or_removing_a_key_makes_a_new_page() {
+        let keyed = html! {<Page key="item" value={1}/>};
+        let unkeyed = html! {<Page value={1}/>};
+        assert!(!same_page(&keyed, &unkeyed));
+        assert!(!same_page(&unkeyed, &keyed));
     }
 }
