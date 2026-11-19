@@ -44,6 +44,21 @@ pub struct NavigationContext {
 }
 
 impl NavigationContext {
+    /// Creates the top level context for an absolute route path.
+    pub fn from_path(path: &str) -> Self {
+        let full_path = normalize_path(path);
+        let (path, child_path) = match full_path.split_once('/') {
+            Some((path, child_path)) => (path.to_string(), Some(child_path.to_string())),
+            None => (full_path, None),
+        };
+
+        NavigationContext {
+            child_path,
+            path,
+            parent_path: None,
+        }
+    }
+
     /// Returns the path component of the route.
     pub fn path(&self) -> String {
         self.path.clone()
@@ -96,24 +111,7 @@ impl NavigationContext {
 }
 
 fn location_to_nav_ctx(loc: &Option<Location>) -> NavigationContext {
-    //log::info!("LOCATION {:?}", loc);
-
-    let full_path = match loc {
-        Some(loc) => normalize_path(loc.path()),
-        None => String::new(),
-    };
-
-    //log::info!("LOCATION {}", full_path);
-    let (path, child_path) = match full_path.split_once('/') {
-        Some((path, child_path)) => (path.to_string(), Some(child_path.to_string())),
-        None => (full_path, None),
-    };
-
-    NavigationContext {
-        child_path,
-        path,
-        parent_path: None,
-    }
+    NavigationContext::from_path(loc.as_ref().map(|loc| loc.path()).unwrap_or(""))
 }
 
 /// Simple way to create a router using nested components.

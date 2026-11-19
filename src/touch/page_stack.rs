@@ -9,6 +9,7 @@ use yew::virtual_dom::Key;
 use crate::props::{
     ContainerBuilder, CssLength, EventSubscriber, IntoVTag, WidgetBuilder, WidgetStyleBuilder,
 };
+use crate::state::NavigationContext;
 use crate::widget::Container;
 
 /// Page animation style.
@@ -37,6 +38,13 @@ impl From<PageAnimationStyle> for Classes {
 }
 
 /// Stack of Pages using animation when switching pages.
+///
+/// If a [NavigationContext] is set, each page gets it through its own
+/// [ContextProvider]. Pages that leave the stack keep the context they had while
+/// they animate out, so routed widgets on them (like
+/// [NavigationBar](super::NavigationBar)) do not switch to the new route. This
+/// does not apply to the location provided by `yew_router` (`Switch`, `use_location`),
+/// which is always the current one.
 #[derive(Clone, PartialEq, Properties)]
 pub struct PageStack {
     #[prop_or_default]
@@ -44,6 +52,9 @@ pub struct PageStack {
 
     #[prop_or_default]
     animation_style: Option<PageAnimationStyle>,
+
+    #[prop_or_default]
+    navigation_context: Option<NavigationContext>,
 }
 
 impl PageStack {
@@ -58,13 +69,39 @@ impl PageStack {
         self.animation_style = style.into_prop_value();
         self
     }
+
+    /// Builder style method to set the navigation context of the current pages.
+    pub fn navigation_context(
+        mut self,
+        nav_ctx: impl IntoPropValue<Option<NavigationContext>>,
+    ) -> Self {
+        self.navigation_context = nav_ctx.into_prop_value();
+        self
+    }
+}
+
+#[derive(Clone, PartialEq)]
+struct PageEntry {
+    key: Key,
+    page: Html,
+    nav_ctx: Option<NavigationContext>,
+}
+
+impl PageEntry {
+    fn new(page: Html, nav_ctx: Option<NavigationContext>) -> Self {
+        Self {
+            key: Key::from(crate::widget::get_unique_element_id()),
+            page,
+            nav_ctx,
+        }
+    }
 }
 
 #[derive(Clone, PartialEq)]
 enum ViewState {
     Normal,
-    Grow((Key, Html)),
-    Shrink((Key, Html)),
+    Grow(PageEntry),
+    Shrink(PageEntry),
 }
 pub enum Msg {
     AnimationEnd,
@@ -76,7 +113,7 @@ pub struct PwtPageStack {
     outer_ref: NodeRef,
 
     // tracked copy of props.stack, in order to assign a key to each pages
-    stack: Vec<(Key, Html)>,
+    stack: Vec<PageEntry>,
 }
 
 impl Component for PwtPageStack {
@@ -87,15 +124,10 @@ impl Component for PwtPageStack {
         let props = ctx.props();
 
         // assign a key to each page
-        let stack: Vec<(Key, Html)> = props
+        let stack: Vec<PageEntry> = props
             .stack
             .iter()
-            .map(|page| {
-                (
-                    Key::from(crate::widget::get_unique_element_id()),
-                    page.clone(),
-                )
-            })
+            .map(|page| PageEntry::new(page.clone(), props.navigation_context.clone()))
             .collect();
 
         Self {
@@ -129,25 +161,24 @@ impl Component for PwtPageStack {
 
         let min_len = props.stack.len().min(self.stack.len());
 
+        // Only pages that stay on the stack follow the new context, the leaving page
+        // captured in the view state above keeps the one it was rendered with.
+        let nav_ctx = &props.navigation_context;
         let mut new_stack = Vec::new();
         for i in 0..min_len {
             let new_page = &props.stack[i];
-            let changed = new_page != &self.stack[i].1;
+            let changed = new_page != &self.stack[i].page;
             if changed {
-                new_stack.push((
-                    Key::from(crate::widget::get_unique_element_id()),
-                    new_page.clone(),
-                ));
+                new_stack.push(PageEntry::new(new_page.clone(), nav_ctx.clone()));
             } else {
-                new_stack.push(self.stack[i].clone());
+                let mut entry = self.stack[i].clone();
+                entry.nav_ctx = nav_ctx.clone();
+                new_stack.push(entry);
             }
         }
 
-        for i in min_len..props.stack.len() {
-            new_stack.push((
-                Key::from(crate::widget::get_unique_element_id()),
-                props.stack[i].clone(),
-            ));
+        for page in &props.stack[min_len..] {
+            new_stack.push(PageEntry::new(page.clone(), nav_ctx.clone()));
         }
         self.stack = new_stack;
 
@@ -162,29 +193,29 @@ impl Component for PwtPageStack {
         let mut stack = self.stack.clone();
 
         let parent_key = match &self.state {
-            ViewState::Grow((parent_key, parent_page)) => {
+            ViewState::Grow(parent) => {
                 // show last visible page as parent
-                if self.stack.iter().find(|(k, _)| k == parent_key).is_some() {
+                if self.stack.iter().any(|entry| entry.key == parent.key) {
                     // parent still there
-                    Some(parent_key.clone())
+                    Some(parent.key.clone())
                 } else {
                     // else we need to insert a copy temporarily
                     // Note: Grow is only set if stack size is >= 2
                     let top = stack.pop().unwrap();
-                    stack.push((parent_key.clone(), parent_page.clone()));
+                    stack.push(parent.clone());
                     stack.push(top);
-                    Some(parent_key.clone())
+                    Some(parent.key.clone())
                 }
             }
             ViewState::Shrink(old_top) => {
-                let parent_key = stack.last().map(|(key, _page)| key.clone());
+                let parent_key = stack.last().map(|entry| entry.key.clone());
                 // show last visible page as top page
                 stack.push(old_top.clone());
                 parent_key
             }
             ViewState::Normal => {
                 let stack_len = stack.len();
-                (stack_len > 1).then(|| stack[stack_len - 2].0.clone())
+                (stack_len > 1).then(|| stack[stack_len - 2].key.clone())
             }
         };
 
@@ -192,9 +223,9 @@ impl Component for PwtPageStack {
 
         let animation: Classes = props.animation_style.into();
 
-        for (i, (child_key, child)) in stack.into_iter().enumerate() {
+        for (i, entry) in stack.into_iter().enumerate() {
             let top_child = (i + 1) == stack_len;
-            let parent = parent_key.as_ref() == Some(&child_key);
+            let parent = parent_key.as_ref() == Some(&entry.key);
 
             let child_class = match self.state {
                 ViewState::Grow(_) if top_child => "pwt-page-grow",
@@ -205,12 +236,21 @@ impl Component for PwtPageStack {
                 _ => "pwt-page-hidden",
             };
 
+            let child = match entry.nav_ctx {
+                Some(nav_ctx) => html! {
+                    <ContextProvider<NavigationContext> context={nav_ctx}>
+                        {entry.page}
+                    </ContextProvider<NavigationContext>>
+                },
+                None => entry.page,
+            };
+
             let page = Container::new()
                 .class("pwt-bg-color-neutral")
                 .class("pwt-page-container")
                 .class(animation.clone())
                 .class(child_class)
-                .key(child_key)
+                .key(entry.key)
                 .onanimationend(ctx.link().batch_callback({
                     let outer_ref = self.outer_ref.clone();
                     // Animations inside a page, like a button ripple, bubble up as well. Yew
