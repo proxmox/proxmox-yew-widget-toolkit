@@ -1,5 +1,7 @@
+use std::cell::RefCell;
 use std::rc::Rc;
 
+use wasm_bindgen::JsCast;
 use yew::html::IntoPropValue;
 use yew::prelude::*;
 use yew::virtual_dom::{VComp, VNode};
@@ -11,6 +13,8 @@ use crate::props::{
 };
 use crate::state::NavigationContext;
 use crate::widget::Container;
+
+use super::hero::{HeroContext, HeroRegistry};
 
 /// Page animation style.
 ///
@@ -73,6 +77,9 @@ impl From<PageAnimationStyle> for Classes {
 /// [NavigationBar](super::NavigationBar)) do not switch to the new route. This
 /// does not apply to the location provided by `yew_router` (`Switch`, `use_location`),
 /// which is always the current one.
+///
+/// When a page is pushed or popped with an animation style set, each [Hero](super::Hero) of the
+/// new top page flies from the place of the hero with the same tag on the old top page.
 ///
 /// A page that is still at the same position after a change is kept, if it has the same key as
 /// before, even if its properties changed, so it is updated instead of created again. A page
@@ -139,13 +146,208 @@ pub enum Msg {
     AnimationEnd,
 }
 
+/// A rectangle relative to the page stack.
+#[derive(Clone, Copy, Debug, PartialEq)]
+struct Rect {
+    x: f64,
+    y: f64,
+    width: f64,
+    height: f64,
+}
+
+impl Rect {
+    fn of(el: &web_sys::Element, outer: &web_sys::DomRect) -> Self {
+        let rect = el.get_bounding_client_rect();
+        Self {
+            x: rect.x() - outer.x(),
+            y: rect.y() - outer.y(),
+            width: rect.width(),
+            height: rect.height(),
+        }
+    }
+}
+
+/// The transform that moves a hero from its place on the target rectangle back to the start of
+/// its flight, with the transform origin in its top left corner.
+fn flight_transform(from: Rect, to: Rect) -> String {
+    let scale = |from: f64, to: f64| if to > 0.0 { from / to } else { 1.0 };
+    format!(
+        "translate({}px, {}px) scale({}, {})",
+        from.x - to.x,
+        from.y - to.y,
+        scale(from.width, to.width),
+        scale(from.height, to.height),
+    )
+}
+
+struct HeroFlight {
+    tag: AttrValue,
+    copy: web_sys::Element,
+    heroes: [web_sys::Element; 2],
+}
+
 #[doc(hidden)]
 pub struct PwtPageStack {
     state: ViewState,
     outer_ref: NodeRef,
+    hero_layer_ref: NodeRef,
 
     // tracked copy of props.stack, in order to assign a key to each pages
     stack: Vec<PageEntry>,
+
+    heroes: Rc<RefCell<HeroRegistry>>,
+    // heroes of the old top page, measured before the DOM update
+    departing_heroes: Vec<(AttrValue, Rect, web_sys::Element)>,
+    flights: Vec<HeroFlight>,
+}
+
+impl PwtPageStack {
+    /// Measures the heroes of the top page before the pages switch.
+    fn prepare_hero_flights(&mut self) {
+        let Some(outer) = self.outer_ref.cast::<web_sys::Element>() else {
+            return;
+        };
+        let outer_rect = outer.get_bounding_client_rect();
+
+        // A flight that is cut short starts the next one from where it is.
+        let in_flight: Vec<(AttrValue, Rect)> = self
+            .flights
+            .iter()
+            .map(|flight| (flight.tag.clone(), Rect::of(&flight.copy, &outer_rect)))
+            .collect();
+        self.finish_hero_flights();
+
+        if let Some(top) = self.stack.last() {
+            self.departing_heroes = self
+                .heroes
+                .borrow()
+                .page_heroes(&top.key)
+                .into_iter()
+                .map(|(tag, el)| {
+                    let rect = in_flight
+                        .iter()
+                        .find(|(t, _)| *t == tag)
+                        .map(|(_, rect)| *rect)
+                        .unwrap_or_else(|| Rect::of(&el, &outer_rect));
+                    (tag, rect, el.into())
+                })
+                .collect();
+        }
+
+        // Only after measuring: the old top page is still visible until the next render, and a
+        // floating action button there would start to scale in. From then on, all pages animate
+        // or hide, so no visible hero is affected.
+        for el in self.heroes.borrow().elements() {
+            let _ = el.class_list().remove_1("pwt-hero-landed");
+        }
+    }
+
+    /// Lets the heroes of the old top page fly to the place of those of the new top page.
+    fn start_hero_flights(&mut self) {
+        let departing = std::mem::take(&mut self.departing_heroes);
+        if departing.is_empty() {
+            return;
+        }
+        let (Some(outer), Some(layer), Some(top)) = (
+            self.outer_ref.cast::<web_sys::Element>(),
+            self.hero_layer_ref.cast::<web_sys::Element>(),
+            self.stack.last(),
+        ) else {
+            return;
+        };
+
+        let pairs: Vec<_> = self
+            .heroes
+            .borrow()
+            .page_heroes(&top.key)
+            .into_iter()
+            .filter_map(|(tag, el)| {
+                let (_, from, from_el) = departing.iter().find(|(t, _, _)| *t == tag)?;
+                Some((tag, *from, from_el.clone(), el))
+            })
+            .collect();
+        if pairs.is_empty() {
+            return;
+        }
+
+        // The new page sits at the start of its animation now. Measure where its heroes end up
+        // with the page animations switched off. They start anew once switched on again, before
+        // anything was painted.
+        let class_list = outer.class_list();
+        let _ = class_list.add_1("pwt-page-measure");
+        let outer_rect = outer.get_bounding_client_rect();
+        let targets: Vec<Rect> = pairs
+            .iter()
+            .map(|(_, _, _, el)| Rect::of(el, &outer_rect))
+            .collect();
+        let _ = class_list.remove_1("pwt-page-measure");
+
+        for ((tag, from, from_el, to_el), to) in pairs.into_iter().zip(targets) {
+            let Some(copy) = to_el
+                .clone_node_with_deep(true)
+                .ok()
+                .and_then(|node| node.dyn_into::<web_sys::HtmlElement>().ok())
+            else {
+                continue;
+            };
+
+            let _ = copy.remove_attribute("id");
+            if let Ok(list) = copy.query_selector_all("[id]") {
+                for i in 0..list.length() {
+                    if let Some(el) = list
+                        .item(i)
+                        .and_then(|n| n.dyn_into::<web_sys::Element>().ok())
+                    {
+                        let _ = el.remove_attribute("id");
+                    }
+                }
+            }
+            let _ = copy.set_attribute("aria-hidden", "true");
+            let _ = copy.set_attribute("inert", "");
+            let _ = copy.class_list().add_1("pwt-hero-flight");
+
+            // Important, so the position and size win over those of the hero's own classes and
+            // styles, whether physical or logical.
+            let style = copy.style();
+            let set = |name: &str, value: &str| {
+                let _ = style.set_property_with_priority(name, value, "important");
+            };
+            set("position", "absolute");
+            set("inset", "auto");
+            set("margin", "0");
+            set("box-sizing", "border-box");
+            set("left", &format!("{}px", to.x));
+            set("top", &format!("{}px", to.y));
+            set("width", &format!("{}px", to.width));
+            set("height", &format!("{}px", to.height));
+            set("--pwt-hero-from", &flight_transform(from, to));
+
+            if layer.append_child(&copy).is_err() {
+                continue;
+            }
+
+            let to_el: web_sys::Element = to_el.into();
+            let _ = from_el.class_list().add_1("pwt-hero-hidden");
+            let _ = to_el.class_list().add_1("pwt-hero-hidden");
+            // Keeps a floating action button from scaling in after it flew.
+            let _ = to_el.class_list().add_1("pwt-hero-landed");
+
+            self.flights.push(HeroFlight {
+                tag,
+                copy: copy.into(),
+                heroes: [from_el, to_el],
+            });
+        }
+    }
+
+    fn finish_hero_flights(&mut self) {
+        for flight in self.flights.drain(..) {
+            flight.copy.remove();
+            for el in flight.heroes {
+                let _ = el.class_list().remove_1("pwt-hero-hidden");
+            }
+        }
+    }
 }
 
 // Pages with a key are the same page as long as the key is, pages without one only if nothing
@@ -175,6 +377,10 @@ impl Component for PwtPageStack {
             state: ViewState::Normal,
             outer_ref: NodeRef::default(),
             stack,
+            hero_layer_ref: NodeRef::default(),
+            heroes: Rc::new(RefCell::new(HeroRegistry::default())),
+            departing_heroes: Vec::new(),
+            flights: Vec::new(),
         }
     }
 
@@ -192,10 +398,14 @@ impl Component for PwtPageStack {
 
         if let Some(last) = self.stack.last() {
             if props.animation_style.is_some() {
-                match props.stack.len().cmp(&self.stack.len()) {
-                    std::cmp::Ordering::Less => self.state = ViewState::Shrink(last.clone()),
-                    std::cmp::Ordering::Greater => self.state = ViewState::Grow(last.clone()),
-                    _ => {}
+                let state = match props.stack.len().cmp(&self.stack.len()) {
+                    std::cmp::Ordering::Less => Some(ViewState::Shrink(last.clone())),
+                    std::cmp::Ordering::Greater => Some(ViewState::Grow(last.clone())),
+                    _ => None,
+                };
+                if let Some(state) = state {
+                    self.state = state;
+                    self.prepare_hero_flights();
                 }
             }
         }
@@ -286,6 +496,16 @@ impl Component for PwtPageStack {
                 None => entry.page,
             };
 
+            let hero_ctx = HeroContext {
+                registry: self.heroes.clone(),
+                page: entry.key.clone(),
+            };
+            let child = html! {
+                <ContextProvider<HeroContext> context={hero_ctx}>
+                    {child}
+                </ContextProvider<HeroContext>>
+            };
+
             let page = Container::new()
                 .class("pwt-bg-color-neutral")
                 .class("pwt-page-container")
@@ -307,6 +527,14 @@ impl Component for PwtPageStack {
             children.push(page.into())
         }
 
+        // All children need a key, else yew does not match the pages by theirs.
+        children.push(
+            Container::new()
+                .key("pwt-page-hero-layer")
+                .class("pwt-page-hero-layer")
+                .into_html_with_ref(self.hero_layer_ref.clone()),
+        );
+
         Container::new()
             .class("pwt-position-relative")
             .class("pwt-overflow-hidden")
@@ -315,6 +543,19 @@ impl Component for PwtPageStack {
             .height(CssLength::Fraction(1.0))
             .children(children)
             .into_html_with_ref(self.outer_ref.clone())
+    }
+
+    fn rendered(&mut self, _ctx: &Context<Self>, _first_render: bool) {
+        match self.state {
+            // The flights take as long as the page animations, which ended now. Ending them only
+            // once the page shows its final state shows the heroes in the same paint.
+            ViewState::Normal => self.finish_hero_flights(),
+            _ => self.start_hero_flights(),
+        }
+    }
+
+    fn destroy(&mut self, _ctx: &Context<Self>) {
+        self.finish_hero_flights();
     }
 }
 
@@ -337,6 +578,41 @@ mod tests {
     #[function_component]
     fn Page(props: &PageProps) -> Html {
         html! {{props.value}}
+    }
+
+    fn rect(x: f64, y: f64, width: f64, height: f64) -> Rect {
+        Rect {
+            x,
+            y,
+            width,
+            height,
+        }
+    }
+
+    #[test]
+    fn flight_starts_at_the_old_place() {
+        let from = rect(10.0, 20.0, 40.0, 30.0);
+        let to = rect(50.0, 100.0, 80.0, 60.0);
+        assert_eq!(
+            flight_transform(from, to),
+            "translate(-40px, -80px) scale(0.5, 0.5)"
+        );
+    }
+
+    #[test]
+    fn flight_in_place_does_not_move() {
+        let r = rect(10.0, 20.0, 40.0, 30.0);
+        assert_eq!(flight_transform(r, r), "translate(0px, 0px) scale(1, 1)");
+    }
+
+    #[test]
+    fn flight_to_an_empty_target_does_not_scale() {
+        let from = rect(0.0, 0.0, 40.0, 30.0);
+        let to = rect(0.0, 0.0, 0.0, 0.0);
+        assert_eq!(
+            flight_transform(from, to),
+            "translate(0px, 0px) scale(1, 1)"
+        );
     }
 
     #[test]

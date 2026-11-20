@@ -24,6 +24,9 @@ pub use fab_menu::{
     FabMenu, FabMenuAlign, FabMenuColor, FabMenuDirection, FabMenuEntry, PwtFabMenu,
 };
 
+mod hero;
+pub use hero::{Hero, PwtHero};
+
 mod material_app;
 pub use material_app::PageController;
 pub use material_app::{MaterialApp, MaterialAppScopeExt, PwtMaterialApp};

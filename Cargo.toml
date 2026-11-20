@@ -33,6 +33,7 @@ web-sys = { version = "0.3", features = [
   "DomTokenList",
   "Element",
   "HtmlCollection",
+  "HtmlElement",
   'Headers',
   "NodeList",
   "MutationObserver",
