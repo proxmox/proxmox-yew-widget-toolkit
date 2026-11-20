@@ -108,6 +108,7 @@ impl Component for PwtScaffold {
 
         let positioned_fab = props.favorite_action_button.clone().map(|fab| {
             Container::new()
+                .class("pwt-scaffold-fab")
                 .class("pwt-position-absolute")
                 .style("inset-inline-end", PwtSpace::Pwt(2))
                 .style("inset-block-end", PwtSpace::Pwt(2))
