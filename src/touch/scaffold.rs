@@ -6,9 +6,9 @@ use yew::virtual_dom::{Key, VComp, VNode};
 
 use crate::css::FlexFit;
 use crate::props::{ContainerBuilder, PwtSpace, WidgetBuilder, WidgetStyleBuilder};
-use crate::widget::{Column, Container, Row};
+use crate::widget::{Column, Row};
 
-use super::{NavigationBar, NavigationRail};
+use super::{Hero, NavigationBar, NavigationRail};
 
 use pwt_macros::builder;
 
@@ -42,6 +42,10 @@ pub struct Scaffold {
     pub navigation_rail: Option<NavigationRail>,
 
     /// Favorite action button.
+    ///
+    /// The button does not move with its page when the [PageStack](super::PageStack) switches
+    /// pages. If the new page has one too, it flies to its place, so a button at the same place
+    /// stays still. Else, it hides while the pages switch and appears afterwards.
     #[prop_or_default]
     pub favorite_action_button: Option<VNode>,
 }
@@ -107,7 +111,7 @@ impl Component for PwtScaffold {
         let props = ctx.props();
 
         let positioned_fab = props.favorite_action_button.clone().map(|fab| {
-            Container::new()
+            Hero::new("pwt-scaffold-fab")
                 .class("pwt-scaffold-fab")
                 .class("pwt-position-absolute")
                 .style("inset-inline-end", PwtSpace::Pwt(2))
