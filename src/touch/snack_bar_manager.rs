@@ -174,6 +174,8 @@ impl PwtSnackBarManager {
             ViewState::Idle | ViewState::FadeOut(_) => { /* do nothing */ }
             ViewState::FadeIn(snackbar) | ViewState::Visible(snackbar) => {
                 if opt_id.is_none() || snackbar.id.as_ref() == opt_id {
+                    // the timeout would otherwise dismiss the next snackbar
+                    self.timeout = None;
                     self.view_state = ViewState::FadeOut(snackbar.clone());
                 }
             }
