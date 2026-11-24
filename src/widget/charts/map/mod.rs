@@ -204,6 +204,14 @@ impl<T: MapPointData + 'static> MapComp<T> {
             self.info_anchor_ref.get(),
             self.info_ref.get(),
         ) {
+            // A hidden map, for example on a page below the top one, has no layout to align to.
+            // Keep the card where it is, so it is in place as soon as the map shows again.
+            if let Some(anchor) = anchor.dyn_ref::<web_sys::Element>() {
+                let rect = anchor.get_bounding_client_rect();
+                if rect.width() == 0.0 && rect.height() == 0.0 {
+                    return;
+                }
+            }
             let _ = align_to(
                 anchor,
                 el,
@@ -360,11 +368,19 @@ impl<T: MapPointData + 'static> yew::Component for MapComp<T> {
                 }
             },
             Msg::Resize(real_width, real_height) => {
-                if real_width > 0.0 && real_height > 0.0 {
-                    // use the smaller scale so the whole map fits
-                    self.fit_scale = (real_width / width).min(real_height / height);
-                    self.cluster_points(ctx);
+                // A hidden map reports a zero size, and the old size again once it shows. Neither
+                // changes anything, and a render would align the info card while the map is
+                // hidden, or while its page still animates in.
+                if real_width <= 0.0 || real_height <= 0.0 {
+                    return false;
                 }
+                // use the smaller scale so the whole map fits
+                let fit_scale = (real_width / width).min(real_height / height);
+                if fit_scale == self.fit_scale {
+                    return false;
+                }
+                self.fit_scale = fit_scale;
+                self.cluster_points(ctx);
             }
             Msg::Tooltip(index) => {
                 if index.is_none() && self.tooltip.is_none() {
