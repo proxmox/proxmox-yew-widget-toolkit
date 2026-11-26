@@ -539,13 +539,14 @@ impl Component for PwtSplitPane {
                 true
             }
             Msg::StopResize(pointer_id) => {
-                if self.pointer_id == Some(pointer_id) {
-                    self.pointerup_listener = None;
-                    self.pointermove_listener = None;
-                    self.drag_offset = 0;
-                    self.pointer_id = None;
+                if self.pointer_id != Some(pointer_id) {
+                    return false;
                 }
-                false
+                self.pointerup_listener = None;
+                self.pointermove_listener = None;
+                self.drag_offset = 0;
+                self.pointer_id = None;
+                true
             }
             Msg::StartResize(child_index, x, y, pointer_id) => {
                 self.drag_offset = if props.vertical { y } else { x };
@@ -577,7 +578,7 @@ impl Component for PwtSplitPane {
                 self.pointerup_listener = Some(pointerup_listener);
                 self.pointer_id = Some(pointer_id);
 
-                false
+                true
             }
             Msg::ResetSize => {
                 self.sizes = Vec::new();
@@ -636,6 +637,9 @@ impl Component for PwtSplitPane {
             .style("flex-direction", flex_direction)
             .style("align-items", "stretch")
             .attribute("style", style)
+            // WebKit lets a press on the non-selectable handle anchor a text selection anyway, which
+            // the drag then extends over the panes
+            .class(self.pointer_id.is_some().then_some(UserSelect::None))
             .onfocusin(ctx.link().callback(|_| Msg::FocusIn))
             .into_html_with_ref(self.node_ref.clone())
     }
