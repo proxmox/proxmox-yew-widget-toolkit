@@ -77,6 +77,7 @@ impl LanguageSelector {
 pub struct PwtLanguageSelector {
     store: Store<LanguageInfo>,
     selection: Selection,
+    columns: Rc<Vec<DataTableHeader<LanguageInfo>>>,
     lang: String,
 }
 
@@ -109,6 +110,7 @@ impl Component for PwtLanguageSelector {
         Self {
             store,
             selection,
+            columns: columns(),
             lang,
         }
     }
@@ -138,7 +140,7 @@ impl Component for PwtLanguageSelector {
 
         let picker = {
             let store = self.store.clone();
-            let columns = COLUMNS.with(Rc::clone);
+            let columns = self.columns.clone();
             let selection = self.selection.clone();
 
             move |controller: &DropdownController| {
@@ -188,28 +190,26 @@ impl From<LanguageSelector> for VNode {
     }
 }
 
-thread_local! {
-    static COLUMNS: Rc<Vec<DataTableHeader<LanguageInfo>>> = Rc::new(vec![
+/// The columns of the picker, built with each selector, so their headers are in the language
+/// in use when it is shown.
+fn columns() -> Rc<Vec<DataTableHeader<LanguageInfo>>> {
+    Rc::new(vec![
         DataTableColumn::new(tr!("Language"))
             .width("200px")
             .show_menu(false)
             .render(|info: &LanguageInfo| {
-                html!{&info.text}
+                html! {&info.text}
             })
-            .sorter(|a: &LanguageInfo, b: &LanguageInfo| {
-                a.text.cmp(&b.text)
-            })
+            .sorter(|a: &LanguageInfo, b: &LanguageInfo| a.text.cmp(&b.text))
             .sort_order(true)
             .into(),
         DataTableColumn::new(tr!("Translated"))
             .width("200px")
             .show_menu(false)
             .render(|info: &LanguageInfo| {
-                html!{&info.translated_text}
+                html! {&info.translated_text}
             })
-            .sorter(|a: &LanguageInfo, b: &LanguageInfo| {
-                a.translated_text.cmp(&b.translated_text)
-            })
-           .into(),
-    ]);
+            .sorter(|a: &LanguageInfo, b: &LanguageInfo| a.translated_text.cmp(&b.translated_text))
+            .into(),
+    ])
 }
