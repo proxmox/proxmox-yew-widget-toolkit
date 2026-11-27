@@ -38,7 +38,6 @@ impl ThemeDensitySelector {
 #[doc(hidden)]
 pub struct PwtThemeDensitySelector {
     density: ThemeDensity,
-    items: Rc<Vec<AttrValue>>,
 }
 
 pub enum Msg {
@@ -54,12 +53,6 @@ impl Component for PwtThemeDensitySelector {
 
         Self {
             density: theme.density,
-            items: Rc::new(vec![
-                AttrValue::from(ThemeDensity::Preset.to_string()),
-                AttrValue::from(ThemeDensity::Compact.to_string()),
-                AttrValue::from(ThemeDensity::Medium.to_string()),
-                AttrValue::from(ThemeDensity::Relaxed.to_string()),
-            ]),
         }
     }
 
@@ -75,11 +68,19 @@ impl Component for PwtThemeDensitySelector {
     fn view(&self, ctx: &Context<Self>) -> Html {
         let props = ctx.props();
 
-        Combobox::new()
+        // the names are stored as they are, only their labels are translated
+        let items = [
+            (ThemeDensity::Preset, tr!("Preset")),
+            (ThemeDensity::Compact, tr!("Compact")),
+            (ThemeDensity::Medium, tr!("Medium")),
+            (ThemeDensity::Relaxed, tr!("Relaxed")),
+        ]
+        .map(|(density, label)| (density.to_string(), label));
+
+        Combobox::from_key_value_pairs(items)
             .class(props.class.clone())
             .required(true)
             .default(self.density.to_string())
-            .items(self.items.clone())
             .on_change(ctx.link().callback(|density: String| {
                 let density = ThemeDensity::try_from(density.as_str()).unwrap_or_default();
                 Msg::SetThemeDensity(density)
